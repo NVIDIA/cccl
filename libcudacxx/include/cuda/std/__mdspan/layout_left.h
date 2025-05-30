@@ -41,6 +41,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Helper for lightweight test checking that one did pass a layout policy as LayoutPolicy template argument
@@ -290,7 +292,7 @@ public:
   }
 
   template <class _OtherExtents, class _Extents2 = _Extents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
@@ -299,7 +301,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherExtents, class _Extents2 = _Extents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
@@ -309,5 +311,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_H

@@ -46,6 +46,8 @@
 #  define _CCCL_MOVE(...) _CUDA_VSTD::move(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE()
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -67,5 +69,7 @@ move_if_noexcept(_Tp& __x) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_MOVE_H

@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Iterator wrapper that carries the valid range it is allowed to access.
@@ -256,5 +258,7 @@ struct pointer_traits<__bounded_iter<_Iterator>>
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_BOUNDED_ITER_H

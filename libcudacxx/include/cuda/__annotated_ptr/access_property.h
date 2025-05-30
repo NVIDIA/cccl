@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/__annotated_ptr/access_property_encoding.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -51,24 +51,30 @@ public:
   {};
   struct persisting
   {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
+#if _CCCL_HAS_CTK()
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator ::cudaAccessProperty() const noexcept
     {
-      return cudaAccessProperty::cudaAccessPropertyPersisting;
+      return ::cudaAccessProperty::cudaAccessPropertyPersisting;
     }
+#endif // _CCCL_HAS_CTK()
   };
   struct streaming
   {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
+#if _CCCL_HAS_CTK()
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator ::cudaAccessProperty() const noexcept
     {
-      return cudaAccessProperty::cudaAccessPropertyStreaming;
+      return ::cudaAccessProperty::cudaAccessPropertyStreaming;
     }
+#endif // _CCCL_HAS_CTK()
   };
   struct normal
   {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
+#if _CCCL_HAS_CTK()
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator ::cudaAccessProperty() const noexcept
     {
-      return cudaAccessProperty::cudaAccessPropertyNormal;
+      return ::cudaAccessProperty::cudaAccessPropertyNormal;
     }
+#endif // _CCCL_HAS_CTK()
   };
 
   _CCCL_HIDE_FROM_ABI access_property() noexcept = default;
@@ -157,5 +163,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY

@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_TRIVIAL) && !defined(_LIBCUDACXX_USE_IS_TRIVIAL_FALLBACK)
@@ -48,5 +50,7 @@ inline constexpr bool is_trivial_v = is_trivial<_Tp>::value;
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIAL) && !defined(_LIBCUDACXX_USE_IS_TRIVIAL_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIAL_H

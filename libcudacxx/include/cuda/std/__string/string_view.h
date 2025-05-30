@@ -28,6 +28,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __string_view
@@ -160,7 +162,7 @@ public:
     return __compare(__other, bool_constant<__cccl_default_is_constant_evaluated()>());
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.__len_ == __rhs.__len_ && __lhs.compare(__rhs) == 0;
@@ -168,7 +170,7 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <=> 0;
@@ -176,31 +178,31 @@ public:
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
@@ -236,5 +238,7 @@ private:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___STRING_STRING_VIEW_H

@@ -26,7 +26,7 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
+
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/util_type.cuh>
 

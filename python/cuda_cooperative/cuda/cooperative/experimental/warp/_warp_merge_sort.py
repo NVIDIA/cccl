@@ -92,6 +92,7 @@ def merge_sort_keys(
             make_binary_tempfile(ltoir, ".ltoir")
             for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
         ],
-        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )

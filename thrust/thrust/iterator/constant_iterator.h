@@ -95,11 +95,7 @@ struct make_constant_iterator_base
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<int> data(4);
-//!   data[0] = 3;
-//!   data[1] = 7;
-//!   data[2] = 2;
-//!   data[3] = 5;
+//!   thrust::device_vector<int> data{3, 7, 2, 5};
 //!
 //!   // add 10 to all values in data
 //!   thrust::transform(data.begin(), data.end(),
@@ -135,11 +131,10 @@ public:
   //! Copy constructor copies the value of another \p constant_iterator with related System type.
   //!
   //! \param rhs The \p constant_iterator to copy.
-  template <
-    class OtherSystem,
-    detail::enable_if_convertible_t<typename iterator_system<constant_iterator<Value, Incrementable, OtherSystem>>::type,
-                                    typename iterator_system<super_t>::type,
-                                    int> = 0>
+  template <class OtherSystem,
+            detail::enable_if_convertible_t<iterator_system_t<constant_iterator<Value, Incrementable, OtherSystem>>,
+                                            iterator_system_t<super_t>,
+                                            int> = 0>
   _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
       : super_t(rhs.base())
       , m_value(rhs.value())

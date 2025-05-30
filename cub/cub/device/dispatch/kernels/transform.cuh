@@ -26,6 +26,7 @@
 // cooperative groups do not support NVHPC yet
 #if !_CCCL_CUDA_COMPILER(NVHPC)
 #  include <cooperative_groups.h>
+
 #  include <cooperative_groups/memcpy_async.h>
 #endif
 
@@ -201,31 +202,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
   return threadIdx.x < 32 && static_cast<bool>(is_elected);
 }
 
-template <typename Offset, typename T>
-_CCCL_DEVICE void bulk_copy_tile_fallback(
-  int tile_size,
-  int tile_stride,
-  char* smem,
-  int& smem_offset,
-  Offset global_offset,
-  const aligned_base_ptr<T>& aligned_ptr)
-{
-  const T* src = aligned_ptr.ptr_to_elements() + global_offset;
-  T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-
-  const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
-  cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
-
-  // add bulk_copy_alignment to make space for the next tile's head padding
-  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
-}
-
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
+  constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
+
   __shared__ uint64_t bar;
   extern __shared__ char __align__(bulk_copy_alignment) smem[];
 

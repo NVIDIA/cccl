@@ -95,7 +95,7 @@ C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_type
 
   SECTION("cudax::async_buffer::begin/end with allocation")
   {
-    Buffer buf{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Buffer buf{env, 42, cudax::no_init}; // Note we do not care about the elements just the sizes
     // begin points to the element at data()
     CUDAX_CHECK(buf.begin() == iterator{buf.data()});
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == const_iterator{buf.data()});
@@ -148,7 +148,7 @@ C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_type
 
   SECTION("cudax::async_buffer::rbegin/rend with allocation")
   {
-    Buffer buf{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Buffer buf{env, 42, cudax::no_init}; // Note we do not care about the elements just the sizes
     // rbegin points to the element at data() + 42
     CUDAX_CHECK(buf.rbegin() == reverse_iterator{iterator{buf.data() + 42}});
     CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});

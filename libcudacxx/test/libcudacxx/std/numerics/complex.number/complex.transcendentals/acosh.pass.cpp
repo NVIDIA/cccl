@@ -28,7 +28,8 @@ __host__ __device__ void test(const cuda::std::complex<T>& c, cuda::std::complex
 template <class T>
 __host__ __device__ void test()
 {
-  test(cuda::std::complex<T>(INFINITY, 1), cuda::std::complex<T>(INFINITY, 0));
+  test(cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 1),
+       cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 0));
 }
 
 template <class T>

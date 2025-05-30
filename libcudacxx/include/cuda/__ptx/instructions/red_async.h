@@ -28,6 +28,8 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.7. Parallel Synchronization and Communication Instructions: red.async
@@ -35,5 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/red_async.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_RED_ASYNC_H_

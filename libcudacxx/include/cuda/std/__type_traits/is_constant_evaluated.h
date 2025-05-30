@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
@@ -43,5 +45,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_default_is_constant_evaluated() 
 #endif // !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H

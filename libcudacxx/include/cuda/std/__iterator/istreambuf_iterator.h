@@ -26,6 +26,8 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -153,5 +155,7 @@ operator!=(const istreambuf_iterator<_CharT, _Traits>& __a, const istreambuf_ite
 #endif // _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ISTREAMBUF_ITERATOR_H

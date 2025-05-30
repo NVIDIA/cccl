@@ -15,7 +15,7 @@
 
 #include <utility.cuh>
 
-namespace driver = cuda::experimental::detail::driver;
+namespace driver = cuda::experimental::__detail::driver;
 
 void recursive_check_device_setter(int id)
 {

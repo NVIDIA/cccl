@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,10 +26,12 @@
 
 #include <cuda/experimental/__device/attributes.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
-namespace detail
+namespace __detail
 {
 struct arch_common_traits
 {
@@ -100,9 +102,9 @@ struct arch_common_traits
   // Maximum number of 32-bit registers available to a thread
   static constexpr int max_registers_per_thread = 255;
 };
-} // namespace detail
+} // namespace __detail
 
-struct arch_traits_t : public detail::arch_common_traits
+struct arch_traits_t : public __detail::arch_common_traits
 {
   // Major compute capability version number
   int compute_capability_major;
@@ -151,7 +153,7 @@ struct arch_traits_t : public detail::arch_common_traits
   bool tma_supported;
 };
 
-namespace detail
+namespace __detail
 {
 
 inline constexpr arch_traits_t sm_600_traits = []() constexpr {
@@ -163,7 +165,7 @@ inline constexpr arch_traits_t sm_600_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block  = 0;
   __traits.max_shared_memory_per_block_optin = 48 * 1024;
 
@@ -185,7 +187,7 @@ inline constexpr arch_traits_t sm_610_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block  = 0;
   __traits.max_shared_memory_per_block_optin = 48 * 1024;
 
@@ -207,7 +209,7 @@ inline constexpr arch_traits_t sm_700_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 0;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -230,7 +232,7 @@ inline constexpr arch_traits_t sm_750_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 16;
   __traits.max_threads_per_multiprocessor       = 1024;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 0;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -253,7 +255,7 @@ inline constexpr arch_traits_t sm_800_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -276,7 +278,7 @@ inline constexpr arch_traits_t sm_860_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 16;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -299,7 +301,7 @@ inline constexpr arch_traits_t sm_890_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 24;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -322,7 +324,7 @@ inline constexpr arch_traits_t sm_900_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -345,7 +347,7 @@ inline constexpr arch_traits_t sm_1000_traits = []() constexpr {
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor =
-    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
   __traits.reserved_shared_memory_per_block = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
@@ -361,7 +363,7 @@ inline constexpr arch_traits_t sm_1000_traits = []() constexpr {
 
 inline constexpr unsigned int __highest_known_arch = 1000;
 
-} // namespace detail
+} // namespace __detail
 
 //! @brief Retrieve architecture traits of the specified architecture
 //!
@@ -374,23 +376,23 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
   switch (__sm_version)
   {
     case 600:
-      return detail::sm_600_traits;
+      return __detail::sm_600_traits;
     case 610:
-      return detail::sm_610_traits;
+      return __detail::sm_610_traits;
     case 700:
-      return detail::sm_700_traits;
+      return __detail::sm_700_traits;
     case 750:
-      return detail::sm_750_traits;
+      return __detail::sm_750_traits;
     case 800:
-      return detail::sm_800_traits;
+      return __detail::sm_800_traits;
     case 860:
-      return detail::sm_860_traits;
+      return __detail::sm_860_traits;
     case 890:
-      return detail::sm_890_traits;
+      return __detail::sm_890_traits;
     case 900:
-      return detail::sm_900_traits;
+      return __detail::sm_900_traits;
     case 1000:
-      return detail::sm_1000_traits;
+      return __detail::sm_1000_traits;
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
@@ -399,7 +401,7 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
 
 //! @brief Type representing a CUDA device architecture. It provides traits from arch_traits_t in form of static members
 template <unsigned int __SmVersion>
-struct arch : public detail::arch_common_traits
+struct arch : public __detail::arch_common_traits
 {
 private:
   static constexpr arch_traits_t __traits = arch_traits(__SmVersion);
@@ -439,7 +441,7 @@ _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
 #endif
 }
 
-namespace detail
+namespace __detail
 {
 [[nodiscard]] inline constexpr arch_traits_t __arch_traits_might_be_unknown(int __device, unsigned int __arch)
 {
@@ -455,12 +457,12 @@ namespace detail
     __traits.compute_capability_minor = (__arch / 10) % 10;
     __traits.compute_capability       = __arch;
     __traits.max_shared_memory_per_multiprocessor =
-      detail::__device_attrs::max_shared_memory_per_multiprocessor(__device);
-    __traits.max_blocks_per_multiprocessor  = detail::__device_attrs::max_blocks_per_multiprocessor(__device);
-    __traits.max_threads_per_multiprocessor = detail::__device_attrs::max_threads_per_multiprocessor(__device);
+      __detail::__device_attrs::max_shared_memory_per_multiprocessor(__device);
+    __traits.max_blocks_per_multiprocessor  = __detail::__device_attrs::max_blocks_per_multiprocessor(__device);
+    __traits.max_threads_per_multiprocessor = __detail::__device_attrs::max_threads_per_multiprocessor(__device);
     __traits.max_warps_per_multiprocessor =
-      __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
-    __traits.reserved_shared_memory_per_block = detail::__device_attrs::reserved_shared_memory_per_block(__device);
+      __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
+    __traits.reserved_shared_memory_per_block = __detail::__device_attrs::reserved_shared_memory_per_block(__device);
     __traits.max_shared_memory_per_block_optin =
       __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
@@ -472,8 +474,10 @@ namespace detail
     return __traits;
   }
 }
-} // namespace detail
+} // namespace __detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_ARCH_TRAITS

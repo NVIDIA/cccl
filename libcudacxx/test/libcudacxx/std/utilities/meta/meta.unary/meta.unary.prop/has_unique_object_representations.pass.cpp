@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: clang-3, clang-4, clang-5, apple-clang, gcc-5, gcc-6, msvc-19
+// UNSUPPORTED: msvc-19
 
 // type_traits
 

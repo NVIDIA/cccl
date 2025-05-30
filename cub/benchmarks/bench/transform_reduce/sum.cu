@@ -25,8 +25,9 @@
  *
  ******************************************************************************/
 
-#include "thrust/iterator/transform_iterator.h"
 #include <nvbench_helper.cuh>
+
+#include "thrust/iterator/transform_iterator.h"
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32

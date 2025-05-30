@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/copy_cvref.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Let COPYCV(FROM, TO) be an alias for type TO with the addition of FROM's
@@ -42,5 +44,7 @@ template <class _From, class _To>
 using __copy_cv_t = typename __apply_cv_fn<_From>::template __call<_To>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_COPY_CV_H

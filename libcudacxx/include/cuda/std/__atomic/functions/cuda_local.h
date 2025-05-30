@@ -31,9 +31,12 @@
 // CUDA compilers < 12.3 also miscompile __isLocal, such that the library cannot
 // detect automatic storage and error. Therefore, in CUDA < 12.3 compilers this
 // uses inline PTX to bypass __isLocal.
+
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 {
@@ -206,8 +209,10 @@ _CCCL_DEVICE bool __cuda_fetch_min_weak_if_local(volatile _Type* __ptr, _Type __
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_min<_Type>);
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_LOCAL_H

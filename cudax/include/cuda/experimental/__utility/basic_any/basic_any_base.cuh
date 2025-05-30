@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,8 +31,7 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -63,7 +62,7 @@ _CCCL_CONCEPT __is_basic_any =
   );
 // clang-format on
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Interface, int = 0>
 struct __basic_any_base : __interface_of<_Interface>
 {
@@ -78,7 +77,7 @@ private:
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
   alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
 };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // Without concepts, we need a base class to correctly implement movability
 // and copyability.
 template <class _Interface, int = extension_of<_Interface, imovable<>> + extension_of<_Interface, icopyable<>>>
@@ -142,10 +141,10 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
   auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = delete;
   auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
 };
-#endif // _CCCL_NO_CONCEPTS ^^^
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H

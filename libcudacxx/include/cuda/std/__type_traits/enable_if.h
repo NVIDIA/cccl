@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool, class _Tp = void>
@@ -35,5 +37,7 @@ template <bool _Bp, class _Tp = void>
 using enable_if_t _CCCL_NODEBUG_ALIAS = typename enable_if<_Bp, _Tp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ENABLE_IF_H

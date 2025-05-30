@@ -14,6 +14,7 @@ set(_cccl_root ../..)
 include(${_cccl_root}/cmake/AppendOptionIfAvailable.cmake)
 include(${_cccl_root}/cmake/CCCLConfigureTarget.cmake)
 include(${_cccl_root}/cmake/CCCLBuildCompilerTargets.cmake)
+include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
 cccl_build_compiler_targets()
 
 set(CCCL_ENABLE_C ON)
@@ -60,9 +61,9 @@ set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_parallel_SOURCE_DIR}\"")
 string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
-set(pyx_source_file "${cuda_parallel_SOURCE_DIR}/cuda/parallel/experimental/_bindings.pyx")
-set(_generated_extension_src "${cuda_parallel_BINARY_DIR}/_bindings.c")
-set(_depfile "${cuda_parallel_BINARY_DIR}/_bindings.c.dep")
+set(pyx_source_file "${cuda_parallel_SOURCE_DIR}/cuda/parallel/experimental/_bindings_impl.pyx")
+set(_generated_extension_src "${cuda_parallel_BINARY_DIR}/_bindings_impl.c")
+set(_depfile "${cuda_parallel_BINARY_DIR}/_bindings_impl.c.dep")
 add_custom_command(
     OUTPUT "${_generated_extension_src}"
     COMMAND "${Python3_EXECUTABLE}" -m cython
@@ -71,13 +72,13 @@ add_custom_command(
     DEPFILE "${_depfile}"
 )
 set_source_files_properties("${_generated_extension_src}" PROPERTIES GENERATED TRUE)
-add_custom_target(cythonize_bindings ALL
+add_custom_target(cythonize_bindings_impl ALL
     DEPENDS "${_generated_extension_src}"
 )
 
-Python3_add_library(_bindings MODULE WITH_SOABI "${_generated_extension_src}")
-add_dependencies(_bindings cythonize_bindings)
-target_link_libraries(_bindings PRIVATE cccl.c.parallel CUDA::cuda_driver)
-set_target_properties(_bindings PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
+Python3_add_library(_bindings_impl MODULE WITH_SOABI "${_generated_extension_src}")
+add_dependencies(_bindings_impl cythonize_bindings_impl)
+target_link_libraries(_bindings_impl PRIVATE cccl.c.parallel CUDA::cuda_driver)
+set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
-install(TARGETS _bindings DESTINATION cuda/parallel/experimental)
+install(TARGETS _bindings_impl DESTINATION cuda/parallel/experimental)

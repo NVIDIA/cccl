@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -51,7 +53,7 @@ inline constexpr bool __is_global_access_property_v =
                             access_property::streaming,
                             access_property>;
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 template <typename _Property>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
@@ -59,13 +61,13 @@ __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 {
   if constexpr (_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
   {
-    [[maybe_unused]] bool __b = __isShared(__ptr);
+    [[maybe_unused]] bool __b = ::__isShared(__ptr);
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
   else if constexpr (__is_global_access_property_v<_Property>)
   {
-    [[maybe_unused]] bool __b = __isGlobal(__ptr);
+    [[maybe_unused]] bool __b = ::__isGlobal(__ptr);
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
@@ -78,7 +80,7 @@ __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_raw_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);))
+  NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__nv_associate_access_property(__ptr, __prop);))
   return __ptr;
 }
 
@@ -89,12 +91,12 @@ template <typename _Property>
   if constexpr (!_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
   {
     [[maybe_unused]] auto __raw_prop = static_cast<uint64_t>(access_property{__prop});
-    return __associate_raw_descriptor(__ptr, __raw_prop);
+    return ::cuda::__associate_raw_descriptor(__ptr, __raw_prop);
   }
   return __ptr;
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Type, typename _Property>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
@@ -119,5 +121,7 @@ template <typename _Tp, typename _Property>
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY

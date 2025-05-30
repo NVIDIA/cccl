@@ -27,9 +27,11 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 template <class _Operand>
 using __cuda_atomic_enable_non_native_arithmetic =
@@ -390,8 +392,10 @@ _CCCL_DEVICE static inline void __atomic_signal_fence_cuda(int)
   asm volatile("" ::: "memory");
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H

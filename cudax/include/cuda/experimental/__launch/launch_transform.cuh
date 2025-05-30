@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +25,8 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/utility.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -121,4 +123,7 @@ using kernel_arg_t = _CUDA_VSTD::decay_t<__kernel_transform_result_t<__launch_tr
 } // namespace cuda::experimental
 
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // !_CUDAX__LAUNCH_LAUNCH_TRANSFORM

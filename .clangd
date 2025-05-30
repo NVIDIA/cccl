@@ -22,6 +22,29 @@ CompileFlags:
 
 ---
 
+# For __cccl/epilogue.h, force-include prologue.h to avoid spurious errors
+If:
+  PathMatch: ".*libcudacxx/include/cuda/std/__cccl/epilogue[.]h"
+
+CompileFlags:
+  Add:
+  - -include
+  - cuda/std/__cccl/prologue.h
+  - -Wno-unknown-pragmas
+
+---
+
+# For __cccl/visibility.h, pretend the file has been included from <cuda/__cccl_config>
+If:
+  PathMatch: ".*libcudacxx/include/cuda/std/__cccl/visibility[.]h"
+
+CompileFlags:
+  Add:
+  - -D_CUDA__CCCL_CONFIG
+
+---
+
+# For __execution/epilogue.cuh, force-include prologue.cuh to avoid spurious errors
 If:
   PathMatch: ".*cudax/include/cuda/experimental/__execution/epilogue[.]cuh"
 
@@ -41,6 +64,7 @@ CompileFlags:
     - -x
     - cuda
     - -Wno-unknown-cuda-version
+    - -Wno-pragma-system-header-outside-header
     - --no-cuda-version-check
     # report all errors
     - "-ferror-limit=0"

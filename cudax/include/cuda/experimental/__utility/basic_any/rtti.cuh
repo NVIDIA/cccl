@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,12 +29,11 @@
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
-#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
-
 #include <nv/target>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -69,7 +68,7 @@ struct bad_any_cast : ::std::bad_cast
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
-struct __rtti_base : detail::__immovable
+struct __rtti_base : __immovable
 {
   _CCCL_HOST_API constexpr __rtti_base(
     __vtable_kind __kind, uint16_t __nbr_interfaces, _CUDA_VSTD::__type_info_ref __self) noexcept
@@ -248,6 +247,6 @@ template <class _SrcInterface, class _DstInterface>
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_RTTI_H

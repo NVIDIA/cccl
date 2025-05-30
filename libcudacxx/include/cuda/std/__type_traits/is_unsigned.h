@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
 
@@ -58,5 +60,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public bool_constant<is_unsig
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNSIGNED_H

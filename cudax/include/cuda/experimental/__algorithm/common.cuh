@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,6 +27,8 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__launch/launch_transform.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -54,4 +56,7 @@ inline constexpr bool __valid_nd_copy_fill_argument =
   __convertible_to_mdspan<__kernel_transform_result_t<__launch_transform_result_t<_Tp>>>;
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif //__CUDAX_ALGORITHM_COMMON

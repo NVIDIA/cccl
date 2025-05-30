@@ -27,7 +27,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -39,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
 {
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+  return static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__ptr));
 }
 
 inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_dsmem(const void* __ptr)
@@ -59,7 +61,7 @@ inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr
 inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
 {
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
+  return static_cast<_CUDA_VSTD::uint64_t>(::__cvta_generic_to_global(__ptr));
 }
 
 /*************************************************************
@@ -71,7 +73,7 @@ template <typename _Tp>
 inline _CCCL_DEVICE _Tp* __from_ptr_smem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
-  return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(__ptr));
+  return reinterpret_cast<_Tp*>(::__cvta_shared_to_generic(__ptr));
 }
 
 template <typename _Tp>
@@ -92,7 +94,7 @@ template <typename _Tp>
 inline _CCCL_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
-  return reinterpret_cast<_Tp*>(__cvta_global_to_generic(__ptr));
+  return reinterpret_cast<_Tp*>(::__cvta_global_to_generic(__ptr));
 }
 
 /*************************************************************
@@ -142,6 +144,8 @@ inline _CCCL_DEVICE _B8 __u32_as_b8(uint32_t __u32)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA_PTX_HELPER_FUNCTIONS_H_

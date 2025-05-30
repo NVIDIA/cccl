@@ -49,6 +49,8 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/span>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace __mdspan_detail
@@ -131,5 +133,7 @@ _CCCL_CONCEPT __index_like =
   _CCCL_TRAIT(is_signed, _Tp) || _CCCL_TRAIT(is_unsigned, _Tp) || __integral_constant_like<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_CONCEPTS_H

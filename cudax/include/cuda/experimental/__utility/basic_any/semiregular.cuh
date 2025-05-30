@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -43,8 +43,7 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtcall.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
 // WAR for NVBUG #4924416
@@ -189,7 +188,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
                  || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto
+  [[nodiscard]] _CCCL_HOST_API friend auto
   operator==(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     auto const& __other = experimental::basic_any_from(__rhs);
@@ -200,7 +199,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
                  || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
-  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto
   operator!=(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -219,7 +218,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto
+  [[nodiscard]] _CCCL_HOST_API friend auto
   operator==(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
@@ -229,7 +228,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto
+  [[nodiscard]] _CCCL_HOST_API friend auto
   operator==(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
@@ -239,7 +238,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto
   operator!=(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -248,7 +247,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto
   operator!=(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -331,6 +330,6 @@ template <class _From, class _To>
 using iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to<_From, _To>::template __interface_<>;
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_SEMIREGULAR_H

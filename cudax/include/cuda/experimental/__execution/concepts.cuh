@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONCEPTS
-#define __CUDAX_ASYNC_DETAIL_CONCEPTS
+#ifndef __CUDAX_EXECUTION_CONCEPTS
+#define __CUDAX_EXECUTION_CONCEPTS
 
 #include <cuda/std/detail/__config>
 
@@ -106,7 +106,7 @@ inline constexpr bool enable_sender = __enable_sender<_Sndr>();
 template <class... _Env>
 struct __completions_tester
 {
-  template <class _Sndr, bool EnableIfConstexpr = (get_completion_signatures<_Sndr, _Env...>(), true)>
+  template <class _Sndr, bool EnableIfConstexpr = ((void) get_completion_signatures<_Sndr, _Env...>(), true)>
   _CCCL_API static constexpr auto __is_valid(int) -> bool
   {
     return __valid_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>>;
@@ -150,4 +150,4 @@ _CCCL_CONCEPT dependent_sender = //
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_CONCEPTS
+#endif // __CUDAX_EXECUTION_CONCEPTS

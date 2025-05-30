@@ -1,15 +1,24 @@
 #!/bin/bash
 
 set -euo pipefail
+source "$(dirname "$0")/pyenv_helper.sh"
 
-source "$(dirname "$0")/build_common.sh"
+# Get the Python version from the command line arguments -py-version=3.10
+py_version=${2#*=}
+echo "Python version: ${py_version}"
 
-print_environment_details
+# Setup Python environment
+setup_python_env "${py_version}"
 
-fail_if_no_gpu
+# Install cuda_cccl
+CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}"
 
-source "test_python_common.sh"
+# Install cuda_parallel
+CUDA_PARALLEL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_parallel-*.whl)"
+python -m pip install "${CUDA_PARALLEL_WHEEL_PATH}[test]"
 
-list_environment
-
-run_tests "cuda_parallel"
+# Run tests
+cd "/home/coder/cccl/python/cuda_parallel/tests/"
+python -m pytest -n 6 -v -m "not large"
+python -m pytest -n 0 -v -m "large"

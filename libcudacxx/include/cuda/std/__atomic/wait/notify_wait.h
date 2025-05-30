@@ -26,6 +26,8 @@
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/cstring>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 extern "C" _CCCL_DEVICE void __atomic_try_wait_unsupported_before_SM_70__();
@@ -54,11 +56,11 @@ _LIBCUDACXX_HIDE_FROM_ABI void __atomic_notify_all(_Tp const volatile*, _Sco)
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs)
 {
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
   return __lhs == __rhs;
-#else
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
   return _CUDA_VSTD::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
-#endif
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 }
 
 template <typename _Tp, typename _Sco>
@@ -87,5 +89,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __atomic_wait(
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H

@@ -854,7 +854,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 // #include <cuda/std/concepts>
 #include <cuda/std/version>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 // Silence NVCC warnings `long double` arising from chrono floating pointer
 // user-defined literals which are defined in terms of `long double`.
@@ -3548,7 +3548,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr hours make24(const hours& __h, bool __is_pm)
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
-_CCCL_DIAG_SUPPRESS_MSVC(4455)
+_CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
+_CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
+_CCCL_NV_DIAG_SUPPRESS(2506) // a user-provided literal suffix must begin with "_"
+
 // Suffixes for duration literals [time.duration.literals]
 inline namespace literals
 {
@@ -3620,7 +3623,7 @@ operator""ns(long double __ns)
   return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano>(__ns);
 }
 
-#if _CCCL_STD_VER > 2017 && _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
+#if _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
 _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::day operator""d(unsigned long long __d) noexcept
 {
   return chrono::day(static_cast<unsigned>(__d));
@@ -3630,10 +3633,11 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year operator""y(unsigned long long 
 {
   return chrono::year(static_cast<int>(__y));
 }
-#endif //_CCCL_STD_VER > 2017 && _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
+#endif // _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
 } // namespace chrono_literals
 } // namespace literals
 
+_CCCL_NV_DIAG_DEFAULT(2506)
 _CCCL_DIAG_POP
 
 namespace chrono
@@ -3680,6 +3684,6 @@ _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
 
 _CCCL_NV_DIAG_DEFAULT(cuda_demote_unsupported_floating_point)
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_CHRONO

@@ -58,29 +58,47 @@ void TestDeviceReferenceAssignmentFromDeviceReference()
 {
   // test same types
   using T0 = int;
-  thrust::device_vector<T0> v0(2, 0);
+  thrust::device_vector<T0> v0{0, 0};
   thrust::device_reference<T0> ref0 = v0[0];
   thrust::device_reference<T0> ref1 = v0[1];
 
   ref0 = 13;
-
   ref1 = ref0;
 
   // ref1 equals 13
   ASSERT_EQUAL(13, ref1);
   ASSERT_EQUAL(ref0, ref1);
 
+  // test const references
+  const thrust::device_reference<T0> cref0 = v0[0];
+  const thrust::device_reference<T0> cref1 = v0[1];
+
+  cref0 = 13;
+  cref1 = cref0;
+
+  // cref1 equals 13
+  ASSERT_EQUAL(13, cref1);
+  ASSERT_EQUAL(cref0, cref1);
+
+  // mix const and non-const references
+  ref0  = 12;
+  cref0 = ref0;
+  ASSERT_EQUAL(12, cref0);
+
+  cref0 = 11;
+  ref0  = cref0;
+  ASSERT_EQUAL(11, cref0);
+
   // test different types
   using T1 = float;
-  thrust::device_vector<T1> v1(1, 0.0f);
+  thrust::device_vector<T1> v1{0.0f};
   thrust::device_reference<T1> ref2 = v1[0];
 
-  ref2 = ref1;
+  ref2 = ref0;
 
-  // ref2 equals 13.0f
-  ASSERT_EQUAL(13.0f, ref2);
+  // ref2 equals 11.0f
+  ASSERT_EQUAL(11.0f, ref2);
   ASSERT_EQUAL(ref0, ref2);
-  ASSERT_EQUAL(ref1, ref2);
 }
 DECLARE_UNITTEST(TestDeviceReferenceAssignmentFromDeviceReference);
 

@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -87,5 +89,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void pop_heap(_RandomAccessIterator __first,
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_POP_HEAP_H

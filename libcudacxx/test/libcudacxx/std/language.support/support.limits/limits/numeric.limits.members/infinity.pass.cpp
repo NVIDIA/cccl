@@ -21,6 +21,8 @@
 #include "common.h"
 #include "test_macros.h"
 
+TEST_NV_DIAG_SUPPRESS(221);
+
 template <class T>
 __host__ __device__ void test(T expected)
 {

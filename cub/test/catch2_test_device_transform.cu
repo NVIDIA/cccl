@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
@@ -39,7 +38,7 @@ struct policy_hub_for_alg
     using algo_policy =
       ::cuda::std::_If<Alg == Algorithm::prefetch,
                        cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256>>;
+                       cub::detail::transform::async_copy_policy_t<256, 128>>;
   };
 };
 

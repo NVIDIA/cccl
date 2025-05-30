@@ -125,11 +125,11 @@ struct empty_kernel
 
 inline int count_driver_stack()
 {
-  if (cudax::detail::driver::ctxGetCurrent() != nullptr)
+  if (cudax::__detail::driver::ctxGetCurrent() != nullptr)
   {
-    auto ctx    = cudax::detail::driver::ctxPop();
+    auto ctx    = cudax::__detail::driver::ctxPop();
     auto result = 1 + count_driver_stack();
-    cudax::detail::driver::ctxPush(ctx);
+    cudax::__detail::driver::ctxPush(ctx);
     return result;
   }
   else
@@ -140,15 +140,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (cudax::detail::driver::ctxGetCurrent() != nullptr)
+  while (cudax::__detail::driver::ctxGetCurrent() != nullptr)
   {
-    cudax::detail::driver::ctxPop();
+    cudax::__detail::driver::ctxPop();
   }
 }
 
 inline int cuda_driver_version()
 {
-  return cudax::detail::driver::getVersion();
+  return cudax::__detail::driver::getVersion();
 }
 
 } // namespace test

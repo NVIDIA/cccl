@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
+import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
 
@@ -108,3 +109,193 @@ def test_segmented_reduce_struct_type():
     expected = h_rgb[np.arange(h_rgb.shape[0]), h_rgb["g"].argmax(axis=-1)]
 
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
+
+
+@pytest.mark.large
+def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
+    """
+    This test builds input iterator as transformation
+    over counting iterator by a function
+    k -> (F(k + 1) - F(k)) % 7
+
+    Segmented reduction with fixed size is performed
+    using add modulo 7. Expected result is known to be
+    F(end_offset[k] + 1) - F(start_offset[k]) % 7
+    """
+
+    def make_difference(idx: np.int64) -> np.uint8:
+        p = np.uint8(7)
+
+        def Fu(idx: np.int64) -> np.uint8:
+            i8 = np.uint8(idx % 5) + np.uint8(idx % 3)
+            f = (i8 * (i8 + 1)) % p
+            return f
+
+        return (Fu(idx + 1) - Fu(idx)) % p
+
+    input_it = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(0)), make_difference
+    )
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    segment_size = 116
+    offset0 = np.int64(0)
+    row_offset = make_scaler(np.int64(segment_size))
+    start_offsets = iterators.TransformIterator(
+        iterators.CountingIterator(offset0), row_offset
+    )
+    end_offsets = start_offsets + 1
+
+    num_segments = (2**15 + 2**3) * 2**16
+    try:
+        res = cp.full(num_segments, fill_value=127, dtype=cp.uint8)
+    except cp.cuda.memory.OutOfMemoryError:
+        pytest.skip("Insufficient memory to run the large number of segments test")
+    assert res.size == num_segments
+
+    def my_add(a: np.uint8, b: np.uint8) -> np.uint8:
+        return (a + b) % np.uint8(7)
+
+    h_init = np.zeros(tuple(), dtype=np.uint8)
+    alg = algorithms.segmented_reduce(
+        input_it, res, start_offsets, end_offsets, my_add, h_init
+    )
+
+    temp_storage_bytes = alg(
+        None, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    _ = alg(
+        d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+
+    # Validation
+
+    def get_expected_value(k: np.int64) -> np.uint8:
+        i = np.uint8(k % 5) + np.uint8(k % 3)
+        k1 = (k % 15) + (segment_size % 15)
+        i1 = np.uint8(k1 % 5) + np.uint8(k1 % 3)
+        p = np.uint8(7)
+        v1 = np.uint8((i1 * (i1 + 1)) % p)
+        v = np.uint8((i * (i + 1)) % p)
+        return (v1 + (p - v)) % p
+
+    # reset the iterator since it has been mutated by being incremented on host
+    start_offsets.cvalue = type(start_offsets.cvalue)(offset0)
+    expected = iterators.TransformIterator(start_offsets, get_expected_value)
+
+    def cmp_op(a: np.uint8, b: np.uint8) -> np.uint8:
+        return np.uint8(1) if (a == b) else np.uint8(0)
+
+    validate = cp.zeros(2**20, dtype=np.uint8)
+    cmp_fn = algorithms.binary_transform(res, expected, validate, cmp_op)
+
+    id = 0
+    while id < res.size:
+        id_next = min(id + validate.size, res.size)
+        num_items = id_next - id
+        cmp_fn(res[id:], expected + id, validate, num_items)
+        assert id == (expected + id).cvalue.value
+        assert cp.all(validate[:num_items].view(np.bool_))
+        id = id_next
+
+
+@pytest.mark.large
+def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
+    """
+    Test with large num_segments > INT_MAX
+
+    Input is constant iterator with value 1.
+
+    offset positions are computed as transformation
+    over counting iterator with `n -> sum(min + (k % p), k=0..n)`.
+    The closed form value of the sum is coded in `offset_value`
+    function.
+
+    Result of segmented reduction is known, and is
+    given by transformed iterator over counting iterator
+    transformed by `k -> min + (k % p)` function.
+    """
+    input_it = iterators.ConstantIterator(np.int16(1))
+
+    def offset_functor(m0: np.int64, p: np.int64):
+        def offset_value(n: np.int64):
+            """
+            Offset value computes closed form for
+            :math:`sum(1 + (k % p), k=0..n)`.
+
+            So segment lengths are periodic linearly
+            increasing sequences, e.g,
+            [min , min + 1, ..., min + p - 2,
+                min + p - 1, min, min +1 , ....]
+            """
+            q = n // p
+            r = n - q * p
+            p2 = (p * (p - 1)) // 2
+            r2 = (r * (r + 1)) // 2
+
+            offset_val = (n + 1) * m0 + q * p2 + r2
+            return offset_val
+
+        return offset_value
+
+    m0, p = 265, 163
+    offsets_it = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(-1)), offset_functor(m0, p)
+    )
+    start_offsets = offsets_it
+    end_offsets = offsets_it + 1
+
+    def _plus(a, b):
+        return a + b
+
+    num_segments = (2**15 + 2**3) * 2**16
+    try:
+        res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
+    except cp.cuda.memory.OutOfMemoryError:
+        pytest.skip("Insufficient memory to run the large number of segments test")
+    assert res.size == num_segments
+
+    h_init = np.zeros(tuple(), dtype=np.int16)
+    alg = algorithms.segmented_reduce(
+        input_it, res, start_offsets, end_offsets, _plus, h_init
+    )
+
+    temp_storage_bytes = alg(
+        None, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    _ = alg(
+        d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+
+    # Validation
+
+    def get_expected_value(k: np.int64) -> np.int16:
+        return np.int16(m0 + (k % p))
+
+    expected = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(0)), get_expected_value
+    )
+
+    def cmp_op(a: np.int16, b: np.int16) -> np.uint8:
+        return np.uint8(1) if (a == b) else np.uint8(0)
+
+    validate = cp.zeros(2**20, dtype=np.uint8)
+    cmp_fn = algorithms.binary_transform(res, expected, validate, cmp_op)
+
+    id = 0
+    while id < res.size:
+        id_next = min(id + validate.size, res.size)
+        num_items = id_next - id
+        cmp_fn(res[id:], expected + id, validate, num_items)
+        assert id == (expected + id).cvalue.value
+        assert cp.all(validate[:num_items].view(np.bool_))
+        id = id_next

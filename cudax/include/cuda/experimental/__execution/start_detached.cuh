@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_START_DETACHED
-#define __CUDAX_ASYNC_DETAIL_START_DETACHED
+#ifndef __CUDAX_EXECUTION_START_DETACHED
+#define __CUDAX_EXECUTION_START_DETACHED
 
 #include <cuda/std/detail/__config>
 
@@ -98,7 +98,7 @@ public:
   template <class _Sndr>
   _CCCL_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
     execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };
@@ -108,4 +108,4 @@ _CCCL_GLOBAL_CONSTANT start_detached_t start_detached{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_START_DETACHED

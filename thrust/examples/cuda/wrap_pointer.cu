@@ -1,7 +1,7 @@
-#include <cuda.h>
-
 #include <thrust/device_ptr.h>
 #include <thrust/fill.h>
+
+#include <cuda.h>
 
 int main()
 {

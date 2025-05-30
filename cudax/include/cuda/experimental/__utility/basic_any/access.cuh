@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -30,8 +30,7 @@
 #include <cuda/experimental/__utility/basic_any/conversions.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -51,7 +50,7 @@ struct __basic_any_access
   _CCCL_TRIVIAL_HOST_API static auto __cast_to(_SrcCvAny&& __from, basic_any<_DstInterface>& __to) noexcept(
     noexcept(__to.__convert_from(static_cast<_SrcCvAny&&>(__from)))) -> void
   {
-    static_assert(detail::__is_specialization_of<_CUDA_VSTD::remove_cvref_t<_SrcCvAny>, basic_any>);
+    static_assert(__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_SrcCvAny>, basic_any>);
     __to.__convert_from(static_cast<_SrcCvAny&&>(__from));
   }
 
@@ -60,7 +59,7 @@ struct __basic_any_access
   _CCCL_TRIVIAL_HOST_API static auto
   __cast_to(_SrcCvAny* __from, basic_any<_DstInterface>& __to) noexcept(noexcept(__to.__convert_from(__from))) -> void
   {
-    static_assert(detail::__is_specialization_of<_CUDA_VSTD::remove_const_t<_SrcCvAny>, basic_any>);
+    static_assert(__is_specialization_of_v<_CUDA_VSTD::remove_const_t<_SrcCvAny>, basic_any>);
     __to.__convert_from(__from);
   }
 
@@ -85,6 +84,6 @@ struct __basic_any_access
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_ACCESS_H

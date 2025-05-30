@@ -23,11 +23,11 @@
 
 #include <cuda/__fwd/barrier.h>
 #include <cuda/__fwd/barrier_native_handle.h>
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
@@ -44,6 +44,8 @@
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
 #endif // _CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // Needed for pipeline.arrive_on
@@ -56,8 +58,7 @@ class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __blo
   using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
-  _CCCL_DEVICE friend inline _CUDA_VSTD::uint64_t*
-  device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(barrier<thread_scope_block>& b);
+  _CCCL_DEVICE friend inline _CUDA_VSTD::uint64_t* _CUDA_DEVICE::barrier_native_handle(barrier<thread_scope_block>& b);
 
   template <typename _Barrier>
   friend class _CUDA_VSTD::__barrier_poll_tester_phase;
@@ -84,15 +85,15 @@ public:
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
-        if (__isShared(&__barrier)) {
+        if (::__isShared(&__barrier)) {
           asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<_CUDA_VSTD::uint32_t>(
-            __cvta_generic_to_shared(&__barrier)))
+            ::__cvta_generic_to_shared(&__barrier)))
                        : "memory");
-        } else if (__isClusterShared(&__barrier)) { __trap(); }),
+        } else if (::__isClusterShared(&__barrier)) { ::__trap(); }),
       NV_PROVIDES_SM_80,
-      (if (__isShared(&__barrier)) {
+      (if (::__isShared(&__barrier)) {
         asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<_CUDA_VSTD::uint32_t>(
-          __cvta_generic_to_shared(&__barrier)))
+          ::__cvta_generic_to_shared(&__barrier)))
                      : "memory");
       }))
   }
@@ -103,19 +104,19 @@ public:
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
-        if (__isShared(&__b->__barrier)) {
+        if (::__isShared(&__b->__barrier)) {
           asm volatile("mbarrier.init.shared.b64 [%0], %1;" ::"r"(
-                         static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__b->__barrier))),
+                         static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
                        "r"(static_cast<_CUDA_VSTD::uint32_t>(__expected))
                        : "memory");
-        } else if (__isClusterShared(&__b->__barrier)) { __trap(); } else {
+        } else if (::__isClusterShared(&__b->__barrier)) { ::__trap(); } else {
           new (&__b->__barrier) __barrier_base(__expected);
         }),
       NV_PROVIDES_SM_80,
       (
-        if (__isShared(&__b->__barrier)) {
+        if (::__isShared(&__b->__barrier)) {
           asm volatile("mbarrier.init.shared.b64 [%0], %1;" ::"r"(
-                         static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__b->__barrier))),
+                         static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
                        "r"(static_cast<_CUDA_VSTD::uint32_t>(__expected))
                        : "memory");
         } else { new (&__b->__barrier) __barrier_base(__expected); }),
@@ -130,9 +131,9 @@ public:
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
-        if (!__isClusterShared(&__barrier)) { return __barrier.arrive(__update); } else if (!__isShared(&__barrier)) {
-          __trap();
-        }
+        if (!::__isClusterShared(&__barrier)) {
+          return __barrier.arrive(__update);
+        } else if (!::__isShared(&__barrier)) { ::__trap(); }
         // Cannot use cuda::device::barrier_native_handle here, as it is
         // only defined for block-scope barriers. This barrier may be a
         // non-block scoped barrier.
@@ -140,7 +141,7 @@ public:
         __token   = _CUDA_VPTX::mbarrier_arrive(__bh, __update);),
       NV_PROVIDES_SM_80,
       (
-        if (!__isShared(&__barrier)) {
+        if (!::__isShared(&__barrier)) {
           return __barrier.arrive(__update);
         } auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
         // Need 2 instructions, can't finish barrier with arrive > 1
@@ -148,22 +149,22 @@ public:
           _CUDA_VPTX::mbarrier_arrive(__bh);),
       NV_PROVIDES_SM_70,
       (
-        if (!__isShared(&__barrier)) { return __barrier.arrive(__update); }
+        if (!::__isShared(&__barrier)) { return __barrier.arrive(__update); }
 
-        unsigned int __mask    = __activemask();
-        unsigned int __activeA = __match_any_sync(__mask, __update);
-        unsigned int __activeB = __match_any_sync(__mask, reinterpret_cast<_CUDA_VSTD::uintptr_t>(&__barrier));
+        unsigned int __mask    = ::__activemask();
+        unsigned int __activeA = ::__match_any_sync(__mask, __update);
+        unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<_CUDA_VSTD::uintptr_t>(&__barrier));
         unsigned int __active  = __activeA & __activeB;
-        int __inc              = __popc(__active) * __update;
+        int __inc              = ::__popc(__active) * __update;
 
         unsigned __laneid;
         asm("mov.u32 %0, %%laneid;" : "=r"(__laneid));
-        int __leader = __ffs(__active) - 1;
+        int __leader = ::__ffs(__active) - 1;
         // All threads in mask synchronize here, establishing cummulativity to the __leader:
-        __syncwarp(__mask);
+        ::__syncwarp(__mask);
         if (__leader == static_cast<int>(__laneid)) {
           __token = __barrier.arrive(__inc);
-        } __token = __shfl_sync(__active, __token, __leader);),
+        } __token = ::__shfl_sync(__active, __token, __leader);),
       NV_IS_HOST,
       (__token = __barrier.arrive(__update);))
     return __token;
@@ -175,12 +176,13 @@ private:
     int32_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
-      (asm volatile("{\n\t"
-                    ".reg .pred p;\n\t"
-                    "mbarrier.test_wait.shared.b64 p, [%1], %2;\n\t"
-                    "selp.b32 %0, 1, 0, p;\n\t"
-                    "}" : "=r"(__ready) : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                    "l"(__token) : "memory");))
+      (asm volatile(
+         "{\n\t"
+         ".reg .pred p;\n\t"
+         "mbarrier.test_wait.shared.b64 p, [%1], %2;\n\t"
+         "selp.b32 %0, 1, 0, p;\n\t"
+         "}" : "=r"(__ready) : "r"(static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
+         "l"(__token) : "memory");))
     return __ready;
   }
 
@@ -190,20 +192,20 @@ private:
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
-        int32_t __ready = 0; if (!__isClusterShared(&__barrier)) {
+        int32_t __ready = 0; if (!::__isClusterShared(&__barrier)) {
           return _CUDA_VSTD::__call_try_wait(__barrier, _CUDA_VSTD::move(__token));
-        } else if (!__isShared(&__barrier)) {
-          __trap();
+        } else if (!::__isShared(&__barrier)) {
+          ::__trap();
         } asm volatile("{\n\t"
                        ".reg .pred p;\n\t"
                        "mbarrier.try_wait.shared.b64 p, [%1], %2;\n\t"
                        "selp.b32 %0, 1, 0, p;\n\t"
                        "}" : "=r"(__ready) : "r"(
-                         static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
+                         static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
                        "l"(__token) : "memory");
         return __ready;),
       NV_PROVIDES_SM_80,
-      (if (!__isShared(&__barrier)) {
+      (if (!::__isShared(&__barrier)) {
         return _CUDA_VSTD::__call_try_wait(__barrier, _CUDA_VSTD::move(__token));
       } return __test_wait_sm_80(__token);),
       NV_ANY_TARGET,
@@ -222,10 +224,10 @@ private:
       NV_PROVIDES_SM_90,
       (
         int32_t __ready = 0;
-        if (!__isClusterShared(&__barrier)) {
+        if (!::__isClusterShared(&__barrier)) {
           return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__token)), __nanosec);
-        } else if (!__isShared(&__barrier)) { __trap(); }
+        } else if (!::__isShared(&__barrier)) { ::__trap(); }
 
         _CUDA_VSTD::chrono::high_resolution_clock::time_point const __start =
           _CUDA_VSTD::chrono::high_resolution_clock::now();
@@ -239,7 +241,7 @@ private:
             "selp.b32 %0, 1, 0, p;\n\t"
             "}"
             : "=r"(__ready)
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
               "l"(__token),
               "r"(__wait_nsec)
             : "memory");
@@ -249,7 +251,7 @@ private:
       NV_PROVIDES_SM_80,
       (
         bool __ready = 0;
-        if (!__isShared(&__barrier)) {
+        if (!::__isShared(&__barrier)) {
           return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__token)), __nanosec);
         }
@@ -275,7 +277,7 @@ private:
                     ".reg .pred %%p;"
                     "mbarrier.test_wait.parity.shared.b64 %%p, [%1], %2;"
                     "selp.u16 %0, 1, 0, %%p;"
-                    "}" : "=h"(__ready) : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(&__barrier))),
+                    "}" : "=h"(__ready) : "r"(static_cast<uint32_t>(::__cvta_generic_to_shared(&__barrier))),
                     "r"(static_cast<uint32_t>(__phase_parity)) : "memory");))
     return __ready;
   }
@@ -285,16 +287,17 @@ private:
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
-        if (!__isClusterShared(&__barrier)) {
+        if (!::__isClusterShared(&__barrier)) {
           return _CUDA_VSTD::__call_try_wait_parity(__barrier, __phase_parity);
-        } else if (!__isShared(&__barrier)) { __trap(); } int32_t __ready = 0;
+        } else if (!::__isShared(&__barrier)) { ::__trap(); } int32_t __ready = 0;
 
-        asm volatile("{\n\t"
-                     ".reg .pred p;\n\t"
-                     "mbarrier.try_wait.parity.shared.b64 p, [%1], %2;\n\t"
-                     "selp.b32 %0, 1, 0, p;\n\t"
-                     "}" : "=r"(__ready) : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                     "r"(static_cast<_CUDA_VSTD::uint32_t>(__phase_parity)) :);
+        asm volatile(
+          "{\n\t"
+          ".reg .pred p;\n\t"
+          "mbarrier.try_wait.parity.shared.b64 p, [%1], %2;\n\t"
+          "selp.b32 %0, 1, 0, p;\n\t"
+          "}" : "=r"(__ready) : "r"(static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
+          "r"(static_cast<_CUDA_VSTD::uint32_t>(__phase_parity)) :);
 
         return __ready;),
       NV_PROVIDES_SM_80,
@@ -316,10 +319,10 @@ private:
       NV_PROVIDES_SM_90,
       (
         int32_t __ready = 0;
-        if (!__isClusterShared(&__barrier)) {
+        if (!::__isClusterShared(&__barrier)) {
           return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
-        } else if (!__isShared(&__barrier)) { __trap(); }
+        } else if (!::__isShared(&__barrier)) { ::__trap(); }
 
         _CUDA_VSTD::chrono::high_resolution_clock::time_point const __start =
           _CUDA_VSTD::chrono::high_resolution_clock::now();
@@ -333,7 +336,7 @@ private:
             "selp.b32 %0, 1, 0, p;\n\t"
             "}"
             : "=r"(__ready)
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
               "r"(static_cast<_CUDA_VSTD::uint32_t>(__phase_parity)),
               "r"(__wait_nsec)
             : "memory");
@@ -385,22 +388,22 @@ public:
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
-        if (!__isClusterShared(&__barrier)) { return __barrier.arrive_and_drop(); } else if (!__isShared(&__barrier)) {
-          __trap();
-        }
+        if (!::__isClusterShared(&__barrier)) {
+          return __barrier.arrive_and_drop();
+        } else if (!::__isShared(&__barrier)) { ::__trap(); }
 
         asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(
-          static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))) : "memory");),
+          static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))) : "memory");),
       NV_PROVIDES_SM_80,
       (
         // Fallback to slowpath on device
-        if (!__isShared(&__barrier)) {
+        if (!::__isShared(&__barrier)) {
           __barrier.arrive_and_drop();
           return;
         }
 
         asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(
-          static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))) : "memory");),
+          static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__barrier))) : "memory");),
       NV_ANY_TARGET,
       (
         // Fallback to slowpath on device
@@ -446,5 +449,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_BARRIER_BLOCK_SCOPE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_STARTS_ON
-#define __CUDAX_ASYNC_DETAIL_STARTS_ON
+#ifndef __CUDAX_EXECUTION_STARTS_ON
+#define __CUDAX_EXECUTION_STARTS_ON
 
 #include <cuda/std/detail/__config>
 
@@ -60,8 +60,8 @@ private:
 
     _CCCL_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
-        , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref<__opstate_t, __env_t>{*this})}
-        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref<__rcvr_with_sch_t>{*this})}
+        , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref_t<__opstate_t, __env_t>{*this})}
+        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref_t<__rcvr_with_sch_t>{*this})}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -81,8 +81,8 @@ private:
       return execution::get_env(this->__base());
     }
 
-    connect_result_t<schedule_result_t<_Sch&>, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
-    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
+    connect_result_t<schedule_result_t<_Sch&>, __rcvr_ref_t<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_ref_t<__rcvr_with_sch_t>> __opstate2_;
   };
 
 public:
@@ -102,20 +102,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   _Sndr __sndr_;
 
   template <class _Env>
-  using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, _FWD_ENV_T<_Env>>;
+  using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, __fwd_env_t<_Env>>;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     using __sch_sndr _CCCL_NODEBUG_ALIAS   = schedule_result_t<_Sch>;
-    using __child_sndr _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
+    using __child_sndr _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
     _CUDAX_LET_COMPLETIONS(
       auto(__sndr_completions) = execution::get_completion_signatures<__child_sndr, __env_t<_Env>...>())
     {
       _CUDAX_LET_COMPLETIONS(
-        auto(__sch_completions) = execution::get_completion_signatures<__sch_sndr, _FWD_ENV_T<_Env>...>())
+        auto(__sch_completions) = execution::get_completion_signatures<__sch_sndr, __fwd_env_t<_Env>...>())
       {
-        return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform());
+        return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform{});
       }
     }
 
@@ -134,18 +134,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 
 template <class _Sch, class _Sndr>
 _CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS  = __domain_of_t<_Sch>; // see [exec.starts.on]
   using __sndr_t _CCCL_NODEBUG_ALIAS = starts_on_t::__sndr_t<_Sch, _Sndr>;
-  return transform_sender(__dom_t{}, __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
+  return transform_sender(get_domain<set_value_t>(__sch),
+                          __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sch, class _Sndr>
@@ -156,4 +156,4 @@ _CCCL_GLOBAL_CONSTANT starts_on_t starts_on{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_STARTS_ON

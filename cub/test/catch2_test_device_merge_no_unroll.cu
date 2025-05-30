@@ -7,7 +7,6 @@
 #define CCCL_AVOID_SORT_UNROLL
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_merge.cuh>
 
@@ -16,9 +15,10 @@
 
 #include <algorithm>
 
+#include <test_util.h>
+
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
-#include <test_util.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

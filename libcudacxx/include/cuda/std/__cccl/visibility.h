@@ -65,8 +65,8 @@
 #  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_HAS_ATTRIBUTE(exclude_from_explicit_instantiation)
-#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
+#if _CCCL_HAS_ATTRIBUTE(__exclude_from_explicit_instantiation__)
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((__exclude_from_explicit_instantiation__))
 #else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
 // NVCC complains mightily about being unable to inline functions if we use _CCCL_FORCEINLINE here
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
@@ -91,9 +91,15 @@
 // - `_CCCL_API` declares the function host/device and hides the symbol from the ABI
 // - `_CCCL_TRIVIAL_API` does the same while also inlining and hiding the function from
 //   debuggers
-#define _CCCL_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#define _CCCL_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#if _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
+#  define _CCCL_API        _CCCL_HOST_DEVICE
+#  define _CCCL_HOST_API   _CCCL_HOST
+#  define _CCCL_DEVICE_API _CCCL_DEVICE
+#else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
+#  define _CCCL_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#endif // !_CCCL_COMPILER(NVHPC)
 
 // _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
 // debuggers to skip it. This is useful for trivial internal functions that do dispatching

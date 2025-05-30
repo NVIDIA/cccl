@@ -28,7 +28,9 @@ static_assert(cuda::std::indirectly_movable_storable<int*, int*>, "");
 static_assert(cuda::std::indirectly_movable_storable<const int*, int*>, "");
 static_assert(!cuda::std::indirectly_movable_storable<int*, const int*>, "");
 static_assert(!cuda::std::indirectly_movable_storable<const int*, const int*>, "");
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(cuda::std::indirectly_movable_storable<int*, int[2]>, "");
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(!cuda::std::indirectly_movable_storable<int[2], int*>, "");
 static_assert(cuda::std::indirectly_movable_storable<MoveOnly*, MoveOnly*>, "");
 static_assert(cuda::std::indirectly_movable_storable<PointerTo<MoveOnly>, PointerTo<MoveOnly>>, "");

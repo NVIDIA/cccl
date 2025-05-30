@@ -62,7 +62,7 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
 
   zip_iter zipped = thrust::make_zip_iterator(first, result);
 
-  return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type(xfrm_type())).get_iterator_tuple());
+  return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()
 
 } // namespace generic

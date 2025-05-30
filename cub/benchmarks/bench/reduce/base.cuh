@@ -25,6 +25,8 @@
  *
  ******************************************************************************/
 
+#pragma once
+
 #include <cub/device/device_reduce.cuh>
 
 #ifndef TUNE_BASE

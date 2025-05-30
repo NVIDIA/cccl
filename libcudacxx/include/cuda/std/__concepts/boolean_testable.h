@@ -24,9 +24,11 @@
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concepts.booleantestable]
 
@@ -38,7 +40,7 @@ concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t)
   { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
 };
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
 _CCCL_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
@@ -52,8 +54,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT __boolean_testable = _CCCL_FRAGMENT(__boolean_testable_, _Tp);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H

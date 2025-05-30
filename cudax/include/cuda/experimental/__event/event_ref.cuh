@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,6 +31,8 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__utility/driver_api.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -77,7 +79,7 @@ public:
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
     _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
     // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-    detail::driver::eventRecord(__event_, __stream.get());
+    __detail::driver::eventRecord(__event_, __stream.get());
   }
 
   //! @brief Synchronizes the event
@@ -128,6 +130,7 @@ public:
     return __event_ != nullptr;
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `event_ref`s for equality
   //!
   //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
@@ -136,7 +139,7 @@ public:
   //! @param __lhs The first `event_ref` to compare
   //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same `cudaEvent_t` object.
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ == __rhs.__event_;
   }
@@ -149,11 +152,14 @@ public:
   //! @param __lhs The first `event_ref` to compare
   //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different `cudaEvent_t` objects.
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ != __rhs.__event_;
   }
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_EVENT_REF_DETAIL_H

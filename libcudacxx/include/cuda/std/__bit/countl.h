@@ -34,6 +34,8 @@
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
@@ -94,13 +96,13 @@ template <typename _Tp>
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countl_zero_impl_device(_Tp __v) noexcept
 {
   return (sizeof(_Tp) == sizeof(uint32_t)) ? ::__clz(static_cast<int>(__v)) : ::__clzll(static_cast<long long>(__v));
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_countl_zero_impl(_Tp __v) noexcept
@@ -159,5 +161,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_COUNTL_H

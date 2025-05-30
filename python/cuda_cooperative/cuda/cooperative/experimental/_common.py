@@ -6,7 +6,7 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import Union
+from typing import BinaryIO, Union
 
 import numba
 import numpy as np
@@ -47,7 +47,17 @@ class CudaSharedMemConfig(Enum):
         return f"cudaSharedMem{self.name}"
 
 
-def make_binary_tempfile(content, suffix):
+def make_binary_tempfile(content: bytes, suffix: str) -> BinaryIO:
+    """
+    Creates an unbuffered temporary binary file containing **content** and
+    ending with **suffix**.  The caller is responsible for closing the file.
+
+    :param content: Supplies the content to write to the temporary file.
+
+    :param suffix: Supplies the suffix for the temporary file.
+
+    :return: A binary file-like object representing the temporary file.
+    """
     tmp = tempfile.NamedTemporaryFile(mode="w+b", suffix=suffix, buffering=0)
     tmp.write(content)
     return tmp

@@ -131,11 +131,7 @@ public:
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 4.0f;
-//!   v[2] = 9.0f;
-//!   v[3] = 16.0f;
+//!   thrust::device_vector<float> v{1.0f, 4.0f, 9.0f, 16.0f};
 //!
 //!   using FloatIterator = thrust::device_vector<float>::iterator;
 //!
@@ -173,11 +169,7 @@ public:
 //! int main()
 //! {
 //!   // initialize a device array
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 2.0f;
-//!   v[2] = 3.0f;
-//!   v[3] = 4.0f;
+//!   thrust::device_vector<float> v{1.0f, 2.0f, 3.0f, 4.0f};
 //!
 //!   float sum_of_squares =
 //!    thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
@@ -206,11 +198,7 @@ public:
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 4.0f;
-//!   v[2] = 9.0f;
-//!   v[3] = 16.0f;
+//!   thrust::device_vector<float> v{1.0f, 4.0f, 9.0f, 16.0f};
 //!
 //!   using FloatIterator = thrust::device_vector<float>::iterator;
 //!

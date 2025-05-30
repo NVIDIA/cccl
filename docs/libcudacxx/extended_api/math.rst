@@ -14,6 +14,7 @@ Math
    math/ipow
    math/pow2
    math/isqrt
+   math/neg
    math/uabs
 
 .. list-table::
@@ -62,6 +63,11 @@ Math
 
    * - :ref:`isqrt <libcudacxx-extended-api-math-isqrt>`
      - Integer square root
+     - CCCL 3.1.0
+     - CUDA 13.1
+
+   * - :ref:`neg <libcudacxx-extended-api-math-neg>`
+     - Integer negation
      - CCCL 3.1.0
      - CUDA 13.1
 

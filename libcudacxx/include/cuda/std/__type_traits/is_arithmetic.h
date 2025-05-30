@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -34,5 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_arithmetic : public bool_constant<is_ari
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ARITHMETIC_H

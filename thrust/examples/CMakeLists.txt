@@ -87,7 +87,6 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   target_link_libraries(${example_target} ${thrust_target})
   target_include_directories(${example_target} PRIVATE "${Thrust_SOURCE_DIR}/examples")
   thrust_clone_target_properties(${example_target} ${thrust_target})
-  thrust_fix_clang_nvcc_build_for(${example_target})
 
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})

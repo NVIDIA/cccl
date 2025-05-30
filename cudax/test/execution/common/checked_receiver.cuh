@@ -67,7 +67,7 @@ struct checked_value_receiver
 };
 
 template <class... Values>
-checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
+_CCCL_HOST_DEVICE checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
 
 template <class Error>
 struct checked_error_receiver
@@ -85,7 +85,10 @@ struct checked_error_receiver
   {
     if constexpr (_CUDA_VSTD::is_same_v<Error, Ty>)
     {
-      CUDAX_CHECK(ty == _error);
+      if (!_CUDA_VSTD::is_same_v<Error, ::std::exception_ptr>)
+      {
+        CUDAX_CHECK(ty == _error);
+      }
     }
     else
     {
@@ -102,7 +105,7 @@ struct checked_error_receiver
 };
 
 template <class Error>
-checked_error_receiver(Error) -> checked_error_receiver<Error>;
+_CCCL_HOST_DEVICE checked_error_receiver(Error) -> checked_error_receiver<Error>;
 
 struct checked_stopped_receiver
 {
@@ -122,5 +125,38 @@ struct checked_stopped_receiver
 
   _CCCL_HOST_DEVICE void set_stopped() && noexcept {}
 };
+
+template <class Ty>
+struct proxy_value_receiver
+{
+  using receiver_concept = cudax_async::receiver_t;
+
+  template <class... As>
+  _CCCL_HOST_DEVICE void set_value(As...) && noexcept
+  {
+    CUDAX_FAIL("expected a value completion; got a different value");
+  }
+
+  _CCCL_HOST_DEVICE void set_value(Ty value) && noexcept
+  {
+    _value = value;
+  }
+
+  template <class Error>
+  _CCCL_HOST_DEVICE void set_error(Error) && noexcept
+  {
+    CUDAX_FAIL("expected a value completion; got an error");
+  }
+
+  _CCCL_HOST_DEVICE void set_stopped() && noexcept
+  {
+    CUDAX_FAIL("expected a value completion; got stopped");
+  }
+
+  Ty& _value;
+};
+
+template <class Ty>
+_CCCL_HOST_DEVICE proxy_value_receiver(Ty&) -> proxy_value_receiver<Ty>;
 
 } // namespace

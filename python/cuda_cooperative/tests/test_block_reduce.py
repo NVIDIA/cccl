@@ -635,3 +635,24 @@ def test_block_sum_invalid_algorithm():
             threads_per_block=128,
             algorithm="invalid_algorithm",
         )
+
+
+def test_sum_alignment():
+    sum1 = cudax.block.sum(
+        dtype=types.int32,
+        threads_per_block=256,
+    )
+
+    sum2 = cudax.block.sum(
+        dtype=types.float64,
+        threads_per_block=256,
+    )
+
+    sum3 = cudax.block.sum(
+        dtype=types.int8,
+        threads_per_block=256,
+    )
+
+    assert sum1.temp_storage_alignment == 4
+    assert sum2.temp_storage_alignment == 8
+    assert sum3.temp_storage_alignment == 1

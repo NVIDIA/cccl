@@ -21,10 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/neg.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -39,7 +42,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {
     using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-    return (__v < _Tp(0)) ? static_cast<_Up>(~static_cast<_Up>(__v) + 1) : static_cast<_Up>(__v);
+    return (__v < _Tp(0)) ? static_cast<_Up>(::cuda::neg(__v)) : static_cast<_Up>(__v);
   }
   else
   {
@@ -48,5 +51,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___CMATH_UABS_H

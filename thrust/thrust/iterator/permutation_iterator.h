@@ -56,8 +56,8 @@ namespace detail
 template <typename ElementIterator, typename IndexIterator>
 struct make_permutation_iterator_base
 {
-  using System1 = typename iterator_system<ElementIterator>::type;
-  using System2 = typename iterator_system<IndexIterator>::type;
+  using System1 = iterator_system_t<ElementIterator>;
+  using System2 = iterator_system_t<IndexIterator>;
 
   using type =
     iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
@@ -98,21 +98,8 @@ struct make_permutation_iterator_base
 //! #include <thrust/iterator/permutation_iterator.h>
 //! #include <thrust/device_vector.h>
 //! ...
-//! thrust::device_vector<float> values(8);
-//! values[0] = 10.0f;
-//! values[1] = 20.0f;
-//! values[2] = 30.0f;
-//! values[3] = 40.0f;
-//! values[4] = 50.0f;
-//! values[5] = 60.0f;
-//! values[6] = 70.0f;
-//! values[7] = 80.0f;
-//!
-//! thrust::device_vector<int> indices(4);
-//! indices[0] = 2;
-//! indices[1] = 6;
-//! indices[2] = 1;
-//! indices[3] = 3;
+//! thrust::device_vector<float> values{10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f};
+//! thrust::device_vector<int> indices{2, 6, 1, 3};
 //!
 //! using ElementIterator = thrust::device_vector<float>::iterator;
 //! using IndexIterator = thrust::device_vector<int>::iterator  ;

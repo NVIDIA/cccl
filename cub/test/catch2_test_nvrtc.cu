@@ -25,13 +25,13 @@
  *
  ******************************************************************************/
 
-#include <cuda.h>
-
 #include <string>
 
-#include <c2h/catch2_test_helper.h>
+#include <cuda.h>
 #include <nvrtc.h>
 #include <nvrtc_args.h>
+
+#include <c2h/catch2_test_helper.h>
 
 TEST_CASE("Test nvrtc", "[test][nvrtc]")
 {
@@ -83,6 +83,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/radix_sort.cuh>
     #include <cub/device/dispatch/kernels/unique_by_key.cuh>
     #include <cub/device/dispatch/kernels/transform.cuh>
+    #include <cub/device/dispatch/kernels/histogram.cuh>
     #include <cub/iterator/arg_index_input_iterator.cuh>
     #include <cub/iterator/cache_modified_input_iterator.cuh>
     #include <cub/iterator/cache_modified_output_iterator.cuh>

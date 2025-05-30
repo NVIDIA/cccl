@@ -19,6 +19,8 @@
 #include <string>
 #include <type_traits>
 
+#include <stdio.h> // printf
+
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
 #include "util/context.h"
@@ -29,7 +31,6 @@
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
-#include <stdio.h> // printf
 
 struct op_wrapper;
 struct device_transform_policy;

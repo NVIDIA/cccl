@@ -12,8 +12,9 @@
 
 #include <cuda/barrier>
 
-#include "cuda_space_selector.h"
 #include <cooperative_groups.h>
+
+#include "cuda_space_selector.h"
 
 namespace cg = cooperative_groups;
 

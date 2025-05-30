@@ -19,19 +19,22 @@
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
 
-#include "kernels/iterators.h"
-#include "kernels/operators.h"
+#include <stdio.h> // printf
+
+#include "jit_templates/templates/input_iterator.h"
+#include "jit_templates/templates/operation.h"
+#include "jit_templates/templates/output_iterator.h"
+#include "jit_templates/traits.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
-#include <stdio.h> // printf
 
-struct op_wrapper;
 struct device_segmented_reduce_policy;
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
@@ -40,77 +43,26 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 static_assert(std::is_unsigned_v<OffsetT>);
 static_assert(sizeof(OffsetT) == sizeof(::cuda::std::uint64_t));
 
-struct input_iterator_t;
-struct output_iterator_t;
-struct start_offset_iterator_t;
-struct end_offset_iterator_t;
-
 namespace segmented_reduce
 {
 
 struct segmented_reduce_runtime_tuning_policy
 {
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
+  cub::detail::RuntimeReduceAgentPolicy segmented_reduce;
 
-  segmented_reduce_runtime_tuning_policy SegmentedReduce() const
+  auto SegmentedReduce() const
   {
-    return *this;
+    return segmented_reduce;
   }
 
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
+  using MaxPolicy = segmented_reduce_runtime_tuning_policy;
 
-  int BlockThreads() const
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
   {
-    return block_size;
+    return op.template Invoke<segmented_reduce_runtime_tuning_policy>(*this);
   }
 };
-
-template <typename Tuning, int N>
-Tuning find_tuning(int cc, const Tuning (&tunings)[N])
-{
-  for (const Tuning& tuning : tunings)
-  {
-    if (cc >= tuning.cc)
-    {
-      return tuning;
-    }
-  }
-
-  return tunings[N - 1];
-}
-
-struct segmented_reduce_tuning_t
-{
-  int cc;
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
-};
-
-segmented_reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
-{
-  // TODO: we should update this once we figure out a way to reuse
-  // tuning logic from C++. Alternately, we should implement
-  // something better than a hardcoded default:
-  constexpr segmented_reduce_tuning_t chain[] = {{16, 256, 16, 4}, {35, 256, 20, 4}};
-
-  auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
-
-  auto four_bytes_per_thread = items_per_thread * 4 / accumulator_type.size;
-  items_per_thread           = _CUDA_VSTD::min<decltype(items_per_thread)>(four_bytes_per_thread, items_per_thread * 2);
-  items_per_thread           = _CUDA_VSTD::min(1, items_per_thread);
-
-  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
-  auto max_block_size = cuda::round_up(work_per_sm, 32);
-  block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
-
-  return {block_size, items_per_thread, vector_load_length};
-}
 
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
@@ -119,72 +71,20 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
   return init.type;
 }
 
-template <typename Type>
-std::string get_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<Type>(&iterator_t));
-  return iterator_t;
-}
-
-std::string get_input_iterator_name()
-{
-  return get_iterator_name<input_iterator_t>();
-}
-
-std::string get_output_iterator_name()
-{
-  return get_iterator_name<output_iterator_t>();
-}
-
-std::string get_start_offset_iterator_name()
-{
-  return get_iterator_name<start_offset_iterator_t>();
-}
-
-std::string get_end_offset_iterator_name()
-{
-  return get_iterator_name<end_offset_iterator_t>();
-}
-
 std::string get_device_segmented_reduce_kernel_name(
-  cccl_op_t op,
-  cccl_iterator_t input_it,
-  cccl_iterator_t output_it,
-  cccl_iterator_t start_offset_it,
-  cccl_iterator_t end_offset_it,
-  cccl_value_t init)
+  std::string_view reduction_op_t,
+  std::string_view input_iterator_t,
+  std::string_view output_iterator_t,
+  std::string_view start_offset_iterator_t,
+  std::string_view end_offset_iterator_t,
+  cccl_value_t init,
+  std::string_view accum_t)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_segmented_reduce_policy>(&chained_policy_t));
 
-  const std::string input_iterator_t =
-    input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(input_it.value_type.type, true) //
-      : get_input_iterator_name();
-
-  const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
-      : get_output_iterator_name();
-
-  const std::string start_offset_iterator_t =
-    start_offset_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(start_offset_it.value_type.type, true) //
-      : get_start_offset_iterator_name();
-
-  const std::string end_offset_iterator_t =
-    end_offset_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(end_offset_it.value_type.type, true) //
-      : get_end_offset_iterator_name();
-
-  const std::string accum_t = cccl_type_enum_to_name(get_accumulator_type(op, input_it, init).type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
-  std::string reduction_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
 
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
@@ -213,20 +113,6 @@ std::string get_device_segmented_reduce_kernel_name(
     accum_t); // 8
 }
 
-template <auto* GetPolicy>
-struct dynamic_reduce_policy_t
-{
-  using MaxPolicy = dynamic_reduce_policy_t;
-
-  template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
-  {
-    return op.template Invoke<segmented_reduce_runtime_tuning_policy>(GetPolicy(device_ptx_version, accumulator_type));
-  }
-
-  cccl_type_info accumulator_type;
-};
-
 struct segmented_reduce_kernel_source
 {
   cccl_device_segmented_reduce_build_result_t& build;
@@ -241,6 +127,12 @@ struct segmented_reduce_kernel_source
   }
 };
 } // namespace segmented_reduce
+
+struct segmented_reduce_input_iterator_tag;
+struct segmented_reduce_output_iterator_tag;
+struct segmented_reduce_start_offset_iterator_tag;
+struct segmented_reduce_end_offset_iterator_tag;
+struct segmented_reduce_operation_tag;
 
 CUresult cccl_device_segmented_reduce_build(
   cccl_device_segmented_reduce_build_result_t* build_ptr,
@@ -263,78 +155,122 @@ CUresult cccl_device_segmented_reduce_build(
   {
     const char* name = "device_segmented_reduce";
 
-    const int cc                       = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t       = segmented_reduce::get_accumulator_type(op, input_it, init);
-    const auto policy                  = segmented_reduce::get_policy(cc, accum_t);
-    const auto accum_cpp               = cccl_type_enum_to_name(accum_t.type);
-    const auto input_it_value_t        = cccl_type_enum_to_name(input_it.value_type.type);
-    const auto start_offset_it_value_t = cccl_type_enum_to_name(start_offset_it.value_type.type);
-    const auto end_offset_it_value_t   = cccl_type_enum_to_name(end_offset_it.value_type.type);
+    const int cc                 = cc_major * 10 + cc_minor;
+    const cccl_type_info accum_t = segmented_reduce::get_accumulator_type(op, input_it, init);
+    const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
+
+    const auto [input_iterator_name, input_iterator_src] =
+      get_specialization<segmented_reduce_input_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+
+    const auto [output_iterator_name, output_iterator_src] = get_specialization<segmented_reduce_output_iterator_tag>(
+      template_id<output_iterator_traits>(), output_it, accum_t);
+
+    const auto [start_offset_iterator_name, start_offset_iterator_src] =
+      get_specialization<segmented_reduce_start_offset_iterator_tag>(
+        template_id<input_iterator_traits>(), start_offset_it);
+
+    const auto [end_offset_iterator_name, end_offset_iterator_src] =
+      get_specialization<segmented_reduce_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
+
+    const auto [op_name, op_src] =
+      get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
+
     // OffsetT is checked to match have 64-bit size
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    const std::string input_iterator_src =
-      make_kernel_input_iterator(offset_t, "input_iterator_t", input_it_value_t, input_it);
-    const std::string output_iterator_src =
-      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
+    const std::string dependent_definitions_src = std::format(
+      R"XXX(
+struct __align__({1}) storage_t {{
+  char data[{0}];
+}};
+{2}
+{3}
+{4}
+{5}
+{6}
+)XXX",
+      input_it.value_type.size, // 0
+      input_it.value_type.alignment, // 1
+      input_iterator_src, // 2
+      output_iterator_src, // 3
+      op_src, // 4
+      start_offset_iterator_src, // 5
+      end_offset_iterator_src); // 6
 
-    const std::string start_offset_iterator_src =
-      make_kernel_input_iterator(offset_t, "start_offset_iterator_t", start_offset_it_value_t, start_offset_it);
-    const std::string end_offset_iterator_src =
-      make_kernel_input_iterator(offset_t, "end_offset_iterator_t", end_offset_it_value_t, end_offset_it);
+    // Runtime parameter tuning
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 5;
+    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+
+    static constexpr std::string_view policy_wrapper_expr_tmpl =
+      R"XXXX(cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{0}, {1}, {2}>::MaxPolicy::ActivePolicy{{}}))XXXX";
+
+    const auto policy_wrapper_expr = std::format(
+      policy_wrapper_expr_tmpl,
+      accum_cpp, // 0
+      offset_t, // 1
+      op_name); // 2
+
+    static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
+#include <cub/block/block_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+{0}
+{1}
+)XXXX";
+
+    const auto ptx_query_tu_src =
+      std::format(ptx_query_tu_src_tmpl, jit_template_header_contents, dependent_definitions_src);
+
+    nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
+
+    using cub::detail::RuntimeReduceAgentPolicy;
+    auto [segmented_reduce_policy,
+          segmented_reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
 
     // agent_policy_t is to specify parameters like policy_hub does in dispatch_reduce.cuh
     constexpr std::string_view program_preamble_template = R"XXX(
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
-struct __align__({1}) storage_t {{
-   char data[{0}];
-}};
-{4}
-{5}
-{8}
-{9}
-struct agent_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {2};
-  static constexpr int BLOCK_THREADS = {3};
-  static constexpr int VECTOR_LOAD_LENGTH = {7};
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
-}};
+{0}
+{1}
 struct device_segmented_reduce_policy {{
   struct ActivePolicy {{
-    using ReducePolicy = agent_policy_t;
-    using SegmentedReducePolicy = agent_policy_t;
+    {2}
   }};
 }};
-{6}
 )XXX";
 
-    std::string src = std::format(
+    std::string final_src = std::format(
       program_preamble_template,
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      policy.items_per_thread, // 2
-      policy.block_size, // 3
-      input_iterator_src, // 4
-      output_iterator_src, // 5
-      op_src, // 6
-      policy.vector_load_length, // 7
-      start_offset_iterator_src, // 8
-      end_offset_iterator_src // 9
-    );
+      jit_template_header_contents, // 0
+      dependent_definitions_src, // 1
+      segmented_reduce_policy_str); // 2
 
     std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
-      op, input_it, output_it, start_offset_it, end_offset_it, init);
+      op_name,
+      input_iterator_name,
+      output_iterator_name,
+      start_offset_iterator_name,
+      end_offset_iterator_name,
+      init,
+      accum_cpp);
     std::string segmented_reduce_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
+    constexpr size_t num_args  = 9;
     const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-std=c++20"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -353,7 +289,7 @@ struct device_segmented_reduce_policy {{
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
         .add_expression({segmented_reduce_kernel_name})
         .compile_program({args, num_args})
         .get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
@@ -370,6 +306,7 @@ struct device_segmented_reduce_policy {{
     build_ptr->cubin            = (void*) result.data.release();
     build_ptr->cubin_size       = result.size;
     build_ptr->accumulator_size = accum_t.size;
+    build_ptr->runtime_policy   = new segmented_reduce::segmented_reduce_runtime_tuning_policy{segmented_reduce_policy};
   }
   catch (const std::exception& exc)
   {
@@ -406,30 +343,30 @@ CUresult cccl_device_segmented_reduce(
 
     auto exec_status = cub::DispatchSegmentedReduce<
       indirect_arg_t, // InputIteratorT
-      indirect_arg_t, // OutputIteratorT
-      indirect_arg_t, // BeginSegmentIteratorT
-      indirect_arg_t, // EndSegmentIteratorT
+      indirect_iterator_t, // OutputIteratorT
+      indirect_iterator_t, // BeginSegmentIteratorT
+      indirect_iterator_t, // EndSegmentIteratorT
       OffsetT, // OffsetT
       indirect_arg_t, // ReductionOpT
       indirect_arg_t, // InitT
       void, // AccumT
-      segmented_reduce::dynamic_reduce_policy_t<&segmented_reduce::get_policy>, // PolicHub
+      segmented_reduce::segmented_reduce_runtime_tuning_policy, // PolicHub
       segmented_reduce::segmented_reduce_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory>:: // KernelLaunchFactory
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
         d_in,
-        d_out,
+        indirect_iterator_t{d_out},
         num_segments,
-        start_offset,
-        end_offset,
+        indirect_iterator_t{start_offset},
+        indirect_iterator_t{end_offset},
         op,
         init,
         stream,
         /* kernel_source */ {build},
         /* launcher_factory &*/ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        /* policy */ {segmented_reduce::get_accumulator_type(op, d_in, init)});
+        /* policy */ *reinterpret_cast<segmented_reduce::segmented_reduce_runtime_tuning_policy*>(build.runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -461,6 +398,7 @@ CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build
 
     // allocation behind cubin is owned by unique_ptr with delete[] deleter now
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

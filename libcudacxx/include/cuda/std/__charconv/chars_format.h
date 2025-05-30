@@ -22,6 +22,8 @@
 
 #include <cuda/std/__utility/to_underlying.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class chars_format
@@ -73,5 +75,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator^=(chars_format& __lhs
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CHARCONV_CHARS_FORMAT_H

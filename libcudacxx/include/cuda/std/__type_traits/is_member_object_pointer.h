@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_OBJECT_POINTER_FALLBACK)
@@ -49,5 +51,7 @@ inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>
 #endif // !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H

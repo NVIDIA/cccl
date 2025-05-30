@@ -597,7 +597,7 @@ private:
     BlockBufferOffsetT buffer_id;
   };
 
-  // Load buffers in a striped arrangement if we do not want to performa a stable partitioning into
+  // Load buffers in a striped arrangement if we do not want to perform a stable partitioning into
   // small, medium, and large buffers, otherwise load them in a blocked arrangement
   using BufferLoadT =
     BlockLoad<BufferSizeT,

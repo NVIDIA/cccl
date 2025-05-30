@@ -27,8 +27,10 @@
 #include <thrust/fill.h>
 #include <thrust/for_each.h>
 
+#include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource_ref.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/equal.h>
 #include <cuda/std/__algorithm/fill.h>
@@ -49,6 +51,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -63,13 +66,11 @@
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__launch/host_launch.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
-#include <cuda/experimental/__stream/get_stream.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 #include <cuda/experimental/__utility/select_execution_space.cuh>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 //! @file The \c async_buffer class provides a container of contiguous memory
 namespace cuda::experimental
@@ -272,7 +273,7 @@ public:
   //! @param __env The environment providing the needed information
   //! @note No memory is allocated.
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env)
-      : async_buffer(__env, 0, ::cuda::experimental::uninit)
+      : async_buffer(__env, 0, ::cuda::experimental::no_init)
   {}
 
   //! @brief Constructs a async_buffer of size \p __size using a memory resource and value-initializes \p __size
@@ -281,7 +282,7 @@ public:
   //! @param __size The size of the async_buffer. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size)
-      : async_buffer(__env, __size, ::cuda::experimental::uninit)
+      : async_buffer(__env, __size, ::cuda::experimental::no_init)
   {
     this->__value_initialize_n(__unwrapped_begin(), __size);
   }
@@ -293,7 +294,7 @@ public:
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, const _Tp& __value)
-      : async_buffer(__env, __size, ::cuda::experimental::uninit)
+      : async_buffer(__env, __size, ::cuda::experimental::no_init)
   {
     this->__fill_n(__unwrapped_begin(), __size, __value);
   }
@@ -304,8 +305,9 @@ public:
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
   //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
-  _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, ::cuda::experimental::uninit_t)
-      : __buf_(::cuda::experimental::get_memory_resource(__env), ::cuda::experimental::get_stream(__env), __size)
+  _CCCL_HIDE_FROM_ABI explicit async_buffer(
+    const __env_t& __env, const size_type __size, ::cuda::experimental::no_init_t)
+      : __buf_(::cuda::mr::get_memory_resource(__env), ::cuda::get_stream(__env), __size)
   {}
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from the forward range
@@ -317,7 +319,7 @@ public:
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
-      : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::uninit)
+      : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::no_init)
   {
     this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
@@ -327,7 +329,7 @@ public:
   //! @param __ilist The initializer_list being copied into the async_buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
-      : async_buffer(__env, __ilist.size(), ::cuda::experimental::uninit)
+      : async_buffer(__env, __ilist.size(), ::cuda::experimental::no_init)
   {
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
@@ -340,7 +342,7 @@ public:
   _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND
                    _CUDA_VRANGES::sized_range<_Range>)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Range&& __range)
-      : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::uninit)
+      : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::no_init)
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
@@ -355,7 +357,7 @@ public:
       : async_buffer(
           __env,
           static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))),
-          ::cuda::experimental::uninit)
+          ::cuda::experimental::no_init)
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
@@ -602,7 +604,7 @@ public:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   __cudax_launch_transform(::cuda::stream_ref, async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
@@ -614,7 +616,7 @@ public:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   __cudax_launch_transform(::cuda::stream_ref, const async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
@@ -637,6 +639,23 @@ using async_device_buffer = async_buffer<_Tp, _CUDA_VMR::device_accessible>;
 template <class _Tp>
 using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
+template <class _Tp, class _PropsList>
+using __buffer_type_for_props = typename _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
+
+template <typename _BufferTo, typename _BufferFrom>
+void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+{
+  __stream.wait(__from.get_stream());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "make_async_buffer: failed to copy data",
+    __to.__unwrapped_begin(),
+    __from.__unwrapped_begin(),
+    sizeof(typename _BufferTo::value_type) * __from.size(),
+    cudaMemcpyKind::cudaMemcpyDefault,
+    __stream.get());
+}
+
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   stream_ref __stream,
@@ -644,25 +663,28 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
-  async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), uninit};
+  async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), no_init};
 
-  // We need some opt-out for the wait here, but I don't know how yet
-  __stream.wait(__source.get_stream());
+  __copy_cross_buffers(__stream, __res, __source);
 
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemcpyAsync,
-    "cudax::async_buffer::__copy_cross: failed to copy data",
-    __res.__unwrapped_begin(),
-    __source.__unwrapped_begin(),
-    sizeof(_Tp) * __source.size(),
-    cudaMemcpyKind::cudaMemcpyDefault,
-    __stream.get());
+  return __res;
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  auto __res = __buffer_type{__env, __source.size(), uninit};
+
+  __copy_cross_buffers(__stream, __res, __source);
 
   return __res;
 }
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINER_ASYNC_BUFFER__

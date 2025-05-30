@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,8 +29,7 @@
 #include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -53,7 +52,7 @@ struct __iset : __iset_<_Interfaces...>::template __interface_<>
 template <class _Interface>
 using __iset_flatten _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__as_type_list<
   _CUDA_VSTD::
-    conditional_t<detail::__is_specialization_of<_Interface, __iset>, _Interface, _CUDA_VSTD::__type_list<_Interface>>>;
+    conditional_t<__is_specialization_of_v<_Interface, __iset>, _Interface, _CUDA_VSTD::__type_list<_Interface>>>;
 
 // flatten all sets into one, remove duplicates, and sort the elements.
 // TODO: sort!
@@ -139,6 +138,6 @@ struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_ISET_H

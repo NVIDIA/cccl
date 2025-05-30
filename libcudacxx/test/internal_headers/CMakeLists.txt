@@ -18,6 +18,9 @@ file(GLOB_RECURSE internal_headers
   ${libcudacxx_SOURCE_DIR}/include/cuda/std/__*/*.h
 )
 
+# Exclude <cuda/std/__cccl/(prologue|epilogue).h> from the test
+list(FILTER internal_headers EXCLUDE REGEX "__cccl/(prologue|epilogue)\.h")
+
 # headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
 list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 
@@ -42,6 +45,7 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     $<$<COMPILE_LANGUAGE:CUDA>:${headertest_warning_levels_device}>
     $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>
     -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+  target_compile_definitions(headertest_${header_name} PRIVATE _CCCL_HEADER_TEST)
   target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
   target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_OPTIONAL_REF)
   if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

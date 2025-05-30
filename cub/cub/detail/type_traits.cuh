@@ -1,8 +1,9 @@
-/******************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+/***********************************************************************************************************************
+ * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,18 +13,15 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- ******************************************************************************/
+ **********************************************************************************************************************/
 
 /**
  * \file
@@ -51,14 +49,11 @@
 #include <cuda/std/functional>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
+#include <cuda/std/type_traits> // is_same_v
 
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-
-template <typename Invokable, typename... Args>
-using invoke_result_t = _CUDA_VSTD::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
 inline constexpr bool is_one_of_v = (_CCCL_TRAIT(_CUDA_VSTD::is_same, T, TArgs) || ...);
@@ -119,6 +114,93 @@ inline constexpr int static_size_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
 template <typename T>
 using implicit_prom_t = decltype(+T{});
 
-} // namespace detail
+/***********************************************************************************************************************
+ * Extended floating point traits
+ **********************************************************************************************************************/
+// half
 
+template <typename>
+inline constexpr bool is_half_impl_v = false;
+
+template <typename>
+inline constexpr bool is_half2_impl_v = false;
+
+#if _CCCL_HAS_NVFP16()
+
+template <>
+inline constexpr bool is_half_impl_v<__half> = true;
+
+template <>
+inline constexpr bool is_half2_impl_v<__half2> = true;
+
+#endif // _CCCL_HAS_NVFP16
+
+template <typename T>
+inline constexpr bool is_half_v = is_half_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_half2_v = is_half2_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_half_v = is_half_impl_v<T> || is_half2_impl_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// bfloat16
+
+template <typename>
+inline constexpr bool is_bfloat16_impl_v = false;
+
+template <typename>
+inline constexpr bool is_bfloat162_impl_v = false;
+
+#if _CCCL_HAS_NVBF16()
+
+template <>
+inline constexpr bool is_bfloat16_impl_v<__nv_bfloat16> = true;
+
+template <>
+inline constexpr bool is_bfloat162_impl_v<__nv_bfloat162> = true;
+
+#endif // _CCCL_HAS_NVBF16
+
+template <typename T>
+inline constexpr bool is_bfloat16_v = is_bfloat16_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_bfloat162_v = is_bfloat162_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat162_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// short2/ushort2
+
+template <typename T>
+inline constexpr bool is_any_short2_impl_v = false;
+
+template <>
+inline constexpr bool is_any_short2_impl_v<short2> = true;
+
+template <>
+inline constexpr bool is_any_short2_impl_v<ushort2> = true;
+
+template <typename T>
+inline constexpr bool is_any_short2_v = is_any_short2_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+// half/bfloat16
+template <typename T>
+inline constexpr bool is_arithmetic_cuda_floating_point_v =
+  is_any_half_v<T> || is_any_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
+
+// - promote small integer types to their corresponding 32-bit promotion type
+// - address the incompatibility between linux/windows for int/long
+template <typename T>
+using signed_promotion_t = _CUDA_VSTD::_If<
+  _CUDA_VSTD::__cccl_is_signed_integer_v<T> && sizeof(T) <= sizeof(int),
+  int,
+  _CUDA_VSTD::_If<_CUDA_VSTD::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
+
+} // namespace detail
 CUB_NAMESPACE_END

@@ -12,8 +12,9 @@
 
 #include <cuda/pipeline>
 
-#include "cuda_space_selector.h"
 #include <cooperative_groups.h>
+
+#include "cuda_space_selector.h"
 
 template <class T, cuda::thread_scope PipelineScope>
 __device__ __noinline__ void test_producer(T* dest, T* source, cuda::pipeline<PipelineScope>& pipe)

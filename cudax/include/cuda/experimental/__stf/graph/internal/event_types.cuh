@@ -46,10 +46,27 @@ protected:
     assert(node);
   }
 
+  // Remove duplicate entries from a vector.
+  //
+  // We could use sort and unique, but that could change the order of the nodes
+  // in the result, so that we would generate graphs with a topology that
+  // changes across multiple calls, where the update method would fail.
+  // Instead, we only append nodes to the result vector if they were not seen
+  // before.
   void remove_duplicates(::std::vector<cudaGraphNode_t>& nodes)
   {
-    ::std::sort(nodes.begin(), nodes.end());
-    nodes.erase(::std::unique(nodes.begin(), nodes.end()), nodes.end()); // Remove duplicates
+    ::std::unordered_set<cudaGraphNode_t> seen;
+    ::std::vector<cudaGraphNode_t> result;
+
+    for (cudaGraphNode_t node : nodes)
+    {
+      if (seen.insert(node).second)
+      {
+        result.push_back(node); // First time we've seen this node
+      }
+    }
+
+    ::std::swap(nodes, result);
   }
 
   bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override

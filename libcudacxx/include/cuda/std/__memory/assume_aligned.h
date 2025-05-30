@@ -28,6 +28,8 @@
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Align, class _Tp>
@@ -52,5 +54,7 @@ template <size_t _Align, class _Tp>
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H

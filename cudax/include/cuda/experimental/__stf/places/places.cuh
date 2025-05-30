@@ -454,6 +454,12 @@ public:
     return !(*this == rhs);
   }
 
+  // To use in a ::std::map indexed by exec_place
+  bool operator<(const exec_place& rhs) const
+  {
+    return pimpl < rhs.pimpl;
+  }
+
   /**
    * @brief an iterator class which goes over all subplaces in an exec place.
    *

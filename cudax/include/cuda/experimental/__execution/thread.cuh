@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THREAD
-#define __CUDAX_ASYNC_DETAIL_THREAD
+#ifndef __CUDAX_EXECUTION_THREAD
+#define __CUDAX_EXECUTION_THREAD
 
 #include <cuda/std/detail/__config>
 
@@ -29,6 +29,8 @@
 #else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_CCCL_PP_EXPAND _FOR_HOST}
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
+
+#include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
@@ -80,4 +82,6 @@ inline _CCCL_API void __this_thread_yield() noexcept
 }
 } // namespace cuda::experimental::execution
 
-#endif
+#include <cuda/experimental/__execution/epilogue.cuh>
+
+#endif // __CUDAX_EXECUTION_THREAD

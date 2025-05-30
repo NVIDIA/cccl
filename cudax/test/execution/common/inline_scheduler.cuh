@@ -30,7 +30,7 @@ private:
   };
 
   template <class Rcvr>
-  struct opstate_t : cudax_async::__immovable
+  struct opstate_t : cudax::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 

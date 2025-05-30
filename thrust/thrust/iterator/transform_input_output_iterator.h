@@ -105,8 +105,8 @@ public:
 // Register transform_input_output_iterator_proxy with 'is_proxy_reference' from type_traits to enable its use with
 // algorithms.
 template <typename InputFunction, typename OutputFunction, typename Iterator>
-struct is_proxy_reference<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> : true_type
-{};
+inline constexpr bool
+  is_proxy_reference_v<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> = true;
 
 } // namespace detail
 

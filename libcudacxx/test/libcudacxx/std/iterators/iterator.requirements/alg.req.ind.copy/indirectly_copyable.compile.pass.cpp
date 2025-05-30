@@ -35,7 +35,9 @@ static_assert(!cuda::std::indirectly_copyable<int*, const int*>, "");
 static_assert(!cuda::std::indirectly_copyable<const int*, const int*>, "");
 
 // Can copy from a pointer into an array but arrays aren't considered indirectly copyable-from.
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(cuda::std::indirectly_copyable<int*, int[2]>, "");
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(!cuda::std::indirectly_copyable<int[2], int*>, "");
 static_assert(!cuda::std::indirectly_copyable<int[2], int[2]>, "");
 static_assert(!cuda::std::indirectly_copyable<int (&)[2], int (&)[2]>, "");

@@ -24,6 +24,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -55,5 +57,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Ep* data(initializer_list<_Ep> __il) 
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_DATA_H

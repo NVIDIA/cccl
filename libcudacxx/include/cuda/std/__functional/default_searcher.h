@@ -27,6 +27,8 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef __cuda_std__
@@ -67,5 +69,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
 #endif // __cuda_std__
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_DEFAULT_SEARCHER_H

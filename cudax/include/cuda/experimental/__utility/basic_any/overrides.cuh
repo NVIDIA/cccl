@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_const.h>
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -54,12 +54,12 @@ struct overrides_for<__iset<_Interfaces...>>
 template <>
 struct overrides_for<iunknown>
 {
-  using __vtable _CCCL_NODEBUG_ALIAS = detail::__ignore; // no vtable, rtti is added explicitly in __vtable_tuple
+  using __vtable _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // no vtable, rtti is added explicitly in __vtable_tuple
   using __vptr_t _CCCL_NODEBUG_ALIAS = __rtti const*;
 };
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_OVERRIDES_H

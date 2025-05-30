@@ -164,9 +164,9 @@ extern "C++" {
 // #  endif // _CCCL_CUDACC_BELOW(12, 2)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_HAS_CUDA_COMPILER()
+#  if _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
-#  endif
+#  endif // _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
 
 #  if (!defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP) && !defined(_LIBCUDACXX_HAS_GCC_ATOMIC_IMP) \
        && !_LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP())

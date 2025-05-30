@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -43,8 +43,7 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -122,7 +121,7 @@ public:
     __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
   }
 
-#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
   //! \brief Move constructs a `basic_any` object.
   //! \pre `_Interface` must extend `imovable<>`.
   //! \post `__other.has_value() == false` and `has_value()` is `true` if and
@@ -142,12 +141,12 @@ public:
   {
     __convert_from(__other);
   }
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
   basic_any(basic_any&& __other)      = default;
   basic_any(basic_any const& __other) = default;
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! \brief Converting constructor that move constructs from a compatible
   //! `basic_any` object.
@@ -201,7 +200,7 @@ public:
     reset();
   }
 
-#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
   //! \brief Move assigns a `basic_any` object.
   //! \pre `_Interface` must extend `imovable<>`.
   //! \post `__other.has_value() == false` and `has_value()` is `true` if and
@@ -221,12 +220,12 @@ public:
   {
     return __assign_from(__other);
   }
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
   auto operator=(basic_any&& __other) -> basic_any&      = default;
   auto operator=(basic_any const& __other) -> basic_any& = default;
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! \brief Converting move assignment operator from a compatible `basic_any`
   //! object.
@@ -516,6 +515,6 @@ private:
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_VALUE_H

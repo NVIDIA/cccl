@@ -80,13 +80,15 @@ struct prefetch_policy_t
   static constexpr int max_items_per_thread      = 32;
 };
 
-template <int BlockThreads>
+template <int BlockThreads, int BulkCopyAlignment>
 struct async_copy_policy_t
 {
   static constexpr int block_threads = BlockThreads;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   static constexpr int min_items_per_thread = 1;
   static constexpr int max_items_per_thread = 32;
+
+  static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
 // mult must be a power of 2
@@ -115,24 +117,37 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
-constexpr int bulk_copy_alignment     = 128;
 constexpr int bulk_copy_size_multiple = 16;
 
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int ptx_version) -> int
 {
-  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_alignment) /* bar */
+  return ptx_version < 1000 ? 128 : 16;
+}
+
+template <typename... RandomAccessIteratorsIn>
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
+{
+  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
        // 128 bytes of padding for each input tile (handles before + after)
        + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
+       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 {
-  // TODO(bgruber): use if-else in C++14 for better readability
-  return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
-       : sm_arch >= 800 ? 16 * 1024 // A100
-                        : 12 * 1024; // V100 and below
+  if (sm_arch >= 1000)
+  {
+    return 64 * 1024; // B200
+  }
+  if (sm_arch >= 900)
+  {
+    return 48 * 1024; // 32 for H100, 48 for H200
+  }
+  if (sm_arch >= 800)
+  {
+    return 16 * 1024; // A100
+  }
+  return 12 * 1024; // V100 and below
 }
 
 template <typename PolicyT, typename = void>
@@ -213,17 +228,21 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   template <int BlockSize, int PtxVersion>
   struct bulkcopy_policy
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
-    using async_policy           = async_copy_policy_t<BlockSize>;
+  private:
+    static constexpr int bulk_copy_align = bulk_copy_alignment(PtxVersion);
+    using async_policy                   = async_copy_policy_t<BlockSize, bulk_copy_align>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::block_threads * async_policy::min_items_per_thread)
+        async_policy::block_threads * async_policy::min_items_per_thread, bulk_copy_align)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-      ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
+      ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_align) || ...);
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
+
+  public:
+    static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
     using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<BlockSize>, async_policy>;
   };

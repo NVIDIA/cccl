@@ -42,13 +42,12 @@
  */
 
 // includes, system
-#include <cuda_runtime.h>
-
 #include <iostream>
 #include <map>
 #include <set>
 #include <utility>
 
+#include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +57,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <cooperative_groups.h>
+
 #include <cooperative_groups/reduce.h>
 
 using namespace cuda::experimental::stf;

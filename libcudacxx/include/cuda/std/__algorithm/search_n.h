@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -155,5 +157,7 @@ search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SEARCH_N_H

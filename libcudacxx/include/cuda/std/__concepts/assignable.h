@@ -27,9 +27,11 @@
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.assignable]
 
@@ -40,7 +42,7 @@ concept assignable_from =
        { __lhs = _CUDA_VSTD::forward<_Rhs>(__rhs) } -> same_as<_Lhs>;
      };
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Lhs, class _Rhs>
 _CCCL_CONCEPT_FRAGMENT(
@@ -53,8 +55,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Lhs, class _Rhs>
 _CCCL_CONCEPT assignable_from = _CCCL_FRAGMENT(__assignable_from_, _Lhs, _Rhs);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_ASSIGNABLE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_COMPLETION_MECHANISM_H
-#define _CUDA___BARRIER_COMPLETION_MECHANISM_H
+#ifndef _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H
+#define _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -40,4 +42,6 @@ enum class __completion_mechanism
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___BARRIER_COMPLETION_MECHANISM_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H

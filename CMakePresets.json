@@ -274,11 +274,10 @@
       }
     },
     {
-      "name": "cccl-infra",
-      "displayName": "CCCL Infrastructure",
+      "name": "packaging",
+      "displayName": "CCCL Packaging Tests/Examples",
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_CUDA_COMPILER": "nvcc",
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
       }
@@ -426,8 +425,8 @@
       "configurePreset": "cccl-c-parallel"
     },
     {
-      "name": "cccl-infra",
-      "configurePreset": "cccl-infra"
+      "name": "packaging",
+      "configurePreset": "packaging"
     }
   ],
   "testPresets": [
@@ -705,8 +704,8 @@
       "inherits": "base"
     },
     {
-      "name": "cccl-infra",
-      "configurePreset": "cccl-infra",
+      "name": "packaging",
+      "configurePreset": "packaging",
       "inherits": "base"
     }
   ]

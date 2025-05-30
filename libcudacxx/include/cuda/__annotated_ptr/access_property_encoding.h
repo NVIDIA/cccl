@@ -32,6 +32,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_descriptor_mode_t : uint32_t
@@ -164,5 +166,7 @@ inline constexpr auto __l2_interleave_persisting = uint64_t{0x14F0000000000000};
 inline constexpr auto __l2_interleave_normal_demote = uint64_t{0x16F0000000000000};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING

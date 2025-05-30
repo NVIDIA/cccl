@@ -17,9 +17,10 @@
 
 #include <stdexcept>
 
-#include "common_tests.cuh"
 #include <testing.cuh>
 #include <utility.cuh>
+
+#include "common_tests.cuh"
 
 namespace cudax = cuda::experimental;
 

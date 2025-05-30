@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,8 +33,7 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/overrides.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -294,7 +293,7 @@ struct __make_interface_fn
 {
   static_assert(_CUDA_VSTD::is_class_v<_Super>, "expected a class type");
   template <class... _Interfaces>
-  using __call _CCCL_NODEBUG_ALIAS = detail::__inherit<__rebind_interface<_Interfaces, _Super>...>;
+  using __call _CCCL_NODEBUG_ALIAS = __inherit<__rebind_interface<_Interfaces, _Super>...>;
 };
 
 // Given an interface `_I<>`, let `_Bs<>...` be the list of types consisting
@@ -355,6 +354,6 @@ _CCCL_REQUIRES(__is_interface<_Interface> _CCCL_AND _CUDA_VSTD::__is_callable_v<
 }
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_INTERFACES_H

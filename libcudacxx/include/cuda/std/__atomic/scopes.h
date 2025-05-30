@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // REMEMBER CHANGES TO THESE ARE ABI BREAKING
@@ -97,5 +99,7 @@ using _CUDA_VSTD::__thread_scope_device_tag;
 using _CUDA_VSTD::__thread_scope_system_tag;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_SCOPES_H

@@ -34,6 +34,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class>
@@ -50,7 +52,7 @@ void size(const _Tp&) = delete;
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_size = __size_enabled<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   { _LIBCUDACXX_AUTO_CAST(__t.size()) } -> __integer_like;
@@ -68,7 +70,7 @@ concept __difference =
     { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
     { _CUDA_VRANGES::end(__t) } -> sized_sentinel_for<decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>;
   };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__member_size_,
                        requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
@@ -101,7 +103,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp>
 _CCCL_CONCEPT __difference = _CCCL_FRAGMENT(__difference_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 struct __fn
 {
@@ -160,17 +162,17 @@ _CCCL_GLOBAL_CONSTANT auto size = __size::__fn{};
 // [range.prim.ssize]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__ssize)
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __can_ssize = requires(_Tp&& __t) { _CUDA_VRANGES::size(__t); };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_ssize_,
                        requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_ssize = _CCCL_FRAGMENT(__can_ssize_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 struct __fn
 {
@@ -192,5 +194,7 @@ _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_SIZE_H

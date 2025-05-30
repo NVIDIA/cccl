@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_VARIANT
-#define __CUDAX_ASYNC_DETAIL_VARIANT
+#ifndef __CUDAX_EXECUTION_VARIANT
+#define __CUDAX_EXECUTION_VARIANT
 
 #include <cuda/std/detail/__config>
 
@@ -23,6 +23,7 @@
 
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__execution/meta.cuh>
@@ -50,8 +51,15 @@ class __variant_impl<_CUDA_VSTD::index_sequence<>>
 {
 public:
   template <class _Fn, class... _Us>
-  _CCCL_API void __visit(_Fn&&, _Us&&...) const noexcept
-  {}
+  _CCCL_API static void __visit(_Fn&&, _Us&&...) noexcept
+  {
+    _CCCL_ASSERT(false, "cannot visit a stateless variant");
+  }
+
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr size_t __index() noexcept
+  {
+    return __npos;
+  }
 };
 
 template <size_t... _Idx, class... _Ts>
@@ -85,16 +93,23 @@ public:
     __destroy();
   }
 
-  _CCCL_TRIVIAL_API void* __ptr() noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  _CCCL_TRIVIAL_API size_t __index() const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API size_t __index() const noexcept
   {
     return __index_;
   }
 
+  template <class _Ty>
+  _CCCL_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>&
+  {
+    return __emplace<_CUDA_VSTD::decay_t<_Ty>, _Ty>(static_cast<_Ty&&>(__value));
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty, class... _As>
   _CCCL_API auto __emplace(_As&&... __as) //
     noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
@@ -108,6 +123,7 @@ public:
     return *_CUDA_VSTD::launder(__value);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Ny, class... _As>
   _CCCL_API auto __emplace_at(_As&&... __as) //
     noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
@@ -120,11 +136,12 @@ public:
     return *_CUDA_VSTD::launder(__value);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class... _As>
   _CCCL_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
-    noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
+    noexcept(__nothrow_callable<_Fn, _As...>) -> _CUDA_VSTD::__call_result_t<_Fn, _As...>&
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
+    using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _As...>;
     constexpr size_t __new_index         = execution::__index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
@@ -134,13 +151,14 @@ public:
     return *_CUDA_VSTD::launder(__value);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _As>
   _CCCL_API static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
-    noexcept((__nothrow_callable<_Fn, _As..., __copy_cvref_t<_Self, _Ts>> && ...))
+    noexcept((__nothrow_callable<_Fn, _As..., _CUDA_VSTD::__copy_cvref_t<_Self, _Ts>> && ...))
   {
     // make this local in case destroying the sub-object destroys *this
     const auto index = __self.__index_;
-    _CCCL_ASSERT(index != __npos, "");
+    _CCCL_ASSERT(index != __npos, "cannot visit a stateless variant");
     ((_Idx == index
         ? static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)..., static_cast<_Self&&>(__self).template __get<_Idx>())
         : void()),
@@ -148,21 +166,21 @@ public:
   }
 
   template <size_t _Ny>
-  _CCCL_API auto __get() && noexcept -> __at<_Ny>&&
+  [[nodiscard]] _CCCL_API auto __get() && noexcept -> __at<_Ny>&&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
-  _CCCL_API auto __get() & noexcept -> __at<_Ny>&
+  [[nodiscard]] _CCCL_API auto __get() & noexcept -> __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
-  _CCCL_API auto __get() const& noexcept -> const __at<_Ny>&
+  [[nodiscard]] _CCCL_API auto __get() const& noexcept -> const __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());
@@ -179,15 +197,15 @@ struct __mk_variant_
 
 template <class... _Ts>
 using __variant _CCCL_NODEBUG_ALIAS = typename __mk_variant_<_Ts...>::type;
-#else
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class... _Ts>
 using __variant _CCCL_NODEBUG_ALIAS = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
-#endif
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 template <class... _Ts>
-using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<_CUDA_VSTD::decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_VARIANT

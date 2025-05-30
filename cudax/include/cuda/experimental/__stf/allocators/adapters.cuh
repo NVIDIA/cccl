@@ -35,7 +35,9 @@ namespace cuda::experimental::stf
  * allocations APIs (cudaMallocAsync, cudaFreeAsync)
  *
  * This can be used as an alternative in CUDA graphs to avoid creating CUDA
- * graphs with a large memory footprints.
+ * graphs with a large memory footprints. Allocations will be done in the same
+ * stream as the one used to launch the graph, and will be destroyed in that
+ * stream when the graph has been launched.
  */
 class stream_adapter
 {
@@ -56,14 +58,29 @@ class stream_adapter
   };
 
   /**
+   * @brief Store the state of the allocator such as the buffers to free
+   */
+  struct adapter_allocator_state
+  {
+    adapter_allocator_state(cudaStream_t stream_)
+        : stream(stream_)
+    {}
+
+    // Resources to release
+    ::std::vector<raw_buffer> to_free;
+
+    // stream used to allocate data
+    cudaStream_t stream;
+  };
+
+  /**
    * @brief allocator interface created within the stream_adapter
    */
   class adapter_allocator : public block_allocator_interface
   {
   public:
-    adapter_allocator(cudaStream_t stream_, stream_adapter* sa_)
-        : stream(stream_)
-        , sa(sa_)
+    adapter_allocator(::std::shared_ptr<adapter_allocator_state> state_)
+        : state(mv(state_))
     {}
 
     // these are events from a graph_ctx
@@ -109,17 +126,20 @@ class stream_adapter
           }
         };
 
-        cuda_safe_call(cudaMallocAsync(&result, s, stream));
+        cuda_safe_call(cudaMallocAsync(&result, s, state->stream));
       }
 
       return result;
     }
 
-    void deallocate(
-      backend_ctx_untyped&, const data_place& memory_node, event_list& /* prereqs */, void* ptr, size_t sz) override
+    void deallocate(backend_ctx_untyped&,
+                    const data_place& memory_node,
+                    event_list& /* prereqs */,
+                    void* ptr,
+                    [[maybe_unused]] size_t sz) override
     {
-      // Do not deallocate buffers, this is done later after
-      sa->to_free.emplace_back(ptr, sz, memory_node);
+      // Do not deallocate buffers, this is done later when we call clear()
+      state->to_free.emplace_back(ptr, sz, memory_node);
       // Prereqs are unchanged
     }
 
@@ -135,16 +155,52 @@ class stream_adapter
     }
 
   private:
-    cudaStream_t stream;
-    stream_adapter* sa;
+    // To keep track of allocated resources
+    ::std::shared_ptr<adapter_allocator_state> state;
   };
 
 public:
   template <typename context_t>
-  stream_adapter(context_t& ctx, cudaStream_t stream_ /*, block_allocator_untyped root_allocator_*/)
-      : stream(stream_) /*, root_allocator(mv(root_allocator_))*/
+  stream_adapter(context_t& ctx, cudaStream_t stream /*, block_allocator_untyped root_allocator_*/)
+      : adapter_state(::std::make_shared<adapter_allocator_state>(stream))
+      , alloc(block_allocator<adapter_allocator>(ctx, adapter_state))
+  {}
+
+  // Delete copy constructor and copy assignment operator
+  stream_adapter(const stream_adapter&)            = delete;
+  stream_adapter& operator=(const stream_adapter&) = delete;
+
+  // This is movable, but we don't need to call clear anymore after moving
+  stream_adapter(stream_adapter&& other) noexcept
+      : adapter_state(other.adapter_state)
+      , alloc(other.alloc)
+      , cleared_or_moved(other.cleared_or_moved)
   {
-    alloc = block_allocator<adapter_allocator>(ctx, stream, this);
+    // No need to clear this now that it was moved
+    other.cleared_or_moved = true;
+  }
+
+  stream_adapter& operator=(stream_adapter&& other) noexcept
+  {
+    if (this != &other)
+    {
+      adapter_state    = mv(other.adapter_state);
+      alloc            = mv(other.alloc);
+      cleared_or_moved = other.cleared_or_moved;
+
+      // Mark the moved-from object as "moved"
+      other.cleared_or_moved = true;
+    }
+    return *this;
+  }
+
+  // Destructor
+  ~stream_adapter()
+  {
+    static_assert(::std::is_move_constructible_v<stream_adapter>, "stream_adapter must be move constructible");
+    static_assert(::std::is_move_assignable_v<stream_adapter>, "stream_adapter must be move assignable");
+
+    _CCCL_ASSERT(cleared_or_moved, "clear() was not called.");
   }
 
   /**
@@ -152,16 +208,21 @@ public:
    */
   void clear()
   {
+    _CCCL_ASSERT(adapter_state, "Invalid state");
+    _CCCL_ASSERT(!cleared_or_moved, "clear() was already called, or the object was moved.");
+
     // We avoid changing device around every CUDA API call, so we will only
     // change it when necessary, and restore the current device at the end
     // of the loop.
     const int prev_dev_id = cuda_try<cudaGetDevice>();
     int current_dev_id    = prev_dev_id;
 
+    cudaStream_t stream = adapter_state->stream;
+
     // No need to wait for the stream multiple times
     bool stream_was_synchronized = false;
 
-    for (auto& b : to_free)
+    for (auto& b : adapter_state->to_free)
     {
       if (b.memory_node.is_host())
       {
@@ -200,7 +261,9 @@ public:
       cuda_safe_call(cudaSetDevice(prev_dev_id));
     }
 
-    to_free.clear();
+    adapter_state->to_free.clear();
+
+    cleared_or_moved = true;
   }
 
   /**
@@ -213,11 +276,13 @@ public:
   }
 
 private:
-  cudaStream_t stream;
+  ::std::shared_ptr<adapter_allocator_state> adapter_state;
 
+  // Note this is using a PIMPL idiom so it's movable
   block_allocator_untyped alloc;
 
-  ::std::vector<raw_buffer> to_free;
+  // We need to call clear() before destroying the object, unless it was moved
+  bool cleared_or_moved = false;
 };
 
 } // end namespace cuda::experimental::stf

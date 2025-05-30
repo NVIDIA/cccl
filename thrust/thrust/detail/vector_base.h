@@ -45,6 +45,17 @@
 
 THRUST_NAMESPACE_BEGIN
 
+struct default_init_t
+{};
+struct no_init_t
+{};
+
+//! Tag to indicate that a vector's elements should be default initialized
+inline constexpr default_init_t default_init;
+
+//! Tag to indicate that a vector's elements should not be initialized
+inline constexpr no_init_t no_init;
+
 namespace detail
 {
 
@@ -84,6 +95,16 @@ public:
    *  \param n The number of elements to create.
    */
   explicit vector_base(size_type n);
+
+  //! This constructor creates a vector_base with default-initialized elements.
+  //! \param n The number of elements to create.
+  explicit vector_base(size_type n, default_init_t);
+
+  //! This constructor creates a vector_base without initializing elements. It mandates that the element type is
+  //! trivially default-constructible.
+  //! \param n The number of elements to create.
+  template <typename T2 = T>
+  explicit vector_base(size_type n, no_init_t);
 
   /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
@@ -208,7 +229,7 @@ public:
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
-   *  \throw std::length_error If n exceeds max_size9).
+   *  \throw std::length_error If n exceeds max_size().
    *
    *  This method will resize this vector_base to the specified number of
    *  elements. If the number is smaller than this vector_base's current
@@ -216,6 +237,19 @@ public:
    *  extended and new elements are value initialized.
    */
   void resize(size_type new_size);
+
+  //! \brief Resizes this vector_base to the specified number of elements, performing default-initialization instead of
+  //!         value-initialization.
+  //! \param new_size Number of elements this vector_base should contain.
+  //! \throw std::length_error If n exceeds max_size().
+  void resize(size_type new_size, default_init_t);
+
+  //! \brief Resizes this vector_base to the specified number of elements, without initializing elements. It mandates
+  //! that the element type is trivially default-constructible.
+  //! \param new_size Number of elements this vector_base should contain.
+  //! \throw std::length_error If n exceeds max_size().
+  template <typename T2 = T>
+  void resize(size_type new_size, no_init_t);
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
@@ -515,6 +549,7 @@ private:
   void insert_dispatch(iterator position, InputIteratorOrIntegralType n, InputIteratorOrIntegralType x, true_type);
 
   // this method appends n value-initialized elements at the end
+  template <bool SkipInit = false>
   void append(size_type n);
 
   // this method performs insertion from a fill value

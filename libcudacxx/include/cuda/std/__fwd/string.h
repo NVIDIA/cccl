@@ -24,6 +24,8 @@
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/memory_resource.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if 0 // we don't support these features
@@ -56,24 +58,26 @@ using u32string = basic_string<char32_t>;
 
 // clang-format off
 template <class _CharT, class _Traits, class _Allocator>
-class _CCCL_PREFERED_NAME(string)
-      _CCCL_PREFERED_NAME(wstring)
+class _CCCL_PREFERRED_NAME(string)
+      _CCCL_PREFERRED_NAME(wstring)
 #if _CCCL_HAS_CHAR8_T()
-      _CCCL_PREFERED_NAME(u8string)
+      _CCCL_PREFERRED_NAME(u8string)
 #endif // _CCCL_HAS_CHAR8_T()
-      _CCCL_PREFERED_NAME(u16string)
-      _CCCL_PREFERED_NAME(u32string)
-      _CCCL_PREFERED_NAME(pmr::string)
-      _CCCL_PREFERED_NAME(pmr::wstring)
+      _CCCL_PREFERRED_NAME(u16string)
+      _CCCL_PREFERRED_NAME(u32string)
+      _CCCL_PREFERRED_NAME(pmr::string)
+      _CCCL_PREFERRED_NAME(pmr::wstring)
 #  if _CCCL_HAS_CHAR8_T()
-      _CCCL_PREFERED_NAME(pmr::u8string)
+      _CCCL_PREFERRED_NAME(pmr::u8string)
 #  endif // _CCCL_HAS_CHAR8_T()
-      _CCCL_PREFERED_NAME(pmr::u16string)
-      _CCCL_PREFERED_NAME(pmr::u32string)
+      _CCCL_PREFERRED_NAME(pmr::u16string)
+      _CCCL_PREFERRED_NAME(pmr::u32string)
       basic_string;
 // clang-format on
 #endif // 0
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_STRING_H

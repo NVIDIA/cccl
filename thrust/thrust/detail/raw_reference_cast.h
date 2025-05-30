@@ -74,7 +74,7 @@ struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cud
 {};
 
 template <typename T>
-struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference<::cuda::std::remove_cv_t<T>>::value>>
+struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference_v<::cuda::std::remove_cv_t<T>>>>
 {
   using type = T;
 };
@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_ca
   return *thrust::raw_pointer_cast(&ref);
 }
 
-template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference<::cuda::std::remove_cv_t<T>>::value, int> = 0>
+template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference_v<::cuda::std::remove_cv_t<T>>, int> = 0>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
 {
   return t;

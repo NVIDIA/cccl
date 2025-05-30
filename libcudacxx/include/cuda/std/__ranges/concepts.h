@@ -42,9 +42,11 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/initializer_list>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [range.range]
 
@@ -137,7 +139,7 @@ concept viewable_range =
           && (is_lvalue_reference_v<_Tp>
               || (movable<remove_reference_t<_Tp>> && !__is_std_initializer_list<remove_cvref_t<_Tp>>) )));
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // [range.range]
 
 // clang-format off
@@ -288,13 +290,13 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT viewable_range = _CCCL_FRAGMENT(__viewable_range_, _Tp);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 //[container.intro.reqmts]
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Range, class _Tp>
 concept __container_compatible_range = input_range<_Range> && convertible_to<range_reference_t<_Range>, _Tp>;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Range, class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __container_compatible_range_,
@@ -302,8 +304,10 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_CONCEPTS_H

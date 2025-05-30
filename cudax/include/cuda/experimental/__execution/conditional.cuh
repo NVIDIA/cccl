@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL
-#define __CUDAX_ASYNC_DETAIL_CONDITIONAL
+#ifndef __CUDAX_EXECUTION_CONDITIONAL
+#define __CUDAX_EXECUTION_CONDITIONAL
 
 #include <cuda/std/detail/__config>
 
@@ -56,7 +56,7 @@ namespace cuda::experimental::execution
 {
 struct _FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE;
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 {
 private:
   template <class _Pred, class _Then, class _Else>
@@ -71,24 +71,24 @@ private:
   }
 
   template <class... _As>
-  using __just_from_t _CCCL_NODEBUG_ALIAS = decltype(just_from(__cond_t::__mk_complete_fn(declval<_As>()...)));
+  using __just_from_t _CCCL_NODEBUG_ALIAS = decltype(just_from(conditional_t::__mk_complete_fn(declval<_As>()...)));
 
   template <class _Pred, class _Then, class _Else, class... _Env>
   struct __either_sig_fn
   {
     template <class... _As>
-    _CCCL_API constexpr auto operator()() const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
       if constexpr (!_CUDA_VSTD::__is_callable_v<_Pred, _As&...>)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __cond_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
                                             _WITH_FUNCTION(_Pred),
                                             _WITH_ARGUMENTS(_As & ...)>();
       }
       else if constexpr (!_CUDA_VSTD::is_convertible_v<_CUDA_VSTD::__call_result_t<_Pred, _As&...>, bool>)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __cond_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE),
                                             _WITH_FUNCTION(_Pred),
                                             _WITH_ARGUMENTS(_As & ...)>();
@@ -96,8 +96,8 @@ private:
       else
       {
         return concat_completion_signatures(
-          get_completion_signatures<__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
-          get_completion_signatures<__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
+          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
+          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
       }
     }
   };
@@ -107,13 +107,13 @@ private:
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __params_t _CCCL_NODEBUG_ALIAS              = __closure<_Pred, _Then, _Else>;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
     template <class... _As>
     using __opstate_t _CCCL_NODEBUG_ALIAS = //
       _CUDA_VSTD::__type_list< //
-        connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
-        connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
+        connect_result_t<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
+        connect_result_t<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
 
     using __next_ops_variant_t _CCCL_NODEBUG_ALIAS = //
       __value_types<completion_signatures_of_t<_Sndr, __env_t>, __opstate_t, __type_concat_into_quote<__variant>::__call>;
@@ -121,7 +121,7 @@ private:
     _CCCL_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __params_t&& __params)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __params_{static_cast<__params_t&&>(__params)}
-        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{*this})}
+        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __ref_rcvr(*this))}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
@@ -131,22 +131,23 @@ private:
       execution::start(__op_);
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _As>
     _CCCL_API void set_value(_As&&... __as) noexcept
     {
-      auto __just = just_from(__cond_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
+      auto __just = just_from(conditional_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
       _CUDAX_TRY( //
         ({ //
           if (static_cast<_Pred&&>(__params_.pred)(__as...))
           {
             auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __rcvr_ref{__rcvr_});
+              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __ref_rcvr(__rcvr_));
             execution::start(__op);
           }
           else
           {
             auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __rcvr_ref{__rcvr_});
+              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __ref_rcvr(__rcvr_));
             execution::start(__op);
           }
         }),
@@ -168,14 +169,14 @@ private:
       execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
     {
-      return get_env(__rcvr_);
+      return __fwd_env(execution::get_env(__rcvr_));
     }
 
     _Rcvr __rcvr_;
     __params_t __params_;
-    connect_result_t<_Sndr, __rcvr_ref<__opstate, __env_t>> __op_;
+    connect_result_t<_Sndr, __rcvr_ref_t<__opstate, __env_t>> __op_;
     __next_ops_variant_t __ops_;
   };
 
@@ -194,15 +195,15 @@ public:
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t<__cond_t::__closure<_Pred, _Then, _Else>, _Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__closure<_Pred, _Then, _Else>, _Sndr>
 {
-  using __params_t _CCCL_NODEBUG_ALIAS = __cond_t::__closure<_Pred, _Then, _Else>;
-  _CCCL_NO_UNIQUE_ADDRESS __cond_t __tag_;
+  using __params_t _CCCL_NODEBUG_ALIAS = conditional_t::__closure<_Pred, _Then, _Else>;
+  _CCCL_NO_UNIQUE_ADDRESS conditional_t __tag_;
   __params_t __params_;
   _Sndr __sndr_;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -226,14 +227,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t<__cond_t::__closure<_Pre
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 
 template <class _Pred, class _Then, class _Else>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure
 {
   _Pred pred;
   _Then on_true;
@@ -242,14 +243,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
   template <class _Sndr>
   _CCCL_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure, _Sndr>
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
-
+    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
+    // If the incoming sender is non-dependent, we can check the completion signatures of
+    // the composed sender immediately.
     if constexpr (!dependent_sender<_Sndr>)
     {
-      using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<__closure, _Sndr>>;
-      static_assert(__valid_completion_signatures<__completions>);
+      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<__closure, _Sndr>>());
     }
-
     return transform_sender(
       __dom_t{}, __sndr_t<__closure, _Sndr>{{}, static_cast<__closure&&>(*this), static_cast<_Sndr&&>(__sndr)});
   }
@@ -268,28 +268,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS    = domain_for_t<_Sndr>;
+  using __dom_t _CCCL_NODEBUG_ALIAS    = __early_domain_of_t<_Sndr>;
   using __params_t _CCCL_NODEBUG_ALIAS = __closure<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
   return static_cast<__params_t&&>(__params).__mk_sender(static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto __cond_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
 }
 
 template <class _Params, class _Sndr>
-inline constexpr size_t structured_binding_size<__cond_t::__sndr_t<_Params, _Sndr>> = 3;
+inline constexpr size_t structured_binding_size<conditional_t::__sndr_t<_Params, _Sndr>> = 3;
 
-using conditional_t _CCCL_NODEBUG_ALIAS = __cond_t;
 _CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CONDITIONAL

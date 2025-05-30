@@ -48,11 +48,11 @@ C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
   STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Buffer&>(), cuda::std::declval<Buffer&>())));
 
   // Note we do not care about the elements just the sizes
-  Buffer vec_small{env, 5, cudax::uninit};
+  Buffer vec_small{env, 5, cudax::no_init};
 
   SECTION("Can swap async_buffer")
   {
-    Buffer vec_large{env, 42, cudax::uninit};
+    Buffer vec_large{env, 42, cudax::no_init};
 
     CUDAX_CHECK(vec_large.size() == 42);
     CUDAX_CHECK(vec_small.size() == 5);
@@ -74,7 +74,7 @@ C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
 
   SECTION("Can swap async_buffer without allocation")
   {
-    Buffer vec_no_allocation{env, 0, cudax::uninit};
+    Buffer vec_no_allocation{env, 0, cudax::no_init};
 
     CUDAX_CHECK(vec_no_allocation.size() == 0);
     CUDAX_CHECK(vec_small.size() == 5);

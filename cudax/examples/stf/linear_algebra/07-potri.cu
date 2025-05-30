@@ -17,8 +17,9 @@
  */
 #include <cuda/experimental/stf.cuh>
 
-#include <cublas_v2.h>
 #include <cusolverDn.h>
+
+#include <cublas_v2.h>
 
 #define TILED
 

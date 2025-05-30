@@ -28,6 +28,8 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 #if __cccl_ptx_isa >= 600
@@ -87,9 +89,9 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
   }
   _CCCL_ASSERT((__clamp_segmask | 0b1111100011111) == 0b1111100011111,
                "clamp value + segmentation mask must use the bit positions [0:4] and [8:12]");
-  _CCCL_ASSERT((__lane_mask & __activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
+  _CCCL_ASSERT((__lane_mask & ::__activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred; _CCCL_ASSERT(__match_all_sync(__activemask(), __lane_mask, &__pred),
+               ([[maybe_unused]] int __pred; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __lane_mask, &__pred),
                                                           "all active lanes must have the same lane mask");))
   _CCCL_ASSERT(_CUDA_VPTX::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
                "the destination lane must be a member of the lane mask");
@@ -103,7 +105,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__idx, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__idx, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::int32_t __pred1;
   _CUDA_VSTD::uint32_t __ret;
@@ -126,7 +128,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__idx, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__idx, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::uint32_t __ret;
   asm volatile("{                                                      \n\t\t"
@@ -145,7 +147,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__up, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__up, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::int32_t __pred1;
   _CUDA_VSTD::uint32_t __ret;
@@ -168,7 +170,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__up, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__up, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::uint32_t __ret;
   asm volatile("{                                                      \n\t\t"
@@ -187,7 +189,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__down, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__down, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::int32_t __pred1;
   _CUDA_VSTD::uint32_t __ret;
@@ -210,7 +212,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__down, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__down, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::uint32_t __ret;
   asm volatile("{                                                      \n\t\t"
@@ -229,7 +231,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__bfly, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__bfly, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::int32_t __pred1;
   _CUDA_VSTD::uint32_t __ret;
@@ -252,7 +254,7 @@ template <typename _Tp>
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask) noexcept
 {
-  __shfl_sync_checks(__dot_shfl_mode::__bfly, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
+  _CUDA_VPTX::__shfl_sync_checks(__dot_shfl_mode::__bfly, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
   _CUDA_VSTD::uint32_t __ret;
   asm volatile( //
@@ -267,5 +269,7 @@ template <typename _Tp>
 #endif // __cccl_ptx_isa >= 600
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_SHFL_SYNC_H

@@ -31,6 +31,8 @@
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Round the number \p __a to the next multiple of \p __b
@@ -98,5 +100,7 @@ round_up(const _Tp __a, const _Up __b) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___CMATH_ROUND_UP_H

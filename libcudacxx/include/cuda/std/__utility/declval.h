@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/void_t.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // When variable templates and noexcept function types are available, a faster
@@ -57,5 +59,7 @@ _LIBCUDACXX_HIDE_FROM_ABI decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noex
 #endif // default impl
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_DECLVAL_H

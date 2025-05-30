@@ -68,7 +68,7 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1624,14 +1624,14 @@ public:
   }
 
   // inplace_vector.comparison
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #if _CCCL_STD_VER <= 2017
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
@@ -1640,32 +1640,32 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __synth_three_way_result_t<_Tp>
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __synth_three_way_result_t<_Tp>
   operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return __rhs < __lhs;
   }
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return !(__rhs < __lhs);
   }
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
@@ -2093,13 +2093,13 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(inplace_vector&, inplace_vector&) noexcept {}
 
   // inplace_vector.comparison
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const inplace_vector&, const inplace_vector&) noexcept
   {
     return true;
   }
 #if _CCCL_STD_VER <= 2017
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const inplace_vector&, const inplace_vector&) noexcept
   {
     return false;
@@ -2107,29 +2107,29 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __synth_three_way_result_t<_Tp>
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __synth_three_way_result_t<_Tp>
   operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(const inplace_vector&, const inplace_vector&) noexcept
   {
     return false;
   }
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(const inplace_vector&, const inplace_vector&) noexcept
   {
     return false;
   }
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(const inplace_vector&, const inplace_vector&) noexcept
   {
     return true;
   }
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(const inplace_vector&, const inplace_vector&) noexcept
   {
     return true;
@@ -2166,6 +2166,6 @@ erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TR
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_INPLACE_VECTOR

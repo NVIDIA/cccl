@@ -117,45 +117,13 @@
 #else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
 #  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#endif // other compilers
+#endif // ^^^ !_CCCL_HAS_CUDA_COMPILER() ^^^
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING
 #  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
 #    define _CCCL_USE_PRAGMA_MSVC_WARNING
 #  endif // !_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
-
-// https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
-// warning C4100: 'quack': unreferenced formal parameter
-// warning C4127: conditional expression is constant
-// warning C4180: qualifier applied to function type has no meaning; ignored
-// warning C4197: 'purr': top-level volatile in cast is ignored
-// warning C4324: 'roar': structure was padded due to alignment specifier
-// warning C4455: literal suffix identifiers that do not start with an underscore are reserved
-// warning C4503: 'hum': decorated name length exceeded, name was truncated
-// warning C4522: 'woof' : multiple assignment operators specified
-// warning C4668: 'meow' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
-// warning C4800: 'boo': forcing value to bool 'true' or 'false' (performance warning)
-// warning C4996: 'meow': was declared deprecated
-#  define _CCCL_MSVC_DISABLED_WARNINGS 4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996 /**/
-#  define _CCCL_MSVC_WARNINGS_PUSH \
-    _CCCL_PRAGMA(warning(push)) _CCCL_PRAGMA(warning(disable : _CCCL_MSVC_DISABLED_WARNINGS))
-#  define _CCCL_MSVC_WARNINGS_POP _CCCL_PRAGMA(warning(pop))
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-#  define _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_MSVC_WARNINGS_POP
 #endif // !_CCCL_COMPILER(MSVC)
-
-#if _CCCL_COMPILER(NVRTC)
-#  define _CCCL_PUSH_MACROS _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_POP_MACROS  _CCCL_MSVC_WARNINGS_POP
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
-#  define _CCCL_PUSH_MACROS         \
-    _CCCL_PRAGMA(push_macro("min")) \
-    _CCCL_PRAGMA(push_macro("max")) _CCCL_PRAGMA(push_macro("interface")) _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_POP_MACROS         \
-    _CCCL_PRAGMA(pop_macro("min")) \
-    _CCCL_PRAGMA(pop_macro("max")) _CCCL_PRAGMA(pop_macro("interface")) _CCCL_MSVC_WARNINGS_POP
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // __CCCL_DIAGNOSTIC_H

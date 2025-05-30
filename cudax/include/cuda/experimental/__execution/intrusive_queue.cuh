@@ -8,8 +8,8 @@
 //                         Copyright (c) 2021-2022 Facebook, Inc & AFFILIATES.
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_INTRUSIVE_QUEUE
-#define __CUDAX_ASYNC_DETAIL_INTRUSIVE_QUEUE
+#ifndef __CUDAX_EXECUTION_INTRUSIVE_QUEUE
+#define __CUDAX_EXECUTION_INTRUSIVE_QUEUE
 
 #include <cuda/std/detail/__config>
 
@@ -293,4 +293,4 @@ private:
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_INTRUSIVE_QUEUE
+#endif // __CUDAX_EXECUTION_INTRUSIVE_QUEUE

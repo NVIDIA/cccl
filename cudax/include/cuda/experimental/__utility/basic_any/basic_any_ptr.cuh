@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -39,8 +39,7 @@
 #include <cuda/experimental/__utility/basic_any/rtti.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -184,13 +183,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
   }
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_API friend auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__lhs.__get_optr()) == *static_cast<__void_ptr_t>(__rhs.__get_optr());
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto operator!=(basic_any const& __lhs, basic_any const& __rhs) noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto operator!=(basic_any const& __lhs, basic_any const& __rhs) noexcept
     -> bool
   {
     return !(__lhs == __rhs);
@@ -302,6 +301,6 @@ _CUDAX_PUBLIC_API basic_any(_Interface<_Super> const*) //
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_PTR_H

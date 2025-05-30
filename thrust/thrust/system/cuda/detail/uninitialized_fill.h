@@ -46,10 +46,8 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 namespace __uninitialized_fill
 {
-
 template <class Iterator, class T>
 struct functor
 {
@@ -57,12 +55,6 @@ struct functor
   T value;
 
   using value_type = thrust::detail::it_value_t<Iterator>;
-
-  THRUST_FUNCTION
-  functor(Iterator items_, T const& value_)
-      : items(items_)
-      , value(value_)
-  {}
 
   template <class Size>
   void THRUST_DEVICE_FUNCTION operator()(Size idx)
@@ -76,18 +68,14 @@ struct functor
     ::new (static_cast<void*>(&out)) value_type(value);
 #  endif
   }
-}; // struct functor
-
+};
 } // namespace __uninitialized_fill
 
 template <class Derived, class Iterator, class Size, class T>
 Iterator _CCCL_HOST_DEVICE
 uninitialized_fill_n(execution_policy<Derived>& policy, Iterator first, Size count, T const& x)
 {
-  using functor_t = __uninitialized_fill::functor<Iterator, T>;
-
-  cuda_cub::parallel_for(policy, functor_t(first, x), count);
-
+  cuda_cub::parallel_for(policy, __uninitialized_fill::functor<Iterator, T>{first, x}, count);
   return first + count;
 }
 

@@ -29,6 +29,7 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
@@ -44,67 +45,26 @@ namespace reduce
 
 struct reduce_runtime_tuning_policy
 {
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
+  cub::detail::RuntimeReduceAgentPolicy single_tile;
+  cub::detail::RuntimeReduceAgentPolicy reduce;
 
-  reduce_runtime_tuning_policy SingleTile() const
+  auto SingleTile() const
   {
-    return *this;
+    return single_tile;
   }
-  reduce_runtime_tuning_policy Reduce() const
+  auto Reduce() const
   {
-    return *this;
+    return reduce;
   }
 
-  int ItemsPerThread() const
+  using MaxPolicy = reduce_runtime_tuning_policy;
+
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
   {
-    return items_per_thread;
-  }
-  int BlockThreads() const
-  {
-    return block_size;
+    return op.template Invoke<reduce_runtime_tuning_policy>(*this);
   }
 };
-
-struct reduce_tuning_t
-{
-  int cc;
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
-};
-
-template <typename Tuning, int N>
-Tuning find_tuning(int cc, const Tuning (&tunings)[N])
-{
-  for (const Tuning& tuning : tunings)
-  {
-    if (cc >= tuning.cc)
-    {
-      return tuning;
-    }
-  }
-
-  return tunings[N - 1];
-}
-
-reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
-{
-  constexpr reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
-
-  auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
-
-  // Implement part of MemBoundScaling
-  auto four_bytes_per_thread = items_per_thread * 4 / accumulator_type.size;
-  items_per_thread = _CUDA_VSTD::clamp<decltype(items_per_thread)>(four_bytes_per_thread, 1, items_per_thread * 2);
-
-  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
-  auto max_block_size = cuda::round_up(work_per_sm, 32);
-  block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
-
-  return {block_size, items_per_thread, vector_load_length};
-}
 
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
@@ -172,20 +132,6 @@ std::string get_device_reduce_kernel_name(
     transform_op_t);
 }
 
-template <auto* GetPolicy>
-struct dynamic_reduce_policy_t
-{
-  using MaxPolicy = dynamic_reduce_policy_t;
-
-  template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
-  {
-    return op.template Invoke<reduce_runtime_tuning_policy>(GetPolicy(device_ptx_version, accumulator_type));
-  }
-
-  cccl_type_info accumulator_type;
-};
-
 struct reduce_kernel_source
 {
   cccl_device_reduce_build_result_t& build;
@@ -229,11 +175,10 @@ CUresult cccl_device_reduce_build(
 
   try
   {
-    const char* name = "test";
+    const char* name = "device_reduce";
 
     const int cc                 = cc_major * 10 + cc_minor;
     const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
-    const auto policy            = reduce::get_policy(cc, accum_t);
     const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
 
     const auto [input_iterator_name, input_iterator_src] =
@@ -244,44 +189,59 @@ CUresult cccl_device_reduce_build(
     const auto [op_name, op_src] =
       get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
 
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 5;
+    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+
     const std::string src = std::format(
       R"XXX(
 #include <cub/block/block_reduce.cuh>
-#include <cub/device/dispatch/kernels/reduce.cuh>
-{8}
+{5}
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
+{2}
+{3}
 {4}
-{5}
-struct agent_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {2};
-  static constexpr int BLOCK_THREADS = {3};
-  static constexpr int VECTOR_LOAD_LENGTH = {7};
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
-}};
-struct device_reduce_policy {{
-  struct ActivePolicy {{
-    using ReducePolicy = agent_policy_t;
-    using SingleTilePolicy = agent_policy_t;
-  }};
-}};
-{6}
 )XXX",
       input_it.value_type.size, // 0
       input_it.value_type.alignment, // 1
-      policy.items_per_thread, // 2
-      policy.block_size, // 3
-      input_iterator_src, // 4
-      output_iterator_src, // 5
-      op_src, // 6
-      policy.vector_load_length, // 7
-      jit_template_header_contents); // 8
+      input_iterator_src, // 2
+      output_iterator_src, // 3
+      op_src, // 4
+      jit_template_header_contents); // 5
+
+    const auto offset_t           = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
+    nlohmann::json runtime_policy = get_policy(
+      std::format("cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{}, {}, "
+                  "{}>::MaxPolicy::ActivePolicy{{}})",
+                  accum_cpp,
+                  offset_t,
+                  op_name),
+      "#include <cub/device/dispatch/tuning/tuning_reduce.cuh>\n" + src,
+      ptx_args);
+
+    using cub::detail::RuntimeReduceAgentPolicy;
+    auto [reduce_policy, reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
+    auto [st_policy, st_policy_str]         = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+
+    std::string final_src = std::format(
+      "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
+      "{0}\n"
+      "struct device_reduce_policy {{\n"
+      "  struct ActivePolicy {{\n"
+      "    {1}\n"
+      "    {2}\n"
+      "  }};\n"
+      "}};",
+      src,
+      reduce_policy_str,
+      st_policy_str);
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 
@@ -321,7 +281,7 @@ struct device_reduce_policy {{
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
         .add_expression({single_tile_kernel_name})
         .add_expression({single_tile_second_kernel_name})
         .add_expression({reduction_kernel_name})
@@ -343,6 +303,7 @@ struct device_reduce_policy {{
     build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
+    build->runtime_policy   = new reduce::reduce_runtime_tuning_policy{st_policy, reduce_policy};
   }
   catch (const std::exception& exc)
   {
@@ -383,7 +344,7 @@ CUresult cccl_device_reduce(
       indirect_arg_t, // InitT
       void, // AccumT
       ::cuda::std::__identity, // TransformOpT
-      reduce::dynamic_reduce_policy_t<&reduce::get_policy>, // PolicyHub
+      reduce::reduce_runtime_tuning_policy, // PolicyHub
       reduce::reduce_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
       Dispatch(
@@ -398,7 +359,7 @@ CUresult cccl_device_reduce(
         {},
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {reduce::get_accumulator_type(op, d_in, init)});
+        *reinterpret_cast<reduce::reduce_runtime_tuning_policy*>(build.runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -429,6 +390,7 @@ CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr
     }
 
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

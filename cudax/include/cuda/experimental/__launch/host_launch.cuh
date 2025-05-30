@@ -27,6 +27,8 @@
 #include <cuda/std/tuple>
 #include <cuda/stream_ref>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -108,5 +110,7 @@ void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> 
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CUDAX__LAUNCH_HOST_LAUNCH

@@ -156,7 +156,7 @@ OutputIt _CCCL_HOST_DEVICE replace_copy(
   T const& old_value,
   T const& new_value)
 {
-  return cuda_cub::replace_copy_if(policy, first, last, result, thrust::detail::equal_to_value<T>(old_value), new_value);
+  return cuda_cub::replace_copy_if(policy, first, last, result, thrust::detail::equal_to_value<T>{old_value}, new_value);
 }
 
 } // namespace cuda_cub

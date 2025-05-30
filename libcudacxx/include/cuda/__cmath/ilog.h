@@ -34,6 +34,8 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
@@ -151,35 +153,35 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   auto __log10_approx                 = static_cast<int>(__log2);
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_32bit())}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(::cuda::__power_of_10_32bit())}, "out of bounds");
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint32_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<uint32_t>(__t) + 1 > __power_of_10_32bit()[__log10_approx];
+      __log10_approx += static_cast<uint32_t>(__t) + 1 > ::cuda::__power_of_10_32bit()[__log10_approx];
     }
     else
     {
-      __log10_approx += static_cast<uint32_t>(__t) >= __power_of_10_32bit()[__log10_approx];
+      __log10_approx += static_cast<uint32_t>(__t) >= ::cuda::__power_of_10_32bit()[__log10_approx];
     }
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_64bit())}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(::cuda::__power_of_10_64bit())}, "out of bounds");
     // +1 is not needed here
-    __log10_approx += static_cast<uint64_t>(__t) >= __power_of_10_64bit()[__log10_approx];
+    __log10_approx += static_cast<uint64_t>(__t) >= ::cuda::__power_of_10_64bit()[__log10_approx];
   }
 #if _CCCL_HAS_INT128()
   else
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_128bit())}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(::cuda::__power_of_10_128bit())}, "out of bounds");
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, __uint128_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<__uint128_t>(__t) + 1 > __power_of_10_128bit()[__log10_approx];
+      __log10_approx += static_cast<__uint128_t>(__t) + 1 > ::cuda::__power_of_10_128bit()[__log10_approx];
     }
     else
     {
-      __log10_approx += static_cast<__uint128_t>(__t) >= __power_of_10_128bit()[__log10_approx];
+      __log10_approx += static_cast<__uint128_t>(__t) >= ::cuda::__power_of_10_128bit()[__log10_approx];
     }
   }
 #endif // _CCCL_HAS_INT128()
@@ -188,5 +190,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_ILOG

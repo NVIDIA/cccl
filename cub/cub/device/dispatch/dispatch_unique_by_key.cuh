@@ -32,6 +32,8 @@
  * items by key from sequences of data items residing within device-accessible memory.
  */
 
+#pragma once
+
 #include <cub/config.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

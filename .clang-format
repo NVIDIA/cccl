@@ -33,7 +33,6 @@ AttributeMacros: [
                   '_CCCL_HOST_DEVICE',
                   '_CCCL_HOST',
                   '_CCCL_NO_UNIQUE_ADDRESS',
-                  '_CCCL_NODISCARD_FRIEND',
                   '_CCCL_TYPE_VISIBILITY_DEFAULT',
                   '_CCCL_VISIBILITY_HIDDEN',
                   'CUB_RUNTIME_FUNCTION',
@@ -81,9 +80,18 @@ FixNamespaceComments: true
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
+  - Regex:           '^<cuda/std/__cccl/prologue.h>'
+    Priority:            0x7FFFFFFF
+    SortPriority:        0x7FFFFFFF
+  - Regex:           '^<cuda/std/__cccl/epilogue.h>'
+    Priority:            -0x7FFFFFFF
+    SortPriority:        -0x7FFFFFFF
   - Regex:           '^<cuda/experimental/__execution/prologue.cuh>'
     Priority:            0x7FFFFFFF
     SortPriority:        0x7FFFFFFF
+  - Regex:           '^"insert_nested_NVTX_range_guard.h"'
+    Priority:            -1
+    SortPriority:        -1
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0
@@ -99,9 +107,15 @@ IncludeCategories:
   - Regex:           '^<cuda/'
     Priority:            4
     SortPriority:        3
-  - Regex:           '^<[a-z_]*>$'
+  - Regex:           '^<nv/'
     Priority:            6
     SortPriority:        5
+  - Regex:           '^<[a-z_]*>$'
+    Priority:            7
+    SortPriority:        6
+  - Regex:           '^<[a-z_]*\.[a-z]+>$'
+    Priority:            8
+    SortPriority:        7
   - Regex:           '^<cuda'
     Priority:            0
     SortPriority:        0

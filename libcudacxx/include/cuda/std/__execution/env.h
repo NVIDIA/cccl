@@ -22,9 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
@@ -87,6 +89,8 @@
 //! @struct get_env_t
 //! A callable object for retrieving the environment associated with an object.
 //!
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION
 
@@ -154,6 +158,7 @@ struct __basic_query : __basic_query<_Query>
 
   using __basic_query<_Query>::operator();
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t) const noexcept(__is_nothrow)
     -> decltype(_DefaultFn{}())
   {
@@ -165,6 +170,7 @@ struct __basic_query : __basic_query<_Query>
 template <class _Query>
 struct __basic_query<_Query, void>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const
     noexcept(__nothrow_queryable_with<_Env, _Query>) -> __query_result_t<_Env, _Query>
@@ -272,6 +278,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   //! @param __query The query object to be passed to the environment's `query` method.
   //! @return The result of the `query` method on the first environment that satisfies the query type.
   //! @throws noexcept If the query operation is noexcept for the resolved environment and query type.
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
@@ -287,6 +294,12 @@ template <class... _Envs>
 _CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED
+
+// Partial specialization for no env because NVCC segfaults trying to compile `__tuple<>`
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
+{};
+
 // Partial specialization for two environments so that the syntax `env(env0, env1)` is
 // valid. That is, `env` can use CTAD with a parentesized list of arguments.
 template <class _Env0, class _Env1>
@@ -302,7 +315,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
     {
       return (__self.__env0_);
     }
-    else
+    else if constexpr (__queryable_with<_Env1, _Query>)
     {
       return (__self.__env1_);
     }
@@ -311,6 +324,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   template <class _Query>
   using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
@@ -342,6 +356,7 @@ struct get_env_t
   template <class _Ty>
   using __env_of _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty>().get_env());
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
   {
@@ -360,6 +375,60 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 template <class _Ty>
 using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(declval<_Ty>()));
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// forwarding_query_t
+_CCCL_GLOBAL_CONSTANT struct forwarding_query_t
+{
+  template <class _Tag>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag) const noexcept -> bool
+  {
+    if constexpr (__queryable_with<_Tag, forwarding_query_t>)
+    {
+      static_assert(noexcept(_Tag().query(*this)));
+      return _Tag().query(*this);
+    }
+    return _CUDA_VSTD::derived_from<_Tag, forwarding_query_t>;
+  }
+} forwarding_query{};
+
+template <class _Tag>
+_CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __query_or_default
+namespace __detail
+{
+// query an environment, or return a default value if the query is not supported
+struct __query_or_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Env, class _Query, class _Default)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query, _Default&&) const
+    noexcept(__nothrow_queryable_with<_Env, _Query>) -> __query_result_t<_Env, _Query>
+  {
+    return __env.query(_Query{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Default>
+  [[nodiscard]] _CCCL_API constexpr auto
+  operator()(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _Default&& __default) const
+    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Default>) -> _Default
+  {
+    return static_cast<_Default&&>(__default);
+  }
+};
+} // namespace __detail
+
+_CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
+
+template <class _Env, class _Query, class _Default>
+using __query_result_or_t _CCCL_NODEBUG_ALIAS =
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _Query{}, _CUDA_VSTD::declval<_Default>()));
+
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDA_STD___EXECUTION_ENV_H

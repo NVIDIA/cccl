@@ -213,14 +213,14 @@ template<class T>
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-_CCCL_PUSH_MACROS
-
 #if _CCCL_HAS_EXCEPTIONS()
 #  ifdef __cpp_lib_optional
 #    include <optional>
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
 #    include <exception>
 #  endif // !__cpp_lib_optional
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
@@ -241,7 +241,11 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
+#  include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CCCL_HAS_EXCEPTIONS()
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1777,6 +1781,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, re
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_OPTIONAL

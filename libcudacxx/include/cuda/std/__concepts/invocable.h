@@ -25,9 +25,11 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.invocable]
 
@@ -48,7 +50,7 @@ concept __invoke_constructible = requires(_Fun&& __fun, _Args&&... __args) {
     _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...));
 };
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Fn, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(_Invocable_,
@@ -69,8 +71,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Fun, class... _Args>
 _CCCL_CONCEPT __invoke_constructible = _CCCL_FRAGMENT(__invoke_constructible_, _Fun, _Args...);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_INVOCABLE_H

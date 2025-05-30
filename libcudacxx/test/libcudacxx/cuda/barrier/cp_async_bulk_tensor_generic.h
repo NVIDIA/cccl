@@ -24,9 +24,9 @@ namespace ptx = cuda::ptx;
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
 #if !TEST_COMPILER(NVRTC)
-#  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
-
 #  include <cstdio>
+
+#  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
 #endif // ! TEST_COMPILER(NVRTC)
 
 // Suppress warning about barrier in shared memory

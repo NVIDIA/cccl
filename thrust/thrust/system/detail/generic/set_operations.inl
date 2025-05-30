@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
 
   zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
-  thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
+  thrust::detail::compare_first<StrictWeakOrdering> comp_first{comp};
 
   iterator_tuple3 result =
     thrust::set_difference(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
@@ -214,7 +214,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
 
   zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
-  thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
+  thrust::detail::compare_first<StrictWeakOrdering> comp_first{comp};
 
   iterator_tuple3 result =
     thrust::set_intersection(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
@@ -304,7 +304,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
 
   zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
-  thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
+  thrust::detail::compare_first<StrictWeakOrdering> comp_first{comp};
 
   iterator_tuple3 result =
     thrust::set_symmetric_difference(
@@ -395,7 +395,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
 
   zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
-  thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
+  thrust::detail::compare_first<StrictWeakOrdering> comp_first{comp};
 
   iterator_tuple3 result =
     thrust::set_union(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)

@@ -20,6 +20,9 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  producer_id:
+    description: "The producer job's ID, if downloading a wheelhouse from a producer."
+    required: false
 
 runs:
   using: "composite"
@@ -28,23 +31,25 @@ runs:
       shell: sh
       run: |
         # Install script dependencies
-        sudo apt update
-        sudo apt install -y --no-install-recommends tree git
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        path: ${{github.event.repository.name}}
-        persist-credentials: false
+        alias retry="${{github.workspace}}/ci/util/retry.sh 5 30"
+        retry sudo apt update
+        retry sudo apt install -y --no-install-recommends tree git
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
+        echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
     - name: Get AWS credentials for sccache bucket
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
+    - name: Download wheelhouse artifact if it exists
+      uses: actions/download-artifact@v4
+      with:
+        name: wheelhouse-${{ inputs.producer_id || inputs.id }}
+        path: wheelhouse/
+      continue-on-error: true
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
@@ -58,7 +63,7 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        mkdir artifacts
+        mkdir -p artifacts
 
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
@@ -102,7 +107,7 @@ runs:
         chmod +x ci.sh
 
         # The devcontainer will mount this path to the home directory:
-        readonly aws_dir="${{github.event.repository.name}}/.aws"
+        readonly aws_dir="${{github.workspace}}/.aws"
         mkdir "${aws_dir}";
 
         cat <<EOF > "${aws_dir}/config"
@@ -135,7 +140,7 @@ runs:
 
         # Launch this container using the host's docker daemon
         set -x
-        ${{github.event.repository.name}}/.devcontainer/launch.sh \
+        ${{github.workspace}}/.devcontainer/launch.sh \
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
@@ -154,6 +159,8 @@ runs:
           --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+          --env "HOST_WORKSPACE=${{github.workspace}}" \
+          --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
           -- /ci.sh
@@ -181,4 +188,12 @@ runs:
       with:
         name: jobs-${{inputs.id}}
         path: jobs
+        compression-level: 0
+
+    - name: Upload wheelhouse
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheelhouse-${{inputs.id}}
+        path: wheelhouse/
         compression-level: 0

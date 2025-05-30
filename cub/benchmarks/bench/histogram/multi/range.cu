@@ -27,8 +27,9 @@
 
 #include <thrust/sequence.h>
 
-#include "../histogram_common.cuh"
 #include <nvbench_helper.cuh>
+
+#include "../histogram_common.cuh"
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32

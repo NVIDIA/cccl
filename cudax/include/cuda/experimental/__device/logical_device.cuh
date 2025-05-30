@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,6 +23,8 @@
 
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__green_context/green_ctx.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -100,7 +102,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the same logical device
-  _CCCL_NODISCARD_FRIEND bool operator==(logical_device __lhs, logical_device __rhs) noexcept
+  [[nodiscard]] friend bool operator==(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx == __rhs.__ctx;
   }
@@ -111,7 +113,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the different logical device
-  _CCCL_NODISCARD_FRIEND bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
+  [[nodiscard]] friend bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx != __rhs.__ctx;
   }
@@ -140,5 +142,7 @@ struct __logical_device_access
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE_REF
