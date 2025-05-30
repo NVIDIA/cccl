@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/internal_functional.h>
 #include <thrust/for_each.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/transform.h>

@@ -55,9 +55,6 @@ class zip_iterator;
 
 namespace detail
 {
-template <typename... Ts>
-using minimum_category = minimum_type<Ts...>;
-
 template <typename IteratorTuple>
 struct make_zip_iterator_base
 {
@@ -84,15 +81,10 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
 
   // Iterator system is the minimum system tag in the iterator tuple
-  using system = ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_system_t<Its>...>,
-                                               any_system_tag,
-                                               ::cuda::std::__type_quote_trait<minimum_system>>;
+  using system = minimum_system_t<iterator_system_t<Its>...>;
 
   // Traversal category is the minimum traversal category in the iterator tuple
-  using traversal_category =
-    ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_traversal_t<Its>...>,
-                                  random_access_traversal_tag,
-                                  ::cuda::std::__type_quote_trait<minimum_category>>;
+  using traversal_category = minimum_type<iterator_traversal_t<Its>...>;
 
   // The iterator facade type from which the zip iterator will be derived.
   using type =
