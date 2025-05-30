@@ -26,14 +26,6 @@ TEST_CASE("discard_iterator", "[iterators]")
   }
 }
 
-struct plus_one
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr int operator()(const int val) const noexcept
-  {
-    return val + 1;
-  }
-};
-
 TEST_CASE("counting_iterator", "[iterators]")
 {
   { // device system
@@ -51,6 +43,33 @@ TEST_CASE("counting_iterator", "[iterators]")
     thrust::copy(cuda::counting_iterator{0}, cuda::counting_iterator{4}, vec.begin());
   }
 }
+
+TEST_CASE("strided_iterator", "[iterators]")
+{
+  auto discard = cuda::discard_iterator{};
+  { // device system
+    thrust::device_vector<int> vec{1, 2, 3, 4, 5, 6};
+    thrust::copy(cuda::strided_iterator{vec.begin(), 2}, cuda::strided_iterator{vec.end(), 2}, discard);
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{1, 2, 3, 4, 5, 6};
+    thrust::copy(cuda::strided_iterator{vec.begin(), 2}, cuda::strided_iterator{vec.end(), 2}, discard);
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{1, 2, 3, 4, 5, 6};
+    thrust::copy(cuda::strided_iterator{vec.begin(), 2}, cuda::strided_iterator{vec.end(), 2}, discard);
+  }
+}
+
+struct plus_one
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr int operator()(const int val) const noexcept
+  {
+    return val + 1;
+  }
+};
 
 TEST_CASE("transform_iterator", "[iterators]")
 {

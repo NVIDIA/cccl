@@ -57,11 +57,11 @@ _CCCL_CONCEPT __integer_like_with_usable_difference_type =
 template <class _Tp>
 using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp, semiregular _Bound = unreachable_sentinel_t>
   requires(is_object_v<_Tp> && same_as<_Tp, remove_cv_t<_Tp>>
            && (__integer_like_with_usable_difference_type<_Bound> || same_as<_Bound, unreachable_sentinel_t>) )
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <
   class _Tp,
   class _Bound                                                         = unreachable_sentinel_t,
@@ -69,7 +69,7 @@ template <
   enable_if_t<semiregular<_Bound>, int>                                = 0,
   enable_if_t<is_object_v<_Tp> && same_as<_Tp, remove_cv_t<_Tp>>, int> = 0,
   enable_if_t<(__integer_like_with_usable_difference_type<_Bound> || same_as<_Bound, unreachable_sentinel_t>), int> = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class repeat_view : public view_interface<repeat_view<_Tp, _Bound>>
 {
 public:
@@ -222,15 +222,15 @@ public:
     _IndexT __current_  = _IndexT();
   };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI repeat_view()
     requires default_initializable<_Tp>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(default_initializable<_Tp2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr repeat_view() noexcept(is_nothrow_default_constructible_v<_Tp2>) {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!same_as<_Tp2, repeat_view>) _CCCL_AND copy_constructible<_Tp2>)
