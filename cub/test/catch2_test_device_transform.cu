@@ -183,7 +183,7 @@ using overaligned_types =
   c2h::type_list<overaligned_addable_t<32>
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
                  ,
-                 overaligned_addable_t<256>
+                 overaligned_addable_t<128>
 #endif // !_CCCL_COMPILER(MSVC)
                  >;
 
