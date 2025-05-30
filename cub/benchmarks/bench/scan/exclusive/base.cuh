@@ -25,6 +25,8 @@
  *
  ******************************************************************************/
 
+#pragma once
+
 #include <cub/device/device_scan.cuh>
 
 #include <cuda/std/__functional/invoke.h>

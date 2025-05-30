@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_STOP_TOKEN
-#define __CUDAX_ASYNC_DETAIL_STOP_TOKEN
+#ifndef __CUDAX_EXECUTION_STOP_TOKEN
+#define __CUDAX_EXECUTION_STOP_TOKEN
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__thread/threading_support.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
 
@@ -108,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT never_stop_token
 private:
   struct __callback_type
   {
-    _CCCL_API explicit __callback_type(never_stop_token, __ignore) noexcept {}
+    _CCCL_API explicit __callback_type(never_stop_token, _CUDA_VSTD::__ignore_t) noexcept {}
   };
 
 public:
@@ -253,7 +254,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback : __stok::__inplace_st
 public:
   template <class _Fun2>
   _CCCL_API explicit inplace_stop_callback(inplace_stop_token __token,
-                                           _Fun2&& __fun) noexcept(_CUDA_VSTD::is_nothrow_constructible_v<_Fun, _Fun2>)
+                                           _Fun2&& __fun) noexcept(__nothrow_constructible<_Fun, _Fun2>)
       : __stok::__inplace_stop_callback_base(__token.__source_, &inplace_stop_callback::__execute_impl)
       , __fun(static_cast<_Fun2&&>(__fun))
   {
@@ -476,4 +477,4 @@ using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callba
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_STOP_TOKEN

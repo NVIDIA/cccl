@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_
+#ifndef _CUDA___MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_
+#define _CUDA___MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_
 
 #include <cuda/std/detail/__config>
 
@@ -57,7 +57,7 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
   _CUDA_VSTD::uint32_t __allowed_completions,
   _CUDA_VSTD::uint64_t* __bar_handle)
 {
-  __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
+  ::cuda::__cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
   return __completion_mechanism::__sync;
 }
 
@@ -78,9 +78,9 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
      _CCCL_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
                   "Pass non-null bar_handle if and only if can_use_complete_tx.");
      if constexpr (_Align >= 16) {
-       if (__can_use_complete_tx && __isShared(__bar_handle))
+       if (__can_use_complete_tx && ::__isShared(__bar_handle))
        {
-         __cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
+         ::cuda::__cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
          return __completion_mechanism::__mbarrier_complete_tx;
        }
      }
@@ -94,14 +94,14 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
       const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
       if (__can_use_async_group)
       {
-        __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
+        ::cuda::__cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
         return __completion_mechanism::__async_group;
       }
     }
      // Fallthrough..
      ));
 
-  __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
+  ::cuda::__cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
   return __completion_mechanism::__sync;
 }
 
@@ -127,11 +127,11 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
       // 2) make sure none of the code paths can reach each other by "falling through".
       //
       // See nvbug 4074679 and also PR #478.
-      if (__isGlobal(__src_char) && __isShared(__dest_char)) {
-        return __dispatch_memcpy_async_global_to_shared<_Align>(
+      if (::__isGlobal(__src_char) && ::__isShared(__dest_char)) {
+        return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
       } else {
-        return __dispatch_memcpy_async_any_to_any<_Align>(
+        return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
       }),
     (
@@ -151,11 +151,12 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
 {
   _CCCL_ASSERT(!(__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)),
                "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
-  return __dispatch_memcpy_async<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, nullptr);
+  return ::cuda::__dispatch_memcpy_async<_Align>(
+    __group, __dest_char, __src_char, __size, __allowed_completions, nullptr);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_
+#endif // _CUDA___MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_

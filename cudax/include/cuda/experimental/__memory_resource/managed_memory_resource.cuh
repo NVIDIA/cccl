@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -173,6 +173,8 @@ public:
     return __alignment <= _CUDA_VMR::default_cuda_malloc_alignment
         && (_CUDA_VMR::default_cuda_malloc_alignment % __alignment == 0);
   }
+
+  using default_queries = properties_list<device_accessible, host_accessible>;
 };
 static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, device_accessible>, "");
 static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, host_accessible>, "");

@@ -40,7 +40,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [incrementable.traits]
 template <class>
@@ -86,7 +86,7 @@ template <class _Ip>
 using iter_difference_t =
   typename __select_traits<remove_cvref_t<_Ip>, incrementable_traits<remove_cvref_t<_Ip>>>::difference_type;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [incrementable.traits]
 template <class, class = void>
@@ -143,7 +143,7 @@ template <class _Ip>
 using iter_difference_t =
   typename __select_traits<remove_cvref_t<_Ip>, incrementable_traits<remove_cvref_t<_Ip>>>::difference_type;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

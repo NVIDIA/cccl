@@ -69,7 +69,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   // compute {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> predicates(exec, n);
   thrust::transform(
-    exec, stencil, stencil + n, predicates.begin(), thrust::detail::predicate_to_integral<Predicate, IndexType>(pred));
+    exec, stencil, stencil + n, predicates.begin(), thrust::detail::predicate_to_integral<Predicate, IndexType>{pred});
 
   // scan {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> scatter_indices(exec, n);

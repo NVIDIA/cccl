@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -638,6 +639,23 @@ using async_device_buffer = async_buffer<_Tp, _CUDA_VMR::device_accessible>;
 template <class _Tp>
 using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
+template <class _Tp, class _PropsList>
+using __buffer_type_for_props = typename _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
+
+template <typename _BufferTo, typename _BufferFrom>
+void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+{
+  __stream.wait(__from.get_stream());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "make_async_buffer: failed to copy data",
+    __to.__unwrapped_begin(),
+    __from.__unwrapped_begin(),
+    sizeof(typename _BufferTo::value_type) * __from.size(),
+    cudaMemcpyKind::cudaMemcpyDefault,
+    __stream.get());
+}
+
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   stream_ref __stream,
@@ -647,17 +665,20 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), no_init};
 
-  // We need some opt-out for the wait here, but I don't know how yet
-  __stream.wait(__source.get_stream());
+  __copy_cross_buffers(__stream, __res, __source);
 
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemcpyAsync,
-    "cudax::async_buffer::__copy_cross: failed to copy data",
-    __res.__unwrapped_begin(),
-    __source.__unwrapped_begin(),
-    sizeof(_Tp) * __source.size(),
-    cudaMemcpyKind::cudaMemcpyDefault,
-    __stream.get());
+  return __res;
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  auto __res = __buffer_type{__env, __source.size(), uninit};
+
+  __copy_cross_buffers(__stream, __res, __source);
 
   return __res;
 }

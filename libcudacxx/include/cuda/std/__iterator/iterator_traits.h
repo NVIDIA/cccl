@@ -78,7 +78,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -95,7 +95,7 @@ concept __dereferenceable = requires(_Tp& __t) {
 template <__dereferenceable _Tp>
 using iter_reference_t = decltype(*declval<_Tp&>());
 
-#else // ^^^ _CCCL_NO_CONCEPTS ^^^ // vvv !_CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ // vvv _CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -119,7 +119,7 @@ _CCCL_CONCEPT __dereferenceable = _CCCL_FRAGMENT(__dereferenceable_, _Tp);
 template <class _Tp>
 using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_Tp&>())>;
 
-#endif // !_CCCL_NO_CONCEPTS
+#endif // _CCCL_HAS_CONCEPTS()
 
 #if _CCCL_COMPILER(NVRTC)
 
@@ -266,7 +266,7 @@ public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
 };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -520,7 +520,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __cccl_primary_template = iterator_traits;
 };
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -810,12 +810,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __cccl_primary_template = iterator_traits;
 };
 
-#endif // !_CCCL_NO_CONCEPTS
+#endif // _CCCL_HAS_CONCEPTS()
 
 template <class _Tp>
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   requires is_object_v<_Tp>
-#endif // !_CCCL_NO_CONCEPTS
+#endif // _CCCL_HAS_CONCEPTS()
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
 {
   using difference_type   = ptrdiff_t;

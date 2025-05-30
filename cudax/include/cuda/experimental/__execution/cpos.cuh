@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CPOS
-#define __CUDAX_ASYNC_DETAIL_CPOS
+#ifndef __CUDAX_EXECUTION_CPOS
+#define __CUDAX_EXECUTION_CPOS
 
 #include <cuda/std/detail/__config>
 
@@ -107,7 +107,7 @@ struct start_t
 struct connect_t
 {
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Sndr, class _Rcvr, class _Domain = domain_for_t<_Sndr, env_of_t<_Rcvr>>>
+  template <class _Sndr, class _Rcvr, class _Domain = __late_domain_of_t<_Sndr, env_of_t<_Rcvr>>>
   _CCCL_TRIVIAL_API static constexpr auto __do_transform(_Sndr&& __sndr, _Rcvr __rcvr) noexcept(
     noexcept(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr)))) -> decltype(auto)
   {
@@ -163,4 +163,4 @@ inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(),
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CPOS

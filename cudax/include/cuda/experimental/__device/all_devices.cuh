@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,7 +33,7 @@
 
 namespace cuda::experimental
 {
-namespace detail
+namespace __detail
 {
 //! @brief A random-access range of all available CUDA devices
 class all_devices
@@ -157,7 +157,7 @@ inline const ::std::vector<device>& all_devices::__devices()
   }();
   return __devices;
 }
-} // namespace detail
+} // namespace __detail
 
 //! @brief A range of all available CUDA devices
 //!
@@ -196,7 +196,7 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! @sa
 //! * device
 //! * device_ref
-inline constexpr detail::all_devices devices{};
+inline constexpr __detail::all_devices devices{};
 
 inline const arch_traits_t& device_ref::get_arch_traits() const
 {

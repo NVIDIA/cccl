@@ -46,7 +46,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Iter, class = void>
 struct __move_iter_category_base
 {};
@@ -68,7 +68,7 @@ concept __move_iter_comparable = requires {
 
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
 {};
@@ -92,7 +92,7 @@ _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _
 
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
@@ -151,18 +151,18 @@ public:
     return __current_;
   }
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
     requires is_constructible_v<_Iter>
       : __current_()
   {}
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _It2 = _Iter)
   _CCCL_REQUIRES(is_constructible_v<_It2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
       : __current_()
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!_IsSame<_Up, _Iter>::value) && convertible_to<const _Up&, _Iter>)
@@ -369,7 +369,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator-(const move_iterator<_Iter1>& 
   return __x.base() - __y.base();
 }
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter>
 operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
@@ -379,14 +379,14 @@ operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
 {
   return __x + __n;
 }
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter>
 operator+(typename move_iterator<_Iter>::difference_type __n, const move_iterator<_Iter>& __x)
 {
   return move_iterator<_Iter>(__x.base() + __n);
 }
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter> make_move_iterator(_Iter __i)
