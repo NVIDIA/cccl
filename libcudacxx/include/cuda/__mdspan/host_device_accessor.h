@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -240,12 +241,12 @@ class __device_accessor : public _Accessor
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static constexpr bool
   __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
   {
-    bool __is_grid_constant  = false;
-    bool __is_cluster_shared = false;
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (__is_grid_constant = ::__isGridConstant(__p);))
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__is_cluster_shared = ::__isClusterShared(__p);))
-    return ::__isGlobal(__p) || ::__isShared(__p) || ::__isConstant(__p) || ::__isLocal(__p) || __is_grid_constant
-        || __is_cluster_shared;
+    return _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::constant, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::local, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::grid_constant, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::cluster_shared, __p);
   }
 
 #endif // _CCCL_DEVICE_COMPILATION()
