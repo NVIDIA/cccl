@@ -30,6 +30,7 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -175,12 +176,12 @@ struct __get_tag
   }
 };
 
-template <class _Sndr, class _Tag = decltype(visit(declval<__get_tag&>(), declval<_Sndr>(), declval<int&>()))>
-extern _Tag __tag_of_v;
+template <class _Sndr, class _Tag = __visit_result_t<__get_tag&, _Sndr, int&>>
+extern __fn_ptr_t<_Tag> __tag_of_v;
 } // namespace __detail
 
 template <class _Sndr>
-using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>);
+using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class _Tag>
 _CCCL_CONCEPT __sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
@@ -196,6 +197,9 @@ extern __fn_t<set_error_t>* __set_tag<__error, _Void>;
 template <class _Void>
 extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
 } // namespace __detail
+
+_CCCL_GLOBAL_CONSTANT auto __default_config =
+  experimental::make_config(experimental::make_hierarchy(block_dims<1>, grid_dims<1>));
 } // namespace execution
 } // namespace cuda::experimental
 

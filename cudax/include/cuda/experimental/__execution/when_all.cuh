@@ -282,7 +282,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     inplace_stop_token __stop_token_;
     _CUDA_VSTD::atomic<_CUDA_VSTD::underlying_type_t<__estate_t>> __state_;
     __errors_t __errors_;
-    // _CCCL_NO_UNIQUE_ADDRESS // gcc doesn't like this
     __values_t __values_;
     __lazy<__stop_callback_t> __on_stop_;
   };

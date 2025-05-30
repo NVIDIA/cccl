@@ -85,7 +85,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __task
   {
     __atomic_intrusive_queue<&__task::__next_>* __queue_;
-    _CCCL_NO_UNIQUE_ADDRESS _Rcvr __rcvr_;
+    _Rcvr __rcvr_;
 
     _CCCL_API static void __execute_impl(__task* __p) noexcept
     {

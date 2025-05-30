@@ -264,7 +264,7 @@ private:
   }
 
   using __launch_config_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<get_launch_config_t, env_of_t<_CvSndr>>;
-  _CCCL_NO_UNIQUE_ADDRESS __launch_config_t __launch_config_{};
+  __launch_config_t __launch_config_{};
   __variant<__state_t, _CUDA_VSTD::unique_ptr<__managed_box<__state_t>>> __state_{};
 };
 

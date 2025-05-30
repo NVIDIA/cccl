@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/experimental/__execution/visit.cuh"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -67,7 +69,7 @@ struct stream_domain::__apply_t<continues_on_t>
     connect_result_t<_CvSndr, __rcvr_ref_t<_Rcvr>> __opstate_;
   };
 
-  struct __sync_sndr_t
+  struct __tag_t
   {};
 
   template <class _Sndr>
@@ -98,7 +100,7 @@ struct stream_domain::__apply_t<continues_on_t>
       return __opstate_t<const _Sndr&, _Rcvr>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __stream_};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS __sync_sndr_t __tag_;
+    _CCCL_NO_UNIQUE_ADDRESS __tag_t __tag_;
     stream_ref __stream_;
     _Sndr __sndr_;
   };
@@ -117,6 +119,9 @@ struct stream_domain::__apply_t<continues_on_t>
     return execution::schedule_from(__sched, __sndr_t<__thunk_t>{{}, __stream, static_cast<__thunk_t&&>(__thunk)});
   }
 };
+
+template <class _Sndr>
+inline constexpr size_t structured_binding_size<stream_domain::__apply_t<continues_on_t>::__sndr_t<_Sndr>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
