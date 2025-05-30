@@ -8,6 +8,36 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - jobs: ['build'] # ['test_gpu']
+      project: 'thrust'
+      std: 'max'
+      cxx: ['gcc', 'clang']
+      gpu: 'l4'
+      cmake_options:
+        - '-DCMAKE_CUDA_FLAGS="-Ofc 0"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc min"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc mid"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc max"'
+    - jobs: ['build'] # ['test_nolid', 'test_lid0']
+      project: 'cub'
+      std: 'max'
+      cxx: ['gcc', 'clang']
+      gpu: 'l4'
+      cmake_options:
+        - '-DCMAKE_CUDA_FLAGS="-Ofc 0"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc min"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc mid"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc max"'
+    - jobs: ['build'] # ['test']
+      project: 'libcudacxx'
+      std: 'max'
+      cxx: ['gcc', 'clang']
+      gpu: 'l4'
+      cmake_options:
+        - '-DCMAKE_CUDA_FLAGS="-Ofc 0"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc min"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc mid"'
+        - '-DCMAKE_CUDA_FLAGS="-Ofc max"'
 
   pull_request:
     # Old CTK/compiler
