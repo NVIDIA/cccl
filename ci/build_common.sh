@@ -6,9 +6,9 @@ set -eo pipefail
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # DO NOT COMMIT: temporarily disable sccache for testing:
-unset CMAKE_C_COMPILER_LAUNCHER || :
-unset CMAKE_CXX_COMPILER_LAUNCHER || :
-unset CMAKE_CUDA_COMPILER_LAUNCHER || :
+# unset CMAKE_C_COMPILER_LAUNCHER || :
+# unset CMAKE_CXX_COMPILER_LAUNCHER || :
+# unset CMAKE_CUDA_COMPILER_LAUNCHER || :
 
 # Script defaults
 VERBOSE=${VERBOSE:-}

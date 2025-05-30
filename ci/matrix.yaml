@@ -8,7 +8,7 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - jobs: ['build'] # ['test_gpu']
+    - jobs: ['test_gpu']
       project: 'thrust'
       std: 'max'
       cxx: ['gcc', 'clang']
@@ -18,7 +18,7 @@ workflows:
         - '-DCMAKE_CUDA_FLAGS="-Ofc min"'
         - '-DCMAKE_CUDA_FLAGS="-Ofc mid"'
         - '-DCMAKE_CUDA_FLAGS="-Ofc max"'
-    - jobs: ['build'] # ['test_nolid', 'test_lid0']
+    - jobs: ['test_nolid', 'test_lid0']
       project: 'cub'
       std: 'max'
       cxx: ['gcc', 'clang']
@@ -28,7 +28,7 @@ workflows:
         - '-DCMAKE_CUDA_FLAGS="-Ofc min"'
         - '-DCMAKE_CUDA_FLAGS="-Ofc mid"'
         - '-DCMAKE_CUDA_FLAGS="-Ofc max"'
-    - jobs: ['build'] # ['test']
+    - jobs: ['test']
       project: 'libcudacxx'
       std: 'max'
       cxx: ['gcc', 'clang']
