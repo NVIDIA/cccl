@@ -1,0 +1,106 @@
+name: "Upload Artifacts"
+description: "Upload a small, arbitrary number of artifacts."
+
+# Github actions don't really provide a lot of flexibility for uploading artifacts,
+# so this is a workaround. It only works for a limited number of artifacts.
+
+inputs:
+  artifacts:
+    description: "JSCN array of {name: '...', path: '...'} objects to upload as artifacts."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Parse artifact array
+      id: parse
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        jq -r '.' <<< '${{ inputs.artifacts }}' > artifacts.json
+
+        max_artifacts=10
+
+        # Error if there are more than 10 artifacts:
+        count=$(jq '. | length' artifacts.json)
+        if [ "$count" -gt "$max_artifacts" ]; then
+          echo "Error: Too many artifacts to upload. Maximum is $max_artifacts, got $count."
+          echo "Update the action to support more artifacts if needed."
+          exit 1
+        fi
+
+        for i in $(seq 0 $((count - 1))); do
+          name=$(jq -r ".[$i].name" artifacts.json)
+          path=$(jq -r ".[$i].path" artifacts.json)
+
+          echo "Artifact $i: name='$name', path='$path'"
+          echo "enabled$i=true" >> "${GITHUB_OUTPUT}"
+          echo "name$i=$name"   >> "${GITHUB_OUTPUT}"
+          echo "path$i=$path"   >> "${GITHUB_OUTPUT}"
+        done
+
+        for i in $(seq $((count)) $((max_artifacts - 1))); do
+          echo "enabled$i=false" >> "${GITHUB_OUTPUT}"
+          echo "name$i="         >> "${GITHUB_OUTPUT}"
+          echo "path$i="         >> "${GITHUB_OUTPUT}"
+        done
+
+    - name: Upload artifact 0
+      if: ${{ steps.parse.outputs.enabled0 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name0 }}
+        path: ${{ steps.parse.outputs.path0 }}
+    - name: Upload artifact 1
+      if: ${{ steps.parse.outputs.enabled1 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name1 }}
+        path: ${{ steps.parse.outputs.path1 }}
+    - name: Upload artifact 2
+      if: ${{ steps.parse.outputs.enabled2 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name2 }}
+        path: ${{ steps.parse.outputs.path2 }}
+    - name: Upload artifact 3
+      if: ${{ steps.parse.outputs.enabled3 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name3 }}
+        path: ${{ steps.parse.outputs.path3 }}
+    - name: Upload artifact 4
+      if: ${{ steps.parse.outputs.enabled4 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name4 }}
+        path: ${{ steps.parse.outputs.path4 }}
+    - name: Upload artifact 5
+      if: ${{ steps.parse.outputs.enabled5 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name5 }}
+        path: ${{ steps.parse.outputs.path5 }}
+    - name: Upload artifact 6
+      if: ${{ steps.parse.outputs.enabled6 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name6 }}
+        path: ${{ steps.parse.outputs.path6 }}
+    - name: Upload artifact 7
+      if: ${{ steps.parse.outputs.enabled7 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name7 }}
+        path: ${{ steps.parse.outputs.path7 }}
+    - name: Upload artifact 8
+      if: ${{ steps.parse.outputs.enabled8 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name8 }}
+        path: ${{ steps.parse.outputs.path8 }}
+    - name: Upload artifact 9
+      if: ${{ steps.parse.outputs.enabled9 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name9 }}
+        path: ${{ steps.parse.outputs.path9 }}

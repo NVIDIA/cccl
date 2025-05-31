@@ -14,12 +14,14 @@ inputs:
   runner:
     description: "The GHA runs-on value."
     required: true
+  # TODO: Just parse cuda / host from the image name, or use image name directly in launch.sh?
   cuda:
     description: "The CUDA version to use when selecting a devcontainer."
     required: true
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+    # TODO Refactor
   producer_id:
     description: "The producer job's ID, if downloading a wheelhouse from a producer."
     required: false
@@ -27,6 +29,7 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # TODO move these to the devcontainer builds:
     - name: Install dependencies
       shell: sh
       run: |
@@ -44,15 +47,18 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-    - name: Download wheelhouse artifact if it exists
-      uses: actions/download-artifact@v4
-      with:
-        name: wheelhouse-${{ inputs.producer_id || inputs.id }}
-        path: wheelhouse/
-      continue-on-error: true
+    # TODO refactor:
+    # - name: Download wheelhouse artifact if it exists
+      # uses: actions/download-artifact@v4
+      # with:
+        # name: wheelhouse-${{ inputs.producer_id || inputs.id }}
+        # path: wheelhouse/
+      # continue-on-error: true
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+      id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        GH_TOKEN: ${{ github.token }}
         CI: true
         RUNNER: "${{inputs.runner}}"
         IMAGE: "${{inputs.image}}"
@@ -63,15 +69,15 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        mkdir -p artifacts
-
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
         set -euo pipefail
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
+
         eval "${COMMAND}"
         exit_code=$?
+
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
@@ -87,22 +93,34 @@ runs:
           exit $exit_code
         fi
 
-        # Copy any artifacts we want to preserve out of the container:
-        results_dir=/artifacts
+        # Collect workflow-related artifacts:
+        source ci/util/artifacts/common.sh
+        jobs_artifact_dir="${ARTIFACT_UPLOAD_STAGE}/jobs"
+        job_artifacts="${jobs_artifact_dir}/${{inputs.id}}"
+        mkdir -p "${job_artifacts}"
+        touch "${job_artifacts}/success"
 
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
+        # Finds a matching file in the root and copies it to the artifact directory.
+        find_and_copy_job_artifact_from() {
           filename="$1"
-          filepath="$(find . -name "${filename}" -print -quit)"
+          root="$2"
+          filepath="$(find "${root}" -name "${filename}" -print -quit)"
           if [[ -z "$filepath" ]]; then
             echo "${filename} does not exist in repo directory."
-            return 1
+            return
           fi
-          cp -v "$filepath" "$results_dir"
+          cp -v "$filepath" "${job_artifacts}/"
         }
 
-        find_and_copy "sccache_stats.json" || :
+        find_and_copy_job_artifact_from "sccache_stats.json" build/
+
+        echo "job artifacts: ${job_artifacts}"
+        tree "${job_artifacts}"
+        ci/util/artifacts/upload/register.sh jobs-${{inputa.id}} "${jobs_artifact_dir}"
         EOF
+
+        # Initialize artifact paths, vars:
+        source ${{github.workspace}}/ci/util/artifacts/common.sh
 
         chmod +x ci.sh
 
@@ -156,44 +174,52 @@ runs:
           --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
           --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
           --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+          --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
           --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+          --env "GH_TOKEN=${{ github.token }}" \
           --env "HOST_WORKSPACE=${{github.workspace}}" \
           --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
-          --volume "${{github.workspace}}/artifacts:/artifacts" \
+          --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
           -- /ci.sh
 
-    - name: Prepare job artifacts
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        echo "Prepare job artifacts"
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
+        set +x
 
-        touch "$result_dir/success"
+        ${{github.workspace}}/ci/util/artifacts/upload/print_matrix.sh >> "${GITHUB_OUTPUT}"
 
-        artifacts_exist="$(ls -A artifacts)"
-        if [ "$artifacts_exist" ]; then
-          cp -rv artifacts/* "$result_dir"
-        fi
 
-        echo "::group::Job artifacts"
-        tree "$result_dir"
-        echo "::endgroup::"
+#    - name: Prepare job artifacts
+#      shell: bash --noprofile --norc -euo pipefail {0}
+#      run: |
+#        # TODO refactor this:
+#        echo "Prepare job artifacts"
+#        result_dir="jobs/${{inputs.id}}"
+#        mkdir -p "$result_dir"
+#
+#        touch "$result_dir/success"
+#
+#        legacy_dir=${ARTIFACT_ARCHIVES}/legacy/
+#        artifacts_exist="$(ls -A ${LEGACY_DIR} 2>/dev/null || true)"
+#        if [ "$artifacts_exist" ]; then
+#          cp -rv ${legacy_dir}/* "$result_dir"
+#        fi
+#
+#        echo "::group::Job artifacts"
+#        tree "$result_dir"
+#        echo "::endgroup::"
 
     - name: Upload job artifacts
-      uses: actions/upload-artifact@v4
+      if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
+      uses: ./.github/actions/upload-artifacts
       with:
-        name: jobs-${{inputs.id}}
-        path: jobs
-        compression-level: 0
+        artifacts: ${{ steps.run.outputs.ARTIFACTS }}
 
-    - name: Upload wheelhouse
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: wheelhouse-${{inputs.id}}
-        path: wheelhouse/
-        compression-level: 0
+    # - name: Upload wheelhouse
+      # if: always()
+      # uses: actions/upload-artifact@v4
+      # with:
+        # name: wheelhouse-${{inputs.id}}
+        # path: wheelhouse/
+        # compression-level: 0
