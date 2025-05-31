@@ -22,4 +22,5 @@ Extended API
    extended_api/math
    extended_api/mdspan
    extended_api/warp
+   extended_api/utility
    extended_api/work_stealing
