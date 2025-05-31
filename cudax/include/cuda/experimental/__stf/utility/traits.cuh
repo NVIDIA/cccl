@@ -92,7 +92,6 @@ constexpr ::std::string_view type_name_impl()
  *
  * @tparam T The type to show.
  *
- * @paragraph example Example
  * @snippet unittest.h type_name
  */
 template <class T>
@@ -106,10 +105,9 @@ inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
  * @tparam Fun Type of mapping function to apply
  * @param t Object to convert, must support `std::apply`
  * @param f function to convert each element of the tuple, must take a single parameter
- * @return constexpr auto The tuple resulting from the mapping
+ * @return auto The tuple resulting from the mapping
  *
- * @paragraph example Example
- * @snippet unittest.h tuple2tuple
+ * @snippet unittest.cuh tuple2tuple
  */
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
@@ -340,7 +338,7 @@ T only_convertible(P0&& p0, [[maybe_unused]] P&&... p)
  * @tparam T The target type to which the elements of the parameter pack should be convertible.
  * @tparam P Variadic template representing the types in the parameter pack.
  * @param p The parameter pack containing elements to be checked for convertibility and potentially added to the array.
- * @return `::std::array<T, N>` An array of type `T` containing all elements from the parameter pack that are
+ * @return `std::array<T, N>` An array of type `T` containing all elements from the parameter pack that are
  * convertible to `T`.
  *
  * @note The size of the returned array, `N`, is determined at compile time based on the number of convertible elements
@@ -387,7 +385,9 @@ auto all_convertible(P&&... p)
   return mv(result);
 }
 
-/*
+namespace reserved
+{
+/**
  * @brief Chooses a parameter from `P...` of a type convertible to `T`. If found, it is returned. If no such parameter
  * is found, returns `default_v`.
  *
@@ -412,8 +412,6 @@ T only_convertible_or([[maybe_unused]] T default_v, [[maybe_unused]] P&&... p)
   }
 }
 
-namespace reserved
-{
 /* Checks whether a collection of `DataTypes` objects can be unambiguously initialized (in some order)
  from a collection of `ArgTypes` objects. Not all objects must be initialized,
  e.g. `check_initialization<int, int*>(1)` passes. */
@@ -448,7 +446,7 @@ struct check_initialization
  *
  * @tparam ArgTypes The types to check the convertibility of.
  * @tparam DataTypes The types to check the convertibility to.
- * @param unused The data of the types to check the convertibility to.
+ * @param ... The data of the types to check the convertibility to.
  *
  * @note A static_assert error occurs if a type is not convertible to exactly one type.
  *
@@ -522,7 +520,7 @@ template <typename... DataTypes, typename... ArgTypes>
 ::std::tuple<DataTypes...> shuffled_tuple(ArgTypes... args)
 {
   reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
-  return ::std::tuple<DataTypes...>{only_convertible_or(DataTypes(), mv(args)...)...};
+  return ::std::tuple<DataTypes...>{reserved::only_convertible_or(DataTypes(), mv(args)...)...};
 }
 
 /**

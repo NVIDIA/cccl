@@ -35,12 +35,32 @@
 namespace cuda::experimental::stf
 {
 
+/**
+ * @brief Invokes the provided callable on the value of the given variant.
+ *
+ * This function applies the callable `f` to the current value stored in
+ * the `std::variant` object `v`. The callable is forwarded as an rvalue
+ * reference. This is applicable to both non-const and const variants.
+ *
+ * @tparam Ts... Types of the variant's possible stored types.
+ * @tparam F Type of the callable (function, lambda, or functor).
+ *
+ * @param v A `std::variant` object containing one of the types `Ts...`.
+ * @param f The callable to invoke on the value stored in the variant.
+ *
+ * @return The result of the callable invocation on the variant's value.
+ *
+ * @overload
+ */
 template <typename... Ts, typename F>
 decltype(auto) operator->*(::std::variant<Ts...>& v, F&& f)
 {
   return ::std::visit(::std::forward<F>(f), v);
 }
 
+/**
+ * @overload
+ */
 template <typename... Ts, typename F>
 decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
 {
