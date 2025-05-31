@@ -271,7 +271,7 @@ private:
 template <class _Sndr>
 struct __attrs_t
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(__detail::__get_domain_late_t) noexcept -> stream_domain
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_late_t) noexcept -> stream_domain
   {
     return {};
   }

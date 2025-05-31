@@ -101,7 +101,7 @@ struct __transfer_sndr_t
 
     // schedule_from and continues_on have special rules for the domain used to transform
     // the sender.
-    [[nodiscard]] _CCCL_API static constexpr auto query(__get_domain_late_t) noexcept -> __late_domain_t
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_late_t) noexcept -> __late_domain_t
     {
       return {};
     }

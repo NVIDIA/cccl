@@ -124,7 +124,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
       return {};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(__detail::__get_domain_late_t) noexcept -> stream_domain
+    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_late_t) noexcept -> stream_domain
     {
       return {};
     }

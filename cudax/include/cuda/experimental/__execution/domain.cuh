@@ -154,15 +154,24 @@ struct get_domain_t
   }
 };
 
-// Explicitly instantiate this because of variable template weirdness in device code
 _CCCL_GLOBAL_CONSTANT get_domain_t get_domain{};
+
+// Used by the schedule_from and continues_on senders
+struct get_domain_late_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
+    -> __query_result_t<_Env, get_domain_late_t>
+  {
+    return {};
+  }
+};
+
+_CCCL_GLOBAL_CONSTANT get_domain_late_t get_domain_late{};
 
 namespace __detail
 {
-// Used by the schedule_from and continues_on senders
-struct __get_domain_late_t
-{};
-
 template <class _Env, class _GetScheduler, class _Default>
 _CCCL_API auto __domain_of_fn(const _Env& __env, _GetScheduler, _Default) noexcept -> decltype(__query_or(
   __env, get_domain, __query_or(__query_or(__env, _GetScheduler{}, __nil{}), get_domain, _Default{})));
@@ -185,9 +194,9 @@ _CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
   // If the sender is a continues_on or schedule_from sender, we check with the sender for
   // its domain. If it does not provide one, we fall back to using the domain from the
   // receiver's environment.
-  if constexpr (__queryable_with<env_of_t<_Sndr>, __get_domain_late_t>)
+  if constexpr (__queryable_with<env_of_t<_Sndr>, get_domain_late_t>)
   {
-    using __late_domain_t _CCCL_NODEBUG_ALIAS = __query_result_t<env_of_t<_Sndr>, __get_domain_late_t>;
+    using __late_domain_t _CCCL_NODEBUG_ALIAS = __query_result_t<env_of_t<_Sndr>, get_domain_late_t>;
     return _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<__late_domain_t, __nil>, __env_domain_t, __late_domain_t>{};
   }
   else
