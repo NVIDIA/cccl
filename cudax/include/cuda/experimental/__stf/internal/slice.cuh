@@ -961,6 +961,34 @@ void unpin(mdspan<T, P...>& s)
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 
+/**
+ * @brief Computes a hash value for the contents of an mdspan.
+ *
+ * @details
+ * This function recursively hashes all elements of the provided mdspan using either
+ * `std::hash<E>` or a custom hash function, if available. The hash is computed by
+ * traversing the multidimensional array in a dimension-major order and combining the
+ * hash values of each element. If neither a standard nor custom hash is available for
+ * the element type, the function prints an error and aborts.
+ *
+ * The function supports both rank deduction and explicit index sequence specification.
+ * When called without an explicit index sequence, it generates one corresponding to the
+ * mdspan's rank.
+ *
+ * @tparam E Element type stored in the mdspan.
+ * @tparam X Extents type describing the shape of the mdspan.
+ * @tparam L Layout policy for the mdspan.
+ * @tparam A Accessor policy for the mdspan.
+ * @tparam i... Index sequence used for multidimensional traversal (automatically deduced).
+ *
+ * @param[in] s The mdspan whose contents will be hashed.
+ *
+ * @return The combined hash value of all elements in the mdspan.
+ *
+ * @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined.
+ *       If neither is available, the function will print an error and terminate the program.
+ * @note If the mdspan is empty, the function returns 0.
+ */
 template <typename E, typename X, typename L, typename A, size_t... i>
 size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i...> = ::std::index_sequence<>())
 {

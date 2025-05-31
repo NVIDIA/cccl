@@ -2258,12 +2258,15 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 }
 
 // Defined here to avoid circular dependencies
+// (also, don't document this because Doxygen doesn't know `decltype`)
+/// @cond NEVER_DOCUMENT
 template <class T>
 inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
 }
+/// \endcond
 
 // Defined here to avoid circular dependencies
 inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) const
@@ -2284,6 +2287,8 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   return instance_id_t::invalid;
 }
 
+// (also, don't document this because Doxygen doesn't know `decltype`)
+/// @cond NEVER_DOCUMENT
 template <typename T, typename logical_data_untyped>
 inline decltype(auto) task::get(size_t submitted_index) const
 {
@@ -2298,6 +2303,7 @@ inline decltype(auto) task::get(size_t submitted_index) const
   logical_data_untyped d    = pimpl->deps[reordered_id].get_data();
   return d.template instance<T>(instance_id);
 }
+/// \endcond
 
 /**
  * @brief Represents typed logical data.
@@ -2439,7 +2445,7 @@ public:
   ///@}
 };
 
-// Shortcut type for the logical data produced by ctx.token()
+/// @brief Shortcut type for the logical data produced by ctx.token()
 using token = logical_data<void_interface>;
 
 /**
