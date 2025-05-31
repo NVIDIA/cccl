@@ -27,14 +27,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <typename _SizeType, typename _Operator, auto... _Indices, typename... _TArgs>
+template <typename _SizeType, typename _Operator, _SizeType... _Indices, typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __static_for_impl(_Operator __op, _CUDA_VSTD::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept
 {
   (__op(_CUDA_VSTD::integral_constant<_SizeType, _Indices>{}, _CUDA_VSTD::forward<_TArgs>(__args)...), ...);
 }
 
-template <auto _Offset, auto _Step, typename _SizeType, auto... _Indices>
+template <typename _SizeType, _SizeType _Offset, _SizeType _Step, _SizeType... _Indices>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __offset_and_step(_CUDA_VSTD::integer_sequence<_SizeType, _Indices...>) noexcept
 {
   return _CUDA_VSTD::integer_sequence<_SizeType, (_Indices * _Step + _Offset)...>{};
@@ -54,7 +54,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... 
 {
   using __size_type    = decltype(_Start);
   using __seq_t        = _CUDA_VSTD::make_integer_sequence<__size_type, (_End - _Start) / _Step>;
-  constexpr auto __seq = ::cuda::__offset_and_step<_Start, _Step>(__seq_t{});
+  constexpr auto __seq = ::cuda::__offset_and_step<__size_type, _Start, _Step>(__seq_t{});
   return ::cuda::__static_for_impl<__size_type>(__op, __seq, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
