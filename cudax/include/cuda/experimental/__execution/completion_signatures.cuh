@@ -27,7 +27,9 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/tuple>
@@ -63,9 +65,35 @@ struct __partitioned_completions;
 template <class _Tag>
 struct __partitioned_fold_fn;
 
+template <>
+struct __partitioned_fold_fn<set_value_t>
+{
+  template <class... _ValueTuples, class _Errors, __stop_kind _StopKind, class _Values>
+  _CCCL_API auto operator()(__partitioned_completions<__type_list<_ValueTuples...>, _Errors, _StopKind>&,
+                            _CUDA_VSTD::__undefined<_Values>&) const
+    -> _CUDA_VSTD::__undefined<__partitioned_completions<__type_list<_ValueTuples..., _Values>, _Errors, _StopKind>>&;
+};
+
+template <>
+struct __partitioned_fold_fn<set_error_t>
+{
+  template <class _Values, class... _Errors, __stop_kind _StopKind, class _Error>
+  _CCCL_API auto operator()(__partitioned_completions<_Values, __type_list<_Errors...>, _StopKind>&,
+                            _CUDA_VSTD::__undefined<__type_list<_Error>>&) const
+    -> _CUDA_VSTD::__undefined<__partitioned_completions<_Values, __type_list<_Errors..., _Error>, _StopKind>>&;
+};
+
+template <>
+struct __partitioned_fold_fn<set_stopped_t>
+{
+  template <class _Values, class _Errors, __stop_kind _StopKind>
+  _CCCL_API auto operator()(__partitioned_completions<_Values, _Errors, _StopKind>&, _CUDA_VSTD::__ignore_t) const
+    -> _CUDA_VSTD::__undefined<__partitioned_completions<_Values, _Errors, __stop_kind::__stoppable>>&;
+};
+
 // The following overload of binary operator* is used to build up the cache of
 // completion signatures. We fold over operator*, accumulating the completion
-// signatures in the cache. `__undefined` is used here to prevent the
+// signatures in the cache. `_CUDA_VSTD::__undefined` is used here to prevent the
 // instantiation of the intermediate types.
 template <class _Partitioned, class _Tag, class... _Args>
 _CCCL_API auto operator*(_CUDA_VSTD::__undefined<_Partitioned>&, _Tag (*)(_Args...)) -> _CUDA_VSTD::
@@ -110,17 +138,20 @@ struct _IN_COMPLETION_SIGNATURES_APPLY;
 struct _IN_COMPLETION_SIGNATURES_TRANSFORM_REDUCE;
 struct _FUNCTION_IS_NOT_CALLABLE_WITH_THESE_SIGNATURES;
 
-template <class _Fn, class _Sig>
-using __completion_if _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::_If<_CUDA_VSTD::__is_callable_v<_Fn, _Sig*>, completion_signatures<_Sig>, completion_signatures<>>;
+template <class... _Sigs>
+struct __remove_sigs
+{
+  template <class _Sig>
+  _CCCL_API constexpr auto operator()(_Sig*) const noexcept -> bool
+  {
+    return !_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_Sigs...>, _Sig>;
+  }
+};
 
 template <class _Fn, class _Sig>
-_CCCL_API _CCCL_CONSTEVAL auto __filer_one(_Fn __fn, _Sig* __sig) -> __completion_if<_Fn, _Sig>
+_CCCL_API _CCCL_CONSTEVAL auto __filer_one() noexcept
+  -> _CUDA_VSTD::_If<_Fn{}(static_cast<_Sig*>(nullptr)), completion_signatures<_Sig>, completion_signatures<>>
 {
-  if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Sig*>)
-  {
-    __fn(__sig);
-  }
   return {};
 }
 
@@ -141,19 +172,25 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   using __partitioned _CCCL_NODEBUG_ALIAS = __partition_completion_signatures_t<_Sigs...>;
 
   template <class _Fn, class... _More>
-  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<_Fn, _Sigs..., _More...>;
+  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<_Fn, _More..., _Sigs...>;
 
   _CCCL_HIDE_FROM_ABI constexpr completion_signatures() = default;
 
+  [[nodiscard]]
+  _CCCL_API static _CCCL_CONSTEVAL auto size() noexcept -> size_t
+  {
+    return sizeof...(_Sigs);
+  }
+
   template <class _Tag>
   [[nodiscard]]
-  _CCCL_API _CCCL_CONSTEVAL auto count(_Tag) const noexcept -> size_t
+  _CCCL_API static _CCCL_CONSTEVAL auto count(_Tag) noexcept -> size_t
   {
-    if constexpr (_Tag() == set_value)
+    if constexpr (_Tag{} == set_value)
     {
       return __partitioned::__count_values::value;
     }
-    else if constexpr (_Tag() == set_error)
+    else if constexpr (_Tag{} == set_error)
     {
       return __partitioned::__count_errors::value;
     }
@@ -163,9 +200,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     }
   }
 
+  template <class _Sig>
+  [[nodiscard]]
+  _CCCL_API static _CCCL_CONSTEVAL auto contains(_Sig* = nullptr) noexcept -> bool
+  {
+    return _CUDA_VSTD::__is_included_in_v<_Sig, _Sigs...>;
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
-  _CCCL_API _CCCL_CONSTEVAL auto apply(_Fn __fn) const -> _CUDA_VSTD::__call_result_t<_Fn, _Sigs*...>
+  _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> _CUDA_VSTD::__call_result_t<_Fn, _Sigs*...>
   {
     return __fn(static_cast<_Sigs*>(nullptr)...);
   }
@@ -173,23 +217,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   [[nodiscard]]
-  _CCCL_API _CCCL_CONSTEVAL auto filter(_Fn __fn) const
-    -> __concat_completion_signatures_t<__completion_if<_Fn, _Sigs>...>
+  _CCCL_API static _CCCL_CONSTEVAL auto filter(_Fn)
   {
-    return concat_completion_signatures(execution::__filer_one(__fn, static_cast<_Sigs*>(nullptr))...);
+    static_assert(_CUDA_VSTD::is_empty_v<_Fn> && _CUDA_VSTD::is_trivially_constructible_v<_Fn>,
+                  "The filter function must be empty and trivially constructible.");
+    return concat_completion_signatures(execution::__filer_one<_Fn, _Sigs>()...);
   }
 
   template <class _Tag>
   [[nodiscard]]
-  _CCCL_API _CCCL_CONSTEVAL auto select(_Tag) const noexcept
+  _CCCL_API static _CCCL_CONSTEVAL auto select(_Tag) noexcept
   {
-    if constexpr (_Tag() == set_value)
+    if constexpr (_Tag{} == set_value)
     {
       using __result_t =
         typename __partitioned::template __value_types<__type_function<set_value_t>::__call, completion_signatures>;
       return __result_t{};
     }
-    else if constexpr (_Tag() == set_error)
+    else if constexpr (_Tag{} == set_error)
     {
       using __result_t =
         typename __partitioned::template __error_types<completion_signatures, __type_function<set_error_t>::__call>;
@@ -205,7 +250,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Transform, class _Reduce>
   [[nodiscard]]
-  _CCCL_API _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce) const
+  _CCCL_API static _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce)
     -> _CUDA_VSTD::__call_result_t<_Reduce, _CUDA_VSTD::__call_result_t<_Transform, _Sigs*>...>
   {
     return __reduce(__transform(static_cast<_Sigs*>(nullptr))...);
@@ -213,11 +258,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
 
   template <class... _OtherSigs>
   [[nodiscard]]
-  _CCCL_API _CCCL_CONSTEVAL auto operator+(completion_signatures<_OtherSigs...> __other) const noexcept
+  _CCCL_API _CCCL_CONSTEVAL auto operator+([[maybe_unused]] completion_signatures<_OtherSigs...> __other) const noexcept
   {
     if constexpr (sizeof...(_OtherSigs) == 0) // short-circuit some common cases
     {
-      (void) __other;
       return *this;
     }
     else if constexpr (sizeof...(_Sigs) == 0)
@@ -229,12 +273,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
       return concat_completion_signatures(*this, __other);
     }
   }
+
+  template <class... _OtherSigs>
+  [[nodiscard]]
+  _CCCL_API constexpr auto operator-([[maybe_unused]] completion_signatures<_OtherSigs...> __other) const noexcept
+  {
+    if constexpr (sizeof...(_OtherSigs) == 0 || sizeof...(_Sigs) == 0) // short-circuit some common cases
+    {
+      return *this;
+    }
+    else
+    {
+      return filter(__remove_sigs<_OtherSigs...>{});
+    }
+  }
 };
 
 _CCCL_HOST_DEVICE completion_signatures() -> completion_signatures<>;
 
 template <class _Ty>
-_CCCL_CONCEPT __valid_completion_signatures = __is_specialization_of_v<_Ty, completion_signatures>;
+_CCCL_CONCEPT __valid_completion_signatures =
+  __is_specialization_of_v<_CUDA_VSTD::remove_const_t<_Ty>, completion_signatures>;
 
 template <class... _Sigs>
 _CCCL_API _CCCL_CONSTEVAL void __assert_valid_completion_signatures(completion_signatures<_Sigs...>)
@@ -462,18 +521,18 @@ template <class _Sndr, class... _Env>
   static_assert(sizeof...(_Env) <= 1, "At most one environment is allowed.");
   if constexpr (0 == sizeof...(_Env))
   {
-    return __get_completion_signatures_helper<_Sndr>();
+    return execution::__get_completion_signatures_helper<_Sndr>();
   }
   else if constexpr (!__has_sender_transform<_Sndr, _Env...>)
   {
-    return __get_completion_signatures_helper<_Sndr, _Env...>();
+    return execution::__get_completion_signatures_helper<_Sndr, _Env...>();
   }
   else
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
     using _NewSndr _CCCL_NODEBUG_ALIAS =
       _CUDA_VSTD::__call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
-    return __get_completion_signatures_helper<_NewSndr, _Env...>();
+    return execution::__get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }
 
@@ -570,32 +629,6 @@ struct __partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>, _CUDA
     using __errors _CCCL_NODEBUG_ALIAS = __nothrow_decay_copyable_t<_Errors...>;
     using __all _CCCL_NODEBUG_ALIAS    = _CUDA_VSTD::_And<__values, __errors>;
   };
-};
-
-template <>
-struct __partitioned_fold_fn<set_value_t>
-{
-  template <class... _ValueTuples, class _Errors, __stop_kind _StopKind, class _Values>
-  _CCCL_API auto operator()(__partitioned_completions<__type_list<_ValueTuples...>, _Errors, _StopKind>&,
-                            _CUDA_VSTD::__undefined<_Values>&) const
-    -> _CUDA_VSTD::__undefined<__partitioned_completions<__type_list<_ValueTuples..., _Values>, _Errors, _StopKind>>&;
-};
-
-template <>
-struct __partitioned_fold_fn<set_error_t>
-{
-  template <class _Values, class... _Errors, __stop_kind _StopKind, class _Error>
-  _CCCL_API auto operator()(__partitioned_completions<_Values, __type_list<_Errors...>, _StopKind>&,
-                            _CUDA_VSTD::__undefined<__type_list<_Error>>&) const
-    -> _CUDA_VSTD::__undefined<__partitioned_completions<_Values, __type_list<_Errors..., _Error>, _StopKind>>&;
-};
-
-template <>
-struct __partitioned_fold_fn<set_stopped_t>
-{
-  template <class _Values, class _Errors, __stop_kind _StopKind>
-  _CCCL_API auto operator()(__partitioned_completions<_Values, _Errors, _StopKind>&, _CUDA_VSTD::__ignore_t) const
-    -> _CUDA_VSTD::__undefined<__partitioned_completions<_Values, _Errors, __stop_kind::__stoppable>>&;
 };
 
 // make_completion_signatures
@@ -804,11 +837,11 @@ struct __transform_one
   template <class _Tag, class... _Ts>
   [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Tag (*)(_Ts...)) const
   {
-    if constexpr (_Tag() == set_value)
+    if constexpr (_Tag{} == set_value)
     {
       return __apply_transform<_Ts...>(__value_fn);
     }
-    else if constexpr (_Tag() == set_error)
+    else if constexpr (_Tag{} == set_error)
     {
       return __apply_transform<_Ts...>(__error_fn);
     }

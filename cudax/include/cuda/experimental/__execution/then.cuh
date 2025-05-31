@@ -98,7 +98,7 @@ template <__disposition_t _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRED_NAME(upon_error_t)
   _CCCL_PREFERRED_NAME(upon_stopped_t) __upon_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
   using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
@@ -161,7 +161,7 @@ private:
       }
       else
       {
-        _Tag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
+        _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
       }
     }
 

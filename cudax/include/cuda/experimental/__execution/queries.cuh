@@ -36,6 +36,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -43,9 +44,18 @@ namespace cuda::experimental::execution
 {
 // NOLINTBEGIN(misc-unused-using-decls)
 using _CUDA_STD_EXEC::__forwarding_query;
-using _CUDA_STD_EXEC::__queryable_with;
+using _CUDA_STD_EXEC::__unwrap_reference_t;
+using _CUDA_STD_EXEC::env;
+using _CUDA_STD_EXEC::env_of_t;
 using _CUDA_STD_EXEC::forwarding_query;
 using _CUDA_STD_EXEC::forwarding_query_t;
+using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::get_env_t;
+using _CUDA_STD_EXEC::prop;
+
+using _CUDA_STD_EXEC::__nothrow_queryable_with;
+using _CUDA_STD_EXEC::__query_result_t;
+using _CUDA_STD_EXEC::__queryable_with;
 // NOLINTEND(misc-unused-using-decls)
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -207,6 +217,29 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
     }
   }
 } get_forward_progress_guarantee{};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_launch_config: A sender can define this attribute to control the launch configuration
+// of the kernel it will launch when executed on a CUDA stream scheduler.
+_CCCL_GLOBAL_CONSTANT struct get_launch_config_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Env>
+  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
+  {
+    if constexpr (__queryable_with<_Env, get_launch_config_t>)
+    {
+      static_assert(noexcept(__env.query(*this)), "The get_launch_config query must be noexcept.");
+      static_assert(__is_specialization_of_v<decltype(__env.query(*this)), kernel_config>,
+                    "The get_launch_config query must return a kernel_config type.");
+      return __env.query(*this);
+    }
+    else
+    {
+      return experimental::make_config(grid_dims<1>, block_dims<1>);
+    }
+  }
+} get_launch_config{};
 
 } // namespace cuda::experimental::execution
 

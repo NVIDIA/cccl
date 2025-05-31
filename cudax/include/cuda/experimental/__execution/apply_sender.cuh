@@ -56,7 +56,7 @@ public:
   //! @tparam _Args The arguments to pass to the algorithm.
   //! @param __sndr The sender object.
   //! @param __args The arguments to pass to the algorithm.
-  //! @return `DOM().apply_sender(_Tag(), __sndr, __args...)`, where `DOM` is the first of
+  //! @return `DOM{}.apply_sender(_Tag{}, __sndr, __args...)`, where `DOM` is the first of
   //! [`_Domain`, `default_domain`] to make the expression well-formed.
   //! @note This function is `constexpr` and `noexcept` if the underlying domain's
   //! `apply_sender` is `noexcept`.

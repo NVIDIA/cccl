@@ -239,65 +239,66 @@ inline void wait_for_value(Sndr&& snd, Ts&&... val)
 // A sender adapter that adds attributes to the child sender's attributes.
 struct write_attrs_t
 {
-  template <class _Sndr, class _Attrs>
-  struct __sndr_t
-  {
-    using sender_concept = cuda::experimental::execution::sender_t;
+  template <class Sndr, class Attrs>
+  struct _sndr_t;
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept
-    {
-      return _CUDA_STD_EXEC::env<const _Attrs&, _CUDA_STD_EXEC::env_of_t<_Sndr>>{
-        __attrs_, _CUDA_STD_EXEC::get_env(__sndr_)};
-    }
-
-    template <class _Self, class... _Env>
-    [[nodiscard]] _CCCL_API static constexpr auto get_completion_signatures()
-      -> cuda::experimental::execution::completion_signatures_of_t<_CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>, _Env...>
-    {
-      return {};
-    }
-
-    template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto
-    connect(_Rcvr __rcvr) && -> cuda::experimental::execution::connect_result_t<_Sndr, _Rcvr>
-    {
-      return cuda::experimental::execution::connect(_CUDA_VSTD::move(__sndr_), _CUDA_VSTD::move(__rcvr));
-    }
-
-    template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto
-    connect(_Rcvr __rcvr) const& -> cuda::experimental::execution::connect_result_t<_Sndr, _Rcvr>
-    {
-      return cuda::experimental::execution::connect(__sndr_, _CUDA_VSTD::move(__rcvr));
-    }
-
-    _Sndr __sndr_;
-    _Attrs __attrs_;
-  };
-
-  template <class _Sndr, class _Attrs>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr snd, _Attrs __attrs_) const -> __sndr_t<_Sndr, _Attrs>
-  {
-    return __sndr_t<_Sndr, _Attrs>{static_cast<_Sndr&&>(snd), static_cast<_Attrs&&>(__attrs_)};
-  }
-
-  template <class _Attrs>
+  template <class Attrs>
   struct __closure
   {
-    _Attrs __attrs_;
+    Attrs _attrs_;
 
-    template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr_, __closure _clsr)
+    template <class Sndr>
+    [[nodiscard]] _CCCL_API friend auto operator|(Sndr _sndr, __closure _clsr)
     {
-      return __sndr_t<_Sndr, _Attrs>{static_cast<_Sndr&&>(__sndr_), static_cast<_Attrs&&>(_clsr.__attrs_)};
+      return _sndr_t<Sndr, Attrs>{{}, static_cast<Attrs&&>(_clsr._attrs_), static_cast<Sndr&&>(_sndr)};
     }
   };
 
-  template <class _Attrs>
-  [[nodiscard]] _CCCL_API auto operator()(_Attrs __attrs_) const
+  template <class Sndr, class Attrs>
+  [[nodiscard]] _CCCL_API auto operator()(Sndr _sndr, Attrs _attrs) const -> _sndr_t<Sndr, Attrs>
   {
-    return __closure<_Attrs>{static_cast<_Attrs&&>(__attrs_)};
+    return _sndr_t<Sndr, Attrs>{{}, static_cast<Attrs&&>(_attrs), static_cast<Sndr&&>(_sndr)};
   }
+
+  template <class Attrs>
+  [[nodiscard]] _CCCL_API auto operator()(Attrs _attrs) const
+  {
+    return __closure<Attrs>{static_cast<Attrs&&>(_attrs)};
+  }
+};
+
+template <class Sndr, class Attrs>
+struct write_attrs_t::_sndr_t
+{
+  using sender_concept = cuda::experimental::execution::sender_t;
+  using _attrs_t       = _CUDA_STD_EXEC::env<const Attrs&, _CUDA_STD_EXEC::env_of_t<Sndr>>;
+
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> _attrs_t
+  {
+    return {_attrs_, _CUDA_STD_EXEC::get_env(_sndr_)};
+  }
+
+  template <class Self, class... Env>
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  {
+    return cuda::experimental::execution::get_child_completion_signatures<Self, Sndr, Env...>();
+  }
+
+  template <class Rcvr>
+  [[nodiscard]] _CCCL_API auto connect(Rcvr _rcvr) && -> cuda::experimental::execution::connect_result_t<Sndr, Rcvr>
+  {
+    return cuda::experimental::execution::connect(_CUDA_VSTD::move(_sndr_), _CUDA_VSTD::move(_rcvr));
+  }
+
+  template <class Rcvr>
+  [[nodiscard]] _CCCL_API auto connect(Rcvr _rcvr) const& -> cuda::experimental::execution::connect_result_t<Sndr, Rcvr>
+  {
+    return cuda::experimental::execution::connect(_sndr_, _CUDA_VSTD::move(_rcvr));
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS write_attrs_t __tag_;
+  Attrs _attrs_;
+  Sndr _sndr_;
 };
 
 inline constexpr write_attrs_t write_attrs{};
