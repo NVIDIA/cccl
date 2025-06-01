@@ -490,12 +490,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   {
     if constexpr (sizeof...(_Sndrs) == 0)
     {
-      return prop{get_domain<start_t>, default_domain{}};
+      return prop{get_domain, default_domain{}};
     }
     else
     {
       using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
-      return prop{get_domain<start_t>, __dom_t{}};
+      return prop{get_domain, __dom_t{}};
     }
     _CCCL_UNREACHABLE();
   }
