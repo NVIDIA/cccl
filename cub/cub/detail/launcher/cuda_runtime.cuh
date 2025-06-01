@@ -64,6 +64,20 @@ struct TripleChevronFactory
     // Get max grid dimension
     return cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal);
   }
+
+  // TODO(bgruber): this is very similar to thrust::cuda_cub::core::get_max_shared_memory_per_block. We should unify
+  // this.
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
+  {
+    int device = 0;
+    auto error = CubDebug(cudaGetDevice(&device));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
+  }
 };
 
 } // namespace detail

@@ -160,7 +160,7 @@ struct aligned_base_ptr
 {
   using value_type = T;
 
-  const char* ptr; // aligned pointer before the original pointer (16-byte or 128-byte). May not be aligned toUBLKCP.*0
+  const char* ptr; // aligned pointer before the original pointer (16-byte or 128-byte). May not be aligned to
                    // alignof(T). E.g.: array of int3 starting at address 4, ptr == 0
   int head_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
@@ -207,7 +207,7 @@ struct thread_block
 
   _CCCL_DEVICE int thread_rank() const
   {
-    return blockIdx.x;
+    return threadIdx.x;
   }
 };
 
@@ -269,12 +269,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+
+      while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+        ;
     }
 
     // all threads wait for bulk copy
     __syncthreads();
-    while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-      ;
   }
   else
   {
@@ -307,8 +308,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         pipe.producer_commit();
 
         pipe.consumer_wait();
-        __syncthreads();
-        pipe.consumer_release();))
+        pipe.consumer_release();
+        __syncthreads();))
   }
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below

@@ -134,7 +134,7 @@ struct transform_kernel_source
     return build.transform_kernel;
   }
 
-  int LoadedBytesPerIteration()
+  int LoadedBytesPerIteration() const
   {
     return build.loaded_bytes_per_iteration;
   }
@@ -145,12 +145,12 @@ struct transform_kernel_source
   }
 
   template <typename It>
-  constexpr It MakeIteratorKernelArg(It it)
+  constexpr It MakeIteratorKernelArg(It it) const
   {
     return it;
   }
 
-  cub::detail::transform::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_arg_t it, int align)
+  cub::detail::transform::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_arg_t it, int align) const
   {
     return cub::detail::transform::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(&it), align);
   }
@@ -247,7 +247,7 @@ struct device_transform_policy {{
     // Note: `-default-device` is needed because of the use of lambdas
     // in the transform kernel code. Qualifying those explicitly with
     // `__device__` seems not to be supported by NVRTC.
-    constexpr size_t num_args  = 9;
+    constexpr size_t num_args  = 10;
     const char* args[num_args] = {
       arch.c_str(),
       cub_path,
@@ -257,7 +257,8 @@ struct device_transform_policy {{
       "-rdc=true",
       "-dlto",
       "-default-device",
-      "-DCUB_DISABLE_CDP"};
+      "-DCUB_DISABLE_CDP",
+      "-lineinfo"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -456,9 +457,18 @@ struct device_transform_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
+    constexpr size_t num_args  = 10;
     const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-default-device",
+      "-DCUB_DISABLE_CDP",
+      "-lineinfo"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};

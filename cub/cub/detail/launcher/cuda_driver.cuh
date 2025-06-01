@@ -108,6 +108,12 @@ struct CudaDriverLauncherFactory
     return static_cast<cudaError_t>(cuDeviceGetAttribute(&max_grid_dim_x, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, device));
   }
 
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
+  {
+    return static_cast<cudaError_t>(
+      cuDeviceGetAttribute(&max_shared_memory, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, device));
+  }
+
   CUdevice device;
   int cc;
 };
