@@ -52,12 +52,17 @@ struct __get_requirements_t
 _CCCL_GLOBAL_CONSTANT auto __get_requirements = __get_requirements_t{};
 
 template <class... _Requirements>
-[[nodiscard]] _CCCL_TRIVIAL_API auto require(_Requirements... __requirements)
+[[nodiscard]] _CCCL_TRIVIAL_API auto require(_Requirements...)
 {
   static_assert((_CUDA_VSTD::is_base_of_v<__requirement, _Requirements> && ...),
                 "Only requirements can be passed to require");
 
-  return _CUDA_STD_EXEC::prop{__get_requirements_t{}, _CUDA_STD_EXEC::env{__requirements...}};
+  // clang < 19 doesn't like this code
+  // since the only requirements we currently allow are in determinism.h and
+  // all of them are stateless, let's ignore incoming parameters
+  _CUDA_STD_EXEC::env<_Requirements...> __env{};
+
+  return _CUDA_STD_EXEC::prop{__get_requirements_t{}, __env};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
