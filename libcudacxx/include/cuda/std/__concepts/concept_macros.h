@@ -58,7 +58,7 @@ enum
 };
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-#  define _CCCL_TEMPLATE(...)    _CCCL_PP_CAT(_CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
+#  define _CCCL_TEMPLATE(...)    _CCCL_PP_EVAL(_CCCL_PP_CAT, _CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
 #  define _CCCL_TEMPLATE_I0(...) template <__VA_ARGS__>
 #  define _CCCL_TEMPLATE_I1(...)
 #  define _CCCL_REQUIRES(...)               requires(__VA_ARGS__)
@@ -66,7 +66,7 @@ enum
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires(__VA_ARGS__)
 #  define _CCCL_TRAILING_REQUIRES(...)      __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-#  define _CCCL_TEMPLATE(...)    _CCCL_PP_CAT(_CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
+#  define _CCCL_TEMPLATE(...)    _CCCL_PP_EVAL(_CCCL_PP_CAT, _CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
 #  define _CCCL_TEMPLATE_I0(...) template <__VA_ARGS__,
 #  define _CCCL_TEMPLATE_I1(...) template <bool __cccl_true_ = true>
 #  define _CCCL_REQUIRES(...)    bool __cccl_true_ = true, __cccl_enable_if_t<(__VA_ARGS__ && __cccl_true_), int> = 0 >
