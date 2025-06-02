@@ -43,7 +43,7 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
   using traversal1 = typename iterator_traversal<InputIterator>::type;
   using traversal2 = typename iterator_traversal<OutputIterator>::type;
 
-  using traversal = typename thrust::detail::minimum_type<traversal1, traversal2>::type;
+  using traversal = thrust::detail::minimum_type<traversal1, traversal2>;
 
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
@@ -60,7 +60,7 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
 {
   using traversal1 = typename iterator_traversal<InputIterator>::type;
   using traversal2 = typename iterator_traversal<OutputIterator>::type;
-  using traversal  = typename thrust::detail::minimum_type<traversal1, traversal2>::type;
+  using traversal  = thrust::detail::minimum_type<traversal1, traversal2>;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
     return system::detail::generic::copy_n(exec, first, n, result);

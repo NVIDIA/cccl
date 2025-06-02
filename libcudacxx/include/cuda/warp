@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__warp/lane_mask.h>
+#include <cuda/__warp/warp_match_all.h>
 #include <cuda/__warp/warp_shuffle.h>
 
 #endif // _CUDA_WARP
