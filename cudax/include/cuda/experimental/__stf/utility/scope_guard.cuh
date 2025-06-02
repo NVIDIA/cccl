@@ -55,24 +55,21 @@ namespace cuda::experimental::stf
 ///@{
 #define SCOPE(kind)                                                                                \
   auto CUDASTF_UNIQUE_NAME(scope_guard) =                                                          \
-    ::std::integral_constant<::cuda::experimental::stf::reserved::scope_guard_condition,           \
-                             (::cuda::experimental::stf::reserved::scope_guard_condition::kind)>() \
+    ::std::integral_constant<::cuda::experimental::stf::scope_guard_condition,           \
+                             (::cuda::experimental::stf::scope_guard_condition::kind)>() \
       ->*[&]()
 ///@}
 
-namespace reserved
-{
 enum class scope_guard_condition
 {
   exit,
   fail,
   success
 };
-}
 
 /// @cond NEVER_DOCUMENT
-template <reserved::scope_guard_condition cond, typename F>
-auto operator->*(::std::integral_constant<reserved::scope_guard_condition, cond>, F&& f)
+template <scope_guard_condition cond, typename F>
+auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
 {
   struct result
   {
@@ -90,7 +87,7 @@ auto operator->*(::std::integral_constant<reserved::scope_guard_condition, cond>
     }
 
     // Destructor (i.e. user's lambda) may throw exceptions if and only if we're in `SCOPE(success)`.
-    ~result() noexcept(cond != reserved::scope_guard_condition::success)
+    ~result() noexcept(cond != scope_guard_condition::success)
     {
       // By convention, call always if threshold is -1, never if threshold < -1
       if (threshold == -1 || ::std::uncaught_exceptions() == threshold)
@@ -107,9 +104,9 @@ auto operator->*(::std::integral_constant<reserved::scope_guard_condition, cond>
   // Threshold is -1 for SCOPE(exit), the same as current exceptions count for SCOPE(success), and 1 above the current
   // exception count for SCOPE(fail).
   return result(::std::forward<F>(f),
-                cond == reserved::scope_guard_condition::exit
+                cond == scope_guard_condition::exit
                   ? -1
-                  : ::std::uncaught_exceptions() + (cond == reserved::scope_guard_condition::fail));
+                  : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
 }
 /// @endcond
 
