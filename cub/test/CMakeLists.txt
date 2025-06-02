@@ -1,3 +1,5 @@
+option(CUB_ENABLE_LAUNCH_VARIANTS "Enable CUB launch variants (lid_1 and lid_2)" ON)
+
 if(CMAKE_GENERATOR MATCHES "^Visual Studio")
   if(CUB_ENABLE_RDC_TESTS)
     if("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
@@ -324,6 +326,10 @@ foreach (test_src IN LISTS test_srcs)
         _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
         if (cdp_val AND NOT CUB_ENABLE_RDC_TESTS)
+          continue()
+        endif()
+
+        if (NOT launcher_id EQUAL 0 AND NOT CUB_ENABLE_LAUNCH_VARIANTS)
           continue()
         endif()
 
