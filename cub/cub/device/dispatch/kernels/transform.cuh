@@ -84,7 +84,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_dim = PrefetchPolicy::block_threads;
+  constexpr int block_dim = PrefetchPolicy::algo_policy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
   const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
@@ -220,14 +220,14 @@ template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomA
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
+  constexpr int bulk_copy_alignment = BulkCopyPolicy::algo_policy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
   extern __shared__ char __align__(bulk_copy_alignment) smem[];
 
   namespace ptx = ::cuda::ptx;
 
-  constexpr int block_dim = BulkCopyPolicy::block_threads;
+  constexpr int block_dim = BulkCopyPolicy::algo_policy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
   const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
@@ -439,12 +439,13 @@ template <typename MaxPolicy,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteartorsIn>
-__launch_bounds__(MaxPolicy::ActivePolicy::block_threads) CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
-  Offset num_items,
-  int num_elem_per_thread,
-  F f,
-  RandomAccessIteratorOut out,
-  kernel_arg<RandomAccessIteartorsIn>... ins)
+__launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
+    Offset num_items,
+    int num_elem_per_thread,
+    F f,
+    RandomAccessIteratorOut out,
+    kernel_arg<RandomAccessIteartorsIn>... ins)
 {
   constexpr auto alg = ::cuda::std::integral_constant<Algorithm, MaxPolicy::ActivePolicy::algorithm>{};
   transform_kernel_impl<typename MaxPolicy::ActivePolicy>(

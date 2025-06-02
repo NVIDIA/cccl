@@ -88,4 +88,12 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_UNROLL_FULL()
 #endif // !CCCL_AVOID_SORT_UNROLL
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  define CUB_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)
+#  define CUB_CONSTEXPR_ISH
+#else // ^^^ CUB_DEFINE_RUNTIME_POLICIES ^^^ / vvv !CUB_DEFINE_RUNTIME_POLICIES vvv
+#  define CUB_STATIC_ISH_ASSERT(expr, msg) static_assert(expr, msg);
+#  define CUB_CONSTEXPR_ISH                constexpr
+#endif // !(CUB_DEFINE_RUNTIME_POLICIES)
+
 CUB_NAMESPACE_END

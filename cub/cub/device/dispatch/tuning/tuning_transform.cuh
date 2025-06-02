@@ -71,44 +71,99 @@ enum class Algorithm
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 };
 
-template <Algorithm AlgorithmV, int BlockThreads, int MinBif, int BulkCopyAlignment>
-struct transform_agent_policy_t
+template <int BlockThreads>
+struct prefetch_policy_t
 {
-  static constexpr Algorithm algorithm = AlgorithmV;
-  static constexpr int min_bif         = MinBif;
-  static constexpr int block_threads   = BlockThreads;
+  static constexpr int block_threads = BlockThreads;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   static constexpr int min_items_per_thread      = 1;
   static constexpr int max_items_per_thread      = 32;
+};
+
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  TransformAgentPrefetchPolicy,
+  (always_true),
+  (block_threads, BlockThreads, int),
+  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
+  (min_items_per_thread, MinItemsPerThread, int),
+  (max_items_per_thread, MaxItemsPerThread, int) )
+
+template <int BlockThreads, int BulkCopyAlignment>
+struct async_copy_policy_t
+{
+  static constexpr int block_threads = BlockThreads;
+  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
+  static constexpr int min_items_per_thread = 1;
+  static constexpr int max_items_per_thread = 32;
 
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
-template <int BlockThreads, int MinBif>
-using prefetch_policy_t = transform_agent_policy_t<Algorithm::prefetch, BlockThreads, MinBif, 0>;
-
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-template <int BlockThreads, int MinBif, int BulkCopyAlignment>
-using async_copy_policy_t = transform_agent_policy_t<Algorithm::ublkcp, BlockThreads, MinBif, BulkCopyAlignment>;
-#endif
-
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  TransformAgentPolicy,
+  TransformAgentAsyncPolicy,
   (always_true),
-  (algorithm, GetAlgorithm, cub::detail::transform::Algorithm),
-  (min_bif, MinBif, int),
   (block_threads, BlockThreads, int),
-  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
   (min_items_per_thread, MinItemsPerThread, int),
   (max_items_per_thread, MaxItemsPerThread, int),
   (bulk_copy_alignment, BulkCopyAlignment, int) )
 
 _CCCL_TEMPLATE(typename PolicyT)
-_CCCL_REQUIRES((!TransformAgentPolicy<PolicyT>) )
+_CCCL_REQUIRES((!TransformAgentPrefetchPolicy<PolicyT> && !TransformAgentAsyncPolicy<PolicyT>) )
 __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
+}
+
+template <typename PolicyT, typename = void>
+struct TransformPolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct TransformPolicyWrapper<
+  StaticPolicyT,
+  ::cuda::std::
+    void_t<decltype(StaticPolicyT::algorithm), decltype(StaticPolicyT::min_bif), typename StaticPolicyT::algo_policy>>
+    : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr Algorithm Algorithm()
+  {
+    return StaticPolicyT::algorithm;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MinBif()
+  {
+    return StaticPolicyT::min_bif;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto AlgorithmPolicy()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::algo_policy());
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"min_bif">()     = value<StaticPolicyT::min_bif>(),
+                  key<"algorithm">()   = value<static_cast<int>(StaticPolicyT::algorithm)>(),
+                  key<"algo_policy">() = AlgorithmPolicy().EncodedPolicy()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
+{
+  return TransformPolicyWrapper<PolicyT>(base);
 }
 
 // mult must be a power of 2
@@ -177,18 +232,21 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   // TODO(bgruber): consider a separate kernel for just filling
 
-  struct policy300
-      : prefetch_policy_t<256, arch_to_min_bytes_in_flight(300)>
-      , ChainedPolicy<300, policy300, policy300>
-  {};
+  struct policy300 : ChainedPolicy<300, policy300, policy300>
+  {
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
+    // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
+    static constexpr auto algorithm = Algorithm::prefetch;
+    using algo_policy               = prefetch_policy_t<256>;
+  };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   template <int BlockSize, int PtxVersion>
   struct bulkcopy_policy
   {
-    static constexpr int min_bif         = arch_to_min_bytes_in_flight(PtxVersion);
+  private:
     static constexpr int bulk_copy_align = bulk_copy_alignment(PtxVersion);
-    using async_policy                   = async_copy_policy_t<BlockSize, min_bif, bulk_copy_align>;
+    using async_policy                   = async_copy_policy_t<BlockSize, bulk_copy_align>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size({sizeof(it_value_t<RandomAccessIteratorsIn>)...},
                                    async_policy::block_threads* async_policy::min_items_per_thread,
@@ -199,16 +257,20 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overaligned;
-    using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<BlockSize, min_bif>, async_policy>;
+
+  public:
+    static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<BlockSize>, async_policy>;
   };
 
   struct policy900
-      : bulkcopy_policy<256, 900>::algo_policy
+      : bulkcopy_policy<256, 900>
       , ChainedPolicy<900, policy900, policy300>
   {};
 
   struct policy1000
-      : bulkcopy_policy<128, 1000>::algo_policy
+      : bulkcopy_policy<128, 1000>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 
