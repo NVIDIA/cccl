@@ -27,9 +27,10 @@
 
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 
+#include <nvbench_helper.cuh>
+
 #include <nvbench/range.cuh>
 #include <nvbench/types.cuh>
-#include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 3:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
