@@ -82,9 +82,9 @@ struct __unpack
 {
   // This is to generate a compile-time error if the sender type cannot be used to
   // initialize a structured binding.
-  auto operator()(_CUDA_VSTD::__ignore_t,
-                  __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity>,
-                  _CUDA_VSTD::__ignore_t) const -> void;
+  _CCCL_API void operator()(_CUDA_VSTD::__ignore_t,
+                            __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity>,
+                            _CUDA_VSTD::__ignore_t) const;
 };
 
 #  define _CCCL_UNPACK_SENDER(_Arity)                                                                               \

@@ -129,12 +129,12 @@ _CCCL_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts)
   return __sndr_t<_Ts...>{{}, {static_cast<_Ts&&>(__ts)...}};
 }
 
-template <class _Fn>
-inline constexpr size_t structured_binding_size<just_t::__sndr_t<_Fn>> = 2;
-template <class _Fn>
-inline constexpr size_t structured_binding_size<just_error_t::__sndr_t<_Fn>> = 2;
-template <class _Fn>
-inline constexpr size_t structured_binding_size<just_stopped_t::__sndr_t<_Fn>> = 2;
+template <class... _Ts>
+inline constexpr size_t structured_binding_size<just_t::__sndr_t<_Ts...>> = 2;
+template <class... _Ts>
+inline constexpr size_t structured_binding_size<just_error_t::__sndr_t<_Ts...>> = 2;
+template <class... _Ts>
+inline constexpr size_t structured_binding_size<just_stopped_t::__sndr_t<_Ts...>> = 2;
 
 _CCCL_GLOBAL_CONSTANT auto just         = just_t{};
 _CCCL_GLOBAL_CONSTANT auto just_error   = just_error_t{};

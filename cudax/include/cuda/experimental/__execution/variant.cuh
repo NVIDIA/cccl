@@ -21,15 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
+#include <exception> // IWYU pragma: keep
 #include <new> // IWYU pragma: keep
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -111,8 +115,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty, class... _As>
-  _CCCL_API auto __emplace(_As&&... __as) //
-    noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
+  _CCCL_API auto __emplace(_As&&... __as) noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
     constexpr size_t __new_index = execution::__index_of<_Ty, _Ts...>();
     static_assert(__new_index != __npos, "Type not in variant");
@@ -125,8 +128,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Ny, class... _As>
-  _CCCL_API auto __emplace_at(_As&&... __as) //
-    noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
+  _CCCL_API auto __emplace_at(_As&&... __as) noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 

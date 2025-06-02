@@ -96,7 +96,7 @@ private:
     [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
       -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Query());
+      return execution::get_env(__state_.__rcvr_).query(_Query{});
     }
   };
 
@@ -282,7 +282,6 @@ private:
     inplace_stop_token __stop_token_;
     _CUDA_VSTD::atomic<_CUDA_VSTD::underlying_type_t<__estate_t>> __state_;
     __errors_t __errors_;
-    // _CCCL_NO_UNIQUE_ADDRESS // gcc doesn't like this
     __values_t __values_;
     __lazy<__stop_callback_t> __on_stop_;
   };
