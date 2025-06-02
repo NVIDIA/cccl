@@ -333,11 +333,11 @@ public:
 
   //! @brief Compares two \c transform_iterator for equality, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::equality_comparable<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() == _CUDA_VSTD::declval<const _Iter2&>())) //
+    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::equality_comparable<_Iter2>)
   {
     return __lhs.__current_ == __rhs.__current_;
   }
@@ -345,11 +345,11 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two \c transform_iterator for inequality, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() != _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::equality_comparable<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() != _CUDA_VSTD::declval<const _Iter2&>())) //
+    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::equality_comparable<_Iter2>)
   {
     return __lhs.__current_ != __rhs.__current_;
   }
@@ -357,44 +357,44 @@ public:
 
   //! @brief Compares two \c transform_iterator for less than, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() < _CUDA_VSTD::declval<const _Iter2&>()))
+    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
   {
     return __lhs.__current_ < __rhs.__current_;
   }
 
   //! @brief Compares two \c transform_iterator for greater than, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() > _CUDA_VSTD::declval<const _Iter2&>()))
+    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
   {
     return __lhs.__current_ > __rhs.__current_;
   }
 
   //! @brief Compares two \c transform_iterator for less equal, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() <= _CUDA_VSTD::declval<const _Iter2&>()))
+    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
   {
     return __lhs.__current_ <= __rhs.__current_;
   }
 
   //! @brief Compares two \c transform_iterator for greater equal, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() >= _CUDA_VSTD::declval<const _Iter2&>()))
+    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
   {
     return __lhs.__current_ >= __rhs.__current_;
   }
@@ -402,11 +402,12 @@ public:
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   //! @brief Three-way-compares two \c transform_iterator, directly three-way-comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE()
+  template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() <=> _CUDA_VSTD::declval<const _Iter&>()))
-    -> _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter>&& _CUDA_VSTD::three_way_comparable<_Iter>)
+    noexcept(_CUDA_VSTD::declval<const _Iter2&>() <=> _CUDA_VSTD::declval<const _Iter2&>()))
+    -> _CCCL_TRAILING_REQUIRES(bool)(
+      _CUDA_VSTD::random_access_iterator<_Iter2>&& _CUDA_VSTD::three_way_comparable<_Iter2>)
   {
     return __lhs.__current_ <=> __rhs.__current_;
   }
@@ -418,7 +419,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE()
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-  operator+(const transform_iterator& __i, difference_type __n)
+  operator+(const transform_iterator& __i, difference_type __n) //
     -> _CCCL_TRAILING_REQUIRES(transform_iterator)(_CUDA_VSTD::random_access_iterator<_Iter>)
   {
     return transform_iterator{__i.__current_ + __n, *__i.__func_};
@@ -442,7 +443,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE()
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-  operator-(const transform_iterator& __i, difference_type __n)
+  operator-(const transform_iterator& __i, difference_type __n) //
     -> _CCCL_TRAILING_REQUIRES(transform_iterator)(_CUDA_VSTD::random_access_iterator<_Iter>)
   {
     return transform_iterator{__i.__current_ - __n, *__i.__func_};
