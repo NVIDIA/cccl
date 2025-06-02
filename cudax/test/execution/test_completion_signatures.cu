@@ -61,6 +61,8 @@ C2H_TEST("completion_signatures_basic", "[utilities][completion_signatures]")
   STATIC_REQUIRE_FALSE(cs_value == cs_error);
   STATIC_REQUIRE(cs_empty == cs_empty);
   STATIC_REQUIRE(cs_all == cs_all);
+  STATIC_REQUIRE(completion_signatures<set_value_t(int), set_error_t(float)>{}
+                 == completion_signatures<set_error_t(float), set_value_t(int)>{});
 
   // Test operator!=
   STATIC_REQUIRE(cs_value != cs_error);

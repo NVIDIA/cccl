@@ -323,80 +323,97 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   {
     return __reduce(__transform(static_cast<_Sigs*>(nullptr))...);
   }
-
-  //! \brief Returns the union of this set and another set of completion signatures.
-  //! \tparam _OtherSigs The other signature types.
-  //! \param __other The other completion_signatures set.
-  //! \return The union of the two sets.
-  template <class... _OtherSigs>
-  [[nodiscard]]
-  _CCCL_API _CCCL_CONSTEVAL auto
-  operator+([[maybe_unused]] const completion_signatures<_OtherSigs...>& __other) const noexcept
-  {
-    if constexpr (sizeof...(_OtherSigs) == 0) // short-circuit some common cases
-    {
-      return *this;
-    }
-    else if constexpr (sizeof...(_Sigs) == 0)
-    {
-      return __other;
-    }
-    else
-    {
-      return concat_completion_signatures(*this, __other);
-    }
-  }
-
-  //! \brief Returns the set difference between this set and another set of completion
-  //! signatures.
-  //! \tparam _OtherSigs The other signature types.
-  //! \param The other completion_signatures set.
-  //! \return A new set with all signatures from the other set removed.
-  template <class... _OtherSigs>
-  [[nodiscard]]
-  _CCCL_API constexpr auto operator-(const completion_signatures<_OtherSigs...>&) const noexcept
-  {
-    if constexpr (sizeof...(_OtherSigs) == 0 || sizeof...(_Sigs) == 0) // short-circuit some common cases
-    {
-      return *this;
-    }
-    else
-    {
-      return filter(__remove_sigs<_OtherSigs...>{});
-    }
-  }
-
-  //! \brief Checks if two completion_signatures sets are equal.
-  //! \tparam _OtherSigs The other signature types.
-  //! \param The other completion_signatures set.
-  //! \return true if the sets are equal, false otherwise.
-  template <class... _OtherSigs>
-  [[nodiscard]]
-  _CCCL_API constexpr auto operator==(const completion_signatures<_OtherSigs...>&) const noexcept -> bool
-  {
-    if constexpr (sizeof...(_OtherSigs) != sizeof...(_Sigs))
-    {
-      return false;
-    }
-    else
-    {
-      return _CUDA_VSTD::__type_set_contains_v<typename __type_set::type, _OtherSigs...>;
-    }
-  }
-
-  //! \brief Checks if two completion_signatures sets are not equal.
-  //! \tparam _OtherSigs The other signature types.
-  //! \param __other The other completion_signatures set.
-  //! \return true if the sets are not equal, false otherwise.
-  template <class... _OtherSigs>
-  [[nodiscard]]
-  _CCCL_API constexpr auto operator!=(const completion_signatures<_OtherSigs...>& __other) const noexcept -> bool
-  {
-    return !(*this == __other);
-  }
 };
 
 _CCCL_HOST_DEVICE completion_signatures() -> completion_signatures<>;
+
+// work-around for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95629
+#if _CCCL_COMPILER(GCC, ==, 11)
+#  define _CCCL_CONSTEVAL_OPERATOR constexpr
+#else // ^^^ GCC 11 ^^^ / vvv other compilers vvv
+#  define _CCCL_CONSTEVAL_OPERATOR _CCCL_CONSTEVAL
+#endif // ^^^ other compilers ^^^
+
+//! \brief Returns the union of two sets of completion signatures.
+//! \tparam _SelfSigs The first set of signature types.
+//! \tparam _OtherSigs The other set of signature types.
+//! \param __self The first `completion_signatures` object.
+//! \param __other The other `completion_signatures` object.
+//! \return The union of the two sets.
+template <class... _SelfSigs, class... _OtherSigs>
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+operator+([[maybe_unused]] completion_signatures<_SelfSigs...> __self,
+          [[maybe_unused]] completion_signatures<_OtherSigs...> __other) noexcept
+{
+  if constexpr (sizeof...(_SelfSigs) == 0) // short-circuit some common cases
+  {
+    return __other;
+  }
+  else if constexpr (sizeof...(_OtherSigs) == 0)
+  {
+    return __self;
+  }
+  else
+  {
+    return concat_completion_signatures(__self, __other);
+  }
+}
+
+//! \brief Returns the set difference between two sets of completion signatures.
+//! \tparam _SelfSigs The first set of signature types.
+//! \tparam _OtherSigs The second set of signature types.
+//! \return A new set with all signatures from the other set removed.
+template <class... _SelfSigs, class... _OtherSigs>
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+operator-(completion_signatures<_SelfSigs...> __self, completion_signatures<_OtherSigs...>) noexcept
+{
+  if constexpr (sizeof...(_OtherSigs) == 0 || sizeof...(_SelfSigs) == 0) // short-circuit some common cases
+  {
+    return __self;
+  }
+  else
+  {
+    return __self.filter(__remove_sigs<_OtherSigs...>{});
+  }
+}
+
+//! \brief Checks if two completion_signatures sets are equal.
+//! \tparam _SelfSigs The first set of signature types.
+//! \tparam _OtherSigs The second set of signature types.
+//! \return `true` if the sets are equal, `false` otherwise.
+template <class... _SelfSigs, class... _OtherSigs>
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+operator==(completion_signatures<_SelfSigs...>, completion_signatures<_OtherSigs...>) noexcept -> bool
+{
+  if constexpr (sizeof...(_OtherSigs) != sizeof...(_SelfSigs))
+  {
+    return false;
+  }
+  else
+  {
+    using __signatures_set_t = typename completion_signatures<_SelfSigs...>::__type_set::type;
+    return _CUDA_VSTD::__type_set_contains_v<__signatures_set_t, _OtherSigs...>;
+  }
+}
+
+//! \brief Checks if two completion_signatures sets are not equal.
+//! \tparam _SelfSigs The first set of signature types.
+//! \tparam _OtherSigs The second set of signature types.
+//! \param __self The other `completion_signatures` object.
+//! \param __other The other `completion_signatures` object.
+//! \return `true` if the sets are not equal, `false` otherwise.
+template <class... _SelfSigs, class... _OtherSigs>
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+operator!=(completion_signatures<_SelfSigs...> __self, completion_signatures<_OtherSigs...> __other) noexcept -> bool
+{
+  return !(__self == __other);
+}
+
+#undef _CCCL_CONSTEVAL_OPERATOR
 
 template <class _Ty>
 _CCCL_CONCEPT __valid_completion_signatures =
