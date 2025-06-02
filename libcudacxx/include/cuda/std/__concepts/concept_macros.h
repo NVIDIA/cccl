@@ -52,7 +52,10 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
-_CCCL_GLOBAL_CONSTANT bool __cccl_true_ = true;
+enum
+{
+  __cccl_true_ = true
+};
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)    _CCCL_PP_CAT(_CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
