@@ -41,28 +41,28 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp>
   requires is_object_v<_Tp>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp, enable_if_t<move_constructible<_Tp>, int> = 0, enable_if_t<is_object_v<_Tp>, int> = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class single_view : public view_interface<single_view<_Tp>>
 {
   _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Tp> __value_;
 
 public:
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI single_view()
     requires default_initializable<_Tp>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(default_initializable<_Tp2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr single_view() noexcept(is_nothrow_default_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
       , __value_(){};
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp) // avoids circular concept definitions with copy_constructible
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Tp2>, single_view>) _CCCL_AND copy_constructible<_Tp2>)

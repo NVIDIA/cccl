@@ -135,10 +135,19 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 {
-  // TODO(bgruber): use if-else in C++14 for better readability
-  return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
-       : sm_arch >= 800 ? 16 * 1024 // A100
-                        : 12 * 1024; // V100 and below
+  if (sm_arch >= 1000)
+  {
+    return 64 * 1024; // B200
+  }
+  if (sm_arch >= 900)
+  {
+    return 48 * 1024; // 32 for H100, 48 for H200
+  }
+  if (sm_arch >= 800)
+  {
+    return 16 * 1024; // A100
+  }
+  return 12 * 1024; // V100 and below
 }
 
 template <typename PolicyT, typename = void>

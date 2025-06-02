@@ -80,8 +80,7 @@ struct transform_output_iterator_base
 // Register transform_output_iterator_proxy with 'is_proxy_reference' from type_traits to enable its use with
 // algorithms.
 template <class UnaryFunction, class OutputIterator>
-struct is_proxy_reference<transform_output_iterator_proxy<UnaryFunction, OutputIterator>> : true_type
-{};
+inline constexpr bool is_proxy_reference_v<transform_output_iterator_proxy<UnaryFunction, OutputIterator>> = true;
 } // namespace detail
 
 //! \addtogroup iterators

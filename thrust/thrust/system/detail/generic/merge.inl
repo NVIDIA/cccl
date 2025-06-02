@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
 
   zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
-  thrust::detail::compare_first<Compare> comp_first(comp);
+  thrust::detail::compare_first<Compare> comp_first{comp};
 
   iterator_tuple3 result =
     thrust::merge(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)

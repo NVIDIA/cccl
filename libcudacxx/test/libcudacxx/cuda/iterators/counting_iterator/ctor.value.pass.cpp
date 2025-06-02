@@ -18,7 +18,6 @@
 
 __host__ __device__ constexpr bool test()
 {
-#if TEST_STD_VER >= 2020
   { // CTAD
     const int val = 42;
     cuda::counting_iterator iter{val};
@@ -29,7 +28,6 @@ __host__ __device__ constexpr bool test()
     cuda::counting_iterator iter{42};
     assert(*iter == 42);
   }
-#endif // TEST_STD_VER >= 2020
 
   {
     const int val = 42;

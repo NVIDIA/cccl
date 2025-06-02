@@ -62,8 +62,7 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct is_proxy_reference : public false_type
-{};
+inline constexpr bool is_proxy_reference_v = false;
 
 template <typename Boolean>
 struct not_ : public integral_constant<bool, !Boolean::value>

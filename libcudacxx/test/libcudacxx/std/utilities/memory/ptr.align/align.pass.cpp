@@ -11,11 +11,58 @@
 
 // void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 
+#include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
-#include <cuda/std/memory>
 
 #include "test_macros.h"
+
+#if TEST_HAS_CUDA_COMPILER()
+
+struct MutableStruct
+{
+  mutable int v;
+};
+
+__device__ int global_var;
+__constant__ int constant_var;
+
+__global__ void test_kernel(const _CCCL_GRID_CONSTANT MutableStruct grid_constant_var)
+{
+  using cuda::device::address_space;
+  using cuda::device::is_address_from;
+
+  __shared__ int shared_var;
+  int local_var;
+
+  size_t space = 20;
+  {
+    void* global_ptr = &global_var;
+    assert(is_address_from(address_space::global, cuda::std::align(4, 10, global_ptr, space)));
+  }
+  {
+    void* shared_ptr = &shared_var;
+    assert(is_address_from(address_space::shared, cuda::std::align(4, 10, shared_ptr, space)));
+  }
+  {
+    void* constant_ptr = &constant_var;
+    assert(is_address_from(address_space::constant, cuda::std::align(4, 10, constant_ptr, space)));
+  }
+  {
+    void* local_ptr = &local_var;
+    assert(is_address_from(address_space::local, cuda::std::align(4, 10, local_ptr, space)));
+  }
+// Compilation with lang-14 with nvcc-12 stucks
+#  if _CCCL_HAS_GRID_CONSTANT() && !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
+  {
+    void* grid_constant_ptr = const_cast<void*>(static_cast<const void*>(&grid_constant_var.v));
+    assert(is_address_from(address_space::grid_constant, cuda::std::align(4, 10, grid_constant_ptr, space)));
+  }
+#  endif // _CCCL_HAS_GRID_CONSTANT() && !_CCCL_COMPILER(CLANG, <= 14)
+  // todo: test address_space::cluster_shared
+}
+
+#endif // TEST_HAS_CUDA_COMPILER()
 
 int main(int, char**)
 {
@@ -84,6 +131,10 @@ int main(int, char**)
   assert(p == &buf[0]);
   assert(r == nullptr);
   assert(s == N);
+
+#if TEST_HAS_CUDA_COMPILER()
+  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>(MutableStruct{}); assert(cudaDeviceSynchronize() == cudaSuccess);))
+#endif // TEST_HAS_CUDA_COMPILER()
 
   return 0;
 }

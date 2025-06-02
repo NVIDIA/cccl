@@ -19,9 +19,9 @@
 #include <tuple>
 #include <vector>
 
-#include <nvJitLink.h>
 #include <nvrtc.h>
 
+#include <nvrtc/nvjitlink_helper.h>
 #include <util/errors.h>
 
 struct nvrtc_ptx

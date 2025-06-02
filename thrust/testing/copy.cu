@@ -720,8 +720,7 @@ namespace detail
 // We need this type to pass as a non-const ref for unary_transform_functor
 // to compile:
 template <>
-struct is_non_const_reference<only_set_when_expected_it> : thrust::true_type
-{};
+inline constexpr bool is_non_const_reference_v<only_set_when_expected_it> = true;
 } // end namespace detail
 THRUST_NAMESPACE_END
 

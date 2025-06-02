@@ -43,7 +43,6 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -56,14 +55,14 @@ namespace detail
 template <typename ElementIterator, typename IndexIterator>
 struct make_permutation_iterator_base
 {
-  using System1 = typename iterator_system<ElementIterator>::type;
-  using System2 = typename iterator_system<IndexIterator>::type;
+  using System1 = iterator_system_t<ElementIterator>;
+  using System2 = iterator_system_t<IndexIterator>;
 
   using type =
     iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
                      IndexIterator,
                      it_value_t<ElementIterator>,
-                     typename minimum_system<System1, System2>::type,
+                     minimum_system_t<System1, System2>,
                      use_default,
                      it_reference_t<ElementIterator>>;
 };

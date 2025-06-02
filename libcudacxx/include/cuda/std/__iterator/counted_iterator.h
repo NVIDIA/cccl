@@ -84,11 +84,11 @@ struct __counted_iterator_value_type<_Iter, enable_if_t<indirectly_readable<_Ite
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <input_or_output_iterator _Iter>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, enable_if_t<input_or_output_iterator<_Iter>, int> = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counted_iterator
     : public __counted_iterator_concept<_Iter>
     , public __counted_iterator_category<_Iter>
@@ -101,15 +101,15 @@ public:
   using iterator_type   = _Iter;
   using difference_type = iter_difference_t<_Iter>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counted_iterator()
     requires default_initializable<_Iter>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(default_initializable<_I2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr counted_iterator() noexcept(is_nothrow_default_constructible_v<_I2>) {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr counted_iterator(_Iter __iter, iter_difference_t<_Iter> __n) noexcept(
     is_nothrow_move_constructible_v<_Iter>)
@@ -431,14 +431,14 @@ _CCCL_REQUIRES(input_iterator<_Iter>)
   return _CUDA_VRANGES::iter_move(__i.base());
 }
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <input_iterator _Iter>
   requires same_as<_ITER_TRAITS<_Iter>, iterator_traits<_Iter>>
 struct iterator_traits<counted_iterator<_Iter>> : iterator_traits<_Iter>
 {
   using pointer = conditional_t<contiguous_iterator<_Iter>, add_pointer_t<iter_reference_t<_Iter>>, void>;
 };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter>
 struct iterator_traits<counted_iterator<_Iter>,
                        enable_if_t<input_iterator<_Iter> && same_as<_ITER_TRAITS<_Iter>, iterator_traits<_Iter>>>>
@@ -460,7 +460,7 @@ struct pointer_traits<counted_iterator<_Iter>, enable_if_t<contiguous_iterator<_
     return _CUDA_VSTD::to_address(__iter.base());
   }
 };
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

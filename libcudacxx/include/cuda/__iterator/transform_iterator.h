@@ -180,21 +180,24 @@ public:
   using difference_type = _CUDA_VSTD::iter_difference_t<_Iter>;
 
   //! @brief Default constructs a \p transform_iterator with a value initialized iterator and functor
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI transform_iterator()
     requires _CUDA_VSTD::default_initializable<_Iter> && _CUDA_VSTD::default_initializable<_Fn>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Fn2 = _Fn)
   _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Iter2> _CCCL_AND _CUDA_VSTD::default_initializable<_Fn2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator() noexcept(
     _CUDA_VSTD::is_nothrow_default_constructible_v<_Iter2> && _CUDA_VSTD::is_nothrow_default_constructible_v<_Fn2>)
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a \p transform_iterator with a given \p __iter iterator and \p __func functor
   //! @param __iter The iterator to transform
   //! @param __func The functor to apply to the iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator(_Iter __current, _Fn __func_) noexcept(
     _CUDA_VSTD::is_nothrow_move_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_move_constructible_v<_Fn>)
       : __current_(_CUDA_VSTD::move(__current))
@@ -208,6 +211,7 @@ public:
   }
 
   //! @brief Extracts the iterator stored in this \p transform_iterator
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter
   base() && noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Iter>)
   {
@@ -215,6 +219,7 @@ public:
   }
 
   //! @brief Invokes the stored functor with the value pointed to by the stored iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::regular_invocable<const _Fn&, _CUDA_VSTD::iter_reference_t<const _Iter2>>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator*() const
@@ -224,6 +229,7 @@ public:
   }
 
   //! @brief Invokes the stored functor with the value pointed to by the stored iterator
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
   operator*() noexcept(noexcept(_CUDA_VSTD::invoke(*__func_, *__current_)))
   {
@@ -231,6 +237,7 @@ public:
   }
 
   //! @brief Increments the stored iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator& operator++() noexcept(noexcept(++__current_))
   {
     ++__current_;
@@ -238,6 +245,7 @@ public:
   }
 
   //! @brief Increments the stored iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int) noexcept(noexcept(++__current_))
   {
     if constexpr (_CUDA_VSTD::forward_iterator<_Iter>)
@@ -253,6 +261,7 @@ public:
   }
 
   //! @brief Decrements the stored iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::bidirectional_iterator<_Iter2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator& operator--() noexcept(noexcept(--__current_))
@@ -262,6 +271,7 @@ public:
   }
 
   //! @brief Decrements the stored iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::bidirectional_iterator<_Iter2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator
@@ -274,6 +284,7 @@ public:
 
   //! @brief Advances this \c transform_iterator by \p __n
   //! @param __n The number of elements to advance
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator&
@@ -285,6 +296,7 @@ public:
 
   //! @brief Decrements this \c transform_iterator by \p __n
   //! @param __n The number of elements to decrement
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator&
@@ -297,6 +309,7 @@ public:
   //! @brief Subscripts the stored iterator by \p __n and applies the stored functor to the result
   //! @param __n The additional offset
   //! @returns _CUDA_VSTD::invoke(__func_, __current_[__n])
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2> _CCCL_AND
                    _CUDA_VSTD::regular_invocable<const _Fn&, _CUDA_VSTD::iter_reference_t<const _Iter2>>)
@@ -309,6 +322,7 @@ public:
   //! @brief Subscripts the stored iterator by \p __n and applies the stored functor to the result
   //! @param __n The additional offset
   //! @returns _CUDA_VSTD::invoke(__func_, __current_[__n])
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
@@ -318,6 +332,7 @@ public:
   }
 
   //! @brief Compares two \c transform_iterator for equality, directly comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -329,6 +344,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two \c transform_iterator for inequality, directly comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -340,6 +356,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Compares two \c transform_iterator for less than, directly comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -350,6 +367,7 @@ public:
   }
 
   //! @brief Compares two \c transform_iterator for greater than, directly comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -360,6 +378,7 @@ public:
   }
 
   //! @brief Compares two \c transform_iterator for less equal, directly comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -370,6 +389,7 @@ public:
   }
 
   //! @brief Compares two \c transform_iterator for greater equal, directly comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -381,6 +401,7 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   //! @brief Three-way-compares two \c transform_iterator, directly three-way-comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -394,6 +415,7 @@ public:
   //! @brief Returns a copy of the \c transform_iterator \p __i advanced by \p __n
   //! @param __i The \c transform_iterator to advance
   //! @param __n The number of elements to advance
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator+(const transform_iterator& __i, difference_type __n)
@@ -405,6 +427,7 @@ public:
   //! @brief Returns a copy of the \c transform_iterator \p __i advanced by \p __n
   //! @param __n The number of elements to advance
   //! @param __i The \c transform_iterator to advance
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator+(difference_type __n, const transform_iterator& __i)
@@ -416,6 +439,7 @@ public:
   //! @brief Returns a copy of the the \c transform_iterator \p __i decremented by \p __n
   //! @param __i The \c transform_iterator to decrement
   //! @param __n The number of elements to decrement
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator-(const transform_iterator& __i, difference_type __n)
@@ -428,6 +452,7 @@ public:
   //! @param __lhs The left \c transform_iterator
   //! @param __rhs The right \c transform_iterator
   //! @return The distance between the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator-(const transform_iterator& __lhs, const transform_iterator& __rhs)

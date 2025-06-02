@@ -107,24 +107,24 @@ _CCCL_CONCEPT __advanceable = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i, const _Ite
   requires(_CUDA_VSTD::convertible_to<decltype(__j - __j), _IotaDiffT<_Iter>>));
 
 template <class, class = void>
-struct counting_iterator_category
+struct __counting_iterator_category
 {};
 
 template <class _Tp>
-struct counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
+struct __counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
 {
   using iterator_category = _CUDA_VSTD::input_iterator_tag;
 };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <_CUDA_VSTD::weakly_incrementable _Start>
   requires _CUDA_VSTD::copyable<_Start>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
           _CUDA_VSTD::enable_if_t<_CUDA_VSTD::weakly_incrementable<_Start>, int> = 0,
           _CUDA_VSTD::enable_if_t<_CUDA_VSTD::copyable<_Start>, int>             = 0>
-#endif // _CCCL_NO_CONCEPTS
-struct counting_iterator : public counting_iterator_category<_Start>
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+struct counting_iterator : public __counting_iterator_category<_Start>
 {
   using iterator_concept = _CUDA_VSTD::conditional_t<
     __advanceable<_Start>,
@@ -140,17 +140,17 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _Start __value_ = _Start();
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counting_iterator()
     requires _CUDA_VSTD::default_initializable<_Start>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Start2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator() noexcept(
     _CUDA_VSTD::is_nothrow_default_constructible_v<_Start2>)
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit counting_iterator(_Start __value) noexcept(
     _CUDA_VSTD::is_nothrow_move_constructible_v<_Start>)

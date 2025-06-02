@@ -81,6 +81,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/policies/policies.cu
     execution/policies/get_execution_policy.cu
     execution/test_concepts.cu
+    execution/test_completion_signatures.cu
     execution/test_conditional.cu
     execution/test_continues_on.cu
     execution/test_just.cu

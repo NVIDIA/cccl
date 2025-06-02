@@ -115,9 +115,9 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Tp>
 concept __integral_constant_like =
@@ -128,7 +128,7 @@ concept __integral_constant_like =
   && bool_constant<_Tp() == _Tp::value>::value
   && bool_constant<static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
@@ -141,7 +141,7 @@ _CCCL_CONCEPT_FRAGMENT(
              (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value)));
 template <class _Tp>
 _CCCL_CONCEPT __integral_constant_like = _CCCL_FRAGMENT(__integral_constant_like_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
 inline constexpr size_t __maybe_static_ext = dynamic_extent;

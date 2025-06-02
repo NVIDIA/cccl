@@ -54,17 +54,17 @@ template <class _View, class _Pred>
 _CCCL_CONCEPT __take_while_const_is_range = _CCCL_REQUIRES_EXPR((_View, _Pred))(
   requires(range<const _View>), requires(indirect_unary_predicate<const _Pred, iterator_t<const _View>>));
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <view _View, class _Pred>
   requires input_range<_View> && is_object_v<_Pred> && indirect_unary_predicate<const _Pred, iterator_t<_View>>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View,
           class _Pred,
           class = enable_if_t<view<_View>>,
           class = enable_if_t<input_range<_View>>,
           class = enable_if_t<is_object_v<_Pred>>,
           class = enable_if_t<indirect_unary_predicate<const _Pred, iterator_t<_View>>>>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class take_while_view : public view_interface<take_while_view<_View, _Pred>>
 {
   _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Pred> __pred_;
@@ -158,17 +158,17 @@ public:
 #endif // _CCCL_STD_VER <= 2017
   };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI take_while_view()
     requires default_initializable<_View> && default_initializable<_Pred>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _View2 = _View, class _Pred2 = _Pred)
   _CCCL_REQUIRES(default_initializable<_View2> _CCCL_AND default_initializable<_Pred2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr take_while_view() noexcept(
     is_nothrow_default_constructible_v<_View2> && is_nothrow_default_constructible_v<_Pred2>)
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr take_while_view(_View __base, _Pred __pred)
       : view_interface<take_while_view<_View, _Pred>>()

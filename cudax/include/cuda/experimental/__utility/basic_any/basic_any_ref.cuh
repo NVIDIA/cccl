@@ -61,7 +61,7 @@ struct __ireference : _Interface
   using interface _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::remove_const_t<_Interface>;
 };
 
-#if defined(_CCCL_NO_CONCEPTS)
+#if !_CCCL_HAS_CONCEPTS()
 //!
 //! A base class for basic_any<__ireference<_Interface>> that provides a
 //! conversion to basic_any<__ireference<_Interface const>>. Only used
@@ -79,7 +79,7 @@ struct __basic_any_reference_conversion_base
 template <class _Interface>
 struct __basic_any_reference_conversion_base<_Interface const>
 {};
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _CCCL_DIAG_PUSH
 // "operator basic_any<...> will not be called for implicit or explicit conversions"
@@ -100,9 +100,9 @@ _CCCL_NV_DIAG_SUPPRESS(554)
 template <class _Interface>
 struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
     : __interface_of<__ireference<_Interface>>
-#if defined(_CCCL_NO_CONCEPTS)
+#if !_CCCL_HAS_CONCEPTS()
     , __basic_any_reference_conversion_base<_Interface>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 {
   static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
   using interface_type                 = _CUDA_VSTD::remove_const_t<_Interface>;
@@ -114,7 +114,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
   auto operator=(basic_any&&) -> basic_any&      = delete;
   auto operator=(basic_any const&) -> basic_any& = delete;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   //! \brief A non-const basic_any reference can be implicitly converted to a
   //! const basic_any reference.
   [[nodiscard]] _CCCL_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
@@ -122,7 +122,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
   {
     return basic_any<__ireference<_Interface const>>(*this);
   }
-#endif // !_CCCL_NO_CONCEPTS
+#endif // _CCCL_HAS_CONCEPTS()
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.

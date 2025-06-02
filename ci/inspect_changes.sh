@@ -2,7 +2,11 @@
 
 # Github action script to identify which subprojects are dirty in a PR
 
-set -u
+set -euo pipefail
+
+# Print error message with script name and line number
+trap 'echo "Error in ${BASH_SOURCE[0]}:${LINENO}"' ERR
+set -o errtrace  # Ensure ERR trap propagates in functions and subshells
 
 # Usage: inspect_changes.sh <base_sha> <head_sha>
 if [ "$#" -ne 2 ]; then
@@ -13,15 +17,23 @@ fi
 base_sha=$1
 head_sha=$2
 
+# Unshallow repo to make it possible to trace the common ancestor.
+if git rev-parse --is-shallow-repository &>/dev/null && git rev-parse --is-shallow-repository | grep -q true; then
+  git fetch origin --unshallow -q
+fi
+
 # Github gives the SHA as the current HEAD of the target ref, not the common ancestor.
 # Find the common ancestor and use that for the base.
-git fetch origin --unshallow -q
+head_sha=$(git rev-parse "$head_sha" || echo "$head_sha")
+base_sha=$(git rev-parse "$base_sha" || echo "$base_sha")
+git fetch origin $head_sha -q
 git fetch origin $base_sha -q
 base_sha=$(git merge-base $head_sha $base_sha)
 
 # Define a list of subproject directories by their subdirectory name:
 subprojects=(
   cccl
+  packaging
   libcudacxx
   cub
   thrust
@@ -36,6 +48,7 @@ subprojects=(
 # Mapped as: key project is rebuilt if any value project is dirty.
 declare -A dependencies=(
   [cccl]=""
+  [packaging]="cccl libcudacxx cub thrust cudax"
   [libcudacxx]="cccl"
   [cub]="cccl libcudacxx thrust c2h"
   [thrust]="cccl libcudacxx cub"
@@ -48,6 +61,7 @@ declare -A dependencies=(
 
 declare -A project_names=(
   [cccl]="CCCL Infrastructure"
+  [packaging]="CCCL Packaging"
   [libcudacxx]="libcu++"
   [cub]="CUB"
   [thrust]="Thrust"
@@ -61,9 +75,13 @@ declare -A project_names=(
 # By default, the project directory is assumed to be the same as the subproject name,
 # but can be overridden here. The `cccl` project is special, and checks for files outside
 # of any subproject directory.
+#
+# *** No trailing slashes, they break things. ***
+#
 declare -A project_dirs=(
-  [cccl_c_parallel]="c/parallel"
-  [stdpar]="test/stdpar"
+  [packaging]='("examples" "test/cmake")'
+  [cccl_c_parallel]='("c/parallel")'
+  [stdpar]='("test/stdpar")'
 )
 
 # Changes to files / directories listed here are ignored when checking if the
@@ -102,11 +120,18 @@ ignore_paths=(
 for subproject in "${subprojects[@]}"; do
   # Check that the subproject directory exists
   if [ "$subproject" != "cccl" ]; then
-    subproject_dir=${project_dirs[$subproject]:-$subproject}
-    if [ ! -d "$subproject_dir" ]; then
-      echo "Error: Subproject '$subproject' directory '$subproject_dir' does not exist."
-      exit 1
+    # project_dirs[$subproject] may be a list of paths, or fallback to $subproject
+    if [[ -n "${project_dirs[$subproject]:-}" ]]; then
+      eval "dirs=${project_dirs[$subproject]}"
+    else
+      dirs=("$subproject")
     fi
+    for dir in "${dirs[@]}"; do
+      if [ ! -d "$dir" ]; then
+        echo "Error: Subproject '$subproject' directory '$dir' does not exist."
+        exit 1
+      fi
+    done
   fi
 
   # If the subproject has dependencies, check that they are valid
@@ -138,62 +163,69 @@ dirty_files() {
   git diff --name-only "${base_sha}" "${head_sha}"
 }
 
-# Return 1 if any files outside of the subproject directories have changed
-inspect_cccl() {
-  exclusions_grep_expr=$(
-    declare -a exclusions
-    for subproject in "${subprojects[@]}"; do
-      if [[ ${subproject} == "cccl" ]]; then
-        continue
-      fi
-      exclusions+=("${project_dirs[$subproject]:-$subproject}")
-    done
+# Returns 0 if any files outside of the subproject directories have changed (i.e., CCCL infra is dirty), 1 otherwise
+# This marks the `cccl` project dirty.
+core_infra_is_dirty() {
+  # Build a list of exclusions (subproject dirs and ignore_paths) for grep
+  exclusions=()
+  for subproject in "${subprojects[@]}"; do
+    if [[ ${subproject} == "cccl" ]]; then
+      continue
+    fi
+    # project_dirs[$subproject] may be a list of paths
+    if [[ -n "${project_dirs[$subproject]:-}" ]]; then
+      eval "dirs=${project_dirs[$subproject]}"
+      for dir in "${dirs[@]}"; do
+        exclusions+=("$dir")
+      done
+    else
+      exclusions+=("$subproject")
+    fi
+  done
 
-    # Manual exclusions:
-    exclusions+=("${ignore_paths[@]}")
+  # Manual exclusions:
+  exclusions+=("${ignore_paths[@]}")
 
-    IFS="|"
-    echo "^(${exclusions[*]})/"
-  )
+  # Build grep pattern: ^(dir1|dir2|...|file1|file2)/
+  grep_pattern="^($(IFS="|"; echo "${exclusions[*]}"))/"
 
-  if dirty_files | grep -v -E "${exclusions_grep_expr}" | grep -q "."; then
-    return 1
-  else
+  if dirty_files | grep -v -E "${grep_pattern}" | grep -q "."; then
     return 0
+  else
+    return 1
   fi
 }
 
-# inspect_subdir <subdir>
-# Returns 1 if any files in the subdirectory have changed
-inspect_subdir() {
+# subdir_is_dirty <subdir>
+# Returns 0 if any files in the subdirectory have changed
+subdir_is_dirty() {
   local subdir="$1"
 
   if dirty_files | grep -E "^${subdir}/" | grep -q '.'; then
-    return 1
-  else
     return 0
+  else
+    return 1
   fi
 }
 
-# add_dependencies <subproject>
-# if the subproject or any of its dependencies are dirty, return 1
-add_dependencies() {
+# project_or_deps_are_dirty <subproject>
+# Returns 0 if the subproject or any of its dependencies are dirty, 1 otherwise
+project_or_deps_are_dirty() {
   local subproject="$1"
 
-  # Check if ${subproject^^}_DIRTY is set to 1, return 1 if it is.
-  local dirty_flag=${subproject^^}_DIRTY
+  local dirty_flag="${subproject^^}_DIRTY"
   if [[ ${!dirty_flag} -ne 0 ]]; then
-    return 1
+    return 0
   fi
 
   for dependency in ${dependencies[$subproject]}; do
     dirty_flag="${dependency^^}_DIRTY"
     if [[ ${!dirty_flag} -ne 0 ]]; then
-      return 1
+      return 0
     fi
   done
 
-  return 0
+  return 1
 }
 
 main() {
@@ -234,9 +266,10 @@ main() {
   echo "|     | Project" | tee_to_step_summary
   echo "|-----|---------" | tee_to_step_summary
 
-  # Assign the return value of `inspect_cccl` to the variable `CCCL_DIRTY`:
-  inspect_cccl
-  CCCL_DIRTY=$?
+  CCCL_DIRTY=0
+  if core_infra_is_dirty; then
+    CCCL_DIRTY=1
+  fi
   checkmark="$(get_checkmark ${CCCL_DIRTY})"
   echo "| ${checkmark} | ${project_names[cccl]}" | tee_to_step_summary
 
@@ -247,10 +280,23 @@ main() {
       continue
     fi
 
-    inspect_subdir ${project_dirs[$subproject]:-$subproject}
-    local dirty=$?
+    # project_dirs[$subproject] may be a list of paths, or fallback to $subproject
+    if [[ -n "${project_dirs[$subproject]:-}" ]]; then
+      eval "dirs=${project_dirs[$subproject]}"
+    else
+      dirs=("$subproject")
+    fi
+    dirty=0
+    for dir in "${dirs[@]}"; do
+      if subdir_is_dirty "$dir"; then
+        dirty=1
+        break
+      fi
+    done
+
     declare ${subproject^^}_DIRTY=${dirty}
     checkmark="$(get_checkmark ${dirty})"
+
     echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
   done
   echo | tee_to_step_summary
@@ -260,9 +306,11 @@ main() {
   echo "|-----|---------" | tee_to_step_summary
 
   for subproject in "${subprojects[@]}"; do
-    add_dependencies ${subproject}
-    local dirty=$?
-    declare ${subproject^^}_DIRTY=${dirty}
+    dirty=0
+    if project_or_deps_are_dirty "${subproject}"; then
+      dirty=1
+    fi
+    declare ${subproject^^}_OR_DEPS_DIRTY=${dirty}
     checkmark="$(get_checkmark ${dirty})"
     echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
   done
@@ -271,7 +319,7 @@ main() {
 
   declare -a dirty_subprojects=()
   for subproject in "${subprojects[@]}"; do
-    var_name="${subproject^^}_DIRTY"
+    var_name="${subproject^^}_OR_DEPS_DIRTY"
     if [[ ${!var_name} -ne 0 ]]; then
       dirty_subprojects+=("$subproject")
     fi

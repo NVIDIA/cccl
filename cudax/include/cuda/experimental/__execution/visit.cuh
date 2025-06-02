@@ -133,6 +133,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 [[maybe_unused]]
 _CCCL_GLOBAL_CONSTANT visit_t visit{};
 
+template <class _Visitor, class _CvSndr, class _Context>
+using __visit_result_t _CCCL_NODEBUG_ALIAS =
+  decltype(execution::visit(declval<_Visitor&>(), declval<_CvSndr>(), declval<_Context&>()));
+
 } // namespace cuda::experimental::execution
 
 #undef _CCCL_FWD_LIKE

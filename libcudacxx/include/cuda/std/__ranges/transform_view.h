@@ -91,16 +91,16 @@ template <class _Fn, class _View>
 inline constexpr bool __nothrow_subscript<_Fn, _View, enable_if_t<random_access_range<_View>>> =
   is_nothrow_invocable_v<_Fn&, range_reference_t<_View>>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <input_range _View, move_constructible _Fn>
   requires __transform_view_constraints<_View, _Fn>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View,
           class _Fn,
           class = enable_if_t<input_range<_View>>,
           class = enable_if_t<move_constructible<_Fn>>,
           class = enable_if_t<__transform_view_constraints<_View, _Fn>>>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class transform_view : public view_interface<transform_view<_View, _Fn>>
 {
   _CCCL_NO_UNIQUE_ADDRESS _View __base_ = _View();
@@ -136,15 +136,15 @@ public:
     using value_type      = remove_cvref_t<invoke_result_t<__maybe_const<_Const, _Fn>&, range_reference_t<_Base>>>;
     using difference_type = range_difference_t<_Base>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
     _CCCL_HIDE_FROM_ABI __iterator()
       requires default_initializable<iterator_t<_Base>>
     = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(default_initializable<iterator_t<_Base2>>)
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator() noexcept(is_nothrow_default_constructible_v<_Base2>) {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator(_Parent& __parent, iterator_t<_Base> __current)
         : __parent_(_CUDA_VSTD::addressof(__parent))
@@ -411,17 +411,17 @@ public:
     }
   };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI transform_view()
     requires default_initializable<_View> && default_initializable<_Fn>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(default_initializable<_View2>&& default_initializable<_Fn>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_view() noexcept(
     is_nothrow_default_constructible_v<_View2> && is_nothrow_default_constructible_v<_Fn>)
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_view(_View __base, _Fn __func)
       : view_interface<transform_view<_View, _Fn>>()

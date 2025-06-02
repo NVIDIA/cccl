@@ -106,6 +106,8 @@ public:
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
   friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
+
+  using default_queries = properties_list<device_accessible>;
 #endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");

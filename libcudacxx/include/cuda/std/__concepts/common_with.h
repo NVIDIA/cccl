@@ -31,7 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.common]
 
@@ -41,7 +41,7 @@ concept common_with = same_as<common_type_t<_Tp, _Up>, common_type_t<_Up, _Tp>> 
   static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>());
 } && common_reference_with<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>> && common_reference_with<add_lvalue_reference_t<common_type_t<_Tp, _Up>>, common_reference_t<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>>>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(__common_type_exists_,
@@ -73,7 +73,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp, class _Up>
 _CCCL_CONCEPT common_with = _CCCL_FRAGMENT(__common_with_, _Tp, _Up);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

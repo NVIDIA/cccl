@@ -24,6 +24,7 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/__fwd/barrier_native_handle.h>
 #if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -157,12 +158,10 @@ public:
         unsigned int __active  = __activeA & __activeB;
         int __inc              = ::__popc(__active) * __update;
 
-        unsigned __laneid;
-        asm("mov.u32 %0, %%laneid;" : "=r"(__laneid));
         int __leader = ::__ffs(__active) - 1;
         // All threads in mask synchronize here, establishing cummulativity to the __leader:
         ::__syncwarp(__mask);
-        if (__leader == static_cast<int>(__laneid)) {
+        if (__leader == static_cast<int>(_CUDA_VPTX::get_sreg_laneid())) {
           __token = __barrier.arrive(__inc);
         } __token = ::__shfl_sync(__active, __token, __leader);),
       NV_IS_HOST,

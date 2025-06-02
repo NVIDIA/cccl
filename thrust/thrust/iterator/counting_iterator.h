@@ -185,12 +185,11 @@ public:
   //! Copy constructor copies the value of another counting_iterator with related System type.
   //!
   //! \param rhs The \p counting_iterator to copy.
-  template <
-    class OtherSystem,
-    detail::enable_if_convertible_t<
-      typename iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder>>::type,
-      typename iterator_system<super_t>::type,
-      int> = 0>
+  template <class OtherSystem,
+            detail::enable_if_convertible_t<
+              iterator_system_t<counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder>>,
+              iterator_system_t<super_t>,
+              int> = 0>
   _CCCL_HOST_DEVICE
   counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder> const& rhs)
       : super_t(rhs.base())

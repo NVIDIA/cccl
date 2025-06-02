@@ -85,7 +85,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
   requires((_Index == 0) && copyable<_Iter>) || (_Index == 1)
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
@@ -94,10 +94,10 @@ template <size_t _Index,
           class _Sent,
           subrange_kind _Kind,
           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int> = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange);
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
   requires(_Index < 2)
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
@@ -107,7 +107,7 @@ template <
   class _Sent,
   subrange_kind _Kind,
   enable_if_t<_Index<2, int> = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange);
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
