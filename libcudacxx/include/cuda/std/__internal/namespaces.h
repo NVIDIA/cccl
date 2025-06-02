@@ -73,6 +73,9 @@
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _LIBCUDACXX_END_NAMESPACE_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION namespace cuda { namespace execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION } } }
+
 // Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
 #if _CCCL_COMPILER(CLANG, ==, 16)
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE namespace __hidden {
