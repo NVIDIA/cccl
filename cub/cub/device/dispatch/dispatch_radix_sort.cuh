@@ -992,26 +992,6 @@ struct DispatchRadixSort
   // Chained policy invocation
   //------------------------------------------------------------------------------
 
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::false_type, ActivePolicyT policy = {})
-  {
-    // Invoke upsweep-downsweep
-    return InvokePasses(
-      kernel_source.RadixSortUpsweepKernel(),
-      kernel_source.RadixSortAltUpsweepKernel(),
-      kernel_source.DeviceRadixSortScanBinsKernel(),
-      kernel_source.RadixSortDownsweepKernel(),
-      kernel_source.RadixSortAltDownsweepKernel(),
-      policy);
-  }
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::true_type, ActivePolicyT policy = {})
-  {
-    // Invoke onesweep
-    return InvokeOnesweep(policy);
-  }
-
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeCopy()
   {
     // is_overwrite_okay == false here
@@ -1104,25 +1084,26 @@ struct DispatchRadixSort
       // Small, single tile size
       return InvokeSingleTile(kernel_source.RadixSortSingleTileKernel(), wrapped_policy);
     }
-// We guard this because this will instantiate and compile both branches, which is not necessary if we know whether we
-// are using one sweep at compile-time
-#ifdef CCCL_C_EXPERIMENTAL
-    else if (wrapped_policy.IsOnesweep())
+
+    if
+#ifndef CCCL_C_EXPERIMENTAL
+      // Branching at compile time prevents instantiation and compilation of both branches
+      constexpr
+#endif // CCCL_C_EXPERIMENTAL
+      (wrapped_policy.IsOnesweep())
     {
-      // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<true>, wrapped_policy);
+      return InvokeOnesweep(wrapped_policy);
     }
     else
     {
-      return InvokeManyTiles(detail::bool_constant_v<false>, wrapped_policy);
+      return InvokePasses(
+        kernel_source.RadixSortUpsweepKernel(),
+        kernel_source.RadixSortAltUpsweepKernel(),
+        kernel_source.DeviceRadixSortScanBinsKernel(),
+        kernel_source.RadixSortDownsweepKernel(),
+        kernel_source.RadixSortAltDownsweepKernel(),
+        wrapped_policy);
     }
-#else
-    else
-    {
-      // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<ActivePolicyT::ONESWEEP>, wrapped_policy);
-    }
-#endif
   }
 
   //------------------------------------------------------------------------------
