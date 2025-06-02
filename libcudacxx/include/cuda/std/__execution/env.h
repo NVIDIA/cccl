@@ -289,7 +289,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     return env::__get_1st<_Query>(*this).query(__query);
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __tuple<_Envs...> __envs_;
+  __tuple<_Envs...> __envs_;
 };
 
 template <class... _Envs>
