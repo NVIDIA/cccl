@@ -162,7 +162,7 @@ doxygen_predefined = [
     "_CCCL_DOXYGEN_INVOKED",
     "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
     "_CCCL_TEMPLATE(x)=template<x, ",
-    "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
+    "_CCCL_TRAILING_REQUIRES(x)=x _CCCL_EAT_REST",
     "__device__",
     "__host__",
     "__forceinline__",
