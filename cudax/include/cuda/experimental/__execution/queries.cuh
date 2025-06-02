@@ -36,6 +36,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -43,9 +44,18 @@ namespace cuda::experimental::execution
 {
 // NOLINTBEGIN(misc-unused-using-decls)
 using _CUDA_STD_EXEC::__forwarding_query;
-using _CUDA_STD_EXEC::__queryable_with;
+using _CUDA_STD_EXEC::__unwrap_reference_t;
+using _CUDA_STD_EXEC::env;
+using _CUDA_STD_EXEC::env_of_t;
 using _CUDA_STD_EXEC::forwarding_query;
 using _CUDA_STD_EXEC::forwarding_query_t;
+using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::get_env_t;
+using _CUDA_STD_EXEC::prop;
+
+using _CUDA_STD_EXEC::__nothrow_queryable_with;
+using _CUDA_STD_EXEC::__query_result_t;
+using _CUDA_STD_EXEC::__queryable_with;
 // NOLINTEND(misc-unused-using-decls)
 
 //////////////////////////////////////////////////////////////////////////////////////////

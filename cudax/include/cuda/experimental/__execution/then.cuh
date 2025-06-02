@@ -161,7 +161,7 @@ private:
       }
       else
       {
-        _Tag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
+        _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
       }
     }
 
