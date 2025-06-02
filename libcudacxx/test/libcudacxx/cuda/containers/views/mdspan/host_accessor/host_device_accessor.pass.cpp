@@ -26,6 +26,13 @@ __host__ __device__ void basic_mdspan_access_test()
   unused(m_md[0]);
 }
 
+__device__ void device_mdspan_access_test()
+{
+  int array[] = {1, 2, 3, 4};
+  cuda::device_mdspan<int, ext_t> d_md{array, ext_t{}};
+  unused(d_md[0]);
+}
+
 __global__ void test_kernel(cuda::host_mdspan<int, ext_t> md)
 {
   cuda::host_mdspan<int, ext_t> h_md2{md};
