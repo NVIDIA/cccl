@@ -204,7 +204,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
   }
   ctx.get_dot()->set_tracing(true);
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
   ctx.change_stage(); // for better DOT rendering
 
   std::vector<double> tv;
@@ -244,7 +244,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
       }
     }
 
-    cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+    cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
     ctx.change_stage(); // for better DOT rendering
     stop = std::chrono::steady_clock::now();
 

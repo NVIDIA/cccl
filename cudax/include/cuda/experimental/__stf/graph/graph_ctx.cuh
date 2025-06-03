@@ -302,7 +302,7 @@ public:
   }
 
   // submit a new stage : this will submit a graph in a stream that we return
-  cudaStream_t task_fence()
+  cudaStream_t fence()
   {
     change_stage();
     // Get the stream used to submit the graph of the stage we have
@@ -420,7 +420,7 @@ public:
     get_state().detach_allocators(*this);
 
     // Make sure all pending async ops are sync'ed with
-    task_fence_impl(*this);
+    fence_impl(*this);
 
     auto& state = this->state();
 
@@ -525,7 +525,7 @@ public:
 
     /* This forces the completion of the host callback, so that the host
      * thread can use the content for dynamic control flow */
-    cuda_safe_call(cudaStreamSynchronize(task_fence()));
+    cuda_safe_call(cudaStreamSynchronize(fence()));
 
     return out;
   }
@@ -541,11 +541,11 @@ private:
   }
 
   /// @brief Inserts an empty node that depends on all pending operations
-  cudaStream_t task_fence_impl(backend_ctx_untyped& bctx)
+  cudaStream_t fence_impl(backend_ctx_untyped& bctx)
   {
     auto& state = this->state();
 
-    auto prereq_fence = state.insert_task_fence(*get_dot());
+    auto prereq_fence = state.insert_fence(*get_dot());
 
     const size_t graph_stage             = state.graph_stage;
     ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereq_fence, graph_stage);
