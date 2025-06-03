@@ -141,7 +141,7 @@ template <
     ScanTileState<OffsetT>,
     EqualityOpT,
     OffsetT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename VSMemHelperT          = detail::unique_by_key::VSMemHelper,
   typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
   typename ValueT                = detail::it_value_t<ValueInputIteratorT>>

@@ -126,7 +126,7 @@ template <typename KeyInputIteratorT,
             ValueIteratorT,
             OffsetT,
             CompareOpT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           typename VSMemHelperT          = detail::merge_sort::VSMemHelper,
           typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
           typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
@@ -263,7 +263,7 @@ struct DispatchMergeSort
           CompareOpT,
           KeyT,
           ValueT>(wrapped_policy.MergeSort());
-      const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
+      const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
       size_t allocation_sizes[4] = {
