@@ -368,7 +368,7 @@ __launch_bounds__(int(ChainedPolicyT::ReducePolicy::BLOCK_THREADS)) void Determi
       const int idx = i + j * GRID_DIM * BLOCK_THREADS;
       if (idx < num_items)
       {
-        items[j] = transform_op(THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in)[idx]);
+        items[j] = transform_op(d_in[idx]);
       }
     }
 
@@ -507,7 +507,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = threadIdx.x; i < num_items; i += BLOCK_THREADS)
   {
-    thread_aggregate += transform_op(THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in)[i]);
+    thread_aggregate += transform_op(d_in[i]);
   }
 
   AccumT block_aggregate = BlockReduceT(temp_storage).Reduce(thread_aggregate, reduction_op, num_items);

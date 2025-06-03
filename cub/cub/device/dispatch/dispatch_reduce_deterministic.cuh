@@ -137,6 +137,7 @@ struct DispatchReduceDeterministic
   using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
+  using input_unwrapped_it_t  = thrust::try_unwrap_contiguous_iterator_t<InputIteratorT>;
 
   //---------------------------------------------------------------------------
   // Problem state
@@ -150,8 +151,8 @@ struct DispatchReduceDeterministic
   /// Reference to size in bytes of `d_temp_storage` allocation
   size_t& temp_storage_bytes;
 
-  /// Pointer to the input sequence of data items
-  InputIteratorT d_in;
+  /// Unwrapped Pointer to the input sequence of data items
+  input_unwrapped_it_t d_in;
 
   /// Pointer to the output aggregate
   OutputIteratorT d_out;
@@ -389,7 +390,7 @@ struct DispatchReduceDeterministic
       return InvokeSingleTile<ActivePolicyT>(
         detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
-          InputIteratorT,
+          input_unwrapped_it_t,
           OutputIteratorT,
           OffsetT,
           reduction_op_t,
@@ -402,7 +403,7 @@ struct DispatchReduceDeterministic
       return InvokePasses<ActivePolicyT>(
         detail::reduce::DeterministicDeviceReduceKernel<
           MaxPolicyT,
-          InputIteratorT,
+          input_unwrapped_it_t,
           OffsetT,
           reduction_op_t,
           deterministic_accum_t,
@@ -471,11 +472,13 @@ struct DispatchReduceDeterministic
       return error;
     }
 
+    input_unwrapped_it_t d_in_unwrapped = thrust::try_unwrap_contiguous_iterator(d_in);
+
     // Create dispatch functor
     DispatchReduceDeterministic dispatch{
       d_temp_storage,
       temp_storage_bytes,
-      d_in,
+      d_in_unwrapped,
       d_out,
       num_items,
       deterministic_add_t{},
