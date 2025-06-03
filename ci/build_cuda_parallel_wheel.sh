@@ -16,6 +16,13 @@ which python
 python --version
 echo "Done setting up python env"
 
+# Figure out the version to use for the package
+export PACKAGE_VERSION_PREFIX="0.1."
+package_version=$(/workspace/ci/generate_version.sh)
+echo "Using package version ${package_version}"
+# Override the version used by setuptools_scm to the custom version
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_PARALLEL="${package_version}"
+
 # Build wheels
 python -m pip wheel --no-deps /workspace/python/cuda_cccl
 python -m pip wheel --no-deps .
