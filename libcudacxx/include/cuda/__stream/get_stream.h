@@ -22,6 +22,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__fwd/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
@@ -34,7 +35,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 class stream_ref;
-struct get_stream_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __convertible_to_stream_ref = _CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>;
