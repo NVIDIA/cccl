@@ -28,7 +28,7 @@
 #  include <new> // for align_val_t
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
 
-#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
+#if __cpp_sized_deallocation < 201309L
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 0
 #else
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 1

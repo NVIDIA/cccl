@@ -19,7 +19,7 @@
 #include "testing.cuh" // IWYU pragma: keep
 
 // Workaround for https://github.com/llvm/llvm-project/issues/113087
-#if defined(__clang__) && defined(__cpp_lib_tuple_like)
+#if defined(__clang__) && __cpp_lib_tuple_like >= 202207L
 #  define C2H_CHECK_TUPLE(...) CHECK((__VA_ARGS__))
 #else
 #  define C2H_CHECK_TUPLE(...) CHECK(__VA_ARGS__)

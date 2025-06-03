@@ -51,7 +51,7 @@
 #define __cccl_lib_math_constants               201907L
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY) \
   && defined(_CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY)
-#  define __cpp_lib_reference_from_temporary 202202L
+#  define __cccl_lib_reference_from_temporary 202202L
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY && _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 #define __cccl_lib_shift                        201806L
 #define __cccl_lib_to_address                   201711L
@@ -60,7 +60,7 @@
 #define __cccl_lib_transparent_operators        201210L
 #define __cccl_lib_transformation_trait_aliases 201304L
 #define __cccl_lib_tuple_element_t              201402L
-// #define __cpp_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
+// #define __cccl_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
 #define __cccl_lib_type_identity                 201806L
 #define __cccl_lib_type_trait_variable_templates 201510L
 #define __cccl_lib_unreachable                   202202L
@@ -86,7 +86,7 @@
 #define __cccl_lib_null_iterators 201304L
 #define __cccl_lib_optional       202110L
 #ifdef CCCL_ENABLE_OPTIONAL_REF
-#  define __cpp_lib_optional_ref 202602L
+#  define __cccl_lib_optional_ref 202602L
 #endif // CCCL_ENABLE_OPTIONAL_REF
 // # define __cccl_lib_quoted_string_io                     201304L
 #define __cccl_lib_result_of_sfinae            201210L
@@ -179,8 +179,7 @@
 // # define __cccl_lib_constexpr_utility                    201811L
 // # define __cccl_lib_constexpr_vector                     201907L
 // # define __cccl_lib_coroutine                            201902L
-#  if defined(__cpp_impl_destroying_delete) && __cpp_impl_destroying_delete >= 201806L \
-    && defined(__cpp_lib_destroying_delete)
+#  if __cpp_impl_destroying_delete >= 201806L && __cpp_lib_destroying_delete >= 201806L
 #    define __cccl_lib_destroying_delete 201806L
 #  endif
 // # define __cccl_lib_erase_if                             201811L

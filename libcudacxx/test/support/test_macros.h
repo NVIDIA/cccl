@@ -87,7 +87,7 @@
 #  endif
 #endif
 
-#if !_CCCL_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
+#if !_CCCL_HAS_FEATURE(cxx_rtti) && __cpp_rtti < 199711L && !defined(__GXX_RTTI)
 #  define TEST_HAS_NO_RTTI
 #endif
 

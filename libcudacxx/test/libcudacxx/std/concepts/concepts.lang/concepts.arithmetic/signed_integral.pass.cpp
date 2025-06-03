@@ -59,9 +59,9 @@ static_assert(CheckSignedIntegralQualifiers<long long>(), "");
 static_assert(CheckSignedIntegralQualifiers<wchar_t>() == cuda::std::is_signed_v<wchar_t>, "");
 static_assert(CheckSignedIntegralQualifiers<bool>() == cuda::std::is_signed_v<bool>, "");
 static_assert(CheckSignedIntegralQualifiers<char>() == cuda::std::is_signed_v<char>, "");
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
 static_assert(CheckSignedIntegralQualifiers<char8_t>() == cuda::std::is_signed_v<char8_t>, "");
-#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
 static_assert(CheckSignedIntegralQualifiers<char16_t>() == cuda::std::is_signed_v<char16_t>, "");
 static_assert(CheckSignedIntegralQualifiers<char32_t>() == cuda::std::is_signed_v<char32_t>, "");
 

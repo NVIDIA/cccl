@@ -28,7 +28,7 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 
-#if __cpp_lib_three_way_comparison
+#if __cpp_lib_three_way_comparison >= 201907L
 #  include <compare> // IWYU pragma: keep
 #endif
 

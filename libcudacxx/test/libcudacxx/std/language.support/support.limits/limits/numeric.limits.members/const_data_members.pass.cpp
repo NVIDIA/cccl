@@ -89,9 +89,9 @@ int main(int, char**)
   test_type<signed char>();
   test_type<unsigned char>();
   test_type<wchar_t>();
-#if TEST_STD_VER >= 2020 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test_type<char8_t>();
-#endif // TEST_STD_VER >= 2020 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
   test_type<char16_t>();
   test_type<char32_t>();
   test_type<short>();

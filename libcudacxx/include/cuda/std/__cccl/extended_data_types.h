@@ -117,11 +117,11 @@
  * char8_t
  **********************************************************************************************************************/
 
-#if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#if _CCCL_STD_VER <= 2017 || __cpp_char8_t < 201811L
 #  define _CCCL_HAS_CHAR8_T() 0
 #else
 #  define _CCCL_HAS_CHAR8_T() 1
-#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#endif // _CCCL_STD_VER <= 2017 || __cpp_char8_t < 201811L
 
 // We currently do not support any of the STL wchar facilities
 #define _CCCL_HAS_WCHAR_T() 0

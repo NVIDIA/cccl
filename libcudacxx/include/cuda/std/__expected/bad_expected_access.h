@@ -26,11 +26,11 @@
 #include <nv/target>
 
 #if _CCCL_HAS_EXCEPTIONS()
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected >= 202202L
 #    include <expected>
-#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected >= 202202L^^^ / vvv __cpp_lib_expected < 202202L vvv
 #    include <exception>
-#  endif // !__cpp_lib_expected
+#  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,11 +39,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_EXCEPTIONS()
 
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected >= 202202L
 
 using ::std::bad_expected_access;
 
-#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
 
 template <class _Err>
 class bad_expected_access;
@@ -104,7 +104,7 @@ public:
 private:
   _Err __unex_;
 };
-#  endif // !__cpp_lib_expected
+#  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 
 #endif // _CCCL_HAS_EXCEPTIONS()
 
