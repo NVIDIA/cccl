@@ -53,8 +53,8 @@ namespace cuda::experimental::stf
  * https://en.cppreference.com/w/cpp/experimental/scope_success
  */
 ///@{
-#define SCOPE(kind)                                                                                \
-  auto CUDASTF_UNIQUE_NAME(scope_guard) =                                                          \
+#define SCOPE(kind)                                                                      \
+  auto CUDASTF_UNIQUE_NAME(scope_guard) =                                                \
     ::std::integral_constant<::cuda::experimental::stf::scope_guard_condition,           \
                              (::cuda::experimental::stf::scope_guard_condition::kind)>() \
       ->*[&]()
@@ -103,10 +103,9 @@ auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
 
   // Threshold is -1 for SCOPE(exit), the same as current exceptions count for SCOPE(success), and 1 above the current
   // exception count for SCOPE(fail).
-  return result(::std::forward<F>(f),
-                cond == scope_guard_condition::exit
-                  ? -1
-                  : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
+  return result(
+    ::std::forward<F>(f),
+    cond == scope_guard_condition::exit ? -1 : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
 }
 /// @endcond
 
