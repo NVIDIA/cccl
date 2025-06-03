@@ -15,11 +15,11 @@
 #endif // !CCCL_C_EXPERIMENTAL
 
 #include <cuda.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -42,7 +42,7 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t d_levels,
+  cccl_type_enum d_levels,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -60,7 +60,7 @@ CCCL_C_API CUresult cccl_device_histogram_range(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
   cccl_value_t num_output_levels,
-  cccl_value_t d_levels,
+  cccl_iterator_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,

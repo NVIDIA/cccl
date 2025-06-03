@@ -26,7 +26,7 @@ void build_histogram(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t d_levels,
+  cccl_type_enum d_levels,
   uint64_t num_rows,
   uint64_t row_stride_samples,
   bool is_evenly_segmented)
@@ -80,7 +80,14 @@ void histogram_even(
 {
   cccl_device_histogram_build_result_t build;
   build_histogram(
-    &build, d_samples, num_output_levels_val, d_output_histograms, lower_level, num_rows, row_stride_samples, true);
+    &build,
+    d_samples,
+    num_output_levels_val,
+    d_output_histograms,
+    lower_level.type.type,
+    num_rows,
+    row_stride_samples,
+    true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -125,14 +132,21 @@ void histogram_range(
   cccl_iterator_t d_output_histograms,
   cccl_value_t num_output_levels,
   int num_output_levels_val,
-  cccl_value_t d_levels,
+  cccl_iterator_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
   build_histogram(
-    &build, d_samples, num_output_levels_val, d_output_histograms, d_levels, num_rows, row_stride_samples, true);
+    &build,
+    d_samples,
+    num_output_levels_val,
+    d_output_histograms,
+    d_levels.value_type.type,
+    num_rows,
+    row_stride_samples,
+    true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -572,7 +586,7 @@ C2H_TEST("DeviceHistogram::HistogramRange basic use", "[histogram][device]", sam
     //   {},
     //   get_type_info<LevelT>(),
     //   h_levels[0].data()};
-    value_t<LevelT*> d_levels{h_levels[0].data()};
+    pointer_t<LevelT> d_levels{h_levels[0]};
 
     if constexpr (active_channels == 1 && channels == 1)
     {
