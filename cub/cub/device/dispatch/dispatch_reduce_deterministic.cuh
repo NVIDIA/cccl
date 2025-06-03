@@ -322,13 +322,7 @@ struct DispatchReduceDeterministic
 
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
       reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(reduce_kernel,
-            d_in,
-            d_block_reductions,
-            static_cast<int>(num_items),
-            reduction_op,
-            transform_op,
-            reduce_grid_size);
+      .doit(reduce_kernel, d_in, d_block_reductions, num_items, reduction_op, transform_op, reduce_grid_size);
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -467,6 +461,8 @@ struct DispatchReduceDeterministic
     cudaStream_t stream                              = {},
     TransformOpT transform_op                        = {})
   {
+    static_assert(sizeof(OffsetT) <= 4, "OffsetT must be 4 bytes or less for deterministic reduction");
+
     cudaError error = cudaSuccess;
 
     // Get PTX version
