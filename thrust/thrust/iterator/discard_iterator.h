@@ -88,23 +88,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<int> keys(7), values(7);
-//!
-//!   keys[0] = 1;
-//!   keys[1] = 3;
-//!   keys[2] = 3;
-//!   keys[3] = 3;
-//!   keys[4] = 2;
-//!   keys[5] = 2;
-//!   keys[6] = 1;
-//!
-//!   values[0] = 9;
-//!   values[1] = 8;
-//!   values[2] = 7;
-//!   values[3] = 6;
-//!   values[4] = 5;
-//!   values[5] = 4;
-//!   values[6] = 3;
+//!   thrust::device_vector<int> keys{1, 3, 3, 3, 2, 2, 1};
+//!   thrust::device_vector<int> values{9, 8, 7, 6, 5, 4, 3};
 //!
 //!   thrust::device_vector<int> result(4);
 //!

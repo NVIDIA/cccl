@@ -784,7 +784,7 @@ struct UniqueByKeyPolicyWrapper<StaticPolicyT,
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::UniqueByKeyPolicyT> UniqueByKey()
+  CUB_RUNTIME_FUNCTION static constexpr auto UniqueByKey()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
   }

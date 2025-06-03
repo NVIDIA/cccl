@@ -32,7 +32,6 @@
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
-#include <cuda/experimental/__stf/utility/unstable_unique.cuh>
 
 #include <algorithm>
 #include <atomic>

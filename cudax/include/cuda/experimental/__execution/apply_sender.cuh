@@ -56,11 +56,12 @@ public:
   //! @tparam _Args The arguments to pass to the algorithm.
   //! @param __sndr The sender object.
   //! @param __args The arguments to pass to the algorithm.
-  //! @return `DOM().apply_sender(_Tag(), __sndr, __args...)`, where `DOM` is the first of
+  //! @return `DOM{}.apply_sender(_Tag{}, __sndr, __args...)`, where `DOM` is the first of
   //! [`_Domain`, `default_domain`] to make the expression well-formed.
   //! @note This function is `constexpr` and `noexcept` if the underlying domain's
   //! `apply_sender` is `noexcept`.
   //! @throws Any exception thrown by the underlying domain's `apply_sender`.
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Domain, class _Tag, class _Sndr, class... _Args>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Tag, _Sndr&& __sndr, _Args&&... __args) const
     noexcept(noexcept(__apply_domain_t<_Domain, _Tag, _Sndr, _Args...>{}.apply_sender(

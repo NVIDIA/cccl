@@ -46,6 +46,7 @@
 #  define _CCCL_HAS_INT128() 1
 #endif
 
+// Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
 #if !_CCCL_HAS_CUDA_COMPILER()
 #  undef _CCCL_HAS_LONG_DOUBLE

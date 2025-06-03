@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_META
-#define __CUDAX_ASYNC_DETAIL_META
+#ifndef __CUDAX_EXECUTION_META
+#define __CUDAX_EXECUTION_META
 
 #include <cuda/std/detail/__config>
 
@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
+
 #if __cpp_lib_three_way_comparison
 #  include <compare> // IWYU pragma: keep
 #endif
@@ -38,15 +40,6 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 
 namespace cuda::experimental::execution
 {
-template <class _Ret, class... _Args>
-using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
-
-template <class _Ty>
-auto declval() noexcept -> _Ty&&;
-
-template <size_t... _Vals>
-struct __moffsets;
-
 // The following must be left undefined
 template <class...>
 struct _DIAGNOSTIC;
@@ -150,9 +143,6 @@ inline constexpr bool __type_contains_error =
 template <class... _Ts>
 using __type_find_error _CCCL_NODEBUG_ALIAS = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
 
-template <template <class...> class _Fn, class... _Ts>
-inline constexpr bool __type_valid_v = _CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value;
-
 template <bool _Error>
 struct __type_self_or_error_with_
 {
@@ -229,7 +219,7 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename _CUDA_VSTD::conditional_t<__type_valid_v<_Fn, _Ts...>, //
+    typename _CUDA_VSTD::conditional_t<_CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value, //
                                        __type_try_quote<_Fn>,
                                        _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
 };
@@ -241,18 +231,18 @@ struct __type_function
   using __call _CCCL_NODEBUG_ALIAS = _Return(_Args...);
 };
 
-template <class _First, class _Second>
-struct __type_pair
+template <class _Return>
+struct __type_function1
 {
-  using first _CCCL_NODEBUG_ALIAS  = _First;
-  using second _CCCL_NODEBUG_ALIAS = _Second;
+  template <class _Arg>
+  using __call _CCCL_NODEBUG_ALIAS = _Return(_Arg);
 };
 
-template <class _Pair>
-using __type_first _CCCL_NODEBUG_ALIAS = typename _Pair::first;
+template <class _First, class _Second>
+using __type_first = _First;
 
-template <class _Pair>
-using __type_second _CCCL_NODEBUG_ALIAS = typename _Pair::second;
+template <class _First, class _Second>
+using __type_second = _Second;
 
 template <template <class...> class _Second, template <class...> class _First>
 struct __type_compose_quote
@@ -285,17 +275,10 @@ struct __type_self_or
   template <class _Uy = _Ty>
   using __call _CCCL_NODEBUG_ALIAS = _Uy;
 };
-
-template <class _Ret>
-struct __type_quote_function
-{
-  template <class... _Args>
-  using __call _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
-};
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_META

@@ -104,7 +104,7 @@ from cuda.cooperative.experimental._typing import (
 def scan(
     dtype: DtypeType,
     threads_per_block: DimType,
-    items_per_thread: int = 1,
+    items_per_thread: int,
     initial_value: Any = None,
     mode: Literal["exclusive", "inclusive"] = "exclusive",
     scan_op: ScanOpType = "+",
@@ -128,8 +128,8 @@ def scan(
         for a 2D or 3D block, respectively.
     :type  threads_per_block: DimType
 
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
+    :param items_per_thread: Supplies the number of items partitioned onto
+        each thread.  This parameter must be greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param initial_value: Optionally supplies the initial value to use for the
@@ -156,17 +156,13 @@ def scan(
     :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"], optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.  Not supported if
-        ``items_per_thread > 1``.
+        user-defined types.  The default is *None*.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
         (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
 
     :raises ValueError: If ``items_per_thread`` is less than 1.
-
-    :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
-        is not *None* (i.e. a user-defined type is being used).
 
     :raises ValueError: If ``mode`` is not one of the supported modes
         (``"exclusive"`` or ``"inclusive"``).
@@ -218,12 +214,6 @@ def scan(
         cpp_function_name = f"{cpp_func_prefix}Sum"
     else:
         cpp_function_name = f"{cpp_func_prefix}Scan"
-
-    # If items_per_thread > 1, we need to check that methods is not None.
-    if items_per_thread > 1 and methods is not None:
-        raise ValueError(
-            "user-defined types are not supported for items_per_thread > 1"
-        )
 
     # An initial value is not supported for inclusive and exclusive sums.
     if initial_value is not None and scan_op.is_sum:
@@ -654,7 +644,8 @@ def scan(
             make_binary_tempfile(ltoir, ".ltoir")
             for ltoir in specialization.get_lto_ir()
         ],
-        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )
 
@@ -662,7 +653,7 @@ def scan(
 def exclusive_sum(
     dtype: DtypeType,
     threads_per_block: DimType,
-    items_per_thread: int = 1,
+    items_per_thread: int,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -707,8 +698,8 @@ def exclusive_sum(
         for a 2D or 3D block, respectively.
     :type  threads_per_block: DimType
 
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
+    :param items_per_thread: Supplies the number of items partitioned onto
+        each thread.  This parameter must be greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by the
@@ -756,7 +747,7 @@ def exclusive_sum(
 def inclusive_sum(
     dtype: DtypeType,
     threads_per_block: DimType,
-    items_per_thread: int = 1,
+    items_per_thread: int,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -773,8 +764,8 @@ def inclusive_sum(
         for a 2D or 3D block, respectively.
     :type  threads_per_block: DimType
 
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
+    :param items_per_thread: Supplies the number of items partitioned onto
+        each thread.  This parameter must be greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by the
@@ -820,8 +811,8 @@ def exclusive_scan(
     dtype: DtypeType,
     threads_per_block: DimType,
     scan_op: ScanOpType,
+    items_per_thread: int,
     initial_value: Any = None,
-    items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -841,14 +832,14 @@ def exclusive_scan(
     :param scan_op: Supplies the scan operator to use for the block-wide scan.
     :type  scan_op: ScanOpType
 
+    :param items_per_thread: Supplies the number of items partitioned onto
+        each thread.  This parameter must be greater than or equal to 1.
+    :type  items_per_thread: int, optional
+
     :param initial_value: Optionally supplies the initial value to use for the
         block-wide scan.  If a non-None value is supplied, ``prefix_op`` must
         be *None*.
     :type  initial_value: Any, optional
-
-    :param items_per_thread: Optionally supplies the number of items
-        partitioned onto each thread.  Defaults to *1*.
-    :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by
         the first warp of threads in a block with the block aggregate value;
@@ -912,8 +903,8 @@ def inclusive_scan(
     dtype: DtypeType,
     threads_per_block: DimType,
     scan_op: ScanOpType,
+    items_per_thread: int,
     initial_value: Any = None,
-    items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -933,15 +924,15 @@ def inclusive_scan(
     :param scan_op: Supplies the scan operator to use for the block-wide scan.
     :type  scan_op: ScanOpType
 
+    :param items_per_thread: Supplies the number of items partitioned onto
+        each thread.  This parameter must be greater than or equal to 1.
+    :type  items_per_thread: int, optional
+
     :param initial_value: Optionally supplies the initial value to use for the
         block-wide scan.  If a non-None value is supplied, ``prefix_op`` must
         be *None*.  Only supported when ``items_per_thread > 1``; a
         ``ValueError`` will be raised if this is not the case.
     :type  initial_value: Any, optional
-
-    :param items_per_thread: Optionally supplies the number of items
-        partitioned onto each thread.  Defaults to *1*.
-    :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by
         the first warp of threads in a block with the block aggregate value;

@@ -22,9 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
@@ -178,7 +180,9 @@ struct __basic_query<_Query, void>
   }
 };
 
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)
+// nvvm/bin/cicc segfaults when `prop` uses [[no_unique_address]]
+#if (_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)) && !_CCCL_CUDA_COMPILER(NVCC) \
+  && !_CCCL_CUDA_COMPILER(NVRTC)
 
 //! @brief A template structure representing a query with a query and a value.
 //!
@@ -217,7 +221,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
     return __value;
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
+  _Value __value;
 };
 
 #endif // !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
@@ -285,13 +289,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     return env::__get_1st<_Query>(*this).query(__query);
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __tuple<_Envs...> __envs_;
+  __tuple<_Envs...> __envs_;
 };
 
 template <class... _Envs>
 _CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED
+
+// Partial specialization for no env because NVCC segfaults trying to compile `__tuple<>`
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
+{};
+
 // Partial specialization for two environments so that the syntax `env(env0, env1)` is
 // valid. That is, `env` can use CTAD with a parentesized list of arguments.
 template <class _Env0, class _Env1>
@@ -307,7 +317,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
     {
       return (__self.__env0_);
     }
-    else
+    else if constexpr (__queryable_with<_Env1, _Query>)
     {
       return (__self.__env1_);
     }
@@ -366,6 +376,58 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 
 template <class _Ty>
 using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(declval<_Ty>()));
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// forwarding_query_t
+_CCCL_GLOBAL_CONSTANT struct forwarding_query_t
+{
+  template <class _Tag>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag) const noexcept -> bool
+  {
+    if constexpr (__queryable_with<_Tag, forwarding_query_t>)
+    {
+      static_assert(noexcept(_Tag().query(*this)));
+      return _Tag().query(*this);
+    }
+    return _CUDA_VSTD::derived_from<_Tag, forwarding_query_t>;
+  }
+} forwarding_query{};
+
+template <class _Tag>
+_CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __query_or
+namespace __detail
+{
+// query an environment, or return a default value if the query is not supported
+struct __query_or_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Env, class _Query, class _Default)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query, _Default&&) const
+    noexcept(__nothrow_queryable_with<_Env, _Query>) -> __query_result_t<_Env, _Query>
+  {
+    return __env.query(_Query{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Default>
+  [[nodiscard]] _CCCL_API constexpr auto
+  operator()(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _Default&& __default) const
+    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Default>) -> _Default
+  {
+    return static_cast<_Default&&>(__default);
+  }
+};
+} // namespace __detail
+
+_CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
+
+template <class _Env, class _Query, class _Default>
+using __query_result_or_t _CCCL_NODEBUG_ALIAS =
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _Query{}, _CUDA_VSTD::declval<_Default>()));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 

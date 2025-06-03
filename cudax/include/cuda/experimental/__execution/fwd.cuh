@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_FWD
-#define __CUDAX_ASYNC_DETAIL_FWD
+#ifndef __CUDAX_EXECUTION_FWD
+#define __CUDAX_EXECUTION_FWD
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +21,32 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
+#include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-namespace cuda::experimental::execution
+namespace cuda::experimental
 {
+// so we can refer to the cuda::experimental::__detail namespace below
+namespace __detail
+{
+}
+namespace execution
+{
+namespace __detail
+{
+using namespace cuda::experimental::__detail; // // NOLINT(misc-unused-using-decls)
+} // namespace __detail
+
 struct _CCCL_TYPE_VISIBILITY_DEFAULT receiver_t
 {};
 
@@ -55,13 +69,20 @@ template <class _Ty>
 using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
-inline constexpr bool __is_sender = __type_valid_v<__sender_concept_t, _Ty>;
+using __operation_state_concept_t _CCCL_NODEBUG_ALIAS =
+  typename _CUDA_VSTD::remove_reference_t<_Ty>::operation_state_concept;
 
 template <class _Ty>
-inline constexpr bool __is_receiver = __type_valid_v<__receiver_concept_t, _Ty>;
+inline constexpr bool __is_sender = __is_instantiable_with_v<__sender_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_scheduler = __type_valid_v<__scheduler_concept_t, _Ty>;
+inline constexpr bool __is_receiver = __is_instantiable_with_v<__receiver_concept_t, _Ty>;
+
+template <class _Ty>
+inline constexpr bool __is_scheduler = __is_instantiable_with_v<__scheduler_concept_t, _Ty>;
+
+template <class _Ty>
+inline constexpr bool __is_operation_state = __is_instantiable_with_v<__operation_state_concept_t, _Ty>;
 
 struct stream_domain;
 struct dependent_sender_error;
@@ -128,6 +149,7 @@ struct write_env_t;
 struct starts_on_t;
 struct continues_on_t;
 struct schedule_from_t;
+struct bulk_t;
 
 // sender consumer algorithms:
 struct sync_wait_t;
@@ -138,9 +160,9 @@ struct get_allocator_t;
 struct get_stop_token_t;
 struct get_scheduler_t;
 struct get_delegation_scheduler_t;
+struct get_forward_progress_guarantee_t;
 template <class _Tag>
 struct get_completion_scheduler_t;
-struct get_forward_progress_guarantee_t;
 struct get_domain_t;
 
 namespace __detail
@@ -148,17 +170,21 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const
-    -> _Tag
+  _CCCL_TRIVIAL_API constexpr auto operator()(int, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }
 };
+
+template <class _Sndr, class _Tag = __visit_result_t<__get_tag&, _Sndr, int&>>
+extern __fn_ptr_t<_Tag> __tag_of_v;
 } // namespace __detail
 
 template <class _Sndr>
-using tag_of_t _CCCL_NODEBUG_ALIAS =
-  decltype(visit(declval<__detail::__get_tag&>(), declval<_Sndr>(), declval<int&>()));
+using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
+
+template <class _Sndr, class _Tag>
+_CCCL_CONCEPT __sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
 
 namespace __detail
 {
@@ -171,8 +197,11 @@ extern __fn_t<set_error_t>* __set_tag<__error, _Void>;
 template <class _Void>
 extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
 } // namespace __detail
-} // namespace cuda::experimental::execution
+
+} // namespace execution
+
+} // namespace cuda::experimental
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_FWD

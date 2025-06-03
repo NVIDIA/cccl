@@ -8,8 +8,8 @@
 //                         Copyright (c) 2023 Maikel Nadolski
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_ATOMIC_INTRUSIVE_QUEUE
-#define __CUDAX_ASYNC_DETAIL_ATOMIC_INTRUSIVE_QUEUE
+#ifndef __CUDAX_EXECUTION_ATOMIC_INTRUSIVE_QUEUE
+#define __CUDAX_EXECUTION_ATOMIC_INTRUSIVE_QUEUE
 
 #include <cuda/std/detail/__config>
 
@@ -82,4 +82,4 @@ private:
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_ATOMIC_INTRUSIVE_QUEUE
+#endif // __CUDAX_EXECUTION_ATOMIC_INTRUSIVE_QUEUE

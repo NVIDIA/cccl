@@ -20,6 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
+// During the header testing, we want to check if the code is wrapped by the prologue/epilogue
+#if defined(_CCCL_HEADER_TEST)
+#  define _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() \
+    static_assert(_CCCL_PROLOGUE_INCLUDED(), "missing #include <cuda/std/__cccl/prologue.h>");
+#else // ^^^ defined(_CCCL_HEADER_TEST) ^^^ / vvv !defined(_CCCL_HEADER_TEST) vvv
+#  define _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#endif // ^^^ !defined(_CCCL_HEADER_TEST) ^^^
+
 #define _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X, _LIBCUDACXX_Y) _LIBCUDACXX_X##_LIBCUDACXX_Y
 #define _LIBCUDACXX_CONCAT(_LIBCUDACXX_X, _LIBCUDACXX_Y)  _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X, _LIBCUDACXX_Y)
 
@@ -30,40 +38,40 @@
 // clang-format off
 
 // Standard namespaces with or without versioning
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace cuda { namespace std {
-#  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION } }
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace cuda { namespace std { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_STD } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std {
+#  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_STD } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // cuda specific namespaces
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA namespace cuda { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_CUDA } }
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR namespace cuda { namespace mr { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_CUDA_MR } } }
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE } } }
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX namespace cuda { namespace ptx { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX } } }
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL } } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::mr { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_MR } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::ptx { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::device::experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Namespaces related to <ranges>
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES namespace cuda { namespace std { namespace ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_RANGES } } } }
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS namespace cuda { namespace std { namespace ranges { namespace views { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_VIEWS } } } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_RANGES } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges::views { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_VIEWS } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_CPO(_CPO) namespace _CPO {
 #  define _LIBCUDACXX_END_NAMESPACE_CPO }
 
 // Namespaces related to chrono / filesystem
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM namespace cuda { namespace std { inline namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM } } } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std { inline namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM } } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Shorthands for different qualifiers
   // Namespaces related to execution
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION namespace cuda { namespace std { namespace execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _LIBCUDACXX_END_NAMESPACE_EXECUTION } } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
 #if _CCCL_COMPILER(CLANG, ==, 16)
@@ -77,6 +85,7 @@
   // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
 #  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_DEVICE         ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VIEWS          ::cuda::std::ranges::views::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE

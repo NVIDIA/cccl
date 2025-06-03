@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -79,7 +79,7 @@ public:
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
     _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
     // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-    detail::driver::eventRecord(__event_, __stream.get());
+    __detail::driver::eventRecord(__event_, __stream.get());
   }
 
   //! @brief Synchronizes the event
