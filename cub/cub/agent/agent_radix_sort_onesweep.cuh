@@ -601,8 +601,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::false_type keys_only)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD])
   {
     // compute digits corresponding to the keys
     int digits[ITEMS_PER_THREAD];
@@ -619,10 +618,6 @@ struct AgentRadixSortOnesweep
     __syncthreads();
     ScatterValuesGlobal(digits);
   }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::true_type keys_only)
-  {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
@@ -653,7 +648,10 @@ struct AgentRadixSortOnesweep
     ScatterKeysGlobal();
 
     // scatter values if necessary
-    GatherScatterValues(ranks, bool_constant_v<KEYS_ONLY>);
+    if constexpr (!KEYS_ONLY)
+    {
+      GatherScatterValues(ranks);
+    }
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE //
