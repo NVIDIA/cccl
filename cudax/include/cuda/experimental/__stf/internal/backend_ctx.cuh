@@ -1133,8 +1133,15 @@ public:
             typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename partitioner_t,
@@ -1142,10 +1149,17 @@ public:
             typename S,
             typename... Deps,
             typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
-  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
+  auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(p), box(e_place), mv(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename S, typename... Deps>

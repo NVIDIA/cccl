@@ -37,20 +37,20 @@ int main()
   cuda_safe_call(cudaMalloc(&B, 64));
   cuda_safe_call(cudaMalloc(&C, 64));
 
-  ctx.parallel_for(box(64), epoch /*lA.write()*/).set_symbol("initA")->*[=]__device__(size_t i) {
+  ctx.parallel_for(64, epoch /*lA.write()*/).set_symbol("initA")->*[=] __device__(size_t i) {
     A[i] = 0;
   };
-  ctx.parallel_for(box(64), epoch /*lB.write()*/).set_symbol("initB")->*[=]__device__(size_t i) {
+  ctx.parallel_for(64, epoch /*lB.write()*/).set_symbol("initB")->*[=] __device__(size_t i) {
     B[i] = 1;
   };
-  ctx.parallel_for(box(64), epoch /*lC.write()*/).set_symbol("initC")->*[=]__device__(size_t i) {
+  ctx.parallel_for(64, epoch /*lC.write()*/).set_symbol("initC")->*[=] __device__(size_t i) {
     C[i] = 2;
   };
 
   for (size_t j = 0; j < 3; j++)
   {
     epoch++;
-    ctx.parallel_for(box(64), epoch /*lA.rw()*/).set_symbol("f1")->*[=]__device__(size_t i) {
+    ctx.parallel_for(64, epoch /*lA.rw()*/).set_symbol("f1")->*[=] __device__(size_t i) {
       ++A[i];
     };
     auto guard = ctx.dot_section("sec_loop " + ::std::to_string(j));
@@ -58,14 +58,14 @@ int main()
     {
       epoch++;
       auto guard_inner = ctx.dot_section("sec_inner_loop " + ::std::to_string(i));
-      ctx.parallel_for(box(64), epoch /*lA.read(), lB.rw()*/).set_symbol("f2")->*[=]__device__(size_t i) {
+      ctx.parallel_for(64, epoch /*lA.read(), lB.rw()*/).set_symbol("f2")->*[=] __device__(size_t i) {
         B[i] += A[i];
       };
-      ctx.parallel_for(box(64), epoch /*lA.read(), lC.rw()*/).set_symbol("f2")->*[=]__device__(size_t i) {
+      ctx.parallel_for(64, epoch /*lA.read(), lC.rw()*/).set_symbol("f2")->*[=] __device__(size_t i) {
         B[i] += A[i];
       };
       epoch++;
-      ctx.parallel_for(box(64), epoch /*lB.read(), lC.read(), lA.rw()*/).set_symbol("f3")->*[=]__device__(size_t i) {
+      ctx.parallel_for(64, epoch /*lB.read(), lC.read(), lA.rw()*/).set_symbol("f3")->*[=] __device__(size_t i) {
         A[i] += B[i] + C[i];
       };
     }
