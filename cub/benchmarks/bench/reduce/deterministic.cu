@@ -55,10 +55,10 @@ struct policy_hub_t
 {
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
-    using DeterministicReducePolicy = AgentReducePolicy;
+    using ReducePolicy = AgentReducePolicy;
 
     // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
+    using SingleTilePolicy = ReducePolicy;
   };
 
   using MaxPolicy = Policy350;

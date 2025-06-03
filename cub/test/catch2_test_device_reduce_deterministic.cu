@@ -94,13 +94,13 @@ struct hub_t
   {
     constexpr static int ITEMS_PER_THREAD = ItemsPerThread;
 
-    using DeterministicReducePolicy = AgentReducePolicy<BlockSize, ItemsPerThread>;
+    using ReducePolicy = AgentReducePolicy<BlockSize, ItemsPerThread>;
 
     // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
+    using SingleTilePolicy = ReducePolicy;
 
     // SegmentedReducePolicy
-    using SegmentedReducePolicy = DeterministicReducePolicy;
+    using SegmentedReducePolicy = ReducePolicy;
   };
 
   using MaxPolicy = Policy;

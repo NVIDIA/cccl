@@ -252,8 +252,7 @@ struct DispatchReduceDeterministic
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(ReduceKernelT reduce_kernel, SingleTileKernelT single_tile_kernel)
   {
-    const auto tile_size = ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS
-                         * ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
+    const auto tile_size = ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
     // Get device ordinal
     int device_ordinal;
     auto error = CubDebug(cudaGetDevice(&device_ordinal));
@@ -270,7 +269,7 @@ struct DispatchReduceDeterministic
     }
 
     KernelConfig reduce_config;
-    error = CubDebug(reduce_config.Init<typename ActivePolicyT::DeterministicReducePolicy>(reduce_kernel));
+    error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel));
     if (cudaSuccess != error)
     {
       return error;
@@ -313,14 +312,14 @@ struct DispatchReduceDeterministic
     _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             reduce_grid_size,
-            ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS,
+            ActivePolicyT::ReducePolicy::BLOCK_THREADS,
             (long long) stream,
-            ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD,
+            ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD,
             reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-      reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
+      reduce_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
       .doit(reduce_kernel, d_in, d_block_reductions, num_items, reduction_op, transform_op, reduce_grid_size);
 
     // Check for failure to launch
