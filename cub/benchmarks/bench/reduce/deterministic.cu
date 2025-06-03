@@ -55,8 +55,6 @@ struct policy_hub_t
 {
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
-    constexpr static int ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
-
     using DeterministicReducePolicy = AgentReducePolicy;
 
     // SingleTilePolicy
