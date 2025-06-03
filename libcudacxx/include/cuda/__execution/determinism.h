@@ -34,11 +34,11 @@ namespace determinism
 
 struct get_determinism_t;
 
-enum __determinism_t
+enum class __determinism_t
 {
-  _not_guaranteed,
-  _run_to_run,
-  _gpu_to_gpu
+  __not_guaranteed,
+  __run_to_run,
+  __gpu_to_gpu
 };
 
 template <__determinism_t _Guarantee>
@@ -53,9 +53,9 @@ struct __determinism_holder_t : __requirement
   }
 };
 
-using gpu_to_gpu_t     = __determinism_holder_t<__determinism_t::_gpu_to_gpu>;
-using run_to_run_t     = __determinism_holder_t<__determinism_t::_run_to_run>;
-using not_guaranteed_t = __determinism_holder_t<__determinism_t::_not_guaranteed>;
+using gpu_to_gpu_t     = __determinism_holder_t<__determinism_t::__gpu_to_gpu>;
+using run_to_run_t     = __determinism_holder_t<__determinism_t::__run_to_run>;
+using not_guaranteed_t = __determinism_holder_t<__determinism_t::__not_guaranteed>;
 
 _CCCL_GLOBAL_CONSTANT gpu_to_gpu_t gpu_to_gpu{};
 _CCCL_GLOBAL_CONSTANT run_to_run_t run_to_run{};
