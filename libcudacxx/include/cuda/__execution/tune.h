@@ -36,7 +36,7 @@ struct get_tuning_t
   _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, get_tuning_t>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
-    static_assert(noexcept(__env.query(*this)), "");
+    static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 

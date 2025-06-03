@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,7 +38,7 @@ struct get_requirements_t
   _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, get_requirements_t>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
-    static_assert(noexcept(__env.query(*this)), "");
+    static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 
@@ -54,7 +53,7 @@ _CCCL_GLOBAL_CONSTANT auto get_requirements = get_requirements_t{};
 template <class... _Requirements>
 [[nodiscard]] _CCCL_TRIVIAL_API auto require(_Requirements... __requirements)
 {
-  static_assert(_CUDA_VSTD::conjunction_v<_CUDA_VSTD::is_base_of<__requirement, _Requirements>...>,
+  static_assert((_CUDA_VSTD::is_base_of_v<__requirement, _Requirements> && ...),
                 "Only requirements can be passed to require");
 
   return _CUDA_STD_EXEC::prop{get_requirements_t{}, _CUDA_STD_EXEC::env{__requirements...}};

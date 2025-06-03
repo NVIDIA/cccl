@@ -81,7 +81,7 @@ struct get_determinism_t
   _CCCL_REQUIRES(__has_query_get_determinism<_Env>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
-    static_assert(noexcept(__env.query(*this)), "");
+    static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 
