@@ -137,7 +137,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
-          typename TransformOpT = ::cuda::std::__identity,
+          typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
@@ -405,13 +405,8 @@ struct DispatchReduce
 
       // Invoke DeviceReduceSingleTileKernel
       launcher_factory(1, active_policy.SingleTile().BlockThreads(), 0, stream)
-        .doit(single_tile_kernel,
-              d_block_reductions,
-              d_out,
-              reduce_grid_size,
-              reduction_op,
-              init,
-              ::cuda::std::__identity{});
+        .doit(
+          single_tile_kernel, d_block_reductions, d_out, reduce_grid_size, reduction_op, init, ::cuda::std::identity{});
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
