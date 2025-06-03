@@ -13,12 +13,12 @@
 __host__ __device__ void test()
 {
   static_assert(
-    cuda::std::is_same_v<decltype(cuda::execution::determinism::get_determinism(cuda::execution::get_requirements(
+    cuda::std::is_same_v<decltype(cuda::execution::determinism::__get_determinism(cuda::execution::__get_requirements(
                            cuda::execution::require(cuda::execution::determinism::run_to_run)))),
                          cuda::execution::determinism::run_to_run_t>);
 
   static_assert(
-    cuda::std::is_same_v<decltype(cuda::execution::determinism::get_determinism(cuda::execution::get_requirements(
+    cuda::std::is_same_v<decltype(cuda::execution::determinism::__get_determinism(cuda::execution::__get_requirements(
                            cuda::execution::require(cuda::execution::determinism::not_guaranteed)))),
                          cuda::execution::determinism::not_guaranteed_t>);
 }

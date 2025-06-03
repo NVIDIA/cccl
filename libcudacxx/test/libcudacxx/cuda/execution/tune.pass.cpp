@@ -65,8 +65,8 @@ __host__ __device__ void test()
   constexpr int nominal_block_threads = 256;
   constexpr int block_threads         = nominal_block_threads / sizeof(int);
 
-  using env_t           = decltype(cuda::execution::tune(reduce<nominal_block_threads>{}, scan_tuning{}));
-  using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::get_tuning_t>;
+  using env_t           = decltype(cuda::execution::__tune(reduce<nominal_block_threads>{}, scan_tuning{}));
+  using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
   using reduce_tuning_t = cuda::std::execution::__query_result_t<tuning_t, get_reduce_tuning_query_t>;
   using scan_tuning_t   = cuda::std::execution::__query_result_t<tuning_t, get_scan_tuning_query_t>;
   using reduce_policy_t = reduce_tuning_t::type<int>;

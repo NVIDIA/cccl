@@ -17,11 +17,11 @@ __host__ __device__ void test()
   static_assert(cuda::std::is_base_of_v<exec::__requirement, exec::determinism::not_guaranteed_t>);
   static_assert(cuda::std::is_base_of_v<exec::__requirement, exec::determinism::gpu_to_gpu_t>);
 
-  static_assert(cuda::std::is_same_v<decltype(exec::determinism::get_determinism(exec::determinism::run_to_run)),
+  static_assert(cuda::std::is_same_v<decltype(exec::determinism::__get_determinism(exec::determinism::run_to_run)),
                                      exec::determinism::run_to_run_t>);
-  static_assert(cuda::std::is_same_v<decltype(exec::determinism::get_determinism(exec::determinism::not_guaranteed)),
+  static_assert(cuda::std::is_same_v<decltype(exec::determinism::__get_determinism(exec::determinism::not_guaranteed)),
                                      exec::determinism::not_guaranteed_t>);
-  static_assert(cuda::std::is_same_v<decltype(exec::determinism::get_determinism(exec::determinism::gpu_to_gpu)),
+  static_assert(cuda::std::is_same_v<decltype(exec::determinism::__get_determinism(exec::determinism::gpu_to_gpu)),
                                      exec::determinism::gpu_to_gpu_t>);
 }
 

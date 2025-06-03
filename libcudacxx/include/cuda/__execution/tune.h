@@ -30,11 +30,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
 
-struct get_tuning_t
+struct __get_tuning_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, get_tuning_t>)
+  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, __get_tuning_t>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
@@ -47,12 +47,12 @@ struct get_tuning_t
   }
 };
 
-_CCCL_GLOBAL_CONSTANT auto get_tuning = get_tuning_t{};
+_CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
 template <class... _Tunings>
-[[nodiscard]] _CCCL_TRIVIAL_API auto tune(_Tunings... __tunings)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __tune(_Tunings... __tunings)
 {
-  return _CUDA_STD_EXEC::prop{get_tuning_t{}, _CUDA_STD_EXEC::env{__tunings...}};
+  return _CUDA_STD_EXEC::prop{__get_tuning_t{}, _CUDA_STD_EXEC::env{__tunings...}};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION

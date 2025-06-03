@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
 namespace determinism
 {
 
-struct get_determinism_t;
+struct __get_determinism_t;
 
 enum class __determinism_t
 {
@@ -47,7 +47,7 @@ struct __determinism_holder_t : __requirement
 {
   static constexpr __determinism_t value = _Guarantee;
 
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_determinism_t&) const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const __get_determinism_t&) const noexcept
     -> __determinism_holder_t<_Guarantee>
   {
     return *this;
@@ -62,11 +62,11 @@ _CCCL_GLOBAL_CONSTANT gpu_to_gpu_t gpu_to_gpu{};
 _CCCL_GLOBAL_CONSTANT run_to_run_t run_to_run{};
 _CCCL_GLOBAL_CONSTANT not_guaranteed_t not_guaranteed{};
 
-struct get_determinism_t
+struct __get_determinism_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, get_determinism_t>)
+  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, __get_determinism_t>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
@@ -79,7 +79,7 @@ struct get_determinism_t
   }
 };
 
-_CCCL_GLOBAL_CONSTANT auto get_determinism = get_determinism_t{};
+_CCCL_GLOBAL_CONSTANT auto __get_determinism = __get_determinism_t{};
 
 } // namespace determinism
 
