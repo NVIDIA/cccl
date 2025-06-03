@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/rfa.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -274,6 +275,248 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
+
+/**
+ * @brief Deterministically Reduce region kernel entry point (multi-block). Computes privatized
+ *        reductions, one per thread block in deterministic fashion
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam InputIteratorT
+ *   Random-access input iterator type for reading input items @iterator
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @tparam ReductionOpT
+ *   Binary reduction functor type having member
+ *   `auto operator()(const T &a, const U &b)`
+ *
+ * @tparam InitT
+ *   Initial value type
+ *
+ * @tparam AccumT
+ *   Accumulator type
+ *
+ * @param[in] d_in
+ *   Pointer to the input sequence of data items
+ *
+ * @param[out] d_out
+ *   Pointer to the output aggregate
+ *
+ * @param[in] num_items
+ *   Total number of input data items
+ *
+ * @param[in] even_share
+ *   Even-share descriptor for mapping an equal number of tiles onto each
+ *   thread block
+ *
+ * @param[in] reduction_op
+ *   Binary reduction functor
+ */
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename AccumT,
+          typename TransformOpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
+  InputIteratorT d_in,
+  AccumT* d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  TransformOpT transform_op,
+  const int reduce_grid_size)
+{
+  using BlockReduceT =
+    BlockReduce<AccumT,
+                ChainedPolicyT::ActivePolicy::DeterministicReducePolicy::BLOCK_THREADS,
+                ChainedPolicyT::ActivePolicy::DeterministicReducePolicy::BLOCK_ALGORITHM>;
+  // Shared memory storage
+  __shared__ typename BlockReduceT::TempStorage temp_storage;
+
+  using FloatType                 = typename AccumT::ftype;
+  constexpr int BinLength         = AccumT::max_index + AccumT::max_fold;
+  constexpr auto ITEMS_PER_THREAD = ChainedPolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
+  constexpr auto BLOCK_THREADS    = ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS;
+  const int GRID_DIM              = reduce_grid_size;
+  const int tid                   = BLOCK_THREADS * blockIdx.x + threadIdx.x;
+
+  FloatType* shared_bins = detail::rfa::get_shared_bin_array<FloatType, BinLength>();
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int index = threadIdx.x; index < BinLength; index += ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)
+  {
+    shared_bins[index] = AccumT::initialize_bin(index);
+  }
+
+  __syncthreads();
+
+  AccumT thread_aggregate{};
+  int count = 0;
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = tid; i < num_items; i += ITEMS_PER_THREAD * GRID_DIM * BLOCK_THREADS)
+  {
+    FloatType items[ITEMS_PER_THREAD] = {};
+    for (int j = 0; j < ITEMS_PER_THREAD; j++)
+    {
+      const int idx = i + j * GRID_DIM * BLOCK_THREADS;
+      if (idx < num_items)
+      {
+        items[j] = transform_op(d_in[idx]);
+      }
+    }
+
+    FloatType abs_max_val = ::cuda::std::fabs(items[0]);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 1; j < ITEMS_PER_THREAD; j++)
+    {
+      abs_max_val = ::cuda::std::fmax(::cuda::std::fabs(items[j]), abs_max_val);
+    }
+
+    thread_aggregate.set_max_val(abs_max_val);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j < ITEMS_PER_THREAD; j++)
+    {
+      thread_aggregate.unsafe_add(items[j]);
+      count++;
+      if (count >= thread_aggregate.endurance())
+      {
+        thread_aggregate.renorm();
+        count = 0;
+      }
+    }
+  }
+
+  AccumT block_aggregate = BlockReduceT(temp_storage).Reduce(thread_aggregate, [](AccumT lhs, AccumT rhs) -> AccumT {
+    AccumT rtn = lhs;
+    rtn += rhs;
+    return rtn;
+  });
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
+  }
+}
+
+/**
+ * @brief Deterministically Reduce a single tile kernel entry point (single-block). Can be used
+ *        to aggregate privatized thread block reductions from a previous
+ *        multi-block reduction pass.
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam InputIteratorT
+ *   Random-access input iterator type for reading input items @iterator
+ *
+ * @tparam OutputIteratorT
+ *   Output iterator type for recording the reduced aggregate @iterator
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @tparam ReductionOpT
+ *   Binary reduction functor type having member
+ *   `T operator()(const T &a, const U &b)`
+ *
+ * @tparam InitT
+ *   Initial value type
+ *
+ * @tparam AccumT
+ *   Accumulator type
+ *
+ * @param[in] d_in
+ *   Pointer to the input sequence of data items
+ *
+ * @param[out] d_out
+ *   Pointer to the output aggregate
+ *
+ * @param[in] num_items
+ *   Total number of input data items
+ *
+ * @param[in] reduction_op
+ *   Binary reduction functor
+ *
+ * @param[in] init
+ *   The initial value of the reduction
+ */
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT,
+          typename AccumT,
+          typename TransformOpT = ::cuda::std::__identity>
+CUB_DETAIL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void DeterministicDeviceReduceSingleTileKernel(
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  InitT init,
+  TransformOpT transform_op)
+{
+  using BlockReduceT =
+    BlockReduce<AccumT,
+                ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS,
+                ChainedPolicyT::SingleTilePolicy::BLOCK_ALGORITHM>;
+
+  // Shared memory storage
+  __shared__ typename BlockReduceT::TempStorage temp_storage;
+
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      *d_out = init;
+    }
+    return;
+  }
+
+  using FloatType         = typename AccumT::ftype;
+  constexpr int BinLength = AccumT::max_index + AccumT::max_fold;
+
+  FloatType* shared_bins = detail::rfa::get_shared_bin_array<FloatType, BinLength>();
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int index = threadIdx.x; index < BinLength;
+       index += ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS)
+  {
+    shared_bins[index] = AccumT::initialize_bin(index);
+  }
+
+  __syncthreads();
+
+  constexpr auto BLOCK_THREADS = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
+
+  AccumT thread_aggregate{};
+
+  // Consume block aggregates of previous kernel
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = threadIdx.x; i < num_items; i += BLOCK_THREADS)
+  {
+    thread_aggregate += transform_op(d_in[i]);
+  }
+
+  AccumT block_aggregate = BlockReduceT(temp_storage).Reduce(thread_aggregate, reduction_op, num_items);
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+  }
+}
+
 } // namespace reduce
 } // namespace detail
 

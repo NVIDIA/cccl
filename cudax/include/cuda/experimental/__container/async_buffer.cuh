@@ -683,6 +683,135 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer
   return __res;
 }
 
+// Empty buffer make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env};
+}
+
+// Size-only make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __size};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __size};
+}
+
+// Size and value make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, const _Tp& __value)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __size, __value};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __size, __value};
+}
+
+// Size with no initialization make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...> make_async_buffer(
+  stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, ::cuda::experimental::no_init_t)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __size, ::cuda::experimental::no_init};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __size, ::cuda::experimental::no_init};
+}
+
+// Iterator range make function
+_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter)
+_CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Iter __first, _Iter __last)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __first, __last};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
+                 _CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __first, __last};
+}
+
+// Initializer list make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...> make_async_buffer(
+  stream_ref __stream, any_async_resource<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __ilist};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __ilist};
+}
+
+// Range make function for ranges
+_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Range)
+_CCCL_REQUIRES(_CUDA_VRANGES::forward_range<_Range>)
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Range&& __range)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, _CUDA_VSTD::forward<_Range>(__range)};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class _Range)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
+                 _CUDA_VRANGES::forward_range<_Range>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, _CUDA_VSTD::forward<_Range>(__range)};
+}
+
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

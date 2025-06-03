@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_EXECUTION_THREAD_CONTEXT
-#define __CUDAX_EXECUTION_THREAD_CONTEXT
+#ifndef __CUDAX_EXECUTION_STREAM_LET_VALUE
+#define __CUDAX_EXECUTION_STREAM_LET_VALUE
 
 #include <cuda/std/detail/__config>
 
@@ -21,47 +21,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__execution/run_loop.cuh>
-
-#include <thread>
+#include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/let_value.cuh>
+#include <cuda/experimental/__execution/stream/domain.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
+/////////////////////////////////////////////////////////////////////////////////
+// let_value, let_error, let_stopped: customization for the stream scheduler
+template <__disposition_t _Disposition>
+struct stream_domain::__apply_t<__let_t<_Disposition>>
 {
-  _CCCL_HOST_API thread_context() noexcept
-      : __thrd_{[this] {
-        __loop_.run();
-      }}
-  {}
-
-  _CCCL_HOST_API ~thread_context() noexcept
+  template <class _Sndr, class _Env>
+  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
   {
-    join();
+    static_assert(_CUDA_VSTD::__always_false_v<_Sndr>,
+                  "The CUDA stream scheduler does not yet support the `let_value`, `let_error`, and `let_stopped` "
+                  "algorithms.");
   }
-
-  _CCCL_HOST_API void join() noexcept
-  {
-    if (__thrd_.joinable())
-    {
-      __loop_.finish();
-      __thrd_.join();
-    }
-  }
-
-  _CCCL_HOST_API auto get_scheduler()
-  {
-    return __loop_.get_scheduler();
-  }
-
-private:
-  run_loop __loop_;
-  ::std::thread __thrd_;
 };
+
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_EXECUTION_THREAD_CONTEXT
+#endif // __CUDAX_EXECUTION_STREAM_LET_VALUE

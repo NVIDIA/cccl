@@ -38,7 +38,7 @@ namespace cuda::experimental::execution
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __write_env_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Rcvr, class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
