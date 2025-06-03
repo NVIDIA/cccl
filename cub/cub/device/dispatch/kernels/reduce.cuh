@@ -513,7 +513,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
   }
 }
 

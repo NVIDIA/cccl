@@ -114,7 +114,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-using types = nvbench::type_list<float, double>;
+using types               = nvbench::type_list<float, double>;
 using custom_offset_types = nvbench::type_list<int32_t>;
 
 NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, custom_offset_types))

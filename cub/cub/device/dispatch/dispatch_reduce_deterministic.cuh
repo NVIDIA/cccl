@@ -96,6 +96,11 @@ struct deterministic_sum_t
     rtn += rhs;
     return rtn;
   }
+
+  _CCCL_DEVICE FloatType operator()(FloatType lhs, FloatType rhs)
+  {
+    return lhs + rhs;
+  }
 };
 
 } // namespace rfa
@@ -125,20 +130,14 @@ template <typename InputIteratorT,
           typename InitT        = rfa::InitT<OutputIteratorT, InputIteratorT>,
           typename AccumT       = rfa::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
           typename TransformOpT = ::cuda::std::__identity,
-          typename PolicyHub    = detail::rfa::policy_hub<
-               rfa::AccumT<::cuda::std::plus<>, rfa::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
-               OffsetT,
-               ::cuda::std::plus<>>>
+          typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
 struct DispatchReduceDeterministic
 {
   using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
-  using ReductionOpT        = deterministic_add_t;
+  using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
 
-  using AcumFloatTransformT = detail::rfa::rfa_float_transform_t<AccumT>;
-
-  using OutputIteratorTransformT = THRUST_NS_QUALIFIER::transform_output_iterator<AcumFloatTransformT, OutputIteratorT>;
   //---------------------------------------------------------------------------
   // Problem state
   //---------------------------------------------------------------------------
@@ -155,13 +154,13 @@ struct DispatchReduceDeterministic
   InputIteratorT d_in;
 
   /// Pointer to the output aggregate
-  OutputIteratorTransformT d_out;
+  OutputIteratorT d_out;
 
   /// Total number of input items (i.e., length of `d_in`)
   OffsetT num_items;
 
   /// Binary reduction functor
-  ReductionOpT reduction_op;
+  reduction_op_t reduction_op;
 
   /// The initial value of the reduction
   InitT init;
@@ -392,9 +391,9 @@ struct DispatchReduceDeterministic
         detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
           InputIteratorT,
-          OutputIteratorTransformT,
+          OutputIteratorT,
           OffsetT,
-          ReductionOpT,
+          reduction_op_t,
           InitT,
           deterministic_accum_t,
           TransformOpT>);
@@ -406,15 +405,15 @@ struct DispatchReduceDeterministic
           MaxPolicyT,
           InputIteratorT,
           OffsetT,
-          ReductionOpT,
+          reduction_op_t,
           deterministic_accum_t,
           TransformOpT>,
         detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
           deterministic_accum_t*,
-          OutputIteratorTransformT,
+          OutputIteratorT,
           int, // Always used with int offsets
-          ReductionOpT,
+          reduction_op_t,
           InitT,
           deterministic_accum_t>);
     }
@@ -473,15 +472,12 @@ struct DispatchReduceDeterministic
       return error;
     }
 
-    OutputIteratorTransformT d_out_transformed =
-      THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
-
     // Create dispatch functor
     DispatchReduceDeterministic dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      d_out_transformed,
+      d_out,
       num_items,
       deterministic_add_t{},
       init,
