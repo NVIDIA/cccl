@@ -61,24 +61,11 @@ _CCCL_GLOBAL_CONSTANT gpu_to_gpu_t gpu_to_gpu{};
 _CCCL_GLOBAL_CONSTANT run_to_run_t run_to_run{};
 _CCCL_GLOBAL_CONSTANT not_guaranteed_t not_guaranteed{};
 
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __is_determinism_holder_,
-  requires()(requires(_CUDA_VSTD::__is_one_of_v<_Tp, gpu_to_gpu_t, run_to_run_t, not_guaranteed_t>)));
-
-template <class _Tp>
-_CCCL_CONCEPT __is_determinism_holder = _CCCL_FRAGMENT(__is_determinism_holder_, _Tp);
-
-template <class _Env>
-_CCCL_CONCEPT __has_query_get_determinism =
-  _CCCL_REQUIRES_EXPR((_Env), const _Env& __env, const get_determinism_t& __cpo)(
-    requires(__is_determinism_holder<decltype(__env.query(__cpo))>));
-
 struct get_determinism_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__has_query_get_determinism<_Env>)
+  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, get_determinism_t>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
