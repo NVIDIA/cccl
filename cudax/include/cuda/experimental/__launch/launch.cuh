@@ -51,7 +51,7 @@ __global__ void __kernel_launcher_no_config(_Kernel __kernel_fn, _Args... __args
 
 _CCCL_TEMPLATE(typename _GraphInserter)
 _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
-_CCCL_HOST_API cudaGraphNode_t
+_CCCL_HOST_API graph_node_ref
 __do_launch(_GraphInserter&& __inserter, cudaLaunchConfig_t& __config, void* __kernel_fn, void** __args_ptrs)
 {
   cudaGraphNode_t __node;
@@ -68,7 +68,7 @@ __do_launch(_GraphInserter&& __inserter, cudaLaunchConfig_t& __config, void* __k
     cudaGraphAddKernelNode,
     "Failed to add a kernel node",
     &__node,
-    __inserter.get_graph(),
+    __inserter.get_graph().get(),
     __dependencies.data(),
     __dependencies.size(),
     &__node_params);
@@ -86,7 +86,7 @@ __do_launch(_GraphInserter&& __inserter, cudaLaunchConfig_t& __config, void* __k
   // TODO skip the update if called on rvalue?
   __inserter.__clear_and_set_dependency_node(__node);
 
-  return __node;
+  return graph_node_ref{__node, __inserter.get_graph().get()};
 }
 
 _CCCL_HOST_API void inline __do_launch(
@@ -235,27 +235,25 @@ _CCCL_HOST_API graph_node_ref launch(
   auto __combined = __conf.combine_with_default(__kernel);
   if constexpr (::cuda::std::is_invocable_v<_Kernel, kernel_config<_Dimensions, _Config...>, kernel_arg_t<_Args>...>)
   {
-    auto __launcher        = __kernel_launcher<decltype(__combined), _Kernel, kernel_arg_t<_Args>...>;
-    cudaGraphNode_t __node = __launch_impl(
+    auto __launcher = __kernel_launcher<decltype(__combined), _Kernel, kernel_arg_t<_Args>...>;
+    return __launch_impl(
       _CUDA_VSTD::forward<_GraphInserter>(__inserter),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __combined,
       __kernel,
       __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_Args>(__args)))...);
-    return graph_node_ref{__node, __inserter.get_graph()};
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<_Kernel, kernel_arg_t<_Args>...>);
-    auto __launcher        = __kernel_launcher_no_config<_Kernel, kernel_arg_t<_Args>...>;
-    cudaGraphNode_t __node = __launch_impl(
+    auto __launcher = __kernel_launcher_no_config<_Kernel, kernel_arg_t<_Args>...>;
+    return __launch_impl(
       _CUDA_VSTD::forward<_GraphInserter>(__inserter),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __kernel,
       __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_Args>(__args)))...);
-    return graph_node_ref{__node, __inserter.get_graph()};
   }
 }
 
@@ -343,13 +341,12 @@ _CCCL_HOST_API graph_node_ref launch(
   _ActArgs&&... __args)
 {
   __ensure_current_device __dev_setter(__inserter.get_device());
-  cudaGraphNode_t __node = __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
+  return __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
     _CUDA_VSTD::forward<_GraphInserter>(__inserter), //
     __conf,
     reinterpret_cast<void*>(__kernel),
     __conf,
     __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
-  return graph_node_ref{__node, __inserter.get_graph()};
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -434,12 +431,11 @@ _CCCL_HOST_API graph_node_ref launch(
   _ActArgs&&... __args)
 {
   __ensure_current_device __dev_setter(__inserter.get_device());
-  cudaGraphNode_t __node = __launch_impl<_ExpArgs...>(
+  return __launch_impl<_ExpArgs...>(
     _CUDA_VSTD::forward<_GraphInserter>(__inserter), //
     __conf,
     reinterpret_cast<void*>(__kernel),
     __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
-  return graph_node_ref{__node, __inserter.get_graph()};
 }
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017

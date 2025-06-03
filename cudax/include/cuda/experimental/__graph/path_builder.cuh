@@ -50,17 +50,17 @@ struct path_builder
 {
   //! \brief Construct a path builder that will insert nodes into a graph builder.
   //! \param __builder The graph builder to create the path builder for.
-  path_builder(graph_builder& __builder)
-      : __graph_(__builder.get())
-      , __dev_(__builder.get_device())
+  _CCCL_HOST_API explicit path_builder(graph_builder_ref __builder)
+      : __dev_{__builder.get_device()}
+      , __graph_{__builder.get()}
   {}
 
   //! \brief Construct a path builder that will insert nodes into a graph.
   //! \param __dev The device on which nodes inserted into the graph will execute.
   //! \param __graph The graph to create the path builder for.
   path_builder(device_ref __dev, cudaGraph_t __graph)
-      : __graph_(__graph)
-      , __dev_(__dev)
+      : __dev_{__dev}
+      , __graph_{__graph}
   {}
 
 #if _CCCL_CTK_AT_LEAST(12, 3)
@@ -124,10 +124,10 @@ struct path_builder
     return _CUDA_VSTD::span(__nodes_.data(), __nodes_.size());
   }
 
-  //! \brief Add the dependencies of another path builder to the current path builder.
+  //! \brief Add the dependencies of another path builder to this path builder.
   //! \param __other The path builder to add dependencies from.
   //! Named wait to match the stream/stream_ref wait function
-  _CCCL_HOST_API void wait(path_builder __other)
+  _CCCL_HOST_API void wait(const path_builder& __other)
   {
     __nodes_.insert(__nodes_.end(), __other.__nodes_.begin(), __other.__nodes_.end());
   }
@@ -135,29 +135,36 @@ struct path_builder
   template <typename... Nodes>
   static constexpr bool __all_dependencies = (graph_dependency<Nodes> && ...);
 
-  //! \brief Add the dependencies of another path builder or single nodes to the current path builder.
+  //! \brief Add the dependencies of another path builder or single nodes to this path builder.
   //! \param __nodes The nodes or path builders to add to the path builder as dependencies.
   _CCCL_TEMPLATE(typename... Nodes)
   _CCCL_REQUIRES(__all_dependencies<Nodes...>)
-  _CCCL_HOST_API void depends_on(Nodes... __nodes)
+  _CCCL_HOST_API void depends_on(Nodes&&... __nodes)
   {
     (
-      [this](auto __arg) {
+      [this](auto&& __arg) {
         if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<decltype(__arg)>, graph_node_ref>)
         {
           __nodes_.push_back(__arg.get());
         }
         else
         {
-          this->wait(__arg);
+          __nodes_.insert(__nodes_.end(), __arg.__nodes_.begin(), __arg.__nodes_.end());
         }
-      }(__nodes),
+      }(static_cast<Nodes&&>(__nodes)),
       ...);
   }
 
   //! \brief Get the graph that the path builder is building.
   //! \return The graph that the path builder is building.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_graph() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_graph() const noexcept -> graph_builder_ref
+  {
+    return graph_builder_ref(__graph_, __dev_);
+  }
+
+  //! \internal
+  //! Internal graph handle getter to match graph_node_ref::__get_graph().
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __get_graph() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
@@ -170,8 +177,8 @@ struct path_builder
   }
 
 private:
-  cudaGraph_t __graph_;
   device_ref __dev_;
+  cudaGraph_t __graph_;
   // TODO should this be a custom class that does inline storage for small counts?
   ::std::vector<cudaGraphNode_t> __nodes_;
 };
@@ -181,7 +188,7 @@ private:
 //! \param __nodes The nodes the path builder will depend on.
 //! \return A new path builder for the graph builder.
 template <typename... Nodes>
-[[nodiscard]] _CCCL_HOST_API path_builder start_path(graph_builder& __gb, Nodes... __nodes)
+[[nodiscard]] _CCCL_HOST_API path_builder start_path(graph_builder_ref __gb, Nodes... __nodes)
 {
   path_builder __pb(__gb);
   if constexpr (sizeof...(__nodes) > 0)
@@ -199,7 +206,7 @@ template <typename... Nodes>
 template <typename _FirstNode, typename... _Nodes>
 [[nodiscard]] _CCCL_HOST_API path_builder start_path(device_ref __dev, _FirstNode __first_node, _Nodes... __nodes)
 {
-  path_builder __pb(__dev, __first_node.get_graph());
+  path_builder __pb(__dev, __first_node.__get_graph());
   __pb.depends_on(__first_node, __nodes...);
   return __pb;
 }
