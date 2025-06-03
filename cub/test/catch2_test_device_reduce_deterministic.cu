@@ -142,22 +142,35 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
   REQUIRE(approx_eq(h_expected, h_output[0]));
 }
 
-template <typename type>
-void deterministic_reduce_gpu(const int N)
+C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
+         "[reduce][deterministic]",
+         float_type_list)
 {
-  const int num_items = N;
+  using type              = typename c2h::get<0, TestType>;
+  constexpr int min_items = 1;
+  constexpr int max_items = 50000;
+
+  const int num_items = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+
+  CAPTURE(num_items);
+
   c2h::device_vector<type> input(num_items);
-  const type min_val = static_cast<type>(0.0f);
+
+  const type min_val = static_cast<type>(-1000.0f);
   const type max_val = static_cast<type>(1000.0f);
+
   c2h::gen(C2H_SEED(2), input, min_val, max_val);
   c2h::device_vector<type> output_p1(1);
   c2h::device_vector<type> output_p2(1);
 
-  const type* d_input = thrust::raw_pointer_cast(input.data());
+  using input_it_t   = const type*;
+  input_it_t d_input = thrust::raw_pointer_cast(input.data());
 
-  std::size_t temp_storage_bytes{};
-
-  using input_it_t  = decltype(d_input);
   using output_it_t = decltype(output_p1.begin());
   using init_t      = cub::detail::rfa::InitT<input_it_t, output_it_t>;
   using accum_t     = cub::detail::rfa::AccumT<::cuda::std::plus<>, init_t, input_it_t>;
@@ -169,21 +182,28 @@ void deterministic_reduce_gpu(const int N)
   using deterministic_dispatch_t_p2 =
     cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, accum_t, transform_t, hub_t<2, 256>>;
 
-  deterministic_dispatch_t_p1::Dispatch(nullptr, temp_storage_bytes, d_input, output_p1.begin(), num_items);
+  std::size_t temp_storage_bytes{};
+
+  auto error =
+    deterministic_dispatch_t_p1::Dispatch(nullptr, temp_storage_bytes, d_input, output_p1.begin(), num_items);
+  REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage_p1(temp_storage_bytes);
 
-  deterministic_dispatch_t_p1::Dispatch(
+  error = deterministic_dispatch_t_p1::Dispatch(
     thrust::raw_pointer_cast(temp_storage_p1.data()), temp_storage_bytes, d_input, output_p1.begin(), num_items);
+  REQUIRE(error == cudaSuccess);
 
   type const res_p1 = output_p1[0];
 
-  deterministic_dispatch_t_p2::Dispatch(nullptr, temp_storage_bytes, d_input, output_p2.begin(), num_items);
+  error = deterministic_dispatch_t_p2::Dispatch(nullptr, temp_storage_bytes, d_input, output_p2.begin(), num_items);
+  REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage_p2(temp_storage_bytes);
 
-  deterministic_dispatch_t_p2::Dispatch(
+  error = deterministic_dispatch_t_p2::Dispatch(
     thrust::raw_pointer_cast(temp_storage_p2.data()), temp_storage_bytes, d_input, output_p2.begin(), num_items);
+  REQUIRE(error == cudaSuccess);
 
   type const res_p2 = output_p2[0];
 
@@ -195,22 +215,4 @@ void deterministic_reduce_gpu(const int N)
 
   // Both device RFA results should be strictly equal, as RFA is deterministic
   REQUIRE(res_p1 == res_p2);
-}
-
-C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
-         "[reduce][deterministic]",
-         float_type_list)
-{
-  using type              = typename c2h::get<0, TestType>;
-  constexpr int max_items = 50000;
-  constexpr int min_items = 1;
-
-  const int num_items = GENERATE_COPY(
-    take(3, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
-  CAPTURE(num_items);
-  deterministic_reduce_gpu<type>(num_items);
 }
