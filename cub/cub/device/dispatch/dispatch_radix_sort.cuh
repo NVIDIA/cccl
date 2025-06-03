@@ -1085,12 +1085,7 @@ struct DispatchRadixSort
       return InvokeSingleTile(kernel_source.RadixSortSingleTileKernel(), wrapped_policy);
     }
 
-    if
-#ifndef CCCL_C_EXPERIMENTAL
-      // Branching at compile time prevents instantiation and compilation of both branches
-      constexpr
-#endif // CCCL_C_EXPERIMENTAL
-      (wrapped_policy.IsOnesweep())
+    _CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C(wrapped_policy.IsOnesweep())
     {
       return InvokeOnesweep(wrapped_policy);
     }
