@@ -111,7 +111,7 @@ overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomA
   using System1 = typename thrust::iterator_system<RandomAccessIterator2>::type;
   using System2 = typename thrust::iterator_system<RandomAccessIterator2>::type;
 
-  using System = typename thrust::detail::minimum_system<System1, System2>::type;
+  using System = minimum_system_t<System1, System2>;
 
   // XXX presumes System is default constructible
   System system;

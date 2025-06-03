@@ -178,6 +178,7 @@ struct __make_hierarchy
       static_assert(__can_stack<UnitOrDefault, Levels...>,
                     "Provided levels can't create a valid hierarchy when stacked in the provided order or reversed");
     }
+    _CCCL_UNREACHABLE();
   }
 };
 

@@ -275,7 +275,7 @@ private:
     static_cast<_Fun&&>(static_cast<inplace_stop_callback*>(__cb)->__fun)();
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Fun __fun;
+  _Fun __fun;
 };
 
 namespace __stok

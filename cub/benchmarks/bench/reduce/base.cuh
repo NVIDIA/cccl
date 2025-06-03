@@ -85,8 +85,10 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     >;
 
   // Retrieve axis parameters
-  const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  thrust::device_vector<T> in = generate(elements);
+  const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
+
+  thrust::device_vector<T> in = generate(elements, entropy);
   thrust::device_vector<T> out(1);
 
   input_it_t d_in   = thrust::raw_pointer_cast(in.data());
@@ -114,4 +116,5 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
+  .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});
