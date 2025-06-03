@@ -18,6 +18,7 @@
 #include <cuda/experimental/__graph/graph_builder.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/graph_node_type.cuh>
+#include <cuda/experimental/__graph/path_builder.cuh>
 // IWYU pragma: end_exports
 
 #endif // __CUDAX_GRAPH_CUH
