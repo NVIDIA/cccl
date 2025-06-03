@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDA_STD__TUNE_H
-#define __CUDA_STD__TUNE_H
+#ifndef __CUDA___EXECUTION_TUNE_H
+#define __CUDA___EXECUTION_TUNE_H
 
 #include <cuda/std/detail/__config>
 
@@ -58,4 +58,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDA_STD__TUNE_H
+#endif // __CUDA___EXECUTION_TUNE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDA_STD__REQUIRE_H
-#define __CUDA_STD__REQUIRE_H
+#ifndef __CUDA___EXECUTION_REQUIRE_H
+#define __CUDA___EXECUTION_REQUIRE_H
 
 #include <cuda/std/detail/__config>
 
@@ -64,4 +64,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDA_STD__REQUIRE_H
+#endif // __CUDA___EXECUTION_REQUIRE_H

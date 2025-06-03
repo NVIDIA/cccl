@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDA_STD__DETERMINISM_H
-#define __CUDA_STD__DETERMINISM_H
+#ifndef __CUDA___EXECUTION_DETERMINISM_H
+#define __CUDA___EXECUTION_DETERMINISM_H
 
 #include <cuda/std/detail/__config>
 
@@ -99,4 +99,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDA_STD__DETERMINISM_H
+#endif // __CUDA___EXECUTION_DETERMINISM_H
