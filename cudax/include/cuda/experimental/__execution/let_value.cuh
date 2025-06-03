@@ -62,7 +62,7 @@ template <__disposition_t _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PREFERRED_NAME(let_error_t)
   _CCCL_PREFERRED_NAME(let_stopped_t) __let_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   using _LetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__let_tag<_Disposition>());
   using _SetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__set_tag<_Disposition>());
 
