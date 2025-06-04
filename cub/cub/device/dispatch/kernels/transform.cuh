@@ -163,6 +163,9 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
+template <typename T, typename U>
+using larger_t = ::cuda::std::conditional_t<(sizeof(T) > sizeof(U)), T, U>;
+
 template <typename VectorizedPolicy,
           typename Offset,
           typename F,
@@ -216,8 +219,9 @@ _CCCL_DEVICE void transform_kernel_impl(
       static_assert((items_per_thread * sizeof(input_t)) % load_store_word_size == 0);
       constexpr int loads = (items_per_thread * sizeof(input_t)) / load_store_word_size;
 
-      auto in_vec    = reinterpret_cast<const load_store_t*>(in);
-      auto input_vec = reinterpret_cast<load_store_t*>(input.data());
+      using load_t   = larger_t<load_store_t, input_t>;
+      auto in_vec    = reinterpret_cast<const load_t*>(in);
+      auto input_vec = reinterpret_cast<load_t*>(input.data());
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < loads; ++i)
       {
@@ -243,8 +247,9 @@ _CCCL_DEVICE void transform_kernel_impl(
       static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
       constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
 
-      auto output_vec = reinterpret_cast<const load_store_t*>(output.data());
-      auto out_vec    = reinterpret_cast<load_store_t*>(out);
+      using store_t   = larger_t<load_store_t, output_t>;
+      auto output_vec = reinterpret_cast<const store_t*>(output.data());
+      auto out_vec    = reinterpret_cast<store_t*>(out);
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < stores; ++i)
