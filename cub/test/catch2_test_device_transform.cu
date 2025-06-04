@@ -36,8 +36,8 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
          offset_types)
 {
-  using type     = typename c2h::get<0, TestType>;
-  using offset_t = typename c2h::get<1, TestType>;
+  using type     = c2h::get<0, TestType>;
+  using offset_t = c2h::get<1, TestType>;
 
   // test edge cases around 16, 128, page size, and full tile
   const offset_t num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097, 100'000);
@@ -226,7 +226,7 @@ struct uncommon_plus
 
 C2H_TEST("DeviceTransform::Transform uncommon types", "[device][device_transform]", uncommon_types)
 {
-  using type = typename c2h::get<0, TestType>;
+  using type = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<type>());
 
   const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
@@ -263,8 +263,8 @@ C2H_TEST("DeviceTransform::Transform BabelStream nstream",
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
          offset_types)
 {
-  using type     = typename c2h::get<0, TestType>;
-  using offset_t = typename c2h::get<1, TestType>;
+  using type     = c2h::get<0, TestType>;
+  using offset_t = c2h::get<1, TestType>;
 
   const offset_t num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<type> a(num_items, thrust::no_init);
@@ -486,7 +486,7 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
          "[device][device_transform]",
          c2h::type_list<std::uint8_t, std::uint16_t, float, double>)
 {
-  using type          = typename c2h::get<0, TestType>;
+  using type          = c2h::get<0, TestType>;
   const int num_items = GENERATE(130, 100'000); // try to hit the small and full tile code paths
   const int offset    = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
   REQUIRE(num_items > offset);
