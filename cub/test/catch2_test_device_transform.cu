@@ -236,7 +236,7 @@ C2H_TEST("DeviceTransform::Transform overaligned type", "[device][device_transfo
   using type = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<type>());
 
-  const int num_items = GENERATE(0, 1, 100, 1'000); // try to hit the small and full tile code paths
+  const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<unsigned> a(num_items, 3); // put some integers at the front, so SMEM has to handle different
                                                 // alignments
   c2h::device_vector<type> b(num_items, type{4});
