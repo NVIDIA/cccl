@@ -164,7 +164,7 @@ struct path_builder
 
   //! \internal
   //! Internal graph handle getter to match graph_node_ref::__get_graph().
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __get_graph() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
@@ -206,7 +206,7 @@ template <typename... Nodes>
 template <typename _FirstNode, typename... _Nodes>
 [[nodiscard]] _CCCL_HOST_API path_builder start_path(device_ref __dev, _FirstNode __first_node, _Nodes... __nodes)
 {
-  path_builder __pb(__dev, __first_node.__get_graph());
+  path_builder __pb(__dev, __first_node.get_native_graph_handle());
   __pb.depends_on(__first_node, __nodes...);
   return __pb;
 }

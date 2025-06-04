@@ -178,7 +178,7 @@ struct graph_node_ref
   //! \return The CUDA graph.
   // internal for now because of a clash with get_graph() in path_builder. We could store the device in the
   // graph_node_ref, but that feels like going a bit too far.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __get_graph() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }

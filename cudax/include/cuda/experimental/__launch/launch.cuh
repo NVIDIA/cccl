@@ -132,6 +132,35 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
   return __do_launch(_CUDA_VSTD::forward<_Dst>(__dst), __config, __kernel_fn, __pArgs);
 }
 
+_CCCL_TEMPLATE(typename _GraphInserter)
+_CCCL_REQUIRES(graph_inserter<_GraphInserter>)
+_CCCL_HOST_API cudaStream_t __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
+{
+  return __detail::__invalid_stream;
+}
+
+_CCCL_HOST_API cudaStream_t inline __stream_or_invalid(cuda::stream_ref __stream)
+{
+  return __stream.get();
+}
+
+_CCCL_TEMPLATE(typename _GraphInserter)
+_CCCL_REQUIRES(graph_inserter<_GraphInserter>)
+_CCCL_HOST_API _GraphInserter&& __forward_or_cast_to_stream_ref(_GraphInserter&& __inserter)
+{
+  return _CUDA_VSTD::forward<_GraphInserter>(__inserter);
+}
+
+// cast to stream_ref to avoid instantiating launch_impl for every type convertible to stream_ref
+template <typename _Dummy>
+_CCCL_HOST_API cuda::stream_ref __forward_or_cast_to_stream_ref(cuda::stream_ref __stream)
+{
+  return __stream;
+}
+
+template <typename _Submitter>
+_CCCL_CONCEPT work_submitter = graph_inserter<_Submitter> || _CUDA_VSTD::is_convertible_v<_Submitter, cuda::stream_ref>;
+
 //! @brief Launch a kernel functor with specified configuration and arguments
 //!
 //! Launches a kernel functor object on the specified stream and with specified configuration.
@@ -171,89 +200,36 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
 //!
 //! @param args
 //! arguments to be passed into the kernel functor
-template <typename... _Args, typename... _Config, typename _Dimensions, typename _Kernel>
-_CCCL_HOST_API void
-launch(::cuda::stream_ref __stream,
-       const kernel_config<_Dimensions, _Config...>& __conf,
-       const _Kernel& __kernel,
-       _Args&&... __args)
+_CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
+_CCCL_REQUIRES(work_submitter<_Submitter>)
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           const _Kernel& __kernel,
+                           _Args&&... __args)
 {
-  __ensure_current_device __dev_setter(__stream);
-  auto __combined = __conf.combine_with_default(__kernel);
-  if constexpr (::cuda::std::is_invocable_v<_Kernel, kernel_config<_Dimensions, _Config...>, kernel_arg_t<_Args>...>)
-  {
-    auto __launcher = __kernel_launcher<decltype(__combined), _Kernel, kernel_arg_t<_Args>...>;
-    __launch_impl(
-      __stream,
-      __combined,
-      reinterpret_cast<void*>(__launcher),
-      __combined,
-      __kernel,
-      __kernel_transform(__launch_transform(__stream, std::forward<_Args>(__args)))...);
-  }
-  else
-  {
-    static_assert(::cuda::std::is_invocable_v<_Kernel, kernel_arg_t<_Args>...>);
-    auto __launcher = __kernel_launcher_no_config<_Kernel, kernel_arg_t<_Args>...>;
-    __launch_impl(__stream,
-                  __combined,
-                  reinterpret_cast<void*>(__launcher),
-                  __kernel,
-                  __kernel_transform(__launch_transform(__stream, std::forward<_Args>(__args)))...);
-  }
-}
-
-//! @brief Launch a kernel functor with specified configuration and arguments
-//!
-//! Launches a kernel functor object on the specified stream and with specified configuration.
-//! Kernel functor object is a type with __device__ operator().
-//! Functor might or might not accept the configuration as its first argument.
-//!
-//! @param __inserter
-//! A graph inserter that will be used to insert the kernel functor into the graph.
-//!
-//! @param __conf
-//! The configuration for this launch.
-//!
-//! @param __kernel
-//! The kernel functor to be launched.
-//!
-//! @param __args
-//! The arguments to be passed into the kernel functor.
-//!
-//! @return
-//! A graph node reference to the kernel node.
-_CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _GraphInserter, typename _Dimensions, typename _Kernel)
-_CCCL_REQUIRES(graph_inserter<_GraphInserter>)
-_CCCL_HOST_API graph_node_ref launch(
-  _GraphInserter&& __inserter,
-  const kernel_config<_Dimensions, _Config...>& __conf,
-  const _Kernel& __kernel,
-  _Args&&... __args)
-{
-  __ensure_current_device __dev_setter(__inserter.get_device());
+  __ensure_current_device __dev_setter{__submitter};
   auto __combined = __conf.combine_with_default(__kernel);
   if constexpr (::cuda::std::is_invocable_v<_Kernel, kernel_config<_Dimensions, _Config...>, kernel_arg_t<_Args>...>)
   {
     auto __launcher = __kernel_launcher<decltype(__combined), _Kernel, kernel_arg_t<_Args>...>;
     return __launch_impl(
-      _CUDA_VSTD::forward<_GraphInserter>(__inserter),
+      __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __combined,
       __kernel,
-      __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_Args>(__args)))...);
+      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args)))...);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<_Kernel, kernel_arg_t<_Args>...>);
     auto __launcher = __kernel_launcher_no_config<_Kernel, kernel_arg_t<_Args>...>;
     return __launch_impl(
-      _CUDA_VSTD::forward<_GraphInserter>(__inserter),
+      __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __kernel,
-      __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_Args>(__args)))...);
+      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args)))...);
   }
 }
 
@@ -295,58 +271,21 @@ _CCCL_HOST_API graph_node_ref launch(
 //! @param args
 //! arguments to be passed into the kernel function
 //!
-template <typename... _ExpArgs, typename... _ActArgs, typename... _Config, typename _Dimensions>
-_CCCL_HOST_API void
-launch(::cuda::stream_ref __stream,
-       const kernel_config<_Dimensions, _Config...>& __conf,
-       void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
-       _ActArgs&&... __args)
-{
-  __ensure_current_device __dev_setter(__stream);
-  __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
-    __stream, //
-    __conf,
-    reinterpret_cast<void*>(__kernel),
-    __conf,
-    __kernel_transform(__launch_transform(__stream, std::forward<_ActArgs>(__args)))...);
-}
-
-//! @brief Launch a kernel function with specified configuration and arguments
-//!
-//! Launches a kernel function on the specified stream and with specified configuration.
-//! Kernel function is a function with __global__ annotation.
-//! Function might or might not accept the configuration as its first argument.
-//!
-//! @param __inserter
-//! A graph inserter that will be used to insert the kernel function into the graph.
-//!
-//! @param __conf
-//! The configuration for this launch.
-//!
-//! @param __kernel
-//! The kernel function to be launched.
-//!
-//! @param __args
-//! The arguments to be passed into the kernel function.
-//!
-//! @return
-//! A graph node reference to the kernel node.
 _CCCL_TEMPLATE(
-  typename... _ExpArgs, typename... _ActArgs, typename _GraphInserter, typename... _Config, typename _Dimensions)
-_CCCL_REQUIRES(graph_inserter<_GraphInserter>)
-_CCCL_HOST_API graph_node_ref launch(
-  _GraphInserter&& __inserter,
-  const kernel_config<_Dimensions, _Config...>& __conf,
-  void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
-  _ActArgs&&... __args)
+  typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
+_CCCL_REQUIRES(work_submitter<_Submitter>)
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
+                           _ActArgs&&... __args)
 {
-  __ensure_current_device __dev_setter(__inserter.get_device());
+  __ensure_current_device __dev_setter{__submitter};
   return __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
-    _CUDA_VSTD::forward<_GraphInserter>(__inserter), //
+    __forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
     reinterpret_cast<void*>(__kernel),
     __conf,
-    __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
+    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -386,57 +325,22 @@ _CCCL_HOST_API graph_node_ref launch(
 //!
 //! @param __args
 //! arguments to be passed into the kernel function
-template <typename... _ExpArgs, typename... _ActArgs, typename... _Config, typename _Dimensions>
-_CCCL_HOST_API void
-launch(::cuda::stream_ref __stream,
-       const kernel_config<_Dimensions, _Config...>& __conf,
-       void (*__kernel)(_ExpArgs...),
-       _ActArgs&&... __args)
+_CCCL_TEMPLATE(
+  typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
+_CCCL_REQUIRES(work_submitter<_Submitter>)
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           void (*__kernel)(_ExpArgs...),
+                           _ActArgs&&... __args)
 {
-  __ensure_current_device __dev_setter(__stream);
-  __launch_impl<_ExpArgs...>(
-    __stream, //
+  __ensure_current_device __dev_setter{__submitter};
+  return __launch_impl<_ExpArgs...>(
+    __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)), //
     __conf,
     reinterpret_cast<void*>(__kernel),
-    __kernel_transform(__launch_transform(__stream, std::forward<_ActArgs>(__args)))...);
+    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
 }
 
-//! @brief Launch a kernel function with specified configuration and arguments
-//!
-//! Launches a kernel function on the specified stream and with specified configuration.
-//! Kernel function is a function with __global__ annotation.
-//! Function might or might not accept the configuration as its first argument.
-//!
-//! @param __inserter
-//! A graph inserter that will be used to insert the kernel function into the graph.
-//!
-//! @param __conf
-//! The configuration for this launch.
-//!
-//! @param __kernel
-//! The kernel function to be launched.
-//!
-//! @param __args
-//! The arguments to be passed into the kernel function.
-//!
-//! @return
-//! A graph node reference to the kernel node.
-_CCCL_TEMPLATE(
-  typename... _ExpArgs, typename... _ActArgs, typename _GraphInserter, typename... _Config, typename _Dimensions)
-_CCCL_REQUIRES(graph_inserter<_GraphInserter>)
-_CCCL_HOST_API graph_node_ref launch(
-  _GraphInserter&& __inserter,
-  const kernel_config<_Dimensions, _Config...>& __conf,
-  void (*__kernel)(_ExpArgs...),
-  _ActArgs&&... __args)
-{
-  __ensure_current_device __dev_setter(__inserter.get_device());
-  return __launch_impl<_ExpArgs...>(
-    _CUDA_VSTD::forward<_GraphInserter>(__inserter), //
-    __conf,
-    reinterpret_cast<void*>(__kernel),
-    __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
-}
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
 
