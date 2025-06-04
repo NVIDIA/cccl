@@ -187,7 +187,7 @@ template <SortOrder Order,
           typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
           typename KernelSource = detail::radix_sort::
             DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
@@ -1261,7 +1261,7 @@ template <SortOrder Order,
             EndOffsetIteratorT,
             SegmentSizeT,
             DecomposerT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------

@@ -355,7 +355,7 @@ template <int NUM_CHANNELS,
           typename PolicyHub    = void, // if user passes a custom Policy this should not be void
           typename KernelSource = detail::histogram::
             DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, OffsetT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           typename SampleT = cub::detail::it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
           typename TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>>
 struct DispatchHistogram

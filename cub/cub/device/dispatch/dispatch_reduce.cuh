@@ -148,7 +148,7 @@ template <typename InputIteratorT,
             InitT,
             AccumT,
             TransformOpT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchReduce
 {
   //---------------------------------------------------------------------------
@@ -585,7 +585,7 @@ template <
     InitT,
     AccumT,
     TransformOpT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory>
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
@@ -684,7 +684,7 @@ template <typename InputIteratorT,
             ReductionOpT,
             InitT,
             AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -1050,7 +1050,7 @@ template <typename InputIteratorT,
             ReductionOpT,
             InitT,
             AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchFixedSizeSegmentedReduce
 {
   //---------------------------------------------------------------------------
