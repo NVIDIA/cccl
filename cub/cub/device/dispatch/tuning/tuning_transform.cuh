@@ -248,13 +248,9 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // for vectorized policy:
   static constexpr int load_store_word_size        = 8;
   static constexpr int nominal_4b_items_per_thread = 16;
-  static constexpr int loaded_bytes_per_item       = loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
-  static constexpr int value_type_size = ::cuda::std::max(int{size_of<it_value_t<RandomAccessIteratorOut>>}, 1);
-  // use register bound scaling
-  static constexpr int scaled_items_per_thread =
-    ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / ::cuda::std::max(4, loaded_bytes_per_item));
-  static constexpr int items_per_thread =
-    ::cuda::round_up(scaled_items_per_thread, ::cuda::std::max(1, load_store_word_size / value_type_size));
+  static constexpr int value_type_size  = ::cuda::std::max(int{size_of<it_value_t<RandomAccessIteratorOut>>}, 1);
+  static constexpr int items_per_thread = ::cuda::round_up(
+    ::cuda::std::max(1, 32 / value_type_size), ::cuda::std::max(1, load_store_word_size / value_type_size));
   using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread, load_store_word_size>;
 
   // TODO(bgruber): consider a separate kernel for just filling
