@@ -32,6 +32,8 @@
 #endif // no system header
 #include <thrust/memory.h>
 
+#include <cuda.h>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup memory_management Memory Management
