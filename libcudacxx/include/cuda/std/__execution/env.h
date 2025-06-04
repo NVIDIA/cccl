@@ -307,8 +307,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
 template <class _Env0, class _Env1>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _Env0 __env0_;
-  _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
+  _Env0 __env0_;
+  _Env1 __env1_;
 
   template <class _Query>
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
