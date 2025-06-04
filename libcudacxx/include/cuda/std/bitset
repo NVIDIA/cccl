@@ -918,7 +918,7 @@ public:
   }
 
 private:
-  template <class _CharT, class _Traits>
+  template <class _CharT, class _Traits = char_traits<_CharT>>
   _CCCL_API constexpr void __init_from_string_view(basic_string_view<_CharT, _Traits> __str, _CharT __zero, _CharT __one)
   {
     size_t __mp = _CUDA_VSTD::min(__str.size(), _Size);
