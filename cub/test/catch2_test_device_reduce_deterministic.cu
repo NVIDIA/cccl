@@ -217,7 +217,7 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   REQUIRE(res_p1 == res_p2);
 }
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu using various iterators",
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with different iterators",
          "[reduce][deterministic]",
          float_type_list)
 {
@@ -263,7 +263,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu using v
 
   SECTION("counting iterator")
   {
-    thrust::counting_iterator<int> input(1);
+    thrust::counting_iterator<type> input(1);
     c2h::device_vector<type> d_output(1);
 
     deterministic_sum(input, d_output.begin(), num_items);
