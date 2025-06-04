@@ -158,12 +158,12 @@ public:
     return *this;
   }
 
-  /*! \brief Converts this \c device_ptr to a raw \c CUdeviceptr.
-   */
-  _CCCL_HOST_DEVICE operator CUdeviceptr() const {
+#if _CCCL_HAS_CTK()
+  //! \brief Converts this \c device_ptr to a raw \c CUdeviceptr.
+  _CCCL_HOST_DEVICE operator CUdeviceptr() const noexcept {
     return reinterpret_cast<CUdeviceptr>(super_t::get());
   }
-
+#endif // _CCCL_HAS_CTK()
 #ifdef _CCCL_DOXYGEN_INVOKED
   /*! \brief Return the raw pointer that this \c device_ptr points to.
    */
