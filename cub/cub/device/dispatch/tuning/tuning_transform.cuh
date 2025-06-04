@@ -44,6 +44,7 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/cmath>
+#include <cuda/numeric>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
@@ -248,8 +249,10 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // for vectorized policy:
   static constexpr int load_store_word_size = 8;
   static constexpr int value_type_size      = ::cuda::std::max(int{size_of<it_value_t<RandomAccessIteratorOut>>}, 1);
-  static constexpr int items_per_thread     = ::cuda::round_up(
-    ::cuda::std::max(1, 32 / value_type_size), ::cuda::std::max(1, load_store_word_size / value_type_size));
+  static constexpr int bytes_per_tile = ::cuda::round_up(32, ::cuda::std::lcm(load_store_word_size, value_type_size));
+  static_assert(bytes_per_tile % value_type_size == 0);
+  static constexpr int items_per_thread = bytes_per_tile / value_type_size;
+  static_assert((items_per_thread * value_type_size) % load_store_word_size == 0);
   using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread, load_store_word_size>;
 
   // TODO(bgruber): consider a separate kernel for just filling

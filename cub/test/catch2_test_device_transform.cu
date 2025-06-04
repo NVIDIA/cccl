@@ -33,7 +33,7 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>,
          offset_types)
 {
   using type     = c2h::get<0, TestType>;
