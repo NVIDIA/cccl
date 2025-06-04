@@ -211,6 +211,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int load_store_word_size = VectorizedPolicy::load_store_word_size;
   using load_store_t                 = decltype(load_store_type<load_store_word_size>());
 
+  using output_t = it_value_t<RandomAccessIteratorOut>;
+  ::cuda::std::array<output_t, items_per_thread> output;
+
   auto provide_array = [&](auto... inputs) {
     // load inputs
     // TODO(bgruber): we could support fancy iterators for loading here
@@ -231,43 +234,41 @@ _CCCL_DEVICE void transform_kernel_impl(
     (load_tile_vectorized(ins, inputs), ...);
 
     // process
-    using output_t = it_value_t<RandomAccessIteratorOut>;
-    ::cuda::std::array<output_t, items_per_thread> output;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
       output[i] = f(inputs[i]...);
     }
-
-    // write output
-    if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-                  && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorOut>>)
-    {
-      // vector path
-      static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
-      constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
-
-      using store_t   = larger_t<load_store_t, output_t>;
-      auto output_vec = reinterpret_cast<const store_t*>(output.data());
-      auto out_vec    = reinterpret_cast<store_t*>(out);
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < stores; ++i)
-      {
-        out_vec[i * VectorizedPolicy::block_threads + threadIdx.x] = output_vec[i];
-      }
-    }
-    else
-    {
-      // serial path
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < items_per_thread; ++i)
-      {
-        out[i * VectorizedPolicy::block_threads + threadIdx.x] = output[i];
-      }
-    }
   };
   provide_array(::cuda::std::array<it_value_t<RandomAccessIteratorIn>, items_per_thread>{}...);
+
+  // write output
+  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+                && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorOut>>)
+  {
+    // vector path
+    static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
+    constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
+
+    using store_t   = larger_t<load_store_t, output_t>;
+    auto output_vec = reinterpret_cast<const store_t*>(output.data());
+    auto out_vec    = reinterpret_cast<store_t*>(out);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < stores; ++i)
+    {
+      out_vec[i * VectorizedPolicy::block_threads + threadIdx.x] = output_vec[i];
+    }
+  }
+  else
+  {
+    // serial path
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < items_per_thread; ++i)
+    {
+      out[i * VectorizedPolicy::block_threads + threadIdx.x] = output[i];
+    }
+  }
 }
 
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
