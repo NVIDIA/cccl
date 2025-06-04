@@ -164,21 +164,11 @@ struct overaligned_addable_and_equal_comparable_policy
       return a.key == b.key;
     }
 
-    _CCCL_HOST_DEVICE friend auto operator+(const CustomType& a, const CustomType& b) -> CustomType
-    {
-      check(a);
-      check(b);
-      CustomType result{};
-      result.key = a.key + b.key;
-      result.val = a.val + b.val;
-      return result;
-    }
-
-    _CCCL_HOST_DEVICE friend auto operator+(unsigned u, const CustomType& b) -> CustomType
+    _CCCL_HOST_DEVICE friend auto operator+(char u, const CustomType& b) -> CustomType
     {
       check(b);
       CustomType result{};
-      result.key = u + b.key;
+      result.key = static_cast<size_t>(u) + b.key;
       result.val = b.val;
       return result;
     }
@@ -197,7 +187,14 @@ using uncommon_types = c2h::type_list<
   short3,
   int3,
   longlong3,
+  // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
+  overaligned_t<32>
+#if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
+  ,
+  overaligned_t<256>
+#endif // !_CCCL_COMPILER(MSVC)
   // exhaust shared memory or registers
+  ,
   huge_t>;
 
 struct uncommon_plus
@@ -215,6 +212,16 @@ struct uncommon_plus
     r.key += static_cast<size_t>(a);
     return r;
   }
+
+  _CCCL_HOST_DEVICE auto operator()(char a, const overaligned_t<32>& b) const -> overaligned_t<32>
+  {
+    return a + b;
+  }
+
+  _CCCL_HOST_DEVICE auto operator()(char a, const overaligned_t<256>& b) const -> overaligned_t<256>
+  {
+    return a + b;
+  }
 };
 
 C2H_TEST("DeviceTransform::Transform uncommon types", "[device][device_transform]", uncommon_types)
@@ -222,7 +229,7 @@ C2H_TEST("DeviceTransform::Transform uncommon types", "[device][device_transform
   using type = typename c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<type>());
 
-  const int num_items = GENERATE(0, 1, 100, 100'000); // try to hit the small and full tile code paths
+  const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<char> a(num_items, thrust::default_init); // put some bytes at the front, so SMEM has to handle
                                                                // padding between tiles to align them
   c2h::device_vector<type> b(num_items, thrust::default_init);
@@ -236,43 +243,6 @@ C2H_TEST("DeviceTransform::Transform uncommon types", "[device][device_transform
   c2h::host_vector<type> b_h = b;
   c2h::host_vector<type> reference_h(num_items);
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), uncommon_plus{});
-  REQUIRE(c2h::host_vector<type>(result) == reference_h);
-}
-
-// TODO(bgruber): merge the following test into the previous one
-// test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
-using overaligned_types =
-  c2h::type_list<overaligned_t<32>
-#if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
-                 ,
-                 overaligned_t<256>
-#endif // !_CCCL_COMPILER(MSVC)
-                 >;
-
-C2H_TEST("DeviceTransform::Transform overaligned type", "[device][device_transform]", overaligned_types)
-{
-  using type = c2h::get<0, TestType>;
-  CAPTURE(c2h::type_name<type>());
-
-  const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
-  c2h::device_vector<unsigned> a(num_items, 3); // put some integers at the front, so SMEM has to handle different
-                                                // alignments
-  c2h::device_vector<type> b(num_items, type{4});
-  c2h::gen(C2H_SEED(1), a);
-  c2h::gen(C2H_SEED(1), b);
-
-  c2h::device_vector<type> result(num_items, thrust::default_init);
-  // we need raw pointers here to halfen the conversion sequence from device_reference<unsigned> -> unsigned -> type
-  // when calling plus(...), which is too long to compile
-  transform_many(::cuda::std::make_tuple(thrust::raw_pointer_cast(a.data()), thrust::raw_pointer_cast(b.data())),
-                 result.begin(),
-                 num_items,
-                 cuda::std::plus{});
-
-  c2h::host_vector<unsigned> a_h = a;
-  c2h::host_vector<type> b_h     = b;
-  c2h::host_vector<type> reference_h(num_items, thrust::default_init);
-  std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus{});
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
