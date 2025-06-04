@@ -35,6 +35,7 @@
 namespace cuda::experimental::stf
 {
 
+/// @cond NEVER_DOCUMENT
 /**
  * @brief Invokes the provided callable on the value of the given variant.
  *
@@ -66,6 +67,7 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
 {
   return ::std::visit(::std::forward<F>(f), v);
 }
+/// @endcond
 
 /**
  * @brief Generic context implementation

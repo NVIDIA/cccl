@@ -1895,7 +1895,7 @@ in existing code.
 - `Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 - `Epochs` offer a simple, efficient synchronization mechanism that generalizes
-the fork/join concurrency pattern.
+  the fork/join concurrency pattern.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
