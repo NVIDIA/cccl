@@ -201,24 +201,24 @@ struct uncommon_plus
 {
   // vector types
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator()(char a, const T& b) const -> T
+  _CCCL_HOST_DEVICE auto operator()(int8_t a, const T& b) const -> T
   {
     return T{a, 0, 0} + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(char a, const huge_t& b) const -> huge_t
+  _CCCL_HOST_DEVICE auto operator()(int8_t a, const huge_t& b) const -> huge_t
   {
     huge_t r = b;
     r.key += static_cast<size_t>(a);
     return r;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(char a, const overaligned_t<32>& b) const -> overaligned_t<32>
+  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<32>& b) const -> overaligned_t<32>
   {
     return a + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(char a, const overaligned_t<256>& b) const -> overaligned_t<256>
+  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<256>& b) const -> overaligned_t<256>
   {
     return a + b;
   }
@@ -230,17 +230,17 @@ C2H_TEST("DeviceTransform::Transform uncommon types", "[device][device_transform
   CAPTURE(c2h::type_name<type>());
 
   const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
-  c2h::device_vector<char> a(num_items, thrust::default_init); // put some bytes at the front, so SMEM has to handle
-                                                               // padding between tiles to align them
+  c2h::device_vector<int8_t> a(num_items, thrust::default_init); // put some bytes at the front, so SMEM has to handle
+                                                                 // padding between tiles to align them
   c2h::device_vector<type> b(num_items, thrust::default_init);
-  c2h::gen(C2H_SEED(1), a, char{0}, char{100});
+  c2h::gen(C2H_SEED(1), a, int8_t{0}, int8_t{100});
   c2h::gen(C2H_SEED(1), b);
 
   c2h::device_vector<type> result(num_items, thrust::default_init);
   transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, uncommon_plus{});
 
-  c2h::host_vector<char> a_h = a;
-  c2h::host_vector<type> b_h = b;
+  c2h::host_vector<int8_t> a_h = a;
+  c2h::host_vector<type> b_h   = b;
   c2h::host_vector<type> reference_h(num_items);
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), uncommon_plus{});
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
