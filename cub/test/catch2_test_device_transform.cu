@@ -386,7 +386,7 @@ C2H_TEST("DeviceTransform::Transform add five streams", "[device][device_transfo
   constexpr auto alg = c2h::get<0, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
 
-  constexpr int num_items = 100;
+  const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<std::int8_t> a(num_items, thrust::no_init);
   c2h::device_vector<std::int16_t> b(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> c(num_items, thrust::no_init);
