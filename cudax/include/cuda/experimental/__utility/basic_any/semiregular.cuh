@@ -85,7 +85,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
   }
   else
   {
-    ::new (__dst) __identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
+    ::new (__dst) _CUDA_VSTD::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
     return false;
   }
 }
@@ -101,7 +101,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   }
   else
   {
-    ::new (__dst) __identity_t<_Tp*>(new _Tp(__src));
+    ::new (__dst) _CUDA_VSTD::type_identity_t<_Tp*>(new _Tp(__src));
     return false;
   }
 }
