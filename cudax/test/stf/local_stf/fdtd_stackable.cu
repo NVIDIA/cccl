@@ -288,7 +288,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     }
   }
 
-  auto [exec_g, stream] = ctx.pop_prologue();
+  auto [exec_g, stream] = ctx.pop_extract_graph();
 
   size_t iter = 0;
   while (iter < timesteps)
@@ -299,7 +299,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   cuda_safe_call(cudaStreamSynchronize(stream));
 
-  ctx.pop_epilogue();
+  ctx.pop_release_graph();
 
   ctx.finalize();
 #endif // !_CCCL_COMPILER(MSVC)

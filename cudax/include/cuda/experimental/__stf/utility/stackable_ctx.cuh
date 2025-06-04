@@ -531,7 +531,7 @@ public:
       _pop_epilogue();
     }
 
-    ::std::pair<cudaGraphExec_t, cudaStream_t> pop_prologue()
+    ::std::pair<cudaGraphExec_t, cudaStream_t> pop_extract_graph()
     {
       // This will acquire the lock, but not release it
       lock_exclusive();
@@ -548,7 +548,7 @@ public:
       return ::std::make_pair(*exec_g, current_node.support_stream);
     }
 
-    void pop_epilogue()
+    void pop_release_graph()
     {
       // The lock was already taken in pop_prologue
       _pop_epilogue();
@@ -834,14 +834,14 @@ public:
     pimpl->pop();
   }
 
-  auto pop_prologue()
+  auto pop_extract_graph()
   {
-    return pimpl->pop_prologue();
+    return pimpl->pop_extract_graph();
   }
 
-  void pop_epilogue()
+  void pop_release_graph()
   {
-    return pimpl->pop_epilogue();
+    return pimpl->pop_release_graph();
   }
 
   template <typename T>

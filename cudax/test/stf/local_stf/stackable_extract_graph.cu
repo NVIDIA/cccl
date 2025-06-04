@@ -59,13 +59,13 @@ int main()
     };
   }
 
-  auto [exec_g, stream] = ctx.pop_prologue();
+  auto [exec_g, stream] = ctx.pop_extract_graph();
   for (size_t iter = 0; iter < 10; iter++)
   {
     cuda_safe_call(cudaGraphLaunch(exec_g, stream));
   }
 
-  ctx.pop_epilogue();
+  ctx.pop_release_graph();
 
   ctx.finalize();
 }
