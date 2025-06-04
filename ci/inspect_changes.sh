@@ -203,7 +203,9 @@ core_infra_is_dirty() {
 subdir_is_dirty() {
   local subdir="$1"
 
-  if dirty_files | grep -E "^${subdir}/" | grep -q '.'; then
+  subdir_dirt="$(dirty_files | grep -E "^${subdir}/")"
+
+  if [[ -n "$subdir_dirt" ]]; then
     return 0
   else
     return 1

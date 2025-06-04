@@ -68,8 +68,8 @@ template <class _InputIterator1, class _InputIterator2, class _Compare>
     _CUDA_VSTD::move(__first2),
     _CUDA_VSTD::move(__last2),
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    __identity(),
-    __identity());
+    identity(),
+    identity());
 }
 
 _CCCL_EXEC_CHECK_DISABLE

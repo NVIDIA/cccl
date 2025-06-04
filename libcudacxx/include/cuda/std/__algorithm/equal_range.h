@@ -84,7 +84,7 @@ equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
     _CUDA_VSTD::move(__last),
     __value,
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    _CUDA_VSTD::__identity());
+    _CUDA_VSTD::identity());
 }
 
 template <class _ForwardIterator, class _Tp>

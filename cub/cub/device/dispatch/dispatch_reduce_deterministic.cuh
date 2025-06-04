@@ -124,7 +124,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename InitT        = rfa::InitT<OutputIteratorT, InputIteratorT>,
           typename AccumT       = rfa::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
-          typename TransformOpT = ::cuda::std::__identity,
+          typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::rfa::policy_hub<
                rfa::AccumT<::cuda::std::plus<>, rfa::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
                OffsetT,
@@ -361,7 +361,7 @@ struct DispatchReduceDeterministic
             reduce_grid_size, // triple_chevron is not type safe, make sure to use int
             reduction_op,
             init,
-            ::cuda::std::__identity{});
+            ::cuda::std::identity{});
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());

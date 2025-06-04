@@ -161,7 +161,7 @@ void deterministic_reduce_gpu(const int N)
   using output_it_t = decltype(output_p1.begin());
   using init_t      = cub::detail::rfa::InitT<input_it_t, output_it_t>;
   using accum_t     = cub::detail::rfa::AccumT<::cuda::std::plus<>, init_t, input_it_t>;
-  using transform_t = ::cuda::std::__identity;
+  using transform_t = ::cuda::std::identity;
 
   using deterministic_dispatch_t_p1 =
     cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, accum_t, transform_t, hub_t<1, 128>>;
