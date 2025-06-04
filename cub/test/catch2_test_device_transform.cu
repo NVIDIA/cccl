@@ -387,11 +387,11 @@ C2H_TEST("DeviceTransform::Transform add five streams", "[device][device_transfo
   FILTER_UNSUPPORTED_ALGS
 
   constexpr int num_items = 100;
-  c2h::device_vector<std::int8_t> a(num_items, 1);
-  c2h::device_vector<std::int16_t> b(num_items, 2);
-  c2h::device_vector<std::int32_t> c(num_items, 3);
-  c2h::device_vector<std::int64_t> d(num_items, 4);
-  c2h::device_vector<float> e(num_items, 5);
+  c2h::device_vector<std::int8_t> a(num_items, thrust::no_init);
+  c2h::device_vector<std::int16_t> b(num_items, thrust::no_init);
+  c2h::device_vector<std::int32_t> c(num_items, thrust::no_init);
+  c2h::device_vector<std::int64_t> d(num_items, thrust::no_init);
+  c2h::device_vector<float> e(num_items, thrust::no_init);
 
   c2h::gen(C2H_SEED(1), a, std::int8_t{10}, std::int8_t{100});
   c2h::gen(C2H_SEED(1), b, std::int16_t{10}, std::int16_t{100});
