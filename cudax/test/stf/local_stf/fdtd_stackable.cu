@@ -297,8 +297,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     iter += iters_per_graph;
   }
 
-  cuda_safe_call(cudaStreamSynchronize(stream));
-
   ctx.pop_release_graph();
 
   ctx.finalize();
