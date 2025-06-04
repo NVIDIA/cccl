@@ -23,7 +23,7 @@
 
 __host__ __device__ constexpr bool test()
 {
-  typedef random_access_iterator<int*> RI;
+  using RI = random_access_iterator<int*>;
   int i1[] = {0, 0};
   assert(cuda::std::is_heap_until(i1, i1) == i1);
   assert(cuda::std::is_heap_until(i1, i1 + 1) == i1 + 1);

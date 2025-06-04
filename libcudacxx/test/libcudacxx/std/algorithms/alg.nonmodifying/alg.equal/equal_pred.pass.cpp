@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
     random_access_iterator<const int*>(ia + s),
     cuda::std::equal_to<int>()));
 
-  typedef cuda::std::equal_to<int> EQ;
+  using EQ             = cuda::std::equal_to<int>;
   int comparison_count = 0;
   counting_predicate<EQ> counting_equals(EQ(), comparison_count);
   assert(!cuda::std::equal(

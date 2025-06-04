@@ -43,7 +43,7 @@ template <class Iter>
 __host__ __device__ void test()
 {
   { // check mixed
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(0, 1), P(0, 2), P(1, 1), P(1, 2), P(2, 1), P(2, 2), P(3, 1), P(3, 2), P(4, 1), P(4, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -60,7 +60,7 @@ __host__ __device__ void test()
     assert(array[9] == P(4, 2));
   }
   {
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(0, 1), P(0, 2), P(1, 1), P(1, 2), P(2, 1), P(2, 2), P(3, 1), P(3, 2), P(4, 1), P(4, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -88,7 +88,7 @@ __host__ __device__ void test()
     assert(array[4] == P(0, 1));
   }
   { // check all false
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(0, 1), P(0, 2), P(2, 1), P(2, 2), P(4, 1), P(4, 2), P(6, 1), P(6, 2), P(8, 1), P(8, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -105,7 +105,7 @@ __host__ __device__ void test()
     assert(array[9] == P(8, 2));
   }
   { // check all true
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(1, 1), P(1, 2), P(3, 1), P(3, 2), P(5, 1), P(5, 2), P(7, 1), P(7, 2), P(9, 1), P(9, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -122,7 +122,7 @@ __host__ __device__ void test()
     assert(array[9] == P(9, 2));
   }
   { // check all false but first true
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(1, 1), P(0, 2), P(2, 1), P(2, 2), P(4, 1), P(4, 2), P(6, 1), P(6, 2), P(8, 1), P(8, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -139,7 +139,7 @@ __host__ __device__ void test()
     assert(array[9] == P(8, 2));
   }
   { // check all false but last true
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(0, 1), P(0, 2), P(2, 1), P(2, 2), P(4, 1), P(4, 2), P(6, 1), P(6, 2), P(8, 1), P(1, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -156,7 +156,7 @@ __host__ __device__ void test()
     assert(array[9] == P(8, 1));
   }
   { // check all true but first false
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(0, 1), P(1, 2), P(3, 1), P(3, 2), P(5, 1), P(5, 2), P(7, 1), P(7, 2), P(9, 1), P(9, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -173,7 +173,7 @@ __host__ __device__ void test()
     assert(array[9] == P(0, 1));
   }
   { // check all true but last false
-    typedef cuda::std::pair<int, int> P;
+    using P             = cuda::std::pair<int, int>;
     P array[]           = {P(1, 1), P(1, 2), P(3, 1), P(3, 2), P(5, 1), P(5, 2), P(7, 1), P(7, 2), P(9, 1), P(0, 2)};
     const unsigned size = sizeof(array) / sizeof(array[0]);
     Iter r              = cuda::std::stable_partition(Iter(array), Iter(array + size), odd_first());
@@ -209,12 +209,16 @@ __host__ __device__ void test1()
   assert(r == Iter(array + size));
 }
 
-int main(int, char**)
+__host__ __device__ void test()
 {
   test<bidirectional_iterator<cuda::std::pair<int, int>*>>();
   test<random_access_iterator<cuda::std::pair<int, int>*>>();
   test<cuda::std::pair<int, int>*>();
   test1<bidirectional_iterator<cuda::std::unique_ptr<int>*>>();
+}
 
+int main(int, char**)
+{
+  test();
   return 0;
 }

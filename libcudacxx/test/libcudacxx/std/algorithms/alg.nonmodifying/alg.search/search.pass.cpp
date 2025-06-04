@@ -140,7 +140,7 @@ int main(int, char**)
 
   {
     int searcher_called = 0;
-    typedef int* RI;
+    using RI            = int*;
     static_assert((cuda::std::is_same<RI, decltype(cuda::std::search(RI(), RI(), MySearcher{searcher_called}))>::value),
                   "");
 

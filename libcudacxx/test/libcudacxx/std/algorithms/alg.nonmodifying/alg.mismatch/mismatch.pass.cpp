@@ -32,8 +32,8 @@ __host__ __device__ constexpr bool test()
   int ib[]                           = {0, 1, 2, 3, 0, 1, 2, 3};
   [[maybe_unused]] const unsigned sb = sizeof(ib) / sizeof(ib[0]);
 
-  typedef cpp17_input_iterator<const int*> II;
-  typedef random_access_iterator<const int*> RAI;
+  using II  = cpp17_input_iterator<const int*>;
+  using RAI = random_access_iterator<const int*>;
 
   assert(cuda::std::mismatch(II(ia), II(ia + sa), II(ib)) == (cuda::std::pair<II, II>(II(ia + 3), II(ib + 3))));
 
