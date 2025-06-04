@@ -293,7 +293,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t iter = 0;
   while (iter < timesteps)
   {
-    cuda_safe_call(cudaGraphLaunch(*exec_g, stream));
+    cuda_safe_call(cudaGraphLaunch(exec_g, stream));
     iter += iters_per_graph;
   }
 

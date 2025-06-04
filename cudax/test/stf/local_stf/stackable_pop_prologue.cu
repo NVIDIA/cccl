@@ -60,10 +60,9 @@ int main()
   }
 
   auto [exec_g, stream] = ctx.pop_prologue();
-
   for (size_t iter = 0; iter < 10; iter++)
   {
-    cuda_safe_call(cudaGraphLaunch(*exec_g, stream));
+    cuda_safe_call(cudaGraphLaunch(exec_g, stream));
   }
 
   ctx.pop_epilogue();

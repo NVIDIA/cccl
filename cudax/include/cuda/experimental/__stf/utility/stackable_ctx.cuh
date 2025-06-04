@@ -531,7 +531,7 @@ public:
       _pop_epilogue();
     }
 
-    ::std::pair<::std::shared_ptr<cudaGraphExec_t>, cudaStream_t> pop_prologue()
+    ::std::pair<cudaGraphExec_t, cudaStream_t> pop_prologue()
     {
       // This will acquire the lock, but not release it
       lock_exclusive();
@@ -545,7 +545,7 @@ public:
       // Create an executable graph
       ::std::shared_ptr<cudaGraphExec_t> exec_g = current_node.ctx.to_graph_ctx().instantiate();
 
-      return ::std::make_pair(mv(exec_g), current_node.support_stream);
+      return ::std::make_pair(*exec_g, current_node.support_stream);
     }
 
     void pop_epilogue()
