@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
@@ -32,6 +33,7 @@
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/device.cuh>
 #include <cuda/experimental/stream.cuh>
 
 #include <new> // IWYU pragma: keep for placement new
@@ -52,11 +54,22 @@ __launch_bounds__(1) __global__ static void __stream_complete(_Tag, _Rcvr* __rcv
 // stream_context
 struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
 {
-  stream_context() noexcept = default;
+  _CCCL_HOST_API stream_context()
+      : stream_context(device_ref{0})
+  {}
+
+  _CCCL_HOST_API explicit stream_context(device_ref __device)
+      : __stream_{__device}
+  {}
 
   _CCCL_HOST_API void sync() noexcept
   {
     __stream_.sync();
+  }
+
+  [[nodiscard]] _CCCL_HOST_API auto query(get_stream_t) const noexcept -> stream_ref
+  {
+    return __stream_;
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////
