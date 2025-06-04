@@ -145,6 +145,49 @@ catch (const std::bad_alloc&)
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
 }
 
+template <int Alignment>
+struct overaligned_addable_and_equal_comparable_policy
+{
+  template <typename CustomType>
+  struct alignas(Alignment) type
+  {
+    _CCCL_HOST_DEVICE static void check(const CustomType& obj)
+    {
+      _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
+                   "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
+    }
+
+    _CCCL_HOST_DEVICE friend auto operator==(const CustomType& a, const CustomType& b) -> bool
+    {
+      check(a);
+      check(b);
+      return a.key == b.key;
+    }
+
+    _CCCL_HOST_DEVICE friend auto operator+(const CustomType& a, const CustomType& b) -> CustomType
+    {
+      check(a);
+      check(b);
+      CustomType result{};
+      result.key = a.key + b.key;
+      result.val = a.val + b.val;
+      return result;
+    }
+
+    _CCCL_HOST_DEVICE friend auto operator+(unsigned u, const CustomType& b) -> CustomType
+    {
+      check(b);
+      CustomType result{};
+      result.key = u + b.key;
+      result.val = b.val;
+      return result;
+    }
+  };
+};
+
+template <int Alignment>
+using overaligned_t = c2h::custom_type_t<overaligned_addable_and_equal_comparable_policy<Alignment>::template type>;
+
 using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
 static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
 
@@ -180,53 +223,11 @@ C2H_TEST("DeviceTransform::Transform uncommon types", "[device][device_transform
 
 // TODO(bgruber): merge the following test into the previous one
 // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
-template <int Alignment>
-struct alignas(Alignment) overaligned_addable_t
-{
-  int value;
-
-  overaligned_addable_t() = default;
-
-  _CCCL_HOST_DEVICE overaligned_addable_t(int val)
-      : value{val}
-  {}
-
-  _CCCL_HOST_DEVICE static void check(const overaligned_addable_t& obj)
-  {
-    if (reinterpret_cast<uintptr_t>(&obj) % Alignment != 0)
-    {
-      printf("Error: object not aligned to %d: %p\n", Alignment, &obj);
-      ::cuda::std::terminate();
-    }
-  }
-
-  _CCCL_HOST_DEVICE friend auto operator==(const overaligned_addable_t& a, const overaligned_addable_t& b) -> bool
-  {
-    check(a);
-    check(b);
-    return a.value == b.value;
-  }
-
-  _CCCL_HOST_DEVICE friend auto operator+(const overaligned_addable_t& a, const overaligned_addable_t& b)
-    -> overaligned_addable_t
-  {
-    check(a);
-    check(b);
-    return overaligned_addable_t{a.value + b.value};
-  }
-
-  _CCCL_HOST friend auto operator<<(std::ostream& os, const overaligned_addable_t& obj) -> std::ostream&
-  {
-    check(obj);
-    return os << "over{" << obj.value << "}";
-  }
-};
-
 using overaligned_types =
-  c2h::type_list<overaligned_addable_t<32>
+  c2h::type_list<overaligned_t<32>
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
                  ,
-                 overaligned_addable_t<256>
+                 overaligned_t<256>
 #endif // !_CCCL_COMPILER(MSVC)
                  >;
 
@@ -239,16 +240,22 @@ C2H_TEST("DeviceTransform::Transform overaligned type", "[device][device_transfo
   c2h::device_vector<unsigned> a(num_items, 3); // put some integers at the front, so SMEM has to handle different
                                                 // alignments
   c2h::device_vector<type> b(num_items, type{4});
+  c2h::gen(C2H_SEED(1), a);
+  c2h::gen(C2H_SEED(1), b);
 
-  c2h::device_vector<type> result(num_items);
-  // we need raw pointers here to halfen the conversion sequence from device_reference<int> -> int -> type when calling
-  // plus(...), which is too long to compile
+  c2h::device_vector<type> result(num_items, thrust::default_init);
+  // we need raw pointers here to halfen the conversion sequence from device_reference<unsigned> -> unsigned -> type
+  // when calling plus(...), which is too long to compile
   transform_many(::cuda::std::make_tuple(thrust::raw_pointer_cast(a.data()), thrust::raw_pointer_cast(b.data())),
                  result.begin(),
                  num_items,
                  cuda::std::plus{});
 
-  REQUIRE(result == c2h::device_vector<type>(num_items, type{7}));
+  c2h::host_vector<unsigned> a_h = a;
+  c2h::host_vector<type> b_h     = b;
+  c2h::host_vector<type> reference_h(num_items, thrust::default_init);
+  std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus{});
+  REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
 template <typename T>
