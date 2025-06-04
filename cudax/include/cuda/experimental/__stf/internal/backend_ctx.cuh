@@ -190,6 +190,11 @@ protected:
       return nullptr;
     }
 
+    virtual ::std::shared_ptr<cudaGraphExec_t> instantiate() const
+    {
+      return nullptr;
+    }
+
     void set_graph_cache_policy(::std::function<bool()> fn)
     {
       cache_policy = mv(fn);

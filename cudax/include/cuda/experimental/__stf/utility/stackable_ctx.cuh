@@ -320,7 +320,7 @@ public:
      */
     void push(const _CUDA_VSTD::source_location& loc, bool is_root = false)
     {
-      auto lock = get_write_lock();
+      auto lock = acquire_exclusive_lock();
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
@@ -420,15 +420,11 @@ public:
       set_head_offset(node_offset);
     }
 
-    /**
-     * @brief Terminate the current nested level and get back to the previous one
-     */
-    void pop()
+    // This method assumes that the mutex is already acquired in exclusive mode
+    void _pop_prologue()
     {
-      auto lock       = get_write_lock();
       int head_offset = get_head_offset();
 
-      // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
       _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
       _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
 
@@ -443,13 +439,6 @@ public:
         return;
       }
 
-      const char* display_mem_stats_env = getenv("CUDASTF_DISPLAY_MEM_STATS");
-      if (display_mem_stats_env && atoi(display_mem_stats_env) != 0)
-      {
-        fprintf(stderr, "PRINT DATA SUMMARY ctx %s\n", current_node.ctx.get_dot()->get_ctx_symbol().c_str());
-        // current_node.ctx.print_logical_data_summary();
-      }
-
       // Automatically pop data if needed. This will destroy the logical data
       // created within the context that is being destroyed. Unless using "non
       // exportable data" this logical data was created as an alias of an
@@ -461,9 +450,14 @@ public:
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_before_finalize(head_offset);
       }
+    }
 
-      // Ensure everything is finished in the context
-      current_node.ctx.finalize();
+    // This method assumes that the mutex is already acquired in exclusive mode
+    void _pop_epilogue()
+    {
+      int head_offset = get_head_offset();
+
+      auto& current_node = nodes[head_offset].value();
 
       // Make the async resource handle reusable on this execution place
       auto& handle_stack = async_handles[current_node.ctx.default_exec_place()];
@@ -517,6 +511,49 @@ public:
 
       // The parent becomes the current context of the thread
       set_head_offset(parent_offset);
+    }
+
+    /**
+     * @brief Terminate the current nested level and get back to the previous one
+     */
+    void pop()
+    {
+      auto lock = acquire_exclusive_lock();
+
+      _pop_prologue();
+
+      // This will create an executable CUDA graph, and launch it
+      int head_offset    = get_head_offset();
+      auto& current_node = nodes[head_offset].value();
+      current_node.ctx.finalize();
+
+      // Release all resources acquired for the push now that we have executed the graph
+      _pop_epilogue();
+    }
+
+    ::std::pair<::std::shared_ptr<cudaGraphExec_t>, cudaStream_t> pop_prologue()
+    {
+      // This will acquire the lock, but not release it
+      lock_exclusive();
+
+      _pop_prologue();
+
+      int head_offset    = get_head_offset();
+      auto& current_node = nodes[head_offset].value();
+      _CCCL_ASSERT(current_node.refcnt == 0, "pop_prologue() can only be used on top context");
+
+      // Create an executable graph
+      ::std::shared_ptr<cudaGraphExec_t> exec_g = current_node.ctx.to_graph_ctx().instantiate();
+
+      return ::std::make_pair(mv(exec_g), current_node.support_stream);
+    }
+
+    void pop_epilogue()
+    {
+      // The lock was already taken in pop_prologue
+      _pop_epilogue();
+
+      unlock_exclusive();
     }
 
     // Offset of the root context
@@ -697,14 +734,36 @@ public:
       stats_map;
 
   public:
-    ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+    /* RAII wrappers to get the lock either in read-only or write mode */
+    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
     {
       return ::std::shared_lock<::std::shared_mutex>(mutex);
     }
 
-    ::std::unique_lock<::std::shared_mutex> get_write_lock()
+    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
     {
       return ::std::unique_lock<::std::shared_mutex>(mutex);
+    }
+
+    /* Methods to explicitly lock/unlock the mutex in a read-only or write way */
+    void lock_shared() const
+    {
+      mutex.lock_shared();
+    }
+
+    void unlock_shared() const
+    {
+      mutex.unlock_shared();
+    }
+
+    void lock_exclusive()
+    {
+      mutex.lock();
+    }
+
+    void unlock_exclusive()
+    {
+      mutex.unlock();
     }
 
   private:
@@ -775,10 +834,20 @@ public:
     pimpl->pop();
   }
 
+  auto pop_prologue()
+  {
+    return pimpl->pop_prologue();
+  }
+
+  void pop_epilogue()
+  {
+    return pimpl->pop_epilogue();
+  }
+
   template <typename T>
   auto logical_data(shape_of<T> s)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     // fprintf(stderr, "initialize from shape.\n");
     int head = pimpl->get_head_offset();
@@ -788,7 +857,7 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... more_sizes)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int head = pimpl->get_head_offset();
     return stackable_logical_data(
@@ -798,7 +867,7 @@ public:
   template <typename T>
   auto logical_data_no_export(shape_of<T> s)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     // fprintf(stderr, "initialize from shape.\n");
     int head = pimpl->get_head_offset();
@@ -808,7 +877,7 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int head = pimpl->get_head_offset();
     return stackable_logical_data(
@@ -820,7 +889,7 @@ public:
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int head = pimpl->get_head_offset();
     // fprintf(stderr, "initialize from value.\n");
@@ -910,7 +979,7 @@ public:
   template <typename... Pack>
   auto task(Pack&&... pack)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -921,7 +990,7 @@ public:
   template <typename... Pack>
   auto parallel_for(Pack&&... pack)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -931,7 +1000,7 @@ public:
   template <typename... Pack>
   auto cuda_kernel(Pack&&... pack)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -941,7 +1010,7 @@ public:
   template <typename... Pack>
   auto cuda_kernel_chain(Pack&&... pack)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -952,7 +1021,7 @@ public:
   template <typename... Pack>
   auto host_launch(Pack&&... pack)
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -961,7 +1030,7 @@ public:
 
   auto task_fence()
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).task_fence();
@@ -969,7 +1038,7 @@ public:
 
   auto get_dot()
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).get_dot();
@@ -978,7 +1047,7 @@ public:
   template <typename... Pack>
   void push_affinity(Pack&&... pack) const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -987,7 +1056,7 @@ public:
 
   void pop_affinity() const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     get_ctx(offset).pop_affinity();
@@ -995,7 +1064,7 @@ public:
 
   auto& current_affinity() const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).current_affinity();
@@ -1003,14 +1072,14 @@ public:
 
   const exec_place& current_exec_place() const
   {
-    auto lock  = pimpl->get_read_lock();
+    auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     return get_ctx(offset).current_exec_place();
   }
 
   auto& async_resources() const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).async_resources();
@@ -1018,7 +1087,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).dot_section(mv(symbol));
@@ -1026,7 +1095,7 @@ public:
 
   size_t task_count() const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).task_count();
@@ -1034,7 +1103,7 @@ public:
 
   void finalize()
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     _CCCL_ASSERT(pimpl->get_head_offset() == pimpl->get_root_offset(),
                  "Can only finalize if there is no pending contexts");
@@ -1044,19 +1113,19 @@ public:
 
   void print_logical_data_summary() const
   {
-    auto lock = pimpl->get_read_lock();
+    auto lock = pimpl->acquire_shared_lock();
 
     pimpl->print_logical_data_summary();
   }
 
-  ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+  ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
   {
-    return pimpl->get_read_lock();
+    return pimpl->acquire_shared_lock();
   }
 
-  ::std::unique_lock<::std::shared_mutex> get_write_lock()
+  ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
   {
-    return pimpl->get_write_lock();
+    return pimpl->acquire_exclusive_lock();
   }
 
 public:
@@ -1241,7 +1310,7 @@ class stackable_logical_data
 
       void set_symbol(::std::string symbol_)
       {
-        auto ctx_lock = sctx.get_write_lock();
+        auto ctx_lock = sctx.acquire_exclusive_lock();
         symbol        = mv(symbol_);
         traverse_data_nodes([this](int offset) {
           get_data_node(offset).ld.set_symbol(this->symbol);
@@ -1287,12 +1356,12 @@ class stackable_logical_data
         return data_nodes[offset].value().frozen_ld.value().get_access_mode();
       }
 
-      ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+      ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
       {
         return ::std::shared_lock<::std::shared_mutex>(mutex);
       }
 
-      ::std::unique_lock<::std::shared_mutex> get_write_lock()
+      ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
       {
         return ::std::unique_lock<::std::shared_mutex>(mutex);
       }
@@ -1386,7 +1455,7 @@ class stackable_logical_data
         return;
       }
 
-      auto ctx_lock = sctx.get_write_lock(); // to protect retained_data
+      auto ctx_lock = sctx.acquire_exclusive_lock(); // to protect retained_data
 
       int data_root_offset = impl_state->get_data_root_offset();
 
@@ -1423,14 +1492,14 @@ class stackable_logical_data
     impl(impl&&) noexcept            = delete;
     impl& operator=(impl&&) noexcept = delete;
 
-    ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
     {
-      return impl_state->get_read_lock();
+      return impl_state->acquire_shared_lock();
     }
 
-    ::std::unique_lock<::std::shared_mutex> get_write_lock()
+    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
     {
-      return impl_state->get_write_lock();
+      return impl_state->acquire_exclusive_lock();
     }
 
     const auto& get_ld(int offset) const
@@ -1720,7 +1789,7 @@ public:
   bool validate_access(int ctx_offset, const stackable_ctx& sctx, access_mode m) const
   {
     // Grab the lock of the data, note that we are already holding the context lock in read mode
-    auto lock = pimpl->get_write_lock();
+    auto lock = pimpl->acquire_exclusive_lock();
 
     _CCCL_ASSERT(m == access_mode::read || m == access_mode::rw || m == access_mode::write,
                  "Unsupported access mode in nested context");
