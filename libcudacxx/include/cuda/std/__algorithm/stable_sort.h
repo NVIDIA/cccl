@@ -276,11 +276,6 @@ _LIBCUDACXX_HIDE_FROM_ABI void __stable_sort(
     __d.__set(__len, (value_type*) nullptr);
     _CUDA_VSTD::__merge_move_assign<_AlgPolicy, _Compare>(
       __buff, __buff + __l2, __buff + __l2, __buff + __len, __first, __comp);
-    //         _CUDA_VSTD::__merge<_Compare>(move_iterator<value_type*>(__buff),
-    //                                  move_iterator<value_type*>(__buff + __l2),
-    //                                  move_iterator<_RandomAccessIterator>(__buff + __l2),
-    //                                  move_iterator<_RandomAccessIterator>(__buff + __len),
-    //                                  __first, __comp);
     return;
   }
   _CUDA_VSTD::__stable_sort<_AlgPolicy, _Compare>(__first, __m, __comp, __l2, __buff, __buff_size);
