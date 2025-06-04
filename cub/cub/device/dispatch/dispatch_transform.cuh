@@ -322,7 +322,8 @@ struct dispatch_t<StableAddress,
 
     auto can_vectorize = false;
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
-    if constexpr (Algorithm::vectorized == wrapped_policy.GetAlgorithm())
+    if constexpr (Algorithm::vectorized == ActivePolicy::algorithm) // TODO(bgruber): should use
+                                                                    // wrapped_policy.GetAlgorithm() for cccl.c
     {
       const int alignment     = wrapped_policy.LoadStoreWordSize();
       auto is_pointer_aligned = [&](auto it) {
@@ -341,7 +342,8 @@ struct dispatch_t<StableAddress,
     }
 
     const int ipt = [&] {
-      if constexpr (Algorithm::vectorized == wrapped_policy.GetAlgorithm())
+      if constexpr (Algorithm::vectorized == ActivePolicy::algorithm) // TODO(bgruber): should use
+                                                                      // wrapped_policy.GetAlgorithm() for cccl.c
       {
         if (can_vectorize)
         {
