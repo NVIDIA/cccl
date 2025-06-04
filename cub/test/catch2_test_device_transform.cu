@@ -373,7 +373,8 @@ C2H_TEST("DeviceTransform::Transform BabelStream nstream",
 
 struct sum_five
 {
-  __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const -> double
+  __host__ __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
+    -> double
   {
     return a + b + c + d + e;
   }
@@ -385,12 +386,18 @@ C2H_TEST("DeviceTransform::Transform add five streams", "[device][device_transfo
   constexpr auto alg = c2h::get<0, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
 
-  constexpr int num_items = 100;
-  c2h::device_vector<std::int8_t> a(num_items, 1);
-  c2h::device_vector<std::int16_t> b(num_items, 2);
-  c2h::device_vector<std::int32_t> c(num_items, 3);
-  c2h::device_vector<std::int64_t> d(num_items, 4);
-  c2h::device_vector<float> e(num_items, 5);
+  const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
+  c2h::device_vector<std::int8_t> a(num_items, thrust::no_init);
+  c2h::device_vector<std::int16_t> b(num_items, thrust::no_init);
+  c2h::device_vector<std::int32_t> c(num_items, thrust::no_init);
+  c2h::device_vector<std::int64_t> d(num_items, thrust::no_init);
+  c2h::device_vector<float> e(num_items, thrust::no_init);
+
+  c2h::gen(C2H_SEED(1), a, std::int8_t{10}, std::int8_t{100});
+  c2h::gen(C2H_SEED(1), b, std::int16_t{10}, std::int16_t{100});
+  c2h::gen(C2H_SEED(1), c, std::int32_t{10}, std::int32_t{100});
+  c2h::gen(C2H_SEED(1), d, std::int64_t{10}, std::int64_t{100});
+  c2h::gen(C2H_SEED(1), e, float{10}, float{100});
 
   c2h::device_vector<double> result(num_items);
   transform_many_with_alg<alg, offset_t>(
@@ -400,8 +407,15 @@ C2H_TEST("DeviceTransform::Transform add five streams", "[device][device_transfo
     sum_five{});
 
   // compute reference and verify
-  c2h::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
-  REQUIRE(reference == result);
+  c2h::host_vector<std::int8_t> a_h  = a;
+  c2h::host_vector<std::int16_t> b_h = b;
+  c2h::host_vector<std::int32_t> c_h = c;
+  c2h::host_vector<std::int64_t> d_h = d;
+  c2h::host_vector<float> e_h        = e;
+  c2h::host_vector<double> reference_h(num_items, thrust::no_init);
+  auto zip = thrust::zip_iterator{a_h.begin(), b_h.begin(), c_h.begin(), d_h.begin(), e_h.begin()};
+  std::transform(zip, zip + num_items, reference_h.begin(), thrust::zip_function{sum_five{}});
+  REQUIRE(reference_h == result);
 }
 
 struct give_me_five
