@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -413,7 +414,7 @@ private:
     }
     else
     {
-      ::new (__buffer_) __identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
+      ::new (__buffer_) _CUDA_VSTD::type_identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
     }
 
     __vptr_for<_Interface> __vptr = experimental::__get_vtable_ptr_for<_Interface, _Tp>();
@@ -440,7 +441,7 @@ private:
     {
       if (!__from.__in_situ())
       {
-        ::new (__buffer_) __identity_t<void*>(__from.__get_optr());
+        ::new (__buffer_) _CUDA_VSTD::type_identity_t<void*>(__from.__get_optr());
         __vptr_.__set(__to_vptr, false);
         __from.__release();
       }

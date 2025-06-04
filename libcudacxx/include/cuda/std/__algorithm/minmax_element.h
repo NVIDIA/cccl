@@ -123,7 +123,7 @@ minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __com
                 "_CUDA_VSTD::minmax_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
-  auto __proj = __identity();
+  auto __proj = identity();
   return _CUDA_VSTD::__minmax_element_impl(__first, __last, __comp, __proj);
 }
 

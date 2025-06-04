@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// iota_view::<iterator>::operator{<,>,<=,>=,==,!=,<=>}
+// counting_iterator::operator{<,>,<=,>=,==,!=,<=>}
 
 #include <cuda/iterator>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
