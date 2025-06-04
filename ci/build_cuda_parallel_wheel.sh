@@ -16,7 +16,10 @@ which python
 python --version
 echo "Done setting up python env"
 
-# Figure out the version to use for the package
+# Figure out the version to use for the package, we need repo history
+if $(git rev-parse --is-shallow-repository); then
+  git fetch --unshallow
+fi
 export PACKAGE_VERSION_PREFIX="0.1."
 package_version=$(/workspace/ci/generate_version.sh)
 echo "Using package version ${package_version}"
