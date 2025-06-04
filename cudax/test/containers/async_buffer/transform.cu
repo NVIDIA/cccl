@@ -73,10 +73,14 @@ using algorithms =
                  >;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-#  define FILTER_UBLKCP                                \
-    if (alg == Algorithm::ublkcp && ptx_version < 900) \
-    {                                                  \
-      return;                                          \
+#  define FILTER_UBLKCP                                 \
+    if (alg == Algorithm::ublkcp && ptx_version < 900)  \
+    {                                                   \
+      return;                                           \
+    }                                                   \
+    if (alg == Algorithm::ublkcp && ptx_version > 1000) \
+    {                                                   \
+      return;                                           \
     }
 #else // _CUB_HAS_TRANSFORM_UBLKCP
 #  define FILTER_UBLKCP
