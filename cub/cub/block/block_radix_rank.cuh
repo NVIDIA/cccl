@@ -49,7 +49,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/span>

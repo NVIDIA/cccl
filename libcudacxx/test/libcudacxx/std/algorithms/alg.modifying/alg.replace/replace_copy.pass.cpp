@@ -16,7 +16,7 @@
 //   replace_copy(InIter first, InIter last, OutIter result, const T& old_value,
 //                                                           const T& new_value);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

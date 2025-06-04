@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-25 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_ALGORITHM
-#define _LIBCUDACXX_ALGORITHM
+#ifndef _CUDA_STD_ALGORITHM
+#define _CUDA_STD_ALGORITHM
 
 #include <cuda/std/detail/__config>
 
@@ -117,42 +117,8 @@
 #include <cuda/std/__algorithm/unique.h>
 #include <cuda/std/__algorithm/unique_copy.h>
 #include <cuda/std/__algorithm/upper_bound.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/move_iterator.h>
-#include <cuda/std/__iterator/next.h>
-#include <cuda/std/__iterator/prev.h>
-#include <cuda/std/__iterator/reverse_iterator.h>
-#include <cuda/std/__iterator/wrap_iter.h>
-#include <cuda/std/__memory/destruct_n.h>
-#include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__random/linear_congruential_engine.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
-#include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/bit>
-#include <cuda/std/climits>
-#include <cuda/std/cstddef>
-#include <cuda/std/functional>
-#include <cuda/std/initializer_list>
-#include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-#include <cuda/std/__cccl/prologue.h>
-
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
-#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
-#  include <__pstl_algorithm>
-#endif
-
-#include <cuda/std/__cccl/epilogue.h>
-
-#endif // _LIBCUDACXX_ALGORITHM
+#endif // _CUDA_STD_ALGORITHM

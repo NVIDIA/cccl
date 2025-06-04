@@ -45,7 +45,7 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 #include <nv/target>
 

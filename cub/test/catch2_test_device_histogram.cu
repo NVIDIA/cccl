@@ -35,7 +35,7 @@
 
 #include <thrust/iterator/counting_iterator.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/bit>
 #include <cuda/std/type_traits>
