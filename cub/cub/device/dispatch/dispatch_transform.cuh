@@ -324,8 +324,8 @@ struct dispatch_t<StableAddress,
         : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
-    const int items_per_thread_evenly_spread = static_cast<int>((
-      ::cuda::std::min) (Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+    const int items_per_thread_evenly_spread = static_cast<int>(
+      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped =
       ::cuda::std::clamp(items_per_thread_evenly_spread, +policy.MinItemsPerThread(), +policy.MaxItemsPerThread());
