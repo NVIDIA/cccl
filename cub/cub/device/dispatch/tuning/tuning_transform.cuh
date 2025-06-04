@@ -43,6 +43,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/cmath>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
@@ -245,14 +246,16 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     are_equal(size_of<it_value_t<RandomAccessIteratorsIn>>..., size_of<it_value_t<RandomAccessIteratorOut>>);
 
   // for vectorized policy:
-  static constexpr int load_store_word_size = 8;
-  // static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 16;
-  // static constexpr int loaded_bytes_per_item       = (sizeof(it_value_t<RandomAccessIteratorsIn>) + ... + 0);
-  // // use register bound scaling
-  // static constexpr int items_per_thread =
-  //   ::cuda::std::max(1, NOMINAL_4B_ITEMS_PER_THREAD * 4 / ::cuda::std::max(4, loaded_bytes_per_item));
-  static constexpr int items_per_thread = 16;
-  using default_vectorized_policy_t     = vectorized_policy_t<256, items_per_thread, load_store_word_size>;
+  static constexpr int load_store_word_size        = 8;
+  static constexpr int nominal_4b_items_per_thread = 16;
+  static constexpr int loaded_bytes_per_item       = loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
+  static constexpr int value_type_size = ::cuda::std::max(int{size_of<it_value_t<RandomAccessIteratorOut>>}, 1);
+  // use register bound scaling
+  static constexpr int scaled_items_per_thread =
+    ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / ::cuda::std::max(4, loaded_bytes_per_item));
+  static constexpr int items_per_thread =
+    ::cuda::round_up(scaled_items_per_thread, ::cuda::std::max(1, load_store_word_size / value_type_size));
+  using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread, load_store_word_size>;
 
   // TODO(bgruber): consider a separate kernel for just filling
 
