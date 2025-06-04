@@ -32,7 +32,9 @@
 #endif // no system header
 #include <thrust/memory.h>
 
-#include <cuda.h>
+#if _CCCL_HAS_CTK()
+#  include <cuda.h>
+#endif // _CCCL_HAS_CTK()
 
 THRUST_NAMESPACE_BEGIN
 
