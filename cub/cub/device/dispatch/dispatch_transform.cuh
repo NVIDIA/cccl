@@ -280,11 +280,12 @@ struct dispatch_t<StableAddress,
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <typename WrappedActivePolicy, size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, WrappedActivePolicy policy)
+  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy active_policy)
   {
-    const int block_dim = policy.BlockThreads();
+    auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
+    const int block_dim = wrapped_policy.BlockThreads();
 
     auto determine_config = [&]() -> cuda_expected<prefetch_config> {
       int max_occupancy = 0;
@@ -321,9 +322,9 @@ struct dispatch_t<StableAddress,
 
     auto can_vectorize = false;
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
-    if constexpr (Algorithm::vectorized == policy.GetAlgorithm())
+    if constexpr (Algorithm::vectorized == wrapped_policy.GetAlgorithm())
     {
-      const int alignment     = policy.LoadStoreWordSize();
+      const int alignment     = wrapped_policy.LoadStoreWordSize();
       auto is_pointer_aligned = [&](auto it) {
         if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
         {
@@ -340,11 +341,11 @@ struct dispatch_t<StableAddress,
     }
 
     const int ipt = [&] {
-      if constexpr (Algorithm::vectorized == policy.GetAlgorithm())
+      if constexpr (Algorithm::vectorized == wrapped_policy.GetAlgorithm())
       {
         if (can_vectorize)
         {
-          return policy.ItemsPerThread();
+          return wrapped_policy.ItemsPerThread();
         }
       }
       // otherwise, setup the prefetch kernel
@@ -353,15 +354,15 @@ struct dispatch_t<StableAddress,
       // choose items per thread to reach minimum bytes in flight
       const int items_per_thread =
         loaded_bytes_per_iter == 0
-          ? +policy.ItemsPerThreadNoInput()
-          : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+          ? +wrapped_policy.ItemsPerThreadNoInput()
+          : ::cuda::ceil_div(wrapped_policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
       const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
         Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
-      const int items_per_thread_clamped =
-        ::cuda::std::clamp(items_per_thread_evenly_spread, +policy.MinItemsPerThread(), +policy.MaxItemsPerThread());
+      const int items_per_thread_clamped       = ::cuda::std::clamp(
+        items_per_thread_evenly_spread, +wrapped_policy.MinItemsPerThread(), +wrapped_policy.MaxItemsPerThread());
       return items_per_thread_clamped;
     }();
     const int tile_size = block_dim * ipt;
@@ -391,7 +392,7 @@ struct dispatch_t<StableAddress,
     else
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
     {
-      return invoke_prefetch_or_vectorized_algorithm(seq, wrapped_policy);
+      return invoke_prefetch_or_vectorized_algorithm(seq, active_policy);
     }
   }
 
