@@ -231,7 +231,7 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
-          typename TransformOpT = ::cuda::std::__identity>
+          typename TransformOpT = ::cuda::std::identity>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
@@ -455,7 +455,7 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
-          typename TransformOpT = ::cuda::std::__identity>
+          typename TransformOpT = ::cuda::std::identity>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void DeterministicDeviceReduceSingleTileKernel(
   InputIteratorT d_in,

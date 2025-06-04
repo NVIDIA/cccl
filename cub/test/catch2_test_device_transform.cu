@@ -212,7 +212,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
   auto check_result_helper = detail::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
-  transform_many(in_it, check_result_it, num_items, ::cuda::std::__identity{});
+  transform_many(in_it, check_result_it, num_items, ::cuda::std::identity{});
 
   check_result_helper.check_all_results_correct();
 }
