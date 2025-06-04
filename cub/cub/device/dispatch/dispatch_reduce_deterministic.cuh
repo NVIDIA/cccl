@@ -137,7 +137,7 @@ struct DispatchReduceDeterministic
   using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
-  using input_unwrapped_it_t  = thrust::try_unwrap_contiguous_iterator_t<InputIteratorT>;
+  using input_unwrapped_it_t  = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
 
   //---------------------------------------------------------------------------
   // Problem state
@@ -472,7 +472,7 @@ struct DispatchReduceDeterministic
       return error;
     }
 
-    input_unwrapped_it_t d_in_unwrapped = thrust::try_unwrap_contiguous_iterator(d_in);
+    input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Create dispatch functor
     DispatchReduceDeterministic dispatch{
