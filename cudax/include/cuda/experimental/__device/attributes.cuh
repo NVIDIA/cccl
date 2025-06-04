@@ -226,7 +226,7 @@ struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
 #if CUDART_VERSION >= 12040
   static constexpr type fabric = ::cudaMemHandleTypeFabric;
 #else
-  static constexpr type fabric = static_cast<::cudaMemAllocationHandleType>(0x8);
+  static inline const type fabric = static_cast<::cudaMemAllocationHandleType>(0x8);
 #endif
 };
 #if CUDART_VERSION >= 12020
