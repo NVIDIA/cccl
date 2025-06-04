@@ -217,27 +217,63 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   REQUIRE(res_p1 == res_p2);
 }
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu using device_vector iterators",
+C2H_TEST("Deterministic Device reduce works with float and double on gpu using various iterators",
          "[reduce][deterministic]",
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = 1 << 10;
-  c2h::device_vector<type> d_input(num_items);
-  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
-  c2h::device_vector<type> d_output(1);
+  SECTION("device_vector iterators")
+  {
+    c2h::device_vector<type> d_input(num_items);
+    c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
-  deterministic_sum(d_input.begin(), d_output.begin(), num_items);
+    c2h::device_vector<type> d_output(1);
 
-  c2h::host_vector<type> h_input = d_input;
+    deterministic_sum(d_input.begin(), d_output.begin(), num_items);
 
-  // Requires `std::accumulate` to produce deterministic result which is required for comparison
-  // with the device RFA result.
-  // NOTE: `std::reduce` is not equivalent
-  const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
-  c2h::host_vector<type> h_output = d_output;
+    c2h::host_vector<type> h_input = d_input;
 
-  REQUIRE(approx_eq(h_expected, h_output[0]));
+    // Requires `std::accumulate` to produce deterministic result which is required for comparison
+    // with the device RFA result.
+    // NOTE: `std::reduce` is not equivalent
+    const type h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+    c2h::host_vector<type> h_output = d_output;
+
+    REQUIRE(approx_eq(h_expected, h_output[0]));
+  }
+
+  SECTION("constant iterator")
+  {
+    thrust::constant_iterator<type> input(1.0f);
+    c2h::device_vector<type> d_output(1);
+
+    deterministic_sum(input, d_output.begin(), num_items);
+
+    // Requires `std::accumulate` to produce deterministic result which is required for comparison
+    // with the device RFA result.
+    // NOTE: `std::reduce` is not equivalent
+    const type h_expected           = std::accumulate(input, input + num_items, type{}, ::cuda::std::plus<type>());
+    c2h::host_vector<type> h_output = d_output;
+
+    REQUIRE(approx_eq(h_expected, h_output[0]));
+  }
+
+  SECTION("counting iterator")
+  {
+    thrust::counting_iterator<int> input(1);
+    c2h::device_vector<type> d_output(1);
+
+    deterministic_sum(input, d_output.begin(), num_items);
+
+    // Requires `std::accumulate` to produce deterministic result which is required for comparison
+    // with the device RFA result.
+    // NOTE: `std::reduce` is not equivalent
+    const type h_expected           = std::accumulate(input, input + num_items, type{}, ::cuda::std::plus<type>());
+    c2h::host_vector<type> h_output = d_output;
+
+    REQUIRE(approx_eq(h_expected, h_output[0]));
+  }
 }
