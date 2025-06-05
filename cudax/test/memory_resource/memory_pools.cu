@@ -343,7 +343,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // prime the pool to a given size
     memory_resource_for_pool<memory_pool> resource{pool};
-    cudax::stream stream{};
+    cudax::stream stream{cudax::device_ref{0}};
 
     // Allocate a buffer to prime
     auto* ptr = resource.allocate_async(256 * sizeof(int), stream);
@@ -467,7 +467,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // prime the pool to a given size
     memory_resource_for_pool<memory_pool> resource{pool};
-    cudax::stream stream{};
+    cudax::stream stream{cudax::device_ref{0}};
 
     // Allocate 2 buffers
     auto* ptr1 = resource.allocate_async(2048 * sizeof(int), stream);

@@ -95,15 +95,11 @@ private:
   using __resource   = any_async_resource<_Properties...>;
   using __stream_ref = stream_ref;
 
-  __resource __mr_                      = device_memory_resource{};
+  __resource __mr_;
   __stream_ref __stream_                = __detail::__invalid_stream;
   execution::execution_policy __policy_ = execution::execution_policy::invalid_execution_policy;
 
 public:
-  //! @brief Default constructs an environment using ``device_memory_resource`` as the resource the default stream
-  //! ``execution_policy::invalid_execution_policy`` as the execution policy
-  _CCCL_HIDE_FROM_ABI env_t() = default;
-
   //! @brief Construct an env_t from an any_resource, a stream and a policy
   //! @param __mr The any_resource passed in
   //! @param __stream The stream_ref passed in

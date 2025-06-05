@@ -16,7 +16,7 @@
 
 C2H_TEST("Can create a stream and launch work into it", "[stream]")
 {
-  cudax::stream str;
+  cudax::stream str{cudax::device_ref{0}};
   ::test::managed<int> i(0);
   cudax::launch(str, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   str.sync();
@@ -93,7 +93,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 
 C2H_TEST("Can add dependency into a stream", "[stream]")
 {
-  cudax::stream waiter, waitee;
+  cudax::stream waiter{cudax::device_ref{0}}, waitee{cudax::device_ref{0}};
 
   add_dependency_test<cudax::stream>(waiter, waitee);
   add_dependency_test<cudax::stream_ref>(waiter, waitee);
@@ -101,11 +101,11 @@ C2H_TEST("Can add dependency into a stream", "[stream]")
 
 C2H_TEST("Stream priority", "[stream]")
 {
-  cudax::stream stream_default_prio;
+  cudax::stream stream_default_prio{cudax::device_ref{0}};
   CUDAX_REQUIRE(stream_default_prio.priority() == cudax::stream::default_priority);
 
   auto priority = cudax::stream::default_priority - 1;
-  cudax::stream stream(0, priority);
+  cudax::stream stream{cudax::device_ref{0}, priority};
   CUDAX_REQUIRE(stream.priority() == priority);
 }
 
