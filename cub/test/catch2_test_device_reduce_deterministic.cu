@@ -277,3 +277,53 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
     REQUIRE(approx_eq(h_expected, h_output[0]));
   }
 }
+
+struct square_t
+{
+  template <typename T>
+  _CCCL_HOST_DEVICE T operator()(const T& x) const
+  {
+    return x * x;
+  }
+};
+
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with different transform operators",
+         "[reduce][deterministic]",
+         float_type_list)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = 1 << 10;
+
+  using input_it_t = thrust::counting_iterator<type>;
+  auto input       = input_it_t(static_cast<type>(1));
+  c2h::device_vector<type> d_output(1);
+
+  using output_it_t = decltype(d_output.begin());
+  using init_t      = cub::detail::rfa::InitT<input_it_t, output_it_t>;
+  using accum_t     = cub::detail::rfa::AccumT<::cuda::std::plus<>, init_t, input_it_t>;
+  using transform_t = square_t;
+
+  using deterministic_dispatch_t_p1 =
+    cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, accum_t, transform_t, hub_t<1, 128>>;
+
+  std::size_t temp_storage_bytes{};
+
+  auto error = deterministic_dispatch_t_p1::Dispatch(nullptr, temp_storage_bytes, input, d_output.begin(), num_items);
+  REQUIRE(error == cudaSuccess);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+
+  error = deterministic_dispatch_t_p1::Dispatch(
+    thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, input, d_output.begin(), num_items);
+  REQUIRE(error == cudaSuccess);
+
+  type const h_output = d_output[0];
+
+  auto h_input = thrust::make_transform_iterator(input, square_t{});
+  // Requires `std::accumulate` to produce deterministic result which is required for comparison
+  const type h_expected = std::accumulate(h_input, h_input + num_items, type{}, ::cuda::std::plus<type>());
+
+  // device RFA result should be approximately equal to host result
+  REQUIRE(approx_eq(h_expected, h_output));
+}
