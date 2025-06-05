@@ -3,7 +3,7 @@
 
 // Should precede any includes
 struct stream_registry_factory_t;
-#define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER stream_registry_factory_t
+#define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY stream_registry_factory_t
 
 #include "insert_nested_NVTX_range_guard.h"
 

@@ -563,5 +563,5 @@ void launch(ActionT action, Args... args)
 
 #endif // TEST_LAUNCH == 0
 
-// Helper relies on the fact that CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER is `stream_registry_factory_t`
-static_assert(cuda::std::is_same_v<CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER, stream_registry_factory_t>);
+// Helper relies on the fact that CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY is `stream_registry_factory_t`
+static_assert(cuda::std::is_same_v<CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY, stream_registry_factory_t>);

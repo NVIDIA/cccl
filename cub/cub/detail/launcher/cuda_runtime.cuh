@@ -69,10 +69,6 @@ struct TripleChevronFactory
   }
 };
 
-#ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER
-#  define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER detail::TripleChevronFactory
-#endif
-
 } // namespace detail
 
 CUB_NAMESPACE_END
