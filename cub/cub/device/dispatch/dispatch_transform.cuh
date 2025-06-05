@@ -22,6 +22,7 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/detail/util/align.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
@@ -332,9 +333,8 @@ struct dispatch_t<StableAddress,
       auto is_pointer_aligned = [&](auto it) {
         if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
         {
-          return reinterpret_cast<::cuda::std::uintptr_t>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it))
-                 % alignment
-              == 0;
+          return THRUST_NS_QUALIFIER::detail::util::is_aligned(
+            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
         }
         else
         {
