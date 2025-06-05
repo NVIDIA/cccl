@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=0.10", "cython"]
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -64,9 +64,10 @@ make-fallback = true
 "cuda/cccl/cooperative" = "cuda/cccl/cooperative"
 
 [tool.scikit-build.metadata.version]
-provider = "scikit_build_core.metadata.regex"
-input = "cuda/cccl/_version.py"
-# use default regex
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.setuptools_scm]
+root = "../.."
 
 [tool.mypy]
 python_version = "3.10"
