@@ -37,6 +37,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items();
 // #include <cstdint>
 // #include <cstddef>
 // #include <type_traits>
+// #include <limits>
 //
 // constexpr std::int32_t list[] = {
 //   0,
@@ -75,7 +76,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items();
 // "  return {{\n";
 //     for (auto v : list)
 //     {
-//       constexpr std::size_t buff_size = 64;
+//       constexpr std::size_t buff_size = 150;
 //       char signed_buff[buff_size]{};
 //       char unsigned_buff[buff_size]{};
 //       std::to_chars(signed_buff, signed_buff + buff_size, v, base);
@@ -83,7 +84,16 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items();
 //       base);
 //
 //       std::cout <<
-// "    TestItem{" << int(v) << ", \"" << signed_buff << "\", \"" << unsigned_buff << "\"},\n";
+// "    TestItem{";
+//       if (v == std::numeric_limits<decltype(v)>::min())
+//       {
+//         std::cout << (-std::numeric_limits<decltype(v)>::max()) << " - 1";
+//       }
+//       else
+//       {
+//         std::cout << v;
+//       }
+//       std::cout << ", \"" << signed_buff << "\", \"" << unsigned_buff << "\"},\n";
 //     }
 //     std::cout <<
 // "  }};\n" <<
@@ -115,7 +125,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<2>()
     TestItem{-790301, "-11000000111100011101", "11111111111100111111000011100011"},
     TestItem{-8999099, "-100010010101000010111011", "11111111011101101010111101000101"},
     TestItem{-542185444, "-100000010100010001011111100100", "11011111101011101110100000011100"},
-    TestItem{-2147483648, "-10000000000000000000000000000000", "10000000000000000000000000000000"},
+    TestItem{-2147483647 - 1, "-10000000000000000000000000000000", "10000000000000000000000000000000"},
   }};
 }
 
@@ -143,7 +153,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<3>()
     TestItem{-790301, "-1111011002102", "102002021020210102102"},
     TestItem{-8999099, "-121221012102222", "102001200210202001212"},
     TestItem{-542185444, "-1101210012212121101", "100200112112001220110"},
-    TestItem{-2147483648, "-12112122212110202102", "12112122212110202102"},
+    TestItem{-2147483647 - 1, "-12112122212110202102", "12112122212110202102"},
   }};
 }
 
@@ -171,7 +181,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<4>()
     TestItem{-790301, "-3000330131", "3333330333003203"},
     TestItem{-8999099, "-202111002323", "3333131222331011"},
     TestItem{-542185444, "-200110101133210", "3133223232200130"},
-    TestItem{-2147483648, "-2000000000000000", "2000000000000000"},
+    TestItem{-2147483647 - 1, "-2000000000000000", "2000000000000000"},
   }};
 }
 
@@ -199,7 +209,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<5>()
     TestItem{-790301, "-200242201", "32243302130440"},
     TestItem{-8999099, "-4300432344", "32234201440242"},
     TestItem{-542185444, "-2102244413234", "30141203004402"},
-    TestItem{-2147483648, "-13344223434043", "13344223434043"},
+    TestItem{-2147483647 - 1, "-13344223434043", "13344223434043"},
   }};
 }
 
@@ -227,7 +237,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<6>()
     TestItem{-790301, "-24534445", "1550035041015"},
     TestItem{-8999099, "-520514255", "1545143101205"},
     TestItem{-542185444, "-125444525444", "1420215050020"},
-    TestItem{-2147483648, "-553032005532", "553032005532"},
+    TestItem{-2147483647 - 1, "-553032005532", "553032005532"},
   }};
 }
 
@@ -255,7 +265,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<7>()
     TestItem{-790301, "-6501041", "211261621313"},
     TestItem{-8999099, "-136330304", "211132062050"},
     TestItem{-542185444, "-16302333403", "161666055651"},
-    TestItem{-2147483648, "-104134211162", "104134211162"},
+    TestItem{-2147483647 - 1, "-104134211162", "104134211162"},
   }};
 }
 
@@ -283,7 +293,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<8>()
     TestItem{-790301, "-3007435", "37774770343"},
     TestItem{-8999099, "-42250273", "37735527505"},
     TestItem{-542185444, "-4024213744", "33753564034"},
-    TestItem{-2147483648, "-20000000000", "20000000000"},
+    TestItem{-2147483647 - 1, "-20000000000", "20000000000"},
   }};
 }
 
@@ -311,7 +321,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<9>()
     TestItem{-790301, "-1434072", "12067223372"},
     TestItem{-8999099, "-17835388", "12050722055"},
     TestItem{-542185444, "-1353185541", "10615461813"},
-    TestItem{-2147483648, "-5478773672", "5478773672"},
+    TestItem{-2147483647 - 1, "-5478773672", "5478773672"},
   }};
 }
 
@@ -339,7 +349,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<10>(
     TestItem{-790301, "-790301", "4294176995"},
     TestItem{-8999099, "-8999099", "4285968197"},
     TestItem{-542185444, "-542185444", "3752781852"},
-    TestItem{-2147483648, "-2147483648", "2147483648"},
+    TestItem{-2147483647 - 1, "-2147483648", "2147483648"},
   }};
 }
 
@@ -367,7 +377,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<11>(
     TestItem{-790301, "-49a846", "1903a50809"},
     TestItem{-8999099, "-509717a", "18aa354385"},
     TestItem{-542185444, "-25905aa49", "1656390606"},
-    TestItem{-2147483648, "-a02220282", "a02220282"},
+    TestItem{-2147483647 - 1, "-a02220282", "a02220282"},
   }};
 }
 
@@ -395,7 +405,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<12>(
     TestItem{-790301, "-321425", "9ba14016b"},
     TestItem{-8999099, "-301b98b", "9b7441805"},
     TestItem{-542185444, "-1316b0884", "888970910"},
-    TestItem{-2147483648, "-4bb2308a8", "4bb2308a8"},
+    TestItem{-2147483647 - 1, "-4bb2308a8", "4bb2308a8"},
   }};
 }
 
@@ -423,7 +433,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<13>(
     TestItem{-790301, "-218945", "535860c44"},
     TestItem{-8999099, "-1b31115", "533c48774"},
     TestItem{-542185444, "-884355b8", "47a6442a1"},
-    TestItem{-2147483648, "-282ba4aab", "282ba4aab"},
+    TestItem{-2147483647 - 1, "-282ba4aab", "282ba4aab"},
   }};
 }
 
@@ -451,7 +461,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<14>(
     TestItem{-790301, "-168021", "2ca44d443"},
     TestItem{-8999099, "-12a37ab", "2c9313a97"},
     TestItem{-542185444, "-5201763a", "27859dc28"},
-    TestItem{-2147483648, "-1652ca932", "1652ca932"},
+    TestItem{-2147483647 - 1, "-1652ca932", "1652ca932"},
   }};
 }
 
@@ -479,7 +489,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<15>(
     TestItem{-790301, "-10926b", "1a1ed3b15"},
     TestItem{-8999099, "-bcb5ee", "1a1411782"},
     TestItem{-542185444, "-328ec814", "16e6e056c"},
-    TestItem{-2147483648, "-c87e66b8", "c87e66b8"},
+    TestItem{-2147483647 - 1, "-c87e66b8", "c87e66b8"},
   }};
 }
 
@@ -507,7 +517,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<16>(
     TestItem{-790301, "-c0f1d", "fff3f0e3"},
     TestItem{-8999099, "-8950bb", "ff76af45"},
     TestItem{-542185444, "-205117e4", "dfaee81c"},
-    TestItem{-2147483648, "-80000000", "80000000"},
+    TestItem{-2147483647 - 1, "-80000000", "80000000"},
   }};
 }
 
@@ -535,7 +545,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<17>(
     TestItem{-790301, "-97ea5", "a7f65cfd"},
     TestItem{-8999099, "-65cbcd", "a79a0fd5"},
     TestItem{-542185444, "-157ea537", "9281355b"},
-    TestItem{-2147483648, "-53g7f549", "53g7f549"},
+    TestItem{-2147483647 - 1, "-53g7f549", "53g7f549"},
   }};
 }
 
@@ -563,7 +573,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<18>(
     TestItem{-790301, "-7993b", "704a4gcb"},
     TestItem{-8999099, "-4dd0hh", "700416g5"},
     TestItem{-542185444, "-fggf5fa", "6260h20c"},
-    TestItem{-2147483648, "-3928g3h2", "3928g3h2"},
+    TestItem{-2147483647 - 1, "-3928g3h2", "3928g3h2"},
   }};
 }
 
@@ -591,7 +601,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<19>(
     TestItem{-790301, "-6143f", "4f54eb2a"},
     TestItem{-8999099, "-3c104f", "4f1hef1a"},
     TestItem{-542185444, "-b9i75e0", "43eb89b6"},
-    TestItem{-2147483648, "-27c57h33", "27c57h33"},
+    TestItem{-2147483647 - 1, "-27c57h33", "27c57h33"},
   }};
 }
 
@@ -619,7 +629,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<20>(
     TestItem{-790301, "-4iff1", "371ic29f"},
     TestItem{-8999099, "-2g4hej", "36j7609h"},
     TestItem{-542185444, "-898d3c4", "2icehecc"},
-    TestItem{-2147483648, "-1db1f928", "1db1f928"},
+    TestItem{-2147483647 - 1, "-1db1f928", "1db1f928"},
   }};
 }
 
@@ -647,7 +657,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<21>(
     TestItem{-790301, "-41718", "28193jgh"},
     TestItem{-8999099, "-245f2b", "27k8kbfe"},
     TestItem{-542185444, "-66fi09a", "21fi858f"},
-    TestItem{-2147483648, "-140h2d92", "140h2d92"},
+    TestItem{-2147483647 - 1, "-140h2d92", "140h2d92"},
   }};
 }
 
@@ -675,7 +685,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<22>(
     TestItem{-790301, "-384ih", "1fj52ib9"},
     TestItem{-8999099, "-1g933l", "1fhe1k45"},
     TestItem{-542185444, "-4h4alik", "1b2401b6"},
-    TestItem{-2147483648, "-ikf5bf2", "ikf5bf2"},
+    TestItem{-2147483647 - 1, "-ikf5bf2", "ikf5bf2"},
   }};
 }
 
@@ -703,7 +713,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<23>(
     TestItem{-790301, "-2illl", "160418je"},
     TestItem{-8999099, "-193ec4", "15lkgg68"},
     TestItem{-542185444, "-3f5am54", "128198d8"},
-    TestItem{-2147483648, "-ebelf96", "ebelf96"},
+    TestItem{-2147483647 - 1, "-ebelf96", "ebelf96"},
   }};
 }
 
@@ -731,7 +741,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<24>(
     TestItem{-790301, "-29415", "mb7009b"},
     TestItem{-8999099, "-132nab", "ma66505"},
     TestItem{-542185444, "-2k24e44", "jf74e6c"},
-    TestItem{-2147483648, "-b5gge58", "b5gge58"},
+    TestItem{-2147483647 - 1, "-b5gge58", "b5gge58"},
   }};
 }
 
@@ -759,7 +769,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<25>(
     TestItem{-790301, "-20ec1", "hei284k"},
     TestItem{-8999099, "-n0ndo", "hdm1o2m"},
     TestItem{-542185444, "-25colhj", "f9730o2"},
-    TestItem{-2147483648, "-8jmdnkn", "8jmdnkn"},
+    TestItem{-2147483647 - 1, "-8jmdnkn", "8jmdnkn"},
   }};
 }
 
@@ -787,7 +797,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<26>(
     TestItem{-790301, "-1ip25", "dnaoclh"},
     TestItem{-8999099, "-ji075", "dmipbgh"},
     TestItem{-542185444, "-1jgc1c8", "c3m5abe"},
-    TestItem{-2147483648, "-6oj8ioo", "6oj8ioo"},
+    TestItem{-2147483647 - 1, "-6oj8ioo", "6oj8ioo"},
   }};
 }
 
@@ -815,7 +825,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<27>(
     TestItem{-790301, "-1d42b", "b276lbb"},
     TestItem{-8999099, "-gp5bq", "b1ilk1n"},
     TestItem{-542185444, "-1al5nga", "9iee1oc"},
-    TestItem{-2147483648, "-5ehnckb", "5ehnckb"},
+    TestItem{-2147483647 - 1, "-5ehnckb", "5ehnckb"},
   }};
 }
 
@@ -843,7 +853,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<28>(
     TestItem{-790301, "-18011", "8pe8ig3"},
     TestItem{-8999099, "-ehqcb", "8p0qk4l"},
     TestItem{-542185444, "-13e2j1o", "7m1drf8"},
-    TestItem{-2147483648, "-4clm98g", "4clm98g"},
+    TestItem{-2147483647 - 1, "-4clm98g", "4clm98g"},
   }};
 }
 
@@ -871,7 +881,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<29>(
     TestItem{-790301, "-13bkm", "76ab6on"},
     TestItem{-8999099, "-cksdm", "75rmj2n"},
     TestItem{-542185444, "-qcglan", "68rqq5m"},
-    TestItem{-2147483648, "-3hk7988", "3hk7988"},
+    TestItem{-2147483647 - 1, "-3hk7988", "3hk7988"},
   }};
 }
 
@@ -899,7 +909,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<30>(
     TestItem{-790301, "-t83b", "5qldhn5"},
     TestItem{-8999099, "-b38tt", "5qb9gqh"},
     TestItem{-542185444, "-m9as84", "54d1ric"},
-    TestItem{-2147483648, "-2sb6cs8", "2sb6cs8"},
+    TestItem{-2147483647 - 1, "-2sb6cs8", "2sb6cs8"},
   }};
 }
 
@@ -927,7 +937,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<31>(
     TestItem{-790301, "-qgbi", "4puodch"},
     TestItem{-8999099, "-9n29g", "4plrrej"},
     TestItem{-542185444, "-it2jp1", "472h9u3"},
-    TestItem{-2147483648, "-2d09uc2", "2d09uc2"},
+    TestItem{-2147483647 - 1, "-2d09uc2", "2d09uc2"},
   }};
 }
 
@@ -955,7 +965,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<32>(
     TestItem{-790301, "-o3ot", "3vv7s73"},
     TestItem{-8999099, "-8ik5r", "3vndbq5"},
     TestItem{-542185444, "-g525v4", "3fqtq0s"},
-    TestItem{-2147483648, "-2000000", "2000000"},
+    TestItem{-2147483647 - 1, "-2000000", "2000000"},
   }};
 }
 
@@ -983,7 +993,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<33>(
     TestItem{-790301, "-lwnh", "3anvqik"},
     TestItem{-8999099, "-7jdkw", "3ah1cl5"},
     TestItem{-542185444, "-ds63jv", "2ttemm6"},
-    TestItem{-2147483648, "-1lsqtl2", "1lsqtl2"},
+    TestItem{-2147483647 - 1, "-1lsqtl2", "1lsqtl2"},
   }};
 }
 
@@ -1011,7 +1021,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<34>(
     TestItem{-790301, "-k3m5", "2qhdfxd"},
     TestItem{-8999099, "-6ownd", "2qb8kw5"},
     TestItem{-542185444, "-bvomio", "2ek8v2s"},
-    TestItem{-2147483648, "-1d8xqrq", "1d8xqrq"},
+    TestItem{-2147483647 - 1, "-1d8xqrq", "1d8xqrq"},
   }};
 }
 
@@ -1039,7 +1049,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<35>(
     TestItem{-790301, "-if51", "2bqkpla"},
     TestItem{-8999099, "-5yv74", "2bl49j7"},
     TestItem{-542185444, "-abapco", "21fsfdm"},
-    TestItem{-2147483648, "-15v22un", "15v22un"},
+    TestItem{-2147483647 - 1, "-15v22un", "15v22un"},
   }};
 }
 
@@ -1067,7 +1077,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<36>(
     TestItem{-790301, "-gxst", "1z0n46b"},
     TestItem{-8999099, "-5cvqz", "1yvr685"},
     TestItem{-542185444, "-8yswys", "1q2b50c"},
-    TestItem{-2147483648, "-zik0zk", "zik0zk"},
+    TestItem{-2147483647 - 1, "-zik0zk", "zik0zk"},
   }};
 }
 
