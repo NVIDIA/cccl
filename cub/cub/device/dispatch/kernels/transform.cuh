@@ -217,7 +217,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   auto provide_array = [&](auto... inputs) {
     // load inputs
     // TODO(bgruber): we could support fancy iterators for loading here
-    auto load_tile_vectorized = [&](auto in, auto& input) {
+    [[maybe_unused]] auto load_tile_vectorized = [&](auto in, auto& input) {
       using input_t = it_value_t<decltype(in)>;
       static_assert((items_per_thread * sizeof(input_t)) % load_store_word_size == 0);
       constexpr int loads = (items_per_thread * sizeof(input_t)) / load_store_word_size;
