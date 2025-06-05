@@ -780,7 +780,7 @@ an asynchronous fence mechanism is available :
 
 .. code:: cpp
 
-    cudaStream_t stream = ctx.task_fence();
+    cudaStream_t stream = ctx.fence();
     cudaStreamSynchronize(stream);
 
 Another synchronization mechanism is the ``wait`` method of the
