@@ -8,7 +8,6 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['test_cuda_cccl_headers', 'test_cuda_cccl_cooperative', 'test_cuda_cccl_parallel'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
 
   pull_request:
     # Old CTK/compiler
