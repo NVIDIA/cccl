@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=0.10", "cython"]
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -60,9 +60,12 @@ make-fallback = true
 "cuda/parallel/experimental" = "cuda/parallel/experimental"
 
 [tool.scikit-build.metadata.version]
-provider = "scikit_build_core.metadata.regex"
-input = "cuda/parallel/_version.py"
-# use default regex
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.setuptools_scm]
+root = "../.."
+# The _version.py files could be removed from version control.
+# write_to = "python/cuda_parallel/cuda/parallel/_version.py"
 
 [tool.mypy]
 python_version = "3.10"
