@@ -34,7 +34,7 @@ int main()
   cudax::async_device_buffer<int> d_in{env, num_items, 1};
   cudax::async_device_buffer<float> d_out{env, 1, cudax::no_init};
 
-  cub::DeviceReduce::Reduce(d_in.begin(), d_out.begin(), num_items, cuda::std::plus<>{}, 0, env);
+  cub::DeviceReduce::Reduce(d_in.begin(), d_out.begin(), num_items, cuda::std::plus{}, 0, env);
 
   cudax::env_t<cuda::mr::host_accessible> host_env{cudax::pinned_memory_resource{}, stream};
   cudax::async_host_buffer<float> h_out{host_env, d_out};
