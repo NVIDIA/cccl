@@ -48,7 +48,7 @@ struct generator
 int main()
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
 
   // The execution policy we want to use to run all work on the same stream
   auto policy = thrust::cuda::par_nosync.on(stream.get());
