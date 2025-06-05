@@ -183,7 +183,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   static_assert((THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorIn> && ...));
 
   constexpr int block_dim        = VectorizedPolicy::block_threads;
-  constexpr int items_per_thread = VectorizedPolicy::items_per_thread;
+  constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
   constexpr int tile_stride      = block_dim * items_per_thread;
   const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_stride;
   const int tile_size            = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
