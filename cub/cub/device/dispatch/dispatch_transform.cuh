@@ -344,7 +344,6 @@ struct dispatch_t<StableAddress,
   {
     auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
     const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
     if constexpr (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
     {
       return invoke_async_algorithm<ActivePolicyT>(
@@ -354,17 +353,15 @@ struct dispatch_t<StableAddress,
         },
         seq);
     }
+    else if constexpr (Algorithm::memcpy_async == wrapped_policy.GetAlgorithm())
+    {
+      return invoke_async_algorithm<ActivePolicyT>(
+        memcpy_async_alignment, &memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>, seq);
+    }
     else
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
-      if constexpr (Algorithm::memcpy_async == wrapped_policy.GetAlgorithm())
-      {
-        return invoke_async_algorithm<ActivePolicyT>(
-          memcpy_async_alignment, &memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>, seq);
-      }
-      else
-      {
-        return invoke_prefetch_algorithm(seq, wrapped_policy);
-      }
+    {
+      return invoke_prefetch_algorithm(seq, wrapped_policy);
+    }
   }
 
   template <typename MaxPolicyT = typename PolicyHub::max_policy>
