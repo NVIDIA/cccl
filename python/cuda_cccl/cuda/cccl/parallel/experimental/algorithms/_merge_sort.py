@@ -153,7 +153,7 @@ def merge_sort(
     Example:
         Below, ``merge_sort`` is used to sort a sequence of keys inplace. It also rearranges the items according to the keys' order.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_merge_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_merge_sort_api.py
           :language: python
           :dedent:
           :start-after: example-begin merge-sort

@@ -163,7 +163,7 @@ def segmented_reduce(
     Example:
         Below, ``segmented_reduce`` is used to compute the minimum value of a sequence of integers.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_segmented_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_segmented_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin segmented-reduce-min

@@ -166,7 +166,7 @@ def unary_transform(
     unary operation ``op``.
 
     Example:
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_transform.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
            :language: python
            :dedent:
            :start-after: example-begin transform-unary
@@ -195,7 +195,7 @@ def binary_transform(
     binary operation ``op``.
 
     Example:
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_transform.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
            :language: python
            :dedent:
            :start-after: example-begin transform-binary

@@ -208,13 +208,13 @@ def reduce(
         The code snippet below illustrates a max reduction of 128 integer items that are
         partitioned across 128 threads.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce
@@ -269,13 +269,13 @@ def sum(
         The code snippet below illustrates a sum of 128 integer items that are partitioned
         across 128 threads.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin sum

@@ -70,13 +70,13 @@ def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
         The code snippet below illustrates a striped load and store of 128 integer items by 32 threads, with
         each thread handling 4 integers.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_load_store_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_load_store_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin load_store
@@ -158,13 +158,13 @@ def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
         The code snippet below illustrates a striped load and store of 128 integer items by 32 threads, with
         each thread handling 4 integers.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_load_store_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_load_store_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin load_store

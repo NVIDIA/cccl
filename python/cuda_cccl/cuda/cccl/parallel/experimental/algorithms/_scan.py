@@ -129,7 +129,7 @@ def exclusive_scan(
     Example:
         Below, ``scan`` is used to compute an exclusive scan of a sequence of integers.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
           :language: python
           :dedent:
           :start-after: example-begin exclusive-scan-max
@@ -161,7 +161,7 @@ def inclusive_scan(
     Example:
         Below, ``scan`` is used to compute an inclusive scan of a sequence of integers.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
           :language: python
           :dedent:
           :start-after: example-begin inclusive-scan-add

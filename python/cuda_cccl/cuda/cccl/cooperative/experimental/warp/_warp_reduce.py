@@ -28,7 +28,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
         The code snippet below illustrates a max reduction of 32 integer items that
         are partitioned across a warp of threads.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -36,7 +36,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
 
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce
@@ -100,7 +100,7 @@ def sum(dtype, threads_in_warp=32):
         The code snippet below illustrates a reduction of 32 integer items that
         are partitioned across a warp of threads.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -108,7 +108,7 @@ def sum(dtype, threads_in_warp=32):
 
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin sum

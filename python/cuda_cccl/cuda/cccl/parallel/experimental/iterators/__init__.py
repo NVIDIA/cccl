@@ -13,7 +13,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     Example:
         The code snippet below demonstrates the usage of a ``CacheModifiedInputIterator``:
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin cache-iterator
@@ -44,7 +44,7 @@ def ConstantIterator(value):
         The code snippet below demonstrates the usage of a ``ConstantIterator``
         representing the sequence ``[10, 10, 10]``:
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin constant-iterator
@@ -68,7 +68,7 @@ def CountingIterator(offset):
         The code snippet below demonstrates the usage of a ``CountingIterator``
         representing the sequence ``[10, 11, 12]``:
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin counting-iterator
@@ -91,7 +91,7 @@ def ReverseInputIterator(sequence):
     Example:
         The code snippet below demonstrates the usage of a ``ReverseInputIterator``:
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin reverse-input-iterator
@@ -115,7 +115,7 @@ def ReverseOutputIterator(sequence):
     Example:
         The code snippet below demonstrates the usage of a ``ReverseIterator``:
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin reverse-output-iterator
@@ -141,7 +141,7 @@ def TransformIterator(it, op):
         composed with a ``CountingIterator``, transforming the sequence ``[10, 11, 12]``
         by squaring each item before reducing the output:
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin transform-iterator

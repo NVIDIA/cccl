@@ -669,7 +669,7 @@ def exclusive_sum(
         :ref:`blocked arrangement <flexible-data-arrangement>` across 128
         threads where each thread owns 4 consecutive items.
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -678,7 +678,7 @@ def exclusive_sum(
         Below is the code snippet that demonstrates the usage of the
         ``exclusive_sum`` API:
 
-        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/cooperative/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin exclusive-sum

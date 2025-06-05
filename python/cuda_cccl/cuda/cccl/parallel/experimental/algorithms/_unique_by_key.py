@@ -156,7 +156,7 @@ def unique_by_key(
     Example:
         Below, ``unique_by_key`` is used to populate the arrays of output keys and items with the first key and its corresponding item from each sequence of equal keys. It also outputs the number of items selected.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_unique_by_key_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_unique_by_key_api.py
           :language: python
           :dedent:
           :start-after: example-begin unique-by-key

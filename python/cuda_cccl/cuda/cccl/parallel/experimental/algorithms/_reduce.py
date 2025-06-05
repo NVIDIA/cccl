@@ -118,7 +118,7 @@ def reduce_into(
     Example:
         Below, ``reduce_into`` is used to compute the minimum value of a sequence of integers.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce-min

@@ -217,7 +217,7 @@ def radix_sort(
     Example:
         Below, ``radix_sort`` is used to sort a sequence of keys. It also rearranges the values according to the keys' order.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_radix_sort_api.py
           :language: python
           :dedent:
           :start-after: example-begin radix-sort
@@ -225,7 +225,7 @@ def radix_sort(
 
         Instead of passing in arrays directly, we can use a ``DoubleBuffer``, which requires less temporary storage but could overwrite the input arrays
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_radix_sort_api.py
           :language: python
           :dedent:
           :start-after: example-begin radix-sort-buffer
