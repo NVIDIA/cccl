@@ -19,6 +19,7 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__barrier/aligned_size.h> // cannot include <cuda/barrier> directly on CUDA_ARCH < 700
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/expected>
@@ -186,18 +187,6 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
   return aligned_base_ptr<T>{base_ptr, static_cast<int>(reinterpret_cast<const char*>(ptr) - base_ptr)};
 }
 
-// Our own version of ::cuda::aligned_size_t, since we cannot include <cuda/barrier> on CUDA_ARCH < 700
-template <_CUDA_VSTD::size_t _Alignment>
-struct aligned_size_t
-{
-  _CUDA_VSTD::size_t value; // TODO(bgruber): can this be an int?
-
-  _CCCL_HOST_DEVICE constexpr operator size_t() const
-  {
-    return value;
-  }
-};
-
 template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
@@ -236,7 +225,10 @@ _CCCL_DEVICE void transform_kernel_impl(
       aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
     cooperative_groups::memcpy_async(
-      group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(bytes_to_copy)});
+      group,
+      dst,
+      src,
+      ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(bytes_to_copy)});
 
     const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
