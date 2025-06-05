@@ -73,7 +73,8 @@ template <typename _Tp>
   {
     return static_cast<int>(::__popcnt64(__v));
   }
-#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(ARM64)
+  // _CountOneBits exists after MSVC 1931
+#  elif _CCCL_COMPILER(MSVC, >, 19, 30) && _CCCL_ARCH(ARM64)
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return static_cast<int>(::_CountOneBits(__v));
