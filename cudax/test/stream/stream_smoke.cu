@@ -14,7 +14,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-C2H_TEST("Can create a stream and launch work into it", "[stream]")
+C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 {
   cudax::stream str;
   ::test::managed<int> i(0);
@@ -23,8 +23,9 @@ C2H_TEST("Can create a stream and launch work into it", "[stream]")
   CUDAX_REQUIRE(*i == 42);
 }
 
-C2H_TEST("From native handle", "[stream]")
+C2H_CCCLRT_TEST("From native handle", "[stream]")
 {
+  cudax::__ensure_current_device guard(cudax::device_ref{0});
   cudaStream_t handle;
   CUDART(cudaStreamCreate(&handle));
   {
@@ -53,7 +54,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
     insert_dependency();
     cudax::launch(waiter, ::test::one_thread_dims, ::test::verify_42{}, i.get());
     CUDAX_REQUIRE(atomic_i.load() != 42);
-    CUDAX_REQUIRE(!waiter.ready());
+    CUDAX_REQUIRE(!waiter.is_done());
     atomic_i.store(80);
     waiter.sync();
     waitee.sync();
@@ -91,7 +92,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
   }
 }
 
-C2H_TEST("Can add dependency into a stream", "[stream]")
+C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 {
   cudax::stream waiter, waitee;
 
@@ -99,7 +100,7 @@ C2H_TEST("Can add dependency into a stream", "[stream]")
   add_dependency_test<cudax::stream_ref>(waiter, waitee);
 }
 
-C2H_TEST("Stream priority", "[stream]")
+C2H_CCCLRT_TEST("Stream priority", "[stream]")
 {
   cudax::stream stream_default_prio;
   CUDAX_REQUIRE(stream_default_prio.priority() == cudax::stream::default_priority);
@@ -109,12 +110,12 @@ C2H_TEST("Stream priority", "[stream]")
   CUDAX_REQUIRE(stream.priority() == priority);
 }
 
-C2H_TEST("Stream get device", "[stream]")
+C2H_CCCLRT_TEST("Stream get device", "[stream]")
 {
   cudax::stream dev0_stream(cudax::device_ref{0});
   CUDAX_REQUIRE(dev0_stream.get_device() == 0);
 
-  cudaSetDevice(static_cast<int>(cudax::devices.size() - 1));
+  cudax::__ensure_current_device guard(cudax::device_ref{*std::prev(cudax::devices.end())});
   cudaStream_t stream_handle;
   CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
