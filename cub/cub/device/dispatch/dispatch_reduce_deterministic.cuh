@@ -67,11 +67,12 @@ namespace detail
 namespace rfa
 {
 
-template <typename ReductionOpT, typename InitT, typename InputIteratorT>
-using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, it_value_t<InputIteratorT>>;
+template <typename Invokable, typename InputT>
+using transformed_input_t = _CUDA_VSTD::decay_t<typename _CUDA_VSTD::__invoke_of<Invokable, InputT>::type>;
 
-template <typename OutputIteratorT, typename InputIteratorT>
-using InitT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>;
+template <typename InitT, typename InputIteratorT, typename TransformOpT>
+using accum_t =
+  _CUDA_VSTD::__accumulator_t<_CUDA_VSTD::plus<>, InitT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
 template <typename FloatType                                                              = float,
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
@@ -127,9 +128,9 @@ struct deterministic_sum_t
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename InitT        = rfa::InitT<OutputIteratorT, InputIteratorT>,
-          typename AccumT       = rfa::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
-          typename TransformOpT = ::cuda::std::__identity,
+          typename InitT,
+          typename TransformOpT = ::cuda::std::identity,
+          typename AccumT       = rfa::accum_t<InitT, InputIteratorT, TransformOpT>,
           typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
 struct DispatchReduceDeterministic
 {
@@ -456,9 +457,9 @@ struct DispatchReduceDeterministic
     InputIteratorT d_in,
     OutputIteratorT d_out,
     OffsetT num_items,
-    rfa::InitT<OutputIteratorT, InputIteratorT> init = {},
-    cudaStream_t stream                              = {},
-    TransformOpT transform_op                        = {})
+    InitT init                = {},
+    cudaStream_t stream       = {},
+    TransformOpT transform_op = {})
   {
     static_assert(sizeof(OffsetT) <= 4, "OffsetT must be 4 bytes or less for deterministic reduction");
 

@@ -81,8 +81,8 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     output_it_t,
     offset_t,
     init_t,
+    transform_t,
     accum_t,
-    transform_t
 #if !TUNE_BASE
     ,
     policy_hub_t
