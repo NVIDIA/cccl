@@ -30,6 +30,10 @@ template <typename T>
 struct runtime_value
 {
   T value;
+
+  _CCCL_HOST_DEVICE runtime_value(T stride = {})
+      : value(stride)
+  {}
 };
 
 //! Holds a compile-time value
