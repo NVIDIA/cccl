@@ -26,21 +26,19 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-// MSVC is not able to compile Catch2 tests with many large type lists. Error:
-// error C3546: '...': there are no parameter packs available to expand in make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
+#include <cub/device/device_for.cuh>
 
-#  include <cub/device/device_for.cuh>
+#include <thrust/count.h>
+#include <thrust/device_vector.h>
+#include <thrust/sequence.h>
 
-#  include <thrust/detail/raw_pointer_cast.h>
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
-#  include <cuda/std/array>
-#  include <cuda/std/mdspan>
-#  include <cuda/std/span>
-
-#  include "c2h/catch2_test_helper.h"
-#  include "c2h/utility.h"
-#  include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/utility.h>
+#include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -107,11 +105,11 @@ using index_types =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
-#  endif
+#endif
                  >;
 
 // int8_t/uint8_t are not enabled because they easily overflow
@@ -120,11 +118,11 @@ using index_types_dynamic =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
-#  endif
+#endif
                  >;
 
 using dimensions =
@@ -141,7 +139,7 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
   return {};
 }
 
-C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
+C2H_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
 {
   using index_type    = c2h::get<0, TestType>;
   using dims          = c2h::get<1, TestType>;
@@ -157,10 +155,14 @@ C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
+// MSVC error: C3546: '...': there are no parameter packs available to expand in
+//             make_tuple_types.h:__make_tuple_types_flat
+#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
+#endif // !_CCCL_COMPILER(MSVC)
 }
 
-C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
+C2H_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
 {
   constexpr int rank = 3;
   using index_type   = c2h::get<0, TestType>;
@@ -178,7 +180,42 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
+#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
+#endif // !_CCCL_COMPILER(MSVC)
 }
 
-#endif // !_CCCL_COMPILER(MSVC)
+//----------------------------------------------------------------------------------------------------------------------
+//
+
+struct incrementer_t
+{
+  int* d_counts;
+
+  template <class OffsetT>
+  __device__ void operator()(OffsetT i, OffsetT)
+  {
+    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
+  }
+};
+
+C2H_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]")
+{
+  constexpr int max_items  = 5000000;
+  constexpr int min_items  = 1;
+  using offset_t           = int;
+  using ext_t              = cuda::std::dextents<offset_t, 1>;
+  const offset_t num_items = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+  c2h::device_vector<int> counts(num_items);
+  int* d_counts = thrust::raw_pointer_cast(counts.data());
+  device_for_each_in_extents(ext_t{num_items}, incrementer_t{d_counts});
+
+  const auto num_of_once_marked_items =
+    static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  REQUIRE(num_of_once_marked_items == num_items);
+}

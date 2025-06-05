@@ -43,7 +43,7 @@
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits> // make_unsigned_t
-#include <cuda/std/utility> // ::cuda::std::index_sequence
+#include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 
@@ -51,11 +51,11 @@ namespace detail
 {
 
 // Compute the submdspan size of a given rank
-template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t Extent0, ::cuda::std::size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
+template <size_t Rank, typename IndexType, size_t Extent0, size_t... Extents>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
+sub_size(const _CUDA_VSTD::extents<IndexType, Extent0, Extents...>& ext)
 {
-  ::cuda::std::make_unsigned_t<IndexType> s = 1;
+  _CUDA_VSTD::make_unsigned_t<IndexType> s = 1;
   for (IndexType i = Rank; i < IndexType{1 + sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
   {
     s *= ext.extent(i);
@@ -64,38 +64,38 @@ sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
 }
 
 // avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
-template <::cuda::std::size_t Rank, typename IndexType>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType>&)
+template <size_t Rank, typename IndexType>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
+sub_size(const _CUDA_VSTD::extents<IndexType>&)
 {
-  return ::cuda::std::make_unsigned_t<IndexType>{1};
+  return _CUDA_VSTD::make_unsigned_t<IndexType>{1};
 }
 
 // TODO: move to cuda::std
-template <typename IndexType, ::cuda::std::size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-size(const ::cuda::std::extents<IndexType, Extents...>& ext)
+template <typename IndexType, size_t... Extents>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
+size(const _CUDA_VSTD::extents<IndexType, Extents...>& ext)
 {
-  return sub_size<0>(ext);
+  return cub::detail::sub_size<0>(ext);
 }
 
 // precompute modulo/division for each submdspan size (by rank)
-template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
+template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
+sub_sizes_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VSTD::index_sequence<Ranks...> = {})
 {
   // deduction guides don't work with nvcc 11.x
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(sub_size<Ranks + 1>(ext))...};
+  return _CUDA_VSTD::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(sub_size<Ranks + 1>(ext))...};
 }
 
 // precompute modulo/division for each mdspan extent
-template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
+template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
+extents_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VSTD::index_sequence<Ranks...> = {})
 {
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
+  return _CUDA_VSTD::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
 }
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
@@ -105,7 +105,7 @@ template <int Rank, typename Extents>
   using index_type = typename Extents::index_type;
   for (index_type i = Rank; i < Extents::rank(); i++)
   {
-    if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
+    if (Extents::static_extent(i) == _CUDA_VSTD::dynamic_extent)
     {
       return false;
     }
