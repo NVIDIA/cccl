@@ -37,6 +37,5 @@ python -m auditwheel repair \
     --exclude 'libnvJitLink.so*' \
     cuda_cccl-*.whl
 
-# Move wheels to output directory
-mv cuda_cccl-*.whl /workspace/wheelhouse/
+# Move wheel to output directory
 mv wheelhouse/cuda_cccl-*.whl /workspace/wheelhouse/
