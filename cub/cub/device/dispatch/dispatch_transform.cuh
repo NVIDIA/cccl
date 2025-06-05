@@ -363,7 +363,7 @@ struct dispatch_t<StableAddress,
       const int items_per_thread =
         loaded_bytes_per_iter == 0
           ? +wrapped_policy.ItemsPerThreadNoInput()
-          : ::cuda::ceil_div(wrapped_policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+          : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
