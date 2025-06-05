@@ -12,9 +12,6 @@
 #  if (__CUDA_ARCH_LIST__) < 900
 #    error "Cannot compile algorithm 2 (ublkcp) below sm90"
 #  endif
-#  ifndef _CUB_HAS_TRANSFORM_UBLKCP
-#    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
-#  endif
 #endif
 
 #include <cub/util_namespace.cuh>
