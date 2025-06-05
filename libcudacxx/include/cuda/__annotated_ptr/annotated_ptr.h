@@ -24,6 +24,7 @@
 #include <cuda/__annotated_ptr/access_property.h>
 #include <cuda/__annotated_ptr/annotated_ptr_base.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -75,7 +76,9 @@ public:
     {
       if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(::__isShared((void*) __p), "__p must be shared");))
+        NV_IF_TARGET(NV_IS_DEVICE,
+                     (_CCCL_ASSERT(_CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __p),
+                                   "__p must be shared");))
       }
     }
     else
@@ -83,7 +86,9 @@ public:
       _CCCL_ASSERT(__p != nullptr, "__p must not be null");
       if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(::__isGlobal((void*) __p), "__p must be global");))
+        NV_IF_TARGET(NV_IS_DEVICE,
+                     (_CCCL_ASSERT(_CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __p),
+                                   "__p must be global");))
       }
     }
   }
@@ -98,7 +103,9 @@ public:
     static_assert(__is_global_access_property_v<_RuntimeProperty>,
                   "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
     _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(::__isGlobal((void*) __p), "__p must be global");))
+    NV_IF_TARGET(
+      NV_IS_DEVICE,
+      (_CCCL_ASSERT(_CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __p), "__p must be global");))
   }
 
   // cannot be constexpr because of get()

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__memory/address_space.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -38,7 +39,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
      auto __ptr1 = const_cast<void*>(__ptr);
-     if (!::__isGlobal(__ptr1))
+     if (!_CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __ptr1))
      {
        return;
      }
@@ -63,7 +64,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
      auto __ptr1 = const_cast<void*>(__ptr);
-     if (!::__isGlobal(__ptr1))
+     if (!_CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __ptr1))
      {
        return;
      }
