@@ -3,6 +3,9 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+
 int main()
 {
   namespace stdexec = cuda::std::execution;

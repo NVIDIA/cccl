@@ -18,7 +18,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/std/optional>
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
 
 #include <c2h/catch2_test_helper.h>
 

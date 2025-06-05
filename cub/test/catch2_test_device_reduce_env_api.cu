@@ -8,7 +8,8 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/std/optional>
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
 
 #include <c2h/catch2_test_helper.h>
 
