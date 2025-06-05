@@ -160,7 +160,7 @@ public:
 
 #if _CCCL_HAS_CTK()
   //! \brief Converts this \c device_ptr to a raw \c CUdeviceptr.
-  _CCCL_HOST_DEVICE operator CUdeviceptr() const noexcept
+  _CCCL_HOST_DEVICE explicit operator CUdeviceptr() const noexcept
   {
     return reinterpret_cast<CUdeviceptr>(super_t::get());
   }
