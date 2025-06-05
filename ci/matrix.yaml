@@ -294,7 +294,7 @@ projects:
     name: "Python"
     job_map:
       build: ['build_cuda_cccl']
-      test:  ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel']
+      test:  ['test_cuda_cccl_headers', 'test_cuda_cccl_cooperative', 'test_cuda_cccl_parallel']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
