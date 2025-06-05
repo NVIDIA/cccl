@@ -196,6 +196,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
+#ifdef _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
   extern __shared__ char smem[]; // this should be __attribute((aligned(memcpy_async_alignment))), but then it clashes
                                  // with the ublkcp kernel, which sets a higher alignment, since they are both called
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
@@ -286,9 +287,11 @@ _CCCL_DEVICE void transform_kernel_impl(
   {
     process_tile(::cuda::std::false_type{});
   }
+#else // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
+  _CCCL_ASSERT(false, "Disabled");
+#endif // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
 }
 
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
 _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
 {
   const ::cuda::std::uint32_t membermask = ~0;
@@ -308,6 +311,7 @@ template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomA
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
+#ifdef _CUB_HAS_TRANSFORM_UBLKCP
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
@@ -426,6 +430,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   {
     process_tile(::cuda::std::false_type{});
   }
+#else // _CUB_HAS_TRANSFORM_UBLKCP
+  _CCCL_ASSERT(false, "Disabled");
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
 }
 
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
@@ -441,15 +448,12 @@ _CCCL_DEVICE void transform_kernel_impl(
   NV_IF_TARGET(NV_PROVIDES_SM_90,
                (transform_kernel_ublkcp<BulkCopyPolicy>(num_items, num_elem_per_thread, f, out, aligned_ptrs...);));
 }
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
 
 template <typename It>
 union kernel_arg
 {
-#if _CUB_HAS_TRANSFORM_UBLKCP
   aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
   static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
-#endif
   It iterator; // may not be trivially [default|copy]-constructible
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
@@ -487,12 +491,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 }
 
 template <Algorithm Alg>
-inline constexpr bool needs_aligned_ptr_v =
-  Alg == Algorithm::memcpy_async
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  || Alg == Algorithm::ublkcp
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
-  ;
+inline constexpr bool needs_aligned_ptr_v = Alg == Algorithm::memcpy_async || Alg == Algorithm::ublkcp;
 
 template <Algorithm Alg, typename It>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto
