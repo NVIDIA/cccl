@@ -26,7 +26,7 @@ namespace stdexec = cuda::std::execution;
 
 // Launcher helper always passes an environment.
 // We need a test of simple use to check if default environment works.
-// ifdef it out not to spend time compiling and runing it twice.
+// ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
 struct block_size_check_t
 {
