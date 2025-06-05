@@ -159,7 +159,7 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 }
 
 template <typename T, typename... Ts>
-_CCCL_HOST_DEVICE constexpr bool are_equal([[maybe_unused]] T head, Ts... tail)
+_CCCL_HOST_DEVICE constexpr bool all_equal([[maybe_unused]] T head, Ts... tail)
 {
   return ((head == tail) && ...);
 }
@@ -258,7 +258,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     (THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>> && ...);
   static constexpr bool can_memcpy = all_contiguous && all_values_trivially_reloc;
   static constexpr bool all_values_same_size =
-    are_equal(size_of<it_value_t<RandomAccessIteratorsIn>>..., size_of<it_value_t<RandomAccessIteratorOut>>);
+    all_equal(size_of<it_value_t<RandomAccessIteratorsIn>>..., size_of<it_value_t<RandomAccessIteratorOut>>);
 
   // for vectorized policy:
   static constexpr int load_store_word_size = 8;
