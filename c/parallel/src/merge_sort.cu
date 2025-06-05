@@ -427,18 +427,18 @@ struct device_merge_sort_vsmem_helper {{
     list_appender.add_iterator_definition(output_items_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({block_sort_kernel_name})
-        .add_expression({partition_kernel_name})
-        .add_expression({merge_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
-        .get_name({partition_kernel_name, partition_kernel_lowered_name})
-        .get_name({merge_kernel_name, merge_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_expression({block_sort_kernel_name})
+        ->add_expression({partition_kernel_name})
+        ->add_expression({merge_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
+        ->get_name({partition_kernel_name, partition_kernel_lowered_name})
+        ->get_name({merge_kernel_name, merge_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(
