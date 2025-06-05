@@ -164,6 +164,15 @@ _CCCL_HOST_DEVICE constexpr bool are_equal([[maybe_unused]] T head, Ts... tail)
   return ((head == tail) && ...);
 }
 
+_CCCL_HOST_DEVICE constexpr int items_per_thread_vectorized(int load_store_word_size, int value_type_size)
+{
+  const int bytes_per_tile = ::cuda::round_up(32, ::cuda::std::lcm(load_store_word_size, value_type_size));
+  assert(bytes_per_tile % value_type_size == 0);
+  const int items_per_thread = bytes_per_tile / value_type_size;
+  assert((items_per_thread * value_type_size) % load_store_word_size == 0);
+  return items_per_thread;
+}
+
 template <typename PolicyT, typename = void>
 struct TransformPolicyWrapper : PolicyT
 {
@@ -178,6 +187,11 @@ struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(Static
   _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
+
+  _CCCL_HOST_DEVICE static constexpr int MinBif()
+  {
+    return StaticPolicyT::min_bif;
+  }
 
   _CCCL_HOST_DEVICE static constexpr Algorithm GetAlgorithm()
   {
@@ -249,11 +263,8 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // for vectorized policy:
   static constexpr int load_store_word_size = 8;
   static constexpr int value_type_size      = ::cuda::std::max(int{size_of<it_value_t<RandomAccessIteratorOut>>}, 1);
-  static constexpr int bytes_per_tile = ::cuda::round_up(32, ::cuda::std::lcm(load_store_word_size, value_type_size));
-  static_assert(bytes_per_tile % value_type_size == 0);
-  static constexpr int items_per_thread = bytes_per_tile / value_type_size;
-  static_assert((items_per_thread * value_type_size) % load_store_word_size == 0);
-  using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread, load_store_word_size>;
+  static constexpr int items_per_thread_vec = items_per_thread_vectorized(load_store_word_size, value_type_size);
+  using default_vectorized_policy_t         = vectorized_policy_t<256, items_per_thread_vec, load_store_word_size>;
 
   // TODO(bgruber): consider a separate kernel for just filling
 

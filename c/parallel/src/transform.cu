@@ -10,7 +10,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#include <cub/device/dispatch/tuning/tuning_transform.cuh> // cub::detail::transform::Algorithm
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
@@ -54,6 +54,7 @@ constexpr auto output_iterator_name = "output_iterator_t";
 
 struct transform_runtime_tuning_policy
 {
+  int min_bif;
   int block_threads;
   int items_per_thread_no_input;
   int min_items_per_thread;
@@ -61,10 +62,16 @@ struct transform_runtime_tuning_policy
   int items_per_thread_vectorized;
   int load_store_word_size;
 
+  int MinBif() const
+  {
+    return min_bif;
+  }
+
   // Note: when we extend transform to support UBLKCP, we may no longer
   // be able to keep this constexpr:
   static constexpr cub::detail::transform::Algorithm GetAlgorithm()
   {
+    // FIXME(bgruber): this needs to incorporate the algorithm selection logic from CUB policy_hub
     return cub::detail::transform::Algorithm::prefetch;
   }
 
@@ -97,15 +104,20 @@ struct transform_runtime_tuning_policy
   {
     return load_store_word_size;
   }
-
-  static constexpr int min_bif = 1024 * 12;
 };
 
-transform_runtime_tuning_policy get_policy()
+transform_runtime_tuning_policy get_policy(int sm_arch)
 {
-  const int items_per_thread_vectorized = 16; // FIXME(bgruber): this needs more logic, since it depends on the value
-                                              // type's size
-  return {256, 2, 1, 32, items_per_thread_vectorized, 8};
+  const int load_store_word_size = 8;
+  const int value_type_size      = 4; // FIXME(bgruber): this should be derived from the value types of the iterators
+  return {.min_bif                   = cub::detail::transform::arch_to_min_bytes_in_flight(sm_arch),
+          .block_threads             = 256,
+          .items_per_thread_no_input = 2,
+          .min_items_per_thread      = 1,
+          .max_items_per_thread      = 32,
+          .items_per_thread_vectorized =
+            cub::detail::transform::items_per_thread_vectorized(load_store_word_size, value_type_size),
+          .load_store_word_size = load_store_word_size};
 }
 
 template <typename StorageT>
@@ -173,9 +185,9 @@ struct dynamic_transform_policy_t
   using max_policy = dynamic_transform_policy_t;
 
   template <typename F>
-  cudaError_t Invoke(int /*device_ptx_version*/, F& op)
+  cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<transform_runtime_tuning_policy>(GetPolicy());
+    return op.template Invoke<transform_runtime_tuning_policy>(GetPolicy(device_ptx_version));
   }
 };
 
@@ -221,7 +233,7 @@ CUresult cccl_device_unary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy();
+    const auto policy            = transform::get_policy(cc * 10);
     const auto input_it_value_t  = cccl_type_enum_to_name<input_storage_t>(input_it.value_type.type);
     const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
@@ -404,7 +416,7 @@ CUresult cccl_device_binary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy();
+    const auto policy            = transform::get_policy(cc * 10);
     const auto input1_it_value_t = cccl_type_enum_to_name<input1_storage_t>(input1_it.value_type.type);
     const auto input2_it_value_t = cccl_type_enum_to_name<input2_storage_t>(input2_it.value_type.type);
 
