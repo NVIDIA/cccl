@@ -322,8 +322,11 @@ struct dispatch_t<StableAddress,
 
     auto can_vectorize = false;
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
-    if constexpr (Algorithm::vectorized == ActivePolicy::algorithm) // TODO(bgruber): should use
-                                                                    // wrapped_policy.GetAlgorithm() for cccl.c
+#ifdef CCCL_C_EXPERIMENTAL
+    if (Algorithm::vectorized == wrapped_policy.GetAlgorithm())
+#else // CCCL_C_EXPERIMENTAL
+    if constexpr (Algorithm::vectorized == ActivePolicy::algorithm)
+#endif // CCCL_C_EXPERIMENTAL
     {
       const int alignment     = wrapped_policy.LoadStoreWordSize();
       auto is_pointer_aligned = [&](auto it) {
@@ -342,12 +345,15 @@ struct dispatch_t<StableAddress,
     }
 
     const int ipt = [&] {
-      if constexpr (Algorithm::vectorized == ActivePolicy::algorithm) // TODO(bgruber): should use
-                                                                      // wrapped_policy.GetAlgorithm() for cccl.c
+#ifdef CCCL_C_EXPERIMENTAL
+      if (Algorithm::vectorized == wrapped_policy.GetAlgorithm())
+#else // CCCL_C_EXPERIMENTAL
+      if constexpr (Algorithm::vectorized == ActivePolicy::algorithm)
+#endif // CCCL_C_EXPERIMENTAL
       {
         if (can_vectorize)
         {
-          return wrapped_policy.ItemsPerThread();
+          return wrapped_policy.ItemsPerThreadForVectorizedPath();
         }
       }
       // otherwise, setup the prefetch kernel
