@@ -58,6 +58,8 @@ struct transform_runtime_tuning_policy
   int items_per_thread_no_input;
   int min_items_per_thread;
   int max_items_per_thread;
+  int items_per_thread_vectorized;
+  int load_store_word_size;
 
   // Note: when we extend transform to support UBLKCP, we may no longer
   // be able to keep this constexpr:
@@ -66,32 +68,44 @@ struct transform_runtime_tuning_policy
     return cub::detail::transform::Algorithm::prefetch;
   }
 
-  int BlockThreads()
+  int BlockThreads() const
   {
     return block_threads;
   }
 
-  int ItemsPerThreadNoInput()
+  int ItemsPerThreadNoInput() const
   {
     return items_per_thread_no_input;
   }
 
-  int MinItemsPerThread()
+  int MinItemsPerThread() const
   {
     return min_items_per_thread;
   }
 
-  int MaxItemsPerThread()
+  int MaxItemsPerThread() const
   {
     return max_items_per_thread;
   }
+
+  int ItemsPerThreadForVectorizedPath() const
+  {
+    return items_per_thread_vectorized;
+  }
+
+  int LoadStoreWordSize() const
+  {
+    return load_store_word_size;
+  }
+
   static constexpr int min_bif = 1024 * 12;
 };
 
 transform_runtime_tuning_policy get_policy()
 {
-  // return prefetch policy defaults:
-  return {256, 2, 1, 32};
+  const int items_per_thread_vectorized = 16; // FIXME(bgruber): this needs more logic, since it depends on the value
+                                              // type's size
+  return {256, 2, 1, 32, items_per_thread_vectorized, 8};
 }
 
 template <typename StorageT>
