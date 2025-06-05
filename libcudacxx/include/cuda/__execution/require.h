@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_empty.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -56,6 +57,7 @@ template <class... _Requirements>
 {
   static_assert((_CUDA_VSTD::is_base_of_v<__requirement, _Requirements> && ...),
                 "Only requirements can be passed to require");
+  static_assert((_CUDA_VSTD::is_empty_v<_Requirements> && ...), "Stateful requirements are not implemented");
 
   // clang < 19 doesn't like this code
   // since the only requirements we currently allow are in determinism.h and
