@@ -12,12 +12,11 @@
 //! @file
 //! This file contains utilities for device-scope API tests of environment APIs.
 //!
-//! Device-scope API in CUB can be launched from the host or as part of cuda graph.
-//! Utilities in this file facilitate testing in both cases.
-//!
+//! Device-scope API in CUB can be launched from the host, device, or as part of cuda graph.
+//! Utilities in this file facilitate testing in all cases.
 //!
 //! ```
-//! // Add PARAM to make CMake generate a test for both host and device launch:
+//! // Add PARAM to make CMake generate a test for all launch modes:
 //! // %PARAM% TEST_LAUNCH lid 0:1:2
 //!
 //! // Declare CDP wrapper for CUB API. The wrapper will accept the same
@@ -35,7 +34,7 @@
 //!
 //! ```
 //!
-//! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
+//! Consult with `test/catch2_test_launch_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2

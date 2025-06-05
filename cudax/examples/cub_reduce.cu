@@ -30,7 +30,7 @@ int main()
   // An environment we use to pass all necessary information to the containers
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
-  // Allocate the two inputs and output, but do not zero initialize via `cudax::no_init`
+  // Allocate input and output, but do not zero initialize via `cudax::no_init`
   cudax::async_device_buffer<int> d_in{env, num_items, 1};
   cudax::async_device_buffer<float> d_out{env, 1, cudax::no_init};
 
