@@ -18,10 +18,10 @@
 
 #include "test_macros.h"
 
+#if _CCCL_HAS_INT128()
+
 constexpr int first_base = 2;
 constexpr int last_base  = 36;
-
-#if _CCCL_HAS_INT128()
 
 struct TestItem
 {
