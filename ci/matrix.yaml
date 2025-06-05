@@ -241,11 +241,11 @@ jobs:
 
   # Python:
   build_cuda_cccl:        { name: "Build cuda.cccl",        gpu: false }
-  build_cuda_cooperative: { name: "Build cuda.cooperative", gpu: false }
-  build_cuda_parallel:    { name: "Build cuda.parallel",    gpu: false }
+  build_cuda_cooperative: { name: "Build cuda.cccl.cooperative", gpu: false }
+  build_cuda_parallel:    { name: "Build cuda.cccl.parallel",    gpu: false }
   test_cuda_cccl:         { name: "Test cuda.cccl",         gpu: true, needs: 'build_cuda_cccl' }
-  test_cuda_cooperative:  { name: "Test cuda.cooperative",  gpu: true, needs: 'build_cuda_cooperative' }
-  test_cuda_parallel:     { name: "Test cuda.parallel",     gpu: true, needs: 'build_cuda_parallel' }
+  test_cuda_cooperative:  { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_cuda_cooperative' }
+  test_cuda_parallel:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_cuda_parallel' }
 
 # Projects have the following properties:
 #

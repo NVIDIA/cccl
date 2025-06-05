@@ -302,7 +302,7 @@ doxygen_conf_extra = """
 """
 
 [repo_docs.projects.cuda_cooperative]
-name = "cuda.cooperative"
+name = "cuda.cccl.cooperative"
 docs_root = "cuda_cooperative"
 logo = "../img/logo.png"
 
@@ -327,7 +327,7 @@ python_paths = [
 ]
 
 [repo_docs.projects.cuda_parallel]
-name = "cuda.parallel"
+name = "cuda.cccl.parallel"
 docs_root = "cuda_parallel"
 logo = "../img/logo.png"
 
@@ -345,7 +345,7 @@ autodoc.mock_imports = [
     "llvmlite",
     "numpy",
     "cupy",
-    "cuda.parallel.experimental._bindings"
+    "cuda.cccl.parallel.experimental._bindings"
 ]
 
 enhanced_search_enabled = true
