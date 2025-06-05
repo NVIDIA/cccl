@@ -12,12 +12,8 @@ setup_python_env "${py_version}"
 
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]"
 
-# Install cuda_cooperative
-CUDA_COOPERATIVE_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cooperative-*.whl)"
-python -m pip install "${CUDA_COOPERATIVE_WHEEL_PATH}[test]"
-
-# Run tests
-cd "/home/coder/cccl/python/cuda_cooperative/tests/"
-python -m pytest -n auto -v
+# Run tests for cooperative module
+cd "/home/coder/cccl/python/cuda_cccl/tests/"
+python -m pytest -n auto -v cooperative/

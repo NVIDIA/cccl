@@ -12,13 +12,9 @@ setup_python_env "${py_version}"
 
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]"
 
-# Install cuda_parallel
-CUDA_PARALLEL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_parallel-*.whl)"
-python -m pip install "${CUDA_PARALLEL_WHEEL_PATH}[test]"
-
-# Run tests
-cd "/home/coder/cccl/python/cuda_parallel/tests/"
-python -m pytest -n 6 -v -m "not large"
-python -m pytest -n 0 -v -m "large"
+# Run tests for parallel module
+cd "/home/coder/cccl/python/cuda_cccl/tests/"
+python -m pytest -n 6 -v parallel/ -m "not large"
+python -m pytest -n 0 -v parallel/ -m "large"

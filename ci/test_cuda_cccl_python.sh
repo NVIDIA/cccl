@@ -14,6 +14,6 @@ setup_python_env "${py_version}"
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]"
 
-# Run tests
+# Run tests for core package
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n auto -v
+python -m pytest -n auto -v headers/

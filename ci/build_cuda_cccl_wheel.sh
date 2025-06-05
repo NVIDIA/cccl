@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Target script for `docker run` command in build_cuda_parallel_python.sh
+# Target script for `docker run` command in build_cuda_cccl_python.sh
 # The /workspace pathnames are hard-wired here.
 
 # Enable GCC toolset
@@ -28,7 +28,6 @@ export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_PARALLEL="${package_version}"
 
 # Build wheels
 python -m pip wheel --no-deps /workspace/python/cuda_cccl
-python -m pip wheel --no-deps .
 
 # Repair wheel
 python -m pip install patchelf auditwheel
@@ -36,8 +35,8 @@ python -m auditwheel repair \
     --exclude 'libcuda.so*' \
     --exclude 'libnvrtc.so*' \
     --exclude 'libnvJitLink.so*' \
-    cuda_parallel-*.whl
+    cuda_cccl-*.whl
 
 # Move wheels to output directory
 mv cuda_cccl-*.whl /workspace/wheelhouse/
-mv wheelhouse/cuda_parallel-*.whl /workspace/wheelhouse/
+mv wheelhouse/cuda_cccl-*.whl /workspace/wheelhouse/
