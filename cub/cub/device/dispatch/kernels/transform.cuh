@@ -22,6 +22,7 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/cmath>
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
@@ -133,6 +134,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <int Length>
 _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
 {
+  static_assert(::cuda::is_power_of_two(Length));
   if constexpr (Length == 1)
   {
     return ::cuda::std::int8_t{};
@@ -159,7 +161,7 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
   else
   {
-    return ::cuda::std::array<char, Length>{};
+    return ::cuda::std::array<int, Length / sizeof(int)>{};
   }
 }
 
