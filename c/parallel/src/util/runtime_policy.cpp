@@ -29,7 +29,7 @@ get_policy(std::string_view policy_wrapper_expr, std::string_view translation_un
     "{0}\n"
      "__global__ void ptx_json_emitting_kernel()\n"
      "{{\n"
-     "  auto wrapped = {1};\n"
+     "  [[maybe_unused]] auto wrapped = {1};\n"
      "  ptx_json::id<ptx_json::string(\"{2}\")>() = wrapped.EncodedPolicy();\n"
      "}}\n",
     translation_unit,
