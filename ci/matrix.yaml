@@ -8,6 +8,8 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    # just run the python build and test jobs
+    - {jobs: ['test_cuda_cccl_headers', 'test_cuda_cccl_cooperative', 'test_cuda_cccl_parallel'], project: 'python'}
 
   pull_request:
     # Old CTK/compiler
@@ -241,9 +243,9 @@ jobs:
 
   # Python:
   build_cuda_cccl:        { name: "Build cuda.cccl",        gpu: false }
-  test_cuda_cccl:         { name: "Test cuda.cccl",         gpu: true, needs: 'build_cuda_cccl' }
-  test_cuda_cooperative:  { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_cuda_cccl' }
-  test_cuda_parallel:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_headers: { name: "Test cuda.cccl.headers", gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_cooperative:  { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_parallel:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_cuda_cccl' }
 
 # Projects have the following properties:
 #
