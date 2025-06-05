@@ -29,7 +29,7 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
 
-using offset_types = c2h::type_list<std::int32_t>;
+using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
