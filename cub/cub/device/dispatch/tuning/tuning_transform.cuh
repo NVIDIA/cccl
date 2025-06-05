@@ -256,11 +256,25 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
       : bulkcopy_policy<128, 1000>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
-
-  using max_policy = policy1000;
-#else // _CUB_HAS_TRANSFORM_UBLKCP
-  using max_policy = policy300;
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
+
+  // UBLKCP is disabled on sm120 for now
+  struct policy1200
+      : ChainedPolicy<1200,
+                      policy1200,
+#ifdef _CUB_HAS_TRANSFORM_UBLKCP
+                      policy1000
+#else // _CUB_HAS_TRANSFORM_UBLKCP
+                      policy300
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
+                      >
+  {
+    static constexpr int min_bif    = arch_to_min_bytes_in_flight(1200);
+    static constexpr auto algorithm = Algorithm::prefetch;
+    using algo_policy               = prefetch_policy_t<256>;
+  };
+
+  using max_policy = policy1200;
 };
 
 } // namespace transform

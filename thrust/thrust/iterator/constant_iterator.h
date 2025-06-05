@@ -33,6 +33,7 @@
 #include <thrust/iterator/iterator_facade.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -44,7 +45,7 @@ namespace detail
 template <typename Value, typename Incrementable, typename System>
 struct make_constant_iterator_base
 {
-  using incrementable = replace_if_use_default<Incrementable, identity_<::cuda::std::intmax_t>>;
+  using incrementable = replace_if_use_default<Incrementable, ::cuda::std::type_identity<::cuda::std::intmax_t>>;
   using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
   using type =
     iterator_adaptor<constant_iterator<Value, Incrementable, System>,

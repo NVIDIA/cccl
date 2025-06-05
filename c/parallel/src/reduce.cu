@@ -120,7 +120,7 @@ std::string get_device_reduce_kernel_name(
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
   std::string transform_op_t;
-  check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
+  check(nvrtcGetTypeName<cuda::std::identity>(&transform_op_t));
 
   return std::format(
     "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
@@ -343,7 +343,7 @@ CUresult cccl_device_reduce(
       indirect_arg_t, // ReductionOpT
       indirect_arg_t, // InitT
       void, // AccumT
-      ::cuda::std::__identity, // TransformOpT
+      ::cuda::std::identity, // TransformOpT
       reduce::reduce_runtime_tuning_policy, // PolicyHub
       reduce::reduce_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
