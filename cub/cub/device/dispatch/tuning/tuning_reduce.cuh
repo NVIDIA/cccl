@@ -308,7 +308,7 @@ struct policy_hub
 
     // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B
     // items)
-    using DeterministicReducePolicy =
+    using ReducePolicy =
       AgentReducePolicy<threads_per_block,
                         items_per_thread,
                         AccumT,
@@ -317,7 +317,7 @@ struct policy_hub
                         LOAD_LDG>;
 
     // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
+    using SingleTilePolicy = ReducePolicy;
   };
 
   /// SM60
@@ -328,7 +328,7 @@ struct policy_hub
     static constexpr int items_per_vec_load = 4;
 
     // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
-    using DeterministicReducePolicy =
+    using ReducePolicy =
       AgentReducePolicy<threads_per_block,
                         items_per_thread,
                         AccumT,
@@ -337,7 +337,7 @@ struct policy_hub
                         LOAD_LDG>;
 
     // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
+    using SingleTilePolicy = ReducePolicy;
   };
 
   using MaxPolicy = Policy600;
