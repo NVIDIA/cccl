@@ -15,7 +15,7 @@
 //   lexicographical_compare(Iter1 first1, Iter1 last1,
 //                           Iter2 first2, Iter2 last2, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
@@ -28,7 +28,7 @@ __host__ __device__ constexpr void test()
   int ia[]          = {1, 2, 3, 4};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
   int ib[]          = {1, 2, 3};
-  typedef cuda::std::greater<int> C;
+  using C           = cuda::std::greater<int>;
   C c{};
   assert(!cuda::std::lexicographical_compare(Iter1(ia), Iter1(ia + sa), Iter2(ib), Iter2(ib + 2), c));
   assert(cuda::std::lexicographical_compare(Iter1(ib), Iter1(ib + 2), Iter2(ia), Iter2(ia + sa), c));

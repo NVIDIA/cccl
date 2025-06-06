@@ -13,7 +13,7 @@
 //    constexpr InputIterator      // constexpr after C++17
 //    for_each_n(InputIterator first, Size n, Function f);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
@@ -57,7 +57,7 @@ struct for_each_test
 
 int main(int, char**)
 {
-  typedef cpp17_input_iterator<int*> Iter;
+  using Iter       = cpp17_input_iterator<int*>;
   int ia[]         = {0, 1, 2, 3, 4, 5};
   const unsigned s = sizeof(ia) / sizeof(ia[0]);
 

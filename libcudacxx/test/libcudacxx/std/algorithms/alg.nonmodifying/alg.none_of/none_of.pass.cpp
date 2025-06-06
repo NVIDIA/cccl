@@ -13,7 +13,7 @@
 //   bool
 //   none_of(InputIterator first, InputIterator last, Predicate pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

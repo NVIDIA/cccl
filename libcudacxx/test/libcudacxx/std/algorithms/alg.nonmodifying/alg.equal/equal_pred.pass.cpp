@@ -21,7 +21,7 @@
 //   constexpr bool     // constexpr after c++17
 //   equal(Iter1 first1, Iter1 last1, Iter2 first2, Iter2 last2, Pred pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
     random_access_iterator<const int*>(ia + s),
     cuda::std::equal_to<int>()));
 
-  typedef cuda::std::equal_to<int> EQ;
+  using EQ             = cuda::std::equal_to<int>;
   int comparison_count = 0;
   counting_predicate<EQ> counting_equals(EQ(), comparison_count);
   assert(!cuda::std::equal(

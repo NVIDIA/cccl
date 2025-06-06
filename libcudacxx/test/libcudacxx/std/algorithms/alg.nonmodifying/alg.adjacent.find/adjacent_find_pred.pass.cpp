@@ -13,7 +13,7 @@
 //   constexpr Iter  // constexpr after C++17
 //   adjacent_find(Iter first, Iter last, Pred pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

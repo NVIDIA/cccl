@@ -22,7 +22,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 CUB_NAMESPACE_BEGIN
 

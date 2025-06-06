@@ -3,7 +3,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
