@@ -183,50 +183,49 @@ public:
       return *this;
     }
 
-    _CCCL_TEMPLATE(class _Base2 = _Base)
-    _CCCL_REQUIRES((!forward_range<_Base2>) )
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator++(int)
+    _CCCL_TEMPLATE()
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int) -> _CCCL_TRAILING_REQUIRES(void)((!forward_range<_Base>) )
     {
       ++__current_;
     }
 
-    _CCCL_TEMPLATE(class _Base2 = _Base)
-    _CCCL_REQUIRES(forward_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator++(int)
+    _CCCL_TEMPLATE()
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int)
+      -> _CCCL_TRAILING_REQUIRES(__iterator)(forward_range<_Base>)
     {
       auto __tmp = *this;
       ++*this;
       return __tmp;
     }
 
-    _CCCL_TEMPLATE(class _Base2 = _Base)
-    _CCCL_REQUIRES(bidirectional_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator--()
+    _CCCL_TEMPLATE()
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator--()
+      -> _CCCL_TRAILING_REQUIRES(__iterator&)(bidirectional_range<_Base>)
     {
       --__current_;
       return *this;
     }
 
-    _CCCL_TEMPLATE(class _Base2 = _Base)
-    _CCCL_REQUIRES(bidirectional_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator--(int)
+    _CCCL_TEMPLATE()
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator--(int)
+      -> _CCCL_TRAILING_REQUIRES(__iterator)(bidirectional_range<_Base>)
     {
       auto __tmp = *this;
       --*this;
       return __tmp;
     }
 
-    _CCCL_TEMPLATE(class _Base2 = _Base)
-    _CCCL_REQUIRES(random_access_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator+=(difference_type __n)
+    _CCCL_TEMPLATE()
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator+=(difference_type __n)
+      -> _CCCL_TRAILING_REQUIRES(__iterator&)(random_access_range<_Base>)
     {
       __current_ += __n;
       return *this;
     }
 
-    _CCCL_TEMPLATE(class _Base2 = _Base)
-    _CCCL_REQUIRES(random_access_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator-=(difference_type __n)
+    _CCCL_TEMPLATE()
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator-=(difference_type __n)
+      -> _CCCL_TRAILING_REQUIRES(__iterator&)(random_access_range<_Base>)
     {
       __current_ -= __n;
       return *this;
@@ -240,47 +239,49 @@ public:
       return _CUDA_VSTD::invoke(*__parent_->__func_, __current_[__n]);
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const __iterator& __x, const __iterator& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base2>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base>>)
     {
       return __x.__current_ == __y.__current_;
     }
 #if _CCCL_STD_VER <= 2017
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const __iterator& __x, const __iterator& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base2>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base>>)
     {
       return __x.__current_ != __y.__current_;
     }
 #endif // _CCCL_STD_VER <= 2017
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator<(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    operator<(const __iterator& __x, const __iterator& __y) -> _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base>)
     {
       return __x.__current_ < __y.__current_;
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator>(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    operator>(const __iterator& __x, const __iterator& __y) -> _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base>)
     {
       return __x.__current_ > __y.__current_;
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator<=(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    operator<=(const __iterator& __x, const __iterator& __y)
+      -> _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base>)
     {
       return __x.__current_ <= __y.__current_;
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator>=(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    operator>=(const __iterator& __x, const __iterator& __y)
+      -> _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base>)
     {
       return __x.__current_ >= __y.__current_;
     }
@@ -295,30 +296,30 @@ public:
     }
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator+(__iterator __i, difference_type __n)
-      _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
+      -> _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base>)
     {
       return __iterator{*__i.__parent_, __i.__current_ + __n};
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator+(difference_type __n, __iterator __i)
-      _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
+      -> _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base>)
     {
       return __iterator{*__i.__parent_, __i.__current_ + __n};
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator-(__iterator __i, difference_type __n)
-      _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
+      -> _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base>)
     {
       return __iterator{*__i.__parent_, __i.__current_ - __n};
     }
 
-    template <class _Base2 = _Base>
+    _CCCL_TEMPLATE()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator-(const __iterator& __x, const __iterator& __y)
-      _CCCL_TRAILING_REQUIRES(difference_type)(sized_sentinel_for<iterator_t<_Base2>, iterator_t<_Base2>>)
+      -> _CCCL_TRAILING_REQUIRES(difference_type)(sized_sentinel_for<iterator_t<_Base>, iterator_t<_Base>>)
     {
       return __x.__current_ - __y.__current_;
     }
@@ -362,7 +363,7 @@ public:
     template <bool _OtherConst>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const __iterator<_OtherConst>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__current_ == __y.__end_;
     }
@@ -370,7 +371,7 @@ public:
     template <bool _OtherConst>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const __sentinel& __x, const __iterator<_OtherConst>& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__end_ == __y.__current_;
     }
@@ -378,7 +379,7 @@ public:
     template <bool _OtherConst>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const __iterator<_OtherConst>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__current_ != __y.__end_;
     }
@@ -386,7 +387,7 @@ public:
     template <bool _OtherConst>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const __sentinel& __x, const __iterator<_OtherConst>& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__end_ != __y.__current_;
     }
@@ -395,7 +396,7 @@ public:
     template <bool _OtherConst>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(
+      -> _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(
         sized_sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__current_ - __y.__end_;
@@ -404,7 +405,7 @@ public:
     template <bool _OtherConst>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator-(const __sentinel& __x, const __iterator<_OtherConst>& __y)
-      _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(
+      -> _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(
         sized_sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__end_ - __y.__current_;

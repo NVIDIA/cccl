@@ -412,7 +412,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto iter_swap(
     const counted_iterator& __x,
     const counted_iterator<_I2>& __y) noexcept(noexcept(_CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_)))
-    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
+    -> _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     _CCCL_ASSERT(__x.__count_ > 0 && __y.__count_ > 0, "Iterators must not be past end of range.");
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);

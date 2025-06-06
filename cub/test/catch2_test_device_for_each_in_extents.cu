@@ -50,7 +50,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
 static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
-  _CCCL_TRAILING_REQUIRES(void)((Rank == ExtentType::rank()))
+  -> _CCCL_TRAILING_REQUIRES(void)((Rank == ExtentType::rank()))
 {
   vector[pos++] = {indices...};
   return void(); // nvc++ requires a return statement
@@ -58,7 +58,7 @@ static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, siz
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
 static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
-  _CCCL_TRAILING_REQUIRES(void)((Rank < ExtentType::rank()))
+  -> _CCCL_TRAILING_REQUIRES(void)((Rank < ExtentType::rank()))
 {
   using IndexType = typename ExtentType::index_type;
   for (IndexType i = 0; i < ext.extent(Rank); ++i)

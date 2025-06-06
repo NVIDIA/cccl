@@ -298,7 +298,7 @@ public:
   template <class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
-    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+    -> _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }

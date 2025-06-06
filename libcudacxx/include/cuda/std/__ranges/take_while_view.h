@@ -129,7 +129,7 @@ public:
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x == __y.__end_ || !_CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
@@ -137,21 +137,21 @@ public:
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y == __x.__end_ || !_CUDA_VSTD::invoke(*__x.__pred_, *__y);
     }
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x != __y.__end_ && _CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
+      -> _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y != __x.__end_ && _CUDA_VSTD::invoke(*__x.__pred_, *__y);
     }

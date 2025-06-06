@@ -116,11 +116,10 @@ private:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  template <class _Tp2 = _Tp>
+  _CCCL_TEMPLATE()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+    -> _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(_CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -128,11 +127,11 @@ private:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  template <class _Tp2 = _Tp>
+  _CCCL_TEMPLATE()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+    -> _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
+      _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
