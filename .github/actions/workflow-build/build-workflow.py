@@ -1089,9 +1089,9 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
 
     if args and args.dirty_projects is not None and workflow_name != "override":
-            matrix_jobs = [
-                job for job in matrix_jobs if job["project"] in args.dirty_projects
-            ]
+        matrix_jobs = [
+            job for job in matrix_jobs if job["project"] in args.dirty_projects
+        ]
 
     # Don't remove excluded jobs if we're currently parsing them:
     if not is_exclusion_matrix:
