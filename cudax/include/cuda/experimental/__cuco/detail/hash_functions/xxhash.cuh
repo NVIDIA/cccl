@@ -91,7 +91,7 @@ public:
 
   //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
-  constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE operator()(_Key const& __key) const noexcept
+  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE operator()(_Key const& __key) const noexcept
   {
     if constexpr (sizeof(_Key) <= 16)
     {
@@ -114,7 +114,7 @@ public:
   //! @param __size The extent of the data in bytes
   //! @return The resulting hash value
   template <typename _Extent>
-  constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
+  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
   __compute_hash(::cuda::std::byte const* __bytes, _Extent __size) const noexcept
   {
     std::size_t __offset = 0;
@@ -194,7 +194,7 @@ public:
   //! @param __size The extent of the data in bytes
   //! @return The resulting hash value
   template <typename _Extent>
-  constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
+  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
   __compute_hash(::std::byte const* __bytes, _Extent __size) const noexcept
   {
     return this->__compute_hash(reinterpret_cast<::cuda::std::byte const*>(__bytes), __size);
@@ -202,7 +202,7 @@ public:
 
 private:
   // avalanche helper
-  constexpr _CCCL_HOST_DEVICE _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
+  [[nodiscard]] constexpr _CCCL_HOST_DEVICE _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
   {
     __h ^= __h >> 15;
     __h *= __prime2;
