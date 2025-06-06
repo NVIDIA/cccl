@@ -2,6 +2,11 @@
 
 set -eo pipefail
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "This script must be sourced, not executed directly." >&2
+  exit 1
+fi
+
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-source "$(dirname "$0")/pyenv_helper.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/pyenv_helper.sh"
 
 # Get the Python version from the command line arguments -py-version=3.10
 py_version=${2#*=}
@@ -9,6 +9,11 @@ echo "Python version: ${py_version}"
 
 # Setup Python environment
 setup_python_env "${py_version}"
+
+if [[ -n "{GITHUB_ACTIONS:-}" ]]; then
+  wheel_artifact_name="$(ci/util/workflow/get_wheel_artifact_name.sh)"
+  ci/util/artifacts/download.sh "${wheel_artifact_name}" /home/coder/cccl/
+fi
 
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"

@@ -131,6 +131,14 @@ gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
 Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
 The same key may be used for both.
 
+## Artifact Scripts: ci/util/artifacts/
+
+TODO ofc
+
+## Workflow job lookup scripts: ci/util/workflow/
+
+TODO ofc
+
 ## Troubleshooting CI Failures
 
 1. **Review CI logs**: Examine CI logs for specific error messages (see [Viewing CI Workflow Results](#viewing-ci-workflow-results))

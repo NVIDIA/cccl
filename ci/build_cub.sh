@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-source "$(dirname "$0")/build_common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
 print_environment_details
 
@@ -46,5 +46,10 @@ CMAKE_OPTIONS="
 "
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
+
+# Create test artifacts:
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    run_command "📦  Packaging test artifacts" /home/coder/cccl/ci/upload_cub_test_artifacts.sh
+fi
 
 print_time_summary
