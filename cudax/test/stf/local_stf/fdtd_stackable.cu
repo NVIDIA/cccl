@@ -276,7 +276,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       ctx.host_launch(lEz.read())->*[=](auto Ez) {
         static int output_id = 0;
         // Output the electric field at the center of the grid
-        fprintf(stderr, "%ld\t%le\n", output_id, Ez(center_x, center_y, center_z));
+        fprintf(stderr, "%d\t%le\n", output_id, Ez(center_x, center_y, center_z));
 
         std::string filename = "Ez" + std::to_string(output_id) + ".vtk";
 
