@@ -30,6 +30,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-python-workflow:
+    name: Test Python workflow
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-and-test-python-wheels.yml
+
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest

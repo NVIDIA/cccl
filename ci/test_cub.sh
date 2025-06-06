@@ -27,18 +27,22 @@ eval set -- ${new_args}
 while true; do
   case "$1" in
   -no-lid)
+    ARTIFACT_TAG="no_lid"
     NO_LID=true
     shift
     ;;
   -lid0)
+    ARTIFACT_TAG="lid_0"
     LID0=true
     shift
     ;;
   -lid1)
+    ARTIFACT_TAG="lid_1"
     LID1=true
     shift
     ;;
   -lid2)
+    ARTIFACT_TAG="lid_2"
     LID2=true
     shift
     ;;
@@ -95,7 +99,15 @@ source "${ci_dir}/build_common.sh"
 
 print_environment_details
 
-./build_cub.sh "$@"
+
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
+  ./build_cub.sh "$@"
+else
+  run_command "📦  Unpacking test artifacts" \
+    "${ci_dir}/util/artifacts/download_packed.sh" \
+      "z_cub-test-artifacts-$DEVCONTAINER_NAME-$(util/workflow/get_producer_id.sh)-$ARTIFACT_TAG" \
+      /home/coder/cccl/
+fi
 
 if $NO_LID; then
   PRESETS=("cub-nolid-cpp$CXX_STANDARD")

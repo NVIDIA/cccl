@@ -10,6 +10,11 @@ echo "Python version: ${py_version}"
 # Setup Python environment
 setup_python_env "${py_version}"
 
+if [[ -n "{GITHUB_ACTIONS:-}" ]]; then
+  wheel_artifact_name="$(ci/util/workflow/get_wheel_artifact_name.sh)"
+  ci/util/artifacts/download.sh "${wheel_artifact_name}" /home/coder/cccl/
+fi
+
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]"
