@@ -38,7 +38,7 @@ runs:
       uses: actions/download-artifact@v4
       with:
         path: jobs
-        pattern: jobs-*
+        pattern: zz_jobs-*
         merge-multiple: true
 
     - name: Clean up job artifacts
