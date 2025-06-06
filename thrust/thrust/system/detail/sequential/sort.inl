@@ -148,6 +148,11 @@ _CCCL_HOST_DEVICE void stable_sort(
   RandomAccessIterator last,
   StrictWeakOrdering comp)
 {
+  // Disabling the optimization until #4919 is investigated
+#if 1 // Investigate #4919
+  thrust::detail::false_type use_primitive_sort;
+  sort_detail::stable_sort(exec, first, last, comp, use_primitive_sort);
+#else
   // the compilation time of stable_primitive_sort is too expensive to use within a single CUDA thread
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -157,6 +162,7 @@ _CCCL_HOST_DEVICE void stable_sort(
     ( // NV_IS_DEVICE:
       thrust::detail::false_type use_primitive_sort;
       sort_detail::stable_sort(exec, first, last, comp, use_primitive_sort);));
+#endif // Investigate #4919
 }
 
 template <typename DerivedPolicy,
