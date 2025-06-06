@@ -5,7 +5,7 @@ set -euo pipefail
 CPU_ONLY=false
 GPU_ONLY=false
 
-ci_dir=$(dirname "$0")
+ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 new_args=$("${ci_dir}/util/extract_switches.sh" -cpu-only -gpu-only -- "$@")
 eval set -- ${new_args}

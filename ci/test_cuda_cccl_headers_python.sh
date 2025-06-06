@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-source "$(dirname "$0")/pyenv_helper.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/pyenv_helper.sh"
 
 # Get the Python version from the command line arguments -py-version=3.10
 py_version=${2#*=}
