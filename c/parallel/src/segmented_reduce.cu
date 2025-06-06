@@ -288,14 +288,14 @@ struct device_segmented_reduce_policy {{
     appender.add_iterator_definition(end_offset_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
-        .add_expression({segmented_reduce_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+        ->add_expression({segmented_reduce_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     // populate build struct members
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
