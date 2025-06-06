@@ -85,7 +85,6 @@ __host__ __device__ constexpr bool test()
     cuda::std::same_as<decltype(cuda::std::views::repeat(42, 3)), cuda::std::ranges::repeat_view<int, int>>);
   static_assert(cuda::std::same_as<decltype(cuda::std::views::repeat), decltype(cuda::std::ranges::views::repeat)>);
 
-#if 0 // Not yet implemented views
   // unbound && drop_view
   {
     auto r = cuda::std::views::repeat(33) | cuda::std::views::drop(3);
@@ -116,7 +115,6 @@ __host__ __device__ constexpr bool test()
     assert(*r.begin() == 33);
     assert(r.size() == 3);
   }
-#endif // Not yet implemented views
 
   // bound && transform_view
   {
