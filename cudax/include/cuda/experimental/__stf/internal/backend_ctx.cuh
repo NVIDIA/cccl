@@ -87,6 +87,81 @@ class logical_data_untyped_impl;
 } // end namespace reserved
 
 /**
+ * @brief A lightweight synchronization primitive for structuring task dependencies across phases.
+ *
+ * The `epoch` class provides a simple and expressive mechanism to sequence asynchronous
+ * operations in task-based execution models. Each `epoch` instance tracks a logical phase,
+ * represented internally by a task dependency token. Code may insert the current epoch as
+ * a dependency when launching tasks or parallel loops (e.g., via `context::parallel_for` or
+ * `context::task`).
+ *
+ * Multiple operations that depend on the same epoch may execute concurrently. When user code
+ * increments the epoch (via `operator++()`), a no-op task is inserted that depends on all prior
+ * operations within that epoch, and the epoch is updated to refer to this new task. This ensures
+ * that any tasks inserted after the increment will occur only after all tasks from the previous
+ * epoch complete.
+ *
+ * This sequencing is reminiscent of fork-join parallelism, but with two key generalizations:
+ * 1. Multiple independent `epoch` objects may coexist, allowing more flexible and fine-grained
+ *    dependency patterns.
+ * 2. Advancing an epoch does not imply synchronization with the host (e.g., no `cudaDeviceSynchronize`),
+ *    but instead introduces purely logical ordering between asynchronous tasks.
+ *
+ * Epochs are useful for expressing barriers, task phases, or staged execution pipelines in
+ * a way that naturally fits into asynchronous task graphs.
+ */
+class epoch : public task_dep<void_interface, ::std::monostate, false>
+{
+public:
+  epoch(epoch&)       = default;
+  epoch(const epoch&) = default;
+  epoch(epoch&&)      = default;
+
+  /**
+   * @brief Constructs an epoch from a given context.
+   *
+   * Initializes the internal dependency token by reading from the context's token.
+   *
+   * @param ctx Reference to the task execution context.
+   */
+  template <typename Ctx>
+  epoch(Ctx& ctx)
+      : task_dep<void_interface, ::std::monostate, false>(ctx.token().read())
+      , increment([&]() {
+        ctx.task(this->as_mode(access_mode::rw))->*[](cudaStream_t) {};
+      })
+  {}
+
+  /**
+   * @brief Prefix increment operator.
+   *
+   * Advances the epoch. New tasks depending on this epoch will wait for the completion
+   * of existing tasks that depend on this epoch.
+   *
+   * @return Reference to the updated `epoch` object.
+   */
+  epoch& operator++()
+  {
+    increment();
+    return *this;
+  }
+
+  /**
+   * @brief Postfix increment operator.
+   *
+   * This operator intentionally returns `void` instead of the previous copy of the epoch object
+   * for efficiency reasons.
+   */
+  void operator++(int)
+  {
+    increment();
+  }
+
+private:
+  ::std::function<void()> increment;
+};
+
+/**
  * @brief This is the underlying context implementation common to all types.
  *
  * We use this class rather than the front-end ones (stream_ctx, graph_ctx,
@@ -219,7 +294,7 @@ protected:
     _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(MSVC)
 
-    virtual size_t epoch() const
+    virtual size_t stage() const
     {
       return size_t(-1);
     }
@@ -491,7 +566,7 @@ protected:
     };
 
     // Insert a fence with all pending asynchronous operations on the current context
-    [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
+    [[nodiscard]] inline event_list insert_fence(reserved::per_ctx_dot& dot)
     {
       auto prereqs = event_list();
       // Create a node in the DOT output (if any)
@@ -766,9 +841,9 @@ public:
     return pimpl->stream_to_event_list(stream, mv(event_symbol));
   }
 
-  size_t epoch() const
+  size_t stage() const
   {
-    return pimpl->epoch();
+    return pimpl->stage();
   }
 
   ::std::string to_string() const
@@ -962,6 +1037,11 @@ public:
     return logical_data(void_interface{});
   }
 
+  auto epoch()
+  {
+    return cuda::experimental::stf::epoch(self());
+  }
+
   template <typename T>
   frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
@@ -1053,8 +1133,15 @@ public:
             typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename partitioner_t,
@@ -1062,17 +1149,24 @@ public:
             typename S,
             typename... Deps,
             typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
-  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
+  auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(p), box(e_place), mv(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename S, typename... Deps>
   auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
-  template <typename S, typename... Deps, typename... Ops, bool... flags>
-  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
+  template <typename S, typename... Deps>
+  auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }

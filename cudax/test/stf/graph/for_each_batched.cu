@@ -122,7 +122,7 @@ int main()
             libSWAP(ctx, lxi, lyi);
           };
 
-  ctx.task_fence();
+  ctx.fence();
 
   ctx.finalize();
 }
