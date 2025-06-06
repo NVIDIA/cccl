@@ -184,7 +184,7 @@ struct dispatch_t<StableAddress,
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
     _CCCL_ASSERT(block_dim % alignment == 0,
-                      "block_threads needs to be a multiple of the copy alignment"); // then tile_size is a multiple
+                 "block_threads needs to be a multiple of the copy alignment"); // then tile_size is a multiple
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
       const auto max_smem = get_max_shared_memory();
       if (!max_smem)
