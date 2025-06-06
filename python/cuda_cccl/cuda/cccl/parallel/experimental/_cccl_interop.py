@@ -16,7 +16,16 @@ import numpy as np
 from numba import cuda, types
 from numba.core.extending import as_numba_type, intrinsic
 
-from cuda.cccl.headers.include_paths import get_include_paths
+# TODO: adding a type-ignore here because `cuda` being a
+# namespace package confuses mypy when `cuda.<something_else>`
+# is installed, but not `cuda.cccl`. For namespace packages,
+# it appears we need to actually install the sub-package
+# in order for mypy to find its py.typed file. However, CI
+# does type checking of `cuda.cccl` without actually installing
+# it.
+#
+# We need to find a better solution for this.
+from cuda.cccl import get_include_paths  # type: ignore
 
 from ._bindings import (
     CommonData,

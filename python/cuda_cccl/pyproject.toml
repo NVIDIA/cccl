@@ -61,6 +61,10 @@ provider = "scikit_build_core.metadata.setuptools_scm"
 [tool.setuptools_scm]
 root = "../.."
 
+[tool.scikit-build.wheel.packages]
+"cuda" = "cuda"
+"cuda/cccl" = "cuda/cccl"
+
 [tool.mypy]
 python_version = "3.10"
 
@@ -68,9 +72,6 @@ python_version = "3.10"
 module = ["numba.*", "llvmlite", "cupy", "cuda.cccl.headers.*"]
 ignore_missing_imports = true
 follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = ["cuda.cccl.*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"

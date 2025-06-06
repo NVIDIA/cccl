@@ -112,19 +112,3 @@ target_link_libraries(_bindings_impl PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
 install(TARGETS _bindings_impl DESTINATION cuda/cccl/parallel/experimental)
-
-# Install Python packages
-install(DIRECTORY cuda/cccl/headers
-  DESTINATION cuda/cccl
-  FILES_MATCHING PATTERN "*.py"
-)
-
-install(DIRECTORY cuda/cccl/parallel
-  DESTINATION cuda/cccl
-  FILES_MATCHING PATTERN "*.py"
-)
-
-install(DIRECTORY cuda/cccl/cooperative
-  DESTINATION cuda/cccl
-  FILES_MATCHING PATTERN "*.py"
-)
