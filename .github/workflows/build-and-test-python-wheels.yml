@@ -30,7 +30,7 @@ jobs:
     needs: build-cccl
     uses: ./.github/workflows/run-ci-script.yml
     with:
-      script-command: ci/test_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
+      script-command: ci/test_cuda_cccl_headers_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
       artifact-name: wheel-cccl-${{ matrix.python-version }}
@@ -48,7 +48,7 @@ jobs:
     needs: build-cccl
     uses: ./.github/workflows/run-ci-script.yml
     with:
-      script-command: ci/test_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
+      script-command: ci/test_cuda_cccl_cooperative_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
       artifact-name: wheel-cccl-${{ matrix.python-version }}
@@ -66,7 +66,7 @@ jobs:
     needs: build-cccl
     uses: ./.github/workflows/run-ci-script.yml
     with:
-      script-command: ci/test_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
+      script-command: ci/test_cuda_cccl_parallel_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
       artifact-name: wheel-cccl-${{ matrix.python-version }}
