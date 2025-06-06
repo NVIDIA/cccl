@@ -284,6 +284,8 @@ def get_job_type_info(job):
         result["gpu"] = False
     if "cuda_ext" not in result:
         result["cuda_ext"] = False
+    if "force_producer_ctk" not in result:
+        result["force_producer_ctk"] = None
     if "needs" not in result:
         result["needs"] = None
     if "invoke" not in result:
@@ -378,7 +380,6 @@ def is_nvhpc(matrix_job):
 
 def generate_dispatch_group_name(matrix_job):
     project = get_project(matrix_job["project"])
-    ctk = matrix_job["ctk"]
     device_compiler = get_device_compiler(matrix_job)
     host_compiler = get_host_compiler(matrix_job["cxx"])
 
@@ -390,11 +391,12 @@ def generate_dispatch_group_name(matrix_job):
     else:
         compiler_info = f"{device_compiler['name']}-{device_compiler['version']} {host_compiler['name']}"
 
-    return f"{project['name']} CTK{ctk} {compiler_info}"
+    return f"{project['name']} {compiler_info}"
 
 
 def generate_dispatch_job_name(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
+    ctk = matrix_job["ctk"]
     std_str = ("C++" + str(matrix_job["std"]) + " ") if "std" in matrix_job else ""
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
@@ -410,7 +412,7 @@ def generate_dispatch_job_name(matrix_job, job_type):
 
     host_compiler = get_host_compiler(matrix_job["cxx"])
 
-    config_tag = f"{std_str}{host_compiler['name']}{host_compiler['version']}"
+    config_tag = f"CTK{ctk} {std_str}{host_compiler['name']}{host_compiler['version']}"
 
     extra_info = (
         f":{cuda_compile_arch}{cmake_options}"
@@ -549,7 +551,41 @@ def generate_dispatch_job_json(matrix_job, job_type):
 
 # Create a single build producer, and a separate consumer for each test_job_type:
 def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job_types):
-    producer_json = generate_dispatch_job_json(matrix_job, producer_job_type)
+    # If any consumer job types have 'force_producer_ctk' set, use that CTK for the producer job.
+    producer_ctk = matrix_job["ctk"]
+    for consumer_job_type in consumer_job_types:
+        job_info = get_job_type_info(consumer_job_type)
+        if job_info["force_producer_ctk"]:
+            producer_ctk = job_info["force_producer_ctk"]
+
+            # Verify that all consumer jobs require the same producer ctk.
+            # If this is needed down the road, we'll need to detect this and split the two-stage job
+            # at an earlier level.
+            for consumer_job_type in consumer_job_types:
+                job_info = get_job_type_info(consumer_job_type)
+                if (
+                    job_info["force_producer_ctk"]
+                    and job_info["force_producer_ctk"] != producer_ctk
+                ):
+                    raise Exception(
+                        f"'force_producer_ctk' value mismatch for consumer job '{consumer_job_type}': "
+                        f"expected '{producer_ctk}', got '{job_info['force_producer_ctk']}'"
+                        f" in matrix job: {matrix_job['origin']['original_matrix_job']}"
+                    )
+
+    if producer_ctk != matrix_job["ctk"]:
+        print(
+            f"Producer job '{producer_job_type}' for matrix job '{matrix_job['origin']['workflow_name']}' "
+            + f"will use a forced CTK version '{producer_ctk}' instead of the matrix job version '{matrix_job['ctk']}'",
+            file=sys.stderr,
+        )
+
+        producer_matrix_job = copy.deepcopy(matrix_job)
+        producer_matrix_job["ctk"] = producer_ctk
+    else:
+        producer_matrix_job = matrix_job
+
+    producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
 
     consumers_json = []
     for consumer_job_type in consumer_job_types:
