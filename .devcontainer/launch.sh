@@ -158,7 +158,13 @@ launch_docker() {
     # Read image
     local DOCKER_IMAGE="$(json_string '"image"' < "${devcontainer_json}")"
     # Always pull the latest copy of the image
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::group::Pulling Docker image ${DOCKER_IMAGE}"
+    fi
     docker pull "$DOCKER_IMAGE"
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::endgroup::"
+    fi
 
     # Read workspaceFolder
     local WORKSPACE_FOLDER="$(json_string '"workspaceFolder"' < "${devcontainer_json}")"
