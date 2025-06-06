@@ -31,14 +31,9 @@ struct generate_random_integer
       THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 1);
       return dist(rng) == 1;
     }
-    else if constexpr (::cuda::std::is_integral_v<T>)
+    else if constexpr (::cuda::std::is_integral_v<T> || ::cuda::std::is_floating_point_v<T>)
     {
-      THRUST_NS_QUALIFIER::uniform_int_distribution<T> dist;
-      return static_cast<T>(dist(rng));
-    }
-    else if constexpr (::cuda::std::is_floating_point_v<T>)
-    {
-      T const min = std::numeric_limits<T>::min(); // TODO(bgruber): why not ::lowest()?
+      T const min = std::numeric_limits<T>::lowest();
       T const max = std::numeric_limits<T>::max();
       THRUST_NS_QUALIFIER::uniform_real_distribution<T> dist(min, max);
       return static_cast<T>(dist(rng));
