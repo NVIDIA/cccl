@@ -296,8 +296,6 @@ struct sum_five
   }
 };
 
-// the vectorized implementation will fail this test, so don't specify the algorithm and let the implementation detect
-// and fall back
 C2H_TEST("DeviceTransform::Transform add five streams", "[device][device_transform]")
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
