@@ -280,18 +280,18 @@ struct __align__({1}) storage_t {{
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
-        .add_expression({single_tile_kernel_name})
-        .add_expression({single_tile_second_kernel_name})
-        .add_expression({reduction_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
-        .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
-        .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+        ->add_expression({single_tile_kernel_name})
+        ->add_expression({single_tile_second_kernel_name})
+        ->add_expression({reduction_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
+        ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
+        ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));

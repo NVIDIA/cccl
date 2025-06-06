@@ -7,12 +7,12 @@ changelog:
     - title: 📚 Libcudacxx
       labels:
         - "libcu++"
-    - title: 🤝 cuda.cooperative
+    - title: 🤝 cuda.cccl.cooperative
       labels:
-        - "cuda.cooperative"
-    - title: ⚡ cuda.parallel
+        - "cuda.cccl.cooperative"
+    - title: ⚡ cuda.cccl.parallel
       labels:
-        - "cuda.parallel"
+        - "cuda.cccl.parallel"
     - title: 📝 Documentation
       labels:
         - "doc"

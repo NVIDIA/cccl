@@ -241,11 +241,9 @@ jobs:
 
   # Python:
   build_cuda_cccl:        { name: "Build cuda.cccl",        gpu: false }
-  build_cuda_cooperative: { name: "Build cuda.cooperative", gpu: false }
-  build_cuda_parallel:    { name: "Build cuda.parallel",    gpu: false }
-  test_cuda_cccl:         { name: "Test cuda.cccl",         gpu: true, needs: 'build_cuda_cccl' }
-  test_cuda_cooperative:  { name: "Test cuda.cooperative",  gpu: true, needs: 'build_cuda_cooperative' }
-  test_cuda_parallel:     { name: "Test cuda.parallel",     gpu: true, needs: 'build_cuda_parallel' }
+  test_cuda_cccl_headers: { name: "Test cuda.cccl.headers", gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_cooperative:  { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_parallel:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_cuda_cccl' }
 
 # Projects have the following properties:
 #
@@ -293,8 +291,8 @@ projects:
   python:
     name: "Python"
     job_map:
-      build: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel']
-      test:  ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel']
+      build: ['build_cuda_cccl']
+      test:  ['test_cuda_cccl_headers', 'test_cuda_cccl_cooperative', 'test_cuda_cccl_parallel']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

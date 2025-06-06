@@ -10,7 +10,7 @@ CUDA Parallel
 Algorithms
 ----------
 
-.. automodule:: cuda.parallel.experimental.algorithms
+.. automodule:: cuda.cccl.parallel.experimental.algorithms
   :members:
   :undoc-members:
   :imported-members:
@@ -18,7 +18,7 @@ Algorithms
 Iterators
 ---------
 
-.. automodule:: cuda.parallel.experimental.iterators
+.. automodule:: cuda.cccl.parallel.experimental.iterators
   :members:
   :undoc-members:
   :imported-members:
@@ -26,5 +26,5 @@ Iterators
 Utilities
 ---------
 
-.. automodule:: cuda.parallel.experimental.struct
+.. automodule:: cuda.cccl.parallel.experimental.struct
    :members:
