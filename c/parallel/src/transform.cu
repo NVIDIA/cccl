@@ -218,7 +218,6 @@ CUresult cccl_device_unary_transform_build(
     const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
 
     constexpr std::string_view src_template = R"XXX(
-#define _CUB_HAS_TRANSFORM_UBLKCP 0
 #include <cub/device/dispatch/kernels/transform.cuh>
 struct __align__({1}) input_storage_t {{
   char data[{0}];
@@ -407,7 +406,6 @@ CUresult cccl_device_binary_transform_build(
       make_kernel_user_binary_operator(input1_it_value_t, input2_it_value_t, output_it_value_t, op);
 
     constexpr std::string_view src_template = R"XXX(
-#define _CUB_HAS_TRANSFORM_UBLKCP 0
 #include <cub/device/dispatch/kernels/transform.cuh>
 struct __align__({1}) input1_storage_t {{
   char data[{0}];

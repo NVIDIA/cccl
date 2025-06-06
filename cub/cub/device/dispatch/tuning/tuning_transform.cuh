@@ -46,16 +46,14 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
-// The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
-// Also, cooperative groups do not support NVHPC yet.
-#if !_CCCL_CUDA_COMPILER(NVHPC)
-#  ifndef _CUB_HAS_TRANSFORM_UBLKCP
-#    define _CUB_HAS_TRANSFORM_UBLKCP 1
-#  endif // !_CUB_HAS_TRANSFORM_UBLKCP
-#  ifndef _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
-#    define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC 1
-#  endif // !_CUB_HAS_TRANSFORM_MEMCPY_ASYNC
-#endif // !_CCCL_CUDA_COMPILER(NVHPC)
+// The memcpy_async and ublkcp kernels need cooperative groups which are not support on NVHPC and from cccl.c yet.
+#if _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL)
+#  define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC() 0
+#  define _CUB_HAS_TRANSFORM_UBLKCP()       0
+#else // _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL))
+#  define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC() 1
+#  define _CUB_HAS_TRANSFORM_UBLKCP()       1
+#endif // _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL))
 
 CUB_NAMESPACE_BEGIN
 
@@ -234,58 +232,37 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   // TODO(bgruber): should we add a tuning for 750? They should have items_per_thread_from_occupancy(256, 4, ...)
 
-  struct policy800 : ChainedPolicy<800, policy800, policy300>
-  {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
-    using async_policy           = async_copy_policy_t<256, memcpy_async_alignment>;
-    static constexpr bool exhaust_smem =
-      memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::block_threads * async_policy::min_items_per_thread)
-      > int{max_smem_per_block};
-    static constexpr bool any_type_is_overalinged =
-      ((alignof(it_value_t<RandomAccessIteratorsIn>) > memcpy_async_alignment) || ...);
-#ifdef _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
-#else // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
-    static constexpr bool use_fallback = true;
-#endif // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
-  };
-
-  template <int BulkCopyBlockSize, int PtxVersion>
-  struct bulkcopy_policy
+  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion, int EnableAsyncCopy>
+  struct async_policy_base
   {
   private:
-    static constexpr int bulk_copy_align = bulk_copy_alignment(PtxVersion);
-    using async_policy                   = async_copy_policy_t<BulkCopyBlockSize, bulk_copy_align>;
+    using async_policy = async_copy_policy_t<AsyncBlockSize, Alignment>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::block_threads * async_policy::min_items_per_thread, bulk_copy_align)
-      > int{max_smem_per_block};
-    static constexpr bool any_type_is_overalinged =
-      ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_align) || ...);
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
-#else
-    static constexpr bool use_fallback = true;
-#endif
+        AsyncBlockSize * async_policy::min_items_per_thread, Alignment)
+      > int{max_smem_per_block}; // TODO(bgruber): we should use the architecture specific limit for SMEM here
+    static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > Alignment) || ...);
+    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem
+                                      || any_type_is_overalinged || !EnableAsyncCopy;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Alg;
     using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
 
+  struct policy800
+      : async_policy_base<Algorithm::memcpy_async, 256, memcpy_async_alignment, 800, _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()>
+      , ChainedPolicy<800, policy800, policy300>
+  {};
+
   struct policy900
-      : bulkcopy_policy<256, 900>
+      : async_policy_base<Algorithm::ublkcp, 256, bulk_copy_alignment(900), 900, _CUB_HAS_TRANSFORM_UBLKCP()>
       , ChainedPolicy<900, policy900, policy800>
   {};
 
   struct policy1000
-      : bulkcopy_policy<128, 1000>
+      : async_policy_base<Algorithm::ublkcp, 128, bulk_copy_alignment(1000), 1000, _CUB_HAS_TRANSFORM_UBLKCP()>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 

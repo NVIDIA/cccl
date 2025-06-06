@@ -196,7 +196,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-#ifdef _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
+#if _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
   extern __shared__ char smem[]; // this should be __attribute((aligned(memcpy_async_alignment))), but then it clashes
                                  // with the ublkcp kernel, which sets a higher alignment, since they are both called
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
@@ -287,9 +287,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   {
     process_tile(::cuda::std::false_type{});
   }
-#else // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
+#else // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
   _CCCL_ASSERT(false, "Disabled");
-#endif // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC
+#endif // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
 }
 
 _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
@@ -311,7 +311,7 @@ template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomA
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
+#if _CUB_HAS_TRANSFORM_UBLKCP()
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
@@ -430,9 +430,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   {
     process_tile(::cuda::std::false_type{});
   }
-#else // _CUB_HAS_TRANSFORM_UBLKCP
+#else // _CUB_HAS_TRANSFORM_UBLKCP()
   _CCCL_ASSERT(false, "Disabled");
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
+#endif // _CUB_HAS_TRANSFORM_UBLKCP()
 }
 
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
