@@ -367,7 +367,7 @@ inline constexpr arch_traits_t sm_1200_traits = []() constexpr {
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 1200;
   __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
-  __traits.max_blocks_per_multiprocessor        = 48;
+  __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor =
     __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
