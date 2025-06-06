@@ -30,11 +30,9 @@
 namespace cuda::experimental::cuco
 {
 
-/**
- * @brief A 32-bit `XXH32` hash function to hash the given argument on host and device.
- *
- * @tparam Key The type of the values to hash
- */
+//! @brief A 32-bit `XXH32` hash function to hash the given argument on host and device.
+//!
+//! @tparam Key The type of the values to hash
 template <typename Key>
 using xxhash_32 = __detail::XXHash_32<Key>;
 
