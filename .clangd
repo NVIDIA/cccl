@@ -70,6 +70,7 @@ CompileFlags:
     - "-ferror-limit=0"
     - "-ftemplate-backtrace-limit=0"
   Remove:
+    - -G
     - -stdpar
     # strip CUDA fatbin args
     - "-Xfatbin*"

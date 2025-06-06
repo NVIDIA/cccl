@@ -77,6 +77,9 @@ ContinuationIndentWidth: 2
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
+IfMacros: [
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C'
+]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:

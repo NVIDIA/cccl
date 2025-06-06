@@ -74,7 +74,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   using init_t      = T;
   using accum_t     = T;
-  using transform_t = ::cuda::std::__identity;
+  using transform_t = ::cuda::std::identity;
 
   using dispatch_t = cub::detail::DispatchReduceDeterministic<
     input_it_t,

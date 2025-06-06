@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -443,7 +444,7 @@ template <class... _Completions>
       auto __local = __non_value_completions + completion_signatures<__values_t>();
       // Check if any of the values or errors are not nothrow decay-copyable.
       constexpr bool __all_nothrow_decay_copyable =
-        (__value_types<_Completions, __nothrow_decay_copyable_t, __identity_t>::value && ...);
+        (__value_types<_Completions, __nothrow_decay_copyable_t, _CUDA_VSTD::type_identity_t>::value && ...);
       return _CUDA_VSTD::__pair{__local + __eptr_completion_if<!__all_nothrow_decay_copyable>(), __offsets};
     }
   }

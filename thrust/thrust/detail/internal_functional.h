@@ -39,6 +39,7 @@
 #include <thrust/tuple.h>
 
 #include <cuda/__iterator/discard_iterator.h>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -211,8 +212,8 @@ struct device_destroy_functor
 template <typename System, typename T>
 struct destroy_functor
     : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
-                              thrust::detail::identity_<host_destroy_functor<T>>,
-                              thrust::detail::identity_<device_destroy_functor<T>>>
+                              ::cuda::std::type_identity<host_destroy_functor<T>>,
+                              ::cuda::std::type_identity<device_destroy_functor<T>>>
 {};
 
 template <typename T>

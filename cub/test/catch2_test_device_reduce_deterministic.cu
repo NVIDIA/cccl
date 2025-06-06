@@ -172,9 +172,10 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   input_it_t d_input = thrust::raw_pointer_cast(input.data());
 
   using output_it_t = decltype(output_p1.begin());
+
   using init_t      = type;
   using accum_t     = type;
-  using transform_t = ::cuda::std::__identity;
+  using transform_t = ::cuda::std::identity;
 
   using deterministic_dispatch_t_p1 =
     cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, transform_t, accum_t, hub_t<1, 128>>;

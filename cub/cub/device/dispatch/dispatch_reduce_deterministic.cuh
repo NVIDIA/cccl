@@ -355,7 +355,7 @@ struct DispatchReduceDeterministic
             reduce_grid_size, // triple_chevron is not type safe, make sure to use int
             reduction_op,
             init,
-            ::cuda::std::__identity{});
+            ::cuda::std::identity{});
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());

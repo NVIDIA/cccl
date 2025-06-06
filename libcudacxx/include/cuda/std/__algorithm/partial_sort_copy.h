@@ -100,8 +100,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
     __result_first,
     __result_last,
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    __identity(),
-    __identity());
+    identity(),
+    identity());
   return __result.second;
 }
 
