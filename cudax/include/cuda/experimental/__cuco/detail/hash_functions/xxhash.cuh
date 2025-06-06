@@ -1,18 +1,12 @@
-/*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
 #define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
@@ -27,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/bit>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
 #include <cuda/experimental/__cuco/extent.cuh>
 
-#include <cstdint>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::detail
+namespace cuda::experimental::cuco::__detail
 {
 
 /**
@@ -76,160 +70,152 @@ namespace cuda::experimental::cuco::detail
  *
  * @tparam Key The type of the values to hash
  */
-template <typename Key>
+template <typename _Key>
 struct XXHash_32
 {
 private:
-  static constexpr std::uint32_t prime1 = 0x9e3779b1u;
-  static constexpr std::uint32_t prime2 = 0x85ebca77u;
-  static constexpr std::uint32_t prime3 = 0xc2b2ae3du;
-  static constexpr std::uint32_t prime4 = 0x27d4eb2fu;
-  static constexpr std::uint32_t prime5 = 0x165667b1u;
+  static constexpr _CUDA_VSTD::uint32_t __prime1 = 0x9e3779b1u;
+  static constexpr _CUDA_VSTD::uint32_t __prime2 = 0x85ebca77u;
+  static constexpr _CUDA_VSTD::uint32_t __prime3 = 0xc2b2ae3du;
+  static constexpr _CUDA_VSTD::uint32_t __prime4 = 0x27d4eb2fu;
+  static constexpr _CUDA_VSTD::uint32_t __prime5 = 0x165667b1u;
 
 public:
-  using argument_type = Key; ///< The type of the values taken as argument
-  using result_type   = std::uint32_t; ///< The type of the hash values produced
-
-  /**
-   * @brief Constructs a XXH32 hash function with the given `seed`.
-   *
-   * @param seed A custom number to randomize the resulting hash value
-   */
-  _CCCL_HOST_DEVICE constexpr XXHash_32(std::uint32_t seed = 0)
-      : seed_{seed}
+  //! @brief Constructs a XXH32 hash function with the given `seed`.
+  //! @param seed A custom number to randomize the resulting hash value
+  _CCCL_HOST_DEVICE constexpr XXHash_32(_CUDA_VSTD::uint32_t __seed = 0)
+      : __seed_{__seed}
   {}
 
-  /**
-   * @brief Returns a hash value for its argument, as a value of type `result_type`.
-   *
-   * @param key The input argument to hash
-   * @return The resulting hash value for `key`
-   */
-  constexpr result_type _CCCL_HOST_DEVICE operator()(Key const& key) const noexcept
+  //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
+
+  //! @param __key The input argument to hash
+  //! @return The resulting hash value for `__key`
+  constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE operator()(_Key const& __key) const noexcept
   {
-    if constexpr (sizeof(Key) <= 16)
+    if constexpr (sizeof(_Key) <= 16)
     {
-      Key const key_copy = key;
-      return compute_hash(reinterpret_cast<::cuda::std::byte const*>(&key_copy),
-                          cuco::extent<std::size_t, sizeof(Key)>{});
+      _Key const __key_copy = __key;
+      return __compute_hash(reinterpret_cast<::cuda::std::byte const*>(&__key_copy),
+                            cuco::extent<std::size_t, sizeof(_Key)>{});
     }
     else
     {
-      return compute_hash(reinterpret_cast<::cuda::std::byte const*>(&key), cuco::extent<std::size_t, sizeof(Key)>{});
+      return __compute_hash(reinterpret_cast<::cuda::std::byte const*>(&__key),
+                            cuco::extent<std::size_t, sizeof(_Key)>{});
     }
   }
 
-  /**
-   * @brief Returns a hash value for its argument, as a value of type `result_type`.
-   *
-   * @tparam Extent The extent type
-   *
-   * @param bytes The input argument to hash
-   * @param size The extent of the data in bytes
-   * @return The resulting hash value
-   */
-  template <typename Extent>
-  constexpr result_type _CCCL_HOST_DEVICE compute_hash(::cuda::std::byte const* bytes, Extent size) const noexcept
+  //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
+  //!
+  //! @tparam _Extent The extent type
+  //!
+  //! @param __bytes The input argument to hash
+  //! @param __size The extent of the data in bytes
+  //! @return The resulting hash value
+  template <typename _Extent>
+  constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
+  __compute_hash(::cuda::std::byte const* __bytes, _Extent __size) const noexcept
   {
-    std::size_t offset = 0;
-    std::uint32_t h32;
+    std::size_t __offset = 0;
+    _CUDA_VSTD::uint32_t __h32;
 
     // data can be processed in 16-byte chunks
-    if (size >= 16)
+    if (__size >= 16)
     {
-      auto const limit = size - 16;
-      std::uint32_t v1 = seed_ + prime1 + prime2;
-      std::uint32_t v2 = seed_ + prime2;
-      std::uint32_t v3 = seed_;
-      std::uint32_t v4 = seed_ - prime1;
+      auto const __limit        = __size - 16;
+      _CUDA_VSTD::uint32_t __v1 = __seed_ + __prime1 + __prime2;
+      _CUDA_VSTD::uint32_t __v2 = __seed_ + __prime2;
+      _CUDA_VSTD::uint32_t __v3 = __seed_;
+      _CUDA_VSTD::uint32_t __v4 = __seed_ - __prime1;
 
       do
       {
         // pipeline 4*4byte computations
-        auto const pipeline_offset = offset / 4;
-        v1 += load_chunk<std::uint32_t>(bytes, pipeline_offset + 0) * prime2;
-        v1 = rotl32(v1, 13);
-        v1 *= prime1;
-        v2 += load_chunk<std::uint32_t>(bytes, pipeline_offset + 1) * prime2;
-        v2 = rotl32(v2, 13);
-        v2 *= prime1;
-        v3 += load_chunk<std::uint32_t>(bytes, pipeline_offset + 2) * prime2;
-        v3 = rotl32(v3, 13);
-        v3 *= prime1;
-        v4 += load_chunk<std::uint32_t>(bytes, pipeline_offset + 3) * prime2;
-        v4 = rotl32(v4, 13);
-        v4 *= prime1;
-        offset += 16;
-      } while (offset <= limit);
+        auto const __pipeline_offset = __offset / 4;
+        __v1 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 0) * __prime2;
+        __v1 = ::cuda::std::rotl(__v1, 13);
+        __v1 *= __prime1;
+        __v2 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 1) * __prime2;
+        __v2 = ::cuda::std::rotl(__v2, 13);
+        __v2 *= __prime1;
+        __v3 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 2) * __prime2;
+        __v3 = ::cuda::std::rotl(__v3, 13);
+        __v3 *= __prime1;
+        __v4 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 3) * __prime2;
+        __v4 = ::cuda::std::rotl(__v4, 13);
+        __v4 *= __prime1;
+        __offset += 16;
+      } while (__offset <= __limit);
 
-      h32 = rotl32(v1, 1) + rotl32(v2, 7) + rotl32(v3, 12) + rotl32(v4, 18);
+      __h32 = ::cuda::std::rotl(__v1, 1) + ::cuda::std::rotl(__v2, 7) + ::cuda::std::rotl(__v3, 12)
+            + ::cuda::std::rotl(__v4, 18);
     }
     else
     {
-      h32 = seed_ + prime5;
+      __h32 = __seed_ + __prime5;
     }
 
-    h32 += size;
+    __h32 += __size;
 
     // remaining data can be processed in 4-byte chunks
-    if ((size % 16) >= 4)
+    if ((__size % 16) >= 4)
     {
-      for (; offset <= size - 4; offset += 4)
+      for (; __offset <= __size - 4; __offset += 4)
       {
-        h32 += load_chunk<std::uint32_t>(bytes, offset / 4) * prime3;
-        h32 = rotl32(h32, 17) * prime4;
+        __h32 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __offset / 4) * __prime3;
+        __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
 
     // the following loop is only needed if the size of the key is not a multiple of the block size
-    if (size % 4)
+    if (__size % 4)
     {
-      while (offset < size)
+      while (__offset < __size)
       {
-        h32 += (::cuda::std::to_integer<std::uint32_t>(bytes[offset]) & 255) * prime5;
-        h32 = rotl32(h32, 11) * prime1;
-        ++offset;
+        __h32 += (::cuda::std::to_integer<_CUDA_VSTD::uint32_t>(__bytes[__offset]) & 255) * __prime5;
+        __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
+        ++__offset;
       }
     }
 
-    return finalize(h32);
+    return __finalize(__h32);
   }
 
-  /**
-   * @brief Returns a hash value for its argument, as a value of type `result_type`.
-   *
-   * @note This API is to ensure backward compatibility with existing use cases using `std::byte`.
-   * Users are encouraged to use the appropriate `cuda::std::byte` overload whenever possible for
-   * better support and performance on the device.
-   *
-   * @tparam Extent The extent type
-   *
-   * @param bytes The input argument to hash
-   * @param size The extent of the data in bytes
-   * @return The resulting hash value
-   */
-  template <typename Extent>
-  constexpr result_type _CCCL_HOST_DEVICE compute_hash(::std::byte const* bytes, Extent size) const noexcept
+  //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
+  //!
+  //! @note This API is to ensure backward compatibility with existing use cases using `std::byte`.
+  //! Users are encouraged to use the appropriate `cuda::std::byte` overload whenever possible for
+  //! better support and performance on the device.
+  //!
+  //! @tparam _Extent The extent type
+  //!
+  //! @param __bytes The input argument to hash
+  //! @param __size The extent of the data in bytes
+  //! @return The resulting hash value
+  template <typename _Extent>
+  constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
+  __compute_hash(::std::byte const* __bytes, _Extent __size) const noexcept
   {
-    return this->compute_hash(reinterpret_cast<::cuda::std::byte const*>(bytes), size);
+    return this->__compute_hash(reinterpret_cast<::cuda::std::byte const*>(__bytes), __size);
   }
 
 private:
   // avalanche helper
-  constexpr _CCCL_HOST_DEVICE std::uint32_t finalize(std::uint32_t h) const noexcept
+  constexpr _CCCL_HOST_DEVICE _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
   {
-    h ^= h >> 15;
-    h *= prime2;
-    h ^= h >> 13;
-    h *= prime3;
-    h ^= h >> 16;
-    return h;
+    __h ^= __h >> 15;
+    __h *= __prime2;
+    __h ^= __h >> 13;
+    __h *= __prime3;
+    __h ^= __h >> 16;
+    return __h;
   }
 
-  std::uint32_t seed_;
+  _CUDA_VSTD::uint32_t __seed_;
 };
 
-} // namespace cuda::experimental::cuco::detail
+} // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>
 

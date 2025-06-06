@@ -42,7 +42,7 @@ namespace cuda::experimental::cuco
  * @tparam Key The type of the values to hash
  */
 template <typename Key>
-using xxhash_32 = detail::XXHash_32<Key>;
+using xxhash_32 = __detail::XXHash_32<Key>;
 
 } // namespace cuda::experimental::cuco
 

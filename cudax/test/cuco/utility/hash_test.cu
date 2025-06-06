@@ -21,7 +21,6 @@
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 
-#include <cuda/experimental/__cuco/detail/__config>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include <testing.cuh>
@@ -44,11 +43,9 @@ private:
   int32_t data_[Words];
 };
 
-template <typename Hash, typename... HashConstructorArgs>
-static _CCCL_HOST_DEVICE bool check_hash_result(
-  typename Hash::argument_type const& key,
-  typename Hash::result_type expected,
-  HashConstructorArgs&&... hash_constructor_args) noexcept
+template <typename Hash, typename Key, typename... HashConstructorArgs>
+static _CCCL_HOST_DEVICE bool
+check_hash_result(Key const& key, std::uint32_t expected, HashConstructorArgs&&... hash_constructor_args) noexcept
 {
   Hash h(::cuda::std::forward<HashConstructorArgs>(hash_constructor_args)...);
   return (h(key) == expected);
