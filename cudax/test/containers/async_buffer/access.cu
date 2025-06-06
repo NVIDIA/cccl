@@ -43,7 +43,7 @@ C2H_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
   using pointer         = typename Buffer::pointer;
   using const_pointer   = typename Buffer::const_pointer;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::get_unsynchronized")

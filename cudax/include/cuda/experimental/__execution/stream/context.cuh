@@ -54,10 +54,6 @@ __launch_bounds__(1) __global__ static void __stream_complete(_Tag, _Rcvr* __rcv
 // stream_context
 struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
 {
-  _CCCL_HOST_API stream_context()
-      : stream_context(device_ref{0})
-  {}
-
   _CCCL_HOST_API explicit stream_context(device_ref __device)
       : __stream_{__device}
   {}
@@ -220,7 +216,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
     __attrs_t __env_;
   };
 
-  stream __stream_{};
+  stream __stream_{no_init};
 };
 
 using stream_scheduler = stream_context::scheduler;

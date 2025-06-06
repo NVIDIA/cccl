@@ -67,13 +67,6 @@ struct stream : stream_ref
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
   }
 
-  //! @brief Constructs a stream on the default device
-  //!
-  //! @throws cuda_error if stream creation fails.
-  stream()
-      : stream(device_ref{0})
-  {}
-
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
   //! @post `stream()` returns an invalid stream handle

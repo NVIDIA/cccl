@@ -101,8 +101,8 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   FILTER_UNSUPPORTED_ALGS
   const int num_items = 1 << 24;
 
-  cudax::stream stream{};
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
+  cudax::stream stream{cudax::device_ref{0}};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cudax::device_ref{0}}, stream};
 
   cudax::async_device_buffer<type> a{env, num_items, cudax::no_init};
   cudax::async_device_buffer<type> b{env, num_items, cudax::no_init};
@@ -148,8 +148,8 @@ struct add_kernel
 
 C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
 {
-  cudax::stream stream{};
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
+  cudax::stream stream{cudax::device_ref{0}};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cudax::device_ref{0}}, stream};
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
