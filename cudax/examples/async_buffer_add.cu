@@ -75,7 +75,7 @@ int main()
   cudax::async_host_buffer<float> h_C{host_env, C};
 
   // Do not forget to sync afterwards
-  stream.wait();
+  stream.sync();
 
   for (int i = 0; i < numElements; ++i)
   {
