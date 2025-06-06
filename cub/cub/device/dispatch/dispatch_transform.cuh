@@ -176,7 +176,7 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
+  configure_async_kernel([[maybe_unused]] int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
     ::cuda::std::
       tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
   {
