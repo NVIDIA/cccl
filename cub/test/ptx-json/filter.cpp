@@ -15,7 +15,7 @@ int main(int argc, char** argv)
   std::ifstream input(argv[1]);
   if (!input)
   {
-    std::cerr << "Can't open the input file (argument #1).\n";
+    std::cerr << "Can't open the input file: " << argv[1] << "\n";
     return 1;
   }
 
