@@ -97,12 +97,12 @@ public:
     {
       _Key const __key_copy = __key;
       return __compute_hash(reinterpret_cast<::cuda::std::byte const*>(&__key_copy),
-                            cuco::extent<std::size_t, sizeof(_Key)>{});
+                            cuco::extent<_CUDA_VSTD::uint32_t, sizeof(_Key)>{});
     }
     else
     {
       return __compute_hash(reinterpret_cast<::cuda::std::byte const*>(&__key),
-                            cuco::extent<std::size_t, sizeof(_Key)>{});
+                            cuco::extent<_CUDA_VSTD::uint32_t, sizeof(_Key)>{});
     }
   }
 
@@ -117,7 +117,7 @@ public:
   [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
   __compute_hash(::cuda::std::byte const* __bytes, _Extent __size) const noexcept
   {
-    std::size_t __offset = 0;
+    _CUDA_VSTD::size_t __offset = 0;
     _CUDA_VSTD::uint32_t __h32;
 
     // data can be processed in 16-byte chunks

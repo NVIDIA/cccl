@@ -28,7 +28,7 @@
 
 namespace cuda::experimental::cuco
 {
-static constexpr std::size_t dynamic_extent = static_cast<std::size_t>(-1);
+static constexpr _CUDA_VSTD::size_t dynamic_extent = static_cast<std::size_t>(-1);
 
 /**
  * @brief Static extent class.
@@ -36,7 +36,7 @@ static constexpr std::size_t dynamic_extent = static_cast<std::size_t>(-1);
  * @tparam SizeType Size type
  * @tparam N Extent
  */
-template <typename SizeType, std::size_t N = dynamic_extent>
+template <typename SizeType, _CUDA_VSTD::size_t N = dynamic_extent>
 struct extent
 {
   using value_type = SizeType; ///< Extent value type
