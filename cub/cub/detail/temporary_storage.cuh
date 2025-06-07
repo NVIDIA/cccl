@@ -351,7 +351,7 @@ private:
 
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
-allocate_async(void*& d_temp_storage, size_t temp_storage_bytes, ::cuda::stream_ref stream, MRT& mr)
+allocate_async(void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr, ::cuda::stream_ref stream)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
@@ -359,12 +359,13 @@ allocate_async(void*& d_temp_storage, size_t temp_storage_bytes, ::cuda::stream_
       try { d_temp_storage = mr.allocate_async(temp_storage_bytes, stream); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (d_temp_storage = mr.allocate_async(temp_storage_bytes, stream); return cudaSuccess;));
+    (d_temp_storage = mr.allocate_async(temp_storage_bytes, stream);));
+  return cudaSuccess;
 }
 
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
-deallocate_async(void* d_temp_storage, size_t temp_storage_bytes, ::cuda::stream_ref stream, MRT& mr)
+deallocate_async(void* d_temp_storage, size_t temp_storage_bytes, MRT& mr, ::cuda::stream_ref stream)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
@@ -372,7 +373,8 @@ deallocate_async(void* d_temp_storage, size_t temp_storage_bytes, ::cuda::stream
       try { mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); return cudaSuccess; return cudaSuccess;));
+    (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream);));
+  return cudaSuccess;
 }
 
 } // namespace temporary_storage

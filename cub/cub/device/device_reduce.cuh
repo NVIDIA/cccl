@@ -473,8 +473,8 @@ public:
       return error;
     }
 
-    // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, stream, mr));
+    // TODO(gevtushenko): use uninitialized buffer whenit's available
+    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
     if (error != cudaSuccess)
     {
       return error;
@@ -488,7 +488,7 @@ public:
       return error;
     }
 
-    return CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, stream, mr));
+    return CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
   }
 
   //! @rst
