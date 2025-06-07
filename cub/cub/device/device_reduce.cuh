@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
@@ -472,13 +473,12 @@ public:
       return error;
     }
 
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (
-        try { d_temp_storage = mr.allocate_async(temp_storage_bytes, stream); } catch (...) {
-          return cudaErrorMemoryAllocation;
-        }),
-      (d_temp_storage = mr.allocate_async(temp_storage_bytes, stream);));
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, stream, mr));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
 
     // Run the algorithm
     error = reduce_impl<tuning_t>(
@@ -488,15 +488,7 @@ public:
       return error;
     }
 
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (
-        try { mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); } catch (...) {
-          return cudaErrorMemoryAllocation;
-        }),
-      (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream);));
-
-    return cudaSuccess;
+    return CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, stream, mr));
   }
 
   //! @rst
