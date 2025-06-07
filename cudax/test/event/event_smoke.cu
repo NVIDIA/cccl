@@ -29,8 +29,9 @@ static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::event_ref>);
 static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::event>);
 static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::timed_event>);
 
-C2H_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
+C2H_CCCLRT_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
 {
+  cudax::__ensure_current_device guard(cudax::device_ref{0});
   ::cudaEvent_t ev;
   CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
   cudax::event_ref ref(ev);
@@ -46,8 +47,9 @@ C2H_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
   CUDAX_REQUIRE(!ref3);
 }
 
-C2H_TEST("can copy construct an event_ref and compare for equality", "[event]")
+C2H_CCCLRT_TEST("can copy construct an event_ref and compare for equality", "[event]")
 {
+  cudax::__ensure_current_device guard(cudax::device_ref{0});
   ::cudaEvent_t ev;
   CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
   const cudax::event_ref ref(ev);
@@ -66,8 +68,9 @@ C2H_TEST("can copy construct an event_ref and compare for equality", "[event]")
   CUDAX_REQUIRE(!ref4);
 }
 
-C2H_TEST("can use event_ref to record and wait on an event", "[event]")
+C2H_CCCLRT_TEST("can use event_ref to record and wait on an event", "[event]")
 {
+  cudax::__ensure_current_device guard(cudax::device_ref{0});
   ::cudaEvent_t ev;
   CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
   const cudax::event_ref ref(ev);
@@ -84,14 +87,14 @@ C2H_TEST("can use event_ref to record and wait on an event", "[event]")
   CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
 }
 
-C2H_TEST("can construct an event with a stream_ref", "[event]")
+C2H_CCCLRT_TEST("can construct an event with a stream_ref", "[event]")
 {
   cudax::stream stream{cudax::device_ref{0}};
   cudax::event ev(static_cast<cuda::stream_ref>(stream));
   CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
 }
 
-C2H_TEST("can wait on an event", "[event]")
+C2H_CCCLRT_TEST("can wait on an event", "[event]")
 {
   cudax::stream stream{cudax::device_ref{0}};
   ::test::managed<int> i(0);
@@ -103,7 +106,7 @@ C2H_TEST("can wait on an event", "[event]")
   stream.sync();
 }
 
-C2H_TEST("can take the difference of two timed_event objects", "[event]")
+C2H_CCCLRT_TEST("can take the difference of two timed_event objects", "[event]")
 {
   cudax::stream stream{cudax::device_ref{0}};
   ::test::managed<int> i(0);
@@ -119,7 +122,7 @@ C2H_TEST("can take the difference of two timed_event objects", "[event]")
   stream.sync();
 }
 
-C2H_TEST("can observe the event in not ready state", "[event]")
+C2H_CCCLRT_TEST("can observe the event in not ready state", "[event]")
 {
   ::test::managed<int> i(0);
   ::cuda::atomic_ref atomic_i(*i);

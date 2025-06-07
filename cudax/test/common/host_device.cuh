@@ -11,7 +11,7 @@
 #ifndef __COMMON_HOST_DEVICE_H__
 #define __COMMON_HOST_DEVICE_H__
 
-#include "testing.cuh"
+#include "utility.cuh"
 
 template <typename Dims, typename Lambda>
 void __global__ lambda_launcher(const Dims dims, const Lambda lambda)

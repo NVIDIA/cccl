@@ -13,7 +13,7 @@
 
 #include <cuda/__cccl_config>
 
-#include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <nv/target>
 
@@ -89,6 +89,56 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
+
 } // namespace Catch
+
+namespace
+{
+namespace test
+{
+inline int count_driver_stack()
+{
+  if (cudax::__detail::driver::ctxGetCurrent() != nullptr)
+  {
+    auto ctx    = cudax::__detail::driver::ctxPop();
+    auto result = 1 + count_driver_stack();
+    cudax::__detail::driver::ctxPush(ctx);
+    return result;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+inline void empty_driver_stack()
+{
+  while (cudax::__detail::driver::ctxGetCurrent() != nullptr)
+  {
+    cudax::__detail::driver::ctxPop();
+  }
+}
+
+inline int cuda_driver_version()
+{
+  return cudax::__detail::driver::getVersion();
+}
+} // namespace test
+} // namespace
+
+// Test macro that should be used in all cccl-rt tests
+// It first empties the driver stack in case some other test has left it non-empty
+// and then runs the test. At the end it checks if it remained empty, which ensures
+// we don't accidentally initialize device 0 through CUDART usage and makes sure
+// our APIs work with empty driver stack.
+#define C2H_CCCLRT_TEST(NAME, TAGS, ...)             \
+  static void C2H_TEST_CONCAT(test_fn_, __LINE__)(); \
+  C2H_TEST(NAME, TAGS, __VA_ARGS__)                  \
+  {                                                  \
+    test::empty_driver_stack();                      \
+    C2H_TEST_CONCAT(test_fn_, __LINE__)();           \
+    CUDAX_CHECK(test::count_driver_stack() == 0);    \
+  }                                                  \
+  static void C2H_TEST_CONCAT(test_fn_, __LINE__)()
 
 #endif // __COMMON_TESTING_H__
