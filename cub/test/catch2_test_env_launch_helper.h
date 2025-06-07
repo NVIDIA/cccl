@@ -81,11 +81,9 @@ struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
   template <class K, class... Args>
   CUB_RUNTIME_FUNCTION cudaError_t doit(K kernel, Args const&... args) const
   {
-    NV_IF_TARGET(NV_IS_HOST, (if (!get_stream_registry_factory_state()->m_kernels.empty()) {
-                   if (cuda::std::find(get_stream_registry_factory_state()->m_kernels.begin(),
-                                       get_stream_registry_factory_state()->m_kernels.end(),
-                                       reinterpret_cast<void*>(kernel))
-                       == get_stream_registry_factory_state()->m_kernels.end())
+    NV_IF_TARGET(NV_IS_HOST, (auto& kernels = get_stream_registry_factory_state()->m_kernels; if (!kernels.empty()) {
+                   if (cuda::std::find(kernels.begin(), kernels.end(), reinterpret_cast<void*>(kernel))
+                       == kernels.end())
                    {
                      FAIL("Kernel is not allowed");
                    }
