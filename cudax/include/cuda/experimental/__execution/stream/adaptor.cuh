@@ -198,9 +198,7 @@ struct __opstate_t
   template <class _Rcvr2>
   _CCCL_HOST_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
-    auto& __state   = __get_state().__state_;
-    auto& __results = __state.__results_;
-    __results_t::__visit(__results_visitor<_Rcvr2&>{__rcvr}, __state.__results_);
+    __results_t::__visit(__results_visitor<_Rcvr2&>{__rcvr}, __get_state().__state_.__results_);
   }
 
 private:
