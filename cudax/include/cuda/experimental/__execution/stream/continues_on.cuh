@@ -138,7 +138,7 @@ struct stream_domain::__apply_t<continues_on_t>
   };
 
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, const _Env& __env) const -> decltype(auto)
+  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, const _Env&) const -> decltype(auto)
   {
     auto& [__tag, __sched, __child] = __sndr;
     static_assert(__is_specialization_of_v<decltype(__child), __stream::__sndr_t>);
