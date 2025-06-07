@@ -271,7 +271,7 @@ struct kernel_with_default_config
 
 void test_default_config()
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   auto grid  = cudax::grid_dims(4);
   auto block = cudax::block_dims<256>;
 
@@ -369,7 +369,7 @@ struct lambda_wrapper
 C2H_TEST("Host launch", "")
 {
   cuda::atomic<int> atomic = 0;
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   int i = 0;
 
   auto set_lambda = [&](int set) {

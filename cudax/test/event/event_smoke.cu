@@ -73,7 +73,7 @@ C2H_TEST("can use event_ref to record and wait on an event", "[event]")
   const cudax::event_ref ref(ev);
 
   test::managed<int> i(0);
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   ref.record(stream);
   ref.sync();
@@ -86,14 +86,14 @@ C2H_TEST("can use event_ref to record and wait on an event", "[event]")
 
 C2H_TEST("can construct an event with a stream_ref", "[event]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   cudax::event ev(static_cast<cuda::stream_ref>(stream));
   CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
 }
 
 C2H_TEST("can wait on an event", "[event]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   ::test::managed<int> i(0);
   cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   cudax::event ev(stream);
@@ -105,7 +105,7 @@ C2H_TEST("can wait on an event", "[event]")
 
 C2H_TEST("can take the difference of two timed_event objects", "[event]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   ::test::managed<int> i(0);
   cudax::timed_event start(stream);
   cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
@@ -124,7 +124,7 @@ C2H_TEST("can observe the event in not ready state", "[event]")
   ::test::managed<int> i(0);
   ::cuda::atomic_ref atomic_i(*i);
 
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
 
   cudax::launch(stream, ::test::one_thread_dims, ::test::spin_until_80{}, i.get());
   cudax::event ev(stream);

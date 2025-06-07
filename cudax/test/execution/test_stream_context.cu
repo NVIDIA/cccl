@@ -41,7 +41,7 @@ struct _say_hello
 
 void stream_context_test1()
 {
-  cudax_async::stream_context ctx;
+  cudax_async::stream_context ctx{cuda::experimental::device_ref{0}};
   auto sched = ctx.get_scheduler();
 
   auto sndr = cudax_async::schedule(sched) //
@@ -56,7 +56,7 @@ void stream_context_test1()
 void stream_context_test2()
 {
   cudax_async::thread_context tctx;
-  cudax_async::stream_context sctx;
+  cudax_async::stream_context sctx{cuda::experimental::device_ref{0}};
   auto sch = sctx.get_scheduler();
 
   auto start = //

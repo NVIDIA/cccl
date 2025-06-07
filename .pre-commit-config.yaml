@@ -72,8 +72,8 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: [types-cachetools, numpy]
-        args: ["--config-file=python/cuda_parallel/pyproject.toml",
-               "python/cuda_parallel/cuda/"]
+        args: ["--config-file=python/cuda_cccl/pyproject.toml",
+               "python/cuda_cccl/cuda/cccl/parallel/"]
         pass_filenames: false
 
 
