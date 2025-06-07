@@ -99,7 +99,7 @@ public:
 private:
   _CCCL_HOST_DEVICE void set_bytes_required(size_t new_size)
   {
-    m_size = (::cuda::std::max)(m_size, new_size);
+    m_size = (::cuda::std::max) (m_size, new_size);
   }
 
   _CCCL_HOST_DEVICE size_t get_bytes_required() const
@@ -372,7 +372,7 @@ deallocate_async(void* d_temp_storage, size_t temp_storage_bytes, ::cuda::stream
       try { mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); return cudaSuccess;));
+    (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); return cudaSuccess; return cudaSuccess;));
 }
 
 } // namespace temporary_storage
