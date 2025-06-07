@@ -225,7 +225,7 @@ private:
 
     // RFA is only supported for float and double accumulators
     constexpr bool is_float_or_double = detail::is_one_of_v<accum_t, float, double>;
-    constexpr bool is_sum             = _CUDA_VSTD::is_same_v<ReductionOpT, ::cuda::std::plus<>>;
+    constexpr bool is_sum             = detail::reduce::is_plus<ReductionOpT>::value;
     constexpr bool is_supported       = is_float_or_double && is_sum;
 
     static_assert(is_supported, "gpu-to-gpu deterministic reduction supports only float and double sum.");

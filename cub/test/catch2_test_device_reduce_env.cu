@@ -175,9 +175,9 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
                   || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
     {
-      REQUIRE(cudaSuccess
-              == cub::DeviceReduce::Reduce(
-                nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, cuda::std::plus<>{}, init));
+      REQUIRE(
+        cudaSuccess
+        == cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init));
 
       using policy_t = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       return cuda::std::array<void*, 3>{
@@ -256,7 +256,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
                           allowed_kernels(kernels), // allowed kernels for the given determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_reduce(d_in, d_out.begin(), num_items, cuda::std::plus<>{}, init, env);
+  device_reduce(d_in, d_out.begin(), num_items, op_t{}, init, env);
 
   REQUIRE(d_out[0] == num_items);
 }
