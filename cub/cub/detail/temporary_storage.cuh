@@ -99,7 +99,7 @@ public:
 private:
   _CCCL_HOST_DEVICE void set_bytes_required(size_t new_size)
   {
-    m_size = (::cuda::std::max) (m_size, new_size);
+    m_size = (::cuda::std::max)(m_size, new_size);
   }
 
   _CCCL_HOST_DEVICE size_t get_bytes_required() const
