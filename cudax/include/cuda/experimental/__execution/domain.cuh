@@ -186,10 +186,10 @@ _CCCL_TRIVIAL_API constexpr auto __get_domain_early() noexcept
   return __domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<set_value_t>, _Default>{};
 }
 
-template <class _Sndr, class _Env>
+template <class _Sndr, class _Env, class _Default = default_domain>
 _CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
 {
-  using __env_domain_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Env, get_scheduler_t>;
+  using __env_domain_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Env, get_scheduler_t, _Default>;
 
   // If the sender is a continues_on or schedule_from sender, we check with the sender for
   // its domain. If it does not provide one, we fall back to using the domain from the

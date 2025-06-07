@@ -98,7 +98,7 @@ public:
   template <class _Sndr>
   _CCCL_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = __late_domain_of_t<_Sndr, env<>, __early_domain_of_t<_Sndr>>;
     execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };

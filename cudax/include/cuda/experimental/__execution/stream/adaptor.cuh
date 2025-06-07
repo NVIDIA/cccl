@@ -194,6 +194,13 @@ struct __opstate_t
     NV_IF_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
   }
 
+  // This is called by the continues_on adaptor after it has sync'ed the stream.
+  template <class _Rcvr2>
+  _CCCL_HOST_API auto __set_results(_Rcvr2& __rcvr) noexcept
+  {
+    __results_t::__visit(__results_visitor<_Rcvr2&>{__rcvr}, __get_state().__state_.__results_);
+  }
+
 private:
   using __child_completions_t = completion_signatures_of_t<_CvSndr, __env_t<env_of_t<_Rcvr>>>;
   using __completions_t       = decltype(__stream::__with_cuda_error(__child_completions_t{}));

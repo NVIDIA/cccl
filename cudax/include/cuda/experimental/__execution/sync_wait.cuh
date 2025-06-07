@@ -267,7 +267,7 @@ public:
     }
     else
     {
-      using __dom_t = __late_domain_of_t<_Sndr, __env_t>;
+      using __dom_t _CCCL_NODEBUG_ALIAS = __late_domain_of_t<_Sndr, __env_t, __early_domain_of_t<_Sndr>>;
       return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)...);
     }
   }
