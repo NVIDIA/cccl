@@ -66,13 +66,13 @@ namespace detail
 namespace reduce
 {
 
-struct get_reduce_tuning_query_t
+struct get_tuning_query_t
 {};
 
 template <class Derived>
 struct tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_reduce_tuning_query_t&) const noexcept -> Derived
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
   {
     return static_cast<const Derived&>(*this);
   }
@@ -193,7 +193,7 @@ private:
     using accum_t         = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
     using transform_t     = ::cuda::std::identity;
     using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_reduce_tuning_query_t, detail::reduce::default_tuning>;
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
     using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
     using dispatch_t =
       DispatchReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
@@ -223,7 +223,7 @@ private:
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
     // RFA is only supported for float and double accumulators
-    constexpr bool is_float_or_double = _CUDA_VSTD::is_same_v<accum_t, float> || _CUDA_VSTD::is_same_v<accum_t, double>;
+    constexpr bool is_float_or_double = detail::is_one_of_v<accum_t, float, double>;
     constexpr bool is_sum             = _CUDA_VSTD::is_same_v<ReductionOpT, ::cuda::std::plus<>>;
     constexpr bool is_supported       = is_float_or_double && is_sum;
 
@@ -233,7 +233,7 @@ private:
     {
       using transform_t     = ::cuda::std::identity;
       using reduce_tuning_t = ::cuda::std::execution::
-        __query_result_or_t<TuningEnvT, detail::reduce::get_reduce_tuning_query_t, detail::reduce::default_rfa_tuning>;
+        __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
       using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
       using dispatch_t =
         detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, accum_t, transform_t, policy_t>;

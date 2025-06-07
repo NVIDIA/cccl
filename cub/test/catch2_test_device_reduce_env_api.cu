@@ -19,7 +19,7 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts determinism requirements", "[reduce]
 
   // example-begin reduce-env-determinism
   auto op     = cuda::std::plus{};
-  auto input  = c2h::device_vector<float>({0.0f, 1.0f, 2.0f, 3.0f});
+  auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
   auto init   = 0.0f;
 
@@ -37,7 +37,7 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
 {
   // example-begin reduce-env-stream
   auto op     = cuda::std::plus{};
-  auto input  = c2h::device_vector<float>({0.0f, 1.0f, 2.0f, 3.0f});
+  auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
   auto init   = 0.0f;
 
