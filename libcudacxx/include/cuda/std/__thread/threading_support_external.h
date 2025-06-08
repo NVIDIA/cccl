@@ -28,9 +28,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield();
+_CCCL_API void __cccl_thread_yield();
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns);
+_CCCL_API void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

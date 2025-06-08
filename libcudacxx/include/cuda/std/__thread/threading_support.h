@@ -50,13 +50,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #endif // ! _CCCL_ARCH(X86_64)
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield_processor()
+_CCCL_API void __cccl_thread_yield_processor()
 {
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
 template <class _Fn>
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
+_CCCL_API bool __cccl_thread_poll_with_backoff(
   _Fn&& __f, _CUDA_VSTD::chrono::nanoseconds __max = _CUDA_VSTD::chrono::nanoseconds::zero())
 {
   _CUDA_VSTD::chrono::high_resolution_clock::time_point const __start =

@@ -38,10 +38,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun_t : public __
   _Sp (_Tp::*__p_)();
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit mem_fun_t(_Sp (_Tp::*__p)())
+  _CCCL_API explicit mem_fun_t(_Sp (_Tp::*__p)())
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(_Tp* __p) const
+  _CCCL_API _Sp operator()(_Tp* __p) const
   {
     return (__p->*__p_)();
   }
@@ -53,23 +53,23 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun1_t : public _
   _Sp (_Tp::*__p_)(_Ap);
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit mem_fun1_t(_Sp (_Tp::*__p)(_Ap))
+  _CCCL_API explicit mem_fun1_t(_Sp (_Tp::*__p)(_Ap))
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(_Tp* __p, _Ap __x) const
+  _CCCL_API _Sp operator()(_Tp* __p, _Ap __x) const
   {
     return (__p->*__p_)(__x);
   }
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)())
+_LIBCUDACXX_DEPRECATED _CCCL_API mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)())
 {
   return mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap))
+_LIBCUDACXX_DEPRECATED _CCCL_API mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap))
 {
   return mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
@@ -80,10 +80,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun_ref_t : publi
   _Sp (_Tp::*__p_)();
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit mem_fun_ref_t(_Sp (_Tp::*__p)())
+  _CCCL_API explicit mem_fun_ref_t(_Sp (_Tp::*__p)())
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(_Tp& __p) const
+  _CCCL_API _Sp operator()(_Tp& __p) const
   {
     return (__p.*__p_)();
   }
@@ -95,23 +95,23 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun1_ref_t : publ
   _Sp (_Tp::*__p_)(_Ap);
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit mem_fun1_ref_t(_Sp (_Tp::*__p)(_Ap))
+  _CCCL_API explicit mem_fun1_ref_t(_Sp (_Tp::*__p)(_Ap))
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(_Tp& __p, _Ap __x) const
+  _CCCL_API _Sp operator()(_Tp& __p, _Ap __x) const
   {
     return (__p.*__p_)(__x);
   }
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)())
+_LIBCUDACXX_DEPRECATED _CCCL_API mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)())
 {
   return mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
+_LIBCUDACXX_DEPRECATED _CCCL_API mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
 {
   return mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
@@ -122,10 +122,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED const_mem_fun_t : pub
   _Sp (_Tp::*__p_)() const;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit const_mem_fun_t(_Sp (_Tp::*__p)() const)
+  _CCCL_API explicit const_mem_fun_t(_Sp (_Tp::*__p)() const)
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(const _Tp* __p) const
+  _CCCL_API _Sp operator()(const _Tp* __p) const
   {
     return (__p->*__p_)();
   }
@@ -138,23 +138,23 @@ _LIBCUDACXX_DEPRECATED const_mem_fun1_t : public __binary_function<const _Tp*, _
   _Sp (_Tp::*__p_)(_Ap) const;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit const_mem_fun1_t(_Sp (_Tp::*__p)(_Ap) const)
+  _CCCL_API explicit const_mem_fun1_t(_Sp (_Tp::*__p)(_Ap) const)
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(const _Tp* __p, _Ap __x) const
+  _CCCL_API _Sp operator()(const _Tp* __p, _Ap __x) const
   {
     return (__p->*__p_)(__x);
   }
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const)
+_LIBCUDACXX_DEPRECATED _CCCL_API const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const)
 {
   return const_mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap) const)
+_LIBCUDACXX_DEPRECATED _CCCL_API const_mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap) const)
 {
   return const_mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
@@ -165,10 +165,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED const_mem_fun_ref_t :
   _Sp (_Tp::*__p_)() const;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit const_mem_fun_ref_t(_Sp (_Tp::*__p)() const)
+  _CCCL_API explicit const_mem_fun_ref_t(_Sp (_Tp::*__p)() const)
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(const _Tp& __p) const
+  _CCCL_API _Sp operator()(const _Tp& __p) const
   {
     return (__p.*__p_)();
   }
@@ -181,24 +181,23 @@ _LIBCUDACXX_DEPRECATED const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap,
   _Sp (_Tp::*__p_)(_Ap) const;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit const_mem_fun1_ref_t(_Sp (_Tp::*__p)(_Ap) const)
+  _CCCL_API explicit const_mem_fun1_ref_t(_Sp (_Tp::*__p)(_Ap) const)
       : __p_(__p)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Sp operator()(const _Tp& __p, _Ap __x) const
+  _CCCL_API _Sp operator()(const _Tp& __p, _Ap __x) const
   {
     return (__p.*__p_)(__x);
   }
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)() const)
+_LIBCUDACXX_DEPRECATED _CCCL_API const_mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)() const)
 {
   return const_mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun1_ref_t<_Sp, _Tp, _Ap>
-mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const)
+_LIBCUDACXX_DEPRECATED _CCCL_API const_mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const)
 {
   return const_mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }

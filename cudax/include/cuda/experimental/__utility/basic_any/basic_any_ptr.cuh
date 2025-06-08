@@ -57,7 +57,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   //!
   basic_any() = default;
 
-  _CCCL_TRIVIAL_HOST_API basic_any(_CUDA_VSTD::nullptr_t) {}
+  _CCCL_NODEBUG_HOST_API basic_any(_CUDA_VSTD::nullptr_t) {}
 
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
   _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
@@ -189,7 +189,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *static_cast<__void_ptr_t>(__lhs.__get_optr()) == *static_cast<__void_ptr_t>(__rhs.__get_optr());
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto operator!=(basic_any const& __lhs, basic_any const& __rhs) noexcept
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API friend auto operator!=(basic_any const& __lhs, basic_any const& __rhs) noexcept
     -> bool
   {
     return !(__lhs == __rhs);
@@ -199,12 +199,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   using __any_ref_t _CCCL_NODEBUG_ALIAS =
     _CUDA_VSTD::__maybe_const<__is_const_ptr, basic_any<__ireference<_Interface>>>;
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto operator->() const noexcept -> __any_ref_t*
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API auto operator->() const noexcept -> __any_ref_t*
   {
     return &__ref_;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto operator*() const noexcept -> __any_ref_t&
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API auto operator*() const noexcept -> __any_ref_t&
   {
     return __ref_;
   }
@@ -239,7 +239,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }

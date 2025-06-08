@@ -46,13 +46,13 @@ extern type_identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
 // from volatile-qualified types _Tp.
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp&& __declval(int);
+_CCCL_API _Tp&& __declval(int);
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp __declval(long);
+_CCCL_API _Tp __declval(long);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
+_CCCL_API decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
 
 #endif // default impl
 

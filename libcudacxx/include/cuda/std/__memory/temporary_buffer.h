@@ -38,7 +38,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-[[nodiscard]] _CCCL_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
+[[nodiscard]] _CCCL_NO_CFI _CCCL_API pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
   const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
@@ -80,7 +80,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
+_CCCL_API void return_temporary_buffer(_Tp* __p) noexcept
 {
   _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }

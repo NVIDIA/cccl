@@ -35,24 +35,24 @@ struct __base_vptr
 {
   __base_vptr() = default;
 
-  _CCCL_TRIVIAL_HOST_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
+  _CCCL_NODEBUG_HOST_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
       : __vptr_(__vptr)
   {}
 
   template <class _VTable>
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API explicit constexpr operator _VTable const*() const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API explicit constexpr operator _VTable const*() const noexcept
   {
     auto const* __vptr = static_cast<_VTable const*>(__vptr_);
     _CCCL_ASSERT(_CCCL_TYPEID(_VTable) == *__vptr->__typeid_, "bad vtable cast detected");
     return __vptr;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API explicit constexpr operator bool() const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API explicit constexpr operator bool() const noexcept
   {
     return __vptr_ != nullptr;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __rtti_base const*
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto operator->() const noexcept -> __rtti_base const*
   {
     return __vptr_;
   }

@@ -79,8 +79,8 @@ public:
 
     using _IndexT _CCCL_NODEBUG_ALIAS = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __iterator(
-      const _Tp* __value, _IndexT __bound_sentinel = _IndexT()) noexcept(is_nothrow_copy_constructible_v<_IndexT>)
+    _CCCL_API constexpr explicit __iterator(const _Tp* __value, _IndexT __bound_sentinel = _IndexT()) noexcept(
+      is_nothrow_copy_constructible_v<_IndexT>)
         : __value_(__value)
         , __current_(__bound_sentinel)
     {}
@@ -93,25 +93,25 @@ public:
 
     _CCCL_HIDE_FROM_ABI __iterator() = default;
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator*() const noexcept
+    [[nodiscard]] _CCCL_API constexpr const _Tp& operator*() const noexcept
     {
       return *__value_;
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator++()
+    _CCCL_API constexpr __iterator& operator++()
     {
       ++__current_;
       return *this;
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator++(int)
+    _CCCL_API constexpr __iterator operator++(int)
     {
       auto __tmp = *this;
       ++*this;
       return __tmp;
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator--()
+    _CCCL_API constexpr __iterator& operator--()
     {
       if constexpr (!same_as<_Bound, unreachable_sentinel_t>)
       {
@@ -121,14 +121,14 @@ public:
       return *this;
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator--(int)
+    _CCCL_API constexpr __iterator operator--(int)
     {
       auto __tmp = *this;
       --*this;
       return __tmp;
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator+=(difference_type __n)
+    _CCCL_API constexpr __iterator& operator+=(difference_type __n)
     {
       if constexpr (!same_as<_Bound, unreachable_sentinel_t>)
       {
@@ -138,7 +138,7 @@ public:
       return *this;
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator-=(difference_type __n)
+    _CCCL_API constexpr __iterator& operator-=(difference_type __n)
     {
       if constexpr (!same_as<_Bound, unreachable_sentinel_t>)
       {
@@ -148,71 +148,65 @@ public:
       return *this;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator[](difference_type __n) const noexcept
+    [[nodiscard]] _CCCL_API constexpr const _Tp& operator[](difference_type __n) const noexcept
     {
       return *(*this + __n);
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator==(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ == __y.__current_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator!=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ != __y.__current_;
     }
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator<=>(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ <=> __y.__current_;
     }
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool operator<(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator<(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ < __y.__current_;
     }
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator<=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator<=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ <= __y.__current_;
     }
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool operator>(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator>(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ > __y.__current_;
     }
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator>=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator>=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ >= __y.__current_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iterator operator+(__iterator __i, difference_type __n)
+    [[nodiscard]] _CCCL_API friend constexpr __iterator operator+(__iterator __i, difference_type __n)
     {
       __i += __n;
       return __i;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iterator operator+(difference_type __n, __iterator __i)
+    [[nodiscard]] _CCCL_API friend constexpr __iterator operator+(difference_type __n, __iterator __i)
     {
       __i += __n;
       return __i;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iterator operator-(__iterator __i, difference_type __n)
+    [[nodiscard]] _CCCL_API friend constexpr __iterator operator-(__iterator __i, difference_type __n)
     {
       __i -= __n;
       return __i;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
-    operator-(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr difference_type operator-(const __iterator& __x, const __iterator& __y)
     {
       return static_cast<difference_type>(__x.__current_) - static_cast<difference_type>(__y.__current_);
     }
@@ -229,12 +223,12 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(default_initializable<_Tp2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr repeat_view() noexcept(is_nothrow_default_constructible_v<_Tp2>) {}
+  _CCCL_API constexpr repeat_view() noexcept(is_nothrow_default_constructible_v<_Tp2>) {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!same_as<_Tp2, repeat_view>) _CCCL_AND copy_constructible<_Tp2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit repeat_view(const _Tp2& __value, _Bound __bound_sentinel = _Bound())
+  _CCCL_API constexpr explicit repeat_view(const _Tp2& __value, _Bound __bound_sentinel = _Bound())
       : __value_(in_place, __value)
       , __bound_(__bound_sentinel)
   {
@@ -244,7 +238,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit repeat_view(_Tp&& __value, _Bound __bound_sentinel = _Bound())
+  _CCCL_API constexpr explicit repeat_view(_Tp&& __value, _Bound __bound_sentinel = _Bound())
       : __value_(in_place, _CUDA_VSTD::move(__value))
       , __bound_(__bound_sentinel)
   {
@@ -256,7 +250,7 @@ public:
 
   _CCCL_TEMPLATE(class... _TpArgs, class... _BoundArgs)
   _CCCL_REQUIRES(constructible_from<_Tp, _TpArgs...> _CCCL_AND constructible_from<_Bound, _BoundArgs...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit repeat_view(
+  _CCCL_API constexpr explicit repeat_view(
     piecewise_construct_t, tuple<_TpArgs...> __value_args, tuple<_BoundArgs...> __bound_args = tuple<>{})
       : __value_(in_place, _CUDA_VSTD::make_from_tuple<_Tp>(_CUDA_VSTD::move(__value_args)))
       , __bound_(_CUDA_VSTD::make_from_tuple<_Bound>(_CUDA_VSTD::move(__bound_args)))
@@ -268,12 +262,12 @@ public:
     }
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator begin() const
+  [[nodiscard]] _CCCL_API constexpr __iterator begin() const
   {
     return __iterator(_CUDA_VSTD::addressof(*__value_));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end() const noexcept(is_nothrow_copy_constructible_v<_Bound>)
+  _CCCL_API constexpr auto end() const noexcept(is_nothrow_copy_constructible_v<_Bound>)
   {
     if constexpr (same_as<_Bound, unreachable_sentinel_t>)
     {
@@ -287,7 +281,7 @@ public:
 
   _CCCL_TEMPLATE(class _Bound2 = _Bound)
   _CCCL_REQUIRES((!same_as<_Bound2, unreachable_sentinel_t>) )
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
+  _CCCL_API constexpr auto size() const
   {
     return _CUDA_VSTD::__to_unsigned_like(__bound_);
   }
@@ -307,14 +301,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn {
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __value) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value) const
     noexcept(noexcept(ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value))))
     -> repeat_view<remove_cvref_t<_Tp>>
     { return          ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value)); }
 
 
   template <class _Tp, class _Bound>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __value, _Bound&& __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value, _Bound&& __bound_sentinel) const
     noexcept(noexcept(ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value), _CUDA_VSTD::forward<_Bound>(__bound_sentinel))))
     -> repeat_view<remove_cvref_t<_Tp>, remove_cvref_t<_Bound>>
     { return          ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value), _CUDA_VSTD::forward<_Bound>(__bound_sentinel)); }

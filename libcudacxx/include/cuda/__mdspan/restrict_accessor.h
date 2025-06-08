@@ -77,11 +77,11 @@ public:
 
   _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor2))
-  _LIBCUDACXX_HIDE_FROM_ABI __restrict_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor2>)
+  _CCCL_API __restrict_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __restrict_accessor(const _Accessor& __acc) noexcept(
+  _CCCL_API constexpr __restrict_accessor(const _Accessor& __acc) noexcept(
     _CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {}
@@ -89,27 +89,26 @@ public:
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
                    _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(
-    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+  _CCCL_API constexpr __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{
+    _CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
                    _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __restrict_accessor(
-    const __restrict_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{
-    _CUDA_VSTD::declval<_OtherAccessor>()}))
+  _CCCL_API constexpr explicit __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(
+    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(__element_type* _CCCL_RESTRICT __p, size_t __i) const
+  _CCCL_API constexpr reference access(__element_type* _CCCL_RESTRICT __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(__element_type* _CCCL_RESTRICT __p, size_t __i) const
+  _CCCL_API constexpr data_handle_type offset(__element_type* _CCCL_RESTRICT __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);

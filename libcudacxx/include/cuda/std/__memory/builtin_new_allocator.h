@@ -40,12 +40,12 @@ struct __builtin_new_allocator
   {
     using pointer_type = void*;
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __builtin_new_deleter(size_t __size, size_t __align) noexcept
+    _CCCL_API constexpr explicit __builtin_new_deleter(size_t __size, size_t __align) noexcept
         : __size_(__size)
         , __align_(__align)
     {}
 
-    _LIBCUDACXX_HIDE_FROM_ABI void operator()(void* __p) const noexcept
+    _CCCL_API void operator()(void* __p) const noexcept
     {
       _CUDA_VSTD::__cccl_deallocate(__p, __size_, __align_);
     }
@@ -57,24 +57,24 @@ struct __builtin_new_allocator
 
   using __holder_t = unique_ptr<void, __builtin_new_deleter>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static __holder_t __allocate_bytes(size_t __s, size_t __align)
+  _CCCL_API static __holder_t __allocate_bytes(size_t __s, size_t __align)
   {
     return __holder_t(_CUDA_VSTD::__cccl_allocate(__s, __align), __builtin_new_deleter(__s, __align));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static void __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept
+  _CCCL_API static void __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept
   {
     _CUDA_VSTD::__cccl_deallocate(__p, __s, __align);
   }
 
   template <class _Tp>
-  _CCCL_NODEBUG_ALIAS _LIBCUDACXX_HIDE_FROM_ABI static __holder_t __allocate_type(size_t __n)
+  _CCCL_NODEBUG_ALIAS _CCCL_API static __holder_t __allocate_type(size_t __n)
   {
     return __allocate_bytes(__n * sizeof(_Tp), alignof(_Tp));
   }
 
   template <class _Tp>
-  _CCCL_NODEBUG_ALIAS _LIBCUDACXX_HIDE_FROM_ABI static void __deallocate_type(void* __p, size_t __n) noexcept
+  _CCCL_NODEBUG_ALIAS _CCCL_API static void __deallocate_type(void* __p, size_t __n) noexcept
   {
     __deallocate_bytes(__p, __n * sizeof(_Tp), alignof(_Tp));
   }

@@ -78,9 +78,6 @@
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 #endif // !_CCCL_COMPILER(NVHPC)
 
-//! Defined here to suppress any warnings from the definition
-#define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE
-
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !CCCL_DETAIL_KERNEL_ATTRIBUTES
@@ -88,9 +85,9 @@
 // _CCCL_HIDE_FROM_ABI and _CCCL_FORCEINLINE cannot be used together because they both try
 // to add `inline` to the function declaration. The following macros slice the function
 // attributes differently to avoid this problem:
-// - `_CCCL_API` declares the function host/device and hides the symbol from the ABI
-// - `_CCCL_TRIVIAL_API` does the same while also inlining and hiding the function from
-//   debuggers
+// - `_CCCL_API` declares the function host/device and hides the symbol from the ABI.
+// - `_CCCL_NODEBUG_API` does the same but also hides the function from debuggers.
+// - `_CCCL_TRIVIAL_API` does the same while also force-inlining the function.
 #if _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_API        _CCCL_HOST_DEVICE
 #  define _CCCL_HOST_API   _CCCL_HOST
@@ -101,12 +98,21 @@
 #  define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !_CCCL_COMPILER(NVHPC)
 
-// _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
-// debuggers to skip it. This is useful for trivial internal functions that do dispatching
-// or other plumbing work. It is particularly useful in the definition of customization
-// point objects.
-#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+// _CCCL_NODEBUG_API marks a function's visibility as hidden and causes debuggers to skip
+// it; that is, a debugger will not step into the function. That is useful for small
+// functions like getters that you do not want to step into ever.
+#define _CCCL_NODEBUG_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+
+// _CCCL_TRIVIAL_API is like _CCCL_NODEBUG_API except it also force-inlines a function.
+// This is useful for trivial internal functions that do dispatching or other plumbing
+// work. It is particularly useful in the definition of customization point objects.
+#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+
+//! Defined here to suppress any warnings from the definition
+#define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_API
 
 #endif // __CCCL_VISIBILITY_H

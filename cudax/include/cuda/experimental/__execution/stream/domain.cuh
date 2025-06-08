@@ -62,7 +62,7 @@ struct stream_domain : default_domain
 public:
   _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
   _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
-  _CCCL_TRIVIAL_HOST_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
+  _CCCL_NODEBUG_HOST_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
     _CUDA_VSTD::__is_nothrow_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
     -> _CUDA_VSTD::__call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {

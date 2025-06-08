@@ -86,17 +86,17 @@ struct __cccl_complex_overload_traits<__half, false, false>
 };
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const _Tp& __value) noexcept
+_CCCL_API __half __convert_to_half(const _Tp& __value) noexcept
 {
   return __value;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const float& __value) noexcept
+_CCCL_API __half __convert_to_half(const float& __value) noexcept
 {
   return __float2half(__value);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const double& __value) noexcept
+_CCCL_API __half __convert_to_half(const double& __value) noexcept
 {
   return __double2half(__value);
 }
@@ -115,23 +115,23 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
 public:
   using value_type = __half;
 
-  _LIBCUDACXX_HIDE_FROM_ABI complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+  _CCCL_API complex(const value_type& __re = value_type(), const value_type& __im = value_type())
       : __repr_(__re, __im)
   {}
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI complex(const complex<_Up>& __c)
+  _CCCL_API complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
             enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                           = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI explicit complex(const complex<_Up>& __c)
+  _CCCL_API explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator=(const value_type& __re)
+  _CCCL_API complex& operator=(const value_type& __re)
   {
     __repr_.x = __re;
     __repr_.y = value_type();
@@ -139,7 +139,7 @@ public:
   }
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator=(const complex<_Up>& __c)
+  _CCCL_API complex& operator=(const complex<_Up>& __c)
   {
     __repr_.x = __convert_to_half(__c.real());
     __repr_.y = __convert_to_half(__c.imag());
@@ -148,12 +148,12 @@ public:
 
 #  if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
+  _CCCL_API complex(const ::std::complex<_Up>& __other)
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
   {}
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator=(const ::std::complex<_Up>& __other)
+  _CCCL_API complex& operator=(const ::std::complex<_Up>& __other)
   {
     __repr_.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
     __repr_.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
@@ -166,51 +166,51 @@ public:
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type real() const
+  [[nodiscard]] _CCCL_API value_type real() const
   {
     return __repr_.x;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const
+  [[nodiscard]] _CCCL_API value_type imag() const
   {
     return __repr_.y;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void real(value_type __re)
+  _CCCL_API void real(value_type __re)
   {
     __repr_.x = __re;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void imag(value_type __im)
+  _CCCL_API void imag(value_type __im)
   {
     __repr_.y = __im;
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type real() const volatile
+  [[nodiscard]] _CCCL_API value_type real() const volatile
   {
     return __repr_.x;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const volatile
+  [[nodiscard]] _CCCL_API value_type imag() const volatile
   {
     return __repr_.y;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator+=(const value_type& __re)
+  _CCCL_API complex& operator+=(const value_type& __re)
   {
     __repr_.x = __hadd(__repr_.x, __re);
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator-=(const value_type& __re)
+  _CCCL_API complex& operator-=(const value_type& __re)
   {
     __repr_.x = __hsub(__repr_.x, __re);
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator*=(const value_type& __re)
+  _CCCL_API complex& operator*=(const value_type& __re)
   {
     __repr_.x = __hmul(__repr_.x, __re);
     __repr_.y = __hmul(__repr_.y, __re);
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator/=(const value_type& __re)
+  _CCCL_API complex& operator/=(const value_type& __re)
   {
     __repr_.x = __hdiv(__repr_.x, __re);
     __repr_.y = __hdiv(__repr_.y, __re);
@@ -218,19 +218,19 @@ public:
   }
 
   // We can utilize vectorized operations for those operators
-  _LIBCUDACXX_HIDE_FROM_ABI friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
+  _CCCL_API friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
   {
     __lhs.__repr_ = __hadd2(__lhs.__repr_, __rhs.__repr_);
     return __lhs;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
+  _CCCL_API friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
   {
     __lhs.__repr_ = __hsub2(__lhs.__repr_, __rhs.__repr_);
     return __lhs;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
@@ -238,21 +238,21 @@ public:
 
 template <> // complex<float>
 template <> // complex<__half>
-_LIBCUDACXX_HIDE_FROM_ABI complex<float>::complex(const complex<__half>& __c)
+_CCCL_API complex<float>::complex(const complex<__half>& __c)
     : __re_(__half2float(__c.real()))
     , __im_(__half2float(__c.imag()))
 {}
 
 template <> // complex<double>
 template <> // complex<__half>
-_LIBCUDACXX_HIDE_FROM_ABI complex<double>::complex(const complex<__half>& __c)
+_CCCL_API complex<double>::complex(const complex<__half>& __c)
     : __re_(__half2float(__c.real()))
     , __im_(__half2float(__c.imag()))
 {}
 
 template <> // complex<float>
 template <> // complex<__half>
-_LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const complex<__half>& __c)
+_CCCL_API complex<float>& complex<float>::operator=(const complex<__half>& __c)
 {
   __re_ = __half2float(__c.real());
   __im_ = __half2float(__c.imag());
@@ -261,36 +261,36 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const comple
 
 template <> // complex<double>
 template <> // complex<__half>
-_LIBCUDACXX_HIDE_FROM_ABI complex<double>& complex<double>::operator=(const complex<__half>& __c)
+_CCCL_API complex<double>& complex<double>::operator=(const complex<__half>& __c)
 {
   __re_ = __half2float(__c.real());
   __im_ = __half2float(__c.imag());
   return *this;
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half arg(__half __re)
+[[nodiscard]] _CCCL_API __half arg(__half __re)
 {
   return _CUDA_VSTD::atan2(__int2half_rn(0), __re);
 }
 
 // We have performance issues with some trigonometric functions with __half
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI complex<__half> asinh(const complex<__half>& __x)
+_CCCL_API complex<__half> asinh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI complex<__half> acosh(const complex<__half>& __x)
+_CCCL_API complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI complex<__half> atanh(const complex<__half>& __x)
+_CCCL_API complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI complex<__half> acos(const complex<__half>& __x)
+_CCCL_API complex<__half> acos(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
@@ -299,25 +299,25 @@ template <>
 struct __get_complex_impl<__half>
 {
   template <size_t _Index>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __half& get(complex<__half>& __z) noexcept
+  static _CCCL_API constexpr __half& get(complex<__half>& __z) noexcept
   {
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
   }
 
   template <size_t _Index>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __half&& get(complex<__half>&& __z) noexcept
+  static _CCCL_API constexpr __half&& get(complex<__half>&& __z) noexcept
   {
     return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __half& get(const complex<__half>& __z) noexcept
+  static _CCCL_API constexpr const __half& get(const complex<__half>& __z) noexcept
   {
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
   }
 
   template <size_t _Index>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __half&& get(const complex<__half>&& __z) noexcept
+  static _CCCL_API constexpr const __half&& get(const complex<__half>&& __z) noexcept
   {
     return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }

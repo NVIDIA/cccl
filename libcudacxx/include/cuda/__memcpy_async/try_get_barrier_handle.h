@@ -37,14 +37,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
 template <thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
+_CCCL_API _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
 {
   return nullptr;
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t*
-__try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
+_CCCL_API _CUDA_VSTD::uint64_t* __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
   [[maybe_unused]] barrier<thread_scope_block>& __barrier)
 {
   NV_DISPATCH_TARGET(

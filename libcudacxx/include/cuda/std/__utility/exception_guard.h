@@ -70,13 +70,13 @@ struct __exception_guard_exceptions
 {
   __exception_guard_exceptions() = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit __exception_guard_exceptions(_Rollback __rollback)
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 explicit __exception_guard_exceptions(_Rollback __rollback)
       : __rollback_(_CUDA_VSTD::move(__rollback))
       , __completed_(false)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __exception_guard_exceptions(
-    __exception_guard_exceptions&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 __exception_guard_exceptions(__exception_guard_exceptions&& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __rollback_(_CUDA_VSTD::move(__other.__rollback_))
       , __completed_(__other.__completed_)
   {
@@ -87,12 +87,12 @@ struct __exception_guard_exceptions
   __exception_guard_exceptions& operator=(__exception_guard_exceptions const&) = delete;
   __exception_guard_exceptions& operator=(__exception_guard_exceptions&&)      = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __complete() noexcept
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~__exception_guard_exceptions()
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__exception_guard_exceptions()
   {
     if (!__completed_)
     {
@@ -111,10 +111,9 @@ template <class _Rollback>
 struct __exception_guard_noexceptions
 {
   __exception_guard_noexceptions() = delete;
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback)
-  {}
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback) {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
     __exception_guard_noexceptions&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __completed_(__other.__completed_)
   {
@@ -125,12 +124,12 @@ struct __exception_guard_noexceptions
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions const&) = delete;
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS void __complete() noexcept
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS ~__exception_guard_noexceptions()
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS ~__exception_guard_noexceptions()
   {
     _CCCL_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }
@@ -150,7 +149,7 @@ using __exception_guard = __exception_guard_exceptions<_Rollback>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Rollback>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollback __rollback)
+_CCCL_API constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollback __rollback)
 {
   return __exception_guard<_Rollback>(_CUDA_VSTD::move(__rollback));
 }

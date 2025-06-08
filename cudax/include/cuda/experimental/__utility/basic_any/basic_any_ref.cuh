@@ -144,13 +144,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API static constexpr auto has_value() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API static constexpr auto has_value() noexcept -> bool
   {
     return true;
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }
@@ -180,10 +180,10 @@ private:
   {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_HOST_API void reset() noexcept {}
+  _CCCL_NODEBUG_HOST_API void reset() noexcept {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_HOST_API void __release() noexcept {}
+  _CCCL_NODEBUG_HOST_API void __release() noexcept {}
 
   //! \brief Rebinds the reference with a vtable pointer and object pointer.
   _CCCL_HOST_API void __set_ref(__vptr_for<interface_type> __vptr,
@@ -230,17 +230,17 @@ private:
     __set_ref(__to_vptr, __from.__get_optr());
   }
 
-  _CCCL_TRIVIAL_HOST_API auto __get_optr() const noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ref, void>*
+  _CCCL_NODEBUG_HOST_API auto __get_optr() const noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ref, void>*
   {
     return __optr_;
   }
 
-  _CCCL_TRIVIAL_HOST_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
+  _CCCL_NODEBUG_HOST_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
   {
     return __vptr_;
   }
 
-  _CCCL_TRIVIAL_HOST_API auto __get_rtti() const noexcept -> __rtti const*
+  _CCCL_NODEBUG_HOST_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __vptr_->__query_interface(iunknown());
   }
@@ -262,11 +262,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   using typename basic_any<__ireference<_Interface>>::interface_type;
   using basic_any<__ireference<_Interface>>::__is_const_ref;
 
-  _CCCL_TRIVIAL_HOST_API basic_any(basic_any&& __other) noexcept
+  _CCCL_NODEBUG_HOST_API basic_any(basic_any&& __other) noexcept
       : basic_any(const_cast<basic_any const&>(__other))
   {}
 
-  _CCCL_TRIVIAL_HOST_API basic_any(basic_any& __other) noexcept
+  _CCCL_NODEBUG_HOST_API basic_any(basic_any& __other) noexcept
       : basic_any(const_cast<basic_any const&>(__other))
   {}
 
@@ -317,7 +317,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   auto operator=(basic_any&&) -> basic_any&      = delete;
   auto operator=(basic_any const&) -> basic_any& = delete;
 
-  _CCCL_TRIVIAL_HOST_API auto move() & noexcept -> basic_any<__ireference<_Interface>>&&
+  _CCCL_NODEBUG_HOST_API auto move() & noexcept -> basic_any<__ireference<_Interface>>&&
   {
     return _CUDA_VSTD::move(*this);
   }

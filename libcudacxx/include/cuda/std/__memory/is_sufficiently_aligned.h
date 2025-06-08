@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _ByteAlignment, class _ElementType>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
+[[nodiscard]] _CCCL_API bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
 {
   return _CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _ByteAlignment == 0;
 }

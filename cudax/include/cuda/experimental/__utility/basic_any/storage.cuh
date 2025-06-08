@@ -60,12 +60,12 @@ _CCCL_HOST_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
 template <class _Tp,
           class _Up,
           class _Vp = decltype(true ? _CUDA_VSTD::type_identity_t<_Tp*>() : _CUDA_VSTD::type_identity_t<_Up*>())>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
+[[nodiscard]] _CCCL_NODEBUG_HOST_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
 {
   return static_cast<_Vp>(__lhs) == static_cast<_Vp>(__rhs);
 }
 
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __ptr_eq(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t) noexcept
+[[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto __ptr_eq(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t) noexcept
   -> bool
 {
   return false;

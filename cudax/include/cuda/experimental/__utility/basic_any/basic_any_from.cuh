@@ -37,19 +37,19 @@ namespace cuda::experimental
 //! a pointer or a reference to the full `basic_any` object.
 //!
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>&& __self) noexcept -> basic_any<_Super>&&
+[[nodiscard]] _CCCL_NODEBUG_HOST_API auto basic_any_from(_Interface<_Super>&& __self) noexcept -> basic_any<_Super>&&
 {
   return static_cast<basic_any<_Super>&&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>& __self) noexcept -> basic_any<_Super>&
+[[nodiscard]] _CCCL_NODEBUG_HOST_API auto basic_any_from(_Interface<_Super>& __self) noexcept -> basic_any<_Super>&
 {
   return static_cast<basic_any<_Super>&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super> const& __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_HOST_API auto basic_any_from(_Interface<_Super> const& __self) noexcept
   -> basic_any<_Super> const&
 {
   return static_cast<basic_any<_Super> const&>(__self);
@@ -65,13 +65,13 @@ template <template <class...> class _Interface>
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>* __self) noexcept -> basic_any<_Super>*
+[[nodiscard]] _CCCL_NODEBUG_HOST_API auto basic_any_from(_Interface<_Super>* __self) noexcept -> basic_any<_Super>*
 {
   return static_cast<basic_any<_Super>*>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super> const* __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_HOST_API auto basic_any_from(_Interface<_Super> const* __self) noexcept
   -> basic_any<_Super> const*
 {
   return static_cast<basic_any<_Super> const*>(__self);

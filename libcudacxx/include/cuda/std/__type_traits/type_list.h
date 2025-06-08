@@ -337,15 +337,15 @@ using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_lis
 namespace __detail
 {
 template <template <class...> class _Fn, class... _Ts>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
+_CCCL_API auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
   -> __type_list<_Ts...>;
 
 template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
+_CCCL_API auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
   -> __type_list<integral_constant<_Ty, _Us>...>;
 
 template <class _Ret, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
+_CCCL_API auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
   -> __type_list<_Ret, _Args...>;
 } // namespace __detail
 
@@ -383,9 +383,9 @@ namespace __detail
 {
 // Only the following precise formulation works with nvcc < 12.2
 template <class _Fn, class... _Ts, template <class...> class _Fn2 = _Fn::template __call, class = _Fn2<_Ts...>>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
+_CCCL_API auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
 
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(void*) -> false_type;
+_CCCL_API auto __type_callable_fn(void*) -> false_type;
 } // namespace __detail
 
 //! \brief Test whether a meta-callable is callable with a given set of
@@ -510,7 +510,7 @@ template <class... _Ts>
 using __type_tuple = __type_tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <size_t _Ip, class _Ty>
-_LIBCUDACXX_HIDE_FROM_ABI __type_tuple_elem<_Ip, _Ty> __type_tuple_get(__type_tuple_elem<_Ip, _Ty>);
+_CCCL_API __type_tuple_elem<_Ip, _Ty> __type_tuple_get(__type_tuple_elem<_Ip, _Ty>);
 
 template <size_t _Ip, class... _Ts>
 using __type_tuple_element_t _CCCL_NODEBUG_ALIAS =
@@ -654,10 +654,10 @@ using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(
 namespace __detail
 {
 template <auto _Label, class _Value>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
+_CCCL_API auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
 
 template <auto _Label, class _Value>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
+_CCCL_API auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
 } // namespace __detail
 
 //! \see __type_switch
@@ -733,7 +733,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
             class... _Gs,
             class... _Hs,
             class... _Tail>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(
+  _CCCL_API static auto __fn(
     __type_list_ptr<_Ts...>, // state
     __type_list_ptr<_As...>, // 1
     __type_list_ptr<_Bs...>, // 2
@@ -760,7 +760,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<0>
 {
   template <class... _Ts>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
+  _CCCL_API static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
 };
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
@@ -1050,7 +1050,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_value_list : __type_list<integral_co
 namespace __detail
 {
 template <class _Ty, _Ty _Start, _Ty _Stride, _Ty... _Is>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
+_CCCL_API auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
   -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
 } // namespace __detail
 

@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Container, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI typename _Container::size_type __cccl_erase_if_container(_Container& __c, _Predicate& __pred)
+_CCCL_API typename _Container::size_type __cccl_erase_if_container(_Container& __c, _Predicate& __pred)
 {
   typename _Container::size_type __old_size = __c.size();
 

@@ -34,7 +34,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type,
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
+_CCCL_API void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "cuda::std::align: alignment must be a power of two!");
   if (__space < __size)

@@ -28,10 +28,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Shape>
-_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
-  [[maybe_unused]] const volatile void* __ptr,
-  [[maybe_unused]] _Shape __shape,
-  [[maybe_unused]] access_property::persisting __prop) noexcept
+_CCCL_API void apply_access_property([[maybe_unused]] const volatile void* __ptr,
+                                     [[maybe_unused]] _Shape __shape,
+                                     [[maybe_unused]] access_property::persisting __prop) noexcept
 {
   // clang-format off
   NV_IF_TARGET(
@@ -53,10 +52,9 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
 }
 
 template <typename _Shape>
-_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
-  [[maybe_unused]] const volatile void* __ptr,
-  [[maybe_unused]] _Shape __shape,
-  [[maybe_unused]] access_property::normal __prop) noexcept
+_CCCL_API void apply_access_property([[maybe_unused]] const volatile void* __ptr,
+                                     [[maybe_unused]] _Shape __shape,
+                                     [[maybe_unused]] access_property::normal __prop) noexcept
 {
   // clang-format off
   NV_IF_TARGET(

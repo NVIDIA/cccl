@@ -55,7 +55,7 @@ struct __uses_alloc_ctor : integral_constant<int, __uses_alloc_ctor_imp<_Tp, _Al
 {};
 
 template <class _Tp, class _Allocator, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API void
 __user_alloc_construct_impl(integral_constant<int, 0>, _Tp* __storage, const _Allocator&, _Args&&... __args)
 {
   new (__storage) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
@@ -63,7 +63,7 @@ __user_alloc_construct_impl(integral_constant<int, 0>, _Tp* __storage, const _Al
 
 // FIXME: This should have a version which takes a non-const alloc.
 template <class _Tp, class _Allocator, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API void
 __user_alloc_construct_impl(integral_constant<int, 1>, _Tp* __storage, const _Allocator& __a, _Args&&... __args)
 {
   new (__storage) _Tp(allocator_arg, __a, _CUDA_VSTD::forward<_Args>(__args)...);
@@ -71,7 +71,7 @@ __user_alloc_construct_impl(integral_constant<int, 1>, _Tp* __storage, const _Al
 
 // FIXME: This should have a version which takes a non-const alloc.
 template <class _Tp, class _Allocator, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API void
 __user_alloc_construct_impl(integral_constant<int, 2>, _Tp* __storage, const _Allocator& __a, _Args&&... __args)
 {
   new (__storage) _Tp(_CUDA_VSTD::forward<_Args>(__args)..., __a);

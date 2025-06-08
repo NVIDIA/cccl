@@ -103,7 +103,7 @@ private:
   __cuda_error_t __status_;
 };
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
+[[noreturn]] _CCCL_API void __throw_cuda_error(
   [[maybe_unused]] const __cuda_error_t __status,
   [[maybe_unused]] const char* __msg,
   [[maybe_unused]] const char* __api                 = nullptr,
@@ -118,15 +118,14 @@ private:
 class cuda_error
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI cuda_error(
-    const __cuda_error_t,
-    const char*,
-    const char*                 = nullptr,
-    _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current()) noexcept
+  _CCCL_API cuda_error(const __cuda_error_t,
+                       const char*,
+                       const char*                 = nullptr,
+                       _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current()) noexcept
   {}
 };
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
+[[noreturn]] _CCCL_API void __throw_cuda_error(
   const __cuda_error_t,
   const char*,
   const char*                 = nullptr,

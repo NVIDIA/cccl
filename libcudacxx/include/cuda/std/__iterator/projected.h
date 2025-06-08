@@ -35,7 +35,7 @@ struct __projected_impl
   struct __type
   {
     using value_type = remove_cvref_t<indirect_result_t<_Proj, _It>>;
-    _LIBCUDACXX_HIDE_FROM_ABI indirect_result_t<_Proj, _It> operator*() const; // not defined
+    _CCCL_API indirect_result_t<_Proj, _It> operator*() const; // not defined
   };
 };
 
@@ -46,7 +46,7 @@ struct __projected_impl<_It, _Proj, enable_if_t<weakly_incrementable<_It>>>
   {
     using value_type      = remove_cvref_t<indirect_result_t<_Proj, _It>>;
     using difference_type = iter_difference_t<_It>;
-    _LIBCUDACXX_HIDE_FROM_ABI indirect_result_t<_Proj, _It> operator*() const; // not defined
+    _CCCL_API indirect_result_t<_Proj, _It> operator*() const; // not defined
   };
 };
 

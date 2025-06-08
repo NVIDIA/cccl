@@ -45,15 +45,15 @@ public:
   static constexpr int digits       = 11;
   static constexpr int digits10     = 3;
   static constexpr int max_digits10 = 5;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x0400u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x7bffu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0xfbffu));
   }
@@ -61,11 +61,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x1400u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x3800u));
   }
@@ -80,19 +80,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = true;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x7c00u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x7e00u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x7d00u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__half>(uint16_t(0x0001u));
   }
@@ -122,15 +122,15 @@ public:
   static constexpr int digits       = 8;
   static constexpr int digits10     = 2;
   static constexpr int max_digits10 = 4;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x0080u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7f7fu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0xff7fu));
   }
@@ -138,11 +138,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x3c00u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x3f00u));
   }
@@ -157,19 +157,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = true;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7f80u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7fc0u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7fa0u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(uint16_t(0x0001u));
   }
@@ -199,15 +199,15 @@ public:
   static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 3;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x08u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x7eu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0xfeu));
   }
@@ -215,11 +215,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x20u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x30u));
   }
@@ -234,19 +234,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = false;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x7fu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x01u));
   }
@@ -276,15 +276,15 @@ public:
   static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x04u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7bu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0xfbu));
   }
@@ -292,11 +292,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x34u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x38u));
   }
@@ -311,19 +311,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = true;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7cu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7eu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7du));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x01u));
   }
@@ -353,15 +353,15 @@ public:
   static constexpr int digits       = 1;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x00u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0xfeu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x00u));
   }
@@ -369,11 +369,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x7fu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x7fu));
   }
@@ -388,19 +388,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = false;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0xffu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return type{};
   }
@@ -430,15 +430,15 @@ public:
   static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 3;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x08u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x1fu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x3fu));
   }
@@ -446,11 +446,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x01u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x04u));
   }
@@ -465,19 +465,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = false;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x01u));
   }
@@ -507,15 +507,15 @@ public:
   static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x04u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x1fu));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x3fu));
   }
@@ -523,11 +523,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x04u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x08u));
   }
@@ -542,19 +542,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = false;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x01u));
   }
@@ -584,15 +584,15 @@ public:
   static constexpr int digits       = 2;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x2u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x7u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0xfu));
   }
@@ -600,11 +600,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x1u));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x1u));
   }
@@ -619,19 +619,19 @@ public:
   static constexpr bool has_signaling_NaN                                        = false;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return type{};
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x1u));
   }
@@ -663,34 +663,34 @@ public:
   static constexpr int max_digits10 = 36;
 
 #  if _CCCL_HAS_FLOAT128_LITERAL()
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _CCCL_API static constexpr type min() noexcept
   {
     return _CCCL_FLOAT128_LITERAL(3.36210314311209350626267781732175260e-4932);
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type min() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type min() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x0001'0000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
 #  if _CCCL_HAS_FLOAT128_LITERAL()
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _CCCL_API static constexpr type max() noexcept
   {
     return _CCCL_FLOAT128_LITERAL(1.18973149535723176508575932662800702e+4932);
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type max() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type max() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7ffe'ffff'ffff'ffff} << 64 | 0xffff'ffff'ffff'ffff);
   }
 #  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
 #  if _CCCL_HAS_FLOAT128_LITERAL()
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _CCCL_API static constexpr type lowest() noexcept
   {
     return -max();
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type lowest() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type lowest() noexcept
   {
     return -max();
   }
@@ -699,11 +699,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr type epsilon() noexcept
   {
     return type(1.92592994438723585305597794258492732e-34);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _CCCL_API static constexpr type round_error() noexcept
   {
     return type(0.5);
   }
@@ -720,45 +720,45 @@ public:
   _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
 
 #  if defined(_CCCL_BUILTIN_HUGE_VALF128)
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _CCCL_API static constexpr type infinity() noexcept
   {
     return _CCCL_BUILTIN_HUGE_VALF128();
   }
 #  else // ^^^ _CCCL_BUILTIN_HUGE_VALF128 ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF128 vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'0000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF128 ^^^
 #  if defined(_CCCL_BUILTIN_NANF128)
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr type quiet_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANF128("");
   }
 #  else // ^^^ _CCCL_BUILTIN_NANF128 ^^^ // vvv !_CCCL_BUILTIN_NANF128 vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'8000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_NANF128 ^^^
 #  if defined(_CCCL_BUILTIN_NANSF128)
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr type signaling_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANSF128("");
   }
 #  else // ^^^ _CCCL_BUILTIN_NANSF128 ^^^ // vvv !_CCCL_BUILTIN_NANSF128 vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_NANSF128 ^^^
 #  if _CCCL_HAS_FLOAT128_LITERAL()
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CCCL_FLOAT128_LITERAL(6.47517511943802511092443895822764655e-4966);
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type denorm_min() noexcept
+  _CCCL_API static _LIBCUDACXX_CONSTEXPR_BIT_CAST type denorm_min() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x1});
   }

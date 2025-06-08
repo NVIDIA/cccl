@@ -42,11 +42,11 @@ private:
   size_type __s_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI __allocator_destructor(_Alloc& __a, size_type __s) noexcept
+  _CCCL_API __allocator_destructor(_Alloc& __a, size_type __s) noexcept
       : __alloc_(__a)
       , __s_(__s)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI void operator()(pointer __p) noexcept
+  _CCCL_API void operator()(pointer __p) noexcept
   {
     __alloc_traits::deallocate(__alloc_, __p, __s_);
   }

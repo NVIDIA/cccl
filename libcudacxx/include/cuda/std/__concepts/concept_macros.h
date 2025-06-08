@@ -72,14 +72,14 @@ template <class...>
 struct __cccl_tag;
 
 template <class>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
+_CCCL_API constexpr bool __cccl_is_true()
 {
   return true;
 }
 
 #if _CCCL_COMPILER(MSVC)
 template <bool _Bp>
-_LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
+_CCCL_API __cccl_enable_if_t<_Bp> __cccl_requires()
 {}
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
@@ -93,7 +93,7 @@ template <class _Impl, class... _Args>
 using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __cccl_unused(_Tp&&) noexcept
+_CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
 {}
 
 // So that we can refer to the ::cuda::std namespace below
@@ -174,12 +174,12 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 
 #  define _CCCL_CONCEPT inline constexpr bool
 
-#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                                                                         \
-    _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQS_##__VA_ARGS__> {} \
-    template <class... _As>                                                                                          \
-    _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
-      ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                                \
-    _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
+#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                                                         \
+    _CCCL_API auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQS_##__VA_ARGS__> {} \
+    template <class... _As>                                                                          \
+    _CCCL_API char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
+      ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                \
+    _CCCL_API char (&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
 #  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_CONCEPT_FRAGMENT_TRUE(...) \
       ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()
@@ -253,19 +253,19 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
     {                                                                                                           \
       using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                                    \
       template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                          \
-      _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
+      _CCCL_API static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 
-#  define _CCCL_REQUIRES_EXPR_2(...)                                                                  \
-    ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}               \
-    template <class... _Args, class = decltype(&__cccl_self_t::__cccl_well_formed<_Args...>)>         \
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(::__cccl_tag<_Args...>*, int) \
-    {                                                                                                 \
-      return true;                                                                                    \
-    }                                                                                                 \
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(void*, long)                  \
-    {                                                                                                 \
-      return false;                                                                                   \
-    }                                                                                                 \
+#  define _CCCL_REQUIRES_EXPR_2(...)                                                          \
+    ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}       \
+    template <class... _Args, class = decltype(&__cccl_self_t::__cccl_well_formed<_Args...>)> \
+    _CCCL_API static constexpr bool __cccl_is_satisfied(::__cccl_tag<_Args...>*, int)         \
+    {                                                                                         \
+      return true;                                                                            \
+    }                                                                                         \
+    _CCCL_API static constexpr bool __cccl_is_satisfied(void*, long)                          \
+    {                                                                                         \
+      return false;                                                                           \
+    }                                                                                         \
     }
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 

@@ -37,13 +37,13 @@ struct __get_requirements_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, __get_requirements_t>)
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -52,7 +52,7 @@ struct __get_requirements_t
 _CCCL_GLOBAL_CONSTANT auto __get_requirements = __get_requirements_t{};
 
 template <class... _Requirements>
-[[nodiscard]] _CCCL_TRIVIAL_API auto require(_Requirements... __requirements)
+[[nodiscard]] _CCCL_NODEBUG_API auto require(_Requirements... __requirements)
 {
   static_assert((_CUDA_VSTD::is_base_of_v<__requirement, _Requirements> && ...),
                 "Only requirements can be passed to require");

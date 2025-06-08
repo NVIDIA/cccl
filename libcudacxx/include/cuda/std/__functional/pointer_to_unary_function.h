@@ -38,17 +38,17 @@ _LIBCUDACXX_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg,
   _Result (*__f_)(_Arg);
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit pointer_to_unary_function(_Result (*__f)(_Arg))
+  _CCCL_API explicit pointer_to_unary_function(_Result (*__f)(_Arg))
       : __f_(__f)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Arg __x) const
+  _CCCL_API _Result operator()(_Arg __x) const
   {
     return __f_(__x);
   }
 };
 
 template <class _Arg, class _Result>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI pointer_to_unary_function<_Arg, _Result> ptr_fun(_Result (*__f)(_Arg))
+_LIBCUDACXX_DEPRECATED _CCCL_API pointer_to_unary_function<_Arg, _Result> ptr_fun(_Result (*__f)(_Arg))
 {
   return pointer_to_unary_function<_Arg, _Result>(__f);
 }

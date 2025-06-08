@@ -36,9 +36,9 @@ struct __has_result_type
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::result_type* = 0);
+  _CCCL_API static true_type __test(typename _Up::result_type* = 0);
 
 public:
   static const bool value = decltype(__test<_Tp>(0))::value;
@@ -55,9 +55,9 @@ private:
     char __lx;
     char __lxx;
   };
-  static _LIBCUDACXX_HIDE_FROM_ABI __two __test(...);
+  static _CCCL_API __two __test(...);
   template <class _Ap, class _Rp>
-  static _LIBCUDACXX_HIDE_FROM_ABI __unary_function<_Ap, _Rp> __test(const volatile __unary_function<_Ap, _Rp>*);
+  static _CCCL_API __unary_function<_Ap, _Rp> __test(const volatile __unary_function<_Ap, _Rp>*);
 
 public:
   static const bool value = !is_same<decltype(__test((_Tp*) 0)), __two>::value;
@@ -73,10 +73,9 @@ private:
     char __lx;
     char __lxx;
   };
-  static __two _LIBCUDACXX_HIDE_FROM_ABI __test(...);
+  static __two _CCCL_API __test(...);
   template <class _A1, class _A2, class _Rp>
-  static _LIBCUDACXX_HIDE_FROM_ABI __binary_function<_A1, _A2, _Rp>
-  __test(const volatile __binary_function<_A1, _A2, _Rp>*);
+  static _CCCL_API __binary_function<_A1, _A2, _Rp> __test(const volatile __binary_function<_A1, _A2, _Rp>*);
 
 public:
   static const bool value = !is_same<decltype(__test((_Tp*) 0)), __two>::value;

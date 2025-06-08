@@ -65,7 +65,7 @@ _CCCL_CONCEPT __movable_box_object = move_constructible<_Tp> && is_object_v<_Tp>
 // whenever we can apply any of these optimizations for both the copy assignment and the move assignment
 // operator.
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __doesnt_need_empty_state() noexcept
+[[nodiscard]] _CCCL_API constexpr bool __doesnt_need_empty_state() noexcept
 {
   if constexpr (copy_constructible<_Tp>)
   {
@@ -92,7 +92,7 @@ template <class _Tp>
 // Hence, when the _Tp doesn't have an assignment operator, we can't risk making it a potentially-overlapping
 // subobject because of the above, and we don't use [[no_unique_address]] in that case.
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_use_no_unique_address() noexcept
+[[nodiscard]] _CCCL_API constexpr bool __can_use_no_unique_address() noexcept
 {
   if constexpr (copy_constructible<_Tp>)
   {
@@ -113,7 +113,7 @@ struct __mb_optional_destruct_base
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
+  _CCCL_API constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
       : __val_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
@@ -124,13 +124,13 @@ struct __mb_optional_destruct_base<_Tp, true>
 {
   _CCCL_NO_UNIQUE_ADDRESS optional<_Tp> __val_;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mb_optional_destruct_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
+  _CCCL_API constexpr __mb_optional_destruct_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __val_(in_place)
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
+  _CCCL_API constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
       : __val_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
@@ -156,7 +156,7 @@ struct __mb_optional_copy_assign<_Tp, true> : __mb_optional_destruct_base<_Tp>
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(__mb_optional_copy_assign&&)      = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mb_optional_copy_assign&
+  _CCCL_API constexpr __mb_optional_copy_assign&
   operator=(const __mb_optional_copy_assign& __other) noexcept(is_nothrow_copy_constructible_v<_Tp>)
   {
     if (this != _CUDA_VSTD::addressof(__other))
@@ -190,7 +190,7 @@ struct __mb_optional_move_assign<_Tp, false> : __mb_optional_copy_assign<_Tp>
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_move_assign(__mb_optional_move_assign&&)                 = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_move_assign& operator=(const __mb_optional_move_assign&) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mb_optional_move_assign&
+  _CCCL_API constexpr __mb_optional_move_assign&
   operator=(__mb_optional_move_assign&& __other) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     if (this != _CUDA_VSTD::addressof(__other))
@@ -215,25 +215,25 @@ struct __mb_optional_base
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_base, __mb_optional_move_assign, _Tp);
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp const& operator*() const noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp const& operator*() const noexcept
   {
     return *this->__val_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator*() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp& operator*() noexcept
   {
     return *this->__val_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* operator->() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Tp* operator->() const noexcept
   {
     return this->__val_.operator->();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator->() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp* operator->() noexcept
   {
     return this->__val_.operator->();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __has_value() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __has_value() const noexcept
   {
     return this->__val_.has_value();
   }
@@ -246,8 +246,8 @@ struct __mb_holder
   _Tp __val_;
 
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __mb_holder(in_place_t, _Args&&... __args) noexcept(
-    is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit __mb_holder(in_place_t,
+                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 };
@@ -258,8 +258,8 @@ struct __mb_holder<_Tp, true>
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
 
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __mb_holder(in_place_t, _Args&&... __args) noexcept(
-    is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit __mb_holder(in_place_t,
+                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 };
@@ -271,8 +271,8 @@ struct __mb_holder_base
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __mb_holder_base(in_place_t, _Args&&... __args) noexcept(
-    is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
+                                                _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __holder_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 };
@@ -282,14 +282,14 @@ struct __mb_holder_base<_Tp, true>
 {
   _CCCL_NO_UNIQUE_ADDRESS __mb_holder<_Tp> __holder_;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mb_holder_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
+  _CCCL_API constexpr __mb_holder_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __holder_(in_place)
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __mb_holder_base(in_place_t, _Args&&... __args) noexcept(
-    is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
+                                                _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __holder_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 };
@@ -308,7 +308,7 @@ struct __mb_copy_assign<_Tp, false> : __mb_holder_base<_Tp>
   _CCCL_HIDE_FROM_ABI constexpr __mb_copy_assign(const __mb_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_copy_assign(__mb_copy_assign&&)      = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mb_copy_assign& operator=(const __mb_copy_assign& __other) noexcept
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 __mb_copy_assign& operator=(const __mb_copy_assign& __other) noexcept
   {
     static_assert(is_nothrow_copy_constructible_v<_Tp>);
     static_assert(!__can_use_no_unique_address<_Tp>());
@@ -337,7 +337,7 @@ struct __mb_move_assign<_Tp, false> : __mb_copy_assign<_Tp>
   _CCCL_HIDE_FROM_ABI constexpr __mb_move_assign(__mb_move_assign&&)                 = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_move_assign& operator=(const __mb_move_assign&) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mb_move_assign&
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 __mb_move_assign&
   operator=(__mb_move_assign&& __other) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     static_assert(is_nothrow_move_constructible_v<_Tp>);
@@ -357,25 +357,25 @@ struct __mb_base : __mb_move_assign<_Tp>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_base, __mb_move_assign, _Tp);
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp const& operator*() const noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp const& operator*() const noexcept
   {
     return this->__holder_.__val_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator*() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp& operator*() noexcept
   {
     return this->__holder_.__val_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* operator->() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Tp* operator->() const noexcept
   {
     return _CUDA_VSTD::addressof(this->__holder_.__val_);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator->() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp* operator->() noexcept
   {
     return _CUDA_VSTD::addressof(this->__holder_.__val_);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __has_value() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __has_value() const noexcept
   {
     return true;
   }
@@ -395,8 +395,8 @@ struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __movable_box(in_place_t, _Args&&... __args) noexcept(
-    is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit __movable_box(in_place_t,
+                                             _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __base(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 

@@ -39,10 +39,9 @@ class barrier<thread_scope_thread, _CUDA_VSTD::__empty_completion> : private bar
 public:
   using __base::__base;
 
-  _LIBCUDACXX_HIDE_FROM_ABI friend void
-  init(barrier* __b,
-       _CUDA_VSTD::ptrdiff_t __expected,
-       _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
+  _CCCL_API friend void init(barrier* __b,
+                             _CUDA_VSTD::ptrdiff_t __expected,
+                             _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
   {
     init(static_cast<__base*>(__b), __expected, __completion);
   }

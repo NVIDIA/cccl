@@ -33,14 +33,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct _CCCL_TYPE_VISIBILITY_DEFAULT monostate
 {};
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(monostate, monostate) noexcept
+_CCCL_API constexpr bool operator==(monostate, monostate) noexcept
 {
   return true;
 }
 
 #if _CCCL_STD_VER < 2020
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(monostate, monostate) noexcept
+_CCCL_API constexpr bool operator!=(monostate, monostate) noexcept
 {
   return false;
 }
@@ -49,29 +49,29 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(monostate, monostate) noexce
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr strong_ordering operator<=>(monostate, monostate) noexcept
+_CCCL_API constexpr strong_ordering operator<=>(monostate, monostate) noexcept
 {
   return strong_ordering::equal;
 }
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<(monostate, monostate) noexcept
+_CCCL_API constexpr bool operator<(monostate, monostate) noexcept
 {
   return false;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>(monostate, monostate) noexcept
+_CCCL_API constexpr bool operator>(monostate, monostate) noexcept
 {
   return false;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<=(monostate, monostate) noexcept
+_CCCL_API constexpr bool operator<=(monostate, monostate) noexcept
 {
   return true;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(monostate, monostate) noexcept
+_CCCL_API constexpr bool operator>=(monostate, monostate) noexcept
 {
   return true;
 }
@@ -85,7 +85,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
   using argument_type = monostate;
   using result_type   = size_t;
 
-  _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(const argument_type&) const noexcept
+  _CCCL_API result_type operator()(const argument_type&) const noexcept
   {
     return 66740831; // return a fundamentally attractive random value.
   }

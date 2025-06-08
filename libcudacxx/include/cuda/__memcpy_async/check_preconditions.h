@@ -45,7 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // Check the memcpy_async preconditions, return value is intended for testing purposes exclusively
 template <class _Tp, class _Size>
-_LIBCUDACXX_HIDE_FROM_ABI bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size)
+_CCCL_API bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size)
 {
   constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
 
@@ -67,7 +67,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* _
 }
 
 template <class _Size>
-_LIBCUDACXX_HIDE_FROM_ABI bool __memcpy_async_check_pre(void* __dst, const void* __src, _Size __size)
+_CCCL_API bool __memcpy_async_check_pre(void* __dst, const void* __src, _Size __size)
 {
   return ::cuda::__memcpy_async_check_pre(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __size);
 }

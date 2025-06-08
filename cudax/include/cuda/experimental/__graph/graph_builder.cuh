@@ -240,7 +240,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \brief Retrieves the underlying CUDA graph object.
   //! \return The `cudaGraph_t` handle.
   //! \throws None
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
@@ -249,7 +249,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \return The `cudaGraph_t` handle, leaving this object in a null state.
   //! \throws None
   //! \post `get() == nullptr`
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto release() noexcept -> cudaGraph_t
   {
     return _CUDA_VSTD::exchange(__graph_, nullptr);
   }
@@ -282,7 +282,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! new node.
   //! \throws cuda::std::cuda_error if adding the node fails.
   template <class _Node>
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
   {
     return add(_CCCL_MOVE(__node), _CUDA_VSTD::span<cudaGraphNode_t, 0>{});
   }

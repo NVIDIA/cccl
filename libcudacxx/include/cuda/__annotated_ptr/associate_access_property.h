@@ -99,7 +99,7 @@ template <typename _Property>
 #endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Type, typename _Property>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
+[[nodiscard]] _CCCL_API _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
 {
   static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
   NV_IF_ELSE_TARGET(
@@ -114,7 +114,7 @@ template <typename _Type, typename _Property>
 // Public access property methods
 
 template <typename _Tp, typename _Property>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
+[[nodiscard]] _CCCL_API _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
 {
   static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
   return ::cuda::__associate(__ptr, __prop);

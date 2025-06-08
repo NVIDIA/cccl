@@ -58,13 +58,13 @@ private:
   streambuf_type* __sbuf_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator(ostream_type& __s) noexcept
+  _CCCL_API ostreambuf_iterator(ostream_type& __s) noexcept
       : __sbuf_(__s.rdbuf())
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator(streambuf_type* __s) noexcept
+  _CCCL_API ostreambuf_iterator(streambuf_type* __s) noexcept
       : __sbuf_(__s)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator=(_CharT __c)
+  _CCCL_API ostreambuf_iterator& operator=(_CharT __c)
   {
     if (__sbuf_ && traits_type::eq_int_type(__sbuf_->sputc(__c), traits_type::eof()))
     {
@@ -72,25 +72,25 @@ public:
     }
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator*()
+  _CCCL_API ostreambuf_iterator& operator*()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator++()
+  _CCCL_API ostreambuf_iterator& operator++()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator++(int)
+  _CCCL_API ostreambuf_iterator& operator++(int)
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool failed() const noexcept
+  _CCCL_API bool failed() const noexcept
   {
     return __sbuf_ == nullptr;
   }
 
   template <class _Ch, class _Tr>
-  friend _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator<_Ch, _Tr> __pad_and_output(
+  friend _CCCL_API ostreambuf_iterator<_Ch, _Tr> __pad_and_output(
     ostreambuf_iterator<_Ch, _Tr> __s, const _Ch* __ob, const _Ch* __op, const _Ch* __oe, ios_base& __iob, _Ch __fl);
 };
 

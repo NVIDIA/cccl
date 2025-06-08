@@ -44,7 +44,7 @@ namespace cuda::experimental
 //! \note A static assertion ensures that all provided arguments are convertible to
 //!       `graph_node_ref`. If this condition is not met, a compilation error will occur.
 template <class... _Nodes>
-_CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
+_CCCL_NODEBUG_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
   -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>
 {
   return _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>{{graph_node_ref(__nodes).get()...}};

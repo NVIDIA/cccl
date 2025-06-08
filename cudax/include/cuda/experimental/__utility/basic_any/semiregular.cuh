@@ -171,13 +171,13 @@ struct iequality_comparable_base : interface<iequality_comparable>
   // These overloads are only necessary so that iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `iequality_comparable<>::overloads` alias template below.
-  [[noreturn]] friend _CCCL_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CCCL_NODEBUG_HOST_API auto
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
   }
 
-  [[noreturn]] friend _CCCL_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CCCL_NODEBUG_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
@@ -199,7 +199,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
                  || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API friend auto
   operator!=(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -238,7 +238,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API friend auto
   operator!=(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -247,7 +247,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API friend auto
   operator!=(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);

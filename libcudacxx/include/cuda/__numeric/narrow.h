@@ -40,7 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-narrowing">ES.46</a> and <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named">ES.49</a>.
 template <class _To, class _From>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _To
+[[nodiscard]] _CCCL_API constexpr _To
 narrow_cast(_From&& __from) noexcept(noexcept(static_cast<_To>(_CUDA_VSTD::forward<_From>(__from))))
 {
   return static_cast<_To>(_CUDA_VSTD::forward<_From>(__from));
@@ -55,7 +55,7 @@ struct narrowing_error : ::std::runtime_error
 };
 #endif // _CCCL_HAS_EXCEPTIONS()
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_narrowing_error()
+[[noreturn]] _CCCL_API void __throw_narrowing_error()
 {
 #if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw narrowing_error{};), (_CUDA_VSTD_NOVERSION::terminate();))
@@ -70,7 +70,7 @@ struct narrowing_error : ::std::runtime_error
 //! Guidelines <a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-narrowing">ES.46</a> and <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named">ES.49</a>.
 template <class _To, class _From>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _To narrow(_From __from)
+[[nodiscard]] _CCCL_API constexpr _To narrow(_From __from)
 {
   static_assert(_CUDA_VSTD::is_constructible_v<_From, _To>);
   static_assert(_CUDA_VSTD::is_constructible_v<_To, _From>);

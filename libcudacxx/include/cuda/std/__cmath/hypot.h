@@ -45,7 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // hypot
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float hypot(float __x, float __y) noexcept
+[[nodiscard]] _CCCL_API float hypot(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_HYPOTF)
   return _CCCL_BUILTIN_HYPOTF(__x, __y);
@@ -54,7 +54,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // !_CCCL_BUILTIN_HYPOTF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float hypotf(float __x, float __y) noexcept
+[[nodiscard]] _CCCL_API float hypotf(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_HYPOTF)
   return _CCCL_BUILTIN_HYPOTF(__x, __y);
@@ -63,7 +63,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // !_CCCL_BUILTIN_HYPOTF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double hypot(double __x, double __y) noexcept
+[[nodiscard]] _CCCL_API double hypot(double __x, double __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_HYPOT)
   return _CCCL_BUILTIN_HYPOT(__x, __y);
@@ -73,7 +73,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double hypot(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API long double hypot(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_HYPOTL)
   return _CCCL_BUILTIN_HYPOTL(__x, __y);
@@ -82,7 +82,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  endif // !_CCCL_BUILTIN_HYPOTL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double hypotl(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API long double hypotl(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_HYPOTL)
   return _CCCL_BUILTIN_HYPOTL(__x, __y);
@@ -93,21 +93,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y) noexcept
+[[nodiscard]] _CCCL_API __half hypot(__half __x, __half __y) noexcept
 {
   return __float2half(_CUDA_VSTD::hypotf(__half2float(__x), __half2float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
+[[nodiscard]] _CCCL_API __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::hypotf(__bfloat162float(__x), __bfloat162float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __promote_t<_A1, _A2> hypot(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _CCCL_API __promote_t<_A1, _A2> hypot(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
   static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
@@ -121,7 +121,7 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
 //    If the square of an argument might run into issues, we scale the arguments appropriately.
 // See https://github.com/llvm/llvm-project/issues/92782 for a detailed discussion and summary.
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp __hypot(_Tp __x, _Tp __y, _Tp __z)
+[[nodiscard]] _CCCL_API _Tp __hypot(_Tp __x, _Tp __y, _Tp __z)
 {
   // Factors needed to determine if over-/underflow might happen
   constexpr int __exp            = _CUDA_VSTD::numeric_limits<_Tp>::max_exponent / 2;
@@ -152,43 +152,42 @@ template <class _Tp>
   return _CUDA_VSTD::sqrt(__x * __x + __y * __y + __z * __z) / __scale;
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float hypot(float __x, float __y, float __z) noexcept
+[[nodiscard]] _CCCL_API float hypot(float __x, float __y, float __z) noexcept
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float hypotf(float __x, float __y, float __z) noexcept
+[[nodiscard]] _CCCL_API float hypotf(float __x, float __y, float __z) noexcept
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double hypot(double __x, double __y, double __z) noexcept
+[[nodiscard]] _CCCL_API double hypot(double __x, double __y, double __z) noexcept
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double hypot(long double __x, long double __y, long double __z) noexcept
+[[nodiscard]] _CCCL_API long double hypot(long double __x, long double __y, long double __z) noexcept
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double hypotl(long double __x, long double __y, long double __z) noexcept
+[[nodiscard]] _CCCL_API long double hypotl(long double __x, long double __y, long double __z) noexcept
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y, __half __z) noexcept
+[[nodiscard]] _CCCL_API __half hypot(__half __x, __half __y, __half __z) noexcept
 {
   return __float2half(_CUDA_VSTD::__hypot(__half2float(__x), __half2float(__y), __half2float(__z)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16
-hypot(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
+[[nodiscard]] _CCCL_API __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::__hypot(__bfloat162float(__x), __bfloat162float(__y), __bfloat162float(__z)));
 }
@@ -197,7 +196,7 @@ hypot(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
 _CCCL_TEMPLATE(class _A1, class _A2, class _A3)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, _A1) _CCCL_AND _CCCL_TRAIT(is_arithmetic, _A2)
                  _CCCL_AND _CCCL_TRAIT(is_arithmetic, _A3))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __promote_t<_A1, _A2, _A3> hypot(_A1 __x, _A2 __y, _A3 __z) noexcept
+[[nodiscard]] _CCCL_API __promote_t<_A1, _A2, _A3> hypot(_A1 __x, _A2 __y, _A3 __z) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
   static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)

@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @param __device_object the object residing in device memory
 //! @return Valid pointer to the device object
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_object)
+[[nodiscard]] _CCCL_API _Tp* get_device_address(_Tp& __device_object)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
