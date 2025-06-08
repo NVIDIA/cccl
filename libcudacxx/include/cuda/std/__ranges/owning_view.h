@@ -59,11 +59,11 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(default_initializable<_Range>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr owning_view() noexcept(is_nothrow_default_constructible_v<_Range>)
+  _CCCL_API constexpr owning_view() noexcept(is_nothrow_default_constructible_v<_Range>)
       : view_interface<owning_view<_Rp>>()
   {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr owning_view(_Rp&& __r) noexcept(is_nothrow_move_constructible_v<_Rp>)
+  _CCCL_API constexpr owning_view(_Rp&& __r) noexcept(is_nothrow_move_constructible_v<_Rp>)
       : view_interface<owning_view<_Rp>>()
       , __r_(_CUDA_VSTD::move(__r))
   {}
@@ -71,80 +71,80 @@ public:
   _CCCL_HIDE_FROM_ABI owning_view(owning_view&&)            = default;
   _CCCL_HIDE_FROM_ABI owning_view& operator=(owning_view&&) = default;
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp& base() & noexcept
+  [[nodiscard]] _CCCL_API constexpr _Rp& base() & noexcept
   {
     return __r_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Rp& base() const& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Rp& base() const& noexcept
   {
     return __r_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp&& base() && noexcept
+  [[nodiscard]] _CCCL_API constexpr _Rp&& base() && noexcept
   {
     return _CUDA_VSTD::move(__r_);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Rp&& base() const&& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Rp&& base() const&& noexcept
   {
     return _CUDA_VSTD::move(__r_);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Rp> begin()
+  [[nodiscard]] _CCCL_API constexpr iterator_t<_Rp> begin()
   {
     return _CUDA_VRANGES::begin(__r_);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr sentinel_t<_Rp> end()
+  [[nodiscard]] _CCCL_API constexpr sentinel_t<_Rp> end()
   {
     return _CUDA_VRANGES::end(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto begin() const
+  [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
     return _CUDA_VRANGES::begin(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end() const
+  [[nodiscard]] _CCCL_API constexpr auto end() const
   {
     return _CUDA_VRANGES::end(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, _Range&>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
+  [[nodiscard]] _CCCL_API constexpr bool empty()
   {
     return _CUDA_VRANGES::empty(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, const _Range&>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _CCCL_API constexpr bool empty() const
   {
     return _CUDA_VRANGES::empty(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<_Range>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size()
+  [[nodiscard]] _CCCL_API constexpr auto size()
   {
     return _CUDA_VRANGES::size(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<const _Range>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
+  [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     return _CUDA_VRANGES::size(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<_Range>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data()
+  [[nodiscard]] _CCCL_API constexpr auto data()
   {
     return _CUDA_VRANGES::data(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<const _Range>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data() const
+  [[nodiscard]] _CCCL_API constexpr auto data() const
   {
     return _CUDA_VRANGES::data(__r_);
   }

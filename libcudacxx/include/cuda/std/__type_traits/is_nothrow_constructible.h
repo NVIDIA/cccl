@@ -50,7 +50,7 @@ struct __cccl_is_nothrow_constructible</*is constructible*/ true, /*is reference
 {};
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __implicit_conversion_to(_Tp) noexcept
+_CCCL_API inline void __implicit_conversion_to(_Tp) noexcept
 {}
 
 template <class _Tp, class _Arg>

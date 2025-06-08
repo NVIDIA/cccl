@@ -75,23 +75,21 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_empty<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp&& __t) const
-    noexcept(noexcept(bool(__t.empty())))
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const noexcept(noexcept(bool(__t.empty())))
   {
     return bool(__t.empty());
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_invoke_size<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::size(__t)))
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const noexcept(noexcept(_CUDA_VRANGES::size(__t)))
   {
     return _CUDA_VRANGES::size(__t) == 0;
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_compare_begin_end<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const
     noexcept(noexcept(bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t))))
   {
     return _CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t);

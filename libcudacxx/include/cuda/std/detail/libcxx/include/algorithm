@@ -772,20 +772,20 @@ private:
   _Predicate __p_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI __invert() {}
+  _CCCL_API inline __invert() {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __invert(_Predicate __p)
+  _CCCL_API inline explicit __invert(_Predicate __p)
       : __p_(__p)
   {}
 
   template <class _T1>
-  _LIBCUDACXX_HIDE_FROM_ABI bool operator()(const _T1& __x)
+  _CCCL_API inline bool operator()(const _T1& __x)
   {
     return !__p_(__x);
   }
 
   template <class _T1, class _T2>
-  _LIBCUDACXX_HIDE_FROM_ABI bool operator()(const _T1& __x, const _T2& __y)
+  _CCCL_API inline bool operator()(const _T1& __x, const _T2& __y)
   {
     return __p_(__y, __x);
   }
@@ -1088,7 +1088,7 @@ uniform_int_distribution<_IntType>::operator()(_URNG& __g, const param_type& __p
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
+_CCCL_API inline _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -1114,7 +1114,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
+_CCCL_API inline _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -1136,7 +1136,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
+_CCCL_API inline _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -1154,18 +1154,18 @@ _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_LIBCUDACXX_HIDE_FROM_ABI _SampleIterator sample(
-  _PopulationIterator __first,
-  _PopulationIterator __last,
-  _SampleIterator __output_iter,
-  _Distance __n,
-  _UniformRandomNumberGenerator&& __g)
+_CCCL_API inline _SampleIterator
+sample(_PopulationIterator __first,
+       _PopulationIterator __last,
+       _SampleIterator __output_iter,
+       _Distance __n,
+       _UniformRandomNumberGenerator&& __g)
 {
   return _CUDA_VSTD::__sample(__first, __last, __output_iter, __n, __g);
 }
 
 template <class _RandomAccessIterator, class _UniformRandomNumberGenerator>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 shuffle(_RandomAccessIterator __first, _RandomAccessIterator __last, _UniformRandomNumberGenerator&& __g)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
@@ -1482,8 +1482,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
 }
 
 template <class _ForwardIterator, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
-stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
+_CCCL_API inline _ForwardIterator stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   return __stable_partition<add_lvalue_reference_t<_Predicate>>(
     __first, __last, __pred, typename iterator_traits<_ForwardIterator>::iterator_category());
@@ -1953,90 +1952,84 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
 
 // This forwarder keeps the top call and the recursive calls using the same instantiation, forcing a reference _Compare
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI void sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+_CCCL_API inline void sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   using _Comp_ref = __comp_ref_type<_Compare>;
   _CUDA_VSTD::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
 }
 
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_CCCL_API inline void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::sort(__first, __last, __less{});
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void sort(_Tp** __first, _Tp** __last)
+_CCCL_API inline void sort(_Tp** __first, _Tp** __last)
 {
   _CUDA_VSTD::sort((size_t*) __first, (size_t*) __last, __less{});
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last)
+_CCCL_API inline void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last)
 {
   _CUDA_VSTD::sort(__first.base(), __last.base());
 }
 
 template <class _Tp, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
+_CCCL_API inline void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
 {
   typedef add_lvalue_reference_t<_Compare> _Comp_ref;
   _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, char*>(char*, char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, signed*>(signed*, signed*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, char*>(char*, char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, signed*>(signed*, signed*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, short*>(short*, short*, __less&))
+  _CCCL_API inline void __sort<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, short*>(short*, short*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, int*>(int*, int*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, unsigned*>(unsigned*, unsigned*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, long*>(long*, long*, __less&))
+  _CCCL_API inline void __sort<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, int*>(int*, int*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, long*>(long*, long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, long long*>(long long*, long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, unsigned long long*>(
-  unsigned long long*, unsigned long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, float*>(float*, float*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, double*>(double*, double*, __less&))
+  _CCCL_API inline void __sort<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, long long*>(long long*, long long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI void __sort<__less&, long double*>(long double*, long double*, __less&))
+  _CCCL_API inline void __sort<__less&, unsigned long long*>(unsigned long long*, unsigned long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, float*>(float*, float*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, double*>(double*, double*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, long double*>(long double*, long double*, __less&))
 
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, char*>(char*, char*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, char*>(char*, char*, __less&))
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, signed char*>(
-  signed char*, signed char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, unsigned char*>(
-  unsigned char*, unsigned char*, __less&))
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, signed char*>(signed char*, signed char*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, short*>(short*, short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, unsigned short*>(
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, short*>(short*, short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned short*>(
   unsigned short*, unsigned short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, int*>(int*, int*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, int*>(int*, int*, __less&))
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, long*>(long*, long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, long*>(long*, long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, unsigned long*>(
-  unsigned long*, unsigned long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, long long*>(long long*, long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, unsigned long long*>(
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, long long*>(long long*, long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned long long*>(
   unsigned long long*, unsigned long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, float*>(float*, float*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, float*>(float*, float*, __less&))
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, double*>(double*, double*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, double*>(double*, double*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI bool __insertion_sort_incomplete<__less&, long double*>(
-  long double*, long double*, __less&))
+  _CCCL_API inline bool __insertion_sort_incomplete<__less&, long double*>(long double*, long double*, __less&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_HIDE_FROM_ABI unsigned __sort5<__less&, long double*>(
+_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline unsigned __sort5<__less&, long double*>(
   long double*, long double*, long double*, long double*, long double*, __less&))
 
 // inplace_merge
@@ -2207,7 +2200,7 @@ _CCCL_HOST_DEVICE void __inplace_merge(
 }
 
 template <class _BidirectionalIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI void inplace_merge(
+_CCCL_API inline void inplace_merge(
   _BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last, _Compare __comp)
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
@@ -2223,7 +2216,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void inplace_merge(
 }
 
 template <class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last)
 {
   _CUDA_VSTD::inplace_merge(__first, __middle, __last, __less{});
@@ -2429,7 +2422,7 @@ _CCCL_HOST_DEVICE void __stable_sort(
 }
 
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+_CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
@@ -2446,7 +2439,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void stable_sort(_RandomAccessIterator __first, _Rando
 }
 
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::stable_sort(__first, __last, __less{});
 }
@@ -2666,7 +2659,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
 }
 
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last, _Compare __comp)
 {
   using _Comp_ref = __comp_ref_type<_Compare>;
@@ -2674,7 +2667,7 @@ nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomA
 }
 
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::nth_element(__first, __nth, __last, __less{});

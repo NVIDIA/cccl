@@ -342,7 +342,7 @@ Visibility Macros
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 | ``_CCCL_HIDE_FROM_ABI``       | Hidden visibility (i.e. ``inline``, not exported, not instantiated)                                 |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
-| ``_LIBCUDACXX_HIDE_FROM_ABI`` | Host/device function with hidden visibility. Most libcu++ functions are hidden with this attribute  |
+| ``_CCCL_API``                 | Host/device function with hidden visibility. Most CCCL functions are hidden with this attribute     |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 
 ----

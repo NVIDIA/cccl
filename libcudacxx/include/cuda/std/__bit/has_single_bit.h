@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool has_single_bit(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr bool has_single_bit(_Tp __t) noexcept
 {
   return _CUDA_VSTD::popcount(__t) == 1;
 }

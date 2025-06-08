@@ -34,7 +34,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shl(const _Tp __value, int __shift) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __shl(const _Tp __value, int __shift) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -49,7 +49,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shr(const _Tp __value, int __shift) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __shr(const _Tp __value, int __shift) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -64,7 +64,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp = uint32_t>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bitmask(int __start, int __width) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp bitmask(int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bitmask() requires unsigned integer types");
   [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;

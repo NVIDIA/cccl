@@ -26,7 +26,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _UnaryOperation>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 transform(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _UnaryOperation __op)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -38,7 +38,7 @@ transform(_InputIterator __first, _InputIterator __last, _OutputIterator __resul
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _BinaryOperation>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform(
+_CCCL_API constexpr _OutputIterator transform(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,

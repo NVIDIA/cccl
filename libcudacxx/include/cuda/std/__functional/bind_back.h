@@ -44,7 +44,7 @@ template <size_t _NBound, size_t... _Ip>
 struct __bind_back_op<_NBound, index_sequence<_Ip...>>
 {
   template <class _Fn, class _BoundArgs, class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args) const
+  _CCCL_API constexpr auto operator()(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args) const
     noexcept(noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f),
                                          _CUDA_VSTD::forward<_Args>(__args)...,
                                          _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...)))
@@ -71,7 +71,7 @@ template <class _Fn,
                                    is_move_constructible<decay_t<_Fn>>,
                                    is_constructible<decay_t<_Args>, _Args>...,
                                    is_move_constructible<decay_t<_Args>>...>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+_CCCL_API constexpr auto
 __bind_back(_Fn&& __f, _Args&&... __args) noexcept(noexcept(__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(
   _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...))))
   -> decltype(__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(

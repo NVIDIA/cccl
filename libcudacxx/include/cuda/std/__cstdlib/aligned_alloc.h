@@ -52,7 +52,7 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
+[[nodiscard]] _CCCL_API inline void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
