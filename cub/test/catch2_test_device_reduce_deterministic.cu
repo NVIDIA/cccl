@@ -43,13 +43,14 @@
 
 using float_type_list = c2h::type_list<float, double>;
 
-template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename InitT>
 CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
   OutputIteratorT d_out,
   NumItemsT num_items,
+  InitT init_value,
   cudaStream_t stream = 0)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::DeterministicSum");
@@ -60,16 +61,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
   // The output value type
   using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-  using InitT = OutputT;
-
   return cub::detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, OffsetT, InitT>::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in,
-    d_out,
-    static_cast<OffsetT>(num_items),
-    InitT{}, // zero-initialize
-    stream);
+    d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), init_value, stream);
 }
 
 template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
@@ -129,7 +122,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
 
   const type* d_input_ptr = thrust::raw_pointer_cast(d_input.data());
 
-  deterministic_sum(d_input_ptr, d_output.begin(), num_items);
+  deterministic_sum(d_input_ptr, d_output.begin(), num_items, type{});
 
   c2h::host_vector<type> h_input = d_input;
 
@@ -233,7 +226,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
     c2h::device_vector<type> d_output(1);
 
-    deterministic_sum(d_input.begin(), d_output.begin(), num_items);
+    deterministic_sum(d_input.begin(), d_output.begin(), num_items, type{});
 
     c2h::host_vector<type> h_input = d_input;
 
@@ -251,7 +244,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
     thrust::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
-    deterministic_sum(input, d_output.begin(), num_items);
+    deterministic_sum(input, d_output.begin(), num_items, type{});
 
     // Requires `std::accumulate` to produce deterministic result which is required for comparison
     // with the device RFA result.
@@ -311,4 +304,33 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   // device RFA result should be approximately equal to host result
   REQUIRE(approx_eq(h_expected, h_output));
+}
+
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with different init values",
+         "[reduce][deterministic]",
+         float_type_list)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = 1 << 10;
+
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
+
+  c2h::device_vector<type> d_output(1);
+
+  type init_value = GENERATE_COPY(
+    static_cast<type>(42), ::cuda::std::numeric_limits<type>::max(), ::cuda::std::numeric_limits<type>::min());
+
+  deterministic_sum(d_input.begin(), d_output.begin(), num_items, init_value);
+
+  c2h::host_vector<type> h_input = d_input;
+
+  // Requires `std::accumulate` to produce deterministic result which is required for comparison
+  // with the device RFA result.
+  // NOTE: `std::reduce` is not equivalent
+  const type h_expected = std::accumulate(h_input.begin(), h_input.end(), init_value, ::cuda::std::plus<type>());
+  c2h::host_vector<type> h_output = d_output;
+
+  REQUIRE(approx_eq(h_expected, h_output[0]));
 }
