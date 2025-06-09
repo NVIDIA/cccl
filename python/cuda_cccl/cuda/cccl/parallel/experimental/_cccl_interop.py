@@ -302,7 +302,7 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
 def get_includes() -> List[str]:
     def as_option(p):
         if p is None:
-            return "-I/"
+            return ""
         return f"-I{p}"
 
     paths = get_include_paths().as_tuple()
