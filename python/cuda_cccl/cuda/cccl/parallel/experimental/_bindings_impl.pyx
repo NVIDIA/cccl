@@ -1124,16 +1124,16 @@ cdef class CommonData:
         return self.cc_minor
 
     cdef inline const char * cub_path_get_c_str(self):
-        return <const char *>self.encoded_cub_path
+        return <const char *>self.encoded_cub_path if self.encoded_cub_path else NULL
 
     cdef inline const char * thrust_path_get_c_str(self):
-        return <const char *>self.encoded_thrust_path
+        return <const char *>self.encoded_thrust_path if self.encoded_thrust_path else NULL
 
     cdef inline const char * libcudacxx_path_get_c_str(self):
-        return <const char *>self.encoded_libcudacxx_path
+        return <const char *>self.encoded_libcudacxx_path if self.encoded_libcudacxx_path else NULL
 
     cdef inline const char * ctk_path_get_c_str(self):
-        return <const char *>self.encoded_ctk_path
+        return <const char *>self.encoded_ctk_path if self.encoded_ctk_path else NULL
 
     @property
     def compute_capability(self):
