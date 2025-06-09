@@ -483,12 +483,18 @@ public:
     // Run the algorithm
     error = reduce_impl<tuning_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+
     if (error != cudaSuccess)
     {
+      // Reduction error takes precedence over deallocation error since it happens first
       return error;
     }
 
-    return CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    return deallocate_error;
   }
 
   //! @rst
