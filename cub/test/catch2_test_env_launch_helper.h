@@ -508,13 +508,13 @@ void launch(ActionT action, Args... args)
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};
 
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
-  // auto kernels    = cuda::std::execution::__query_or(env, get_allowed_kernels_t{}, cuda::std::span<void*>{});
+  auto kernels    = cuda::std::execution::__query_or(env, get_allowed_kernels_t{}, cuda::std::span<void*>{});
 
   cuda::std::apply(
-    [stream, action](auto... args) {
-      // Make sure specified stream is used
+    [stream, kernels, action](auto... args) {
+      // Make sure specified stream and kernels are used
       stream_scope allowed_stream(stream);
-      // kernel_scope allowed_kernels(kernels);
+      kernel_scope allowed_kernels(kernels);
       cudaError_t error = action(args...);
       REQUIRE(cudaSuccess == error);
     },
