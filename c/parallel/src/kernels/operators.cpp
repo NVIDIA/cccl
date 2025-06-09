@@ -49,10 +49,12 @@ constexpr std::string_view binary_op_template = R"XXX(
 )XXX";
 
 constexpr std::string_view stateless_binary_op_template = R"XXX(
-extern "C" __device__ {0} OP_NAME(LHS_T lhs, RHS_T rhs);
+extern "C" __device__ void OP_NAME(const void* lhs, const void* rhs, void* out);
 struct op_wrapper {{
   __device__ {0} operator()(LHS_T lhs, RHS_T rhs) const {{
-    return OP_NAME(lhs, rhs);
+    {0} ret;
+    OP_NAME(&lhs, &rhs, &ret);
+    return ret;
   }}
 }};
 )XXX";
@@ -61,11 +63,13 @@ constexpr std::string_view stateful_binary_op_template = R"XXX(
 struct __align__(OP_ALIGNMENT) op_state {{
   char data[OP_SIZE];
 }};
-extern "C" __device__ {0} OP_NAME(op_state *state, LHS_T lhs, RHS_T rhs);
+extern "C" __device__ void OP_NAME(void* state, const void* lhs, const void* rhs, void* out);
 struct op_wrapper {{
   op_state state;
   __device__ {0} operator()(LHS_T lhs, RHS_T rhs) {{
-    return OP_NAME(&state, lhs, rhs);
+    {0} ret;
+    OP_NAME(&state, &lhs, &rhs, &ret);
+    return ret;
   }}
 }};
 )XXX";
@@ -165,10 +169,12 @@ std::string make_kernel_user_unary_operator(std::string_view input_t, std::strin
 )XXX";
 
   constexpr std::string_view stateless_op = R"XXX(
-extern "C" __device__ OUTPUT_T OP_NAME(INPUT_T val);
+extern "C" __device__  void OP_NAME(const void* val, void* result);
 struct op_wrapper {
   __device__ OUTPUT_T operator()(INPUT_T val) const {
-    return OP_NAME(val);
+    OUTPUT_T out;
+    OP_NAME(&val, &out);
+    return out;
   }
 };
 )XXX";
@@ -177,13 +183,15 @@ struct op_wrapper {
 struct __align__(OP_ALIGNMENT) op_state {
   char data[OP_SIZE];
 };
-extern "C" __device__ OUTPUT_T OP_NAME(op_state* state, INPUT_T val);
+extern "C" __device__ void OP_NAME(op_state* state, const void* val, void* result);
 struct op_wrapper
 {
   op_state state;
   __device__ OUTPUT_T operator()(INPUT_T val)
   {
-    return OP_NAME(&state, val);
+    OUTPUT_T out;
+    OP_NAME(&state, &val, &out);
+    return out;
   }
 };
 

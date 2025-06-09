@@ -273,6 +273,8 @@ C++20
 #    include <exception>
 #  endif // !__cpp_lib_variant
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
 #  ifdef __cpp_lib_variant
@@ -292,7 +294,11 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
+#  include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CCCL_HAS_EXCEPTIONS()
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1378,12 +1384,12 @@ struct __no_narrowing_check
 
 struct __narrowing_check
 {
-  template <class _Dest, class _Source, class = void>
+  template <class _Dest, class _Source, bool = __cccl_internal::__is_non_narrowing_convertible<_Dest, _Source>::value>
   struct __narrowing_check_impl
   {};
 
   template <class _Dest, class _Source>
-  struct __narrowing_check_impl<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
+  struct __narrowing_check_impl<_Dest, _Source, true>
   {
     using type = type_identity<_Dest>;
   };
@@ -2148,5 +2154,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto&& __unchecked_get(variant<_Types...>& _
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_VARIANT

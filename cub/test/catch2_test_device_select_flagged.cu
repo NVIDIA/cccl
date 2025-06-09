@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 
@@ -428,7 +427,8 @@ C2H_TEST("DeviceSelect::Flagged works with a different output type", "[device][s
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Flagged works for very large number of items", "[device][select_flagged]")
+C2H_TEST("DeviceSelect::Flagged works for very large number of items",
+         "[device][select_flagged][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::int64_t;

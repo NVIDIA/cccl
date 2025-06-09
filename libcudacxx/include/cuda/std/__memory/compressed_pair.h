@@ -40,6 +40,8 @@
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Tag used to default initialize one or both of the pair's elements.
@@ -223,5 +225,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H

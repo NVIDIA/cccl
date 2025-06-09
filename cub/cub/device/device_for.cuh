@@ -37,9 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
-#include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -141,7 +139,7 @@ private:
     OffsetT num_items,
     OpT op,
     cudaStream_t stream,
-    ::cuda::std::false_type /* do_not_vectorize */)
+    _CUDA_VSTD::false_type /* do_not_vectorize */)
   {
     using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessIteratorT>;
     return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
@@ -149,7 +147,7 @@ private:
 
   template <class ContiguousIteratorT, class OffsetT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    ContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, ::cuda::std::true_type /* vectorize */)
+    ContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, _CUDA_VSTD::true_type /* vectorize */)
   {
     auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
     using wrapped_op_t =
@@ -167,7 +165,7 @@ private:
     }
 
     // Fallback to non-vectorized version
-    return for_each_n(first, num_items, op, stream, ::cuda::std::false_type{});
+    return for_each_n(first, num_items, op, stream, _CUDA_VSTD::false_type{});
   }
 
 public:
@@ -227,7 +225,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   Bulk(void* d_temp_storage, size_t& temp_storage_bytes, ShapeT shape, OpT op, cudaStream_t stream = {})
   {
-    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    static_assert(_CUDA_VSTD::is_integral_v<ShapeT>, "ShapeT must be an integral type");
 
     if (d_temp_storage == nullptr)
     {
@@ -577,8 +575,8 @@ public:
   template <class ShapeT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
-    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
+    static_assert(_CUDA_VSTD::is_integral_v<ShapeT>, "ShapeT must be an integral type");
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
@@ -594,7 +592,7 @@ private:
     // constexpr bool use_vectorization =
     //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
     //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
-    using use_vectorization_t = ::cuda::std::bool_constant<false>;
+    using use_vectorization_t = _CUDA_VSTD::bool_constant<false>;
     return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
   }
 
@@ -650,7 +648,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -702,10 +700,10 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
+    const auto num_items = static_cast<offset_t>(_CUDA_VSTD::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -775,7 +773,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 
@@ -830,9 +828,9 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
+    const auto num_items = static_cast<offset_t>(_CUDA_VSTD::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 
@@ -902,11 +900,11 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  template <typename IndexType, size_t... Extents, typename OpType>
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtents(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    const ::cuda::std::extents<IndexType, Extents...>& extents,
+    const _CUDA_VSTD::extents<IndexType, Extents...>& extents,
     OpType op,
     cudaStream_t stream = {})
   {
@@ -975,15 +973,21 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  template <typename IndexType, size_t... Extents, typename OpType>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  ForEachInExtents(const _CUDA_VSTD::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
-    // TODO: check dimensions overflows
-    // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
+    using namespace cub::detail;
+    using extents_type      = _CUDA_VSTD::extents<IndexType, Extents...>;
+    using extent_index_type = typename extents_type::index_type;
+    using fast_mod_array_t  = _CUDA_VSTD::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    static constexpr auto seq            = _CUDA_VSTD::make_index_sequence<extents_type::rank()>{};
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(extents, seq);
+    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    for_each::op_wrapper_extents_t<OpType, extents_type, fast_mod_array_t> op_wrapper{
+      op, extents, sub_sizes_div_array, extents_div_array};
+    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
   }
 };
 

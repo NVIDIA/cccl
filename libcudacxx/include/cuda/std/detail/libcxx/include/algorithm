@@ -706,6 +706,8 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__algorithm/prev_permutation.h>
 #include <cuda/std/__algorithm/push_heap.h>
 #include <cuda/std/__algorithm/ranges_iterator_concept.h>
+#include <cuda/std/__algorithm/ranges_min.h>
+#include <cuda/std/__algorithm/ranges_min_element.h>
 #include <cuda/std/__algorithm/remove.h>
 #include <cuda/std/__algorithm/remove_copy.h>
 #include <cuda/std/__algorithm/remove_copy_if.h>
@@ -757,7 +759,7 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1055,8 +1057,9 @@ public:
 
 template <class _IntType>
 template <class _URNG>
-typename uniform_int_distribution<_IntType>::result_type uniform_int_distribution<_IntType>::operator()(
-  _URNG& __g, const param_type& __p) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+typename uniform_int_distribution<_IntType>::result_type
+uniform_int_distribution<_IntType>::operator()(_URNG& __g, const param_type& __p)
+  _CCCL_NO_SANITIZE("unsigned-integer-overflow")
 {
   typedef conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, uint64_t> _UIntType;
   const _UIntType _Rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
@@ -2684,6 +2687,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #  include <__pstl_algorithm>
 #endif
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_ALGORITHM

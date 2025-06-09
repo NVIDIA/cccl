@@ -32,6 +32,8 @@
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
@@ -71,7 +73,8 @@ template <typename _Tp>
   {
     return static_cast<int>(::__popcnt64(__v));
   }
-#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(ARM64)
+  // _CountOneBits exists after MSVC 1931
+#  elif _CCCL_COMPILER(MSVC, >, 19, 30) && _CCCL_ARCH(ARM64)
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return static_cast<int>(::_CountOneBits(__v));
@@ -86,7 +89,7 @@ template <typename _Tp>
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_popcount_impl_device(_Tp __v) noexcept
 {
@@ -99,7 +102,7 @@ template <typename _Tp>
     return static_cast<int>(::__popcll(__v));
   }
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popcount_impl(_Tp __v) noexcept
@@ -145,5 +148,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_POPCOUNT_H

@@ -17,11 +17,13 @@
 #if defined(_WIN32)
 #  define CCCL_C_API __declspec(dllexport)
 #else // ^^^ _WIN32 ^^^ / vvv !_WIN32 vvv
-#  define CCCL_C_API __attribute__((visibility("default")))
+#  define CCCL_C_API __attribute__((__visibility__("default")))
 #endif // !_WIN32
 
-#include <cccl/c/extern_c.h>
 #include <stddef.h>
+#include <stdint.h>
+
+#include <cccl/c/extern_c.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -106,6 +108,14 @@ typedef struct cccl_value_t
   void* state;
 } cccl_value_t;
 
+typedef union
+{
+  int64_t signed_offset;
+  uint64_t unsigned_offset;
+} cccl_increment_t;
+
+typedef void (*cccl_host_op_fn_ptr_t)(void*, cccl_increment_t);
+
 typedef struct cccl_iterator_t
 {
   size_t size;
@@ -115,6 +125,7 @@ typedef struct cccl_iterator_t
   cccl_op_t dereference;
   cccl_type_info value_type;
   void* state;
+  cccl_host_op_fn_ptr_t host_advance;
 } cccl_iterator_t;
 
 typedef enum cccl_sort_order_t

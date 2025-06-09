@@ -22,7 +22,9 @@ static_assert(!cuda::std::indirectly_movable<int*, const int*>, "");
 static_assert(cuda::std::indirectly_movable<const int*, int*>, "");
 
 // Can move from a pointer into an array but arrays aren't considered indirectly movable-from.
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(cuda::std::indirectly_movable<int*, int[2]>, "");
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(!cuda::std::indirectly_movable<int[2], int*>, "");
 static_assert(!cuda::std::indirectly_movable<int[2], int[2]>, "");
 static_assert(!cuda::std::indirectly_movable<int (&)[2], int (&)[2]>, "");

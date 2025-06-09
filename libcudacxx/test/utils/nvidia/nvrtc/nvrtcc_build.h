@@ -8,16 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda.h>
-
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "nvrtcc_common.h"
+#include <cuda.h>
 #include <nvrtc.h>
 #include <stdio.h>
+
+#include "nvrtcc_common.h"
 
 // Arch configs are strings and bools determining architecture and ptx/sass compilation
 using ArchConfig          = std::tuple<std::string, bool>;

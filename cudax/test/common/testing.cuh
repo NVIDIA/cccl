@@ -15,19 +15,20 @@
 
 #include <cuda/experimental/launch.cuh>
 
+#include <nv/target>
+
 #include <exception> // IWYU pragma: keep
 #include <iostream>
 #include <sstream>
 
 #include <c2h/catch2_test_helper.h>
-#include <nv/target>
 
-namespace cuda::experimental::__async
+namespace cuda::experimental::execution
 {
 }
 
 namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
-namespace cudax_async = cuda::experimental::__async; // NOLINT: misc-unused-alias-decls
+namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-alias-decls
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 

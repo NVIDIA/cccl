@@ -35,12 +35,12 @@ static_assert(cuda::std::indirect_binary_predicate<GoodPredicate<It1, It2>, It1,
 static_assert(cuda::std::indirect_binary_predicate<bool (*)(int, float), int*, float*>, "");
 
 TEST_DIAG_SUPPRESS_CLANG("-Wunneeded-internal-declaration")
-#ifndef __CUDA_ARCH__
+#if _CCCL_HOST_COMPILATION()
 auto lambda = [](int i, long j) {
   return i == j;
 };
 static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>, "");
-#endif
+#endif // _CCCL_HOST_COMPILATION()
 
 // Should fail when either of the iterators is not indirectly_readable
 #if TEST_STD_VER > 2017

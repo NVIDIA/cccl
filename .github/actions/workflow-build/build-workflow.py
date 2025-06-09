@@ -398,6 +398,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
     std_str = ("C++" + str(matrix_job["std"]) + " ") if "std" in matrix_job else ""
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
+    py_version = (
+        (", py" + matrix_job["py_version"]) if "py_version" in matrix_job else ""
+    )
     cuda_compile_arch = (
         (" sm{" + str(matrix_job["sm"]) + "}") if "sm" in matrix_job else ""
     )
@@ -415,7 +418,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
+    return (
+        f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}{py_version}){extra_info}"
+    )
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
@@ -478,6 +483,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cuda_compile_arch = matrix_job["sm"] if "sm" in matrix_job else ""
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
+    py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+
     command = f'"{script_name}"'
     if job_args:
         command += f" {job_args}"
@@ -489,6 +496,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f" -cuda \"{device_compiler['exe']}\""
     if cmake_options:
         command += f' -cmake-options "{cmake_options}"'
+    if py_version:
+        command += f' -py-version "{py_version}"'
 
     return command
 

@@ -40,6 +40,7 @@ find(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      InputIterator last,
      const T& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::find");
   using thrust::system::detail::generic::find;
   return find(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 } // end find()
@@ -52,6 +53,7 @@ _CCCL_HOST_DEVICE InputIterator find_if(
   InputIterator last,
   Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::find_if");
   using thrust::system::detail::generic::find_if;
   return find_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end find_if()
@@ -64,6 +66,7 @@ _CCCL_HOST_DEVICE InputIterator find_if_not(
   InputIterator last,
   Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::find_if_not");
   using thrust::system::detail::generic::find_if_not;
   return find_if_not(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end find_if_not()
@@ -71,6 +74,7 @@ _CCCL_HOST_DEVICE InputIterator find_if_not(
 template <typename InputIterator, typename T>
 InputIterator find(InputIterator first, InputIterator last, const T& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::find");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -83,6 +87,7 @@ InputIterator find(InputIterator first, InputIterator last, const T& value)
 template <typename InputIterator, typename Predicate>
 InputIterator find_if(InputIterator first, InputIterator last, Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::find_if");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -95,6 +100,7 @@ InputIterator find_if(InputIterator first, InputIterator last, Predicate pred)
 template <typename InputIterator, typename Predicate>
 InputIterator find_if_not(InputIterator first, InputIterator last, Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::find_if_not");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;

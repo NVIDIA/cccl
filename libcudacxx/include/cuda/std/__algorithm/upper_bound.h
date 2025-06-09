@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -63,7 +65,7 @@ upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 {
   static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
   return _CUDA_VSTD::__upper_bound<_ClassicAlgPolicy>(
-    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __value, _CUDA_VSTD::move(__comp), _CUDA_VSTD::__identity());
+    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __value, _CUDA_VSTD::move(__comp), _CUDA_VSTD::identity());
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -75,5 +77,7 @@ upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_UPPER_BOUND_H

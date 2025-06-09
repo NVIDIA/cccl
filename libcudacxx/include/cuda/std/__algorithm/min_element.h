@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,7 +57,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
 {
-  auto __proj = __identity();
+  auto __proj = identity();
   return _CUDA_VSTD::__min_element<_Comp>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __proj);
 }
 
@@ -83,6 +83,6 @@ min_element(_ForwardIterator __first, _ForwardIterator __last)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H

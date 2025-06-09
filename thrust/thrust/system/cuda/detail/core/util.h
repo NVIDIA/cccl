@@ -48,7 +48,7 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/type_traits>
 
 #include <nv/target>
 
@@ -163,7 +163,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
 #    define _THRUST_TUNING_ARCH sm52
 #  endif
 #else
-#  if (__CUDA_ARCH__ >= 600)
+#  if (_CCCL_PTX_ARCH() >= 600)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
 #    define _THRUST_TUNING_ARCH sm52
@@ -296,7 +296,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
+    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>::type
 {};
 
 // returns AgentPlan corresponding to a given ptx version

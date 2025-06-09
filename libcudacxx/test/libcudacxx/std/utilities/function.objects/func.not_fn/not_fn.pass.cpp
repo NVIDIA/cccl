@@ -662,13 +662,13 @@ __host__ __device__ void call_operator_noexcept_test()
     static_assert(noexcept(!_CUDA_VSTD::__invoke(value)), "");
     static_assert(noexcept(!cuda::std::invoke(value)), "");
 // TODO: nvcc gets this wrong, investigate
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     auto const& cret = ret;
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(cret()), "call should be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     unused(cret);
   }
   {
@@ -676,13 +676,13 @@ __host__ __device__ void call_operator_noexcept_test()
     T value(true);
     [[maybe_unused]] auto ret = cuda::std::not_fn(value);
 // TODO: nvcc gets this wrong, investigate
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should not be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     auto const& cret = ret;
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(cret()), "call should not be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     unused(cret);
   }
   {

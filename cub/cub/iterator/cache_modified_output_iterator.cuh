@@ -48,8 +48,10 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/type_traits>
+
 #if !_CCCL_COMPILER(NVRTC)
-#  include <iosfwd>
+#  include <ostream>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
@@ -240,7 +242,7 @@ public:
 
 #if !_CCCL_COMPILER(NVRTC)
   /// ostream operator
-  friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     return os;
   }

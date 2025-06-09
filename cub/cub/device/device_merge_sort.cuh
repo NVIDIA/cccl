@@ -38,7 +38,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -241,7 +240,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
@@ -373,7 +372,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
@@ -512,7 +511,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
@@ -652,7 +651,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX(
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
@@ -759,7 +758,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
@@ -858,7 +857,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     return SortKeysNoNVTX<KeyIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
@@ -971,7 +970,7 @@ public:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }

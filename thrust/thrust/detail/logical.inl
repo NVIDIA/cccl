@@ -40,6 +40,7 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator last,
        Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("all_of");
   using thrust::system::detail::generic::all_of;
   return all_of(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end all_of()
@@ -52,6 +53,7 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator last,
        Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("any_of");
   using thrust::system::detail::generic::any_of;
   return any_of(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end any_of()
@@ -64,6 +66,7 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator last,
         Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("none_of");
   using thrust::system::detail::generic::none_of;
   return none_of(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end none_of()
@@ -71,6 +74,7 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 template <typename InputIterator, typename Predicate>
 bool all_of(InputIterator first, InputIterator last, Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("all_of");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -83,6 +87,7 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred)
 template <typename InputIterator, typename Predicate>
 bool any_of(InputIterator first, InputIterator last, Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("any_of");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -95,6 +100,7 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred)
 template <typename InputIterator, typename Predicate>
 bool none_of(InputIterator first, InputIterator last, Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("none_of");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;

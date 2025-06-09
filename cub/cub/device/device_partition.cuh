@@ -43,13 +43,8 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
-
-#include <iterator>
-
-#include <stdio.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -187,7 +182,7 @@ struct DevicePartition
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using SelectOp      = NullType; // Selection op (not used)
@@ -344,7 +339,7 @@ struct DevicePartition
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using FlagIterator  = NullType*; // FlagT iterator type (not used)
@@ -650,7 +645,7 @@ public:
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     return IfNoNVTX(
       d_temp_storage,
       temp_storage_bytes,

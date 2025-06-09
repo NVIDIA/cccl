@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,6 +27,8 @@
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace cuda::experimental
@@ -48,7 +50,7 @@ struct [[maybe_unused]] __ensure_current_device
   explicit __ensure_current_device(device_ref __new_device)
   {
     auto __ctx = devices[__new_device.get()].get_primary_context();
-    detail::driver::ctxPush(__ctx);
+    __detail::driver::ctxPush(__ctx);
   }
 
   //! @brief Construct a new `__ensure_current_device` object and switch to the specified
@@ -62,14 +64,14 @@ struct [[maybe_unused]] __ensure_current_device
   //! @throws cuda_error if the device switch fails
   explicit __ensure_current_device(logical_device __new_device)
   {
-    detail::driver::ctxPush(__new_device.get_context());
+    __detail::driver::ctxPush(__new_device.get_context());
   }
 
   // Doesn't really fit into the type description, we might consider changing it once
   // green ctx design is more finalized
   explicit __ensure_current_device(CUcontext __ctx)
   {
-    detail::driver::ctxPush(__ctx);
+    __detail::driver::ctxPush(__ctx);
   }
 
   //! @brief Construct a new `__ensure_current_device` object and switch to the device
@@ -80,8 +82,8 @@ struct [[maybe_unused]] __ensure_current_device
   //! @throws cuda_error if the device switch fails
   explicit __ensure_current_device(stream_ref __stream)
   {
-    auto __ctx = detail::driver::streamGetCtx(__stream.get());
-    detail::driver::ctxPush(__ctx);
+    auto __ctx = __detail::driver::streamGetCtx(__stream.get());
+    __detail::driver::ctxPush(__ctx);
   }
 
   __ensure_current_device(__ensure_current_device&&)                 = delete;
@@ -97,9 +99,12 @@ struct [[maybe_unused]] __ensure_current_device
   ~__ensure_current_device() noexcept(false)
   {
     // TODO would it make sense to assert here that we pushed and popped the same thing?
-    detail::driver::ctxPop();
+    __detail::driver::ctxPop();
   }
 };
 } // namespace cuda::experimental
 #endif // _CCCL_DOXYGEN_INVOKED
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE

@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Comp, class _Proj>
@@ -121,7 +123,7 @@ minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __com
                 "_CUDA_VSTD::minmax_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
-  auto __proj = __identity();
+  auto __proj = identity();
   return _CUDA_VSTD::__minmax_element_impl(__first, __last, __comp, __proj);
 }
 
@@ -133,5 +135,7 @@ minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H

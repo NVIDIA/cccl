@@ -9,11 +9,10 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
+
+#include <cooperative_groups.h>
 
 #include "utils.h"
-#include <cooperative_groups.h>
 
 // TODO: global-shared
 // TODO: read  const
@@ -89,7 +88,7 @@ __device__ __host__ __noinline__ void test_memcpy_async()
         if (arr1[i] != (int) i)
         {
           DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
-          assert(arr1[i] == i);
+          assert(arr1[i] == (int) i);
         }
 
         arr1[i] = 0;
@@ -103,7 +102,7 @@ __device__ __host__ __noinline__ void test_memcpy_async()
         if (arr1[i] != (int) i)
         {
           DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
-          assert(arr1[i] == i);
+          assert(arr1[i] == (int) i);
         }
 
         arr1[i] = 0;

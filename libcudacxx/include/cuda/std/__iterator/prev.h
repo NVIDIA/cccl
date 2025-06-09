@@ -27,6 +27,8 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _InputIter)
@@ -82,6 +84,9 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
 } // namespace __cpo
+
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_PREV_H

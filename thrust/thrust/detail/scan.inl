@@ -43,6 +43,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   InputIterator last,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan");
   using thrust::system::detail::generic::inclusive_scan;
   return inclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end inclusive_scan()
@@ -56,6 +57,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   OutputIterator result,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan");
   using thrust::system::detail::generic::inclusive_scan;
   return inclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, binary_op);
 } // end inclusive_scan()
@@ -70,6 +72,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   T init,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan");
   using thrust::system::detail::generic::inclusive_scan;
   return inclusive_scan(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, init, binary_op);
@@ -83,6 +86,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   InputIterator last,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan");
   using thrust::system::detail::generic::exclusive_scan;
   return exclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end exclusive_scan()
@@ -96,6 +100,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   OutputIterator result,
   T init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan");
   using thrust::system::detail::generic::exclusive_scan;
   return exclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, init);
 } // end exclusive_scan()
@@ -110,6 +115,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   T init,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan");
   using thrust::system::detail::generic::exclusive_scan;
   return exclusive_scan(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, init, binary_op);
@@ -124,6 +130,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   InputIterator2 first2,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan_by_key");
   using thrust::system::detail::generic::inclusive_scan_by_key;
   return inclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result);
@@ -143,6 +150,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   OutputIterator result,
   BinaryPredicate binary_pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan_by_key");
   using thrust::system::detail::generic::inclusive_scan_by_key;
   return inclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result, binary_pred);
@@ -164,6 +172,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   BinaryPredicate binary_pred,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan_by_key");
   using thrust::system::detail::generic::inclusive_scan_by_key;
   return inclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -184,6 +193,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   InputIterator2 first2,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::exclusive_scan_by_key;
   return exclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result);
@@ -199,6 +209,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   OutputIterator result,
   T init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::exclusive_scan_by_key;
   return exclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result, init);
@@ -220,6 +231,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   T init,
   BinaryPredicate binary_pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::exclusive_scan_by_key;
   return exclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result, init, binary_pred);
@@ -243,6 +255,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   BinaryPredicate binary_pred,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::exclusive_scan_by_key;
   return exclusive_scan_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -258,6 +271,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
 template <typename InputIterator, typename OutputIterator>
 OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -272,6 +286,7 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
 OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -287,6 +302,7 @@ template <typename InputIterator, typename OutputIterator, typename T, typename 
 OutputIterator
 inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init, BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -301,6 +317,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
 template <typename InputIterator, typename OutputIterator>
 OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -315,6 +332,7 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -330,6 +348,7 @@ template <typename InputIterator, typename OutputIterator, typename T, typename 
 OutputIterator
 exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init, BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -345,6 +364,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 inclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -362,6 +382,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator inclusive_scan_by_key(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryPredicate binary_pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -389,6 +410,7 @@ OutputIterator inclusive_scan_by_key(
   BinaryPredicate binary_pred,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -407,6 +429,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -424,6 +447,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, T init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -446,6 +470,7 @@ OutputIterator exclusive_scan_by_key(
   T init,
   BinaryPredicate binary_pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -475,6 +500,7 @@ OutputIterator exclusive_scan_by_key(
   BinaryPredicate binary_pred,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::exclusive_scan_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

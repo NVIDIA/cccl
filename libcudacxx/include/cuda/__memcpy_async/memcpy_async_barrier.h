@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
+#ifndef _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
+#define _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__barrier/barrier_thread_scope.h>
@@ -30,42 +31,15 @@
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
 #include <cuda/__memcpy_async/memcpy_completion.h>
 #include <cuda/__memcpy_async/try_get_barrier_handle.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-/***********************************************************************
- * cuda::memcpy_async dispatch helper functions
- *
- * - __get_size_align struct to determine the alignment from a size type.
- ***********************************************************************/
-
-// The __get_size_align struct provides a way to query the guaranteed
-// "alignment" of a provided size. In this case, an n-byte aligned size means
-// that the size is a multiple of n.
-//
-// Use as follows:
-// static_assert(__get_size_align<size_t>::align == 1)
-// static_assert(__get_size_align<aligned_size_t<n>>::align == n)
-
-// Default impl: always returns 1.
-template <typename, typename = void>
-struct __get_size_align
-{
-  static constexpr int align = 1;
-};
-
-// aligned_size_t<n> overload: return n.
-template <typename T>
-struct __get_size_align<T, _CUDA_VSTD::void_t<decltype(T::align)>>
-{
-  static constexpr int align = T::align;
-};
-
-////////////////////////////////////////////////////////////////////////////////
 
 struct __single_thread_group
 {
@@ -91,14 +65,13 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
   // shared memory, supports the mbarrier_complete_tx mechanism in addition to
   // the async group mechanism.
   _CUDA_VSTD::uint32_t __allowed_completions =
-    __is_local_smem_barrier(__barrier)
+    ::cuda::__is_local_smem_barrier(__barrier)
       ? (_CUDA_VSTD::uint32_t(__completion_mechanism::__async_group)
          | _CUDA_VSTD::uint32_t(__completion_mechanism::__mbarrier_complete_tx))
       : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
-  constexpr _CUDA_VSTD::size_t __align      = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+  constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
   // functions.
@@ -108,10 +81,12 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
   // 2. Issue actual copy instructions.
   _CUDA_VSTD::uint64_t* __bh = nullptr;
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (__bh = __is_local_smem_barrier(__barrier) ? __try_get_barrier_handle(__barrier) : nullptr;))
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (__bh = ::cuda::__is_local_smem_barrier(__barrier) ? ::cuda::__try_get_barrier_handle(__barrier) : nullptr;))
 #endif // __cccl_ptx_isa >= 800
-  auto __cm = __dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bh);
+  auto __cm =
+    ::cuda::__dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bh);
 
   // 3. Synchronize barrier with copy instructions.
   return __memcpy_completion_impl::__defer(__cm, __group, __size, __barrier);
@@ -119,4 +94,6 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_

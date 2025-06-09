@@ -24,8 +24,9 @@
 #  define _NV_COMPILER_CLANG_CUDA
 #endif
 
-// Hide `if target` support from NVRTC
-#if !defined(__CUDACC_RTC__)
+// Hide `if target` support from NVRTC and C
+// Some toolkit headers use <nv/target> in true C contexts
+#if !defined(__CUDACC_RTC__) && defined(__cplusplus)
 
 #  if defined(_NV_COMPILER_NVCXX)
 #    define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
@@ -221,7 +222,7 @@ using detail::provides;
 } // namespace target
 } // namespace nv
 
-#endif // C++11  && !defined(__CUDACC_RTC__)
+#endif // C++  && !defined(__CUDACC_RTC__)
 
 #include <nv/detail/__target_macros>
 

@@ -1,0 +1,9 @@
+-Ilibcudacxx/include
+--offload-arch=sm_75
+-Ilibcudacxx/test/support
+-Icub
+-Ic/parallel/include
+-DCCCL_C_EXPERIMENTAL
+-Ithrust
+-std=c++20
+-Ic/parallel/src

@@ -47,27 +47,27 @@ struct host_only_type
 
   ~host_only_type() noexcept {}
 
-  _CCCL_NODISCARD_FRIEND bool operator==(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  [[nodiscard]] friend bool operator==(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator!=(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  [[nodiscard]] friend bool operator!=(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ != rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator<(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  [[nodiscard]] friend bool operator<(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator<=(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  [[nodiscard]] friend bool operator<=(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ <= rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator>(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  [[nodiscard]] friend bool operator>(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ > rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator>=(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  [[nodiscard]] friend bool operator>=(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ >= rhs.val_;
   }
@@ -79,7 +79,7 @@ struct host_only_type
 };
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 struct device_only_type
 {
   int val_;
@@ -113,27 +113,27 @@ struct device_only_type
 
   __device__ ~device_only_type() noexcept {}
 
-  __device__ _CCCL_NODISCARD_FRIEND bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ != rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ <= rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ > rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ >= rhs.val_;
   }
@@ -143,6 +143,6 @@ struct device_only_type
     cuda::std::swap(val_, other.val_);
   }
 };
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // TEST_SUPPORT_HOST_DEVICE_TYPES

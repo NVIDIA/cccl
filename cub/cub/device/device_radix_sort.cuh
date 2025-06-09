@@ -43,7 +43,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
 #include <cuda/std/type_traits>
@@ -334,7 +333,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -481,7 +480,7 @@ public:
               int end_bit,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -619,7 +618,7 @@ public:
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -772,7 +771,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -891,7 +890,7 @@ public:
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1036,7 +1035,7 @@ public:
               int end_bit,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1178,7 +1177,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1316,7 +1315,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1456,7 +1455,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1605,7 +1604,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1725,7 +1724,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1871,7 +1870,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2008,7 +2007,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2140,7 +2139,7 @@ public:
              int end_bit,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2268,7 +2267,7 @@ public:
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2404,7 +2403,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2513,7 +2512,7 @@ public:
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2646,7 +2645,7 @@ public:
              int end_bit,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2774,7 +2773,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2898,7 +2897,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3024,7 +3023,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3155,7 +3154,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -3265,7 +3264,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3399,7 +3398,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;

@@ -64,8 +64,6 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
-#include <type_traits>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN

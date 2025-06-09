@@ -55,6 +55,8 @@
 #    include <function>
 #  endif // !_CCCL_HAS_EXCEPTIONS()
 
+#  include <cuda/std/__cccl/prologue.h>
+
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
 {
 #  if _CCCL_HAS_EXCEPTIONS()
@@ -383,7 +385,7 @@ class __value_func<_Rp(_ArgTypes...)>
   using __func = __base<_Rp(_ArgTypes...)>;
   __func* __f_;
 
-  _LIBCUDACXX_NO_CFI static __func* __as_base(void* __p)
+  _CCCL_NO_CFI static __func* __as_base(void* __p)
   {
     return reinterpret_cast<__func*>(__p);
   }
@@ -1267,6 +1269,8 @@ _LIBCUDACXX_HIDE_FROM_ABI void swap(function<_Rp(_ArgTypes...)>& __x, function<_
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 

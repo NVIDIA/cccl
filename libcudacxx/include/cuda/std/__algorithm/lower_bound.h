@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -63,7 +65,7 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
-  auto __proj = _CUDA_VSTD::__identity();
+  auto __proj = _CUDA_VSTD::identity();
   return _CUDA_VSTD::__lower_bound<_ClassicAlgPolicy>(__first, __last, __value, __comp, __proj);
 }
 
@@ -75,5 +77,7 @@ lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_LOWER_BOUND_H

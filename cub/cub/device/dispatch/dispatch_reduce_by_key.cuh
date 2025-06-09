@@ -53,11 +53,6 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdio>
-#include <iterator>
-
-#include <nv/target>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************

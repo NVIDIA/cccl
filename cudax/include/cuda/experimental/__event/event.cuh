@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,6 +31,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -63,7 +65,7 @@ public:
   //! @brief Construct a new `event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr event(uninit_t) noexcept
+  explicit constexpr event(no_init_t) noexcept
       : event_ref(::cudaEvent_t{})
   {}
 
@@ -88,7 +90,7 @@ public:
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto __status = detail::driver::eventDestroy(__event_);
+      [[maybe_unused]] auto __status = __detail::driver::eventDestroy(__event_);
     }
   }
 
@@ -135,10 +137,12 @@ public:
     return _CUDA_VSTD::exchange(__event_, {});
   }
 
-  _CCCL_NODISCARD_FRIEND constexpr flags operator|(flags __lhs, flags __rhs) noexcept
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  [[nodiscard]] friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
     return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
   }
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   // Use `event::from_native_handle(e)` to construct an owning `event`
@@ -156,5 +160,7 @@ private:
   }
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_EVENT_DETAIL_H

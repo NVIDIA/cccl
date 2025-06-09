@@ -26,6 +26,8 @@
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__limits/numeric_limits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // nvfp16
@@ -773,5 +775,7 @@ public:
 #endif // _CCCL_HAS_FLOAT128()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___LIMITS_NUMERIC_LIMITS_EXT_H

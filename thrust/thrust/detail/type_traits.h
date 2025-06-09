@@ -62,8 +62,7 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct is_proxy_reference : public false_type
-{};
+inline constexpr bool is_proxy_reference_v = false;
 
 template <typename Boolean>
 struct not_ : public integral_constant<bool, !Boolean::value>
@@ -84,14 +83,6 @@ struct eval_if<false, Then, Else>
 {
   using type = typename Else::type;
 }; // end eval_if
-
-template <typename T>
-//  struct identity
-//  XXX WAR nvcc's confusion with thrust::identity
-struct identity_
-{
-  using type = T;
-}; // end identity
 
 template <bool, typename T>
 struct lazy_enable_if
@@ -128,7 +119,7 @@ struct largest_available_float
 // T1 wins if they are both the same size
 template <typename T1, typename T2>
 struct larger_type
-    : thrust::detail::eval_if<(sizeof(T2) > sizeof(T1)), thrust::detail::identity_<T2>, thrust::detail::identity_<T1>>
+    : thrust::detail::eval_if<(sizeof(T2) > sizeof(T1)), ::cuda::std::type_identity<T2>, ::cuda::std::type_identity<T1>>
 {};
 
 template <class F, class... Us>

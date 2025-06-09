@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__barrier/barrier_block_scope.h>
@@ -32,13 +32,16 @@
 #    include <cuda/std/__atomic/scopes.h>
 #    include <cuda/std/cstdint>
 
+#    include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
 _CCCL_DEVICE inline void
 barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __transaction_count_update)
 {
-  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
+               "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
   _CCCL_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
@@ -53,15 +56,17 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
   // On architectures pre-sm90, arrive_tx is not supported.
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+    (auto __bh = ::__cvta_generic_to_shared(_CUDA_DEVICE::barrier_native_handle(__b));
      asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;" : : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update)) : "memory");),
-    (__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
+    (_CUDA_DEVICE::__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
+#    include <cuda/std/__cccl/epilogue.h>
+
 #  endif // __cccl_ptx_isa >= 800
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA_PTX_BARRIER_EXPECT_TX_H_

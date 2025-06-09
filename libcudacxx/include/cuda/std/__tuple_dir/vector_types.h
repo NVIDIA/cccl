@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_HAS_CTK()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
@@ -79,6 +79,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     _LIBCUDACXX_SPECIALIZE_GET(__name##2, __base_type)           \
     _LIBCUDACXX_SPECIALIZE_GET(__name##3, __base_type)           \
     _LIBCUDACXX_SPECIALIZE_GET(__name##4, __base_type)
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -226,6 +228,8 @@ _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
+#  include <cuda/std/__cccl/epilogue.h>
+
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR
 #  undef _LIBCUDACXX_SPECIALIZE_GET
@@ -233,6 +237,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_HAS_CTK()
 
 #endif // _LIBCUDACXX___TUPLE_VECTOR_TYPES_H

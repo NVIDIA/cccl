@@ -27,6 +27,7 @@ function(cudax_add_example target_name_var example_src cudax_target)
   )
   target_compile_options(${example_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr --extended-lambda>
   )
 
   cudax_clone_target_properties(${example_target} ${cudax_target})
@@ -52,6 +53,8 @@ file(GLOB example_srcs
   *.cu *.cpp
 )
 
+find_package(CUDAToolkit REQUIRED) # for CUDAToolkit_VERSION
+
 # Example requires pinned_memory_resource.
 if(CUDAToolkit_VERSION VERSION_LESS 12.6)
   list(REMOVE_ITEM example_srcs async_buffer_add.cu)
@@ -67,6 +70,12 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 
   foreach (example_src IN LISTS example_srcs)
     cudax_add_example(example_target "${example_src}" ${cudax_target})
+    if (${example_src} MATCHES "stdexec")
+      # The stream context needs atomic wait/notify, which is only available on sm70 and above.
+      get_target_property(cuda_arch_list ${example_target} CUDA_ARCHITECTURES)
+      list(REMOVE_ITEM cuda_arch_list "60" "61")
+      set_target_properties(${example_target} PROPERTIES CUDA_ARCHITECTURES "${cuda_arch_list}")
+    endif()
   endforeach()
 endforeach()
 

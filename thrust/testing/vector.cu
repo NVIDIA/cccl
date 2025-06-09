@@ -621,7 +621,7 @@ void TestVectorResizing()
   ASSERT_EQUAL(v.size(), 0lu);
 
 // TODO remove this WAR
-#if defined(__CUDACC__) && CUDART_VERSION == 3000
+#if _CCCL_CUDA_COMPILATION() && CUDART_VERSION == 3000
   // depending on sizeof(T), we will receive one
   // of two possible exceptions
   try
@@ -635,7 +635,7 @@ void TestVectorResizing()
     // reset the CUDA error
     cudaGetLastError();
   } // end catch
-#endif // defined(__CUDACC__) && CUDART_VERSION==3000
+#endif // _CCCL_CUDA_COMPILATION() && CUDART_VERSION == 3000
 
   ASSERT_EQUAL(v.size(), 0lu);
 }
@@ -657,7 +657,7 @@ void TestVectorReserving()
   ASSERT_EQUAL(v.capacity(), old_capacity);
 
 // TODO remove this WAR
-#if defined(__CUDACC__) && CUDART_VERSION == 3000
+#if _CCCL_CUDA_COMPILATION() && CUDART_VERSION == 3000
   try
   {
     v.reserve(std::numeric_limits<size_t>::max());
@@ -666,7 +666,7 @@ void TestVectorReserving()
   {}
   catch (std::bad_alloc e)
   {}
-#endif // defined(__CUDACC__) && CUDART_VERSION==3000
+#endif // _CCCL_CUDA_COMPILATION() && CUDART_VERSION==3000
 
   ASSERT_EQUAL(v.capacity(), old_capacity);
 }
@@ -834,3 +834,97 @@ void TestVectorMove()
   ASSERT_EQUAL(ptr3, ptr4);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorMove);
+
+struct IntWithInit
+{
+  int value = 42;
+};
+
+void TestVectorDefaultInitCtor()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int> hv(10, thrust::default_init);
+    thrust::device_vector<int> dv(10, thrust::default_init);
+  }
+
+  // non-trivially-constructible type: check that initialization was performed
+  {
+    thrust::host_vector<IntWithInit> hv(10, thrust::default_init);
+    for (auto e : hv)
+    {
+      ASSERT_EQUAL(e.value, 42);
+    }
+
+    thrust::device_vector<IntWithInit> dv(10, thrust::default_init);
+    for (auto e : dv)
+    {
+      ASSERT_EQUAL(static_cast<IntWithInit>(e).value, 42);
+    }
+  }
+}
+DECLARE_UNITTEST(TestVectorDefaultInitCtor);
+
+void TestVectorNoInitCtor()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int> hv(10, thrust::no_init);
+    thrust::device_vector<int> dv(10, thrust::no_init);
+  }
+
+  // non-trivially-constructible type: those should fail to compile
+  // thrust::host_vector<IntWithInit> hv(10, thrust::no_init);
+  // thrust::device_vector<IntWithInit> dv(10, thrust::no_init);
+}
+DECLARE_UNITTEST(TestVectorNoInitCtor);
+
+void TestVectorDefaultInitResize()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int> hv(5);
+    hv.resize(10, thrust::default_init);
+  }
+  {
+    thrust::device_vector<int> dv(5);
+    dv.resize(10, thrust::default_init);
+  }
+
+  // non-trivially-constructible type: check that initialization was performed
+  {
+    thrust::host_vector<IntWithInit> hv(5);
+    hv.resize(10, thrust::default_init);
+    for (auto e : hv)
+    {
+      ASSERT_EQUAL(e.value, 42);
+    }
+  }
+  {
+    thrust::device_vector<IntWithInit> dv(5, thrust::default_init);
+    dv.resize(10, thrust::default_init);
+    for (auto e : dv)
+    {
+      ASSERT_EQUAL(static_cast<IntWithInit>(e).value, 42);
+    }
+  }
+}
+DECLARE_UNITTEST(TestVectorDefaultInitResize);
+
+void TestVectorNoInitResize()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int> hv(5);
+    hv.resize(10, thrust::no_init);
+  }
+  {
+    thrust::device_vector<int> dv(5);
+    dv.resize(10, thrust::no_init);
+  }
+
+  // non-trivially-constructible type: those should fail to compile
+  // thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
+  // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
+}
+DECLARE_UNITTEST(TestVectorNoInitResize);

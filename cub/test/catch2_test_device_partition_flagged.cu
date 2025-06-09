@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_partition.cuh>
 
@@ -402,7 +401,9 @@ C2H_TEST("DevicePartition::Flagged works with different output type", "[device][
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::Flagged works for very large number of items", "[device][partition_flagged]", offset_types)
+C2H_TEST("DevicePartition::Flagged works for very large number of items",
+         "[device][partition_flagged][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
 try
 {
   using type     = std::int64_t;

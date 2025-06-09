@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,8 +29,7 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/conversions.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -41,7 +40,7 @@ namespace cuda::experimental
 //! \c basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any<_DstInterface>>)
-[[nodiscard]] _CUDAX_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>&& __src) -> basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>&& __src) -> basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(_CUDA_VSTD::move(__src), __dst);
@@ -51,7 +50,7 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any<_DstInterfa
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>&, basic_any<_DstInterface>>)
-[[nodiscard]] _CUDAX_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>& __src) -> basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>& __src) -> basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
@@ -61,7 +60,7 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>&, basic_any<_DstInterf
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any<_DstInterface>>)
-[[nodiscard]] _CUDAX_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface> const& __src) -> basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface> const& __src) -> basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
@@ -77,7 +76,7 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any<_Dst
 //! \c basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>*, basic_any<_DstInterface>>)
-[[nodiscard]] _CUDAX_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>* __src) -> basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>* __src) -> basic_any<_DstInterface>
 {
   static_assert(_CUDA_VSTD::is_pointer_v<_DstInterface>,
                 "when dynamic_any_cast-ing from a pointer to a basic_any, the destination type must be a pointer to an "
@@ -90,7 +89,7 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>*, basic_any<_DstInterf
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const*, basic_any<_DstInterface>>)
-[[nodiscard]] _CUDAX_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface> const* __src) -> basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface> const* __src) -> basic_any<_DstInterface>
 {
   static_assert(_CUDA_VSTD::is_pointer_v<_DstInterface>,
                 "when dynamic_any_cast-ing from a pointer to a basic_any, the destination type must be a pointer to an "
@@ -102,6 +101,6 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const*, basic_any<_Dst
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_DYNAMIC_ANY_CAST_H

@@ -1,4 +1,0 @@
-AlignTrailingComments:
-  Kind: Always
-
-BasedOnStyle: InheritParentConfig

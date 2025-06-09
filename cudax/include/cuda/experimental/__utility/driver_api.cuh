@@ -4,16 +4,18 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDAX__UTILITY_DRIVER_API
 #define _CUDAX__UTILITY_DRIVER_API
 
+#include <cuda/std/__exception/cuda_error.h>
+
 #include <cuda.h>
 
-#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__cccl/prologue.h>
 
 // Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \
@@ -22,7 +24,7 @@
 #define CUDAX_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, version) \
   reinterpret_cast<decltype(versioned_fn_name)*>(get_driver_entry_point(#function_name, version))
 
-namespace cuda::experimental::detail::driver
+namespace cuda::experimental::__detail::driver
 {
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
@@ -230,7 +232,10 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   return result;
 }
 #endif // CUDART_VERSION >= 12050
-} // namespace cuda::experimental::detail::driver
+} // namespace cuda::experimental::__detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif

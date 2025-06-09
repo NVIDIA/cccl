@@ -20,7 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/void_t.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -28,17 +31,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // implementation of declval is available. It compiles approximately 2x faster
 // than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE and
 // MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
-// `__identity_t` alias is help MSVC parse the declaration correctly.
+// `type_identity_t` alias is help MSVC parse the declaration correctly.
 #if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 4) && !_CCCL_COMPILER(MSVC, <, 19, 39)
 
-template <class _Tp>
-using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
-
 template <class _Tp, class = void>
-extern __identity_t<void (*)() noexcept> declval;
+extern type_identity_t<void (*)() noexcept> declval;
 
 template <class _Tp>
-extern __identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
+extern type_identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
 
 #else // ^^^ fast declval ^^^ / vvv default impl vvv
 
@@ -57,5 +57,7 @@ _LIBCUDACXX_HIDE_FROM_ABI decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noex
 #endif // default impl
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_DECLVAL_H

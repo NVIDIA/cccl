@@ -42,6 +42,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
   ForwardIterator last,
   const T& x)
 {
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_fill");
   using thrust::system::detail::generic::uninitialized_fill;
   return uninitialized_fill(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, x);
 } // end uninitialized_fill()
@@ -51,6 +52,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Size, typen
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, Size n, const T& x)
 {
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_fill_n");
   using thrust::system::detail::generic::uninitialized_fill_n;
   return uninitialized_fill_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, x);
 } // end uninitialized_fill_n()
@@ -58,6 +60,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
 template <typename ForwardIterator, typename T>
 void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
 {
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_fill");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -70,6 +73,7 @@ void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
 template <typename ForwardIterator, typename Size, typename T>
 ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x)
 {
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_fill_n");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
