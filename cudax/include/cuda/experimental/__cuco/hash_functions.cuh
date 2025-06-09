@@ -30,11 +30,25 @@
 namespace cuda::experimental::cuco
 {
 
-//! @brief A 32-bit `XXH32` hash function to hash the given argument on host and device.
+enum class HashStrategy
+{
+  XXHash_32
+};
+
+//! @brief A hash function class specialized for different hash strategies.
 //!
-//! @tparam Key The type of the values to hash
-template <typename Key>
-using xxhash_32 = __detail::XXHash_32<Key>;
+//! @tparam _Key The type of the values to hash
+//! @tparam _S The hash strategy to use, defaults to `HashStrategy::XXHash_32`
+template <typename _Key, HashStrategy _S = HashStrategy::XXHash_32>
+class Hash;
+
+template <typename _Key>
+class Hash<_Key, HashStrategy::XXHash_32> : private __detail::_XXHash_32<_Key>
+{
+public:
+  using __detail::_XXHash_32<_Key>::_XXHash_32;
+  using __detail::_XXHash_32<_Key>::operator();
+};
 
 } // namespace cuda::experimental::cuco
 

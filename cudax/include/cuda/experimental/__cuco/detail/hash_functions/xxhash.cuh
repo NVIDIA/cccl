@@ -34,9 +34,9 @@ namespace cuda::experimental::cuco::__detail
 {
 
 /**
- * @brief A `XXHash_32` hash function to hash the given argument on host and device.
+ * @brief A `_XXHash_32` hash function to hash the given argument on host and device.
  *
- * XXHash_32 implementation from
+ * _XXHash_32 implementation from
  * https://github.com/Cyan4973/xxHash
  * -----------------------------------------------------------------------------
  * xxHash - Extremely Fast Hash algorithm
@@ -71,7 +71,7 @@ namespace cuda::experimental::cuco::__detail
  * @tparam Key The type of the values to hash
  */
 template <typename _Key>
-struct XXHash_32
+struct _XXHash_32
 {
 private:
   static constexpr _CUDA_VSTD::uint32_t __prime1 = 0x9e3779b1u;
@@ -83,7 +83,7 @@ private:
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE constexpr XXHash_32(_CUDA_VSTD::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE constexpr _XXHash_32(_CUDA_VSTD::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
