@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 import textwrap
+import warnings
 from typing import TYPE_CHECKING, Callable, List
 
 import numba
@@ -321,6 +322,9 @@ def _check_compile_result(cubin: bytes):
         if out.returncode != 0:
             raise RuntimeError("nvdisasm failed")
         sass = out.stdout.decode("utf-8")
+    except FileNotFoundError:
+        sass = "nvdiasm not found, skipping SASS validation"
+        warnings.warn(sass)
     finally:
         os.unlink(temp_cubin_file.name)
 
