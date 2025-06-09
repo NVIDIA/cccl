@@ -41,7 +41,10 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
   auto output = c2h::device_vector<float>(1);
   auto init   = 0.0f;
 
-  cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, init, cuda::stream_ref{});
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+
+  cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, init, stream_ref);
 
   c2h::device_vector<float> expected{6.0f};
   // example-end reduce-env-stream
