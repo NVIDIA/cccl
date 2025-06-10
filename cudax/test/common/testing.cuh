@@ -123,6 +123,21 @@ inline int cuda_driver_version()
 {
   return cudax::__detail::driver::getVersion();
 }
+
+// Needs to be a template because we use template catch2 macro
+template <typename Dummy = void>
+struct ccclrt_test_fixture
+{
+  ccclrt_test_fixture()
+  {
+    empty_driver_stack();
+  }
+  ~ccclrt_test_fixture()
+  {
+    CUDAX_CHECK(count_driver_stack() == 0);
+  }
+};
+
 } // namespace test
 } // namespace
 
@@ -131,14 +146,6 @@ inline int cuda_driver_version()
 // and then runs the test. At the end it checks if it remained empty, which ensures
 // we don't accidentally initialize device 0 through CUDART usage and makes sure
 // our APIs work with empty driver stack.
-#define C2H_CCCLRT_TEST(NAME, TAGS, ...)             \
-  static void C2H_TEST_CONCAT(test_fn_, __LINE__)(); \
-  C2H_TEST(NAME, TAGS, __VA_ARGS__)                  \
-  {                                                  \
-    test::empty_driver_stack();                      \
-    C2H_TEST_CONCAT(test_fn_, __LINE__)();           \
-    CUDAX_CHECK(test::count_driver_stack() == 0);    \
-  }                                                  \
-  static void C2H_TEST_CONCAT(test_fn_, __LINE__)()
+#define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __COMMON_TESTING_H__
