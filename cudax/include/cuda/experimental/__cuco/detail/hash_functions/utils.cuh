@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/cstddef>
+#include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
 
