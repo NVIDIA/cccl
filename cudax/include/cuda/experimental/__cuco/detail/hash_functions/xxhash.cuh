@@ -118,7 +118,7 @@ public:
   __compute_hash(::cuda::std::byte const* __bytes, _Extent __size) const noexcept
   {
     _CUDA_VSTD::size_t __offset = 0;
-    _CUDA_VSTD::uint32_t __h32;
+    _CUDA_VSTD::uint32_t __h32  = {};
 
     // data can be processed in 16-byte chunks
     if (__size >= 16)
