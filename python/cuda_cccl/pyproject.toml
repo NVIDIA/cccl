@@ -25,18 +25,13 @@ dependencies = [
   "nvidia-nvjitlink-cu12",
   "pynvjitlink-cu12>=0.2.4",
   "jinja2",
+  "typing_extensions",
 ]
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-test = [
-  "pytest",
-  "pytest-xdist",
-  "cupy-cuda12x",
-  "typing_extensions",
-  "pytest-benchmark",
-]
+test = ["pytest", "pytest-xdist", "cupy-cuda12x", "pytest-benchmark"]
 
 [project.urls]
 Homepage = "https://developer.nvidia.com/"
