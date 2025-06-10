@@ -1126,7 +1126,7 @@ template <>
   const float __round_shift = 12582912.0f; // 1.5 * 2^23;
   const float __log2_e      = 1.4426950408889634f; // log2(e)
   float __j                 = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
-  __j                        = __j -__round_shift;
+  __j                       = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
@@ -1237,7 +1237,7 @@ template <>
   const double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
   const double __log2_e      = 1.442695040888963407; // log2(e)
   double __j                 = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
-  __j                        = __j -__round_shift;
+  __j                        = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
