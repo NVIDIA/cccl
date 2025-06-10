@@ -1120,26 +1120,29 @@ template <>
     }
   }
 
-  // e^real, deal with overflow after:
-  float __j = _CUDA_VSTD::roundf(__r * 1.4426950408889634073599246810018921374f);
-  float __exp_mant;
+  // e^real, deal with overflow after.
+  // A slightly more efficient way of doing
+  //    __j = round(__r * L2E)
+  const float __round_shift = 12582912.0f; // 1.5 * 2^23;
+  const float __log2_e      = 1.4426950408889634f; // log2(e)
+  float __j                 = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
+  __j                        = __j -__round_shift;
 
-  // exp() range reduction.
+  // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   float __r_reduced;
   __r_reduced = _CUDA_VSTD::fmaf(-__j, 0.693147182464599609375f, __r);
   __r_reduced = _CUDA_VSTD::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
-  __r_reduced = _CUDA_VSTD::fmaf(-__j, -1.864189073832837884e-15f, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
-  __exp_mant = 1.95693559362553060054779052734375e-4f;
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.39354146085679531097412109375e-3f);
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 8.333896286785602569580078125e-3f);
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 4.16664592921733856201171875e-2f);
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.16666664183139801025390625f);
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.5f);
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
-  __exp_mant = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
+  float __exp_mant = 1.95693559362553060054779052734375e-4f;
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.39354146085679531097412109375e-3f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 8.333896286785602569580078125e-3f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 4.16664592921733856201171875e-2f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.16666664183139801025390625f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.5f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
 
   // Get some close bounds when the answer is fully guaranteed to under/overflow.
   // Sometime close to but >= log(max_flt / min_denom_float):
@@ -1182,7 +1185,7 @@ template <>
     __j = -151.0f;
   }
 
-  const int __j_int = int(__j);
+  const int32_t __j_int = int32_t(__j);
 
   // Split this j up into four parts to fit it into four float exponents's.
   // (Splitting j in 4 better than in 3).
@@ -1193,8 +1196,8 @@ template <>
   __j_quarter   = (__j_quarter + 127) << 23;
   __j_remainder = (__j_remainder + 127) << 23;
 
-  const float __ldexp_factor_1 = reinterpret_cast<float&>(__j_quarter);
-  const float __ldexp_factor_2 = reinterpret_cast<float&>(__j_remainder);
+  const float __ldexp_factor_1 = _CUDA_VSTD::bit_cast<float>(__j_quarter);
+  const float __ldexp_factor_2 = _CUDA_VSTD::bit_cast<float>(__j_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all
@@ -1228,30 +1231,33 @@ template <>
     }
   }
 
-  // e^real, deal with overflow after:
-  double __j = _CUDA_VSTD::round(__r * 1.442695040888963407);
-  double __exp_mant;
+  // e^real, deal with overflow after.
+  // A slightly more efficient way of doing
+  //    __j = round(__r * L2E)
+  const double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
+  const double __log2_e      = 1.442695040888963407; // log2(e)
+  double __j                 = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
+  __j                        = __j -__round_shift;
 
-  // exp() range reduction.
+  // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   double __r_reduced;
   __r_reduced = _CUDA_VSTD::fma(-__j, 0.6931471805599453972491, __r);
   __r_reduced = _CUDA_VSTD::fma(-__j, -8.78318343240526554e-17, __r_reduced);
-  __r_reduced = _CUDA_VSTD::fma(-__j, -2.51071706717795650e-33, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
-  __exp_mant = 2.5022322536502990e-8;
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7630903488173108e-7);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7557514545882439e-6);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.4801491039099165e-5);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.9841269589115497e-4);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.3888888945916380e-3);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 8.3333333334550432e-3);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 4.1666666666519754e-2);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.6666666666666477e-1);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 5.0000000000000122e-1);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
-  __exp_mant = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
+  double __exp_mant = 2.5022322536502990e-8;
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7630903488173108e-7);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7557514545882439e-6);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.4801491039099165e-5);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.9841269589115497e-4);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.3888888945916380e-3);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 8.3333333334550432e-3);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 4.1666666666519754e-2);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.6666666666666477e-1);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 5.0000000000000122e-1);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
 
   if (_CUDA_VSTD::fabs(__r) >= 1457.0)
   {
@@ -1291,7 +1297,7 @@ template <>
     __j = -1076.0;
   }
 
-  const int __j_int = int(__j);
+  const int64_t __j_int = int64_t(__j);
 
   // We can split this j up into three parts to fit it into three double exponents's.
   // j can be in a set of 3174 values.
@@ -1303,8 +1309,8 @@ template <>
   __j_quarter   = (__j_quarter + 1023) << 52;
   __j_remainder = (__j_remainder + 1023) << 52;
 
-  const double __ldexp_factor_1 = reinterpret_cast<double&>(__j_quarter);
-  const double __ldexp_factor_2 = reinterpret_cast<double&>(__j_remainder);
+  const double __ldexp_factor_1 = _CUDA_VSTD::bit_cast<double>(__j_quarter);
+  const double __ldexp_factor_2 = _CUDA_VSTD::bit_cast<double>(__j_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the best way to do it:
