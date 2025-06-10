@@ -277,6 +277,13 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
+#define C2H_TEST_LIST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...) \
+  using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>;   \
+  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+
+#define C2H_TEST_LIST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
+
 #define C2H_TEST_STR(a) #a
 
 namespace c2h

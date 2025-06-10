@@ -258,6 +258,21 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   return result;
 }
 
+inline void* memAllocHost(size_t __bytes)
+{
+  void* __ptr;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemAllocHost);
+  call_driver_fn(driver_fn, "Failed to allocate memory with cuMemAllocHost", &__ptr, __bytes);
+  return __ptr;
+}
+
+inline cudaError_t memFreeHost(void* __ptr)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemFreeHost);
+  CUresult status       = driver_fn(__ptr);
+  return static_cast<cudaError_t>(status);
+}
+
 #endif // CUDART_VERSION >= 12050
 } // namespace cuda::experimental::__detail::driver
 
