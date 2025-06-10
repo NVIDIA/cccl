@@ -92,8 +92,7 @@ public:
   [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
-    _CCCL_TRY_CUDA_API(
-      ::cudaEventElapsedTime, "Failed to get CUDA event elapsed time", &__ms, __start.get(), __end.get());
+    __detail::driver::eventElapsedTime(__start.get(), __end.get(), &__ms);
     return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 

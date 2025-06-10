@@ -133,6 +133,7 @@ struct launch_transform_to_int_convertible
 // Needs a separate function for Windows extended lambda
 void launch_smoke_test()
 {
+  cudax::__ensure_current_device guard(cudax::device_ref{0});
   // Use raw stream to make sure it can be implicitly converted on call to launch
   cudaStream_t stream;
 
@@ -320,7 +321,7 @@ void block_stream(cudax::stream_ref stream, cuda::atomic<int>& atomic)
 
 void unblock_and_wait_stream(cudax::stream_ref stream, cuda::atomic<int>& atomic)
 {
-  CUDAX_REQUIRE(!stream.ready());
+  CUDAX_REQUIRE(!stream.is_done());
   atomic = 1;
   stream.sync();
   atomic = 0;
