@@ -60,25 +60,25 @@ struct test_xxhash_32
   {
     int i = 0;
 
-    result[i++] = check_hash_result<cudax::cuco::Hash<char>>(0, 3479547966, 0);
-    result[i++] = check_hash_result<cudax::cuco::Hash<char>>(42, 3774771295, 0);
-    result[i++] = check_hash_result<cudax::cuco::Hash<char>>(0, 2099223482, 42);
+    result[i++] = check_hash_result<cudax::cuco::Hash<char>>(static_cast<char>(0), 3479547966, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<char>>(static_cast<char>(42), 3774771295, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<char>>(static_cast<char>(0), 2099223482, 42);
 
-    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(0, 148298089, 0);
-    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(0, 2132181312, 42);
-    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(42, 1161967057, 0);
-    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(123456789, 2987034094, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(static_cast<int32_t>(0), 148298089, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(static_cast<int32_t>(0), 2132181312, 42);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(static_cast<int32_t>(42), 1161967057, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int32_t>>(static_cast<int32_t>(123456789), 2987034094, 0);
 
-    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(0, 3736311059, 0);
-    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(0, 1076387279, 42);
-    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(42, 2332451213, 0);
-    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(123456789, 1561711919, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(static_cast<int64_t>(0), 3736311059, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(static_cast<int64_t>(0), 1076387279, 42);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(static_cast<int64_t>(42), 2332451213, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(static_cast<int64_t>(123456789), 1561711919, 0);
 
 #if defined(CUCO_HAS_INT128)
-    result[i++] = check_hash_result<cudax::cuco::Hash<__int128>>(123456789, 1846633701, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<__int128>>(static_cast<__int128>(123456789), 1846633701, 0);
 #endif
 
-    result[i++] = check_hash_result<cudax::cuco::Hash<large_key<32>>>(123456789, 3715432378, 0);
+    result[i++] = check_hash_result<cudax::cuco::Hash<large_key<32>>>(large_key<32>(123456789), 3715432378, 0);
   }
 };
 
