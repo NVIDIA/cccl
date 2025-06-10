@@ -237,7 +237,7 @@ private:
         __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
       using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
       using dispatch_t =
-        detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, accum_t, transform_t, policy_t>;
+        detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, transform_t, accum_t, policy_t>;
 
       return dispatch_t::Dispatch(
         d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
