@@ -21,8 +21,11 @@ dependencies = [
   "numpy",
   "cuda-python==12.9.0",
   "cupy-cuda12x",
+  "numba-cuda",
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
+  # pynvjitlink is needed here for MVC support
+  # in numba-cuda, which treats it as optional dependency
   "pynvjitlink-cu12>=0.2.4",
   "jinja2",
   "typing_extensions",
