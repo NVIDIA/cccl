@@ -89,8 +89,6 @@ struct stream_ref : ::cuda::stream_ref
   }
 
   //! @brief Deprecated. Use is_done() instead.
-  //!
-  //! @deprecated Use is_done() instead.
   [[deprecated("Use is_done() instead.")]] [[nodiscard]] bool ready() const
   {
     return is_done();
