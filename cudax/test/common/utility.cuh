@@ -11,8 +11,6 @@
 #ifndef __COMMON_UTILITY_H__
 #define __COMMON_UTILITY_H__
 
-#include <nv/detail/__preprocessor>
-
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
