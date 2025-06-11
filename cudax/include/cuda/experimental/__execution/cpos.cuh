@@ -107,33 +107,52 @@ struct start_t
 // connect
 struct connect_t
 {
+private:
   struct __transform_fn
   {
-    _CCCL_EXEC_CHECK_DISABLE
     template <class _Sndr, class _Rcvr, class _Domain = __late_domain_of_t<_Sndr, env_of_t<_Rcvr>>>
     _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
       noexcept(noexcept(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr))))
-        -> _CUDA_VSTD::__call_result_t<transform_sender_t, _Domain, _Sndr, env_of_t<_Rcvr>>
+        -> decltype(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr)))
     {
       return transform_sender(_Domain{}, static_cast<_Sndr&&>(__sndr), get_env(__rcvr));
     }
   };
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
-  _CCCL_REQUIRES((!__has_sender_transform<_Sndr, env_of_t<_Rcvr>>) )
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>()))) -> decltype(auto)
+  template <bool _HasSndrTransform>
+  struct __impl_fn
   {
-    return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
-  }
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class _Sndr, class _Rcvr>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+      noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>())))
+        -> decltype(declval<_Sndr>().connect(declval<_Rcvr>()))
+    {
+      return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
+    }
+  };
 
+  template <class _Sndr, class _Rcvr>
+  using __impl_t = __impl_fn<__has_sender_transform<_Sndr, env_of_t<_Rcvr>>>;
+
+public:
+  template <class _Sndr, class _Rcvr>
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(_CUDA_VSTD::__is_nothrow_callable_v<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>)
+      -> _CUDA_VSTD::__call_result_t<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>
+  {
+    return __impl_t<_Sndr, _Rcvr>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));
+  }
+};
+
+template <>
+struct connect_t::__impl_fn<true>
+{
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
-  _CCCL_REQUIRES(__has_sender_transform<_Sndr, env_of_t<_Rcvr>>)
+  template <class _Sndr, class _Rcvr>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
     noexcept(noexcept(__transform_fn{}(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>())))
-      -> connect_result_t<_CUDA_VSTD::__call_result_t<__transform_fn, _Sndr, _Rcvr>, _Rcvr>
+      -> decltype(__transform_fn{}(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>()))
   {
     return __transform_fn{}(static_cast<_Sndr&&>(__sndr), __rcvr).connect(static_cast<_Rcvr&&>(__rcvr));
   }
