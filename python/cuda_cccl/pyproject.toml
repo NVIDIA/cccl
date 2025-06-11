@@ -88,3 +88,6 @@ markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
 ]
+
+[project.entry-points."numba_extensions"]
+init = "cuda.cccl.cooperative.experimental._init_extension"

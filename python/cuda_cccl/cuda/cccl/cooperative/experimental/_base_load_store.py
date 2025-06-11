@@ -10,10 +10,6 @@ from cuda.cccl.cooperative.experimental._common import (
     normalize_dim_param,
     normalize_dtype_param,
 )
-from cuda.cccl.cooperative.experimental._enums import (
-    BlockLoadAlgorithm,
-    BlockStoreAlgorithm,
-)
 from cuda.cccl.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -44,78 +40,8 @@ CUB_BLOCK_STORE_ALGOS = {
 }
 
 class BaseLoadStore(BasePrimitive):
-    template_parameters = [
-        TemplateParameter("T"),
-        TemplateParameter("BLOCK_DIM_X"),
-        TemplateParameter("ITEMS_PER_THREAD"),
-        TemplateParameter("ALGORITHM"),
-        TemplateParameter("BLOCK_DIM_Y"),
-        TemplateParameter("BLOCK_DIM_Z"),
-    ]
 
-    parameters = [
-        [
-            Pointer(numba.uint8),
-            DependentPointer(Dependency("T")),
-            DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-        ]
-    ]
-
-    def __init__(self, dtype, dim, items_per_thread, algorithm=None):
-        self.dtype = normalize_dtype_param(dtype)
-        self.dim = normalize_dim_param(dim)
-        self.items_per_thread = items_per_thread
-        algorithm_enum = None
-        if algorithm is not None:
-            enum_class = self.default_algorithm.__class__
-            if isinstance(algorithm, str):
-                algorithm_cub = CUB_BLOCK_LOAD_ALGOS[algorithm]
-            elif isinstance(algorithm, int):
-                algorithm_enum = enum_class(algorithm)
-                algorithm_cub = str(algorithm_enum)
-            else:
-                enum_class = self.default_algorithm.__class__
-                if not isinstance(algorithm, enum_class):
-                    raise ValueError(f"Invalid algorithm: {algorithm}")
-                algorithm_cub = str(algorithm)
-        else:
-            algorithm_cub = str(self.default_algorithm)
-
-        self.algorithm = Algorithm(
-            self.struct_name,
-            self.method_name,
-            self.c_name,
-            self.includes,
-            self.template_parameters,
-            self.parameters,
-        )
-        self.specialization = self.algorithm.specialize(
-            {
-                "T": self.dtype,
-                "BLOCK_DIM_X": self.dim[0],
-                "ITEMS_PER_THREAD": items_per_thread,
-                "ALGORITHM": algorithm_cub,
-                "BLOCK_DIM_Y": self.dim[1],
-                "BLOCK_DIM_Z": self.dim[2],
-            }
-        )
-
-class load(BaseLoadStore):
-    default_algorithm = BlockLoadAlgorithm.DIRECT
-    struct_name = "BlockLoad"
-    method_name = "Load"
-    c_name = "block_load"
-    includes = ["cub/block/block_load.cuh"]
-
-class store(BaseLoadStore):
-    default_algorithm = BlockStoreAlgorithm.DIRECT
-    struct_name = "BlockStore"
-    method_name = "Store"
-    c_name = "block_store"
-    includes = ["cub/block/block_store.cuh"]
-
-
-def create_load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
+def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     """Creates an operation that performs a block-wide load.
 
     Returns a callable object that can be linked to and invoked from device code. It can be
@@ -203,7 +129,7 @@ def create_load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"
     )
 
 
-def create_store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
+def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     """Creates an operation that performs a block-wide store.
 
     Returns a callable object that can be linked to and invoked from device code. It can be
