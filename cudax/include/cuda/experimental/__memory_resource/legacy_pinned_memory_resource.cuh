@@ -33,6 +33,7 @@
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
+#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
