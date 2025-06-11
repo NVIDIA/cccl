@@ -53,6 +53,7 @@ struct Op2D
     if constexpr (index > 0)
     {
       cuda::static_for<index()>(Op<index_t>{0, 1, index()});
+      cuda::static_for<index_t, index()>(Op<index_t>{0, 1, index()});
     }
   }
 };

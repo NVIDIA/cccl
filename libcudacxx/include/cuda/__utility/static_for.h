@@ -39,21 +39,31 @@ __static_for_impl(_Operator __op, _CUDA_VSTD::integer_sequence<_SizeType, _Indic
   (__op(_CUDA_VSTD::integral_constant<_SizeType, (_Indices * _Step + _Offset)>{}, __args...), ...);
 }
 
-template <auto _Size, typename _Operator, typename... _TArgs>
+template <typename _Tp, _Tp _Size, typename _Operator, typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
 {
   static_assert(_Size > 0);
-  using __size_type = decltype(_Size);
-  ::cuda::__static_for_impl<__size_type, 0, 1>(
-    __op, _CUDA_VSTD::make_integer_sequence<__size_type, _Size>{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
+  ::cuda::__static_for_impl<_Tp, 0, 1>(
+    __op, _CUDA_VSTD::make_integer_sequence<_Tp, _Size>{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
+}
+
+template <typename _Tp, _Tp _Start, _Tp _End, _Tp _Step = 1, typename _Operator, typename... _TArgs>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
+{
+  using __seq_t = _CUDA_VSTD::make_integer_sequence<_Tp, (_End - _Start) / _Step>;
+  ::cuda::__static_for_impl<_Tp, _Start, _Step>(__op, __seq_t{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
+}
+
+template <auto _Size, typename _Operator, typename... _TArgs>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
+{
+  ::cuda::static_for<decltype(_Size), _Size>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
 template <auto _Start, decltype(_Start) _End, decltype(_Start) _Step = 1, typename _Operator, typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
 {
-  using __size_type = decltype(_Start);
-  using __seq_t     = _CUDA_VSTD::make_integer_sequence<__size_type, (_End - _Start) / _Step>;
-  return ::cuda::__static_for_impl<__size_type, _Start, _Step>(__op, __seq_t{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
+  ::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
