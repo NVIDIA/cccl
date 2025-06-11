@@ -15,9 +15,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/ranges>
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/string_view>
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
+#include <cuda/std/string_view>
 #if defined(_LIBCUDACXX_HAS_VECTOR)
 #  include <cuda/std/vector>
 #endif // _LIBCUDACXX_HAS_VECTOR
@@ -36,15 +34,23 @@ static_assert(ValidTransformView<MoveOnlyView, PlusOne>);
 static_assert(!ValidTransformView<Range, PlusOne>);
 static_assert(!ValidTransformView<MoveOnlyView, BadFunction>);
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
+struct toUpperFn
+{
+  __host__ __device__ constexpr char operator()(const char c) const noexcept
+  {
+    if (c >= 'a' && c <= 'z')
+    {
+      return static_cast<char>(c - 32);
+    }
+    return c;
+  }
+};
+
 template <class R, cuda::std::enable_if_t<cuda::std::ranges::range<R>, int> = 0>
 __host__ __device__ auto toUpper(R range)
 {
-  return cuda::std::ranges::transform_view(range, [](char c) {
-    return cuda::std::toupper(c);
-  });
+  return cuda::std::ranges::transform_view(range, toUpperFn{});
 }
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
 
 template <class E1, class E2, size_t N, class Join = cuda::std::plus<E1>>
 __host__ __device__ auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
@@ -119,14 +125,12 @@ int main(int, char**)
     assert(equal(out, check));
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
   {
     cuda::std::string_view str   = "Hello, World.";
     auto upp                     = toUpper(str);
     cuda::std::string_view check = "HELLO, WORLD.";
     assert(equal(upp, check));
   }
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
 
   return 0;
 }
