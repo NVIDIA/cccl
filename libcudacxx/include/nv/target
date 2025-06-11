@@ -69,7 +69,8 @@ constexpr base_int_t sm_103_bit = 1 << 19;
 constexpr base_int_t sm_120_bit = 1 << 20;
 constexpr base_int_t all_devices =
   sm_35_bit | sm_37_bit | sm_50_bit | sm_52_bit | sm_53_bit | sm_60_bit | sm_61_bit | sm_62_bit | sm_70_bit | sm_72_bit
-  | sm_75_bit | sm_80_bit | sm_86_bit | sm_87_bit | sm_89_bit | sm_90_bit | sm_100_bit | sm_101_bit | sm_103_bit | sm_120_bit;
+  | sm_75_bit | sm_80_bit | sm_86_bit | sm_87_bit | sm_89_bit | sm_90_bit | sm_100_bit | sm_101_bit | sm_103_bit
+  | sm_120_bit;
 
 // Store a set of targets as a set of bits
 struct _NV_BITSET_ATTRIBUTE target_description
