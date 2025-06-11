@@ -27,17 +27,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <typename _SizeType, typename _Operator, _SizeType... _Indices, typename... _TArgs>
+template <typename _SizeType,
+          _SizeType _Offset,
+          _SizeType _Step,
+          typename _Operator,
+          _SizeType... _Indices,
+          typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __static_for_impl(_Operator __op, _CUDA_VSTD::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept
 {
-  (__op(_CUDA_VSTD::integral_constant<_SizeType, _Indices>{}, __args...), ...);
-}
-
-template <typename _SizeType, _SizeType _Offset, _SizeType _Step, _SizeType... _Indices>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __offset_and_step(_CUDA_VSTD::integer_sequence<_SizeType, _Indices...>) noexcept
-{
-  return _CUDA_VSTD::integer_sequence<_SizeType, (_Indices * _Step + _Offset)...>{};
+  (__op(_CUDA_VSTD::integral_constant<_SizeType, (_Indices * _Step + _Offset)>{}, __args...), ...);
 }
 
 template <auto _Size, typename _Operator, typename... _TArgs>
@@ -45,17 +44,16 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... 
 {
   static_assert(_Size > 0);
   using __size_type = decltype(_Size);
-  ::cuda::__static_for_impl<__size_type>(
+  ::cuda::__static_for_impl<__size_type, 0, 1>(
     __op, _CUDA_VSTD::make_integer_sequence<__size_type, _Size>{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
 template <auto _Start, decltype(_Start) _End, decltype(_Start) _Step = 1, typename _Operator, typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
 {
-  using __size_type    = decltype(_Start);
-  using __seq_t        = _CUDA_VSTD::make_integer_sequence<__size_type, (_End - _Start) / _Step>;
-  constexpr auto __seq = ::cuda::__offset_and_step<__size_type, _Start, _Step>(__seq_t{});
-  return ::cuda::__static_for_impl<__size_type>(__op, __seq, _CUDA_VSTD::forward<_TArgs>(__args)...);
+  using __size_type = decltype(_Start);
+  using __seq_t     = _CUDA_VSTD::make_integer_sequence<__size_type, (_End - _Start) / _Step>;
+  return ::cuda::__static_for_impl<__size_type, _Start, _Step>(__op, __seq_t{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
