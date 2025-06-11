@@ -31,7 +31,7 @@ template <typename _SizeType, typename _Operator, _SizeType... _Indices, typenam
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __static_for_impl(_Operator __op, _CUDA_VSTD::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept
 {
-  (__op(_CUDA_VSTD::integral_constant<_SizeType, _Indices>{}, _CUDA_VSTD::forward<_TArgs>(__args)...), ...);
+  (__op(_CUDA_VSTD::integral_constant<_SizeType, _Indices>{}, __args...), ...);
 }
 
 template <typename _SizeType, _SizeType _Offset, _SizeType _Step, _SizeType... _Indices>
