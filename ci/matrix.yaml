@@ -8,14 +8,27 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+# Need to fix MSVC build scripts to work with multiple arches:
+#    # MSVC build coverage of extended GPU nightly tests:
+#    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: '70;75;89;90', cxx: 'msvc'}
+#    # Build-only coverage of extended arches. `sm` split up to parallelize.
+#    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['86;90a', '100;103', '120'], cxx: ['msvc', 'gcc'] }
+#
+#    - {jobs: ['build'], std: 'max', cxx: ['gcc', 'msvc'],  sm: ['90;90a', '100;120']}
+#
+#    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'msvc'], sm: ['90;90a', '100;120']}
+
     # MSVC build coverage of extended GPU nightly tests:
-    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: '70;75;89;90', cxx: 'msvc'}
+    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['70', '75', '89', '90'], cxx: 'msvc'}
     # Build-only coverage of extended arches. `sm` split up to parallelize.
-    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['86;90a', '100;103', '120'], cxx: ['msvc', 'gcc'] }
+    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['86;90a', '100;103', '120'], cxx: ['gcc'] }
+    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['86', '90a', '100', '103', '120'], cxx: ['msvc'] }
 
-    - {jobs: ['build'], std: 'max', cxx: ['gcc', 'msvc'],  sm: ['90;90a', '100;120']}
+    - {jobs: ['build'], std: 'max', cxx: ['gcc'],  sm: ['90;90a', '100;120']}
+    - {jobs: ['build'], std: 'max', cxx: ['msvc'], sm: ['90', '90a', '100', '120']}
 
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'msvc'], sm: ['90;90a', '100;120']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc'], sm: ['90;90a', '100;120']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['msvc'], sm: ['90', '90a', '100', '120']}
 
 
 
