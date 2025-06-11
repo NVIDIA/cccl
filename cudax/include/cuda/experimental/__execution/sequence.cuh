@@ -69,29 +69,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
 
     template <class... _Values>
-    _CCCL_API void set_value(_Values&&...) && noexcept
+    _CCCL_API constexpr void set_value(_Values&&...) noexcept
     {
       execution::start(__opstate2_);
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __error) && noexcept
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<__rcvr_t&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API void set_stopped() && noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return execution::get_env(__rcvr_);
     }
@@ -132,20 +132,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) &&
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) &&
   {
     using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
     return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const&
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const&
   {
     using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr2>>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr2>>
   {
     return __fwd_env(execution::get_env(__sndr2_));
   }

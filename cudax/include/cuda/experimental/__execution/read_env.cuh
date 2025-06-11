@@ -50,7 +50,7 @@ private:
 
     _Rcvr __rcvr_;
 
-    _CCCL_API explicit __opstate_t(_Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
@@ -132,7 +132,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>)
+    -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }

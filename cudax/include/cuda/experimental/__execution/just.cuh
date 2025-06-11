@@ -59,7 +59,7 @@ private:
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __tuple_t _CCCL_NODEBUG_ALIAS               = _CUDA_VSTD::__tuple<_Ts...>;
 
-    _CCCL_API __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
         : __rcvr_{__rcvr}
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
@@ -73,7 +73,7 @@ private:
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 #endif // !_CCCL_COMPILER(GCC)
 
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       _CUDA_VSTD::__apply(
         _SetTag{}, static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
@@ -104,7 +104,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
     -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{
@@ -112,8 +112,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
-    -> __opstate_t<_Rcvr, _Ts...>
+  [[nodiscard]] _CCCL_API constexpr auto
+  connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>) -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
   }

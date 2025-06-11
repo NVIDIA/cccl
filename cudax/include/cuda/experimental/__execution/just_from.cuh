@@ -94,7 +94,7 @@ private:
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});
     }
@@ -127,14 +127,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>) -> __opstate<_Rcvr, _Fn>
   {
     return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate<_Rcvr, _Fn>
   {
     return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};

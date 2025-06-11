@@ -126,7 +126,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__op_);
     }
@@ -159,17 +159,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __error) noexcept
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API void set_stopped() noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return __fwd_env(execution::get_env(__rcvr_));
     }
@@ -216,18 +216,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
     return {static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
+  [[nodiscard]] _CCCL_API constexpr auto
+  connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }

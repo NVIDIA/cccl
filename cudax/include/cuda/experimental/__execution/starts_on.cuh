@@ -45,7 +45,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
     return __sch_;
   }
 
-  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto query(get_domain_t) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
   {
     return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
   }
@@ -63,7 +63,7 @@ struct starts_on_t
     using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
     using __rcvr_with_sch_t _CCCL_NODEBUG_ALIAS       = __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>;
 
-    _CCCL_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
+    _CCCL_API constexpr explicit __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
         , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref_t<__opstate_t, __env_t>{*this})}
         , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref_t<__rcvr_with_sch_t>{*this})}
@@ -71,17 +71,17 @@ struct starts_on_t
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
 
-    _CCCL_API void set_value() noexcept
+    _CCCL_API constexpr void set_value() noexcept
     {
       execution::start(__opstate2_);
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return __fwd_env(execution::get_env(this->__base()));
     }
@@ -128,18 +128,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
   {
     return __opstate_t<_Rcvr, _Sch, _Sndr>{__sch_, static_cast<_Rcvr&&>(__rcvr), static_cast<_Sndr&&>(__sndr_)};
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, _Sch, const _Sndr&>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, _Sch, const _Sndr&>
   {
     return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }

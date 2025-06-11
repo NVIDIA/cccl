@@ -83,7 +83,7 @@ struct __merror_base
 {
   // _CCCL_HIDE_FROM_ABI virtual ~__merror_base() = default;
 
-  _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
+  _CCCL_HOST_DEVICE friend constexpr auto __ustdex_unhandled_error(void*) noexcept -> bool
   {
     return true;
   }
