@@ -213,7 +213,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
                                                             decltype(d_out.begin())>;
 
       using dispatch_t = cub::detail::
-        DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, accumulator_t, transform_t>;
+        DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
 
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
