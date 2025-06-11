@@ -278,7 +278,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
   }
   SECTION("Name")
   {
-    std::string name = device_ref(0).get_name();
+    std::string name = device_ref(0).name();
     CUDAX_REQUIRE(name.length() != 0);
     CUDAX_REQUIRE(name[0] != 0);
   }
@@ -314,7 +314,7 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
     CUDAX_REQUIRE(cudax::devices.size() - 1 == static_cast<std::size_t>(std::prev(cudax::devices.end())->get()));
     CUDAX_REQUIRE(cudax::devices.size() - 1 == static_cast<std::size_t>(cudax::devices.end()[-1].get()));
 
-    auto peers = cudax::devices[0].get_peers();
+    auto peers = cudax::devices[0].peer_devices();
     for (auto peer : peers)
     {
       CUDAX_REQUIRE(cudax::devices[0].has_peer_access_to(peer))
