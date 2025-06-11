@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
-
 #include <cuda/experimental/__cuco/detail/hash_functions/xxhash.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
