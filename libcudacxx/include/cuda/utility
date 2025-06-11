@@ -22,5 +22,6 @@
 #endif // no system header
 
 #include <cuda/__utility/static_for.h>
+#include <cuda/std/utility>
 
 #endif // _CUDA_UTILITY
