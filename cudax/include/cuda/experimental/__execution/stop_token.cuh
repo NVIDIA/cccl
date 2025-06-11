@@ -35,6 +35,9 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Winvalid-constexpr")
+
 namespace cuda::experimental::execution
 {
 // [stoptoken.inplace], class inplace_stop_token
@@ -475,6 +478,8 @@ struct __on_stop_request
 template <class _Token, class _Callback>
 using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
 } // namespace cuda::experimental::execution
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
