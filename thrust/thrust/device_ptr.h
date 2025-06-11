@@ -32,6 +32,10 @@
 #endif // no system header
 #include <thrust/memory.h>
 
+#if _CCCL_HAS_CTK()
+#  include <cuda.h>
+#endif // _CCCL_HAS_CTK()
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup memory_management Memory Management
@@ -154,6 +158,13 @@ public:
     return *this;
   }
 
+#if _CCCL_HAS_CTK()
+  //! \brief Converts this \c device_ptr to a raw \c CUdeviceptr.
+  _CCCL_HOST_DEVICE explicit operator CUdeviceptr() const noexcept
+  {
+    return reinterpret_cast<CUdeviceptr>(super_t::get());
+  }
+#endif // _CCCL_HAS_CTK()
 #ifdef _CCCL_DOXYGEN_INVOKED
   /*! \brief Return the raw pointer that this \c device_ptr points to.
    */
