@@ -12,21 +12,24 @@ fi
 num_tries=$1
 sleep_time=$2
 shift 2
-command="$@"
+command=()
+for arg in "$@"; do
+    command+=( "$(printf '%q' "$arg")" )
+done
 
 # Loop until the command succeeds or we reach the maximum number of attempts:
 for ((i=1; i<=num_tries; i++)); do
-    echo "Attempt ${i} of ${num_tries}: Running command '${command}'"
-    eval "$command"
-    status=$?
+    echo "Attempt ${i} of ${num_tries}: Running command '${command[*]}'"
+    status=0
+    eval "${command[*]}" || status=$?
 
     if [ $status -eq 0 ]; then
-        echo "Command '${command}' succeeded on attempt ${i}."
+        echo "Command '${command[*]}' succeeded on attempt ${i}."
         exit 0
     else
-        echo "Command '${command}' failed with status ${status}. Retrying in ${sleep_time} seconds..."
+        echo "Command '${command[*]}' failed with status ${status}. Retrying in ${sleep_time} seconds..."
         sleep $sleep_time
     fi
 done
-echo "Command '${command}' failed after ${num_tries} attempts."
+echo "Command '${command[*]}' failed after ${num_tries} attempts."
 exit 1
