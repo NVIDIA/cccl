@@ -76,7 +76,33 @@ struct stream_ref : ::cuda::stream_ref
    */
   [[nodiscard]] bool is_done() const
   {
-    return ready();
+    const auto __result = __detail::driver::streamQuery(__stream);
+    switch (__result)
+    {
+      case ::cudaErrorNotReady:
+        return false;
+      case ::cudaSuccess:
+        return true;
+      default:
+        ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
+    }
+  }
+
+  //! @brief Deprecated. Use is_done() instead.
+  [[deprecated("Use is_done() instead.")]] [[nodiscard]] bool ready() const
+  {
+    return is_done();
+  }
+
+  //! @brief Get the priority of the stream
+  //!
+  //! @return The priority of the stream
+  //!
+  //! @throws cuda_error if the priority query fails
+  // Needs to be without "get_" prefix, because it is this way in cuda::stream_ref
+  [[nodiscard]] _CCCL_HOST_API int priority() const
+  {
+    return __detail::driver::streamGetPriority(__stream);
   }
 
   //! @brief Create a new event and record it into this stream
@@ -99,7 +125,13 @@ struct stream_ref : ::cuda::stream_ref
     return timed_event(*this, __flags);
   }
 
-  using ::cuda::stream_ref::sync;
+  //! @brief Synchronize the stream
+  //!
+  //! @throws cuda_error if synchronization fails
+  _CCCL_HOST_API void sync() const
+  {
+    __detail::driver::streamSynchronize(__stream);
+  }
 
   //! @brief Make all future work submitted into this stream depend on completion of the specified event
   //!
