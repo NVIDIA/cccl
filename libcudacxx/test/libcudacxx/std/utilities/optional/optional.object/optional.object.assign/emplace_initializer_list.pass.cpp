@@ -13,11 +13,9 @@
 //   T& optional<T>::emplace(initializer_list<U> il, Args&&... args);
 
 #include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
-#ifdef _LIBCUDACXX_HAS_VECTOR
-#  include <cuda/std/vector>
-#endif
 
 #include "test_macros.h"
 
@@ -162,16 +160,14 @@ int main(int, char**)
     static_assert(check_X());
 #endif
   }
-#ifdef _LIBCUDACXX_HAS_VECTOR
   {
-    optional<cuda::std::vector<int>> opt{};
-    auto& v = opt.emplace({1, 2, 3}, cuda::std::allocator<int>());
-    static_assert(cuda::std::is_same_v<cuda::std::vector<int>&, decltype(v)>, "");
+    optional<cuda::std::inplace_vector<int, 3>> opt{};
+    auto& v = opt.emplace({1, 2, 3});
+    static_assert(cuda::std::is_same_v<cuda::std::inplace_vector<int, 3>&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
-    assert(*opt == cuda::std::vector<int>({1, 2, 3}));
+    assert(*opt == cuda::std::inplace_vector<int, 3>({1, 2, 3}));
     assert(&v == &*opt);
   }
-#endif
   {
     check_Y();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
