@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#from cuda.cccl.cooperative.experimental._numba_extension import (
+# from cuda.cccl.cooperative.experimental._numba_extension import (
 #    _init_extension,
-#)
+# )
 
-#_init_extension()
+# _init_extension()
 
 # example-begin imports
 import numba
@@ -21,7 +21,8 @@ patch.patch_numba_linker(lto=True)
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-def test_block_load_store_single_phase():
+
+def test_block_load_store_single_phase1():
     # example-begin load_store_single_phase_implicit_temp_storage_kernel
 
     @cuda.jit
@@ -47,6 +48,7 @@ def test_block_load_store_single_phase():
     np.testing.assert_allclose(h_output, h_input)
     # example-end load_store_single_phase_implicit_temp_storage_usage
 
+
 def test_block_load_store_single_phase2():
     # example-begin load_store_single_phase_implicit_temp_storage_kernel
 
@@ -56,12 +58,9 @@ def test_block_load_store_single_phase2():
 
     @cuda.jit
     def kernel(d_in, d_out):
-        thread_data = cuda.local.array(
-            items_per_thread,
-            dtype
-        )
+        thread_data = cuda.local.array(items_per_thread, dtype)
         coop.block.load(d_in, thread_data, items_per_thread)
-        #coop.block.store(d_out, thread_data, items_per_thread)
+        # coop.block.store(d_out, thread_data, items_per_thread)
 
     # example-end load_store_single_phase_implicit_temp_storage_kernel
 
@@ -77,4 +76,3 @@ def test_block_load_store_single_phase2():
 
     np.testing.assert_allclose(h_output, h_input)
     # example-end load_store_single_phase_implicit_temp_storage_usage
-

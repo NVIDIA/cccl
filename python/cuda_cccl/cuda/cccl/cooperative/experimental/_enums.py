@@ -13,7 +13,8 @@ def get_pattern():
     # Match CameCase class names.  Calling `findall()` will return a list of
     # the capitalized words in the given class name.
     import re
-    return re.compile(r'[A-Z][^A-Z]*')
+
+    return re.compile(r"[A-Z][^A-Z]*")
 
 
 def cub_cpp_name(instance):
@@ -21,10 +22,10 @@ def cub_cpp_name(instance):
     class_name = cls.__name__
     pattern = get_pattern()
     words = pattern.findall(class_name)
-    if words[-1] != 'Algorithm':
-        raise ValueError(f'Unexpected class name: {class_name}')
-    parts = '_'.join(word.upper() for word in words[:-1])
-    return f'::cub::{parts}_{instance.name}'
+    if words[-1] != "Algorithm":
+        raise ValueError(f"Unexpected class name: {class_name}")
+    parts = "_".join(word.upper() for word in words[:-1])
+    return f"::cub::{parts}_{instance.name}"
 
 
 class BaseAlgorithmEnum(IntEnum):
@@ -62,5 +63,3 @@ class WarpStoreAlgorithm(BaseAlgorithmEnum):
     STRIPED = auto()
     VECTORIZE = auto()
     TRANSPOSE = auto()
-
-

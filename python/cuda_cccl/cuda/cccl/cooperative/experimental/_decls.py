@@ -6,32 +6,17 @@
 # It is responsible for defining the Numba templates for cuda.cooperative
 # primitives.
 
-from collections import defaultdict
-from enum import IntEnum
-import operator
 from numba.core import errors, types
 from numba.core.typing.npydecl import (
     parse_dtype,
     parse_shape,
-    register_number_classes,
-    register_numpy_ufunc,
-    trigonometric_functions,
-    comparison_functions,
-    math_operations,
-    bit_twiddling_functions,
 )
 from numba.core.typing.templates import (
     AttributeTemplate,
-    ConcreteTemplate,
-    AbstractTemplate,
     CallableTemplate,
-    signature,
     Registry,
+    signature,
 )
-from numba.cuda.types import dim3
-from numba.core.typeconv import Conversion
-from numba import cuda
-from numba.cuda.compiler import declare_device_function
 
 import cuda.cccl.cooperative.experimental as coop
 
@@ -39,6 +24,7 @@ registry = Registry()
 register = registry.register
 register_attr = registry.register_attr
 register_global = registry.register_global
+
 
 # =============================================================================
 # Utils/Helpers
@@ -50,11 +36,13 @@ class CoopDeclMixin:
     Numba.
     """
 
+
 def get_coop_decl_class_map():
     return {
         subclass: getattr(subclass, "key")
         for subclass in CoopDeclMixin.__subclasses__()
     }
+
 
 # =============================================================================
 # Arrays
@@ -286,9 +274,7 @@ class StoreMixin:
 
 
 @register
-class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate,
-                        LoadMixin,
-                        CoopDeclMixin):
+class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     key = coop.block.load
     primitive_name = "coop.block.load"
     algorithm_enum = coop.BlockLoadAlgorithm
@@ -296,9 +282,7 @@ class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate,
 
 
 @register
-class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate,
-                         StoreMixin,
-                         CoopDeclMixin):
+class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     key = coop.block.store
     primitive_name = "coop.block.store"
     algorithm_enum = coop.BlockStoreAlgorithm
@@ -308,6 +292,7 @@ class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate,
 # =============================================================================
 # Module Template
 # =============================================================================
+
 
 @register_attr
 class CoopSharedModuleTemplate(AttributeTemplate):
@@ -360,5 +345,6 @@ class CoopModuleTemplate(AttributeTemplate):
 
     def resolve_WarpStoreAlgorithm(self, mod):
         return types.Module(coop.WarpStoreAlgorithm)
+
 
 register_global(coop, types.Module(coop))
