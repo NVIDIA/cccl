@@ -181,11 +181,9 @@ struct alignas(Alignment) overaligned_addable_t
 
 using overaligned_types =
   c2h::type_list<overaligned_addable_t<32>
-#if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
+                 // MSVC and nvcc don't support alignments over 256 bytes
                  ,
-                 overaligned_addable_t<128>
-#endif // !_CCCL_COMPILER(MSVC)
-                 >;
+                 overaligned_addable_t<128>>;
 
 C2H_TEST("DeviceTransform::Transform works for large number of items",
          "[device][device_transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
