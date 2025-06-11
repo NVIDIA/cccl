@@ -36,17 +36,17 @@ namespace cuda::experimental::execution
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
-template <__disposition_t, class _Void = void>
+template <__disposition, class _Void = void>
 extern _CUDA_VSTD::__undefined<_Void> __just_tag;
 template <class _Void>
-extern __fn_t<just_t>* __just_tag<__value, _Void>;
+extern __fn_t<just_t>* __just_tag<__disposition::__value, _Void>;
 template <class _Void>
-extern __fn_t<just_error_t>* __just_tag<__error, _Void>;
+extern __fn_t<just_error_t>* __just_tag<__disposition::__error, _Void>;
 template <class _Void>
-extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
+extern __fn_t<just_stopped_t>* __just_tag<__disposition::__stopped, _Void>;
 } // namespace __detail
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(just_t) _CCCL_PREFERRED_NAME(just_error_t)
   _CCCL_PREFERRED_NAME(just_stopped_t) __just_t
 {
@@ -92,7 +92,7 @@ public:
   _CCCL_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class... _Ts>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
 {
@@ -123,7 +123,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   _CUDA_VSTD::__tuple<_Ts...> __values_;
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class... _Ts>
 _CCCL_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
 {

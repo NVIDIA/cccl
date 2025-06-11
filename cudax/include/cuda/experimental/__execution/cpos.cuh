@@ -33,25 +33,25 @@
 namespace cuda::experimental::execution
 {
 // make the completion tags equality comparable
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 struct __completion_tag
 {
-  template <__disposition_t _OtherDisposition>
+  template <__disposition _OtherDisposition>
   _CCCL_TRIVIAL_API constexpr auto operator==(__completion_tag<_OtherDisposition>) const noexcept -> bool
   {
     return _Disposition == _OtherDisposition;
   }
 
-  template <__disposition_t _OtherDisposition>
+  template <__disposition _OtherDisposition>
   _CCCL_TRIVIAL_API constexpr auto operator!=(__completion_tag<_OtherDisposition>) const noexcept -> bool
   {
     return _Disposition != _OtherDisposition;
   }
 
-  static constexpr __disposition_t __disposition = _Disposition;
+  static constexpr __disposition __disposition = _Disposition;
 };
 
-struct set_value_t : __completion_tag<__value>
+struct set_value_t : __completion_tag<__disposition::__value>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class... _Ts>
@@ -65,7 +65,7 @@ struct set_value_t : __completion_tag<__value>
   }
 };
 
-struct set_error_t : __completion_tag<__error>
+struct set_error_t : __completion_tag<__disposition::__error>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class _Ey>
@@ -79,7 +79,7 @@ struct set_error_t : __completion_tag<__error>
   }
 };
 
-struct set_stopped_t : __completion_tag<__stopped>
+struct set_stopped_t : __completion_tag<__disposition::__stopped>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
