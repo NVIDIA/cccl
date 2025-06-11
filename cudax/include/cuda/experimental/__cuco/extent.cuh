@@ -32,40 +32,40 @@ static constexpr _CUDA_VSTD::size_t dynamic_extent = static_cast<std::size_t>(-1
 
 //! @brief Static extent class.
 //!
-//! @tparam SizeType Size type
-//! @tparam N Extent
-template <typename SizeType, _CUDA_VSTD::size_t N = dynamic_extent>
+//! @tparam _SizeType Size type
+//! @tparam _N Extent
+template <typename _SizeType, _CUDA_VSTD::size_t _N = dynamic_extent>
 struct extent
 {
-  using value_type = SizeType; ///< Extent value type
+  using value_type = _SizeType; ///< Extent value type
 
   constexpr extent() = default;
 
-  /// Constructs from `SizeType`
-  _CCCL_HOST_DEVICE constexpr extent(SizeType) noexcept {}
+  /// Constructs from `_SizeType`
+  _CCCL_HOST_DEVICE constexpr extent(_SizeType) noexcept {}
 
   //! @brief Conversion to value_type.
   //!
   //! @return Extent size
   _CCCL_HOST_DEVICE constexpr operator value_type() const noexcept
   {
-    return N;
+    return _N;
   }
 };
 
 //! @brief Dynamic extent class.
 //!
-//! @tparam SizeType Size type
-template <typename SizeType>
-struct extent<SizeType, dynamic_extent>
+//! @tparam _SizeType Size type
+template <typename _SizeType>
+struct extent<_SizeType, dynamic_extent>
 {
-  using value_type = SizeType; ///< Extent value type
+  using value_type = _SizeType; ///< Extent value type
 
   //! @brief Constructs extent from a given `size`.
   //!
-  //! @param size The extent size
-  _CCCL_HOST_DEVICE constexpr extent(SizeType size) noexcept
-      : value_{size}
+  //! @param __size The extent size
+  _CCCL_HOST_DEVICE constexpr extent(_SizeType __size) noexcept
+      : __value{__size}
   {}
 
   //! @brief Conversion to value_type.
@@ -73,11 +73,11 @@ struct extent<SizeType, dynamic_extent>
   //! @return Extent size
   _CCCL_HOST_DEVICE constexpr operator value_type() const noexcept
   {
-    return value_;
+    return __value;
   }
 
 private:
-  value_type value_; ///< Extent value
+  value_type __value; ///< Extent value
 };
 
 } // namespace cuda::experimental::cuco
