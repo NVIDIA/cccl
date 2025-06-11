@@ -16,13 +16,13 @@ from cuda.cccl.cooperative.experimental._enums import (
 )
 from cuda.cccl.cooperative.experimental._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentArray,
     DependentPointer,
     Invocable,
     Pointer,
     TemplateParameter,
-    BasePrimitive,
 )
 
 CUB_BLOCK_LOAD_ALGOS = {
@@ -42,6 +42,7 @@ CUB_BLOCK_STORE_ALGOS = {
     "warp_transpose": "::cub::BLOCK_STORE_WARP_TRANSPOSE",
     "warp_transpose_timesliced": "::cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED",
 }
+
 
 class BaseLoadStore(BasePrimitive):
     template_parameters = [
@@ -100,12 +101,14 @@ class BaseLoadStore(BasePrimitive):
             }
         )
 
+
 class load(BaseLoadStore):
     default_algorithm = BlockLoadAlgorithm.DIRECT
     struct_name = "BlockLoad"
     method_name = "Load"
     c_name = "block_load"
     includes = ["cub/block/block_load.cuh"]
+
 
 class store(BaseLoadStore):
     default_algorithm = BlockStoreAlgorithm.DIRECT

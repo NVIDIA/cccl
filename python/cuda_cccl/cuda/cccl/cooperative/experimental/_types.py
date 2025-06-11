@@ -6,7 +6,8 @@ import re
 from functools import cached_property
 from io import StringIO
 from textwrap import dedent
-from types import FunctionType as PyFunctionType, SimpleNamespace
+from types import FunctionType as PyFunctionType
+from types import SimpleNamespace
 from typing import BinaryIO, Literal, Sequence
 
 import numba
@@ -868,8 +869,7 @@ class Algorithm:
 
         return results
 
-    def create_codegen_method(self, method, mangled_name,
-                              func_to_overload=None):
+    def create_codegen_method(self, method, mangled_name, func_to_overload=None):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
@@ -1003,6 +1003,7 @@ class Algorithm:
     def codegen(self, func_to_overload):
         self.create_codegens(func_to_overload=func_to_overload)
 
+
 class Invocable:
     def __init__(
         self,
@@ -1036,7 +1037,6 @@ class Invocable:
 
 
 class BasePrimitive:
-
     @property
     def temp_storage_bytes(self):
         return self.specialization.temp_storage_bytes

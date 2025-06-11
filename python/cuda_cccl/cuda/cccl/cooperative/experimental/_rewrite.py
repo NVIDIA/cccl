@@ -5,35 +5,35 @@
 # This module is responsible for rewriting cuda.cooperative single-phase
 # primitives detected in typed Numba IR into equivalent two-phase invocations.
 
-import sys
 import inspect
-from dataclasses import dataclass
-from functools import lru_cache, reduce
-from textwrap import dedent
-from typing import Optional, Tuple, List, Any
-from operator import mul
-from types import ModuleType as PyModuleType
-
-
-from numba.core.typing.templates import AbstractTemplate
-
-from enum import IntEnum, auto
-from functools import cached_property
+import sys
 from collections import OrderedDict
-from numba.core.typing.templates import Signature, infer_global, infer_getattr
-from numba.core import ir, types, ir_utils
-from numba.core.rewrites import register_rewrite, Rewrite
+from dataclasses import dataclass
+from enum import IntEnum, auto
+from functools import cached_property, lru_cache, reduce
+from operator import mul
+from textwrap import dedent
+from types import ModuleType as PyModuleType
+from typing import Any
+
+from numba.core import ir, ir_utils, types
+from numba.core.rewrites import Rewrite, register_rewrite
+from numba.core.typing.templates import (
+    AbstractTemplate,
+    Signature,
+)
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import current_launch_config
 
-
 if True:
     from numba.core import config
+
     config.DEBUG = True
     config.DEBUG_JIT = True
     config.DUMP_IR = True
     config.CUDA_ENABLE_PYNVJITLINK = True
+
 
 def get_element_count(shape):
     if isinstance(shape, int):
@@ -42,27 +42,28 @@ def get_element_count(shape):
         return reduce(mul, shape, 1)
     raise TypeError(f"Invalid shape type: {type(shape)}")
 
+
 def ensure_current_launch_config():
     launch_config = current_launch_config()
     if not launch_config:
-        raise RuntimeError(
-            "Internal invariant failure: no launch config found."
-        )
+        raise RuntimeError("Internal invariant failure: no launch config found.")
     return launch_config
+
 
 def param_index(code, name: str, *, include_kwonly=True):
     """
     Return zero-based index of *name* in the function's parameter list.
     """
-    n_posonly   = code.co_posonlyargcount
-    n_pos_kw    = code.co_argcount
-    n_kwonly    = code.co_kwonlyargcount if include_kwonly else 0
+    n_posonly = code.co_posonlyargcount
+    n_pos_kw = code.co_argcount
+    n_kwonly = code.co_kwonlyargcount if include_kwonly else 0
     param_names = code.co_varnames[: n_posonly + n_pos_kw + n_kwonly]
 
     try:
         return param_names.index(name)
     except ValueError as e:
         raise LookupError(f"{name!r} is not a parameter") from e
+
 
 def param_index_safe(code, name: str, *, include_kwonly=True):
     try:
@@ -94,14 +95,16 @@ class Primitive(IntEnum):
     REDUCE = auto()
     SCAN = auto()
 
+
 class CoopNodeMixin:
     pass
 
+
 def get_coop_node_class_map():
     return {
-        subclass.primitive_name: subclass
-        for subclass in CoopNodeMixin.__subclasses__()
+        subclass.primitive_name: subclass for subclass in CoopNodeMixin.__subclasses__()
     }
+
 
 @dataclass
 class CoopNode:
@@ -112,7 +115,7 @@ class CoopNode:
 
     index: int
     block_line: int
-    #state: Any
+    # state: Any
     expr: ir.Expr
     instr: ir.Assign
     template: Any
@@ -166,9 +169,7 @@ class CoopNode:
                 if isinstance(elem, types.IntegerLiteral):
                     literals.append(elem.literal_value)
                 else:
-                    raise RuntimeError(
-                        f"Expected integer literal in tuple, got {elem}"
-                    )
+                    raise RuntimeError(f"Expected integer literal in tuple, got {elem}")
             return tuple(literals)
 
         if isinstance(arg_ty, types.DType):
@@ -176,25 +177,17 @@ class CoopNode:
             return arg_ty.dtype
 
         # See if the argument is a parameter of the invoked kernel.
-        arg_idx = param_index_safe(
-            launch_config.dispatcher.func_code, arg_var.name
-        )
+        arg_idx = param_index_safe(launch_config.dispatcher.func_code, arg_var.name)
         if arg_idx is not None:
             return launch_config.args[arg_idx]
 
         # Try consts.
-        const_val = ir_utils.guard(
-            ir_utils.find_const,
-            self.func_ir, arg_var
-        )
+        const_val = ir_utils.guard(ir_utils.find_const, self.func_ir, arg_var)
         if const_val is not None:
             return const_val
 
         # Try outer values.
-        outer_val = ir_utils.guard(
-            ir_utils.find_outer_value,
-            self.func_ir, arg_var
-        )
+        outer_val = ir_utils.guard(ir_utils.find_outer_value, self.func_ir, arg_var)
         if outer_val is not None:
             return outer_val
 
@@ -228,7 +221,6 @@ class CoopNode:
         sig = self.decl_signature
         return sig.bind(*list(self.expr.args), **dict(self.expr.kws))
 
-
     @cached_property
     def call_var_name(self):
         name = (
@@ -254,9 +246,7 @@ class CoopNode:
     def c_name(self):
         # Need to obtain the mangled name depending the template parameter
         # match.
-        name = (
-            self.instance.specialization.mangled_names_alloc[0]
-        )
+        name = self.instance.specialization.mangled_names_alloc[0]
         return name
 
     @cached_property
@@ -309,10 +299,7 @@ class CoopNode:
 
     @property
     def is_load_or_store(self):
-        return (
-            self.primitive == Primitive.LOAD
-            or self.primitive == Primitive.STORE
-        )
+        return self.primitive == Primitive.LOAD or self.primitive == Primitive.STORE
 
     @property
     def is_block(self):
@@ -324,14 +311,13 @@ class CoopNode:
 
     @property
     def codegen(self):
-        assert len(self.codegens) == 2, (
-            len(self.codegens), self.codegens
-        )
+        assert len(self.codegens) == 2, (len(self.codegens), self.codegens)
         if self.implicit_temp_storage:
             idx = 1
         else:
             idx = 0
         return self.codegens[idx]
+
 
 class LoadStoreNode(CoopNode):
     threads_per_block = None
@@ -362,7 +348,7 @@ class LoadStoreNode(CoopNode):
                 self.typemap[src.name],
                 self.typemap[dst.name],
             )
-            runtime_arg_names = ('src', 'dst')
+            runtime_arg_names = ("src", "dst")
 
         else:
             dst = expr_args.pop(0)
@@ -372,20 +358,16 @@ class LoadStoreNode(CoopNode):
                 self.typemap[dst.name],
                 self.typemap[src.name],
             )
-            runtime_arg_names = ('dst', 'src')
+            runtime_arg_names = ("dst", "src")
 
         arg_ty = self.typemap[src.name]
         assert isinstance(arg_ty, types.Array)
         dtype = arg_ty.dtype
 
         # Get items_per_thread.
-        items_per_thread = self.get_arg_value(
-            "items_per_thread", launch_config
-        )
+        items_per_thread = self.get_arg_value("items_per_thread", launch_config)
 
-        algorithm_id = self.get_arg_value_safe(
-            "algorithm", launch_config
-        )
+        algorithm_id = self.get_arg_value_safe("algorithm", launch_config)
 
         if algorithm_id is None:
             algorithm_id = int(self.impl_class.default_algorithm)
@@ -400,7 +382,6 @@ class LoadStoreNode(CoopNode):
         self.runtime_arg_names = runtime_arg_names
 
     def rewrite(self, rewriter):
-
         node = self
         expr = node.expr
 
@@ -474,8 +455,8 @@ class LoadStoreNode(CoopNode):
         @register_global(invocable)
         class ImplDecl(AbstractTemplate):
             key = invocable
-            def generic(self, outer_args, outer_kws):
 
+            def generic(self, outer_args, outer_kws):
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
                     node = invocable.node
@@ -511,18 +492,19 @@ class LoadStoreNode(CoopNode):
 
         existing = self.typemap.get(g_var.name, None)
         if existing:
-            raise RuntimeError(
-                f"Variable {g_var.name} already exists in typemap."
-            )
+            raise RuntimeError(f"Variable {g_var.name} already exists in typemap.")
         self.typemap[g_var.name] = func_ty
 
         return (g_assign, new_assign)
 
+
 class CoopBlockLoadNode(LoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.load"
 
+
 class CoopBlockStoreNode(LoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.store"
+
 
 class CoopArrayNode(CoopNode):
     shape = None
@@ -531,21 +513,20 @@ class CoopArrayNode(CoopNode):
 
     @cached_property
     def is_shared(self):
-        return 'shared' in self.primitive_name
+        return "shared" in self.primitive_name
 
     @cached_property
     def attr_name(self):
         if self.is_shared:
-            return 'shared'
+            return "shared"
         else:
-            return 'local'
+            return "local"
 
     @property
     def element_count(self):
         return get_element_count(self.shape)
 
     def refine_match(self, rewriter):
-
         launch_config = ensure_current_launch_config()
 
         self.shape = self.get_arg_value("shape", launch_config)
@@ -593,9 +574,7 @@ class CoopArrayNode(CoopNode):
                 new_alignment_name,
                 expr.loc,
             )
-            self.typemap[new_alignment_var.name] = (
-                types.IntegerLiteral(alignment)
-            )
+            self.typemap[new_alignment_var.name] = types.IntegerLiteral(alignment)
             new_alignment_assign = ir.Assign(
                 value=ir.Const(alignment, expr.loc),
                 target=new_alignment_var,
@@ -617,6 +596,7 @@ class CoopArrayNode(CoopNode):
         # Get the array primitive.
         import numba.cuda
         import numba.cuda.cudadecl
+
         array_module = getattr(numba.cuda, attr_name)
         array_func = getattr(array_module, "array")
         array_decl_name = f"Cuda_{attr_name}_array"
@@ -692,11 +672,14 @@ class CoopArrayNode(CoopNode):
 
         return new_nodes
 
+
 class CoopSharedArrayNode(CoopArrayNode, CoopNodeMixin):
     primitive_name = "coop.shared.array"
 
+
 class CoopLocalArrayNode(CoopArrayNode, CoopNodeMixin):
     primitive_name = "coop.local.array"
+
 
 @lru_cache(maxsize=None)
 def get_coop_class_maps():
@@ -707,13 +690,9 @@ def get_coop_class_maps():
     decl_classes = get_coop_decl_class_map()
     node_classes = get_coop_node_class_map()
 
-    decl_primitive_names = set(
-        decl.primitive_name for decl in decl_classes.keys()
-    )
+    decl_primitive_names = set(decl.primitive_name for decl in decl_classes.keys())
 
-    node_primitive_names = set(
-        node.primitive_name for node in node_classes.values()
-    )
+    node_primitive_names = set(node.primitive_name for node in node_classes.values())
 
     # Ensure that the decl classes and node classes have the exact same
     # primitive names.
@@ -724,6 +703,7 @@ def get_coop_class_maps():
         )
 
     return (decl_classes, node_classes)
+
 
 @register_rewrite("after-inference")
 class BaseCooperativeNodeRewriter(Rewrite):
@@ -764,7 +744,6 @@ class BaseCooperativeNodeRewriter(Rewrite):
         self._global_cuda_module_instr = g_numba_cuda_assign
         new_nodes.append(g_numba_cuda_assign)
         return g_numba_cuda_assign
-
 
     def match(self, func_ir, block, typemap, calltypes, **kw):
         # If there are no calls in this block, we can immediately skip it.
@@ -845,7 +824,6 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
         return found
 
-
     def apply(self):
         new_block = ir.Block(self.block.scope, self.block.loc)
         new_instrs = []
@@ -857,8 +835,8 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 new_instrs,
             )
 
-        #unused = set()
-        #for node in self.nodes.values():
+        # unused = set()
+        # for node in self.nodes.values():
         #    unused.update(node.expr_args_no_longer_needed)
 
         # XXX todo: I don't know if we need to omit unused variables here;
@@ -870,7 +848,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 target_name = instr.target.name
                 node = self.nodes.get(target_name, None)
                 if not node:
-                    #if instr.target in unused:
+                    # if instr.target in unused:
                     #    continue
                     new_block.append(instr)
                     continue
@@ -880,19 +858,19 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     new_block.append(new_instr)
 
             elif isinstance(instr, ir.Del):
-                #if instr in unused:
+                # if instr in unused:
                 #    continue
                 new_block.append(instr)
                 continue
 
             elif isinstance(instr, ir.Var):
-                #if instr in unused:
+                # if instr in unused:
                 #    continue
                 new_block.append(instr)
                 continue
 
             else:
-                #if instr in unused:
+                # if instr in unused:
                 #    continue
                 new_block.append(instr)
                 continue
