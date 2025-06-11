@@ -1,0 +1,80 @@
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#from cuda.cccl.cooperative.experimental._numba_extension import (
+#    _init_extension,
+#)
+
+#_init_extension()
+
+# example-begin imports
+import numba
+import numpy as np
+from numba import cuda
+from pynvjitlink import patch
+
+import cuda.cccl.cooperative.experimental as coop
+
+patch.patch_numba_linker(lto=True)
+# example-end imports
+
+numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+
+def test_block_load_store_single_phase():
+    # example-begin load_store_single_phase_implicit_temp_storage_kernel
+
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        coop.block.load(d_in, thread_data, items_per_thread)
+        coop.block.store(d_out, thread_data, items_per_thread)
+
+    # example-end load_store_single_phase_implicit_temp_storage_kernel
+
+    # example-begin load_store_single_phase_implicit_temp_storage_usage
+    threads_per_block = 128
+    items_per_thread = 4
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=np.int32
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    k = kernel[1, threads_per_block]
+    k(d_input, d_output, items_per_thread)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+    # example-end load_store_single_phase_implicit_temp_storage_usage
+
+def test_block_load_store_single_phase2():
+    # example-begin load_store_single_phase_implicit_temp_storage_kernel
+
+    threads_per_block = 128
+    items_per_thread = 4
+    dtype = np.int32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = cuda.local.array(
+            items_per_thread,
+            dtype
+        )
+        coop.block.load(d_in, thread_data, items_per_thread)
+        #coop.block.store(d_out, thread_data, items_per_thread)
+
+    # example-end load_store_single_phase_implicit_temp_storage_kernel
+
+    # example-begin load_store_single_phase_implicit_temp_storage_usage
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=np.int32
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    k = kernel[1, threads_per_block]
+    k(d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+    # example-end load_store_single_phase_implicit_temp_storage_usage
+
