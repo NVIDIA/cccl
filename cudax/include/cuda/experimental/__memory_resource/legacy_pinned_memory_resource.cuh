@@ -47,6 +47,13 @@ namespace cuda::experimental
 class legacy_pinned_memory_resource
 {
 public:
+  //! @brief Construct a new legacy_pinned_memory_resource object.
+  //! @note Memory allocated through this resource resides in host memory, but is internally tracked under a device.
+  //! Because of this, the resource constructor takes an optional device argument to select the device to track the
+  //! memory under. If no device is provided, the resource will default to device 0, which will be initialized as a side
+  //! effect. If initialization of device 0 this way in not desired, the user should explicitly provide a different
+  //! device. The device setting does not affect comparison results for this type.
+  //! @param __device The device to track the memory under.
   constexpr legacy_pinned_memory_resource(device_ref __device = device_ref{0}) noexcept
       : __device_(__device)
   {}
