@@ -74,7 +74,7 @@ struct test_xxhash_32
     result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(static_cast<int64_t>(42), 2332451213, 0);
     result[i++] = check_hash_result<cudax::cuco::Hash<int64_t>>(static_cast<int64_t>(123456789), 1561711919, 0);
 
-#if defined(_CCCL_HAS_INT128)
+#if _CCCL_HAS_INT128()
     result[i++] = check_hash_result<cudax::cuco::Hash<__int128_t>>(static_cast<__int128_t>(123456789), 1846633701, 0);
 #endif
 
