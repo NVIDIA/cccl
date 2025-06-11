@@ -17,6 +17,14 @@ Defined in ``<cuda/utility>`` header.
     __host__ __device__
     constexpr void static_for(Operator op, TArgs&&... args) noexcept
 
+    template <typename T, T Size, typename Operator, typename... TArgs>
+    __host__ __device__
+    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+
+    template <typename T, T Start, T End, T Step = 1, typename Operator, typename... TArgs>
+    __host__ __device__
+    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+
     } // namespace cuda
 
 | The functionality provides a ``for`` loop with compile-time indices.
@@ -29,6 +37,7 @@ Defined in ``<cuda/utility>`` header.
 
 - ``Size``: the number of iterations.
 - ``Start``, ``End``, ``Step``: the start, end, and step of the range.
+- ``T``: type of the loop index.
 - ``op``: the function to execute.
 - ``args``: optional arguments to pass to ``op``.
 
@@ -40,7 +49,9 @@ Defined in ``<cuda/utility>`` header.
 
 **Performance considerations**
 
-- The function is useful as metaprogramming utility and when a loop requires fully unrolling, independently of the compiler constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which be used in a constant expression and further optimize the code.
+- The functions are useful as metaprogramming utility and when a loop requires fully unrolling, independently of the compiler constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which be used in a constant expression and further optimize the code.
+
+- Conversely, ``static_for`` is more expensive to compile compared to ``#pragma unroll``. Additionally, the preprocessor directive interacts with the compiler, which tunes the loop unrolling based on register usage, binary size, and instruction cache.
 
 Example
 -------
@@ -54,6 +65,9 @@ Example
         cuda::static_for<5>([](auto i){ static_assert(i >= 0 && i < 5); });
 
         cuda::static_for<5>([](auto i){ printf("%d, ", i()); }); // 0, 1, 2, 3, 4,
+        printf("\n");
+
+        cuda::static_for<short, 5>([](auto i){ printf("%d, ", i()); }); // 0, 1, 2, 3, 4,
         printf("\n");
 
         cuda::static_for<-5, 7, 3>([](auto i){ printf("%d, ", i()); }); // -5, -2, 1, 4,
@@ -77,4 +91,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/3jdzn1PKh>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/1GWc4dqKj>`_
