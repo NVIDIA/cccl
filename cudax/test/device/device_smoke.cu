@@ -12,7 +12,7 @@
 
 #include <cuda/experimental/device.cuh>
 
-#include <testing.cuh>
+#include <utility.cuh>
 
 namespace
 {
@@ -31,7 +31,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 }
 } // namespace
 
-C2H_TEST("Smoke", "[device]")
+C2H_CCCLRT_TEST("Smoke", "[device]")
 {
   using cudax::device;
   using cudax::device_ref;
@@ -284,7 +284,7 @@ C2H_TEST("Smoke", "[device]")
   }
 }
 
-C2H_TEST("global devices vector", "[device]")
+C2H_CCCLRT_TEST("global devices vector", "[device]")
 {
   CUDAX_REQUIRE(cudax::devices.size() > 0);
   CUDAX_REQUIRE(cudax::devices.begin() != cudax::devices.end());

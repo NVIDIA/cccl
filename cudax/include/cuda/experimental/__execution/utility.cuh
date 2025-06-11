@@ -21,6 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -29,6 +35,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
+
+#include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -107,10 +115,84 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
-_CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
+[[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
+  -> _CUDA_VSTD::decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }
+
+[[nodiscard]] _CCCL_HOST_API inline auto __get_pointer_attributes(const void* __pv) -> ::cudaPointerAttributes
+{
+  ::cudaPointerAttributes __attrs;
+  _CCCL_TRY_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
+  return __attrs;
+}
+
+// This function can only be called from a catch handler.
+[[nodiscard]] _CCCL_HOST_API inline auto __get_cuda_error_from_active_exception() -> ::cudaError_t
+{
+  try
+  {
+    throw; // rethrow the active exception
+  }
+  catch (::cuda::cuda_error& __err)
+  {
+    return __err.status();
+  }
+  catch (::std::bad_alloc&)
+  {
+    return ::cudaErrorMemoryAllocation;
+  }
+  catch (...)
+  {
+    return ::cudaErrorUnknown; // fallback if no cuda error is found
+  }
+  _CCCL_UNREACHABLE();
+}
+
+template <class _Ty>
+struct __managed_box : private __immovable
+{
+  using value_type = _Ty;
+
+  _CCCL_HIDE_FROM_ABI __managed_box() = default;
+
+  _CCCL_TEMPLATE(class... _Args)
+  _CCCL_REQUIRES(_CUDA_VSTD::constructible_from<_Ty, _Args...>)
+  _CCCL_HOST_API explicit __managed_box(_Args&&... __args) noexcept(__nothrow_constructible<_Ty, _Args...>)
+      : __value{static_cast<_Args&&>(__args)...}
+  {
+    _CCCL_ASSERT(execution::__get_pointer_attributes(this).type == cudaMemoryTypeManaged,
+                 "__managed_box must be allocated in managed memory");
+  }
+
+  template <class... _Args>
+  _CCCL_HOST_API static auto __make_unique(_Args&&... __args) -> _CUDA_VSTD::unique_ptr<__managed_box>
+  {
+    return _CUDA_VSTD::make_unique<__managed_box>(static_cast<_Args&&>(__args)...);
+  }
+
+  _CCCL_HOST_API static auto operator new(size_t __size) -> void*
+  {
+    void* __ptr = nullptr;
+    _CCCL_TRY_CUDA_API(::cudaMallocManaged, "cudaMallocManaged failed", &__ptr, __size);
+    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure the memory is allocated before returning it.
+    return __ptr;
+  }
+
+  _CCCL_HOST_API static void operator delete(void* __ptr, size_t) noexcept
+  {
+    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure all operations on the memory are complete.
+    _CUDA_VSTD::ignore = ::cudaFree(__ptr);
+  }
+
+  value_type __value;
+
+private:
+  // Prevent the construction of __managed_box without dynamic allocation.
+  friend struct _CUDA_VSTD::default_delete<__managed_box<_Ty>>;
+  ~__managed_box() = default;
+};
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")

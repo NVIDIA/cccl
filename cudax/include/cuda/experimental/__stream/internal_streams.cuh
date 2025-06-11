@@ -33,7 +33,7 @@ namespace cuda::experimental
 //! should ever be pushed into it
 inline ::cuda::stream_ref __cccl_allocation_stream()
 {
-  static ::cuda::experimental::stream __stream{};
+  static ::cuda::experimental::stream __stream{device_ref{0}};
   return __stream;
 }
 

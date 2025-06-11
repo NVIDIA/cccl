@@ -120,7 +120,7 @@ std::string get_device_reduce_kernel_name(
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
   std::string transform_op_t;
-  check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
+  check(nvrtcGetTypeName<cuda::std::identity>(&transform_op_t));
 
   return std::format(
     "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
@@ -280,18 +280,18 @@ struct __align__({1}) storage_t {{
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
-        .add_expression({single_tile_kernel_name})
-        .add_expression({single_tile_second_kernel_name})
-        .add_expression({reduction_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
-        .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
-        .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+        ->add_expression({single_tile_kernel_name})
+        ->add_expression({single_tile_second_kernel_name})
+        ->add_expression({reduction_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
+        ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
+        ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
@@ -343,7 +343,7 @@ CUresult cccl_device_reduce(
       indirect_arg_t, // ReductionOpT
       indirect_arg_t, // InitT
       void, // AccumT
-      ::cuda::std::__identity, // TransformOpT
+      ::cuda::std::identity, // TransformOpT
       reduce::reduce_runtime_tuning_policy, // PolicyHub
       reduce::reduce_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory

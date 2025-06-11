@@ -62,7 +62,7 @@ public:
     }
   }
 
-private:
+  _CUDAX_SEMI_PRIVATE :
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __task : __immovable
   {
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
@@ -85,7 +85,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __task
   {
     __atomic_intrusive_queue<&__task::__next_>* __queue_;
-    _CCCL_NO_UNIQUE_ADDRESS _Rcvr __rcvr_;
+    _Rcvr __rcvr_;
 
     _CCCL_API static void __execute_impl(__task* __p) noexcept
     {
@@ -103,7 +103,10 @@ private:
         }),
         _CUDAX_CATCH(...) //
         ({ //
-          set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
+          if constexpr (!noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()))
+          {
+            set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
+          }
         }) //
       )
     }
@@ -123,6 +126,17 @@ private:
 public:
   class _CCCL_TYPE_VISIBILITY_DEFAULT scheduler
   {
+    friend run_loop;
+
+    _CCCL_API explicit scheduler(run_loop* __loop) noexcept
+        : __loop_(__loop)
+    {}
+
+    run_loop* __loop_;
+
+  public:
+    using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
+
     struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     {
       using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
@@ -133,14 +147,17 @@ public:
         return {&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
       }
 
-      template <class _Self>
+      template <class _Self, class _Env>
       [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
       {
 #if _CCCL_HAS_EXCEPTIONS()
-        return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>{};
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-        return completion_signatures<set_value_t(), set_stopped_t()>{};
+        if constexpr (!noexcept(get_stop_token(declval<_Env>()).stop_requested()))
+        {
+          return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>{};
+        }
+        else
 #endif // !_CCCL_HAS_EXCEPTIONS()
+          return completion_signatures<set_value_t(), set_stopped_t()>{};
       }
 
     private:
@@ -175,25 +192,14 @@ public:
       run_loop* const __loop_;
     };
 
-    friend run_loop;
-
-    _CCCL_API explicit scheduler(run_loop* __loop) noexcept
-        : __loop_(__loop)
-    {}
+    [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __sndr_t
+    {
+      return __sndr_t{__loop_};
+    }
 
     _CCCL_API auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee
     {
       return forward_progress_guarantee::parallel;
-    }
-
-    run_loop* __loop_;
-
-  public:
-    using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
-
-    [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __sndr_t
-    {
-      return __sndr_t{__loop_};
     }
 
     [[nodiscard]] _CCCL_API friend bool operator==(const scheduler& __a, const scheduler& __b) noexcept

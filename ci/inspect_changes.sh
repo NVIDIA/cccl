@@ -186,10 +186,12 @@ core_infra_is_dirty() {
   # Manual exclusions:
   exclusions+=("${ignore_paths[@]}")
 
-  # Build grep pattern: ^(dir1|dir2|...|file1|file2)/
-  grep_pattern="^($(IFS="|"; echo "${exclusions[*]}"))/"
+  # Build grep pattern: ^(dir1|dir2|...|file1|file2)
+  grep_pattern="^($(IFS="|"; echo "${exclusions[*]}"))"
 
-  if dirty_files | grep -v -E "${grep_pattern}" | grep -q "."; then
+  cccl_infra_dirty_files=$(dirty_files | grep -v -E "${grep_pattern}")
+
+  if [[ -n "${cccl_infra_dirty_files}" ]]; then
     return 0
   else
     return 1
@@ -201,7 +203,9 @@ core_infra_is_dirty() {
 subdir_is_dirty() {
   local subdir="$1"
 
-  if dirty_files | grep -E "^${subdir}/" | grep -q '.'; then
+  subdir_dirt="$(dirty_files | grep -E "^${subdir}/")"
+
+  if [[ -n "$subdir_dirt" ]]; then
     return 0
   else
     return 1

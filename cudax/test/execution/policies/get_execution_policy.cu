@@ -14,13 +14,13 @@
 
 #include <testing.cuh>
 
-using cuda::experimental::execution::execution_policy;
+namespace execution = cuda::experimental::execution;
 
 struct with_get_execution_policy_const_lvalue
 {
-  execution_policy pol_ = execution_policy::sequenced_host;
+  execution::any_execution_policy pol_ = execution::seq;
 
-  const execution_policy& get_execution_policy() const noexcept
+  const execution::any_execution_policy& get_execution_policy() const noexcept
   {
     return pol_;
   }
@@ -30,15 +30,15 @@ C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy me
 {
   with_get_execution_policy_const_lvalue val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
-  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution_policy&&>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }
 
 struct with_get_execution_policy_rvalue
 {
-  execution_policy pol_{};
+  execution::any_execution_policy pol_{};
 
-  execution_policy get_execution_policy() const noexcept
+  execution::any_execution_policy get_execution_policy() const noexcept
   {
     return pol_;
   }
@@ -48,15 +48,15 @@ C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy me
 {
   with_get_execution_policy_rvalue val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
-  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution_policy&&>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }
 
 struct with_get_execution_policy_non_const
 {
-  execution_policy pol_{};
+  execution::any_execution_policy pol_{};
 
-  execution_policy get_execution_policy() noexcept
+  execution::any_execution_policy get_execution_policy() noexcept
   {
     return pol_;
   }
@@ -70,9 +70,9 @@ C2H_TEST("Cannot call get_execution_policy on a type with a non-const get_execut
 
 struct env_with_query_const_ref
 {
-  execution_policy pol_{};
+  execution::any_execution_policy pol_{};
 
-  execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
+  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
   {
     return pol_;
   }
@@ -82,15 +82,15 @@ C2H_TEST("Can call get_execution_policy on an env with a get_execution_policy qu
 {
   env_with_query_const_ref val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
-  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution_policy&&>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }
 
 struct env_with_query_rvalue
 {
-  execution_policy pol_{};
+  execution::any_execution_policy pol_{};
 
-  execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
+  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
   {
     return pol_;
   }
@@ -100,15 +100,15 @@ C2H_TEST("Can call get_execution_policy on an env with a get_execution_policy qu
 {
   env_with_query_rvalue val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
-  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution_policy&&>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }
 
 struct env_with_query_non_const
 {
-  execution_policy pol_{};
+  execution::any_execution_policy pol_{};
 
-  execution_policy query(cuda::experimental::execution::get_execution_policy_t) noexcept
+  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) noexcept
   {
     return pol_;
   }
@@ -121,14 +121,14 @@ C2H_TEST("Cannot call get_execution_policy on an env with a non-const query", "[
 
 struct env_with_query_and_method
 {
-  execution_policy pol_{};
+  execution::any_execution_policy pol_{};
 
-  execution_policy get_execution_policy() const noexcept
+  execution::any_execution_policy get_execution_policy() const noexcept
   {
     return pol_;
   }
 
-  execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
+  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
   {
     return pol_;
   }
@@ -137,6 +137,6 @@ C2H_TEST("Can call get_execution_policy on a type with both get_execution_policy
 {
   env_with_query_and_method val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
-  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution_policy&&>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }

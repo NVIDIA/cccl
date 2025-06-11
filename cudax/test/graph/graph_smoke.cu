@@ -82,7 +82,7 @@ C2H_TEST("can instantiate and launch a graph", "[graph]")
   CUDAX_REQUIRE(exec.get() != nullptr);
 
   // Create a stream and launch the graph
-  cuda::experimental::stream s;
+  cuda::experimental::stream s{cuda::experimental::device_ref{0}};
   exec.launch(s);
 
   // Wait for completion

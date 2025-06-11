@@ -40,11 +40,13 @@ private:
 public:
   explicit _malloc_managed(std::size_t size)
   {
+    cudax::__ensure_current_device guard(cudax::device_ref{0});
     _CCCL_TRY_CUDA_API(::cudaMallocManaged, "failed to allocate managed memory", &pv, size);
   }
 
   ~_malloc_managed()
   {
+    cudax::__ensure_current_device guard(cudax::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFree(pv);
   }
 
@@ -122,34 +124,6 @@ struct empty_kernel
 {
   __device__ void operator()() const noexcept {}
 };
-
-inline int count_driver_stack()
-{
-  if (cudax::__detail::driver::ctxGetCurrent() != nullptr)
-  {
-    auto ctx    = cudax::__detail::driver::ctxPop();
-    auto result = 1 + count_driver_stack();
-    cudax::__detail::driver::ctxPush(ctx);
-    return result;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-inline void empty_driver_stack()
-{
-  while (cudax::__detail::driver::ctxGetCurrent() != nullptr)
-  {
-    cudax::__detail::driver::ctxPop();
-  }
-}
-
-inline int cuda_driver_version()
-{
-  return cudax::__detail::driver::getVersion();
-}
 
 } // namespace test
 } // namespace

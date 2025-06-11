@@ -40,9 +40,6 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 
 namespace cuda::experimental::execution
 {
-template <class _Ret, class... _Args>
-using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
-
 // The following must be left undefined
 template <class...>
 struct _DIAGNOSTIC;
@@ -234,18 +231,18 @@ struct __type_function
   using __call _CCCL_NODEBUG_ALIAS = _Return(_Args...);
 };
 
-template <class _First, class _Second>
-struct __type_pair
+template <class _Return>
+struct __type_function1
 {
-  using first _CCCL_NODEBUG_ALIAS  = _First;
-  using second _CCCL_NODEBUG_ALIAS = _Second;
+  template <class _Arg>
+  using __call _CCCL_NODEBUG_ALIAS = _Return(_Arg);
 };
 
-template <class _Pair>
-using __type_first _CCCL_NODEBUG_ALIAS = typename _Pair::first;
+template <class _First, class _Second>
+using __type_first = _First;
 
-template <class _Pair>
-using __type_second _CCCL_NODEBUG_ALIAS = typename _Pair::second;
+template <class _First, class _Second>
+using __type_second = _Second;
 
 template <template <class...> class _Second, template <class...> class _First>
 struct __type_compose_quote

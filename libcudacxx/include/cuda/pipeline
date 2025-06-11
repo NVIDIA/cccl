@@ -25,6 +25,7 @@
 #include <cuda/__memcpy_async/check_preconditions.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/memcpy_async_barrier.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/barrier>
 #include <cuda/std/__algorithm/max.h>
@@ -83,16 +84,6 @@ private:
                 pipeline_role __role);
 };
 
-struct __pipeline_asm_helper
-{
-  _CCCL_DEVICE static inline uint32_t __lane_id()
-  {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (uint32_t __lane_id; asm volatile("mov.u32 %0, %%laneid;" : "=r"(__lane_id)); return __lane_id;),
-                      (return 0;))
-  }
-};
-
 template <thread_scope _Scope>
 class pipeline
 {
@@ -119,7 +110,7 @@ public:
       const uint32_t __match_mask =
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(__shared_state_get_refcount()));
       const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
-      __elected                   = (__pipeline_asm_helper::__lane_id() == __elected_id);
+      __elected                   = (_CUDA_VPTX::get_sreg_laneid() == __elected_id);
       __sub_count                 = ::__popc(__match_mask);
       , __elected = true;
       __sub_count = 1;)
@@ -309,7 +300,7 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
       const uint32_t __match_mask =
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(&__shared_state->__refcount));
       const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
-      __elected                   = (__pipeline_asm_helper::__lane_id() == __elected_id);
+      __elected                   = (_CUDA_VPTX::get_sreg_laneid() == __elected_id);
       __add_count                 = ::__popc(__match_mask);
       , __elected = true;
       __add_count = 1;)

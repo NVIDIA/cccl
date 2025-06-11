@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -57,7 +58,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   template <class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-private:
+  _CUDAX_SEMI_PRIVATE :
   // Extract the first template parameter of the __state_t specialization.
   // The first template parameter is the receiver type.
   template <class _State>
@@ -96,7 +97,7 @@ private:
     [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
       -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Query());
+      return execution::get_env(__state_.__rcvr_).query(_Query{});
     }
   };
 
@@ -282,7 +283,6 @@ private:
     inplace_stop_token __stop_token_;
     _CUDA_VSTD::atomic<_CUDA_VSTD::underlying_type_t<__estate_t>> __state_;
     __errors_t __errors_;
-    // _CCCL_NO_UNIQUE_ADDRESS // gcc doesn't like this
     __values_t __values_;
     __lazy<__stop_callback_t> __on_stop_;
   };
@@ -444,7 +444,7 @@ template <class... _Completions>
       auto __local = __non_value_completions + completion_signatures<__values_t>();
       // Check if any of the values or errors are not nothrow decay-copyable.
       constexpr bool __all_nothrow_decay_copyable =
-        (__value_types<_Completions, __nothrow_decay_copyable_t, __identity_t>::value && ...);
+        (__value_types<_Completions, __nothrow_decay_copyable_t, _CUDA_VSTD::type_identity_t>::value && ...);
       return _CUDA_VSTD::__pair{__local + __eptr_completion_if<!__all_nothrow_decay_copyable>(), __offsets};
     }
   }
@@ -490,12 +490,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   {
     if constexpr (sizeof...(_Sndrs) == 0)
     {
-      return prop{get_domain<start_t>, default_domain{}};
+      return prop{get_domain, default_domain{}};
     }
     else
     {
       using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
-      return prop{get_domain<start_t>, __dom_t{}};
+      return prop{get_domain, __dom_t{}};
     }
     _CCCL_UNREACHABLE();
   }

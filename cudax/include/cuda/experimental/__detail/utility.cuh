@@ -50,9 +50,6 @@ inline constexpr bool __is_specialization_of_v = false;
 template <template <class...> class _Template, class... _Args>
 inline constexpr bool __is_specialization_of_v<_Template<_Args...>, _Template> = true;
 
-template <class _Tp>
-using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
-
 struct no_init_t
 {
   explicit no_init_t() = default;

@@ -25,9 +25,12 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
@@ -41,19 +44,8 @@ namespace cuda::experimental
 {
 namespace execution
 {
-// NOLINTBEGIN(misc-unused-using-decls)
-using _CUDA_STD_EXEC::__unwrap_reference_t;
-using _CUDA_STD_EXEC::env;
-using _CUDA_STD_EXEC::env_of_t;
-using _CUDA_STD_EXEC::get_env;
-using _CUDA_STD_EXEC::get_env_t;
-using _CUDA_STD_EXEC::prop;
-
-using _CUDA_STD_EXEC::__nothrow_queryable_with;
-using _CUDA_STD_EXEC::__query_result_t;
-using _CUDA_STD_EXEC::__queryable_with;
-// NOLINTEND(misc-unused-using-decls)
-
+// For senders that adapt other senders, the attribute queries are forwarded. __fwd_env_
+// is a utility that forwards queries to a given environment.
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
 {
@@ -62,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
   [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
     -> __query_result_t<_Env, _Query>
   {
-    return __env_.query(_Query());
+    return __env_.query(_Query{});
   }
 
   _Env __env_;
@@ -74,30 +66,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
-    -> __fwd_env_<_Env>
+    -> decltype(auto)
   {
-    return __fwd_env_<_Env>{static_cast<_Env&&>(__env)};
-  }
-
-  template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>&& __env) const noexcept -> __fwd_env_<_Env>
-  {
-    static_assert(noexcept(__fwd_env_<_Env>{static_cast<_Env&&>(__env)}),
-                  "The move constructor of __fwd_env_ must be noexcept");
-    return static_cast<__fwd_env_<_Env>&&>(__env);
-  }
-
-  template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>& __env) const noexcept -> __fwd_env_<_Env>&
-  {
-    return __env;
-  }
-
-  template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
-    -> const __fwd_env_<_Env>&
-  {
-    return __env;
+    if constexpr (__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_Env>, __fwd_env_>)
+    {
+      // If the environment is already a forwarding environment, we can just return it.
+      return static_cast<_Env>(static_cast<_Env&&>(__env)); // take care to not return an rvalue reference
+    }
+    else
+    {
+      return __fwd_env_<_Env>{static_cast<_Env&&>(__env)};
+    }
   }
 };
 } // namespace __detail
@@ -116,23 +95,18 @@ private:
   using __resource   = any_async_resource<_Properties...>;
   using __stream_ref = stream_ref;
 
-  __resource __mr_                      = device_memory_resource{};
-  __stream_ref __stream_                = __detail::__invalid_stream;
-  execution::execution_policy __policy_ = execution::execution_policy::invalid_execution_policy;
+  __resource __mr_;
+  __stream_ref __stream_                    = __detail::__invalid_stream;
+  execution::any_execution_policy __policy_ = {};
 
 public:
-  //! @brief Default constructs an environment using ``device_memory_resource`` as the resource the default stream
-  //! ``execution_policy::invalid_execution_policy`` as the execution policy
-  _CCCL_HIDE_FROM_ABI env_t() = default;
-
   //! @brief Construct an env_t from an any_resource, a stream and a policy
   //! @param __mr The any_resource passed in
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
-  _CCCL_HIDE_FROM_ABI
-  env_t(__resource __mr,
-        __stream_ref __stream                = __detail::__invalid_stream,
-        execution::execution_policy __policy = execution::execution_policy::invalid_execution_policy) noexcept
+  _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
+                            __stream_ref __stream                    = __detail::__invalid_stream,
+                            execution::any_execution_policy __policy = {}) noexcept
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
       , __policy_(__policy)
@@ -166,7 +140,8 @@ public:
     return __stream_;
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution::execution_policy query(execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution::any_execution_policy
+  query(execution::get_execution_policy_t) const noexcept
   {
     return __policy_;
   }

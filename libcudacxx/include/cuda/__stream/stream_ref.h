@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__fwd/get_stream.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/cstddef>
@@ -145,6 +146,13 @@ public:
     int __result = 0;
     _CCCL_TRY_CUDA_API(::cudaStreamGetPriority, "Failed to get stream priority", get(), &__result);
     return __result;
+  }
+
+  //! @brief Queries the \c stream_ref for itself. This makes \c stream_ref usable in places where we expect an
+  //! environment with a \c get_stream_t query
+  [[nodiscard]] stream_ref query(const ::cuda::get_stream_t&) const noexcept
+  {
+    return *this;
   }
 };
 
