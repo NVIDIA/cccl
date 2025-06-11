@@ -33,7 +33,7 @@ template <class _Tp>
 struct __is_identity : false_type
 {};
 
-struct __identity
+struct identity
 {
   template <class _Tp>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator()(_Tp&& __t) const noexcept
@@ -45,16 +45,14 @@ struct __identity
 };
 
 template <>
-struct __is_identity<__identity> : true_type
+struct __is_identity<identity> : true_type
 {};
 template <>
-struct __is_identity<reference_wrapper<__identity>> : true_type
+struct __is_identity<reference_wrapper<identity>> : true_type
 {};
 template <>
-struct __is_identity<reference_wrapper<const __identity>> : true_type
+struct __is_identity<reference_wrapper<const identity>> : true_type
 {};
-
-using identity = __identity;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

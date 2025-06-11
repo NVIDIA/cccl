@@ -31,6 +31,7 @@
 
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -161,15 +162,15 @@ struct xor_combine_engine_max_aux_2
   static const result_type value = thrust::detail::eval_if<
     // if k is odd...
     math::is_odd<result_type, constants::k>::value,
-    thrust::detail::identity_<
+    ::cuda::std::type_identity<
       thrust::detail::integral_constant<result_type, xor_combine_engine_max_aux_case2<result_type, a, b, d>::value>>,
     thrust::detail::eval_if<
       // otherwise if a * 2^3 >= b, then case 3
       a * constants::two_to_the_d >= b,
-      thrust::detail::identity_<
+      ::cuda::std::type_identity<
         thrust::detail::integral_constant<result_type, xor_combine_engine_max_aux_case3<result_type, a, b, d>::value>>,
       // otherwise, case 4
-      thrust::detail::identity_<
+      ::cuda::std::type_identity<
         thrust::detail::integral_constant<result_type, xor_combine_engine_max_aux_case4<result_type, a, b, d>::value>>>>::
     type::value;
 };

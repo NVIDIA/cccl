@@ -48,13 +48,13 @@ struct generator
 int main()
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
 
   // The execution policy we want to use to run all work on the same stream
   auto policy = thrust::cuda::par_nosync.on(stream.get());
 
   // An environment we use to pass all necessary information to the containers
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cudax::device_ref{0}}, stream};
 
   // Allocate the two inputs and output, but do not zero initialize via `cudax::no_init`
   cudax::async_device_buffer<float> A{env, numElements, cudax::no_init};
@@ -75,7 +75,7 @@ int main()
   cudax::async_host_buffer<float> h_C{host_env, C};
 
   // Do not forget to sync afterwards
-  stream.wait();
+  stream.sync();
 
   for (int i = 0; i < numElements; ++i)
   {

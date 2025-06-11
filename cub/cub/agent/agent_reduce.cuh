@@ -570,7 +570,7 @@ template <typename AgentReducePolicy,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
-          typename TransformOp = ::cuda::std::__identity>
+          typename TransformOp = ::cuda::std::identity>
 struct AgentReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
@@ -638,7 +638,7 @@ template <typename AgentReducePolicy,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
-          typename TransformOp = ::cuda::std::__identity>
+          typename TransformOp = ::cuda::std::identity>
 struct AgentWarpReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,

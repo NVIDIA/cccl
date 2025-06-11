@@ -57,7 +57,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
 {
-  auto __proj = __identity();
+  auto __proj = identity();
   return _CUDA_VSTD::__min_element<_Comp>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __proj);
 }
 

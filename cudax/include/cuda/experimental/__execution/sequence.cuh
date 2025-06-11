@@ -41,7 +41,7 @@ namespace cuda::experimental::execution
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Rcvr, class _Sndr1, class _Sndr2>
   struct __args
   {

@@ -31,6 +31,8 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of iterator_adaptor for make_iterator_adaptor_base below
@@ -47,8 +49,8 @@ namespace detail
 {
 // If T is use_default, return the result of invoking DefaultNullaryFn, otherwise return T.
 template <class T, class DefaultNullaryFn>
-using replace_if_use_default =
-  typename ::cuda::std::_If<::cuda::std::is_same_v<T, use_default>, DefaultNullaryFn, identity_<T>>::type;
+using replace_if_use_default = typename ::cuda::std::
+  _If<::cuda::std::is_same_v<T, use_default>, DefaultNullaryFn, ::cuda::std::type_identity<T>>::type;
 
 // A metafunction which computes an iterator_adaptor's base class, a specialization of iterator_facade.
 template <typename Derived,

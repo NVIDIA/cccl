@@ -77,6 +77,9 @@ ContinuationIndentWidth: 2
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
+IfMacros: [
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C'
+]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
@@ -131,6 +134,7 @@ MaxEmptyLinesToKeep: 1
 Macros:
 - _CCCL_TEMPLATE(...)=template<...>
 - _CCCL_REQUIRES(...)=requires (...)
+- _CUDAX_SEMI_PRIVATE=private
 WhitespaceSensitiveMacros:
 - _CCCL_HAS_INCLUDE
 NamespaceIndentation: None

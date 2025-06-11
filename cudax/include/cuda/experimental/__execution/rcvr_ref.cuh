@@ -44,27 +44,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
       : __rcvr_{_CUDA_VSTD::addressof(__rcvr)}
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_TRIVIAL_API void set_value(_As&&... __as) noexcept
   {
-    static_cast<_Rcvr&&>(*__rcvr_).set_value(static_cast<_As&&>(__as)...);
+    execution::set_value(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_As&&>(__as)...);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Error>
   _CCCL_TRIVIAL_API void set_error(_Error&& __err) noexcept
   {
-    static_cast<_Rcvr&&>(*__rcvr_).set_error(static_cast<_Error&&>(__err));
+    execution::set_error(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_Error&&>(__err));
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TRIVIAL_API void set_stopped() noexcept
   {
-    static_cast<_Rcvr&&>(*__rcvr_).set_stopped();
+    execution::set_stopped(static_cast<_Rcvr&&>(*__rcvr_));
   }
 
-  _CCCL_API auto get_env() const noexcept -> _Env
+  [[nodiscard]] _CCCL_TRIVIAL_API auto get_env() const noexcept -> _Env
   {
     static_assert(_CUDA_VSTD::is_same_v<_Env, env_of_t<_Rcvr>>,
                   "get_env() must return the same type as env_of_t<_Rcvr>");
@@ -116,13 +113,13 @@ template <class _Env = void, class _Rcvr>
   {
     return __rcvr_ref<_Rcvr, _Env>{__rcvr};
   }
-  else if constexpr (_CUDA_VSTD::is_nothrow_copy_constructible_v<_Rcvr>)
+  else if constexpr (__nothrow_constructible<_Rcvr, const _Rcvr&> && _CUDA_VSTD::is_copy_constructible_v<_Rcvr>)
   {
-    return __rcvr;
+    return const_cast<const _Rcvr&>(__rcvr);
   }
   else
   {
-    return __rcvr_ref<_Rcvr, _Env>{__rcvr};
+    return __rcvr_ref{__rcvr};
   }
   _CCCL_UNREACHABLE();
 }

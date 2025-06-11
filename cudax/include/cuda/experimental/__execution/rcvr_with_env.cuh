@@ -31,47 +31,53 @@ namespace cuda::experimental::execution
 template <class _Rcvr, class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 {
+  // If _Env has a value for the `get_scheduler` query, then we must ensure that we report
+  // the domain correctly. Under no circumstances should we forward the `get_domain` query
+  // to the receiver's environment. That environment may have a domain that does not
+  // conform to the scheduler in _Env.
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    template <class _Query>
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(const __env_t& __self) noexcept -> decltype(auto)
-    {
-      if constexpr (__queryable_with<_Env, _Query>)
-      {
-        return (__self.__rcvr_->__env_);
-      }
-      else
-      {
-        return execution::get_env(__self.__rcvr_->__base());
-      }
-    }
-
-    template <class _Query>
-    using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
-
+    // Prefer to query _Env
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<__1st_env_t<_Query>, _Query>)
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
+    _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
+      -> __query_result_t<_Env, _Query>
     {
-      return __env_t::__get_1st<_Query>(*this).query(_Query{});
+      return __rcvr_->__env_.query(_Query{});
+    }
+
+    // Fallback to querying the inner receiver's environment, but only for forwarding
+    // queries.
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES((!__queryable_with<_Env, _Query>)
+                     _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Rcvr>, _Query>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Rcvr>, _Query>) -> __query_result_t<env_of_t<_Rcvr>, _Query>
+    {
+      // If _Env has a value for the `get_scheduler` query, then we should not be
+      // forwarding a get_domain query to the parent receiver's environment.
+      static_assert(!_CUDA_VSTD::is_same_v<_Query, get_domain_t> || !__queryable_with<_Env, get_scheduler_t>,
+                    "_Env specifies a scheduler but not a domain.");
+      return __rcvr_->__base().query(_Query{});
+      // return execution::get_env(__rcvr_->__base()).query(_Query{});
     }
 
     __rcvr_with_env_t const* __rcvr_;
   };
 
-  _CCCL_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
+  [[nodiscard]] _CCCL_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
   {
     return static_cast<_Rcvr&&>(*this);
   }
 
-  _CCCL_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
+  [[nodiscard]] _CCCL_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
   {
     return *this;
   }
 
-  _CCCL_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
+  [[nodiscard]] _CCCL_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
   {
     return *this;
   }
@@ -85,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 };
 
 template <class _Rcvr, class _Env>
-__rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
+_CCCL_HOST_DEVICE __rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
 
 } // namespace cuda::experimental::execution
 

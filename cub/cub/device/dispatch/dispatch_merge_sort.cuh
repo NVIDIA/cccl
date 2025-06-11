@@ -126,7 +126,7 @@ template <typename KeyInputIteratorT,
             ValueIteratorT,
             OffsetT,
             CompareOpT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           typename VSMemHelperT          = detail::merge_sort::VSMemHelper,
           typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
           typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
