@@ -25,6 +25,7 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_empty.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
