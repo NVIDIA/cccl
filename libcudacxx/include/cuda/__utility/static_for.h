@@ -60,7 +60,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... 
   ::cuda::static_for<decltype(_Size), _Size>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
-template <auto _Start, decltype(_Start) _End, decltype(_Start) _Step = 1, typename _Operator, typename... _TArgs>
+template <auto _Start, auto _End, auto _Step = 1, typename _Operator, typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
 {
   ::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);

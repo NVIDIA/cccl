@@ -13,7 +13,7 @@ Defined in ``<cuda/utility>`` header.
     __host__ __device__
     constexpr void static_for(Operator op, TArgs&&... args) noexcept
 
-    template <auto Start, decltype(Start) End, decltype(Start) Step = 1, typename Operator, typename... TArgs>
+    template <auto Start, auto End, auto Step = 1, typename Operator, typename... TArgs>
     __host__ __device__
     constexpr void static_for(Operator op, TArgs&&... args) noexcept
 
@@ -36,7 +36,7 @@ Defined in ``<cuda/utility>`` header.
 **Parameters**
 
 - ``Size``: the number of iterations.
-- ``Start``, ``End``, ``Step``: the start, end, and step of the range.
+- ``Start``, ``End``, ``Step``: the start, end, and step of the range. Note that ``End`` and ``Step`` are converted to the type of ``Start``.
 - ``T``: type of the loop index.
 - ``op``: the function to execute.
 - ``args``: optional arguments to pass to ``op``.

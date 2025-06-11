@@ -27,7 +27,7 @@ struct Op
   __host__ __device__ constexpr void operator()(Index index)
   {
     static_assert(cuda::std::is_same_v<ExpectedType, decltype(index())>);
-    constexpr int value = index(); // compile-time evaluation
+    [[maybe_unused]] constexpr auto value = index(); // compile-time evaluation
     assert(value == i);
     i += step;
     assert(count < max_iters);
