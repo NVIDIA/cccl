@@ -257,6 +257,7 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
   return result;
 }
+#endif // CUDART_VERSION >= 12050
 
 inline void* memAllocHost(size_t __bytes)
 {
@@ -273,7 +274,6 @@ inline cudaError_t memFreeHost(void* __ptr)
   return static_cast<cudaError_t>(status);
 }
 
-#endif // CUDART_VERSION >= 12050
 } // namespace cuda::experimental::__detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION
