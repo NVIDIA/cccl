@@ -255,6 +255,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
@@ -1098,7 +1099,6 @@ template <class _Tp>
 }
 
 // exp fp32 specialization
-
 template <>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI complex<float> exp(const complex<float>& __x)
 {
@@ -1111,7 +1111,10 @@ template <>
     if (_CUDA_VSTD::isinf(__r) && !_CUDA_VSTD::isfinite(__i))
     {
       // __r == +-INF
-      return (__r == INFINITY) ? complex<float>{INFINITY, NAN} : complex<float>{0.0f, 0.0f};
+      return _CUDA_VSTD::signbit(__r)
+             ? complex<float>{}
+             : complex<float>{_CUDA_VSTD::numeric_limits<float>::infinity(),
+                              _CUDA_VSTD::numeric_limits<float>::quiet_NaN()};
     }
     // __r NaN:
     if (_CUDA_VSTD::isnan(__r) && (__i == 0.0f))
@@ -1124,7 +1127,7 @@ template <>
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   const float __round_shift = 12582912.0f; // 1.5 * 2^23;
-  const float __log2_e      = 1.4426950408889634f; // log2(e)
+  const float __log2_e      = _CUDA_VSTD::numbers::log2e_v<float>;
   float __j                 = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
   __j                       = __j - __round_shift;
 
@@ -1154,15 +1157,12 @@ template <>
     __exp_mant = (__r < 0.0f) ? 0.0f : 1e3f;
   }
 
-// Compile to sincos when possible:
-#ifdef __CUDA_ARCH__
+  // Compile to sincos when possible:
   float __sin_i;
   float __cos_i;
-  sincosf(__i, &__sin_i, &__cos_i);
-#else
-  const float __sin_i = _CUDA_VSTD::sinf(__i);
-  const float __cos_i = _CUDA_VSTD::cosf(__i);
-#endif
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::sincosf(__i, &__sin_i, &__cos_i);),
+                    (__sin_i = _CUDA_VSTD::sinf(__i); __cos_i = _CUDA_VSTD::cosf(__i);))
 
   // Our answer now is: (ldexp(__exp_mant * __sin_r, __j_int), ldexp(__exp_mant * __sin_r, __j_int))
   // However we don't need a full ldexp here, and if __exp_mant*__sin_r is denormal we can lose bits.
@@ -1221,10 +1221,15 @@ template <>
   // Special cases that don't filter through:
   if (!_CUDA_VSTD::isfinite(__r))
   {
+    // __r == +-INF
     if (_CUDA_VSTD::isinf(__r) && !_CUDA_VSTD::isfinite(__i))
     {
-      return (__r == INFINITY) ? complex<double>{INFINITY, NAN} : complex<double>{0.0, 0.0};
+      return _CUDA_VSTD::signbit(__r)
+             ? complex<double>{}
+             : complex<double>{_CUDA_VSTD::numeric_limits<double>::infinity(),
+                               _CUDA_VSTD::numeric_limits<double>::quiet_NaN()};
     }
+    // __r NaN:
     if (_CUDA_VSTD::isnan(__r) && (__i == 0.0))
     {
       return __x;
@@ -1235,7 +1240,7 @@ template <>
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   const double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
-  const double __log2_e      = 1.442695040888963407; // log2(e)
+  const double __log2_e      = _CUDA_VSTD::numbers::log2e_v<double>;
   double __j                 = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
   __j                        = __j - __round_shift;
 
@@ -1266,15 +1271,13 @@ template <>
     __exp_mant = (__r < 0.0) ? 0.0 : 1e10;
   }
 
-// Compile to sincos when possible:
-#ifdef __CUDA_ARCH__
+  // Compile to sincos when possible:
   double __sin_i;
   double __cos_i;
-  sincos(__i, &__sin_i, &__cos_i);
-#else
-  double __sin_i = _CUDA_VSTD::sin(__i);
-  double __cos_i = _CUDA_VSTD::cos(__i);
-#endif
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::sincos(__i, &__sin_i, &__cos_i);),
+                    (__sin_i = _CUDA_VSTD::sin(__i); __cos_i = _CUDA_VSTD::cos(__i);))
+
   // Our answer now is: (ldexp(__exp_mant * __sin_r, __j_int), ldexp(__exp_mant * __sin_r, __j_int))
   // However we don't need a full ldexp here, and if __exp_mant*__sin_r is denormal we can lose bits.
   // Instead, do an inlined/simplified ldexp.
