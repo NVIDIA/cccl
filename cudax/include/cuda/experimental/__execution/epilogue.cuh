@@ -14,7 +14,6 @@
 #  error epilogue.cuh included without a prior inclusion of prologue.cuh
 #endif
 
-#undef _CCCL_IMMOVABLE_OPSTATE
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
 #if _CCCL_CUDA_COMPILER(NVHPC)

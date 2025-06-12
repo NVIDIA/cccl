@@ -64,6 +64,11 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  {
+    return {};
+  }
+
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
     -> decltype(auto)

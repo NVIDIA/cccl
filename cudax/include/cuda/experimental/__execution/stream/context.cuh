@@ -25,6 +25,7 @@
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
@@ -63,7 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
     __stream_.sync();
   }
 
-  [[nodiscard]] _CCCL_HOST_API auto query(get_stream_t) const noexcept -> stream_ref
+  [[nodiscard]] _CCCL_HOST_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
   {
     return __stream_;
   }
@@ -149,7 +150,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
     using operation_state_concept = operation_state_t;
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API explicit __opstate_t(_Rcvr __rcvr, stream_ref __stream_ref) noexcept(__nothrow_movable<_Rcvr>)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr, stream_ref __stream_ref) noexcept(__nothrow_movable<_Rcvr>)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __stream_{__stream_ref}
     {
@@ -159,7 +160,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       NV_IF_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
     }
@@ -207,7 +208,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
     {
       return __opstate_t<_Rcvr>{static_cast<_Rcvr&&>(__rcvr), __env_.__stream_};
     }

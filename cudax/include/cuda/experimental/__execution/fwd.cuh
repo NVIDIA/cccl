@@ -34,6 +34,9 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
+                             // will always produce an error when instantiated.
+
 namespace cuda::experimental
 {
 // so we can refer to the cuda::experimental::__detail namespace below
@@ -113,6 +116,15 @@ struct set_stopped_t;
 struct start_t;
 struct connect_t;
 struct schedule_t;
+
+template <class _Sch>
+using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(declval<_Sch>()));
+
+template <class _Sndr, class _Rcvr>
+using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+
+template <class _Sndr, class _Rcvr>
+inline constexpr bool __nothrow_connectable = noexcept(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
 
 // sender factory algorithms:
 template <__disposition_t>
@@ -201,6 +213,8 @@ extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
 } // namespace execution
 
 } // namespace cuda::experimental
+
+_CCCL_NV_DIAG_DEFAULT(2642)
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

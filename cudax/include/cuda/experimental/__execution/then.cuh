@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -109,7 +110,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
     using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
     using __rcvr_t _CCCL_NODEBUG_ALIAS                = __rcvr_ref_t<__opstate_t, __env_t>;
 
-    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
         , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
@@ -117,7 +118,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate_);
     }
@@ -182,7 +183,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
       __complete(set_stopped_t());
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return execution::get_env(__rcvr_);
     }
@@ -258,7 +259,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
     -> __opstate_t<_Rcvr, _Sndr, _Fn>
   {
@@ -267,7 +268,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
                                      const _Sndr&,
                                      _Rcvr,
@@ -277,7 +278,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }

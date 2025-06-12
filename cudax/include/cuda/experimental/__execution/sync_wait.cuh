@@ -62,14 +62,14 @@ struct sync_wait_t
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
-    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
       -> __query_result_t<_Env, _Query>
     {
       return __state_->__env_.query(_Query{});
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API auto query(get_scheduler_t) const noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_scheduler_t>)
       {
@@ -83,7 +83,7 @@ struct sync_wait_t
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API auto query(get_delegation_scheduler_t) const noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_delegation_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_delegation_scheduler_t>)
       {
@@ -117,7 +117,7 @@ struct sync_wait_t
     using __values_t _CCCL_NODEBUG_ALIAS       = typename __state_t<_Sndr, _Env>::__values_t;
 
     template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) && noexcept
+    _CCCL_API void set_value(_As&&... __as) noexcept
     {
       _CUDAX_TRY( //
         ({ //
@@ -137,18 +137,18 @@ struct sync_wait_t
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error __err) && noexcept
+    _CCCL_API constexpr void set_error(_Error __err) noexcept
     {
       __state_->__errors_.__emplace(static_cast<_Error&&>(__err));
       __state_->__loop_.finish();
     }
 
-    _CCCL_API void set_stopped() && noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       __state_->__loop_.finish();
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t<_Env>
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t<_Env>
     {
       return __env_t<_Env>{__state_};
     }

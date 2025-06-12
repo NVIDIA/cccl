@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__execution/env.cuh>
@@ -54,7 +55,7 @@ struct set_value_t : __completion_tag<__value>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class... _Ts>
-  _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
   {
     static_assert(
@@ -68,7 +69,7 @@ struct set_error_t : __completion_tag<__error>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class _Ey>
-  _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e)))
   {
     static_assert(
@@ -82,7 +83,7 @@ struct set_stopped_t : __completion_tag<__stopped>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
-  _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr) const noexcept
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Rcvr&& __rcvr) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
@@ -95,7 +96,7 @@ struct start_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _OpState>
-  _CCCL_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
+  _CCCL_TRIVIAL_API constexpr auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
@@ -106,30 +107,54 @@ struct start_t
 // connect
 struct connect_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Sndr, class _Rcvr, class _Domain = __late_domain_of_t<_Sndr, env_of_t<_Rcvr>>>
-  _CCCL_TRIVIAL_API static constexpr auto __do_transform(_Sndr&& __sndr, _Rcvr __rcvr) noexcept(
-    noexcept(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr)))) -> decltype(auto)
+private:
+  struct __transform_fn
   {
-    return transform_sender(_Domain{}, static_cast<_Sndr&&>(__sndr), get_env(__rcvr));
-  }
+    template <class _Sndr, class _Rcvr, class _Domain = __late_domain_of_t<_Sndr, env_of_t<_Rcvr>>>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+      noexcept(noexcept(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr))))
+        -> decltype(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr)))
+    {
+      return transform_sender(_Domain{}, static_cast<_Sndr&&>(__sndr), get_env(__rcvr));
+    }
+  };
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
-  _CCCL_REQUIRES((!__has_sender_transform<_Sndr, env_of_t<_Rcvr>>) )
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>()))) -> decltype(auto)
+  template <bool _HasSndrTransform>
+  struct __impl_fn
   {
-    return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
-  }
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class _Sndr, class _Rcvr>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+      noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>())))
+        -> decltype(declval<_Sndr>().connect(declval<_Rcvr>()))
+    {
+      return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
+    }
+  };
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
-  _CCCL_REQUIRES(__has_sender_transform<_Sndr, env_of_t<_Rcvr>>)
+  template <class _Sndr, class _Rcvr>
+  using __impl_t = __impl_fn<__has_sender_transform<_Sndr, env_of_t<_Rcvr>>>;
+
+public:
+  template <class _Sndr, class _Rcvr>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(noexcept(__do_transform(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>()))) -> decltype(auto)
+    noexcept(_CUDA_VSTD::__is_nothrow_callable_v<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>)
+      -> _CUDA_VSTD::__call_result_t<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>
   {
-    return __do_transform(static_cast<_Sndr&&>(__sndr), __rcvr).connect(static_cast<_Rcvr&&>(__rcvr));
+    return __impl_t<_Sndr, _Rcvr>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));
+  }
+};
+
+template <>
+struct connect_t::__impl_fn<true>
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Sndr, class _Rcvr>
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(noexcept(__transform_fn{}(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>())))
+      -> decltype(__transform_fn{}(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>()))
+  {
+    return __transform_fn{}(static_cast<_Sndr&&>(__sndr), __rcvr).connect(static_cast<_Rcvr&&>(__rcvr));
   }
 };
 
@@ -137,7 +162,7 @@ struct schedule_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch&& __sch) const noexcept
   {
     static_assert(noexcept(static_cast<_Sch&&>(__sch).schedule()));
     return static_cast<_Sch&&>(__sch).schedule();
@@ -150,15 +175,6 @@ _CCCL_GLOBAL_CONSTANT set_stopped_t set_stopped{};
 _CCCL_GLOBAL_CONSTANT start_t start{};
 _CCCL_GLOBAL_CONSTANT connect_t connect{};
 _CCCL_GLOBAL_CONSTANT schedule_t schedule{};
-
-template <class _Sndr, class _Rcvr>
-using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(connect(declval<_Sndr>(), declval<_Rcvr>()));
-
-template <class _Sch>
-using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(schedule(declval<_Sch>()));
-
-template <class _Sndr, class _Rcvr>
-inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(), declval<_Rcvr>()));
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

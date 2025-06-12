@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -110,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PRE
     // Compute the type of the variant of operation states
     using __opstate_variant_t _CCCL_NODEBUG_ALIAS = __opstate2_t<_CvSndr, _Fn, _Rcvr>;
 
-    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __fn_(static_cast<_Fn&&>(__fn))
@@ -119,7 +120,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PRE
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
@@ -171,7 +172,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PRE
       __complete(set_stopped_t());
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return __fwd_env(execution::get_env(__rcvr_));
     }
@@ -293,7 +294,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   struct __attrs_t
   {
     template <class _SetTag>
-    _CCCL_API auto query(get_completion_scheduler_t<_SetTag>) const = delete;
+    _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>) const = delete;
 
     // Returns the domain on which the let sender will complete:
     _CCCL_TEMPLATE(class _Sndr2 = _Sndr)
@@ -306,8 +307,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!_CUDA_VSTD::same_as<_Query, get_domain_t>)
                      _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-      -> __query_result_t<env_of_t<_Sndr>, _Query>
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
     {
       return execution::get_env(__self_->__sndr_).query(_Query{});
     }
@@ -347,14 +348,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& noexcept(
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& noexcept(
     __nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>, const _Sndr&, const _Fn&, _Rcvr>)
     -> __opstate_t<_Rcvr, const _Sndr&, _Fn>
   {
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
   {
     return __attrs_t{this};
   }
