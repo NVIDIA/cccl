@@ -80,7 +80,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __heterogeneous_iterator_access(pointer __ptr) noexcept
+  _CCCL_API explicit constexpr __heterogeneous_iterator_access(pointer __ptr) noexcept
       : __ptr_(__ptr)
   {}
 
@@ -127,7 +127,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __heterogeneous_iterator_access(pointer __ptr) noexcept
+  _CCCL_API explicit constexpr __heterogeneous_iterator_access(pointer __ptr) noexcept
       : __ptr_(__ptr)
   {}
 
@@ -230,7 +230,7 @@ public:
   _CCCL_HIDE_FROM_ABI heterogeneous_iterator() = default;
 
   //! @brief Construct a \c heterogeneous_iterator from a pointer to the underlying memory
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator(pointer __ptr) noexcept
+  _CCCL_API constexpr heterogeneous_iterator(pointer __ptr) noexcept
       : __base(__ptr)
   {}
 
@@ -238,14 +238,13 @@ public:
   //! @param __other The mutable \c heterogeneous_iterator
   _CCCL_TEMPLATE(class _OtherTp)
   _CCCL_REQUIRES((_CUDA_VSTD::is_same_v<_OtherTp, value_type>) _CCCL_AND(_CUDA_VSTD::is_const_v<_CvTp>))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator(
-    heterogeneous_iterator<_OtherTp, _Properties...> __other) noexcept
+  _CCCL_API constexpr heterogeneous_iterator(heterogeneous_iterator<_OtherTp, _Properties...> __other) noexcept
       : __base(__other.__ptr_)
   {}
 
   //! @brief Increment of a \c heterogeneous_iterator
   //! @return The heterogeneous_iterator pointing to the next element
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator& operator++() noexcept
+  _CCCL_API constexpr heterogeneous_iterator& operator++() noexcept
   {
     ++this->__ptr_;
     return *this;
@@ -253,7 +252,7 @@ public:
 
   //! @brief Post-increment of a \c heterogeneous_iterator
   //! @return A copy of the heterogeneous_iterator pointing to the next element
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator operator++(int) noexcept
+  _CCCL_API constexpr heterogeneous_iterator operator++(int) noexcept
   {
     heterogeneous_iterator __temp = *this;
     ++this->__ptr_;
@@ -262,7 +261,7 @@ public:
 
   //! @brief Decrement of a \c heterogeneous_iterator
   //! @return The heterogeneous_iterator pointing to the previous element
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator& operator--() noexcept
+  _CCCL_API constexpr heterogeneous_iterator& operator--() noexcept
   {
     --this->__ptr_;
     return *this;
@@ -270,7 +269,7 @@ public:
 
   //! @brief Post-decrement of a \c heterogeneous_iterator
   //! @return A copy of the heterogeneous_iterator pointing to the previous element
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator operator--(int) noexcept
+  _CCCL_API constexpr heterogeneous_iterator operator--(int) noexcept
   {
     heterogeneous_iterator __temp = *this;
     --this->__ptr_;
@@ -280,7 +279,7 @@ public:
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @return The heterogeneous_iterator advanced by \p __count
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator& operator+=(const difference_type __count) noexcept
+  _CCCL_API constexpr heterogeneous_iterator& operator+=(const difference_type __count) noexcept
   {
     this->__ptr_ += __count;
     return *this;
@@ -289,8 +288,7 @@ public:
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by \p __count
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
-  operator+(const difference_type __count) const noexcept
+  [[nodiscard]] _CCCL_API constexpr heterogeneous_iterator operator+(const difference_type __count) const noexcept
   {
     heterogeneous_iterator __temp = *this;
     __temp += __count;
@@ -302,7 +300,7 @@ public:
   //! @param __count The number of elements to advance.
   //! @param __other A heterogeneous_iterator.
   //! @return \p __other advanced by \p __count
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr heterogeneous_iterator
+  [[nodiscard]] _CCCL_API friend constexpr heterogeneous_iterator
   operator+(const difference_type __count, heterogeneous_iterator __other) noexcept
   {
     __other += __count;
@@ -313,7 +311,7 @@ public:
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
   //! @return The heterogeneous_iterator advanced by the negative value of \p __count
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator& operator-=(const difference_type __count) noexcept
+  _CCCL_API constexpr heterogeneous_iterator& operator-=(const difference_type __count) noexcept
   {
     this->__ptr_ -= __count;
     return *this;
@@ -322,8 +320,7 @@ public:
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by the negative value of \p __count
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
-  operator-(const difference_type __count) const noexcept
+  [[nodiscard]] _CCCL_API constexpr heterogeneous_iterator operator-(const difference_type __count) const noexcept
   {
     heterogeneous_iterator __temp = *this;
     __temp -= __count;
@@ -333,8 +330,7 @@ public:
   //! @brief Distance between two heterogeneous_iterator
   //! @param __other The other heterogeneous_iterator.
   //! @return The distance between the two elements the heterogeneous_iterator point to
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type
-  operator-(const heterogeneous_iterator& __other) const noexcept
+  [[nodiscard]] _CCCL_API constexpr difference_type operator-(const heterogeneous_iterator& __other) const noexcept
   {
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
   }
@@ -344,7 +340,7 @@ public:
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if both heterogeneous_iterator point to the same element
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ == __rhs.__ptr_;
@@ -354,7 +350,7 @@ public:
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return false, if both heterogeneous_iterator point to the same element
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ != __rhs.__ptr_;
@@ -362,7 +358,7 @@ public:
 #    endif // _CCCL_STD_VER <= 2017
 
 #    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr _CUDA_VSTD::strong_ordering
+  [[nodiscard]] _CCCL_API friend constexpr _CUDA_VSTD::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
@@ -373,7 +369,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then the address of the one pointed to
   //! by \p __rhs
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ < __rhs.__ptr_;
@@ -383,7 +379,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then or equal to the address of the one
   //! pointed to by \p __rhs
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <= __rhs.__ptr_;
@@ -393,7 +389,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then the address of the one
   //! pointed to by \p __rhs
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ > __rhs.__ptr_;
@@ -403,7 +399,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then or equal to the address of the
   //! one pointed to by \p __rhs
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;
@@ -411,7 +407,7 @@ public:
 #    endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  endif // _CCCL_DOXYGEN_INVOKED
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer __unwrap() const noexcept
+  _CCCL_API constexpr pointer __unwrap() const noexcept
   {
     return this->__ptr_;
   }
@@ -432,7 +428,7 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
   //! @brief Retrieve the address of the element pointed at by an heterogeneous_iterator
   //! @param __iter A heterogeneous_iterator.
   //! @return A pointer to the element pointed to by the heterogeneous_iterator
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr element_type* to_address(const pointer __iter) noexcept
+  [[nodiscard]] _CCCL_API static constexpr element_type* to_address(const pointer __iter) noexcept
   {
     return _CUDA_VSTD::to_address(__iter.__unwrap());
   }

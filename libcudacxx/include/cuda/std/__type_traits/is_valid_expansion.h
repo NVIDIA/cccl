@@ -27,9 +27,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <template <class...> class _Templ, class... _Args, class = _Templ<_Args...>>
-_LIBCUDACXX_HIDE_FROM_ABI true_type __sfinae_test_impl(int);
+_CCCL_API inline true_type __sfinae_test_impl(int);
 template <template <class...> class, class...>
-_LIBCUDACXX_HIDE_FROM_ABI false_type __sfinae_test_impl(...);
+_CCCL_API inline false_type __sfinae_test_impl(...);
 
 template <template <class...> class _Templ, class... _Args>
 using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));

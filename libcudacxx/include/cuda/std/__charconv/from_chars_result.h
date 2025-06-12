@@ -31,18 +31,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT from_chars_result
   const char* ptr;
   errc ec;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return ec == errc{};
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
   {
     return __lhs.ptr == __rhs.ptr && __lhs.ec == __rhs.ec;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
   {
     return !(__lhs == __rhs);

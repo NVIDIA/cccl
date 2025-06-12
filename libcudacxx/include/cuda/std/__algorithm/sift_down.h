@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __sift_down(
+_CCCL_API constexpr void __sift_down(
   _RandomAccessIterator __first,
   _Compare&& __comp,
   typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -96,7 +96,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __sift_down(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __floyd_sift_down(
+_CCCL_API constexpr _RandomAccessIterator __floyd_sift_down(
   _RandomAccessIterator __first,
   _Compare&& __comp,
   typename iterator_traits<_RandomAccessIterator>::difference_type __len)
