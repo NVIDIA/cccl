@@ -40,7 +40,7 @@ struct OpArgs
   template <typename Index>
   __host__ __device__ constexpr void operator()(Index index, int, int, int)
   {
-    [[maybe_unused]] constexpr int value = index(); // compile-time evaluation
+    [[maybe_unused]] constexpr auto value = index(); // compile-time evaluation
   }
 };
 
