@@ -51,7 +51,12 @@
 
 #include <cuda/std/type_traits>
 
+#include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
+
 CUB_NAMESPACE_BEGIN
+
+namespace cg = cooperative_groups;
 
 /******************************************************************************
  * Tuning policy
@@ -341,11 +346,12 @@ struct AgentHistogram
     InitBinCounters(d_privatized_histograms);
   }
 
-  //---------------------------------------------------------------------
-  // Update final output histograms
-  //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// Update final output histograms
+//---------------------------------------------------------------------
 
-  // Update final output histograms from privatized histograms
+// Update final output histograms from privatized histograms
+#if 0
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
   {
     // Barrier to make sure all threads are done updating counters
@@ -371,6 +377,249 @@ struct AgentHistogram
       }
     }
   }
+#endif
+
+  #if 0
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
+  {
+    // make sure the privatized histograms are fully written
+    __syncthreads();
+
+    constexpr unsigned FULL_MASK = 0xFFFF'FFFFu;
+    const int lane               = threadIdx.x & 31; // warp lane id
+
+#pragma unroll
+    for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
+    {
+      const int channel_bins = num_privatized_bins[CHANNEL];
+
+      // every thread walks its share of the privatized bins
+      for (int privatized_bin = threadIdx.x; privatized_bin < channel_bins; privatized_bin += BLOCK_THREADS)
+      {
+        //------------------------------------------------------------------
+        // 1.  Compute the *candidate* output bin for this privatized bin
+        //------------------------------------------------------------------
+        int output_bin = -1;
+        CounterT count = privatized_histograms[CHANNEL][privatized_bin];
+        bool is_valid  = count > 0;
+
+        output_decode_op[CHANNEL].template BinSelect<LOAD_MODIFIER>((SampleT) privatized_bin, output_bin, is_valid);
+
+        //------------------------------------------------------------------
+        // 2.  Warp-level "labeled_partition + reduce" using only intrinsics
+        //------------------------------------------------------------------
+
+        // mask of warp lanes that produced *some* valid bin
+        unsigned valid_mask = __ballot_sync(FULL_MASK, output_bin >= 0);
+
+        // process one distinct output_bin at a time
+        while (valid_mask)
+        {
+          // ---- choose the leader lane (least-significant set bit) ----
+          const unsigned leader_bit = valid_mask & -valid_mask;
+          const int leader_lane     = __ffs(valid_mask) - 1;
+
+          // broadcast that leader's bin label to the whole warp
+          const int leader_bin = __shfl_sync(FULL_MASK, output_bin, leader_lane);
+
+          // mask of lanes that *share* that same bin label
+          const unsigned same_bin_mask = __ballot_sync(FULL_MASK, output_bin == leader_bin);
+
+          // count how many lanes voted for this label
+          const CounterT votes = __popc(same_bin_mask);
+
+          // have the leader do the single global atomic
+          if (lane == leader_lane)
+          {
+            atomicAdd(&d_output_histograms[CHANNEL][leader_bin], votes);
+          }
+
+          // remove the lanes we just serviced and move on
+          valid_mask ^= same_bin_mask;
+        }
+        // optional: ensure all warp lanes have finished before next bin
+        __syncwarp(FULL_MASK);
+      }
+    }
+  }
+  #endif
+
+#if 0
+  // Update final output histograms from privatized histograms
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
+  {
+    // Barrier to make sure all threads are done updating counters
+    __syncthreads();
+
+    // Apply privatized bin counts to output bin counts
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
+    {
+      int channel_bins = num_privatized_bins[CHANNEL];
+      for (int privatized_bin = threadIdx.x; privatized_bin < channel_bins; privatized_bin += BLOCK_THREADS)
+      {
+        int output_bin = -1;
+        CounterT count = privatized_histograms[CHANNEL][privatized_bin];
+        bool is_valid  = count > 0;
+
+        output_decode_op[CHANNEL].template BinSelect<LOAD_MODIFIER>((SampleT) privatized_bin, output_bin, is_valid);
+
+        if (output_bin >= 0)
+        {
+          cg::coalesced_group active = cg::coalesced_threads();
+          auto bin_group = cg::labeled_partition(active, output_bin);
+          CounterT votes = cg::reduce(bin_group, CounterT{1}, cg::plus<CounterT>());
+          if (bin_group.thread_rank() == 0)
+          {
+            atomicAdd(&d_output_histograms[CHANNEL][output_bin], votes);
+          }
+          bin_group.sync();
+        }
+      }
+    }
+  }
+
+#endif
+
+#if 0
+_CCCL_DEVICE _CCCL_FORCEINLINE
+void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
+{
+    // 1.  Make sure all threads have finished writing the privatized bins
+    __syncthreads();
+
+    constexpr unsigned FULL_MASK = 0xFFFF'FFFFu;
+    const  int         lane      = threadIdx.x & 31;          // Lane ID in the warp
+
+#pragma unroll
+    for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
+    {
+        const int channel_bins = num_privatized_bins[CHANNEL];
+
+        // 2.  Each thread walks its slice of the privatized array
+        for (int privatized_bin = threadIdx.x;
+             privatized_bin < channel_bins;
+             privatized_bin += BLOCK_THREADS)
+        {
+            //------------------------------------------------------------------
+            // (a) Compute the candidate output bin for *this* privatized bin
+            //------------------------------------------------------------------
+            CounterT  count      = privatized_histograms[CHANNEL][privatized_bin];
+            int       output_bin = -1;
+            const bool is_valid  = count > 0;
+
+            output_decode_op[CHANNEL]
+                .template BinSelect<LOAD_MODIFIER>((SampleT)privatized_bin,
+                                                   output_bin,
+                                                   is_valid);
+
+            //------------------------------------------------------------------
+            // (b) Warp-level “labeled partition + reduction”
+            //------------------------------------------------------------------
+            unsigned remaining = __ballot_sync(FULL_MASK, output_bin >= 0);
+
+            while (remaining)
+            {
+                // ---- pick one label to process (least-significant set bit) ----
+                const int leader_lane = __ffs(remaining) - 1;
+                const int leader_bin  = __shfl_sync(FULL_MASK, output_bin, leader_lane);
+
+                // Lanes that share that label
+                const unsigned same_bin_mask =
+                    __ballot_sync(FULL_MASK, output_bin == leader_bin);
+
+                // ---- sum the *counts* from those lanes ----
+                CounterT bin_sum = count;
+
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 800)
+                bin_sum = __reduce_add_sync(same_bin_mask, bin_sum);
+#else                             // portable shfl-down reduction
+                for (int offset = 16; offset > 0; offset >>= 1)
+                {
+                    bin_sum += __shfl_down_sync(same_bin_mask, bin_sum, offset);
+                }
+#endif
+
+                // ---- a single global atomic for the whole equivalence class ----
+                if (lane == leader_lane)
+                {
+                    atomicAdd(&d_output_histograms[CHANNEL][leader_bin], bin_sum);
+                }
+
+                // Remove those lanes and continue with the rest
+                remaining ^= same_bin_mask;
+            }
+            // All lanes continue together here
+        }
+    }
+}
+#endif
+
+_CCCL_DEVICE _CCCL_FORCEINLINE
+void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
+{
+    __syncthreads();                                     // 1. privatized bins done
+
+    constexpr unsigned FULL_MASK = 0xFFFF'FFFFu;
+    const     int      lane      = threadIdx.x & 31;
+
+#pragma unroll
+    for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
+    {
+        const int channel_bins = num_privatized_bins[CHANNEL];
+
+        // 2. walk this thread's slice of privatized bins
+        for (int privatized_bin = threadIdx.x;
+             privatized_bin < channel_bins;
+             privatized_bin += BLOCK_THREADS)
+        {
+            //------------------------------------------------------------------
+            //  (a)  Map privatized-bin → candidate output-bin
+            //------------------------------------------------------------------
+            CounterT count      = privatized_histograms[CHANNEL][privatized_bin];
+            int      output_bin = -1;
+            bool     is_valid   = count > 0;
+
+            output_decode_op[CHANNEL]
+                .template BinSelect<LOAD_MODIFIER>((SampleT)privatized_bin,
+                                                   output_bin,
+                                                   is_valid);
+
+            //------------------------------------------------------------------
+            //  (b)  Warp-local “group by label + reduction”
+            //------------------------------------------------------------------
+            unsigned remaining = __ballot_sync(FULL_MASK, output_bin >= 0);
+
+            while (remaining)
+            {
+                const int leader_lane = __ffs(remaining) - 1;
+                const int leader_bin  = __shfl_sync(FULL_MASK,
+                                                    output_bin,
+                                                    leader_lane);
+
+                // lanes that share that label
+                const unsigned group_mask =
+                    __ballot_sync(FULL_MASK, output_bin == leader_bin);
+
+                // ---- safe reduction over the full warp ----
+                CounterT bin_sum = (output_bin == leader_bin) ? count : 0;
+
+    #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 800)
+                bin_sum = __reduce_add_sync(FULL_MASK, bin_sum); // Ampere+
+    #else
+                for (int ofs = 16; ofs > 0; ofs >>= 1)
+                    bin_sum += __shfl_down_sync(FULL_MASK, bin_sum, ofs);
+    #endif
+
+                if (lane == leader_lane)
+                    atomicAdd(&d_output_histograms[CHANNEL][leader_bin],
+                              bin_sum);
+
+                remaining ^= group_mask;         // next distinct label
+            }
+        }
+    }
+}
 
   // Update final output histograms from privatized histograms.  Specialized for privatized shared-memory counters
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreSmemOutput()
