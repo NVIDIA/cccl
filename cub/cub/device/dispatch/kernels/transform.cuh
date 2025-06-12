@@ -32,7 +32,38 @@
 #endif
 
 CUB_NAMESPACE_BEGIN
+namespace detail::transform
+{
+struct thread_block
+{
+  _CCCL_DEVICE int size() const
+  {
+    return blockDim.x;
+  }
 
+  _CCCL_DEVICE int thread_rank() const
+  {
+    return threadIdx.x;
+  }
+
+  _CCCL_DEVICE void sync() const
+  {
+    __syncthreads();
+  }
+};
+} // namespace detail::transform
+CUB_NAMESPACE_END
+
+_CG_BEGIN_NAMESPACE
+namespace details
+{
+template <>
+struct _async_copy_group_supported<CUB_NS_QUALIFIER::detail::transform::thread_block> : _CG_STL_NAMESPACE::true_type
+{};
+} // namespace details
+_CG_END_NAMESPACE
+
+CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
 
@@ -92,7 +123,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_threads = PrefetchPolicy::block_threads;
   const int tile_stride       = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size         = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
+  const int tile_size         = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -207,7 +238,6 @@ _CCCL_DEVICE void transform_kernel_impl(
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
-  auto group                       = cooperative_groups::this_thread_block();
   [[maybe_unused]] int smem_offset = 0;
 
   auto copy_and_return_smem_dst = [&](auto aligned_ptr) {
@@ -226,7 +256,7 @@ _CCCL_DEVICE void transform_kernel_impl(
       aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * valid_items, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
     cooperative_groups::memcpy_async(
-      group, dst, src, ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<size_t>(bytes_to_copy)});
+      thread_block{}, dst, src, ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<size_t>(bytes_to_copy)});
 
     const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
@@ -244,7 +274,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
     const int bytes_to_copy = int{sizeof(T)} * valid_items;
     smem_offset += bytes_to_copy;
-    cooperative_groups::memcpy_async(group, dst, src, bytes_to_copy);
+    cooperative_groups::memcpy_async(thread_block{}, dst, src, bytes_to_copy);
 
     return dst;
   };
@@ -253,7 +283,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   const bool inner_blocks               = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst(aligned_ptrs) : copy_and_return_smem_dst_fallback(aligned_ptrs))...};
-  cooperative_groups::wait(group);
+  cooperative_groups::wait(thread_block{});
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
@@ -321,7 +351,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_threads = BulkCopyPolicy::block_threads;
   const int tile_stride       = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size         = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
+  const int tile_size         = (::cuda::std::min) (num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -380,7 +410,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
       const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
-      cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
+      cooperative_groups::memcpy_async(thread_block{}, dst, src, bytes_to_copy);
 
       // add bulk_copy_alignment to make space for the next tile's head padding
       smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
@@ -389,7 +419,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // Order of evaluation is left-to-right
     (..., bulk_copy_tile_fallback(aligned_ptrs));
 
-    cooperative_groups::wait(cooperative_groups::this_thread_block());
+    cooperative_groups::wait(thread_block{});
   }
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
