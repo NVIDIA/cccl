@@ -189,7 +189,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   } while (true);
 }
 
-#    else // ^^^ _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870 ^^^ / vvv !_CCCL_HAS_INT128() || __cccl_ptx_isa < 870 vvv
+#  else // ^^^ _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870 ^^^ / vvv !_CCCL_HAS_INT128() || __cccl_ptx_isa < 870 vvv
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
 __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
