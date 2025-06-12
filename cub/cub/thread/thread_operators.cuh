@@ -127,6 +127,21 @@ struct ArgMin
 
 namespace detail
 {
+template <typename KeyLessThen>
+struct arg_min_custom_key_compare : KeyLessThen
+{
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
+  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
+  {
+    if ((b.value < a.value) || ((a.value == b.value) && static_cast<const KeyLessThen&>(*this)(b.key, a.key)))
+    {
+      return b;
+    }
+
+    return a;
+  }
+};
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
