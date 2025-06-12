@@ -33,6 +33,7 @@
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -49,17 +50,17 @@ struct _FUNCTION_MUST_RETURN_A_SENDER;
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
-template <__disposition_t, class _Void = void>
+template <__disposition, class _Void = void>
 extern _CUDA_VSTD::__undefined<_Void> __let_tag;
 template <class _Void>
-extern __fn_t<let_value_t>* __let_tag<__value, _Void>;
+extern __fn_t<let_value_t>* __let_tag<__disposition::__value, _Void>;
 template <class _Void>
-extern __fn_t<let_error_t>* __let_tag<__error, _Void>;
+extern __fn_t<let_error_t>* __let_tag<__disposition::__error, _Void>;
 template <class _Void>
-extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
+extern __fn_t<let_stopped_t>* __let_tag<__disposition::__stopped, _Void>;
 } // namespace __detail
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PREFERRED_NAME(let_error_t)
   _CCCL_PREFERRED_NAME(let_stopped_t) __let_t
 {
@@ -285,7 +286,7 @@ public:
   _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>;
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Sndr, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
 {
@@ -321,11 +322,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      if constexpr (_Disposition == __disposition_t::__value)
+      if constexpr (_Disposition == __disposition::__value)
       {
         return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn>{});
       }
-      else if constexpr (_Disposition == __disposition_t::__error)
+      else if constexpr (_Disposition == __disposition::__error)
       {
         return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn>{});
       }
@@ -365,7 +366,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   _Sndr __sndr_;
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
 {
@@ -386,7 +387,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
   }
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Sndr, class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
@@ -400,7 +401,7 @@ _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr,
   return transform_sender(__dom_t{}, __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
 }
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>
 {

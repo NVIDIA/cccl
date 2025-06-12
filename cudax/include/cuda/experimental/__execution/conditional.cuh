@@ -30,6 +30,7 @@
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>

@@ -29,8 +29,10 @@
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/lazy.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>

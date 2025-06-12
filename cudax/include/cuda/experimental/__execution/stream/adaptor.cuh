@@ -33,9 +33,10 @@
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
+#include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
@@ -339,7 +340,14 @@ struct __sndr_t
 template <class _Sndr>
 _CCCL_API constexpr auto __adapt(_Sndr __sndr, stream_ref __stream) -> decltype(auto)
 {
-  return __sndr_t<_Sndr>{{__stream, static_cast<_Sndr&&>(__sndr)}};
+  if constexpr (__is_specialization_of_v<_Sndr, __sndr_t>)
+  {
+    return _Sndr(static_cast<_Sndr&&>(__sndr));
+  }
+  else
+  {
+    return __sndr_t<_Sndr>{{__stream, static_cast<_Sndr&&>(__sndr)}};
+  }
 }
 
 template <class _Sndr>
