@@ -39,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
+_CCCL_API constexpr int ilog2(_Tp __t) noexcept
 {
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
@@ -50,13 +50,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int ceil_ilog2(_Tp __t) noexcept
+_CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
 {
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
   return ::cuda::ilog2(__t) + !_CUDA_VSTD::has_single_bit(static_cast<_Up>(__t));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
 {
   return {10,
           100,
@@ -70,7 +70,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ceil_ilog2(_Tp __t) noexcept
           _CUDA_VSTD::numeric_limits<uint32_t>::max()};
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint64_t, 20> __power_of_10_64bit() noexcept
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::array<uint64_t, 20> __power_of_10_64bit() noexcept
 {
   return {
     10,
@@ -97,7 +97,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ceil_ilog2(_Tp __t) noexcept
 
 #if _CCCL_HAS_INT128()
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<__uint128_t, 39> __power_of_10_128bit() noexcept
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::array<__uint128_t, 39> __power_of_10_128bit() noexcept
 {
   return {
     10,
@@ -144,7 +144,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ceil_ilog2(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
+_CCCL_API constexpr int ilog10(_Tp __t) noexcept
 {
   _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");
   constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)

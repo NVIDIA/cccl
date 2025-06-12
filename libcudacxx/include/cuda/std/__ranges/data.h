@@ -78,7 +78,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_data<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(__t.data()))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(__t.data()))
   {
     return __t.data();
   }
@@ -86,7 +86,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__ranges_begin_invocable<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t))))
   {
     return _CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t));
@@ -106,7 +106,7 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
@@ -115,7 +115,7 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t))))
       -> decltype(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))
   {

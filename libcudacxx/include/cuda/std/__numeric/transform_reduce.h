@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b, _UnaryOp __u)
 {
   for (; __first != __last; ++__first)
@@ -42,7 +42,7 @@ transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _Bin
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOp1, class _BinaryOp2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp transform_reduce(
+[[nodiscard]] _CCCL_API constexpr _Tp transform_reduce(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -58,7 +58,7 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
 {
   return _CUDA_VSTD::transform_reduce(

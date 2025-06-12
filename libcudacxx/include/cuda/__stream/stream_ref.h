@@ -53,7 +53,7 @@ public:
   //!
   //! @note: It is the callers responsibility to ensure the `stream_ref` does not
   //! outlive the stream identified by the `cudaStream_t` handle.
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr stream_ref(value_type __stream_) noexcept
+  _CCCL_API constexpr stream_ref(value_type __stream_) noexcept
       : __stream{__stream_}
   {}
 
@@ -71,8 +71,7 @@ public:
   //! @param lhs The first `stream_ref` to compare
   //! @param rhs The second `stream_ref` to compare
   //! @return true if equal, false if unequal
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
   }
@@ -85,14 +84,13 @@ public:
   //! @param lhs The first `stream_ref` to compare
   //! @param rhs The second `stream_ref` to compare
   //! @return true if unequal, false if equal
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
   }
 
   //! Returns the wrapped `cudaStream_t` handle.
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr value_type get() const noexcept
   {
     return __stream;
   }

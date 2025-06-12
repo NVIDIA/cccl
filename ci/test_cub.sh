@@ -9,7 +9,7 @@ LID2=false
 LIMITED=false
 COMPUTE_SANITIZER=false
 
-ci_dir=$(dirname "$0")
+ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 new_args=$("${ci_dir}/util/extract_switches.sh" \
   -no-lid \

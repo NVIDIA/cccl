@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template <class _Range>
 struct __conversion_tester
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static void __fun(_Range&);
+  _CCCL_API inline static void __fun(_Range&);
   static void __fun(_Range&&) = delete;
 };
 
@@ -67,42 +67,42 @@ public:
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__different_from<_Tp, ref_view> _CCCL_AND convertible_to<_Tp, _Range&> _CCCL_AND
                    __convertible_to_lvalue<_Tp, _Range>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr ref_view(_Tp&& __t)
+  _CCCL_API constexpr ref_view(_Tp&& __t)
       : view_interface<ref_view<_Range>>()
       , __range_(_CUDA_VSTD::addressof(static_cast<_Range&>(_CUDA_VSTD::forward<_Tp>(__t))))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Range& base() const
+  _CCCL_API constexpr _Range& base() const
   {
     return *__range_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Range> begin() const
+  _CCCL_API constexpr iterator_t<_Range> begin() const
   {
     return _CUDA_VRANGES::begin(*__range_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr sentinel_t<_Range> end() const
+  _CCCL_API constexpr sentinel_t<_Range> end() const
   {
     return _CUDA_VRANGES::end(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, const _Range2&>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  _CCCL_API constexpr bool empty() const
   {
     return _CUDA_VRANGES::empty(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(sized_range<_Range2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
+  _CCCL_API constexpr auto size() const
   {
     return _CUDA_VRANGES::size(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(contiguous_range<_Range2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data() const
+  _CCCL_API constexpr auto data() const
   {
     return _CUDA_VRANGES::data(*__range_);
   }
