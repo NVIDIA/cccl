@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -217,7 +218,7 @@ class __device_accessor : public _Accessor
     noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
 
   [[nodiscard]] _CCCL_API static constexpr bool
-  __is_device_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+  __is_device_accessible_pointer_from_host([[maybe_unused]] __data_handle_type __p) noexcept
   {
 #if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
@@ -234,15 +235,25 @@ class __device_accessor : public _Accessor
     }
   }
 
-  _CCCL_API static constexpr void __check_device_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+#if _CCCL_DEVICE_COMPILATION()
+
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static constexpr bool
+  __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
   {
-    _CCCL_ASSERT(__is_device_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
+    return _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::constant, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::local, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::grid_constant, __p)
+        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::cluster_shared, __p);
   }
 
-  template <typename _Sp = bool> // lazy evaluation
-  _CCCL_API static constexpr void __prevent_host_instantiation() noexcept
+#endif // _CCCL_DEVICE_COMPILATION()
+
+  _CCCL_API static constexpr void __check_device_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
-    static_assert(_CUDA_VSTD::__always_false_v<_Sp>, "cuda::__device_accessor cannot be used in HOST code");
+    NV_IF_TARGET(NV_IS_HOST,
+                 (_CCCL_ASSERT(__is_device_accessible_pointer_from_host(__p), "The pointer is not device accessible");))
   }
 
 public:
@@ -299,9 +310,10 @@ public:
 
   _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept(__is_access_noexcept)
   {
-#if _CCCL_HOST_COMPILATION()
-    __prevent_host_instantiation();
-#endif // _CCCL_HOST_COMPILATION()
+    NV_IF_ELSE_TARGET(
+      NV_IS_DEVICE,
+      (_CCCL_ASSERT(__is_device_accessible_pointer_from_device(__p), "The pointer is not device accessible");),
+      (_CCCL_ASSERT(false, "cuda::device_accessor cannot be used in HOST code");))
     return _Accessor::access(__p, __i);
   }
 
@@ -313,7 +325,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr bool __detectably_invalid(data_handle_type __p, size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_device_accessible_pointer(__p);), (return false;))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_device_accessible_pointer_from_host(__p);), (return false;))
   }
 };
 

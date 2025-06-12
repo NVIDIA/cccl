@@ -4,11 +4,11 @@
 
 import re
 from functools import cached_property
+from io import StringIO
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
 from typing import BinaryIO, Literal, Sequence
 
-import jinja2
 import numba
 from llvmlite import ir
 from numba import cuda, types
@@ -54,53 +54,48 @@ class TypeWrapper:
 
         if numba_type in NUMBA_TYPES_TO_CPP:
             self.code = ""
-        else:
-            context = cuda.descriptor.cuda_target.target_context
-            size = context.get_value_type(numba_type).get_abi_size(context.target_data)
-            alignment = context.get_value_type(numba_type).get_abi_alignment(
-                context.target_data
+            return
+
+        context = cuda.descriptor.cuda_target.target_context
+        value_type = context.get_value_type(numba_type)
+        size = value_type.get_abi_size(context.target_data)
+        alignment = value_type.get_abi_alignment(context.target_data)
+
+        buf = StringIO()
+        w = buf.write
+        if "construct" in methods:
+            construct_name = methods["construct"].__name__
+            w(f'extern "C" __device__ void {construct_name}(void *ptr);\n')
+        if "assign" in methods:
+            assign_name = methods["assign"].__name__
+            w(
+                f'extern "C" __device__ void {assign_name}'
+                "(void *dst, const void *src);\n"
             )
-            parameters = {"size": size, "alignment": alignment}
-            if "construct" in methods:
-                parameters["construct"] = methods["construct"].__name__
-            if "assign" in methods:
-                parameters["assign"] = methods["assign"].__name__
-            environment = jinja2.Environment()
-            template = environment.from_string("""
-        {% if construct %}
-        extern "C" __device__ void {{ construct }}(void *ptr);
-        {% endif %}
-        {% if assign %}
-        extern "C" __device__ void {{ assign }}(void *dst, const void *src);
-        {% endif %}
 
-        struct __align__({{ alignment }}) storage_t
-        {
-            {% if construct %}
-            __device__ storage_t() {
-                {{ construct }}(data);
-            }
-            {% endif %}
+        w(f"struct __align__({alignment}) storage_t\n")
+        w("{\n")
+        if "construct" in methods:
+            w("    __device__ storage_t() {\n")
+            w(f"        {construct_name}(data);\n")
+            w("    }\n")
+        if "assign" in methods:
+            w("    __device__ storage_t& operator=(const storage_t &rhs) {\n")
+            w(f"        {assign_name}(data, rhs.data);\n")
+            w("        return *this;\n")
+            w("    }\n")
+        w(f"    char data[{size}];\n")
+        w("};\n")
 
-            {% if assign %}
-            __device__ storage_t& operator=(const storage_t &rhs) {
-                {{ assign }}(data, rhs.data);
-                return *this;
-            }
-            {% endif %}
+        self.code = buf.getvalue()
 
-            char data[{{ size }}];
-        };
-        """)
-            self.code = template.render(**parameters)
-
-            for method in methods:
-                lto_fn, _ = cuda.compile(
-                    methods[method],
-                    sig=method_to_signature(numba_type, method),
-                    output="ltoir",
-                )
-                self.lto_irs.append(lto_fn)
+        for method in methods:
+            lto_fn, _ = cuda.compile(
+                methods[method],
+                sig=method_to_signature(numba_type, method),
+                output="ltoir",
+            )
+            self.lto_irs.append(lto_fn)
 
 
 def numba_type_to_wrapper(
@@ -295,25 +290,24 @@ class StatefulOperator:
             param_decls.append(f"const {arg_type}& {arg_name}")
             param_refs.append("&" + arg_name if arg_type == "storage_t" else arg_name)
 
-        environment = jinja2.Environment()
-        template = environment.from_string("""
-            auto {{ name }} = [{{ name }}_state]({{ param_decls }}) {
-              {% if 'storage_t' == ret_cpp_type %}
-              {{ ret_cpp_type }} result;
-                {{ mangled_name }}({{ name }}_state, &result, {{ param_refs }});
-                return result;
-              {% else %}
-                return {{ mangled_name }}({{ name }}_state, {{ param_refs }});
-              {% endif %}
-            };
-        """)
-        return template.render(
-            name=name,
-            ret_cpp_type=self.ret_cpp_type,
-            param_decls=", ".join(param_decls),
-            param_refs=", ".join(param_refs),
-            mangled_name=self.mangled_name(),
-        )
+        param_decls_csv = ", ".join(param_decls)
+        param_refs_csv = ", ".join(param_refs)
+
+        buf = StringIO()
+        w = buf.write
+        state_name = f"{name}_state"
+        w(f"auto {name} = [{state_name}]({param_decls_csv}) {{\n")
+        if self.ret_cpp_type == "storage_t":
+            w(f"    {self.ret_cpp_type} result;\n")
+            w(f"    {self.mangled_name()}(\n")
+            w(f"        {state_name}, &result, {param_refs_csv});\n")
+            w("    return result;\n")
+        else:
+            w(f"    return {self.mangled_name()}(\n")
+            w(f"        {state_name}, {param_refs_csv});\n")
+        w("};\n")
+        src = buf.getvalue()
+        return src
 
     def is_provided_by_user(self):
         return True
@@ -338,7 +332,9 @@ class StatelessOperator:
             ret_decl = self.ret_cpp_type
         for arg in self.arg_cpp_types:
             arg_decls.append("const void*" if arg == "storage_t" else arg)
-        return f'extern "C" __device__ {ret_decl} {self.mangled_name()}({", ".join(arg_decls)});'
+        mangled_name = self.mangled_name()
+        arg_decls_csv = ", ".join(arg_decls)
+        return f'extern "C" __device__ {ret_decl} {mangled_name}({arg_decls_csv});'
 
     def wrap_decl(self, name):
         param_decls = []
@@ -348,25 +344,22 @@ class StatelessOperator:
             param_decls.append(f"const {arg_type}& {arg_name}")
             param_refs.append("&" + arg_name if arg_type == "storage_t" else arg_name)
 
-        environment = jinja2.Environment()
-        template = environment.from_string("""
-            auto {{ name }} = []({{ param_decls }}) {
-              {% if 'storage_t' == ret_cpp_type %}
-              {{ ret_cpp_type }} result;
-                {{ mangled_name }}(&result, {{ param_refs }});
-                return result;
-              {% else %}
-                return {{ mangled_name }}({{ param_refs }});
-              {% endif %}
-            };
-        """)
-        return template.render(
-            name=name,
-            ret_cpp_type=self.ret_cpp_type,
-            param_decls=", ".join(param_decls),
-            param_refs=", ".join(param_refs),
-            mangled_name=self.mangled_name(),
-        )
+        buf = StringIO()
+        w = buf.write
+        param_decls_csv = ", ".join(param_decls)
+        param_refs_csv = ", ".join(param_refs)
+        mangled_name = self.mangled_name()
+
+        w(f"auto {name} = []({param_decls_csv}) {{\n")
+        if self.ret_cpp_type == "storage_t":
+            w("    storage_t result;\n")
+            w(f"    {mangled_name}(&result, {param_refs_csv});\n")
+            w("    return result;\n")
+        else:
+            w(f"    return {mangled_name}({param_refs_csv});\n")
+        w("};\n")
+        src = buf.getvalue()
+        return src
 
     def is_provided_by_user(self):
         return False
@@ -612,31 +605,26 @@ class Algorithm:
 
     @cached_property
     def _temp_storage_bytes_and_alignment(self):
-        environment = jinja2.Environment()
-        template = environment.from_string("""
-            #include <cuda/std/cstdint>
+        algorithm_name = self.struct_name
+        includes = self.includes or []
+        type_definitions = self.type_definitions or []
 
-            {% for include in includes %}
-            #include <{{ include }}>
-            {% endfor %}
+        buf = StringIO()
+        w = buf.write
 
-            {% if type_definitions %}
-            {% for type_definition in type_definitions %}
-            {{ type_definition.code }}
-            {% endfor %}
-            {% endif %}
+        w("#include <cuda/std/cstdint>\n")
+        for include in includes:
+            w(f"#include <{include}>\n")
+        for type_definition in type_definitions:
+            w(f"{type_definition.code}\n")
 
-            using algorithm_t = cub::{{ algorithm_name }};
-            using temp_storage_t = typename algorithm_t::TempStorage;
+        w(f"using algorithm_t = cub::{algorithm_name};\n")
+        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned temp_storage_"
+        w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
+        w(f"{prefix}alignment = alignof(temp_storage_t);\n")
 
-            __device__ constexpr unsigned temp_storage_bytes = sizeof(temp_storage_t);
-            __device__ constexpr unsigned temp_storage_alignment = alignof(temp_storage_t);
-            """)
-        src = template.render(
-            algorithm_name=self.struct_name,
-            includes=self.includes,
-            type_definitions=self.type_definitions,
-        )
+        src = buf.getvalue()
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
@@ -671,33 +659,30 @@ class Algorithm:
                         udf_declarations[param.name] = param.forward_decl()
                         lto_irs.append(param.ltoir)
 
-        environment = jinja2.Environment()
-        template = environment.from_string("""
-            #include <cuda/std/cstdint>
+        algorithm_name = self.struct_name
+        includes = self.includes or []
+        type_definitions = self.type_definitions or []
 
-            {% for include in includes %}
-            #include <{{ include }}>
-            {% endfor %}
+        buf = StringIO()
+        w = buf.write
 
-            {% if type_definitions %}
-            {% for type_definition in type_definitions %}
-            {{ type_definition.code }}
-            {% endfor %}
-            {% endif %}
+        w("#include <cuda/std/cstdint>\n")
+        for include in includes:
+            w(f"#include <{include}>\n")
+        for type_definition in type_definitions:
+            w(f"{type_definition.code}\n")
 
-            {% for name, decl in udf_declarations.items() %}
-            {{ decl }}
-            {% endfor %}
+        w("\n")
+        for decl in udf_declarations.values():
+            w(f"{decl}\n")
+        w("\n")
 
-            using algorithm_t = cub::{{ algorithm_name }};
-            using temp_storage_t = typename algorithm_t::TempStorage;
-            """)
-        src = template.render(
-            algorithm_name=self.struct_name,
-            includes=self.includes,
-            udf_declarations=udf_declarations,
-            type_definitions=self.type_definitions,
-        )
+        w(f"using algorithm_t = cub::{algorithm_name};\n")
+        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+
+        src = buf.getvalue()
+
+        method_name = self.method_name
 
         for method in self.parameters:
             param_decls = []
@@ -734,58 +719,55 @@ class Algorithm:
                 provide_alloc_version = threads == 32
 
                 # pessimistic temporary storage allocation for 1024 threads
-                storage = f"__shared__ temp_storage_t temp_storages[1024 / {threads}];"
-                storage += f"temp_storage_t &temp_storage = temp_storages[threadIdx.x / {threads}];"
+                storage = (
+                    "__shared__ temp_storage_t temp_storages"
+                    f"[1024 / {threads}];\n"
+                    "    temp_storage_t &temp_storage = temp_storages"
+                    f"[threadIdx.x / {threads}];\n"
+                )
                 sync = "__syncwarp();"
             elif self.struct_name.startswith("Block"):
                 provide_alloc_version = True
                 storage = "__shared__ temp_storage_t temp_storage;"
                 sync = "__syncthreads();"
 
-            template = environment.from_string("""
-                {% if provide_alloc_version %}
-                extern "C" __device__ void {{ mangled_name }}_alloc({{ param_decls }})
-                {
-                  {{ storage }}
+            buf = StringIO()
+            w = buf.write
 
-                  {% for decl in func_decls %}
-                  {{ decl }}
-                  {% endfor %}
+            mangled_name = self.mangled_name(method)
+            param_decls_csv = ", ".join(param_decls)
+            param_args_csv = ", ".join(param_args)
 
-                  {% if out_param %}
-                  {{ out_param }} =
-                  {% endif %}
+            if provide_alloc_version:
+                w(f'extern "C" __device__ void {mangled_name}_alloc(')
+                w(f"{param_decls_csv}) {{\n")
+                w(f"    {storage}\n")
+                for decl in func_decls:
+                    w(f"    {decl}\n")
+                if out_param:
+                    w(f"    {out_param} = ")
+                else:
+                    w("    ")
+                w("algorithm_t(temp_storage).")
+                w(f"{method_name}({param_args_csv});\n")
+                w(f"    {sync}\n")
+                w("}\n")
 
-                   algorithm_t(temp_storage).{{ method_name }}({{ param_args }});
+            w(f'extern "C" __device__ void {mangled_name}(')
+            w("temp_storage_t *temp_storage, ")
+            w(f"{param_decls_csv}) {{\n")
+            for decl in func_decls:
+                w(f"    {decl}\n")
+            if out_param:
+                w(f"    {out_param} = ")
+            else:
+                w("    ")
+            w("algorithm_t(*temp_storage).")
+            w(f"{method_name}({param_args_csv});\n")
+            w("}\n\n")
 
-                  {{ sync }}
-                }
-                {% endif %}
-
-                extern "C" __device__ void {{ mangled_name }}( temp_storage_t *temp_storage, {{ param_decls }})
-                {
-                  {% for decl in func_decls %}
-                  {{ decl }}
-                  {% endfor %}
-
-                  {% if out_param %}
-                  {{ out_param }} =
-                  {% endif %}
-
-                   algorithm_t(*temp_storage).{{ method_name }}({{ param_args }});
-                }
-                """)
-            src += template.render(
-                param_decls=", ".join(param_decls),
-                param_args=", ".join(param_args),
-                func_decls=func_decls,
-                out_param=out_param,
-                method_name=self.method_name,
-                mangled_name=self.mangled_name(method),
-                sync=sync,
-                storage=storage,
-                provide_alloc_version=provide_alloc_version,
-            )
+            chunk = buf.getvalue()
+            src += chunk
 
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
