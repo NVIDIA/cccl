@@ -34,9 +34,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#  if _CCCL_HAS_INT128()
-
-#    if __cccl_ptx_isa >= 870
+#  if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
 
 template <int _Index>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
@@ -191,7 +189,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   } while (true);
 }
 
-#    else // ^^^ __cccl_ptx_isa >= 870 ^^^ / vvv __cccl_ptx_isa < 870 vvv
+#    else // ^^^ _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870 ^^^ / vvv !_CCCL_HAS_INT128() || __cccl_ptx_isa < 870 vvv
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
 __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
@@ -199,8 +197,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   // We are compiling for SM100 but PTX 8.7 is not supported, so fall back to just calling the function
   _CUDA_VSTD::invoke(_CUDA_VSTD::move(__uf), __block_idx);
 }
-#    endif // __cccl_ptx_isa <= 870
-#  endif // _CCCL_HAS_INT128()
+#  endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
 
 //! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
 //! from the current grid. On success, it invokes the unary function `__uf` before trying again.
