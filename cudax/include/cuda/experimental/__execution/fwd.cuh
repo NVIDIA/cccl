@@ -34,8 +34,8 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t" will always
-                             // produce an error when
+_CCCL_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
+                             // will always produce an error when instantiated.
 
 namespace cuda::experimental
 {
