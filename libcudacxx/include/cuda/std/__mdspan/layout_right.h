@@ -269,9 +269,9 @@ public:
     return true;
   }
 
-  _CCCL_TEMPLATE(class _Extents2 = _Extents)
-  _CCCL_REQUIRES((_Extents2::rank() > 0))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const noexcept
+  _CCCL_TEMPLATE()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto stride(rank_type __r) const noexcept
+    -> _CCCL_TRAILING_REQUIRES(index_type)((_Extents::rank() > 0))
   {
     // While it would be caught by extents itself too, using a too large __r
     // is functionally an out of bounds access on the stored information needed to compute strides
@@ -284,19 +284,19 @@ public:
     return __s;
   }
 
-  template <class _OtherExtents, class _Extents2 = _Extents>
+  template <class _OtherExtents>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
+    -> _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents::rank()))
   {
     return __lhs.extents() == __rhs.extents();
   }
 
 #if _CCCL_STD_VER <= 2017
-  template <class _OtherExtents, class _Extents2 = _Extents>
+  template <class _OtherExtents>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
+    -> _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents::rank()))
   {
     return __lhs.extents() != __rhs.extents();
   }

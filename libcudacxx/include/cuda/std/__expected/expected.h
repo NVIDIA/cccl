@@ -472,11 +472,11 @@ public:
     }
   }
 
-  template <class _Tp2 = _Tp, class _Err2 = _Err>
+  _CCCL_TEMPLATE()
   friend _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2) && _CCCL_TRAIT(is_nothrow_swappable, _Tp2)
-    && _CCCL_TRAIT(is_nothrow_move_constructible, _Err2) && _CCCL_TRAIT(is_nothrow_swappable, _Err2))
-    _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<_Tp2, _Err2>)
+    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_swappable, _Tp)
+    && _CCCL_TRAIT(is_nothrow_move_constructible, _Err) && _CCCL_TRAIT(is_nothrow_swappable, _Err))
+    -> _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<_Tp, _Err>)
   {
     return __x.swap(__y); // some compiler warn about non void function without return
   }
@@ -1422,10 +1422,10 @@ public:
     }
   }
 
-  template <class _Err2 = _Err>
+  _CCCL_TEMPLATE()
   friend _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Err2) && _CCCL_TRAIT(is_nothrow_swappable, _Err2))
-    _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<void, _Err2>)
+    _CCCL_TRAIT(is_nothrow_move_constructible, _Err) && _CCCL_TRAIT(is_nothrow_swappable, _Err))
+    -> _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<void, _Err>)
   {
     return __x.swap(__y); // some compiler warn about non void function without return
   }

@@ -52,18 +52,24 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
+using __cccl_void_t = void;
+
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
-#  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
+#  define _CCCL_TEMPLATE(...)    _CCCL_PP_EVAL(_CCCL_PP_CAT, _CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
+#  define _CCCL_TEMPLATE_I0(...) template <__VA_ARGS__>
+#  define _CCCL_TEMPLATE_I1(...)
+#  define _CCCL_REQUIRES(...)               requires(__VA_ARGS__)
 #  define _CCCL_AND                         &&
-#  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires __VA_ARGS__
-#  define _CCCL_TRAILING_REQUIRES(...)      ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
+#  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires(__VA_ARGS__)
+#  define _CCCL_TRAILING_REQUIRES(...)      __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND                         &&__cccl_true_, int > = 0, __cccl_enable_if_t <
-#  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__ >
-#  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
+#  define _CCCL_TEMPLATE(...)    _CCCL_PP_EVAL(_CCCL_PP_CAT, _CCCL_TEMPLATE_I, _CCCL_PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
+#  define _CCCL_TEMPLATE_I0(...) template <__VA_ARGS__, class __cccl_void_t = void,
+#  define _CCCL_TEMPLATE_I1(...) template <class __cccl_void_t = void>
+#  define _CCCL_REQUIRES(...)    __cccl_enable_if_t<((__VA_ARGS__) && __cccl_is_true<__cccl_void_t>()), int> = 0 >
+#  define _CCCL_AND                         )&&__cccl_is_true<__cccl_void_t>()), int > = 0, __cccl_enable_if_t <((
+#  define _CCCL_TRAILING_REQUIRES_AUX_(...) ((__VA_ARGS__) && __cccl_is_true<__cccl_void_t>()) >
+#  define _CCCL_TRAILING_REQUIRES(...)      __cccl_requires_t < __VA_ARGS__, _CCCL_TRAILING_REQUIRES_AUX_
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 // The following concepts emulation macros need variable template support
