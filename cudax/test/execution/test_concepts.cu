@@ -82,5 +82,5 @@ C2H_TEST("tests for the sender concepts", "[concepts]")
   static_assert(async::sender<read_env_t>);
   static_assert(!async::sender_in<read_env_t>);
   static_assert(!async::sender_in<read_env_t, async::env<>>);
-  static_assert(async::sender_in<read_env_t, async::prop<async::get_scheduler_t, inline_scheduler>>);
+  static_assert(async::sender_in<read_env_t, async::prop<async::get_scheduler_t, inline_scheduler<>>>);
 }

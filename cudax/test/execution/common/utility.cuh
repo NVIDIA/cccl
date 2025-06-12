@@ -85,6 +85,33 @@ struct potentially_throwing
   }
 };
 
+struct non_default_constructible
+{
+  _CCCL_HOST_DEVICE constexpr explicit non_default_constructible(int value) noexcept
+      : value_(value)
+  {}
+
+  _CCCL_HOST_DEVICE friend constexpr bool
+  operator==(const non_default_constructible& a, const non_default_constructible& b) noexcept
+  {
+    return a.value_ == b.value_;
+  }
+
+  _CCCL_HOST_DEVICE friend constexpr bool
+  operator!=(const non_default_constructible& a, const non_default_constructible& b) noexcept
+  {
+    return a.value_ != b.value_;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const non_default_constructible& self)
+  {
+    os << "non_default_constructible{" << self.value_ << "}";
+    return os;
+  }
+
+  int value_;
+};
+
 struct string
 {
   string() = default;
@@ -204,14 +231,22 @@ template <class... Values, class Sndr>
 _CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
   using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, _CUDA_VSTD::__make_type_set>;
-  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>)
+  {
+    _CUDA_VSTD::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+  }
 }
 
 template <class... Errors, class Sndr>
 _CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
   using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, _CUDA_VSTD::__make_type_set>;
-  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>)
+  {
+    _CUDA_VSTD::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+  }
 }
 
 template <bool SendsStopped, class Sndr>
