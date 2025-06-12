@@ -255,6 +255,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
@@ -1147,7 +1148,6 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> asinh(const complex<_Tp>& __x)
 {
-  const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::isinf(__x.real()))
   {
     if (_CUDA_VSTD::isnan(__x.imag()))
@@ -1156,7 +1156,7 @@ template <class _Tp>
     }
     if (_CUDA_VSTD::isinf(__x.imag()))
     {
-      return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
+      return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() * _Tp(0.25), __x.imag()));
     }
     return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
   }
@@ -1175,7 +1175,7 @@ template <class _Tp>
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
     return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__x.imag(), __x.real()),
-                        _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
+                        _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() / _Tp(2), __x.imag()));
   }
   complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) + _Tp(1)));
   return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__z.real(), __x.real()),
@@ -1187,7 +1187,6 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> acosh(const complex<_Tp>& __x)
 {
-  const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::isinf(__x.real()))
   {
     if (_CUDA_VSTD::isnan(__x.imag()))
@@ -1198,16 +1197,18 @@ template <class _Tp>
     {
       if (__x.real() > _Tp(0))
       {
-        return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
+        return complex<_Tp>(__x.real(),
+                            _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() * _Tp(0.25), __x.imag()));
       }
       else
       {
-        return complex<_Tp>(-__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi * _Tp(0.75), __x.imag()));
+        return complex<_Tp>(-__x.real(),
+                            _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() * _Tp(0.75), __x.imag()));
       }
     }
     if (__x.real() < _Tp(0))
     {
-      return complex<_Tp>(-__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi, __x.imag()));
+      return complex<_Tp>(-__x.real(), _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi(), __x.imag()));
     }
     return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
   }
@@ -1221,7 +1222,8 @@ template <class _Tp>
   }
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
-    return complex<_Tp>(_CUDA_VSTD::abs(__x.imag()), _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::abs(__x.imag()),
+                        _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() / _Tp(2), __x.imag()));
   }
   complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) - _Tp(1)));
   return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__z.real(), _Tp(0)),
@@ -1233,11 +1235,10 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> atanh(const complex<_Tp>& __x)
 {
-  const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
     return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.real()),
-                        _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
+                        _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() / _Tp(2), __x.imag()));
   }
   if (_CUDA_VSTD::isnan(__x.imag()))
   {
@@ -1254,7 +1255,7 @@ template <class _Tp>
   if (_CUDA_VSTD::isinf(__x.real()))
   {
     return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.real()),
-                        _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
+                        _CUDA_VSTD::__constexpr_copysign(__numbers<_Tp>::__pi() / _Tp(2), __x.imag()));
   }
   if (_CUDA_VSTD::abs(__x.real()) == _Tp(1) && __x.imag() == _Tp(0))
   {
@@ -1355,7 +1356,6 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> acos(const complex<_Tp>& __x)
 {
-  const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::isinf(__x.real()))
   {
     if (_CUDA_VSTD::isnan(__x.imag()))
@@ -1366,13 +1366,13 @@ template <class _Tp>
     {
       if (__x.real() < _Tp(0))
       {
-        return complex<_Tp>(_Tp(0.75) * __pi, -__x.imag());
+        return complex<_Tp>(_Tp(0.75) * __numbers<_Tp>::__pi(), -__x.imag());
       }
-      return complex<_Tp>(_Tp(0.25) * __pi, -__x.imag());
+      return complex<_Tp>(_Tp(0.25) * __numbers<_Tp>::__pi(), -__x.imag());
     }
     if (__x.real() < _Tp(0))
     {
-      return complex<_Tp>(__pi, _CUDA_VSTD::signbit(__x.imag()) ? -__x.real() : __x.real());
+      return complex<_Tp>(__numbers<_Tp>::__pi(), _CUDA_VSTD::signbit(__x.imag()) ? -__x.real() : __x.real());
     }
     return complex<_Tp>(_Tp(0), _CUDA_VSTD::signbit(__x.imag()) ? __x.real() : -__x.real());
   }
@@ -1386,11 +1386,11 @@ template <class _Tp>
   }
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
-    return complex<_Tp>(__pi / _Tp(2), -__x.imag());
+    return complex<_Tp>(__numbers<_Tp>::__pi() / _Tp(2), -__x.imag());
   }
   if (__x.real() == _Tp(0) && (__x.imag() == _Tp(0) || _CUDA_VSTD::isnan(__x.imag())))
   {
-    return complex<_Tp>(__pi / _Tp(2), -__x.imag());
+    return complex<_Tp>(__numbers<_Tp>::__pi() / _Tp(2), -__x.imag());
   }
   complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) - _Tp(1)));
   if (_CUDA_VSTD::signbit(__x.imag()))

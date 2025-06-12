@@ -56,6 +56,7 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -314,7 +315,6 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   int B_is_usable;
   complex<double> w;
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
-  const double m_ln2         = 6.9314718055994531e-1; /*  0x162e42fefa39ef.0p-53 */
   x                          = z.real();
   y                          = z.imag();
   ax                         = fabs(x);
@@ -350,11 +350,11 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
     /* clog...() will raise inexact unless x or y is infinite. */
     if (signbit(x) == 0)
     {
-      w = clog_for_large_values(z) + m_ln2;
+      w = clog_for_large_values(z) + ::cuda::std::numbers::ln2_v<double>;
     }
     else
     {
-      w = clog_for_large_values(-z) + m_ln2;
+      w = clog_for_large_values(-z) + ::cuda::std::numbers::ln2_v<double>;
     }
     return (complex<double>(copysign(w.real(), x), copysign(w.imag(), y)));
   }
@@ -417,7 +417,6 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   complex<double> w;
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
   const volatile double pio2_lo = 6.1232339957367659e-17; /*  0x11a62633145c07.0p-106 */
-  const double m_ln2            = 6.9314718055994531e-1; /*  0x162e42fefa39ef.0p-53 */
 
   x  = z.real();
   y  = z.imag();
@@ -457,7 +456,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
     /* clog...() will raise inexact unless x or y is infinite. */
     w  = clog_for_large_values(z);
     rx = fabs(w.imag());
-    ry = w.real() + m_ln2;
+    ry = w.real() + ::cuda::std::numbers::ln2_v<double>;
     if (sy == 0)
     {
       ry = -ry;
@@ -732,10 +731,9 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
     return (z);
   }
 
-  const double m_ln2 = 6.9314718055994531e-1; /*  0x162e42fefa39ef.0p-53 */
   if (ax == 1 && ay < DBL_EPSILON)
   {
-    rx = (m_ln2 - log(ay)) / 2;
+    rx = (::cuda::std::numbers::ln2_v<double> - log(ay)) / 2;
   }
   else
   {
