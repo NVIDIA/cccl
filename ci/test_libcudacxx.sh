@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$(dirname "$0")/build_common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
 print_environment_details
 
