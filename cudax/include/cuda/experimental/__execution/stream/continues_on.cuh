@@ -26,6 +26,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>

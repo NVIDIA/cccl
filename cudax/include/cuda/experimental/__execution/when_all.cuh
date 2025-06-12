@@ -34,6 +34,7 @@
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>

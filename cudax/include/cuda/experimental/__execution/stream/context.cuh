@@ -25,6 +25,7 @@
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
