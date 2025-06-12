@@ -13,6 +13,7 @@
 #include <unordered_set>
 
 #include "cccl/c/types.h"
+#include <jit_templates/templates/operation.h>
 #include <kernels/operators.h>
 #include <util/errors.h>
 #include <util/types.h>
@@ -77,48 +78,27 @@ struct op_wrapper {{
 std::string make_kernel_binary_operator_full_source(
   std::string_view lhs_t, std::string_view rhs_t, cccl_op_t operation, std::string_view return_type)
 {
-  if (primitive_types.contains(lhs_t) && primitive_types.contains(rhs_t) && primitive_types.contains(return_type))
+  if (lhs_t == rhs_t && (return_type == lhs_t || return_type == "bool"))
   {
-    switch (operation.type)
+    auto desc = user_operation_traits::well_known_operation_description(operation.type);
+    if (desc && desc->symbol)
     {
-      case CCCL_PLUS:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::plus<>;\n";
-      case CCCL_MINUS:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::minus<>;\n";
-      case CCCL_MULTIPLIES:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::multiplies<>;\n";
-      case CCCL_DIVIDES:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::divides<>;\n";
-      case CCCL_MODULUS:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::modulus<>;\n";
-      case CCCL_EQUAL_TO:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::equal_to<>;\n";
-      case CCCL_NOT_EQUAL_TO:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::not_equal_to<>;\n";
-      case CCCL_GREATER:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::greater<>;\n";
-      case CCCL_LESS:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::less<>;\n";
-      case CCCL_GREATER_EQUAL:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::greater_equal<>;\n";
-      case CCCL_LESS_EQUAL:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::less_equal<>;\n";
-      case CCCL_LOGICAL_AND:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::logical_and<>;\n";
-      case CCCL_LOGICAL_OR:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::logical_or<>;\n";
-      case CCCL_BIT_AND:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::bit_and<>;\n";
-      case CCCL_BIT_OR:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::bit_or<>;\n";
-      case CCCL_BIT_XOR:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::bit_xor<>;\n";
-      case CCCL_STATEFUL:
-        [[fallthrough]];
-      case CCCL_STATELESS:
-        break;
-      default:
-        throw std::runtime_error("c.parallel: invalid well-known operation specified for a binary cccl_op_t.");
+      if (desc->check != user_operation_traits::binary_predicate_matcher
+          && desc->check != user_operation_traits::binary_matcher)
+      {
+        throw std::runtime_error(
+          std::format("c.parallel: invalid well-known operation '{}' specified for a binary cccl_op_t.",
+                      std::format(desc->name, +"")));
+      }
+
+      std::string ret =
+        std::format("#include <cuda/std/functional>\nusing op_wrapper = {};\n", std::format(desc->name, lhs_t.data()));
+      if (!primitive_types.contains(lhs_t))
+      {
+        std::string_view type_names[] = {return_type, lhs_t, rhs_t};
+        ret += user_operation_traits::binary_builder(cuda::std::span(type_names), *desc->symbol, operation.name);
+      }
+      return ret;
     }
   }
 
@@ -197,28 +177,27 @@ struct op_wrapper
 
 )XXX";
 
-  if (primitive_types.contains(input_t) && primitive_types.contains(output_t))
+  if (output_t == input_t || output_t == "bool")
   {
-    switch (operation.type)
+    auto desc = user_operation_traits::well_known_operation_description(operation.type);
+    if (desc && desc->symbol)
     {
-      case CCCL_LOGICAL_NOT:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::logical_not<>;\n";
-      case CCCL_BIT_NOT:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::bit_not<>;\n";
-      case CCCL_IDENTITY:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::identity<>;\n";
-      case CCCL_NEGATE:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::std::negate<>;\n";
-      case CCCL_MINIMUM:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::minimum<>;\n";
-      case CCCL_MAXIMUM:
-        return "#include <cuda/std/functional>\nusing op_wrapper = ::cuda::maximum<>;\n";
-      case CCCL_STATEFUL:
-        [[fallthrough]];
-      case CCCL_STATELESS:
-        break;
-      default:
-        throw std::runtime_error("c.parallel: invalid well-known operation specified for a unary cccl_op_t.");
+      if (desc->check != user_operation_traits::unary_predicate_matcher
+          && desc->check != user_operation_traits::unary_matcher)
+      {
+        throw std::runtime_error(
+          std::format("c.parallel: invalid well-known operation '{}' specified for a unary cccl_op_t.",
+                      std::format(desc->name, +"")));
+      }
+
+      std::string_view type_names[] = {output_t, input_t};
+      std::string ret               = std::format(
+        "#include <cuda/std/functional>\nusing op_wrapper = {};\n", std::format(desc->name, input_t.data()));
+      if (!primitive_types.contains(input_t))
+      {
+        ret += user_operation_traits::unary_builder(cuda::std::span(type_names), *desc->symbol, operation.name);
+      }
+      return ret;
     }
   }
 
