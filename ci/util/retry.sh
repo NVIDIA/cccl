@@ -12,10 +12,7 @@ fi
 num_tries=$1
 sleep_time=$2
 shift 2
-command=()
-for arg in "$@"; do
-    command+=( "$(printf '%q' "$arg")" )
-done
+command=("${*@Q}")
 
 # Loop until the command succeeds or we reach the maximum number of attempts:
 for ((i=1; i<=num_tries; i++)); do
