@@ -56,19 +56,19 @@ struct __emplace_device
 class device : public device_ref
 {
 public:
-  using attrs = __detail::__device_attrs;
+  using attributes = __detail::__device_attrs;
 
   //! @brief For a given attribute, returns the type of the attribute value.
   //!
   //! @par Example
   //! @code
-  //! using threads_per_block_t = device::attr_result_t<device::attrs::max_threads_per_block>;
+  //! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
   //! static_assert(std::is_same_v<threads_per_block_t, int>);
   //! @endcode
   //!
-  //! @sa device::attrs
+  //! @sa device::attributes
   template <::cudaDeviceAttr _Attr>
-  using attr_result_t = typename __detail::__dev_attr<_Attr>::type;
+  using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
@@ -97,7 +97,7 @@ public:
       __device      = __detail::driver::deviceGet(__id_);
       __primary_ctx = __detail::driver::primaryCtxRetain(__device);
     });
-    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::attr_result_t::primary_context failed to get context");
+    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
     return __primary_ctx;
   }
 
@@ -127,7 +127,7 @@ private:
 
   explicit device(int __id)
       : device_ref(__id)
-      , __traits(__detail::__arch_traits_might_be_unknown(__id, attrs::compute_capability(__id)))
+      , __traits(__detail::__arch_traits_might_be_unknown(__id, attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
