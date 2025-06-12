@@ -630,30 +630,19 @@ THRUST_RUNTIME_FUNCTION size_t get_reduce_n_temporary_storage_size(
   return tmp_size;
 }
 
-template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION T
-reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
+template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp, typename GetValue>
+THRUST_RUNTIME_FUNCTION auto reduce_n_impl(
+  execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op, GetValue get_value)
 {
-  cudaStream_t stream = cuda_cub::stream(policy);
-  cudaError_t status;
+  const cudaStream_t stream = cuda_cub::stream(policy);
 
-  // Determine temporary device storage requirements.
-
+  // We allocate both the temporary storage needed for the algorithm, and a `T` to store the result. The array was
+  // dynamically allocated, so we assume that it's suitably aligned for any type of data.
+  // `malloc`/`cudaMalloc`/`new`/`std::allocator` make this guarantee.
   size_t tmp_size = get_reduce_n_temporary_storage_size(policy, first, num_items, init, binary_op);
-
-  // Allocate temporary storage.
-
-  // We allocate both the temporary storage needed for the algorithm, and a `T`
-  // to store the result.
-  //
-  // The array was dynamically allocated, so we assume that it's suitably
-  // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
-  // make this guarantee.
-
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, tmp_size + sizeof(T));
 
-  // Run reduction.
-
+  cudaError_t status;
   T* ret_ptr    = thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get());
   void* tmp_ptr = static_cast<void*>((tmp.data() + sizeof(T)).get());
   THRUST_INDEX_TYPE_DISPATCH(
@@ -663,30 +652,20 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
     (tmp_ptr, tmp_size, first, ret_ptr, num_items_fixed, binary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduce invocation");
 
-  // Synchronize the stream and get the value.
-
-  status = cuda_cub::synchronize(policy);
-  cuda_cub::throw_on_error(status, "reduce failed to synchronize");
-  return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get()));
+  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "reduce failed to synchronize");
+  return get_value(policy, ret_ptr);
 }
 
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename BinaryOp>
 THRUST_RUNTIME_FUNCTION void reduce_n_into_impl(
   execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt output, T init, BinaryOp binary_op)
 {
-  cudaStream_t stream = cuda_cub::stream(policy);
-  cudaError_t status;
-
-  // Determine temporary device storage requirements.
+  const cudaStream_t stream = cuda_cub::stream(policy);
 
   size_t tmp_size = get_reduce_n_temporary_storage_size(policy, first, num_items, init, binary_op);
-
-  // Allocate temporary storage.
-
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, tmp_size);
 
-  // Run reduction.
-
+  cudaError_t status;
   void* tmp_ptr = thrust::raw_pointer_cast(tmp.data());
   THRUST_INDEX_TYPE_DISPATCH(
     status,
@@ -695,12 +674,9 @@ THRUST_RUNTIME_FUNCTION void reduce_n_into_impl(
     (tmp_ptr, tmp_size, first, output, num_items_fixed, binary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduce invocation");
 
-  // Synchronize the stream and get the value.
-
   status = cuda_cub::synchronize_optional(policy);
   cuda_cub::throw_on_error(status, "reduce failed to synchronize");
 }
-
 } // namespace detail
 
 //-------------------------
@@ -713,7 +689,8 @@ _CCCL_HOST_DEVICE T
 reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
 {
   THRUST_CDP_DISPATCH(
-    (init = thrust::cuda_cub::detail::reduce_n_impl(policy, first, num_items, init, binary_op);),
+    (init = thrust::cuda_cub::detail::reduce_n_impl(
+       policy, first, num_items, init, binary_op, &get_value<Derived, const T*>);),
     (init = thrust::reduce(cvt_to_seq(derived_cast(policy)), first, first + num_items, init, binary_op);));
   return init;
 }
