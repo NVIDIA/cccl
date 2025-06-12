@@ -193,8 +193,15 @@ function configure_preset()
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}"
-    status=$?
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+      # Retry 5 times with 30 seconds between attempts to try to WAR network issues during CPM fetch on CI runners:
+      export RUN_COMMAND_RETRY_PARAMS="5 30"
+    fi
+    status=0
+    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        unset RUN_COMMAND_RETRY_PARAMS
+    fi
     popd > /dev/null
 
     if $CONFIGURE_ONLY; then
@@ -226,8 +233,8 @@ function build_preset() {
     source "./sccache_stats.sh" "start" || :
 
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
-    status=$?
+    status=0
+    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
     popd > /dev/null
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
@@ -277,8 +284,8 @@ function test_preset()
     local ctest_log="${preset_dir}/ctest.log"
 
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET
-    status=$?
+    status=0
+    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
     popd > /dev/null
 
     print_test_time_summary ${ctest_log}
