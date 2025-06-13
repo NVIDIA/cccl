@@ -165,7 +165,7 @@ int main(int, char**)
     auto& v = opt.emplace({1, 2, 3});
     static_assert(cuda::std::is_same_v<cuda::std::inplace_vector<int, 3>&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
-    assert(*opt == cuda::std::inplace_vector<int, 3>({1, 2, 3}));
+    assert((*opt == cuda::std::inplace_vector<int, 3>({1, 2, 3})));
     assert(&v == &*opt);
   }
   {
