@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-barrier:
 
-cuda::barrier
+``cuda::barrier``
 =================
 
 .. toctree::

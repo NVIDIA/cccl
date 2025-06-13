@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 __find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -85,7 +85,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _BidirectionalIterator1, class _BidirectionalIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _BidirectionalIterator1 __find_end(
   _BidirectionalIterator1 __first1,
   _BidirectionalIterator1 __last1,
   _BidirectionalIterator2 __first2,
@@ -139,7 +139,7 @@ template <class _BinaryPredicate, class _BidirectionalIterator1, class _Bidirect
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _RandomAccessIterator1 __find_end(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -194,7 +194,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1 find_end(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -212,7 +212,7 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
 find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return _CUDA_VSTD::find_end(__first1, __last1, __first2, __last2, __equal_to{});

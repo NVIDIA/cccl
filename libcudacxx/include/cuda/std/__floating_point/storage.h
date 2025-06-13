@@ -34,7 +34,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <__fp_format _Fmt>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_storage_type_impl() noexcept
+[[nodiscard]] _CCCL_API constexpr auto __fp_storage_type_impl() noexcept
 {
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3 || _Fmt == __fp_format::__fp8_nv_e5m2
                 || _Fmt == __fp_format::__fp8_nv_e8m0 || _Fmt == __fp_format::__fp6_nv_e2m3
@@ -87,7 +87,7 @@ struct __cccl_nvbf16_manip_helper : __nv_bfloat16
 #endif // _CCCL_HAS_NVBF16()
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(__is_std_fp, _Tp) || _CCCL_TRAIT(__is_ext_compiler_fp, _Tp))
   {
@@ -174,10 +174,10 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, _Up, __fp_storage_of_t<_Tp>)))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(const _Up& __v) noexcept = delete;
+_CCCL_API constexpr _Tp __fp_from_storage(const _Up& __v) noexcept = delete;
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(__is_std_fp, _Tp) || _CCCL_TRAIT(__is_ext_compiler_fp, _Tp))
   {

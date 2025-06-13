@@ -11,7 +11,12 @@ Numeric
 
 .. list-table::
    :widths: 25 45 30 30
-   :header-rows: 0
+   :header-rows: 1
+
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
 
    * - :ref:`cuda::narrow <libcudacxx-extended-api-numeric-narrow>`
      - Casts a value and checks whether the value has changed

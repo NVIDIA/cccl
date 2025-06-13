@@ -1,14 +1,17 @@
 #!/bin/bash
 set -euo pipefail
-source "$(dirname "$0")/pyenv_helper.sh"
 
-# Get the Python version from the command line arguments e.g., -py-version=3.10
+# Get the Python version from the command line arguments -py-version=3.10
 py_version=${2#*=}
-echo "Python version: ${py_version}"
+echo "Docker socket: " $(ls /var/run/docker.sock)
 
-# Setup Python environment
-setup_python_env "${py_version}"
-
-# Build the wheel and output to the wheelhouse directory
-cd /home/coder/cccl/python/cuda_cccl
-python -m pip wheel --no-deps . && cp *.whl /home/coder/cccl/wheelhouse
+# cuda_cccl must be built in a container that can produce manylinux wheels,
+# and has the CUDA toolkit installed. We use the rapidsai/ci-wheel image for this.
+# These images don't come with a new enough version of gcc installed, so that
+# must be installed manually.
+docker run --rm -i \
+    --workdir /workspace/python/cuda_cccl \
+    --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
+    --env py_version=${py_version} \
+    rapidsai/ci-wheel:cuda12.9.0-rockylinux8-py3.10 \
+    /workspace/ci/build_cuda_cccl_wheel.sh

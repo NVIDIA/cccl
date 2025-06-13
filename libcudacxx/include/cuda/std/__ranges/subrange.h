@@ -233,7 +233,7 @@ private:
   struct _Empty
   {
     template <class _Tp>
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr _Empty(_Tp) noexcept
+    _CCCL_API constexpr _Empty(_Tp) noexcept
     {}
   };
   using _Size                            = conditional_t<_StoreSize, make_unsigned_t<iter_difference_t<_Iter>>, _Empty>;
@@ -248,13 +248,13 @@ public:
   = default;
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   template <class _It = _Iter, enable_if_t<default_initializable<_It>, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
+  _CCCL_API constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
       : view_interface<subrange<_Iter, _Sent, _Kind>>(){};
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__subrange_from_iter_sent<_Iter, _It, _StoreSize>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_It __iter, _Sent __sent)
+  _CCCL_API constexpr subrange(_It __iter, _Sent __sent)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
       , __begin_(_CUDA_VSTD::move(__iter))
       , __end_(_CUDA_VSTD::move(__sent))
@@ -262,7 +262,7 @@ public:
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__subrange_from_iter_sent_size<_Iter, _Kind, _It>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
+  _CCCL_API constexpr subrange(_It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
       , __begin_(_CUDA_VSTD::move(__iter))
       , __end_(_CUDA_VSTD::move(__sent))
@@ -277,19 +277,19 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range)
+  _CCCL_API constexpr subrange(_Range&& __range)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range)
+  _CCCL_API constexpr subrange(_Range&& __range)
       : subrange(__range, _CUDA_VRANGES::size(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
+  _CCCL_API constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
@@ -297,7 +297,7 @@ public:
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_TEMPLATE(class _Pair)
   _CCCL_REQUIRES(__pair_like<_Pair> _CCCL_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Pair() const
+  _CCCL_API constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
   }
@@ -305,31 +305,31 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(copyable<_It>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin() const
+  [[nodiscard]] _CCCL_API constexpr _It begin() const
   {
     return __begin_;
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES((!copyable<_It>) )
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin()
+  [[nodiscard]] _CCCL_API constexpr _It begin()
   {
     return _CUDA_VSTD::move(__begin_);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent end() const
+  [[nodiscard]] _CCCL_API constexpr _Sent end() const
   {
     return __end_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _CCCL_API constexpr bool empty() const
   {
     return __begin_ == __end_;
   }
 
   _CCCL_TEMPLATE(subrange_kind _Kind_ = _Kind)
   _CCCL_REQUIRES((_Kind_ == subrange_kind::sized))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr make_unsigned_t<iter_difference_t<_Iter>> size() const
+  _CCCL_API constexpr make_unsigned_t<iter_difference_t<_Iter>> size() const
   {
     if constexpr (_StoreSize)
     {
@@ -343,14 +343,14 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(forward_iterator<_It>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
+  [[nodiscard]] _CCCL_API constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
   {
     auto __tmp = *this;
     __tmp.advance(__n);
     return __tmp;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
+  [[nodiscard]] _CCCL_API constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
   {
     advance(__n);
     return _CUDA_VSTD::move(*this);
@@ -358,14 +358,14 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(bidirectional_iterator<_It>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
+  [[nodiscard]] _CCCL_API constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
   {
     auto __tmp = *this;
     __tmp.advance(-__n);
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange& advance(iter_difference_t<_Iter> __n)
+  _CCCL_API constexpr subrange& advance(iter_difference_t<_Iter> __n)
   {
     if constexpr (bidirectional_iterator<_Iter>)
     {
@@ -423,7 +423,7 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
+_CCCL_API constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
 {
   if constexpr (_Index == 0)
   {
@@ -447,7 +447,7 @@ template <
   subrange_kind _Kind,
   enable_if_t<_Index<2, int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
+_CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
 {
   if constexpr (_Index == 0)
   {

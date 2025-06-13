@@ -109,7 +109,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::stream stream{};
+      cudax::stream stream{cudax::device_ref{0}};
       cudax::any_async_resource<cudax::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;

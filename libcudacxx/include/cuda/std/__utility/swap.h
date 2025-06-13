@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // from std::)
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
+_CCCL_API constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
 {
   _Tp __t(_CUDA_VSTD::move(__x));
@@ -48,8 +48,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_ide
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value
-                                                && __is_swappable<_Tp>::value>
+_CCCL_API constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
 swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value)
 {
   for (size_t __i = 0; __i != _Np; ++__i)

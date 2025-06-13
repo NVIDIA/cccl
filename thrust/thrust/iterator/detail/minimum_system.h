@@ -29,6 +29,8 @@
 #include <thrust/detail/type_traits/is_metafunction_defined.h>
 #include <thrust/detail/type_traits/minimum_type.h>
 
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
@@ -37,14 +39,15 @@ template <typename... Ts>
 struct unrelated_systems
 {};
 
+template <typename... Ts>
+_CCCL_HOST_DEVICE auto minimum_system_impl(int) -> minimum_type<Ts...>;
+template <typename... Ts>
+_CCCL_HOST_DEVICE auto minimum_system_impl(long) -> unrelated_systems<Ts...>;
+
 // if a minimum system exists for these arguments, return it
 // otherwise, collect the arguments and report them as unrelated
 template <typename... Ts>
-using minimum_system = ::cuda::std::
-  _If<is_metafunction_defined<minimum_type<Ts...>>::value, minimum_type<Ts...>, identity_<unrelated_systems<Ts...>>>;
-
-template <typename... Ts>
-using minimum_system_t = typename minimum_system<Ts...>::type;
+using minimum_system_t = decltype(minimum_system_impl<Ts...>(0));
 
 } // namespace detail
 THRUST_NAMESPACE_END

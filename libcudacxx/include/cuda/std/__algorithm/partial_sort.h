@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
+_CCCL_API constexpr _RandomAccessIterator
 __partial_sort_impl(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Sentinel __last, _Compare&& __comp)
 {
   if (__first == __middle)
@@ -64,7 +64,7 @@ __partial_sort_impl(_RandomAccessIterator __first, _RandomAccessIterator __middl
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
+_CCCL_API constexpr _RandomAccessIterator
 __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Sentinel __last, _Compare& __comp)
 {
   if (__first == __middle)
@@ -78,7 +78,7 @@ __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _S
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void partial_sort(
+_CCCL_API constexpr void partial_sort(
   _RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last, _Compare __comp)
 {
   static_assert(_CCCL_TRAIT(is_copy_constructible, _RandomAccessIterator), "Iterators must be copy constructible.");
@@ -89,7 +89,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void partial_sort(
 }
 
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
+_CCCL_API constexpr void
 partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::partial_sort(__first, __middle, __last, __less{});

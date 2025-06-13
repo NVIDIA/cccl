@@ -31,6 +31,8 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/tuple.h>
 
+#include <cuda/std/type_traits>
+
 // the order of declarations and definitions in this file is totally goofy
 // this header defines raw_reference_cast, which has a few overloads towards the bottom of the file
 // raw_reference_cast depends on metafunctions such as is_unwrappable and raw_reference
@@ -102,7 +104,8 @@ namespace raw_reference_detail
 
 // wrapped references are unwrapped using raw_reference, otherwise, return T
 template <typename T>
-struct raw_reference_tuple_helper : eval_if<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, identity_<T>>
+struct raw_reference_tuple_helper
+    : eval_if<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, ::cuda::std::type_identity<T>>
 {};
 
 // recurse on tuples

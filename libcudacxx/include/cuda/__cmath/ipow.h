@@ -36,7 +36,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp, class _Ep>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_ipow_impl_base_pow2(_Tp __b, _Ep __e) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __cccl_ipow_impl_base_pow2(_Tp __b, _Ep __e) noexcept
 {
   const auto __shift = static_cast<int>(__e - 1) * ::cuda::ilog2(__b);
   const auto __lz    = _CUDA_VSTD::countl_zero(__b);
@@ -44,7 +44,7 @@ template <class _Tp, class _Ep>
 }
 
 template <class _Tp, class _Ep>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_ipow_impl(_Tp __b, _Ep __e) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __cccl_ipow_impl(_Tp __b, _Ep __e) noexcept
 {
   static_assert(_CUDA_VSTD::is_unsigned_v<_Tp>);
 
@@ -78,7 +78,7 @@ template <class _Tp, class _Ep>
 //! @note The result is undefined if \p __b is 0 and \p __e is negative.
 _CCCL_TEMPLATE(class _Tp, class _Ep)
 _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Ep>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp ipow(_Tp __b, _Ep __e) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp ipow(_Tp __b, _Ep __e) noexcept
 {
   _CCCL_ASSERT(__b != _Tp{0} || _CUDA_VSTD::cmp_greater_equal(__e, _Ep{0}),
                "cuda::ipow() requires non-negative exponent for base 0");

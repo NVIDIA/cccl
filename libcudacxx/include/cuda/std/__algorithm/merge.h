@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator __merge(
+_CCCL_API constexpr _OutputIterator __merge(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -60,7 +60,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator __merge(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 merge(_InputIterator1 __first1,
       _InputIterator1 __last1,
       _InputIterator2 __first2,
@@ -72,7 +72,7 @@ merge(_InputIterator1 __first1,
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 merge(_InputIterator1 __first1,
       _InputIterator1 __last1,
       _InputIterator2 __first2,
