@@ -63,7 +63,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... 
 template <auto _Start, auto _End, auto _Step = 1, typename _Operator, typename... _TArgs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
 {
-  ::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
+  using _Tp = decltype(_Start);
+  ::cuda::static_for<_Tp, _Start, _Tp{_End}, _Tp{_Step}>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
