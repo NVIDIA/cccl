@@ -286,3 +286,64 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   REQUIRE(approx_eq(h_expected, h_output[0]));
 }
+
+using test_types = c2h::type_list<char, int, long int, float, double>;
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with different input types and reduction op",
+         "[reduce][deterministic]",
+         test_types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = 1 << 10;
+
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-100.0), static_cast<type>(100.0));
+
+  SECTION("plus")
+  {
+    c2h::device_vector<type> d_output(1);
+
+    cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, reduction_op, type{}, env);
+
+    c2h::host_vector<type> h_input = d_input;
+
+    // Requires `std::accumulate` to produce deterministic result which is required for comparison
+    // with the device RFA result.
+    // NOTE: `std::reduce` is not equivalent
+    const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), type{}, reduction_op);
+    c2h::host_vector<type> h_output = d_output;
+
+    REQUIRE(approx_eq(h_expected, h_output[0]));
+  }
+
+  SECTION("minimum")
+  {
+    c2h::device_vector<type> d_output(1);
+
+    type init_value = ::cuda::std::numeric_limits<type>::max();
+
+    cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, ::cuda::minimum<>{}, init_value, env);
+
+    c2h::host_vector<type> h_input = d_input;
+
+    const type h_expected           = std::reduce(h_input.begin(), h_input.end(), init_value, ::cuda::minimum<>{});
+    c2h::host_vector<type> h_output = d_output;
+
+    REQUIRE(approx_eq(h_expected, h_output[0]));
+  }
+  SECTION("maximum")
+  {
+    c2h::device_vector<type> d_output(1);
+
+    type init_value = ::cuda::std::numeric_limits<type>::min();
+
+    cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, ::cuda::maximum<>{}, init_value, env);
+
+    c2h::host_vector<type> h_input = d_input;
+
+    const type h_expected           = std::reduce(h_input.begin(), h_input.end(), init_value, ::cuda::maximum<>{});
+    c2h::host_vector<type> h_output = d_output;
+
+    REQUIRE(approx_eq(h_expected, h_output[0]));
+  }
+}
