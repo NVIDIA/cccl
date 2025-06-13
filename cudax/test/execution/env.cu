@@ -45,14 +45,14 @@ struct test_resource
   friend void get_property(const test_resource&, cuda::mr::device_accessible) noexcept {}
 };
 
-C2H_TEST("env_t is queryable for all properties we want", "[execution, env]")
+C2H_TEST("env_t is queryable for all properties we want", "[execution][env]")
 {
   STATIC_REQUIRE(cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>);
   STATIC_REQUIRE(cuda::std::execution::__queryable_with<env_t, cuda::mr::get_memory_resource_t>);
   STATIC_REQUIRE(cuda::std::execution::__queryable_with<env_t, cudax::execution::get_execution_policy_t>);
 }
 
-C2H_TEST("env_t is default constructible", "[execution, env]")
+C2H_TEST("env_t is default constructible", "[execution][env]")
 {
   env_t env{cudax::device_memory_resource{cudax::device_ref{0}}};
   CHECK(env.query(cuda::get_stream) == ::cuda::experimental::__detail::__invalid_stream);
@@ -60,7 +60,7 @@ C2H_TEST("env_t is default constructible", "[execution, env]")
   CHECK(env.query(cuda::mr::get_memory_resource) == cudax::device_memory_resource{cudax::device_ref{0}});
 }
 
-C2H_TEST("env_t is constructible from an any_resource", "[execution, env]")
+C2H_TEST("env_t is constructible from an any_resource", "[execution][env]")
 {
   const cudax::any_async_resource<cuda::mr::device_accessible> mr{test_resource{}};
 
@@ -91,7 +91,7 @@ C2H_TEST("env_t is constructible from an any_resource", "[execution, env]")
   }
 }
 
-C2H_TEST("env_t is constructible from an any_resource passed as an rvalue", "[execution, env]")
+C2H_TEST("env_t is constructible from an any_resource passed as an rvalue", "[execution][env]")
 {
   SECTION("Passing an any_resource")
   {
@@ -124,7 +124,7 @@ C2H_TEST("env_t is constructible from an any_resource passed as an rvalue", "[ex
   }
 }
 
-C2H_TEST("env_t is constructible from a resource", "[execution, env]")
+C2H_TEST("env_t is constructible from a resource", "[execution][env]")
 {
   test_resource mr{};
 
@@ -155,7 +155,7 @@ C2H_TEST("env_t is constructible from a resource", "[execution, env]")
   }
 }
 
-C2H_TEST("env_t is constructible from a resource passed as an rvalue", "[execution, env]")
+C2H_TEST("env_t is constructible from a resource passed as an rvalue", "[execution][env]")
 {
   SECTION("Passing an any_resource")
   {
@@ -205,7 +205,7 @@ struct some_env_t
     return policy_;
   }
 };
-C2H_TEST("env_t is constructible from a suitable env", "[execution, env]")
+C2H_TEST("env_t is constructible from a suitable env", "[execution][env]")
 {
   some_env_t other_env{};
   env_t env{other_env};
@@ -239,7 +239,7 @@ struct bad_env_t
     return policy_;
   }
 };
-C2H_TEST("env_t is not constructible from a env missing queries", "[execution, env]")
+C2H_TEST("env_t is not constructible from a env missing queries", "[execution][env]")
 {
   STATIC_REQUIRE(cuda::std::is_constructible_v<env_t, bad_env_t<true, true, true>>);
   STATIC_REQUIRE(!cuda::std::is_constructible_v<env_t, bad_env_t<false, true, true>>);
@@ -247,7 +247,7 @@ C2H_TEST("env_t is not constructible from a env missing queries", "[execution, e
   STATIC_REQUIRE(!cuda::std::is_constructible_v<env_t, bad_env_t<true, true, false>>);
 }
 
-C2H_TEST("Can use query to construct various objects", "[execution, env]")
+C2H_TEST("Can use query to construct various objects", "[execution][env]")
 {
   SECTION("Can create an any_resource")
   {
