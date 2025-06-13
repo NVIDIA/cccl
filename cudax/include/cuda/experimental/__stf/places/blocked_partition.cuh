@@ -125,6 +125,7 @@ public:
   }
 };
 
+/// @brief Partition a multidimensional box or shape into contiguous blocks along a selected dimension.
 using blocked_partition = blocked_partition_custom<>;
 
 } // namespace cuda::experimental::stf
