@@ -11,26 +11,20 @@
 
 // template <class C> auto begin(C& c) -> decltype(c.begin());
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/cassert>
-#  include <cuda/std/vector>
+#include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
+#include <cuda/std/iterator>
 
-#  include "test_macros.h"
+#include "test_macros.h"
 
 int main(int, char**)
 {
   int ia[] = {1, 2, 3};
-  cuda::std::vector<int> v(ia, ia + sizeof(ia) / sizeof(ia[0]));
-  cuda::std::vector<int>::iterator i = begin(v);
+  cuda::std::inplace_vector<int, 3> v(ia, ia + sizeof(ia) / sizeof(ia[0]));
+  cuda::std::inplace_vector<int, 3>::iterator i = cuda::std::begin(v);
   assert(*i == 1);
   *i = 2;
   assert(*i == 2);
 
   return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif

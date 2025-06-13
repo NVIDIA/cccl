@@ -12,12 +12,10 @@
 //     -> common_type_t<ptrdiff_t, make_signed_t<decltype(c.size())>>;                    // C++20
 // template <class T, ptrdiff_t> constexpr ptrdiff_t ssize(const T (&array)[N]) noexcept; // C++20
 
-#include <cuda/std/cassert>
-#include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
 #include <cuda/std/array>
+#include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
+#include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_LIST)
 #  include <cuda/std/list>
 #endif
@@ -82,10 +80,8 @@ TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-  cuda::std::vector<int> v;
+  cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
-#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   cuda::std::list<int> l;
   l.push_back(2);
@@ -94,10 +90,8 @@ int main(int, char**)
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   test_container(v);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(v))>);
-#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_container(l);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(l))>);
@@ -107,9 +101,7 @@ int main(int, char**)
   test_container(il);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(il))>);
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   test_const_container(v);
-#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_const_container(l);
 #endif

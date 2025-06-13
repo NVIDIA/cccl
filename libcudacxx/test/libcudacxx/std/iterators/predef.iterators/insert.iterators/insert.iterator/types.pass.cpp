@@ -26,12 +26,11 @@
 //   typedef void                   pointer;
 // };
 
+#include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
 
-#  include "test_macros.h"
+#include "test_macros.h"
 
 template <class C>
 struct find_members : private cuda::std::insert_iterator<C>
@@ -63,13 +62,7 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
-  test<cuda::std::vector<int>>();
+  test<cuda::std::inplace_vector<int, 5>>();
 
   return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif
