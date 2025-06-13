@@ -326,7 +326,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
     c2h::host_vector<type> h_input = d_input;
 
-    const type h_expected           = std::reduce(h_input.begin(), h_input.end(), init_value, ::cuda::minimum<>{});
+    const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), init_value, ::cuda::minimum<>{});
     c2h::host_vector<type> h_output = d_output;
 
     REQUIRE(approx_eq(h_expected, h_output[0]));
@@ -341,7 +341,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
     c2h::host_vector<type> h_input = d_input;
 
-    const type h_expected           = std::reduce(h_input.begin(), h_input.end(), init_value, ::cuda::maximum<>{});
+    const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), init_value, ::cuda::maximum<>{});
     c2h::host_vector<type> h_output = d_output;
 
     REQUIRE(approx_eq(h_expected, h_output[0]));
