@@ -117,7 +117,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::managed_memory_resource managed1{}, managed2{};
+      cudax::legacy_managed_memory_resource managed1{}, managed2{};
       CHECK(managed1 == managed2);
       cudax::any_resource<cudax::device_accessible> mr{managed1};
       CHECK(mr == managed1);
