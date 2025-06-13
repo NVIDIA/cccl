@@ -282,7 +282,7 @@ C2H_TEST("Launch smoke path builder", "[launch]")
   CUDAX_REQUIRE(g.node_count() == 46);
 
   auto exec = g.instantiate();
-  cudax::stream s;
+  cudax::stream s{cudax::device_ref{0}};
   exec.launch(s);
   s.sync();
 }

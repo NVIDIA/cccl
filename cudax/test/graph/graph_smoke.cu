@@ -159,7 +159,7 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
 
 C2H_TEST("Path builder with kernel nodes", "[graph]")
 {
-  cudax::stream s;
+  cudax::stream s{cudax::device_ref{0}};
   cudax::managed_memory_resource mr;
   int* ptr = static_cast<int*>(mr.allocate(sizeof(int)));
   *ptr     = 0;
