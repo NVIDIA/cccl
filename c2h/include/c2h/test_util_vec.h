@@ -366,21 +366,14 @@ inline constexpr bool is_vector2_type_v = cuda::std::__is_one_of_v<
   ulong2,
   ulonglong2,
   float2,
-  double2>;
-
-#  if TEST_HALF_T()
-
-template <>
-inline constexpr bool is_vector2_type_v<__half2> = true;
-
+  double2
+  #  if TEST_HALF_T()
+  , __half2
 #  endif // TEST_HALF_T()
-
 #  if TEST_BF_T()
-
-template <>
-inline constexpr bool is_vector2_type_v<__nv_bfloat162> = true;
-
+  , __nv_bfloat162
 #  endif // TEST_BF_T()
+  >;
 
 //----------------------------------------------------------------------------------------------------------------------
 // vector2 floating point type traits
