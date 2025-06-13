@@ -26,6 +26,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// BUG (gcc#98995): copy elision fails when initializing a [[no_unique_address]] field
+// from a function returning an object of class type by value.
+// See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
+#if _CCCL_COMPILER(GCC)
+// By declaring the move constructor but not defining it, any TU that ODR-uses the move
+// constructor will cause a linker error.
+#  define _CCCL_IMMOVABLE_OPSTATE(_XP) _CCCL_API _XP(_XP&&) noexcept
+#else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
+#  define _CCCL_IMMOVABLE_OPSTATE(_XP) _XP(_XP&&) = delete
+#endif // !_CCCL_COMPILER(GCC)
+
 namespace cuda::experimental
 {
 // NOLINTBEGIN(misc-unused-using-decls)
@@ -35,9 +46,8 @@ using _CUDA_VSTD::declval;
 // Classes can inherit from this type to become immovable.
 struct __immovable
 {
-  _CCCL_HIDE_FROM_ABI __immovable()              = default;
-  __immovable(__immovable&&) noexcept            = delete;
-  __immovable& operator=(__immovable&&) noexcept = delete;
+  _CCCL_HIDE_FROM_ABI __immovable() = default;
+  _CCCL_IMMOVABLE_OPSTATE(__immovable);
 };
 
 template <class... _Types>
@@ -49,9 +59,6 @@ inline constexpr bool __is_specialization_of_v = false;
 
 template <template <class...> class _Template, class... _Args>
 inline constexpr bool __is_specialization_of_v<_Template<_Args...>, _Template> = true;
-
-template <class _Tp>
-using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
 
 struct no_init_t
 {

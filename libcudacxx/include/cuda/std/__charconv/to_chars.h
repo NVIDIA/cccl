@@ -35,7 +35,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char __to_chars_value_to_char(int __v, int __base) noexcept
+[[nodiscard]] _CCCL_API constexpr char __to_chars_value_to_char(int __v, int __base) noexcept
 {
   _CCCL_ASSERT(__v >= 0 && __v < __base, "value must be in the range [0, base)");
   const int __offset = (__base < 10 || __v < 10) ? '0' : ('a' - 10);
@@ -43,7 +43,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __to_chars_int_width(_Tp __v, int __base) noexcept
+[[nodiscard]] _CCCL_API constexpr int __to_chars_int_width(_Tp __v, int __base) noexcept
 {
   using _Up = cuda::std::conditional_t<sizeof(_Tp) >= sizeof(uint32_t), make_unsigned_t<_Tp>, uint32_t>;
 
@@ -82,7 +82,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __to_chars_int_generic(char* __last, _Tp __value, int __base) noexcept
+_CCCL_API constexpr void __to_chars_int_generic(char* __last, _Tp __value, int __base) noexcept
 {
   do
   {
@@ -94,7 +94,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __to_chars_int_generic(char* __last, _T
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr to_chars_result
+[[nodiscard]] _CCCL_API constexpr to_chars_result
 to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
 {
   _CCCL_ASSERT(__base >= 2 && __base <= 36, "base must be in the range [2, 36]");
@@ -126,7 +126,7 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
   }
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr to_chars_result
+[[nodiscard]] _CCCL_API constexpr to_chars_result
 to_chars(char* __first, char* __last, char __value, int __base = 10) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, char))
@@ -139,7 +139,7 @@ to_chars(char* __first, char* __last, char __value, int __base = 10) noexcept
   }
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr to_chars_result to_chars(char*, char*, bool, int = 10) noexcept = delete;
+_CCCL_API constexpr to_chars_result to_chars(char*, char*, bool, int = 10) noexcept = delete;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

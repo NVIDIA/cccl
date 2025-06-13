@@ -22,8 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/stream_ref>
 
+#include <cuda/experimental/__execution/completion_signatures.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/path_builder.cuh>
@@ -279,6 +285,8 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
+  static_assert(sizeof...(_ExpArgs) == sizeof...(_ActArgs),
+                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
   __ensure_current_device __dev_setter{__submitter};
   return __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
     __forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
@@ -333,6 +341,8 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
+  static_assert(sizeof...(_ExpArgs) == sizeof...(_ActArgs),
+                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
   __ensure_current_device __dev_setter{__submitter};
   return __launch_impl<_ExpArgs...>(
     __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)), //
@@ -341,7 +351,45 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
     __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
 }
 
+//
+// Lazy launch
+//
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t
+{
+  template <class _Config, class _Fn, class... _Args>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+template <class _Config, class _Fn, class... _Args>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
+{
+  using sender_concept = execution::sender_t;
+
+  template <class _Self>
+  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  {
+    return execution::completion_signatures<execution::set_value_t(), execution::set_error_t(cudaError_t)>();
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS __kernel_t __tag_{};
+  _CUDA_VSTD::__tuple<_Config, _Fn, _Args...> __args_;
+};
+
+template <class _Dimensions, class... _Config, class _Fn, class... _Args>
+_CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config, _Fn __fn, _Args... __args)
+  -> __kernel_t::__sndr_t<kernel_config<_Dimensions, _Config...>, _Fn, _Args...>
+{
+  return {{}, {_CCCL_MOVE(__config), _CCCL_MOVE(__fn), _CCCL_MOVE(__args)...}};
+}
+
+namespace execution
+{
+template <class _Config, class _Fn, class... _Args>
+inline constexpr size_t structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
+} // namespace execution
+
 } // namespace cuda::experimental
+
 #endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>

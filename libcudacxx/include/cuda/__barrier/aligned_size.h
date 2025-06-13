@@ -36,13 +36,13 @@ struct aligned_size_t
   static constexpr _CUDA_VSTD::size_t align = _Alignment;
   _CUDA_VSTD::size_t value;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr aligned_size_t(_CUDA_VSTD::size_t __s)
+  _CCCL_API explicit constexpr aligned_size_t(_CUDA_VSTD::size_t __s)
       : value(__s)
   {
     _CCCL_ASSERT(value % align == 0,
                  "aligned_size_t must be constructed with a size that is a multiple of the alignment");
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::size_t() const
+  _CCCL_API constexpr operator _CUDA_VSTD::size_t() const
   {
     return value;
   }

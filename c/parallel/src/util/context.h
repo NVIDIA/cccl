@@ -11,7 +11,8 @@
 #pragma once
 
 #include <cuda.h>
-#include <nvJitLink.h>
 #include <nvrtc.h>
+
+#include <nvrtc/nvjitlink_helper.h>
 
 bool try_push_context();

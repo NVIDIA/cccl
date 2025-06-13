@@ -25,13 +25,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 
-#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -134,7 +134,7 @@ _CCCL_CONCEPT sender_in = //
   ( //
     requires(sender<_Sndr>), //
     requires(sizeof...(_Env) <= 1), //
-    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>), //
+    requires((__queryable<_Env> && ... && true)), //
     requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
   );
 

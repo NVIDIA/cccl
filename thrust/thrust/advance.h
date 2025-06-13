@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 //! deprecated [since 3.1]
 template <typename InputIterator, typename Distance>
 CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::advance instead")
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(InputIterator& i, Distance n)
+_CCCL_API constexpr void advance(InputIterator& i, Distance n)
 {
   ::cuda::std::advance(i, n);
 }
@@ -41,7 +41,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(InputIterator& i, Distance n)
 //! deprecated [since 3.1]
 template <typename InputIterator>
 CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::next instead")
-_LIBCUDACXX_HIDE_FROM_ABI constexpr InputIterator
+_CCCL_API constexpr InputIterator
   next(InputIterator i, typename ::cuda::std::iterator_traits<InputIterator>::difference_type n = 1)
 {
   return ::cuda::std::next(i, n);
@@ -50,7 +50,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr InputIterator
 //! deprecated [since 3.1]
 template <typename InputIterator>
 CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::prev instead")
-_LIBCUDACXX_HIDE_FROM_ABI constexpr InputIterator
+_CCCL_API constexpr InputIterator
   prev(InputIterator i, typename ::cuda::std::iterator_traits<InputIterator>::difference_type n = 1)
 {
   return ::cuda::std::prev(i, n);

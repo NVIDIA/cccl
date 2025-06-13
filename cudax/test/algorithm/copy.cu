@@ -12,11 +12,11 @@
 
 C2H_TEST("1d Copy", "[data_manipulation]")
 {
-  cudax::stream _stream;
+  cudax::stream _stream{cudax::device_ref{0}};
 
   SECTION("Device resource")
   {
-    cudax::device_memory_resource device_resource;
+    cudax::device_memory_resource device_resource{cudax::device_ref{0}};
     std::vector<int> host_vector(buffer_size);
 
     {
@@ -133,7 +133,7 @@ void test_mdspan_copy_bytes(
 
 C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
 
   SECTION("Different extents")
   {
@@ -171,7 +171,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
 C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 

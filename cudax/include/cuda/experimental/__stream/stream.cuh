@@ -27,7 +27,7 @@
 
 #include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
-#include <cuda/experimental/__stream/stream_ref.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -66,13 +66,6 @@ struct stream : stream_ref
     _CCCL_TRY_CUDA_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
   }
-
-  //! @brief Constructs a stream on the default device
-  //!
-  //! @throws cuda_error if stream creation fails.
-  stream()
-      : stream(device_ref{0})
-  {}
 
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
@@ -146,6 +139,12 @@ struct stream : stream_ref
   [[nodiscard]] ::cudaStream_t release()
   {
     return _CUDA_VSTD::exchange(__stream, __detail::__invalid_stream);
+  }
+
+  //! @brief Returns a \c execution::scheduler that enqueues work on this stream.
+  auto get_scheduler() const noexcept -> stream_ref
+  {
+    return *this;
   }
 
 private:

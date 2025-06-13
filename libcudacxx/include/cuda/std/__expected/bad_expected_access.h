@@ -81,22 +81,22 @@ public:
     __unex_.~_Err();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Err& error() & noexcept
+  _CCCL_API inline _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Err& error() const& noexcept
+  _CCCL_API inline const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Err&& error() && noexcept
+  _CCCL_API inline _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Err&& error() const&& noexcept
+  _CCCL_API inline const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
@@ -109,7 +109,7 @@ private:
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Err, class _Arg>
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
+[[noreturn]] _CCCL_API inline void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST,

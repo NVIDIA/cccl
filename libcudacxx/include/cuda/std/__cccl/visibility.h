@@ -78,9 +78,6 @@
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 #endif // !_CCCL_COMPILER(NVHPC)
 
-//! Defined here to suppress any warnings from the definition
-#define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE
-
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !CCCL_DETAIL_KERNEL_ATTRIBUTES
@@ -108,5 +105,11 @@
 #define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 #define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 #define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+
+//! _LIBCUDACXX_HIDE_FROM_ABI is for backwards compatibility for external projects.
+//! _CCCL_API and its variants are the preferred way to declare functions
+//! that should be hidden from the ABI.
+//! Defined here to suppress any warnings from the definition
+#define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_API inline
 
 #endif // __CCCL_VISIBILITY_H

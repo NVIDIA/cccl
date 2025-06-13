@@ -137,6 +137,15 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
   }
 }
 
+struct dev0_device_memory_resource : cudax::device_memory_resource
+{
+  dev0_device_memory_resource()
+      : cudax::device_memory_resource{cudax::device_ref{0}}
+  {}
+
+  using default_queries = cudax::properties_list<cuda::mr::device_accessible>;
+};
+
 // helper class as we need to pass the properties in a tuple to the catch tests
 template <class>
 struct extract_properties;
@@ -152,7 +161,7 @@ struct extract_properties<cuda::std::tuple<Properties...>>
 #else
                                             void,
 #endif
-                                            cudax::device_memory_resource>;
+                                            dev0_device_memory_resource>;
   using iterator       = cudax::heterogeneous_iterator<int, Properties...>;
   using const_iterator = cudax::heterogeneous_iterator<const int, Properties...>;
 
