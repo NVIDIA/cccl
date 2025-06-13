@@ -45,7 +45,7 @@ void stream_context_test1()
   auto sched = ctx.get_scheduler();
 
   auto sndr = cudax_async::schedule(sched) //
-            | cudax_async::then([] __device__() noexcept -> bool {
+            | cudax_async::then([] __host__ __device__() noexcept -> bool {
                 return _is_on_device();
               });
 
