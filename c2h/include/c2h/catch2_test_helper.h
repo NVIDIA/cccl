@@ -128,7 +128,6 @@ template <typename T>
 
 #if TEST_BF_T()
 
-template <>
 [[nodiscard]] constexpr bool isnan(__nv_bfloat162 value) noexcept
 {
   return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
