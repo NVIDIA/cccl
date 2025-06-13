@@ -35,7 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @note This function doesn't cause undefined behavior when negating the minimum value of a signed integer type.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp neg(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp neg(_Tp __v) noexcept
 {
   return static_cast<_Tp>(~_CUDA_VSTD::__to_unsigned_like(__v) + 1);
 }

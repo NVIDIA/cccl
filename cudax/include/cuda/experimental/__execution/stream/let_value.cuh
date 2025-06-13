@@ -31,7 +31,7 @@ namespace cuda::experimental::execution
 {
 /////////////////////////////////////////////////////////////////////////////////
 // let_value, let_error, let_stopped: customization for the stream scheduler
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 struct stream_domain::__apply_t<__let_t<_Disposition>>
 {
   template <class _Sndr, class _Env>

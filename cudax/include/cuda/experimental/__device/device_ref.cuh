@@ -101,16 +101,16 @@ public:
   //!
   //! @sa device::attrs
   template <typename _Attr>
-  [[nodiscard]] auto attr(_Attr __attr) const
+  [[nodiscard]] auto attribute(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  [[nodiscard]] auto attr() const
+  [[nodiscard]] auto attribute() const
   {
-    return attr(__detail::__dev_attr<_Attr>());
+    return attribute(__detail::__dev_attr<_Attr>());
   }
 
   //! @brief Retrieve string with the name of this device.

@@ -111,13 +111,13 @@ public:
       )
     }
 
-    _CCCL_API __opstate_t(__atomic_intrusive_queue<&__task::__next_>* __queue, _Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(__atomic_intrusive_queue<&__task::__next_>* __queue, _Rcvr __rcvr)
         : __task{&__execute_impl}
         , __queue_{__queue}
         , __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
     {}
 
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       __queue_->push(this);
     }
@@ -128,7 +128,7 @@ public:
   {
     friend run_loop;
 
-    _CCCL_API explicit scheduler(run_loop* __loop) noexcept
+    _CCCL_API constexpr explicit scheduler(run_loop* __loop) noexcept
         : __loop_(__loop)
     {}
 
@@ -142,9 +142,9 @@ public:
       using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
       template <class _Rcvr>
-      _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+      [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
       {
-        return {&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
+        return __opstate_t<_Rcvr>{&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
       }
 
       template <class _Self, class _Env>
@@ -167,53 +167,54 @@ public:
       {
         run_loop* __loop_;
 
-        _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
+        _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
         {
           return __loop_->get_scheduler();
         }
 
-        _CCCL_API auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
+        _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
         {
           return __loop_->get_scheduler();
         }
       };
 
-      _CCCL_API auto get_env() const noexcept -> __env_t
+      _CCCL_API constexpr auto get_env() const noexcept -> __env_t
       {
         return __env_t{__loop_};
       }
 
     private:
       friend class scheduler;
-      _CCCL_API explicit __sndr_t(run_loop* __loop) noexcept
+      _CCCL_API constexpr explicit __sndr_t(run_loop* __loop) noexcept
           : __loop_(__loop)
       {}
 
       run_loop* const __loop_;
     };
 
-    [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __sndr_t
+    [[nodiscard]] _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
     {
       return __sndr_t{__loop_};
     }
 
-    _CCCL_API auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_forward_progress_guarantee_t) noexcept
+      -> forward_progress_guarantee
     {
       return forward_progress_guarantee::parallel;
     }
 
-    [[nodiscard]] _CCCL_API friend bool operator==(const scheduler& __a, const scheduler& __b) noexcept
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const scheduler& __a, const scheduler& __b) noexcept
     {
       return __a.__loop_ == __b.__loop_;
     }
 
-    [[nodiscard]] _CCCL_API friend bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
     {
       return __a.__loop_ != __b.__loop_;
     }
   };
 
-  [[nodiscard]] _CCCL_API auto get_scheduler() noexcept -> scheduler
+  [[nodiscard]] _CCCL_API constexpr auto get_scheduler() noexcept -> scheduler
   {
     return scheduler{this};
   }

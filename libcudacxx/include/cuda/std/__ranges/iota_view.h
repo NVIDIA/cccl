@@ -74,30 +74,26 @@ public:
 
   public:
     _CCCL_HIDE_FROM_ABI __sentinel() = default;
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __sentinel(_BoundSentinel __bound_sentinel)
+    _CCCL_API constexpr explicit __sentinel(_BoundSentinel __bound_sentinel)
         : __bound_sentinel_(_CUDA_VSTD::move(__bound_sentinel))
     {}
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator==(const __iterator& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ == __y.__bound_sentinel_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator==(const __sentinel& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __sentinel& __x, const __iterator& __y)
     {
       return __x.__bound_sentinel_ == __y.__value_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator!=(const __iterator& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ != __y.__bound_sentinel_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator!=(const __sentinel& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __sentinel& __x, const __iterator& __y)
     {
       return __x.__bound_sentinel_ != __y.__value_;
     }
@@ -105,7 +101,7 @@ public:
 
     _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
     _CCCL_REQUIRES(sized_sentinel_for<_BoundSentinel2, _Start>)
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iter_difference_t<_Start>
+    [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Start>
     operator-(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ - __y.__bound_sentinel_;
@@ -113,7 +109,7 @@ public:
 
     _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
     _CCCL_REQUIRES(sized_sentinel_for<_BoundSentinel2, _Start>)
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iter_difference_t<_Start>
+    [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Start>
     operator-(const __sentinel& __x, const __iterator& __y)
     {
       return -(__y - __x);
@@ -132,18 +128,17 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(default_initializable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_view() noexcept(is_nothrow_default_constructible_v<_Start2>)
+  _CCCL_API constexpr iota_view() noexcept(is_nothrow_default_constructible_v<_Start2>)
       : view_interface<iota_view<_Start, _BoundSentinel>>()
   {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit iota_view(_Start __value) noexcept(
-    is_nothrow_move_constructible_v<_Start>)
+  _CCCL_API constexpr explicit iota_view(_Start __value) noexcept(is_nothrow_move_constructible_v<_Start>)
       : view_interface<iota_view<_Start, _BoundSentinel>>()
       , __value_(_CUDA_VSTD::move(__value))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_view(
+  _CCCL_API constexpr iota_view(
     type_identity_t<_Start> __value,
     type_identity_t<_BoundSentinel> __bound_sentinel) noexcept(is_nothrow_move_constructible_v<_Start>
                                                                && is_nothrow_move_constructible_v<_BoundSentinel>)
@@ -161,28 +156,28 @@ public:
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES(same_as<_Start, _BoundSentinel2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_view(__iterator __first, __iterator __last)
+  _CCCL_API constexpr iota_view(__iterator __first, __iterator __last)
       : iota_view(_CUDA_VSTD::move(__first.__value_), _CUDA_VSTD::move(__last.__value_))
   {}
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES(same_as<_BoundSentinel2, unreachable_sentinel_t>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_view(__iterator __first, _BoundSentinel __last)
+  _CCCL_API constexpr iota_view(__iterator __first, _BoundSentinel __last)
       : iota_view(_CUDA_VSTD::move(__first.__value_), _CUDA_VSTD::move(__last))
   {}
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES((!same_as<_Start, _BoundSentinel2>) _CCCL_AND(!same_as<_Start, unreachable_sentinel_t>))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_view(__iterator __first, __sentinel __last)
+  _CCCL_API constexpr iota_view(__iterator __first, __sentinel __last)
       : iota_view(_CUDA_VSTD::move(__first.__value_), _CUDA_VSTD::move(__last.__bound_sentinel_))
   {}
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator begin() const
+  [[nodiscard]] _CCCL_API constexpr __iterator begin() const
   {
     return __iterator{__value_};
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end() const
+  [[nodiscard]] _CCCL_API constexpr auto end() const
   {
     if constexpr (same_as<_Start, _BoundSentinel>)
     {
@@ -202,7 +197,7 @@ public:
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES((same_as<_Start, _BoundSentinel2> && __advanceable<_Start>)
                  || (integral<_Start> && integral<_BoundSentinel2>) || sized_sentinel_for<_BoundSentinel2, _Start>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
+  _CCCL_API constexpr auto size() const
   {
     if constexpr (__integer_like<_Start> && __integer_like<_BoundSentinel>)
     {
@@ -240,7 +235,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iota)
 struct __fn
 {
   template <class _Start>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Start&& __start) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start) const
     noexcept(noexcept(_CUDA_VRANGES::iota_view(_CUDA_VSTD::forward<_Start>(__start))))
       -> iota_view<remove_cvref_t<_Start>>
   {
@@ -248,10 +243,10 @@ struct __fn
   }
 
   template <class _Start, class _BoundSentinel>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-  operator()(_Start&& __start, _BoundSentinel&& __bound_sentinel) const noexcept(noexcept(_CUDA_VRANGES::iota_view(
-    _CUDA_VSTD::forward<_Start>(__start), _CUDA_VSTD::forward<_BoundSentinel>(__bound_sentinel))))
-    -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start, _BoundSentinel&& __bound_sentinel) const
+    noexcept(noexcept(_CUDA_VRANGES::iota_view(_CUDA_VSTD::forward<_Start>(__start),
+                                               _CUDA_VSTD::forward<_BoundSentinel>(__bound_sentinel))))
+      -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
   {
     return _CUDA_VRANGES::iota_view(
       _CUDA_VSTD::forward<_Start>(__start), _CUDA_VSTD::forward<_BoundSentinel>(__bound_sentinel));

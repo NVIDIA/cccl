@@ -33,9 +33,10 @@
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
+#include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
@@ -133,13 +134,13 @@ struct __rcvr_t
   }
 
   template <class... _Args>
-  _CCCL_TRIVIAL_API void set_value(_Args&&... __args) noexcept
+  _CCCL_TRIVIAL_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_TRIVIAL_API void set_error(_Error&& __err) noexcept
+  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
   {
     if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::exception_ptr>)
     {
@@ -151,12 +152,12 @@ struct __rcvr_t
     }
   }
 
-  _CCCL_TRIVIAL_API void set_stopped() noexcept
+  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
 
-  _CCCL_API auto get_env() const noexcept -> __env_t<env_of_t<_Rcvr>>
+  _CCCL_API constexpr auto get_env() const noexcept -> __env_t<env_of_t<_Rcvr>>
   {
     return {execution::get_env(__state_->__rcvr_)};
   }
@@ -179,7 +180,7 @@ struct __opstate_t
 {
   using operation_state_concept = operation_state_t;
 
-  _CCCL_API explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
+  _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
       : __launch_config_{get_launch_config(get_env(__sndr))}
   {
     NV_IF_TARGET(NV_IS_HOST,
@@ -189,7 +190,7 @@ struct __opstate_t
 
   _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-  _CCCL_API void start() noexcept
+  _CCCL_API constexpr void start() noexcept
   {
     NV_IF_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
   }
@@ -310,19 +311,19 @@ struct __sndr_t
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
   {
     return __opstate_t<_Sndr, _Rcvr>(
       static_cast<_Sndr&&>(__state_.__sndr_), static_cast<_Rcvr&&>(__rcvr), __state_.__stream_);
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
   {
     return __opstate_t<const _Sndr&, _Rcvr>(__state_.__sndr_, static_cast<_Rcvr&&>(__rcvr), __state_.__stream_);
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __attrs_t<_Sndr>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr>
   {
     return __attrs_t<_Sndr>{&__state_.__sndr_};
   }
@@ -339,7 +340,14 @@ struct __sndr_t
 template <class _Sndr>
 _CCCL_API constexpr auto __adapt(_Sndr __sndr, stream_ref __stream) -> decltype(auto)
 {
-  return __sndr_t<_Sndr>{{__stream, static_cast<_Sndr&&>(__sndr)}};
+  if constexpr (__is_specialization_of_v<_Sndr, __sndr_t>)
+  {
+    return _Sndr(static_cast<_Sndr&&>(__sndr));
+  }
+  else
+  {
+    return __sndr_t<_Sndr>{{__stream, static_cast<_Sndr&&>(__sndr)}};
+  }
 }
 
 template <class _Sndr>

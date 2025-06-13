@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // __cccl_strcpy
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
+_CCCL_API constexpr _CharT*
 __cccl_strcpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
   _CharT* __dst_it = __dst;
@@ -65,8 +65,7 @@ __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRI
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
-__cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
+_CCCL_API constexpr _CharT* __cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -78,7 +77,7 @@ __cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) 
 // __cccl_strncpy
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
+_CCCL_API constexpr _CharT*
 __cccl_strncpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   _CharT* __dst_it = __dst;
@@ -114,7 +113,7 @@ __cccl_strncpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTR
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
+_CCCL_API constexpr _CharT*
 __cccl_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -127,7 +126,7 @@ __cccl_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src,
 // __cccl_strlen
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_strlen_impl_constexpr(const _CharT* __ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr size_t __cccl_strlen_impl_constexpr(const _CharT* __ptr) noexcept
 {
   size_t __len = 0;
   while (*__ptr++ != _CharT('\0'))
@@ -153,7 +152,7 @@ template <class _CharT>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_strlen(const _CharT* __ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr size_t __cccl_strlen(const _CharT* __ptr) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -165,8 +164,7 @@ template <class _CharT>
 // __cccl_strcmp
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_strcmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_strcmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
 
@@ -200,7 +198,7 @@ __cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -212,7 +210,7 @@ template <class _CharT>
 // __cccl_strncmp
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
+[[nodiscard]] _CCCL_API constexpr int
 __cccl_strncmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
@@ -252,8 +250,7 @@ __cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) n
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -265,8 +262,7 @@ __cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 // __cccl_strchr
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
-__cccl_strchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
 {
   while (*__ptr != __c)
   {
@@ -297,7 +293,7 @@ template <class _CharT>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT* __cccl_strchr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr(_CharT* __ptr, _CharT __c) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -309,8 +305,7 @@ template <class _CharT>
 // __cccl_strrchr
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
-__cccl_strrchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strrchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
 {
   if (__c == _CharT('\0'))
   {
@@ -347,7 +342,7 @@ template <class _CharT>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT* __cccl_strrchr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strrchr(_CharT* __ptr, _CharT __c) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -359,8 +354,7 @@ template <class _CharT>
 // __cccl_memchr
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   while (__n--)
   {
@@ -390,7 +384,7 @@ template <class _Tp>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -402,8 +396,7 @@ template <class _Tp>
 // __cccl_memmove
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memmove_impl_constexpr(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memmove_impl_constexpr(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
   const auto __dst_copy = __dst;
 
@@ -437,7 +430,7 @@ __cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
+_CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -453,7 +446,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* _
 // __cccl_memcmp
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
+[[nodiscard]] _CCCL_API constexpr int
 __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
   using _Up = __make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
@@ -487,8 +480,7 @@ __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -504,7 +496,7 @@ __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 // __cccl_memcpy
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
+[[nodiscard]] _CCCL_API constexpr _Tp*
 __cccl_memcpy_impl_constexpr(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   const auto __dst_copy = __dst;
@@ -526,8 +518,7 @@ __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
+_CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -543,8 +534,7 @@ __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t
 // __cccl_memset
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memset_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memset_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   const auto __ptr_copy = __ptr;
 
@@ -571,7 +561,7 @@ template <class _Tp>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+_CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {

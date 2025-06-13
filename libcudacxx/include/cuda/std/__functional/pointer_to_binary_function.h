@@ -38,17 +38,17 @@ _LIBCUDACXX_DEPRECATED pointer_to_binary_function : public __binary_function<_Ar
   _Result (*__f_)(_Arg1, _Arg2);
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit pointer_to_binary_function(_Result (*__f)(_Arg1, _Arg2))
+  _CCCL_API inline explicit pointer_to_binary_function(_Result (*__f)(_Arg1, _Arg2))
       : __f_(__f)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Arg1 __x, _Arg2 __y) const
+  _CCCL_API inline _Result operator()(_Arg1 __x, _Arg2 __y) const
   {
     return __f_(__x, __y);
   }
 };
 
 template <class _Arg1, class _Arg2, class _Result>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI pointer_to_binary_function<_Arg1, _Arg2, _Result>
+_LIBCUDACXX_DEPRECATED _CCCL_API inline pointer_to_binary_function<_Arg1, _Arg2, _Result>
 ptr_fun(_Result (*__f)(_Arg1, _Arg2))
 {
   return pointer_to_binary_function<_Arg1, _Arg2, _Result>(__f);

@@ -5,9 +5,8 @@ Param(
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
-    [ValidateNotNullOrEmpty()]
     [Alias("arch")]
-    [int]$CUDA_ARCH = 0
+    [string]$CUDA_ARCH = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,7 +17,7 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $CUDA_ARCH
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
 
 $PRESET = "libcudacxx-cpp${CXX_STANDARD}"
 $CMAKE_OPTIONS = ""
