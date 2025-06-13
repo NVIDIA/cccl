@@ -119,8 +119,7 @@ template <typename T>
 // TODO: move to libcu++
 #if TEST_HALF_T()
 
-template <>
-[[nodiscard]] constexpr bool isnan<__half2>(__half2 value) noexcept
+[[nodiscard]] constexpr bool isnan(__half2 value) noexcept
 {
   return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
 }
