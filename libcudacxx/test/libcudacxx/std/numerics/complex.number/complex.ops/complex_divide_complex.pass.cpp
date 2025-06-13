@@ -46,7 +46,7 @@ __host__ __device__ void test_edges()
           switch (classify(testcases[j]))
           {
             case zero:
-              assert(classify(r) == NaN);
+              assert(classify(r) == inf);
               break;
             case non_zero:
               assert(classify(r) == zero);
@@ -126,7 +126,7 @@ __host__ __device__ void test_edges()
           switch (classify(testcases[j]))
           {
             case zero:
-              assert(classify(r) == inf);
+              assert(classify(r) == NaN);
               break;
             case non_zero:
               assert(classify(r) == NaN);
