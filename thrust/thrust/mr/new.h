@@ -46,9 +46,9 @@ class new_delete_resource_base : public memory_resource<>
 public:
   void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-#if defined(__cpp_aligned_new)
+#if __cpp_aligned_new >= 201606L
     return ::operator new(bytes, std::align_val_t(alignment));
-#else
+#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
     // allocate memory for bytes, plus potential alignment correction,
     // plus store of the correction offset
     void* p             = ::operator new(bytes + alignment + sizeof(std::size_t));
@@ -62,27 +62,27 @@ public:
     std::size_t* offset_store = reinterpret_cast<std::size_t*>(ptr + bytes);
     *offset_store             = offset;
     return static_cast<void*>(ptr);
-#endif
+#endif // ^^^ __cpp_aligned_new < 201606L ^^^
   }
 
   void do_deallocate(void* p,
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-#if defined(__cpp_aligned_new)
-#  if defined(__cpp_sized_deallocation)
+#if __cpp_aligned_new >= 201606L
+#  if __cpp_sized_deallocation >= 201309L
     ::operator delete(p, bytes, std::align_val_t(alignment));
-#  else
+#  else // ^^^ __cpp_sized_deallocation >= 201309L ^^^ / vvv __cpp_sized_deallocation < 201309L vvv
     ::operator delete(p, std::align_val_t(alignment));
-#  endif
-#else
+#  endif // ^^^ __cpp_sized_deallocation < 201309L ^^^
+#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
     char* ptr = static_cast<char*>(p);
     // calculate where the offset is stored
     std::size_t* offset = reinterpret_cast<std::size_t*>(ptr + bytes);
     // calculate the original pointer
     p = static_cast<void*>(ptr - *offset);
     ::operator delete(p);
-#endif
+#endif // ^^^ __cpp_aligned_new < 201606L ^^^
   }
 };
 

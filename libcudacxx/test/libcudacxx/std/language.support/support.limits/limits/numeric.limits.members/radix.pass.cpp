@@ -31,9 +31,9 @@ int main(int, char**)
   test<signed char, 2>();
   test<unsigned char, 2>();
   test<wchar_t, 2>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, 2>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, 2>();
   test<char32_t, 2>();
   test<short, 2>();

@@ -42,9 +42,9 @@ int main(int, char**)
   test<char>(CHAR_MAX);
   test<signed char>(SCHAR_MAX);
   test<unsigned char>(UCHAR_MAX);
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>(UCHAR_MAX); // ??
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>(USHRT_MAX);
   test<char32_t>(UINT_MAX);
   test<short>(SHRT_MAX);

@@ -47,7 +47,7 @@
 #    include <memory>
 #  endif // _CCCL_COMPILER(NVRTC)
 
-#  ifndef __cpp_lib_constexpr_dynamic_alloc
+#  if __cpp_lib_constexpr_dynamic_alloc < 201907L
 namespace std
 {
 _CCCL_EXEC_CHECK_DISABLE
@@ -64,7 +64,7 @@ _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 #    endif
 }
 } // namespace std
-#  endif // __cpp_lib_constexpr_dynamic_alloc
+#  endif // __cpp_lib_constexpr_dynamic_alloc < 201907L
 #endif // _CCCL_STD_VER >= 2020
 
 #include <cuda/std/__cccl/prologue.h>

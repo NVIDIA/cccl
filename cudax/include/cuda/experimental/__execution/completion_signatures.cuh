@@ -617,7 +617,7 @@ template <bool _PotentiallyThrowing>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // invalid_completion_signature
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 
 template <class... _What, class... _Values>
 [[noreturn, nodiscard]] _CCCL_API consteval auto invalid_completion_signature(_Values... __values)
@@ -633,7 +633,7 @@ template <class... _What, class... _Values>
   }
 }
 
-#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 
 template <class... _What, class... _Values>
 [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
@@ -641,7 +641,7 @@ template <class... _What, class... _Values>
   return _ERROR<_What...>{};
 }
 
-#endif // ^^^ no constexpr exceptions ^^^
+#endif // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^
 
 } // namespace cuda::experimental::execution
 

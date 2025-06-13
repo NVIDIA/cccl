@@ -43,7 +43,7 @@
 #      define _CCCL_NO_RTTI
 #    endif
 #  else
-#    if __GXX_RTTI == 0 && __cpp_rtti == 0
+#    if __GXX_RTTI == 0 && __cpp_rtti < 199711L
 #      define _CCCL_NO_RTTI
 #    endif
 #  endif
@@ -63,7 +63,7 @@
 #      define _CCCL_NO_TYPEID
 #    endif
 #  else
-#    if __GXX_RTTI == 0 && __cpp_rtti == 0
+#    if __GXX_RTTI == 0 && __cpp_rtti < 199711L
 #      define _CCCL_NO_TYPEID
 #    endif
 #  endif

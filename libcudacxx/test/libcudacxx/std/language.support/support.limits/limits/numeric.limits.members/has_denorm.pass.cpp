@@ -30,9 +30,9 @@ int main(int, char**)
   test<signed char, cuda::std::denorm_absent>();
   test<unsigned char, cuda::std::denorm_absent>();
   test<wchar_t, cuda::std::denorm_absent>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, cuda::std::denorm_absent>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, cuda::std::denorm_absent>();
   test<char32_t, cuda::std::denorm_absent>();
   test<short, cuda::std::denorm_absent>();

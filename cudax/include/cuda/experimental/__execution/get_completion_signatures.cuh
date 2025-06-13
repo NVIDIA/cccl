@@ -117,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
 //   }
 //   else
 
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 
 #  define _CUDAX_LET_COMPLETIONS(...)                  \
     if constexpr ([[maybe_unused]] __VA_ARGS__; false) \
@@ -131,7 +131,7 @@ template <class... _Sndr>
   throw __dependent_sender_error<_Sndr...>{};
 }
 
-#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 
 #  define _CUDAX_PP_EAT_AUTO_auto(_ID)    _ID _CCCL_PP_EAT _CCCL_PP_LPAREN
 #  define _CUDAX_PP_EXPAND_AUTO_auto(_ID) auto _ID
@@ -152,7 +152,7 @@ template <class... _Sndr>
   return __dependent_sender_error<_Sndr...>{};
 }
 
-#endif // ^^^ no constexpr exceptions ^^^
+#endif // ^^^ !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // get_completion_signatures
@@ -270,7 +270,7 @@ template <class _Parent, class _Child, class... _Env>
 #undef _CUDAX_CHECKED_COMPLSIGS
 _CCCL_DIAG_POP
 
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 // When asked for its completions without an envitonment, a dependent sender
 // will throw an exception of a type derived from `dependent_sender_error`.
 template <class _Sndr>
@@ -288,14 +288,14 @@ catch (...)
 {
   return false; // different kind of exception was thrown; not a dependent sender
 }
-#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 template <class _Sndr>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __is_dependent_sender() noexcept -> bool
 {
   using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
   return _CUDA_VSTD::is_base_of_v<dependent_sender_error, _Completions>;
 }
-#endif // ^^^ no constexpr exceptions ^^^
+#endif // ^^^ !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^
 
 } // namespace cuda::experimental::execution
 
