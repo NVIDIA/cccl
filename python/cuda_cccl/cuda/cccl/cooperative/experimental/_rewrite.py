@@ -26,13 +26,13 @@ from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import current_launch_config
 
-if True:
+if False:
     from numba.core import config
 
     config.DEBUG = True
     config.DEBUG_JIT = True
     config.DUMP_IR = True
-    config.CUDA_ENABLE_PYNVJITLINK = True
+    # config.CUDA_ENABLE_PYNVJITLINK = True
 
 
 def get_element_count(shape):
@@ -122,7 +122,7 @@ class CoopNode:
     func: Any
     func_name: str
     impl_class: Any
-    target_name: str
+    target: Any
     calltypes: Any
     typemap: Any
     func_ir: Any
@@ -319,7 +319,7 @@ class CoopNode:
         return self.codegens[idx]
 
 
-class LoadStoreNode(CoopNode):
+class CoopLoadStoreNode(CoopNode):
     threads_per_block = None
 
     def refine_match(self, rewriter):
@@ -334,12 +334,9 @@ class LoadStoreNode(CoopNode):
 
         expr = self.expr
         dtype = None
-        dim = None
         items_per_thread = None
-        algorithm = None
         algorithm_id = None
         expr_args = self.expr_args = list(expr.args)
-        expr_args_no_longer_needed = self.expr_args_no_longer_needed = []
         if self.is_load:
             src = expr_args.pop(0)
             dst = expr_args.pop(0)
@@ -467,7 +464,7 @@ class LoadStoreNode(CoopNode):
                     # Add all the LTO-IRs to the current code library.
                     lib = context.active_code_library
                     algo = node.instance.specialization
-                    algo.generate_source(node.threads)
+                    # algo.generate_source(node.threads)
                     for ltoir in algo.lto_irs:
                         lib.add_linking_file(ltoir)
 
@@ -482,7 +479,7 @@ class LoadStoreNode(CoopNode):
         # I can't imagine any of this is the canonical (or even correct) way
         # to do this.
         typingctx = self.typingctx
-        result = func_ty.get_call_type(
+        func_ty.get_call_type(
             typingctx,
             args=(first_ty, second_ty),
             kws={},
@@ -498,11 +495,11 @@ class LoadStoreNode(CoopNode):
         return (g_assign, new_assign)
 
 
-class CoopBlockLoadNode(LoadStoreNode, CoopNodeMixin):
+class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.load"
 
 
-class CoopBlockStoreNode(LoadStoreNode, CoopNodeMixin):
+class CoopBlockStoreNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.store"
 
 
@@ -540,7 +537,15 @@ class CoopArrayNode(CoopNode):
 
         new_nodes = []
 
-        # Process the 1D shape argument.
+        # Process the shape argument.  Note that shape can either be an
+        # integer literal or a 2D or 3D tuple of integers at this point,
+        # per the standard dim3 (x, y, z) affair.  To make our lives easier
+        # in this rewriting pass, we flatten the shape to a 1D integer via
+        # the `get_element_count` utility function.
+        #
+        # This allows us to just inject a single integer literal into the IR,
+        # which is a lot less fiddly than supporting all three possible dim3
+        # shapes (1D, 2D, 3D) and their associated types.
         shape = self.element_count
         scope = node.instr.target.scope
         new_shape_name = f"${self.make_arg_name('shape')}"
@@ -553,27 +558,42 @@ class CoopArrayNode(CoopNode):
         )
         new_nodes.append(new_shape_assign)
 
-        # Process the dtype argument.
-        dtype = self.dtype
+        # Process the dtype argument.  Unlike shape, which we can just inject
+        # as a constant variable, dtype is a Numba type object, so we need to
+        # inject both the `numba` module as a global, and then a supporting
+        # getattr to get the dtype object from it.
+
+        g_numba_module_assign = rewriter.get_or_create_global_numba_module_instr(
+            scope,
+            expr.loc,
+            new_nodes,
+        )
+
+        dtype_attr = str(self.dtype)
         new_dtype_name = f"${self.make_arg_name('dtype')}"
         new_dtype_var = ir.Var(scope, new_dtype_name, expr.loc)
-        self.typemap[new_dtype_var.name] = types.DType(dtype)
-        new_dtype_assign = ir.Assign(
-            value=ir.Const(dtype, expr.loc),
+        dtype_ty = types.DType(self.dtype)
+        self.typemap[new_dtype_var.name] = dtype_ty
+
+        dtype_getattr = ir.Expr.getattr(
+            value=g_numba_module_assign.target,
+            attr=dtype_attr,
+            loc=expr.loc,
+        )
+        dtype_assign = ir.Assign(
+            value=dtype_getattr,
             target=new_dtype_var,
             loc=expr.loc,
         )
-        new_nodes.append(new_dtype_assign)
+        new_nodes.append(dtype_assign)
 
-        # Process the alignment argument if present.
+        # Process the alignment argument if present.  We can handle this the
+        # same way we handled the single integer literal shape argument: just
+        # inject a constant variable into the IR.
         if self.alignment is not None:
             alignment = self.alignment
             new_alignment_name = f"${self.make_arg_name('alignment')}"
-            new_alignment_var = ir.Var(
-                scope,
-                new_alignment_name,
-                expr.loc,
-            )
+            new_alignment_var = ir.Var(scope, new_alignment_name, expr.loc)
             self.typemap[new_alignment_var.name] = types.IntegerLiteral(alignment)
             new_alignment_assign = ir.Assign(
                 value=ir.Const(alignment, expr.loc),
@@ -582,15 +602,28 @@ class CoopArrayNode(CoopNode):
             )
             new_nodes.append(new_alignment_assign)
 
+        # At this point, we've finished processing the arguments to the array
+        # call (shape, dtype, and, optionally, alignment).  We now need to
+        # inject the instructions required to call the corresponding array
+        # primitive function from the `numba.cuda` module.
+        #
+        # This involves obtaining the `numba.cuda` module as a global variable
+        # (creating it if it doesn't exist), then getting the `local` or
+        # `shared` attribute from it, then the `array` attribute from that,
+        # and finally calling the `array` function with the shape, dtype, and
+        # alignment arguments.
+
         # Re-use the global numba.cuda module variable if its available,
         # otherwise, create and insert a new one.
-        g_numba_cuda_assign = rewriter.get_or_create_global_cuda_module_instr(
-            scope,
-            expr.loc,
-            new_nodes,
+        g_numba_cuda_module_assign = (
+            rewriter.get_or_create_global_numba_cuda_module_instr(
+                scope,
+                expr.loc,
+                new_nodes,
+            )
         )
 
-        # Get the attribute name for the array primitive.
+        # Get the array primitive's attribute name (i.e. local or shared).
         attr_name = self.attr_name
 
         # Get the array primitive.
@@ -598,7 +631,7 @@ class CoopArrayNode(CoopNode):
         import numba.cuda.cudadecl
 
         array_module = getattr(numba.cuda, attr_name)
-        array_func = getattr(array_module, "array")
+        # array_func = getattr(array_module, "array")
         array_decl_name = f"Cuda_{attr_name}_array"
         array_decl = getattr(numba.cuda.cudadecl, array_decl_name)
         array_decl_ty = types.Function(array_decl)
@@ -612,9 +645,43 @@ class CoopArrayNode(CoopNode):
         mod = mod_ty(context=None)
         array_func_ty = mod.resolve_array(None)
 
+        assert array_decl_ty is array_func_ty, (array_decl_ty, array_func_ty)
+
+        array_func_template_class = array_func_ty.templates[0]
+        instance = array_func_template_class(context=None)
+
+        typer = instance.generic()
+        match_sig = inspect.signature(typer)
+        try:
+            match_sig.bind(shape, self.dtype, alignment=self.alignment)
+        except Exception as e:
+            msg = f"Failed to bind array function signature for {self!r}: {e}"
+            raise RuntimeError(msg)
+
+        args = [types.IntegerLiteral(shape), dtype_ty]
+        if self.alignment is not None:
+            args.append(types.IntegerLiteral(self.alignment))
+
+        return_type = typer(*args)
+        if not isinstance(return_type, types.Array):
+            msg = f"Expected an array type, got {return_type!r}"
+            raise RuntimeError(msg)
+
+        # More get_call_type() shenanigans.
+        array_func_sig = Signature(return_type, args, recvr=None, pysig=None)
+        typingctx = self.typingctx
+        array_decl_ty.get_call_type(
+            typingctx,
+            args=array_func_sig.args,
+            kws={},
+        )
+        check = array_decl_ty._impl_keys[array_func_sig.args]
+        assert check is not None, check
+        # array_func_sig = sig
+
         # module_attr = getattr(numba.cuda, attr_name)
         module_attr_getattr = ir.Expr.getattr(
-            value=g_numba_cuda_assign.target,
+            value=g_numba_cuda_module_assign.target,
             attr=attr_name,
             loc=expr.loc,
         )
@@ -652,7 +719,7 @@ class CoopArrayNode(CoopNode):
         if self.alignment is not None:
             new_args.append(new_alignment_var)
 
-        array_func_var_name = f"{array_attr_var_name}_array_call"
+        array_func_var_name = f"{module_attr_var_name}_array_call"
         array_func_var = ir.Var(scope, array_func_var_name, expr.loc)
         self.typemap[array_func_var.name] = array_func_ty
         array_func_call = ir.Expr.call(
@@ -661,14 +728,13 @@ class CoopArrayNode(CoopNode):
             kws=(),
             loc=expr.loc,
         )
+        self.calltypes[array_func_call] = array_func_sig
         array_func_assign = ir.Assign(
             value=array_func_call,
-            target=array_func_var,
+            target=node.target,
             loc=expr.loc,
         )
         new_nodes.append(array_func_assign)
-
-        # Do we need to insert ir.Del nodes for all the new nodes we created?
 
         return new_nodes
 
@@ -707,43 +773,77 @@ def get_coop_class_maps():
 
 @register_rewrite("after-inference")
 class BaseCooperativeNodeRewriter(Rewrite):
+    interesting_modules = {
+        "numba",
+        "numba.cuda",
+    }
+
     def __init__(self, state, *args, **kwargs):
         super().__init__(state, *args, **kwargs)
 
         (decl_classes, node_classes) = get_coop_class_maps()
-        self.decl_classes = decl_classes
-        self.node_classes = node_classes
-        self._global_cuda_module_instr = None
-        self.need_global_cuda_module_instr = False
+        self._decl_classes = decl_classes
+        self._node_classes = node_classes
 
-        self.state = state
+        # Map of fully-qualified module names to the ir.Assign instruction
+        # for loading the module as a global variable.
+        self._modules: dict[str, ir.Assign] = {}
 
-    def get_or_create_global_cuda_module_instr(self, scope, loc, new_nodes):
-        instr = self._global_cuda_module_instr
+        # Set of fully-qualified module names requested by nodes being
+        # rewritten this pass.  Nodes that need a module will call our
+        # `needs_module(self, fq_mod_name)` method, which will add the
+        # name to this set.
+        self._needs_module: set[str] = set()
+
+        self._state = state
+
+    def _reset(self):
+        # Called by match() when we've found the first coop node in a new block.
+        self._modules.clear()
+        self._needs_module.clear()
+
+    def _get_or_create_global_module(
+        self,
+        mod_key: str,
+        module_obj,
+        scope,
+        loc,
+        new_nodes: list[ir.Assign],
+    ) -> ir.Assign:
+        instr = self._modules.get(mod_key)
         if instr:
+            new_nodes.append(instr)
             return instr
 
+        # Unique SSA variable for the module object
+        unique_name = f"$g_{mod_key.replace('.', '_')}_var"
+        var_name = ir_utils.mk_unique_var(unique_name)
+        var = ir.Var(scope, var_name, loc)
+
+        # ir.Global wraps the Python module so it becomes a constant
+        g_mod = ir.Global(mod_key.split(".")[-1], module_obj, loc)
+        instr = ir.Assign(value=g_mod, target=var, loc=loc)
+
+        # Type-map entry so later passes know this is a module object.
+        self.typemap[var.name] = types.Module(module_obj)
+
+        # Cache for reuse.
+        self._modules[mod_key] = instr
+
+        new_nodes.append(instr)
+        return instr
+
+    def get_or_create_global_numba_module_instr(self, scope, loc, new_nodes):
+        import numba
+
+        return self._get_or_create_global_module("numba", numba, scope, loc, new_nodes)
+
+    def get_or_create_global_numba_cuda_module_instr(self, scope, loc, new_nodes):
         import numba.cuda
 
-        g_numba_cuda_var_name = ir_utils.mk_unique_var("$g_numba_cuda_var")
-        g_numba_cuda_var = ir.Var(scope, g_numba_cuda_var_name, loc)
-        g_numba_cuda = ir.Global(
-            g_numba_cuda_var_name,
-            numba.cuda,
-            loc,
+        return self._get_or_create_global_module(
+            "numba.cuda", numba.cuda, scope, loc, new_nodes
         )
-
-        g_numba_cuda_assign = ir.Assign(
-            value=g_numba_cuda,
-            target=g_numba_cuda_var,
-            loc=loc,
-        )
-
-        self.typemap[g_numba_cuda_var.name] = types.Module(numba.cuda)
-
-        self._global_cuda_module_instr = g_numba_cuda_assign
-        new_nodes.append(g_numba_cuda_assign)
-        return g_numba_cuda_assign
 
     def match(self, func_ir, block, typemap, calltypes, **kw):
         # If there are no calls in this block, we can immediately skip it.
@@ -751,22 +851,31 @@ class BaseCooperativeNodeRewriter(Rewrite):
         if num_calltypes == 0:
             return False
 
+        self._reset()
+
         first = True
         found = False
 
-        decl_classes = self.decl_classes
-        node_classes = self.node_classes
+        decl_classes = self._decl_classes
+        node_classes = self._node_classes
+        interesting_modules = self.interesting_modules
 
         for i, instr in enumerate(block.body):
-            if isinstance(instr, ir.Global):
-                expr = instr.value
-                if isinstance(expr, PyModuleType):
-                    if expr.__name__ == "numba.cuda":
-                        self._global_cuda_module_instr = instr
-                        continue
-            if not isinstance(instr, ir.Assign):
-                continue
+            # Temp: do we ever encounter nodes other than Assign, Del, or
+            # Return?
+            if not isinstance(instr, (ir.Assign, ir.Del, ir.Return)):
+                raise RuntimeError(f"Unexpected instruction type: {instr!r}")
+
             expr = instr.value
+            if isinstance(expr, ir.Global):
+                if isinstance(expr.value, PyModuleType):
+                    module = expr.value
+                    module_name = module.__name__
+                    if module_name in interesting_modules:
+                        if module_name not in self._modules:
+                            self._modules[module_name] = instr
+                continue
+
             if not isinstance(expr, ir.Expr):
                 continue
             if expr.op != "call":
@@ -800,8 +909,6 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 first = False
                 found = True
 
-            target_name = instr.target.name
-
             node = node_class(
                 index=i,
                 block_line=block.loc.line,
@@ -811,13 +918,14 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 func=func,
                 func_name=func_name,
                 impl_class=impl_class,
-                target_name=target_name,
+                target=instr.target,
                 calltypes=calltypes,
                 typemap=typemap,
                 func_ir=func_ir,
-                typingctx=self.state.typingctx,
+                typingctx=self._state.typingctx,
             )
 
+            target_name = node.target.name
             assert target_name not in self.nodes, target_name
             self.nodes[target_name] = node
             node.refine_match(self)
@@ -828,52 +936,27 @@ class BaseCooperativeNodeRewriter(Rewrite):
         new_block = ir.Block(self.block.scope, self.block.loc)
         new_instrs = []
 
-        if self.need_global_cuda_module_instr:
-            self.get_or_create_global_cuda_module_instr(
-                self.block.scope,
-                self.block.loc,
-                new_instrs,
-            )
-
-        # unused = set()
-        # for node in self.nodes.values():
-        #    unused.update(node.expr_args_no_longer_needed)
-
-        # XXX todo: I don't know if we need to omit unused variables here;
-        # the dead variable elimination pass may already take care of that
-        # for us.
-
         for instr in self.block.body:
             if isinstance(instr, ir.Assign):
                 target_name = instr.target.name
                 node = self.nodes.get(target_name, None)
                 if not node:
-                    # if instr.target in unused:
-                    #    continue
                     new_block.append(instr)
                     continue
 
-                for new_instr in node.rewrite(self):
-                    new_instrs.append(new_instr)
+                new_instrs = node.rewrite(self)
+                for new_instr in new_instrs:
                     new_block.append(new_instr)
 
-            elif isinstance(instr, ir.Del):
-                # if instr in unused:
-                #    continue
-                new_block.append(instr)
-                continue
-
-            elif isinstance(instr, ir.Var):
-                # if instr in unused:
-                #    continue
-                new_block.append(instr)
-                continue
-
             else:
-                # if instr in unused:
-                #    continue
+                # Copy the original instruction verbatim.
                 new_block.append(instr)
-                continue
 
-        # new_block.dump()
         return new_block
+
+
+def _init_rewriter():
+    # Dummy function that allows us to do the following in `_init_extension`:
+    # from ._rewrite import _init_rewriter
+    # _init_rewriter()
+    pass

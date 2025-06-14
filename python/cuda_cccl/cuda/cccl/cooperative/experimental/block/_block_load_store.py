@@ -5,16 +5,16 @@
 
 import numba
 
-from cuda.cccl.cooperative.experimental._common import (
+from .._common import (
     make_binary_tempfile,
     normalize_dim_param,
     normalize_dtype_param,
 )
-from cuda.cccl.cooperative.experimental._enums import (
+from .._enums import (
     BlockLoadAlgorithm,
     BlockStoreAlgorithm,
 )
-from cuda.cccl.cooperative.experimental._types import (
+from .._types import (
     Algorithm,
     BasePrimitive,
     Dependency,
@@ -23,6 +23,10 @@ from cuda.cccl.cooperative.experimental._types import (
     Invocable,
     Pointer,
     TemplateParameter,
+)
+from .._typing import (
+    DimType,
+    DtypeType,
 )
 
 CUB_BLOCK_LOAD_ALGOS = {
@@ -108,6 +112,25 @@ class load(BaseLoadStore):
     method_name = "Load"
     c_name = "block_load"
     includes = ["cub/block/block_load.cuh"]
+
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        algorithm=None,
+    ):
+        """Creates a block-wide load operation."""
+        algo = cls(dtype, threads_per_block, items_per_thread, algorithm)
+        specialization = algo.specialization
+
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
 
 
 class store(BaseLoadStore):
