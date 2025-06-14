@@ -14,13 +14,18 @@
 #endif // no system header
 
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/cmath>
 #include <cuda/ptx>
 #include <cuda/std/bit>
+#include <cuda/std/cstdint>
 #include <cuda/std/expected>
 
 // cooperative groups do not support NVHPC yet
@@ -84,6 +89,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>,
   Offset num_items,
   int num_elem_per_thread,
+  bool /*can_vectorize*/,
   F f,
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
@@ -99,7 +105,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     out += offset;
   }
 
-  (..., prefetch_tile<block_dim>(THRUST_NS_QUALIFIER::raw_reference_cast(ins), tile_size));
+  (..., prefetch_tile<block_dim>(ins, tile_size));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -122,6 +128,148 @@ _CCCL_DEVICE void transform_kernel_impl(
   else
   {
     process_tile(::cuda::std::false_type{}, ins...);
+  }
+}
+
+template <int Length>
+_CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
+{
+  static_assert(::cuda::is_power_of_two(Length));
+  if constexpr (Length == 1)
+  {
+    return ::cuda::std::int8_t{};
+  }
+  else if constexpr (Length == 2)
+  {
+    return ::cuda::std::int16_t{};
+  }
+  else if constexpr (Length == 4)
+  {
+    return ::cuda::std::int32_t{};
+  }
+  else if constexpr (Length == 8)
+  {
+    return ::cuda::std::int64_t{};
+  }
+  else if constexpr (Length == 16)
+  {
+    return int4{};
+  }
+  else if constexpr (Length == 32)
+  {
+    return longlong4{};
+  }
+  else
+  {
+    return ::cuda::std::array<int, Length / sizeof(int)>{};
+  }
+}
+
+template <typename T, typename U>
+using larger_t = ::cuda::std::conditional_t<(sizeof(T) > sizeof(U)), T, U>;
+
+template <typename VectorizedPolicy,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorIn>
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::vectorized>,
+  Offset num_items,
+  int num_elem_per_thread,
+  bool can_vectorize,
+  F f,
+  RandomAccessIteratorOut out,
+  RandomAccessIteratorIn... ins)
+{
+  static_assert((THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorIn> && ...));
+
+  constexpr int block_dim        = VectorizedPolicy::block_threads;
+  constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
+  constexpr int tile_stride      = block_dim * items_per_thread;
+  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size            = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
+
+  if (!can_vectorize || tile_size != tile_stride)
+  {
+    // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
+    transform_kernel_impl<VectorizedPolicy>(
+      ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>{},
+      num_items,
+      num_elem_per_thread,
+      can_vectorize,
+      ::cuda::std::move(f),
+      ::cuda::std::move(out),
+      ::cuda::std::move(ins)...);
+    return;
+  }
+
+  // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
+  {
+    (..., (ins += offset));
+    out += offset;
+  }
+
+  constexpr int load_store_word_size = VectorizedPolicy::load_store_word_size;
+  using load_store_t                 = decltype(load_store_type<load_store_word_size>());
+
+  using output_t = it_value_t<RandomAccessIteratorOut>;
+  ::cuda::std::array<output_t, items_per_thread> output;
+
+  auto provide_array = [&](auto... inputs) {
+    // load inputs
+    // TODO(bgruber): we could support fancy iterators for loading here
+    [[maybe_unused]] auto load_tile_vectorized = [&](auto in, auto& input) {
+      using input_t = it_value_t<decltype(in)>;
+      static_assert((items_per_thread * sizeof(input_t)) % load_store_word_size == 0);
+      constexpr int loads = (items_per_thread * sizeof(input_t)) / load_store_word_size;
+
+      using load_t   = larger_t<load_store_t, input_t>;
+      auto in_vec    = reinterpret_cast<const load_t*>(in);
+      auto input_vec = reinterpret_cast<load_t*>(input.data());
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < loads; ++i)
+      {
+        input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
+      }
+    };
+    (load_tile_vectorized(ins, inputs), ...);
+
+    // process
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < items_per_thread; ++i)
+    {
+      output[i] = f(inputs[i]...);
+    }
+  };
+  provide_array(::cuda::std::array<it_value_t<RandomAccessIteratorIn>, items_per_thread>{}...);
+
+  // write output
+  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+                && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorOut>>)
+  {
+    // vector path
+    static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
+    constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
+
+    using store_t   = larger_t<load_store_t, output_t>;
+    auto output_vec = reinterpret_cast<const store_t*>(output.data());
+    auto out_vec    = reinterpret_cast<store_t*>(out);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < stores; ++i)
+    {
+      out_vec[i * VectorizedPolicy::block_threads + threadIdx.x] = output_vec[i];
+    }
+  }
+  else
+  {
+    // serial path
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < items_per_thread; ++i)
+    {
+      out[i * VectorizedPolicy::block_threads + threadIdx.x] = output[i];
+    }
   }
 }
 
@@ -331,6 +479,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
   Offset num_items,
   int num_elem_per_thread,
+  bool /*can_vectorize*/,
   F f,
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
@@ -418,6 +567,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
     Offset num_items,
     int num_elem_per_thread,
+    bool can_vectorize,
     F f,
     RandomAccessIteratorOut out,
     kernel_arg<RandomAccessIteartorsIn>... ins)
@@ -427,6 +577,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     alg,
     num_items,
     num_elem_per_thread,
+    can_vectorize,
     ::cuda::std::move(f),
     ::cuda::std::move(out),
     select_kernel_arg(alg, ::cuda::std::move(ins))...);
