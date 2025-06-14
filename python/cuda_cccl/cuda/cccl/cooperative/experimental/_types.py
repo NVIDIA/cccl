@@ -1067,3 +1067,19 @@ class BasePrimitive:
     @cached_property
     def invocable(self):
         return Invocable()
+
+
+class TempStorage:
+    def __init__(
+        self, size_in_bytes: int = None, alignment: int = None, auto_sync: bool = True
+    ):
+        self.size_in_bytes = size_in_bytes
+        self.alignment = alignment
+        self.auto_sync = auto_sync
+
+
+class ThreadData:
+    def __init__(self, items_per_thread: int):
+        if items_per_thread <= 0:
+            raise ValueError("items_per_thread must be a positive integer")
+        self.items_per_thread = items_per_thread

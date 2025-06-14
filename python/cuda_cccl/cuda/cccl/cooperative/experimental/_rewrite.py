@@ -877,6 +877,11 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
             if not isinstance(expr, ir.Expr):
                 continue
+            if expr.op == "getitem":
+                import debugpy
+
+                debugpy.breakpoint()
+                print(expr)
             if expr.op != "call":
                 continue
             func_name = expr.func.name
