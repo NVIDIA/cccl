@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_GRAPH_FWD
-#define __CUDAX_GRAPH_FWD
+#ifndef __CUDAX_GRAPH_CONCEPTS
+#define __CUDAX_GRAPH_CONCEPTS
 
 #include <cuda/std/detail/__config>
 
@@ -21,24 +21,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/array>
+#include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda_runtime_api.h>
+#include <cuda/experimental/__graph/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-struct graph_builder;
-struct graph_node_ref;
-struct graph;
-struct path_builder;
 
-template <class... _Nodes>
-_CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
-  -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
+// Concept to check if T is a graph dependency or contains them (either path_builder or graph_node_ref)
+// TODO we might do something more abstract here rather than just checking specific types
+template <typename T>
+_CCCL_CONCEPT graph_dependency =
+  _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<T>, path_builder>
+  || _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<T>, graph_node_ref>;
+
+// Concept to check if T can insert nodes into a graph
+// TODO we might do something more abstract here rather than just checking specific types
+template <typename T>
+_CCCL_CONCEPT graph_inserter = _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<T>, path_builder>;
+
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_GRAPH_FWD
+#endif // __CUDAX_GRAPH_CONCEPTS

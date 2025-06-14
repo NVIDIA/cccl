@@ -94,19 +94,42 @@ public:
   }
 };
 
-struct assign_42
+template <int N>
+struct assign_n
 {
   __device__ constexpr void operator()(int* pi) const noexcept
   {
-    *pi = 42;
+    *pi = N;
   }
 };
 
-struct verify_42
+template <int N>
+struct verify_n
 {
   __device__ void operator()(int* pi) const noexcept
   {
-    CUDAX_REQUIRE(*pi == 42);
+    CUDAX_REQUIRE(*pi == N);
+  }
+};
+
+using assign_42 = assign_n<42>;
+using verify_42 = verify_n<42>;
+
+struct atomic_add_one
+{
+  __device__ void operator()(int* pi) const noexcept
+  {
+    cuda::atomic_ref atomic_pi(*pi);
+    atomic_pi.fetch_add(1);
+  }
+};
+
+struct atomic_sub_one
+{
+  __device__ void operator()(int* pi) const noexcept
+  {
+    cuda::atomic_ref atomic_pi(*pi);
+    atomic_pi.fetch_sub(1);
   }
 };
 

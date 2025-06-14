@@ -237,11 +237,14 @@ private:
     // start the child operation state on the host and launch a kernel to pass the results
     // to the receiver.
     execution::start(__state.__opstate_);
-    auto __status =
-      __detail::launch_impl(__stream, __launch_config_, &__host_complete_fn<_Rcvr, __results_t>, &__state.__state_);
-    if (__status != cudaSuccess)
+    try
     {
-      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), __status);
+      __launch_impl(
+        __stream, __launch_config_, reinterpret_cast<void*>(&__host_complete_fn<_Rcvr, __results_t>), &__state.__state_);
+    }
+    catch (::cuda::cuda_error& __cuda_error)
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), __cuda_error.status());
     }
   }
 
