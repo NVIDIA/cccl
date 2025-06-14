@@ -7,6 +7,7 @@ from functools import cached_property
 from io import StringIO
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
+from types import SimpleNamespace
 from typing import BinaryIO, Literal, Sequence
 
 import numba
@@ -15,9 +16,14 @@ from numba import cuda, types
 from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
+from numba.cuda import LTOIR
 
 import cuda.cccl.cooperative.experimental._nvrtc as nvrtc
-from cuda.cccl.cooperative.experimental._common import find_unsigned
+
+from ._common import (
+    find_unsigned,
+    make_binary_tempfile,
+)
 
 NUMBA_TYPES_TO_CPP = {
     types.boolean: "bool",
@@ -90,12 +96,16 @@ class TypeWrapper:
         self.code = buf.getvalue()
 
         for method in methods:
-            lto_fn, _ = cuda.compile(
+            ltoir_blob, _ = cuda.compile(
                 methods[method],
                 sig=method_to_signature(numba_type, method),
                 output="ltoir",
             )
-            self.lto_irs.append(lto_fn)
+            ltoir = LTOIR(
+                name=f"udt_{numba_type!s}_{method}",
+                data=ltoir_blob,
+            )
+            self.lto_irs.append(ltoir)
 
 
 def numba_type_to_wrapper(
@@ -405,8 +415,12 @@ class DependentPythonOperator:
                     ret_numba_type, types.CPointer(op.dtype), *arg_numba_types
                 )
             abi_info = {"abi_name": mangled_name}
-            ltoir, _ = cuda.compile(
+            ltoir_blob, _ = cuda.compile(
                 binary_op, sig=binary_op_signature, output="ltoir", abi_info=abi_info
+            )
+            ltoir = LTOIR(
+                name=f"udf_{mangled_name}",
+                data=ltoir_blob,
             )
             return StatefulOperator(
                 mangled_name, op.dtype, ret_cpp_type, arg_cpp_types, ltoir
@@ -421,10 +435,19 @@ class DependentPythonOperator:
             else:
                 binary_op_signature = signature(ret_numba_type, *arg_numba_types)
             abi_info = {"abi_name": mangled_name}
-            ltoir, _ = cuda.compile(
+            ltoir_blob, _ = cuda.compile(
                 binary_op, sig=binary_op_signature, output="ltoir", abi_info=abi_info
             )
-            return StatelessOperator(mangled_name, ret_cpp_type, arg_cpp_types, ltoir)
+            ltoir = LTOIR(
+                name=f"udf_{mangled_name}",
+                data=ltoir_blob,
+            )
+            return StatelessOperator(
+                mangled_name,
+                ret_cpp_type,
+                arg_cpp_types,
+                ltoir,
+            )
 
 
 class CxxFunction(Parameter):
@@ -543,6 +566,7 @@ class Algorithm:
         parameters,
         type_definitions=None,
         fake_return=False,
+        threads=None,
     ):
         self.struct_name = struct_name
         self.method_name = method_name
@@ -552,6 +576,10 @@ class Algorithm:
         self.parameters = parameters
         self.type_definitions = type_definitions
         self.fake_return = fake_return
+        self.mangled_names = []
+        self.mangled_names_alloc = []
+        self._lto_irs = []
+        self.threads = threads
 
     def __repr__(self) -> str:
         return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
@@ -601,6 +629,7 @@ class Algorithm:
             specialized_parameters,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
+            threads=self.threads,
         )
 
     @cached_property
@@ -641,8 +670,12 @@ class Algorithm:
     def temp_storage_alignment(self):
         return self._temp_storage_bytes_and_alignment[1]
 
-    def get_lto_ir(self, threads=None):
-        lto_irs = []
+    @cached_property
+    def source_code(self):
+        if len(self.template_parameters):
+            raise ValueError("Cannot generate source for a template")
+
+        lto_irs = self._lto_irs
 
         if self.type_definitions:
             for type_definition in self.type_definitions:
@@ -658,6 +691,8 @@ class Algorithm:
                     if param.name not in udf_declarations:
                         udf_declarations[param.name] = param.forward_decl()
                         lto_irs.append(param.ltoir)
+
+        self.udf_declarations = udf_declarations
 
         algorithm_name = self.struct_name
         includes = self.includes or []
@@ -712,6 +747,7 @@ class Algorithm:
                         param_args.append(name)
 
             if self.struct_name.startswith("Warp"):
+                threads = self.threads
                 if threads is None:
                     raise ValueError("Warp algorithm must specify number of threads")
                 # sub hw warps require computing masks for syncwarp, which is not supported
@@ -769,26 +805,74 @@ class Algorithm:
             chunk = buf.getvalue()
             src += chunk
 
+        return src
+
+    def get_lto_ir(self):
+        # Compatibility with original two-phase API.
+        return self.lto_irs
+
+    @cached_property
+    def lto_irs(self):
+        # Pick up any LTO IRs from type definitions.
+        lto_irs = self._lto_irs
+
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
-        # N.B. Uncomment this to immediately print generated source to stdout.
-        # print(src)
-        _, lto_fn = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
-        lto_irs.append(lto_fn)
+        src = self.source_code
+        _, blob = nvrtc.compile(
+            cpp=src,
+            cc=cc,
+            rdc=True,
+            code="lto",
+        )
+        obj = LTOIR(
+            name=self.c_name,
+            data=blob,
+        )
+        lto_irs.append(obj)
         return lto_irs
 
-    def codegen(self, func_to_overload):
+    def create_codegens(self, parameters=None, func_to_overload=None):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
-        for method in self.parameters:
-            self.codegen_method(func_to_overload, method, self.mangled_name(method))
-            self.codegen_method(
-                func_to_overload, method[1:], self.mangled_name(method) + "_alloc"
+        results = []
+
+        if parameters is None:
+            parameters = self.parameters
+        else:
+            if not isinstance(parameters, (list, tuple)):
+                parameters = [parameters]
+            # Ensure all parameters are ones we know about.
+            given_parameters = set(tuple(p) for p in parameters)
+            known_parameters = set(tuple(p) for p in self.parameters)
+            if not given_parameters.issubset(known_parameters):
+                raise ValueError(
+                    "Given parameters do not match known parameters: "
+                    f"{given_parameters - known_parameters}"
+                )
+
+        for method in parameters:
+            mangled_name = self.mangled_name(method)
+            results.append(
+                self.create_codegen_method(
+                    method,
+                    mangled_name,
+                    func_to_overload=func_to_overload,
+                )
+            )
+            results.append(
+                self.create_codegen_method(
+                    method[1:],
+                    mangled_name + "_alloc",
+                    func_to_overload=func_to_overload,
+                )
             )
 
-    def codegen_method(self, func_to_overload, method, mangled_name):
+        return results
+
+    def create_codegen_method(self, method, mangled_name, func_to_overload=None):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
@@ -801,7 +885,7 @@ class Algorithm:
             )
             return ignore
 
-        def intrinsic_impl(*args):
+        def intrinsic_impl(*outer_args):
             def codegen(context, builder, sig, args):
                 types = []
                 arguments = []
@@ -901,21 +985,45 @@ class Algorithm:
         wrapped_algorithm_impl = war_introspection(
             algorithm_impl, num_user_provided_params
         )
-        overload(func_to_overload, target="cuda")(wrapped_algorithm_impl)
+
+        if func_to_overload is not None:
+            overload(func_to_overload, target="cuda")(
+                wrapped_algorithm_impl,
+            )
+            return
+
+        cg = SimpleNamespace(
+            method=method,
+            mangled_name=mangled_name,
+            intrinsic_impl=intrinsic_impl,
+            numba_intrinsic=numba_intrinsic,
+            algorithm_impl=algorithm_impl,
+            wrapped_algorithm_impl=wrapped_algorithm_impl,
+        )
+
+        return cg
+
+    def codegen(self, func_to_overload):
+        self.create_codegens(func_to_overload=func_to_overload)
 
 
 class Invocable:
     def __init__(
         self,
-        temp_files: Sequence[BinaryIO],
-        temp_storage_bytes: int,
-        temp_storage_alignment: int,
-        algorithm: Algorithm,
+        temp_files: Sequence[BinaryIO] = None,
+        ltoir_files: Sequence[LTOIR] = None,
+        temp_storage_bytes: int = None,
+        temp_storage_alignment: int = None,
+        algorithm: Algorithm = None,
     ):
-        self._temp_files = temp_files
+        if temp_files and ltoir_files:
+            raise RuntimeError("Cannot specify both temp_files and ltoir_files.")
+        self._temp_files = temp_files or []
+        self._lto_irs = ltoir_files or []
         self._temp_storage_bytes = temp_storage_bytes
         self._temp_storage_alignment = temp_storage_alignment
-        algorithm.codegen(self)
+        if algorithm:
+            algorithm.codegen(self)
 
     @property
     def temp_storage_bytes(self):
@@ -925,11 +1033,53 @@ class Invocable:
     def temp_storage_alignment(self):
         return self._temp_storage_alignment
 
-    @property
+    @cached_property
     def files(self):
+        if self._temp_files:
+            return [v.name for v in self._temp_files]
+
+        # Until numba-cuda supports LTOIR objects in the jit decorator, we
+        # need to dump the binary data to a temp file first.
+        self._temp_files = [
+            make_binary_tempfile(ltoir.data, ".ltoir") for ltoir in self._lto_irs
+        ]
         return [v.name for v in self._temp_files]
 
     def __call__(self, *args):
         raise Exception(
             "__call__ should not be called directly outside of a numba.cuda.jit(...) kernel."
         )
+
+
+class BasePrimitive:
+    @property
+    def temp_storage_bytes(self):
+        return self.specialization.temp_storage_bytes
+
+    @property
+    def temp_storage_alignment(self):
+        return self.specialization.temp_storage_alignment
+
+    @cached_property
+    def lto_irs(self):
+        return self.specialization.lto_irs
+
+    @cached_property
+    def invocable(self):
+        return Invocable()
+
+
+class TempStorage:
+    def __init__(
+        self, size_in_bytes: int = None, alignment: int = None, auto_sync: bool = True
+    ):
+        self.size_in_bytes = size_in_bytes
+        self.alignment = alignment
+        self.auto_sync = auto_sync
+
+
+class ThreadData:
+    def __init__(self, items_per_thread: int):
+        if items_per_thread <= 0:
+            raise ValueError("items_per_thread must be a positive integer")
+        self.items_per_thread = items_per_thread
