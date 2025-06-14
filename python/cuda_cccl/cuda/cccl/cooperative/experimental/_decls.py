@@ -202,14 +202,27 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
             )
             raise errors.TypingError(msg)
 
+    def _validate_temp_storage(self, temp_storage):
+        """
+        Validate that *temp_storage* is either None or a device array.
+        Raise TypingError if it is not.  Return None if the checks pass.
+        """
+        if temp_storage is not None and not isinstance(temp_storage, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'temp_storage' to be a "
+                "device array or None"
+            )
+
     def _validate_args_and_create_signature(
-        self, src, dst, items_per_thread, algorithm=None
+        self, src, dst, items_per_thread, algorithm=None, temp_storage=None
     ):
         self._validate_src_dst(src, dst)
 
         self._validate_items_per_thread(items_per_thread)
 
         self._validate_algorithm(algorithm)
+
+        self._validate_temp_storage(temp_storage)
 
         # If we reach here, all arguments are valid.
         if self.src_first:
@@ -224,6 +237,8 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
 
         if algorithm is not None:
             arglist.append(algorithm)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
 
         sig = signature(
             types.void,
@@ -242,12 +257,14 @@ class LoadMixin:
             dst,
             items_per_thread,
             algorithm=None,
+            temp_storage=None,
         ):
             return self._validate_args_and_create_signature(
                 src,
                 dst,
                 items_per_thread,
                 algorithm,
+                temp_storage,
             )
 
         return typer
@@ -262,12 +279,14 @@ class StoreMixin:
             src,
             items_per_thread,
             algorithm=None,
+            temp_storage=None,
         ):
             return self._validate_args_and_create_signature(
                 src,
                 dst,
                 items_per_thread,
                 algorithm,
+                temp_storage,
             )
 
         return typer
