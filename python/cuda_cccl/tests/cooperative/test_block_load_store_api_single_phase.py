@@ -2,39 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-if True:
-    from cuda.cccl.cooperative.experimental._numba_extension import (
-        _init_extension,
-    )
-
-    _init_extension()
-
-# example-begin imports
 import numba
 import numpy as np
 from numba import cuda
 
 import cuda.cccl.cooperative.experimental as coop
 
-# from pynvjitlink import patch
-# patch.patch_numba_linker(lto=True)
-# example-end imports
+coop._init_extension()
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 def test_block_load_store_single_phase1():
-    # example-begin load_store_single_phase_implicit_temp_storage_kernel
-
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
         coop.block.load(d_in, thread_data, items_per_thread)
         coop.block.store(d_out, thread_data, items_per_thread)
 
-    # example-end load_store_single_phase_implicit_temp_storage_kernel
-
-    # example-begin load_store_single_phase_implicit_temp_storage_usage
     threads_per_block = 128
     items_per_thread = 4
     h_input = np.random.randint(
@@ -47,4 +32,3 @@ def test_block_load_store_single_phase1():
     h_output = d_output.copy_to_host()
 
     np.testing.assert_allclose(h_output, h_input)
-    # example-end load_store_single_phase_implicit_temp_storage_usage
