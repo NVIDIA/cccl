@@ -464,7 +464,7 @@ C2H_TEST("Async memory resource access", "")
 {
   if (cudax::devices.size() > 1)
   {
-    auto peers = cudax::devices[0].get_peers();
+    auto peers = cudax::devices[0].peer_devices();
     if (peers.size() > 0)
     {
       cudax::device_memory_pool pool{cudax::devices[0]};
