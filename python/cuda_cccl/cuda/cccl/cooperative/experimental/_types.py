@@ -19,7 +19,11 @@ from numba.core.typing import signature
 from numba.cuda import LTOIR
 
 import cuda.cccl.cooperative.experimental._nvrtc as nvrtc
-from cuda.cccl.cooperative.experimental._common import find_unsigned
+
+from ._common import (
+    find_unsigned,
+    make_binary_tempfile,
+)
 
 NUMBA_TYPES_TO_CPP = {
     types.boolean: "bool",
@@ -562,6 +566,7 @@ class Algorithm:
         parameters,
         type_definitions=None,
         fake_return=False,
+        threads=None,
     ):
         self.struct_name = struct_name
         self.method_name = method_name
@@ -573,8 +578,8 @@ class Algorithm:
         self.fake_return = fake_return
         self.mangled_names = []
         self.mangled_names_alloc = []
-        self.source_code = None
         self._lto_irs = []
+        self.threads = threads
 
     def __repr__(self) -> str:
         return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
@@ -624,6 +629,7 @@ class Algorithm:
             specialized_parameters,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
+            threads=self.threads,
         )
 
     @cached_property
@@ -664,9 +670,10 @@ class Algorithm:
     def temp_storage_alignment(self):
         return self._temp_storage_bytes_and_alignment[1]
 
-    def generate_source(self, threads=None):
-        if self.source_code is not None:
-            return
+    @cached_property
+    def source_code(self):
+        if len(self.template_parameters):
+            raise ValueError("Cannot generate source for a template")
 
         lto_irs = self._lto_irs
 
@@ -740,6 +747,7 @@ class Algorithm:
                         param_args.append(name)
 
             if self.struct_name.startswith("Warp"):
+                threads = self.threads
                 if threads is None:
                     raise ValueError("Warp algorithm must specify number of threads")
                 # sub hw warps require computing masks for syncwarp, which is not supported
@@ -797,28 +805,23 @@ class Algorithm:
             chunk = buf.getvalue()
             src += chunk
 
-        self.source_code = src
+        return src
 
-    def get_lto_ir():
+    def get_lto_ir(self):
         # Compatibility with original two-phase API.
         return self.lto_irs
 
     @cached_property
     def lto_irs(self):
-        if self.source_code is None:
-            raise RuntimeError(
-                "Source code must be generated before LTO IRs can be created"
-            )
-
         # Pick up any LTO IRs from type definitions.
         lto_irs = self._lto_irs
 
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
-        code_type = "lto"
+        src = self.source_code
         _, blob = nvrtc.compile(
-            cpp=self.source_code,
+            cpp=src,
             cc=cc,
             rdc=True,
             code="lto",
@@ -1008,11 +1011,15 @@ class Invocable:
     def __init__(
         self,
         temp_files: Sequence[BinaryIO] = None,
+        ltoir_files: Sequence[LTOIR] = None,
         temp_storage_bytes: int = None,
         temp_storage_alignment: int = None,
         algorithm: Algorithm = None,
     ):
-        self._temp_files = temp_files
+        if temp_files and ltoir_files:
+            raise RuntimeError("Cannot specify both temp_files and ltoir_files.")
+        self._temp_files = temp_files or []
+        self._lto_irs = ltoir_files or []
         self._temp_storage_bytes = temp_storage_bytes
         self._temp_storage_alignment = temp_storage_alignment
         if algorithm:
@@ -1026,8 +1033,16 @@ class Invocable:
     def temp_storage_alignment(self):
         return self._temp_storage_alignment
 
-    @property
+    @cached_property
     def files(self):
+        if self._temp_files:
+            return [v.name for v in self._temp_files]
+
+        # Until numba-cuda supports LTOIR objects in the jit decorator, we
+        # need to dump the binary data to a temp file first.
+        self._temp_files = [
+            make_binary_tempfile(ltoir.data, ".ltoir") for ltoir in self._lto_irs
+        ]
         return [v.name for v in self._temp_files]
 
     def __call__(self, *args):

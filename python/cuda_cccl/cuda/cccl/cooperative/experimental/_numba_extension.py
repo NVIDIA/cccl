@@ -9,10 +9,15 @@ by `numba.njit`/`cuda.jit`.
 
 
 def _init_extension() -> None:
+    # import cuda.cccl.cooperative.experimental._rewrite
+    from ._rewrite import _init_rewriter
+
+    _init_rewriter()
+
     # Is this the idiomatic way of registering a Numba extension?!
     from numba.cuda.target import CUDATypingContext
 
-    from cuda.cccl.cooperative.experimental._decls import registry
+    from ._decls import registry
 
     if not hasattr(CUDATypingContext, "_cccl_patched"):
         _orig = CUDATypingContext.load_additional_registries
@@ -24,13 +29,10 @@ def _init_extension() -> None:
         CUDATypingContext.load_additional_registries = _patched
         CUDATypingContext._cccl_patched = True
 
-    try:
-        from numba.cuda.cudadrv.driver import driver
+    from numba.cuda.cudadrv.driver import driver
 
-        if hasattr(driver, "target_context"):
-            driver.target_context.install_registry(reg)
-    except Exception:
-        pass
+    if hasattr(driver, "target_context"):
+        driver.target_context.install_registry(registry)
 
     import os
 
