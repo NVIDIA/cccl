@@ -562,7 +562,6 @@ class CoopArrayNode(CoopNode):
         # as a constant variable, dtype is a Numba type object, so we need to
         # inject both the `numba` module as a global, and then a supporting
         # getattr to get the dtype object from it.
-
         g_numba_module_assign = rewriter.get_or_create_global_numba_module_instr(
             scope,
             expr.loc,
