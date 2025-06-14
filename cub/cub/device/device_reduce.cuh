@@ -223,29 +223,15 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
-    // RFA is only supported for float and double accumulators
-    constexpr bool is_float_or_double = detail::is_one_of_v<accum_t, float, double>;
-    constexpr bool is_sum             = detail::reduce::is_plus<ReductionOpT>::value;
-    constexpr bool is_supported       = is_float_or_double && is_sum;
+    using transform_t     = ::cuda::std::identity;
+    using reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
+    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t =
+      detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, transform_t, accum_t, policy_t>;
 
-    static_assert(is_supported, "gpu-to-gpu deterministic reduction supports only float and double sum.");
-
-    if constexpr (is_supported)
-    {
-      using transform_t     = ::cuda::std::identity;
-      using reduce_tuning_t = ::cuda::std::execution::
-        __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
-      using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-      using dispatch_t =
-        detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, transform_t, accum_t, policy_t>;
-
-      return dispatch_t::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
-    }
-    else
-    {
-      return cudaErrorNotSupported;
-    }
+    return dispatch_t::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
   }
 
 public:
@@ -451,10 +437,46 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
+
+    using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+
+    constexpr auto gpu_gpu_determinism =
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+
+    // integral types are always gpu-to-gpu deterministic, so fallback to run-to-run determinism
+    constexpr auto integral_fallback = gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t>;
+
+    // any floating point type with ::cuda::minimum<> or ::cuda::maximum<> are always gpu-to-gpu deterministic, so
+    // fallback to run-to-run determinism
+    constexpr auto fp_min_max_fallback =
+      gpu_gpu_determinism
+      && (::cuda::is_floating_point_v<accum_t>
+          && detail::is_one_of_v<ReductionOpT, ::cuda::minimum<>, ::cuda::maximum<>>);
+
+    // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
+    constexpr auto float_double_plus = gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double>
+                                    && detail::reduce::is_plus<ReductionOpT>::value;
+
+    constexpr auto supported = integral_fallback || fp_min_max_fallback || float_double_plus || !gpu_gpu_determinism;
+
+    static_assert(supported,
+                  "gpu_to_gpu determinism is only supported for integral types, or "
+                  "float and double types with ::cuda::std::plus operator, or "
+                  "any floating point types with ::cuda::minimum<> or ::cuda::maximum<> operators.");
+
+    if constexpr (!supported)
+    {
+      return cudaErrorNotSupported;
+    }
+
+    using determinism_t =
+      ::cuda::std::conditional_t<integral_fallback || fp_min_max_fallback,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 default_determinism_t>;
 
     // Query relevant properties from the environment
     auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
