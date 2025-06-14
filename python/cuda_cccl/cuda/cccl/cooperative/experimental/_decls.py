@@ -6,16 +6,24 @@
 # It is responsible for defining the Numba templates for cuda.cooperative
 # primitives.
 
+import operator
+
 from numba.core import errors, types
 from numba.core.typing.npydecl import (
     parse_dtype,
     parse_shape,
 )
 from numba.core.typing.templates import (
+    AbstractTemplate,
     AttributeTemplate,
     CallableTemplate,
     Registry,
+    infer_global,
     signature,
+)
+from numba.extending import (
+    type_callable,
+    typeof_impl,
 )
 
 import cuda.cccl.cooperative.experimental as coop
@@ -42,6 +50,133 @@ def get_coop_decl_class_map():
         subclass: getattr(subclass, "key")
         for subclass in CoopDeclMixin.__subclasses__()
     }
+
+
+# =============================================================================
+# Temp Storage
+# =================================================================================
+class TempStorageType(types.Type):
+    def __init__(self):
+        super().__init__(name="coop.TempStorage")
+
+
+temp_storage_type = TempStorageType()
+
+
+@typeof_impl.register(coop.TempStorage)
+def typeof_temp_storage(*args, **kwargs):
+    return temp_storage_type
+
+
+@type_callable(coop.TempStorage)
+def type_temp_storage(context):
+    def typer(size_in_bytes=None, alignment=None, auto_sync=True):
+        if size_in_bytes is not None:
+            permitted = (types.Integer, types.IntegerLiteral)
+            if not isinstance(size_in_bytes, permitted):
+                msg = "size_in_bytes must be an integer value"
+                raise errors.TypingError(msg)
+
+        if alignment is not None:
+            permitted = (types.Integer, types.IntegerLiteral)
+            if not isinstance(alignment, permitted):
+                msg = "alignment must be an integer value"
+                raise errors.TypingError(msg)
+
+        if auto_sync is not None:
+            permitted = (bool, types.Boolean, types.BooleanLiteral)
+            if not isinstance(auto_sync, permitted):
+                msg = f"auto_sync must be a boolean value, got {auto_sync}"
+                raise errors.TypingError(msg)
+
+        return temp_storage_type
+
+    return typer
+
+
+class CoopTempStorageGetItemDecl(AbstractTemplate):
+    # Allows for coop primitives to be called with a temp_storage argument
+    # via the getitem syntax, e.g. `coop.block.load[temp_storage](...)`.
+    def generic(self, args, kwds):
+        assert not kwds, "No keyword arguments expected"
+        assert len(args) == 2, "Expected two arguments"
+        (func_obj, temp_storage) = args
+        if not isinstance(func_obj, types.Function):
+            return None
+
+        try:
+            typing_key = func_obj.typing_key
+        except AttributeError:
+            return None
+
+        if typing_key != self.target_key:
+            return None
+
+        if not isinstance(temp_storage, TempStorageType):
+            msg = f"temp_storage must be a {TempStorageType}, " f"got {temp_storage}"
+            raise errors.TypingError(msg)
+
+        return signature(
+            func_obj,
+            (func_obj, temp_storage),
+        )
+
+
+# =============================================================================
+# Thread Data
+# =================================================================================
+
+# Our ThreadData type simplifies this code:
+#
+#    @cuda.jit
+#    def kernel(d_in, items_per_thread):
+#      thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+#      coop.block.load(d_in, thread_data, items_per_thread)
+#      ...
+#      coop.block.store(d_in, thread_data, items_per_thread)
+#
+# To this:
+#
+#    @cuda.jit
+#    def kernel(d_in, d_out, items_per_thread):
+#      thread_data = coop.ThreadData(items_per_thread)
+#      coop.block.load(d_in, thread_data)
+#      ...
+#      coop.block.store(d_out, thread_data)
+#
+# We are able to infer the dtype during rewriting, obviating the need to
+# specify it explicitly to the ThreadData constructor.  Additionally, we
+# can obtain the `items_per_thread` value from the ThreadData object,
+# obviating need to pass it explicitly to the load/store functions.
+
+
+class ThreadDataType(types.Type):
+    def __init__(self):
+        super().__init__(name="coop.ThreadData")
+
+
+thread_data_type = ThreadDataType()
+
+
+@typeof_impl.register(coop.ThreadData)
+def typeof_thread_data(*args, **kwargs):
+    return thread_data_type
+
+
+@type_callable(coop.ThreadData)
+def type_thread_data(context):
+    def typer(items_per_thread):
+        permitted = (types.Integer, types.IntegerLiteral)
+        if not isinstance(items_per_thread, permitted):
+            msg = (
+                "items_per_thread must be an integer or "
+                f"integer literal, got {items_per_thread}"
+            )
+            raise errors.TypingError(msg)
+
+        return thread_data_type
+
+    return typer
 
 
 # =============================================================================
@@ -113,6 +248,9 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
     exact_match_required = True
     prefer_literal = True
 
+    def __init__(self, context=None):
+        super().__init__(context=context)
+
     def _validate_src_dst(self, src, dst):
         """
         Validate that *src* and *dst* are both provided, are device arrays,
@@ -124,14 +262,17 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
                 f"{self.primitive_name} needs both 'src' and 'dst' arrays"
             )
 
-        invalid_types = not isinstance(src, types.Array) or not isinstance(
-            dst, types.Array
-        )
+        permitted = (types.Array, ThreadDataType)
+        invalid_types = not isinstance(src, permitted) or not isinstance(dst, permitted)
         if invalid_types:
             raise errors.TypingError(
                 f"{self.primitive_name} requires both 'src' and 'dst' to be "
-                "device arrays"
+                "device or thread-data arrays"
             )
+
+        if isinstance(src, ThreadDataType) or isinstance(dst, ThreadDataType):
+            # No more validation required if one of the types is thread data.
+            return
 
         # Mismatched types.
         if src.dtype != dst.dtype:
@@ -214,11 +355,16 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
             )
 
     def _validate_args_and_create_signature(
-        self, src, dst, items_per_thread, algorithm=None, temp_storage=None
+        self, src, dst, items_per_thread=None, algorithm=None, temp_storage=None
     ):
         self._validate_src_dst(src, dst)
 
-        self._validate_items_per_thread(items_per_thread)
+        using_thread_data = isinstance(src, ThreadDataType) or isinstance(
+            dst, ThreadDataType
+        )
+        if not using_thread_data:
+            # items_per_thread is mandatory if not using thread data.
+            self._validate_items_per_thread(items_per_thread)
 
         self._validate_algorithm(algorithm)
 
@@ -230,13 +376,14 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
         else:
             array_args = (dst, src)
 
-        arglist = [
-            *array_args,
-            items_per_thread,
-        ]
+        arglist = [*array_args]
+
+        if items_per_thread is not None:
+            arglist.append(items_per_thread)
 
         if algorithm is not None:
             arglist.append(algorithm)
+
         if temp_storage is not None:
             arglist.append(temp_storage)
 
@@ -255,7 +402,7 @@ class LoadMixin:
         def typer(
             src,
             dst,
-            items_per_thread,
+            items_per_thread=None,
             algorithm=None,
             temp_storage=None,
         ):
@@ -277,7 +424,7 @@ class StoreMixin:
         def typer(
             dst,
             src,
-            items_per_thread,
+            items_per_thread=None,
             algorithm=None,
             temp_storage=None,
         ):
@@ -292,6 +439,7 @@ class StoreMixin:
         return typer
 
 
+# Load
 @register
 class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     key = coop.block.load
@@ -300,12 +448,25 @@ class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     default_algorithm = coop.BlockLoadAlgorithm.DIRECT
 
 
+@infer_global(operator.getitem)
+class CoopBlockLoadTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
+    target_key = coop.block.load
+    target_template = CoopBlockLoadDecl
+
+
+# Store
 @register
 class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     key = coop.block.store
     primitive_name = "coop.block.store"
     algorithm_enum = coop.BlockStoreAlgorithm
     default_algorithm = coop.BlockStoreAlgorithm.DIRECT
+
+
+@infer_global(operator.getitem)
+class CoopBlockStoreTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
+    target_key = coop.block.store
+    target_template = CoopBlockStoreDecl
 
 
 # =============================================================================

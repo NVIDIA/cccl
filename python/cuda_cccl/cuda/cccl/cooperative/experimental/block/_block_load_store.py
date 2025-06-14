@@ -1,12 +1,9 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-import operator
-
 import numba
-from numba.extending import overload
 
 from .._common import (
     make_binary_tempfile,
@@ -319,44 +316,3 @@ def create_store(dtype, threads_per_block, items_per_thread=1, algorithm="direct
         temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )
-
-
-# Support for getitem syntax: coop.block.load[temp_storage]
-@overload(operator.getitem)
-def block_load_store_getitem(func_obj, temp_storage):
-    """Handle getitem syntax for load and store functions"""
-    # Check if func_obj is a Function type and get its typing_key
-    if hasattr(func_obj, "typing_key"):
-        typing_key = func_obj.typing_key
-        if typing_key is load:
-
-            def load_getitem_impl(func_obj, temp_storage):
-                def parameterized_load(src, dst, items_per_thread, algorithm=None):
-                    # Call the load function directly with temp_storage as the last argument
-                    if algorithm is None:
-                        return load(
-                            src, dst, items_per_thread, temp_storage=temp_storage
-                        )
-                    else:
-                        return load(src, dst, items_per_thread, algorithm, temp_storage)
-
-                return parameterized_load
-
-            return load_getitem_impl
-        elif typing_key is store:
-
-            def store_getitem_impl(func_obj, temp_storage):
-                def parameterized_store(dst, src, items_per_thread, algorithm=None):
-                    # Call the store function directly with temp_storage as the last argument
-                    if algorithm is None:
-                        return store(
-                            dst, src, items_per_thread, temp_storage=temp_storage
-                        )
-                    else:
-                        return store(
-                            dst, src, items_per_thread, algorithm, temp_storage
-                        )
-
-                return parameterized_store
-
-            return store_getitem_impl
