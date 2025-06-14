@@ -11,7 +11,7 @@ std::string print(T val)
   return ss.str();
 }
 
-#if _CCCL_HAS_INT128()
+#if TEST_INT128()
 TEST_CASE("Test utils can print __int128", "[test][utils]")
 {
   REQUIRE(print(__int128_t{0}) == "0");
