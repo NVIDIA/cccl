@@ -47,7 +47,7 @@
 //   _CCCL_CATCH((...) {               // Handle any other exceptions
 //     ...
 //   })
-#if !_CCCL_HAS_EXCEPTIONS() || (_CCCL_CUDA_COMPILATION() && defined(__CUDA_ARCH__))
+#if !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC))
 #  define _CCCL_TRY(...) {__VA_ARGS__}
 #  define _CCCL_CATCH(...)
 #  define _CCCL_CATCH_OR(...)

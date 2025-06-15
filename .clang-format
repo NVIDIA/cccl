@@ -134,6 +134,7 @@ Macros:
 - _CCCL_TEMPLATE(...)=template<...>
 - _CCCL_REQUIRES(...)=requires (...)
 - _CCCL_TRY(...)=try { __VA_ARGS__ }
+- _CCCL_CATCH_OR(...)=catch __VA_ARGS__
 - _CCCL_CATCH(...)=catch __VA_ARGS__
 - _CUDAX_SEMI_PRIVATE=private
 WhitespaceSensitiveMacros:
