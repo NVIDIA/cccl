@@ -140,7 +140,9 @@ struct policy_hub_all
   GEN_POLICY(890, 870);
   GEN_POLICY(900, 890);
   GEN_POLICY(1000, 900);
-  GEN_POLICY(1200, 1000);
+  GEN_POLICY(1010, 1000);
+  GEN_POLICY(1100, 1010);
+  GEN_POLICY(1200, 1100);
   // add more policies here when new architectures emerge
   GEN_POLICY(2000, 1200); // non-existing architecture, just to test pruning
 
