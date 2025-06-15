@@ -30,8 +30,11 @@
 #include <thrust/detail/config/device_system.h>
 
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <iostream>
+
+#include <c2h/extended_types.h>
 
 /******************************************************************************
  * Console printing utilities
@@ -345,5 +348,51 @@ C2H_VEC_TRAITS_OVERLOAD(double, double)
 #  undef REPEAT_TO_LIST_3
 #  undef REPEAT_TO_LIST_4
 #  undef REPEAT_TO_LIST
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 type traits
+
+template <typename T>
+inline constexpr bool is_vector2_type_v = cuda::std::__is_one_of_v<
+  cuda::std::remove_cv_t<T>,
+  char2,
+  short2,
+  int2,
+  long2,
+  longlong2,
+  uchar2,
+  ushort2,
+  uint2,
+  ulong2,
+  ulonglong2,
+  float2,
+  double2
+  #  if TEST_HALF_T()
+  , __half2
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+  , __nv_bfloat162
+#  endif // TEST_BF_T()
+  >;
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 floating point type traits
+
+template <typename T>
+inline constexpr bool is_vector2_fp_type_v = cuda::std::__is_one_of_v<cuda::std::remove_cv_t<T>, float2, double2>;
+
+#  if TEST_HALF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_v<__half2> = true;
+
+#  endif // TEST_HALF_T()
+
+#  if TEST_BF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_v<__nv_bfloat162> = true;
+
+#  endif // TEST_BF_T()
 
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

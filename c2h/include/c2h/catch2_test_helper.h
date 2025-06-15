@@ -42,6 +42,7 @@
 
 #include <c2h/catch2_main.h>
 #include <c2h/device_policy.h>
+#include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>
@@ -109,6 +110,31 @@ using iota = ::cuda::std::__type_iota<std::size_t, Start, Size, Stride>;
 template <typename TypeList, typename T>
 using remove = ::cuda::std::__type_remove<TypeList, T>;
 
+template <typename T>
+[[nodiscard]] constexpr bool isnan(T value) noexcept
+{
+  return cuda::std::isnan(value);
+}
+
+// TODO: move to libcu++
+#if TEST_HALF_T()
+
+[[nodiscard]] constexpr bool isnan(__half2 value) noexcept
+{
+  return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+#endif // TEST_HALF_T()
+
+#if TEST_BF_T()
+
+[[nodiscard]] constexpr bool isnan(__nv_bfloat162 value) noexcept
+{
+  return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+#endif // TEST_BF_T()
+
 } // namespace c2h
 
 namespace detail
@@ -140,6 +166,13 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
   }
 
+#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                          \
+  {                                                                       \
+    auto vec_ref = detail::to_vec(ref);                                   \
+    auto vec_out = detail::to_vec(out);                                   \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
+  }
+
 namespace detail
 {
 // Returns true if values are equal, or both NaN:
@@ -148,7 +181,7 @@ struct equal_or_nans
   template <typename T>
   bool operator()(const T& a, const T& b) const
   {
-    return (cuda::std::isnan(a) && cuda::std::isnan(b)) || a == b;
+    return (c2h::isnan(a) && c2h::isnan(b)) || a == b;
   }
 };
 
