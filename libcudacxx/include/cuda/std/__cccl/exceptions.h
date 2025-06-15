@@ -39,17 +39,18 @@
 //
 // Usage:
 //   _CCCL_TRY({
-//     ...                          // Code that may throw an exception
+//     ...                             // Code that may throw an exception
 //   })
-//   _CCCL_CATCH((cuda_error& e) {  // Handle CUDA exceptions
+//   _CCCL_CATCH_OR((cuda_error& e) {  // Handle CUDA exceptions
 //     ...
 //   })
-//   _CCCL_CATCH((...) {            // Handle any other exceptions
+//   _CCCL_CATCH((...) {               // Handle any other exceptions
 //     ...
 //   })
 #if !_CCCL_HAS_EXCEPTIONS() || (_CCCL_CUDA_COMPILATION() && defined(__CUDA_ARCH__))
 #  define _CCCL_TRY(...) {__VA_ARGS__}
 #  define _CCCL_CATCH(...)
+#  define _CCCL_CATCH_OR(...)
 #elif _CCCL_CUDA_COMPILATION() && _CCCL_CUDA_COMPILER(NVHPC) // ^^^ no exceptions, or device code ^^^
                                                              // vvv CUDA compilation with NVHPC vvv
 // In the following macro, it is intentional for the `else` branch to not have braces
@@ -61,11 +62,15 @@
       __VA_ARGS__                     \
     }                                 \
     else                              \
+    {                                 \
       try                             \
       {                               \
         __VA_ARGS__                   \
       }
-#  define _CCCL_CATCH(...) catch __VA_ARGS__
+#  define _CCCL_CATCH(...) \
+    catch __VA_ARGS__      \
+    }
+#  define _CCCL_CATCH_OR(...) catch __VA_ARGS__
 #else // ^^^ CUDA compilation with NVHPC ^^^
       // vvv Host compilation with exceptions vvv
 #  define _CCCL_TRY(...) \
@@ -74,6 +79,7 @@
       __VA_ARGS__        \
     }
 #  define _CCCL_CATCH(...) catch __VA_ARGS__
+#  define _CCCL_CATCH_OR(...) catch __VA_ARGS__
 #endif // ^^^ Host compilation with exceptions ^^^
 
 #endif // __CCCL_EXCEPTIONS_H
