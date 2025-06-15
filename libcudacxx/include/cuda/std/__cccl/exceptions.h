@@ -78,7 +78,7 @@
     {                    \
       __VA_ARGS__        \
     }
-#  define _CCCL_CATCH(...) catch __VA_ARGS__
+#  define _CCCL_CATCH(...)    catch __VA_ARGS__
 #  define _CCCL_CATCH_OR(...) catch __VA_ARGS__
 #endif // ^^^ Host compilation with exceptions ^^^
 
