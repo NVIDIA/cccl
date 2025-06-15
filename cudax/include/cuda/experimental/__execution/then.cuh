@@ -141,15 +141,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
       }
       else
       {
-        _CUDAX_TRY( //
-          ({ //
-            __set<true>(static_cast<_Ts&&>(__ts)...); //
-          }), //
-          _CUDAX_CATCH(...) //
-          ({ //
-            execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-          }) //
-        )
+        _CCCL_TRY({ //
+          __set<true>(static_cast<_Ts&&>(__ts)...);
+        })
+        _CCCL_CATCH((...) { //
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        })
       }
     }
 
