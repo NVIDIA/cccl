@@ -44,6 +44,11 @@ _CCCL_CONCEPT __has_member_stream = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
   requires(!__convertible_to_stream_ref<_Tp>), //
   requires(__convertible_to_stream_ref<decltype(__t.stream())>));
 
+template <class _Tp>
+_CCCL_CONCEPT __has_member_get_stream = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
+  requires(!__convertible_to_stream_ref<_Tp>), //
+  requires(__convertible_to_stream_ref<decltype(__t.get_stream())>));
+
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_stream = _CCCL_REQUIRES_EXPR((_Env), const _Env& __env, const get_stream_t& __cpo)(
   requires(!__convertible_to_stream_ref<_Env>),
@@ -68,6 +73,15 @@ struct get_stream_t
   [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const noexcept(noexcept(__t.stream()))
   {
     return __t.stream();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__has_member_get_stream<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
+    noexcept(noexcept(__t.get_stream()))
+  {
+    return __t.get_stream();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
