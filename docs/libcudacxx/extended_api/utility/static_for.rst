@@ -11,19 +11,19 @@ Defined in ``<cuda/utility>`` header.
 
     template <auto Size, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
 
     template <auto Start, auto End, auto Step = 1, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
 
     template <typename T, T Size, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
 
     template <typename T, T Start, T End, T Step = 1, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
 
     } // namespace cuda
 
@@ -32,6 +32,8 @@ Defined in ``<cuda/utility>`` header.
 
 - Executes ``op`` for each value in the range ``[0, Size)``.
 - Executes ``op`` for each value in the range ``[Start, End)`` with step ``Step``.
+
+The function is ``noexcept`` if ``op`` is ``noexcept``.
 
 **Parameters**
 
