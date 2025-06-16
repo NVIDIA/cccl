@@ -14,8 +14,11 @@
 #  error epilogue.cuh included without a prior inclusion of prologue.cuh
 #endif
 
-#undef _CCCL_IMMOVABLE_OPSTATE
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED
+
+#if _CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_NV_DIAG_DEFAULT(cuda_compile)
+#endif // _CCCL_CUDA_COMPILER(NVHPC)
 
 _CCCL_DIAG_POP
 #include <cuda/std/__cccl/epilogue.h>

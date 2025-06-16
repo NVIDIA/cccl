@@ -115,9 +115,9 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Tp>
 concept __integral_constant_like =
@@ -128,7 +128,7 @@ concept __integral_constant_like =
   && bool_constant<_Tp() == _Tp::value>::value
   && bool_constant<static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
@@ -141,7 +141,7 @@ _CCCL_CONCEPT_FRAGMENT(
              (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value)));
 template <class _Tp>
 _CCCL_CONCEPT __integral_constant_like = _CCCL_FRAGMENT(__integral_constant_like_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
 inline constexpr size_t __maybe_static_ext = dynamic_extent;
@@ -170,13 +170,13 @@ public:
   // [span.cons], span constructors, copy, assignment, and destructor
   _CCCL_TEMPLATE(size_t _Sz = _Extent)
   _CCCL_REQUIRES((_Sz == 0))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
+  _CCCL_API constexpr span() noexcept
       : __data_{nullptr}
   {}
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(initializer_list<value_type> __il) noexcept
+  _CCCL_API constexpr explicit span(initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
   {
     _CCCL_ASSERT(_Extent == __il.size(), "size mismatch in span's constructor (initializer_list).");
@@ -187,7 +187,7 @@ public:
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
+  _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
     _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
@@ -195,7 +195,7 @@ public:
 
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
+  _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
     _CCCL_ASSERT((__last - __first >= 0), "invalid range in span's constructor (iterator, sentinel)");
@@ -205,25 +205,25 @@ public:
 
   _CCCL_TEMPLATE(size_t _Sz = _Extent)
   _CCCL_REQUIRES((_Sz != 0))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
+  _CCCL_API constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(array<_OtherElementType, _Extent>& __arr) noexcept
+  _CCCL_API constexpr span(array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const array<_OtherElementType, _Extent>& __arr) noexcept
+  _CCCL_API constexpr span(const array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_Range&& __r)
+  _CCCL_API constexpr explicit span(_Range&& __r)
       : __data_{_CUDA_VRANGES::data(__r)}
   {
     _CCCL_ASSERT(_CUDA_VRANGES::size(__r) == _Extent, "size mismatch in span's constructor (range)");
@@ -231,13 +231,13 @@ public:
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _Extent2 = _Extent)
   _CCCL_REQUIRES((_Extent2 != dynamic_extent) _CCCL_AND __span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const span<_OtherElementType, _Extent2>& __other) noexcept
+  _CCCL_API constexpr span(const span<_OtherElementType, _Extent2>& __other) noexcept
       : __data_{__other.data()}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(const span<_OtherElementType, dynamic_extent>& __other) noexcept
+  _CCCL_API constexpr explicit span(const span<_OtherElementType, dynamic_extent>& __other) noexcept
       : __data_{__other.data()}
   {
     _CCCL_ASSERT(_Extent == __other.size(), "size mismatch in span's constructor (other span)");
@@ -246,26 +246,26 @@ public:
   //  ~span() noexcept = default;
 
   template <size_t _Count>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> first() const noexcept
+  _CCCL_API constexpr span<element_type, _Count> first() const noexcept
   {
     static_assert(_Count <= _Extent, "span<T, N>::first<Count>(): Count out of range");
     return span<element_type, _Count>{data(), _Count};
   }
 
   template <size_t _Count>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> last() const noexcept
+  _CCCL_API constexpr span<element_type, _Count> last() const noexcept
   {
     static_assert(_Count <= _Extent, "span<T, N>::last<Count>(): Count out of range");
     return span<element_type, _Count>{data() + size() - _Count, _Count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
+  _CCCL_API constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "span<T, N>::first(count): count out of range");
     return {data(), __count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
+  _CCCL_API constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "span<T, N>::last(count): count out of range");
     return {data() + size() - __count, __count};
@@ -275,7 +275,7 @@ public:
   using __subspan_t = span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>;
 
   template <size_t _Offset, size_t _Count = dynamic_extent>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
+  _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
     static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset,
@@ -283,7 +283,7 @@ public:
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent>
+  _CCCL_API constexpr span<element_type, dynamic_extent>
   subspan(size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
     _CCCL_ASSERT(__offset <= size(), "span<T, N>::subspan(offset, count): offset out of range");
@@ -297,26 +297,26 @@ public:
     return {data() + __offset, __count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  _CCCL_API constexpr size_type size() const noexcept
   {
     return _Extent;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
+  _CCCL_API constexpr size_type size_bytes() const noexcept
   {
     return _Extent * sizeof(element_type);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
   {
     return _Extent == 0;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
+  _CCCL_API constexpr reference operator[](size_type __idx) const noexcept
   {
     _CCCL_ASSERT(__idx < size(), "span<T, N>::operator[](index): index out of range");
     return __data_[__idx];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type __idx) const
+  _CCCL_API constexpr reference at(size_type __idx) const
   {
     if (__idx >= size())
     {
@@ -325,47 +325,47 @@ public:
     return __data_[__idx];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
+  _CCCL_API constexpr reference front() const noexcept
   {
     _CCCL_ASSERT(!empty(), "span<T, N>::front() on empty span");
     return __data_[0];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() const noexcept
+  _CCCL_API constexpr reference back() const noexcept
   {
     _CCCL_ASSERT(!empty(), "span<T, N>::back() on empty span");
     return __data_[size() - 1];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer data() const noexcept
+  _CCCL_API constexpr pointer data() const noexcept
   {
     return __data_;
   }
 
   // [span.iter], span iterator support
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() const noexcept
+  _CCCL_API constexpr iterator begin() const noexcept
   {
     return iterator(data());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() const noexcept
+  _CCCL_API constexpr iterator end() const noexcept
   {
     return iterator(data() + size());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() const noexcept
+  _CCCL_API constexpr reverse_iterator rbegin() const noexcept
   {
     return reverse_iterator(end());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() const noexcept
+  _CCCL_API constexpr reverse_iterator rend() const noexcept
   {
     return reverse_iterator(begin());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI span<const byte, _Extent * sizeof(element_type)> __as_bytes() const noexcept
+  _CCCL_API inline span<const byte, _Extent * sizeof(element_type)> __as_bytes() const noexcept
   {
     return span<const byte, _Extent * sizeof(element_type)>{reinterpret_cast<const byte*>(data()), size_bytes()};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI span<byte, _Extent * sizeof(element_type)> __as_writable_bytes() const noexcept
+  _CCCL_API inline span<byte, _Extent * sizeof(element_type)> __as_writable_bytes() const noexcept
   {
     return span<byte, _Extent * sizeof(element_type)>{reinterpret_cast<byte*>(data()), size_bytes()};
   }
@@ -393,14 +393,14 @@ public:
   static constexpr size_type extent = dynamic_extent;
 
   // [span.cons], span constructors, copy, assignment, and destructor
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
+  _CCCL_API constexpr span() noexcept
       : __data_{nullptr}
       , __size_{0}
   {}
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(initializer_list<value_type> __il) noexcept
+  _CCCL_API constexpr span(initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
       , __size_{__il.size()}
   {}
@@ -410,14 +410,14 @@ public:
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_It __first, size_type __count)
+  _CCCL_API constexpr span(_It __first, size_type __count)
       : __data_{_CUDA_VSTD::to_address(__first)}
       , __size_{__count}
   {}
 
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_It __first, _End __last)
+  _CCCL_API constexpr span(_It __first, _End __last)
       : __data_(_CUDA_VSTD::to_address(__first))
       , __size_(__last - __first)
   {
@@ -425,35 +425,35 @@ public:
   }
 
   template <size_t _Sz>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
+  _CCCL_API constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
       , __size_{_Sz}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _Sz)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(array<_OtherElementType, _Sz>& __arr) noexcept
+  _CCCL_API constexpr span(array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _Sz)
   _CCCL_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const array<_OtherElementType, _Sz>& __arr) noexcept
+  _CCCL_API constexpr span(const array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Range&& __r)
+  _CCCL_API constexpr span(_Range&& __r)
       : __data_(_CUDA_VRANGES::data(__r))
       , __size_{_CUDA_VRANGES::size(__r)}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherExtent)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const span<_OtherElementType, _OtherExtent>& __other) noexcept
+  _CCCL_API constexpr span(const span<_OtherElementType, _OtherExtent>& __other) noexcept
       : __data_{__other.data()}
       , __size_{__other.size()}
   {}
@@ -461,7 +461,7 @@ public:
   //    ~span() noexcept = default;
 
   template <size_t _Count>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> first() const noexcept
+  _CCCL_API constexpr span<element_type, _Count> first() const noexcept
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Count == 0 ? true : _Count <= size(), "span<T>::first<Count>(): Count out of range");
@@ -469,20 +469,20 @@ public:
   }
 
   template <size_t _Count>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> last() const noexcept
+  _CCCL_API constexpr span<element_type, _Count> last() const noexcept
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Count == 0 ? true : _Count <= size(), "span<T>::last<Count>(): Count out of range");
     return span<element_type, _Count>{data() + size() - _Count, _Count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
+  _CCCL_API constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "span<T>::first(count): count out of range");
     return {data(), __count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
+  _CCCL_API constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "span<T>::last(count): count out of range");
     return {data() + size() - __count, __count};
@@ -492,7 +492,7 @@ public:
   using __subspan_t = span<element_type, _Count>;
 
   template <size_t _Offset, size_t _Count = dynamic_extent>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
+  _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Offset == 0 ? true : _Offset <= size(), "span<T>::subspan<Offset, Count>(): Offset out of range");
@@ -501,8 +501,8 @@ public:
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
-  constexpr span<element_type, dynamic_extent> _LIBCUDACXX_HIDE_FROM_ABI
-  subspan(size_type __offset, size_type __count = dynamic_extent) const noexcept
+  constexpr span<element_type, dynamic_extent> _CCCL_API inline subspan(
+    size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
     _CCCL_ASSERT(__offset <= size(), "span<T>::subspan(offset, count): offset out of range");
     _CCCL_ASSERT(__count <= size() || __count == dynamic_extent, "span<T>::subspan(offset, count): count out of range");
@@ -514,26 +514,26 @@ public:
     return {data() + __offset, __count};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  _CCCL_API constexpr size_type size() const noexcept
   {
     return __size_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
+  _CCCL_API constexpr size_type size_bytes() const noexcept
   {
     return __size_ * sizeof(element_type);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
+  _CCCL_API constexpr reference operator[](size_type __idx) const noexcept
   {
     _CCCL_ASSERT(__idx < size(), "span<T>::operator[](index): index out of range");
     return __data_[__idx];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type __idx) const
+  _CCCL_API constexpr reference at(size_type __idx) const
   {
     if (__idx >= size())
     {
@@ -542,47 +542,47 @@ public:
     return __data_[__idx];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
+  _CCCL_API constexpr reference front() const noexcept
   {
     _CCCL_ASSERT(!empty(), "span<T>::front() on empty span");
     return __data_[0];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() const noexcept
+  _CCCL_API constexpr reference back() const noexcept
   {
     _CCCL_ASSERT(!empty(), "span<T>::back() on empty span");
     return __data_[size() - 1];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer data() const noexcept
+  _CCCL_API constexpr pointer data() const noexcept
   {
     return __data_;
   }
 
   // [span.iter], span iterator support
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() const noexcept
+  _CCCL_API constexpr iterator begin() const noexcept
   {
     return iterator(data());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() const noexcept
+  _CCCL_API constexpr iterator end() const noexcept
   {
     return iterator(data() + size());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() const noexcept
+  _CCCL_API constexpr reverse_iterator rbegin() const noexcept
   {
     return reverse_iterator(end());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() const noexcept
+  _CCCL_API constexpr reverse_iterator rend() const noexcept
   {
     return reverse_iterator(begin());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI span<const byte, dynamic_extent> __as_bytes() const noexcept
+  _CCCL_API inline span<const byte, dynamic_extent> __as_bytes() const noexcept
   {
     return span<const byte, dynamic_extent>{reinterpret_cast<const byte*>(data()), size_bytes()};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI span<byte, dynamic_extent> __as_writable_bytes() const noexcept
+  _CCCL_API inline span<byte, dynamic_extent> __as_writable_bytes() const noexcept
   {
     return span<byte, dynamic_extent>{reinterpret_cast<byte*>(data()), size_bytes()};
   }
@@ -594,14 +594,14 @@ private:
 
 //  as_bytes & as_writable_bytes
 template <class _Tp, size_t _Extent>
-_LIBCUDACXX_HIDE_FROM_ABI auto as_bytes(span<_Tp, _Extent> __s) noexcept
+_CCCL_API inline auto as_bytes(span<_Tp, _Extent> __s) noexcept
 {
   return __s.__as_bytes();
 }
 
 _CCCL_TEMPLATE(class _Tp, size_t _Extent)
 _CCCL_REQUIRES((!is_const<_Tp>::value))
-_LIBCUDACXX_HIDE_FROM_ABI auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
+_CCCL_API inline auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
 {
   return __s.__as_writable_bytes();
 }

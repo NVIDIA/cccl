@@ -30,8 +30,12 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
+
+_CCCL_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
+                             // will always produce an error when instantiated.
 
 namespace cuda::experimental
 {
@@ -43,7 +47,7 @@ namespace execution
 {
 namespace __detail
 {
-using namespace cuda::experimental::__detail; // // NOLINT(misc-unused-using-decls)
+using namespace cuda::experimental::__detail; // NOLINT(misc-unused-using-decls)
 } // namespace __detail
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT receiver_t
@@ -83,7 +87,6 @@ inline constexpr bool __is_scheduler = __is_instantiable_with_v<__scheduler_conc
 template <class _Ty>
 inline constexpr bool __is_operation_state = __is_instantiable_with_v<__operation_state_concept_t, _Ty>;
 
-struct stream_domain;
 struct dependent_sender_error;
 
 struct default_domain;
@@ -95,11 +98,12 @@ template <class _Sndr, class... _Env>
 _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
-using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr, _Env...>());
+using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
 
 // handy enumerations for keeping type names readable
-enum __disposition_t
+enum class __disposition : int8_t
 {
+  __invalid = -1,
   __value,
   __error,
   __stopped
@@ -113,33 +117,42 @@ struct start_t;
 struct connect_t;
 struct schedule_t;
 
-// sender factory algorithms:
-template <__disposition_t>
-struct __just_t;
-using just_t         = __just_t<__value>;
-using just_error_t   = __just_t<__error>;
-using just_stopped_t = __just_t<__stopped>;
+template <class _Sch>
+using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(declval<_Sch>()));
 
-template <__disposition_t>
+template <class _Sndr, class _Rcvr>
+using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+
+template <class _Sndr, class _Rcvr>
+inline constexpr bool __nothrow_connectable = noexcept(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+
+// sender factory algorithms:
+template <__disposition>
+struct __just_t;
+using just_t         = __just_t<__disposition::__value>;
+using just_error_t   = __just_t<__disposition::__error>;
+using just_stopped_t = __just_t<__disposition::__stopped>;
+
+template <__disposition>
 struct __just_from_t;
-using just_from_t         = __just_from_t<__value>;
-using just_error_from_t   = __just_from_t<__error>;
-using just_stopped_from_t = __just_from_t<__stopped>;
+using just_from_t         = __just_from_t<__disposition::__value>;
+using just_error_from_t   = __just_from_t<__disposition::__error>;
+using just_stopped_from_t = __just_from_t<__disposition::__stopped>;
 
 struct read_env_t;
 
 // sender adaptor algorithms:
-template <__disposition_t>
+template <__disposition>
 struct __let_t;
-using let_value_t   = __let_t<__value>;
-using let_error_t   = __let_t<__error>;
-using let_stopped_t = __let_t<__stopped>;
+using let_value_t   = __let_t<__disposition::__value>;
+using let_error_t   = __let_t<__disposition::__error>;
+using let_stopped_t = __let_t<__disposition::__stopped>;
 
-template <__disposition_t>
+template <__disposition>
 struct __upon_t;
-using then_t         = __upon_t<__value>;
-using upon_error_t   = __upon_t<__error>;
-using upon_stopped_t = __upon_t<__stopped>;
+using then_t         = __upon_t<__disposition::__value>;
+using upon_error_t   = __upon_t<__disposition::__error>;
+using upon_stopped_t = __upon_t<__disposition::__stopped>;
 
 struct when_all_t;
 struct conditional_t;
@@ -148,6 +161,7 @@ struct write_env_t;
 struct starts_on_t;
 struct continues_on_t;
 struct schedule_from_t;
+struct bulk_t;
 
 // sender consumer algorithms:
 struct sync_wait_t;
@@ -161,42 +175,69 @@ struct get_delegation_scheduler_t;
 struct get_forward_progress_guarantee_t;
 template <class _Tag>
 struct get_completion_scheduler_t;
-template <class _Tag>
 struct get_domain_t;
+struct get_domain_late_t;
+
+// get_forward_progress_guarantee:
+enum class forward_progress_guarantee
+{
+  concurrent,
+  parallel,
+  weakly_parallel
+};
 
 namespace __detail
 {
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const
-    -> _Tag
+  _CCCL_TRIVIAL_API constexpr auto operator()(int, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }
 };
+
+template <class _Sndr, class _Tag = __visit_result_t<__get_tag&, _Sndr, int&>>
+extern __fn_ptr_t<_Tag> __tag_of_v;
 } // namespace __detail
 
 template <class _Sndr>
-using tag_of_t _CCCL_NODEBUG_ALIAS =
-  decltype(visit(declval<__detail::__get_tag&>(), declval<_Sndr>(), declval<int&>()));
+using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class _Tag>
 _CCCL_CONCEPT __sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
 
 namespace __detail
 {
-template <__disposition_t, class _Void = void>
+template <__disposition, class _Void = void>
 extern _CUDA_VSTD::__undefined<_Void> __set_tag;
 template <class _Void>
-extern __fn_t<set_value_t>* __set_tag<__value, _Void>;
+extern __fn_t<set_value_t>* __set_tag<__disposition::__value, _Void>;
 template <class _Void>
-extern __fn_t<set_error_t>* __set_tag<__error, _Void>;
+extern __fn_t<set_error_t>* __set_tag<__disposition::__error, _Void>;
 template <class _Void>
-extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
+extern __fn_t<set_stopped_t>* __set_tag<__disposition::__stopped, _Void>;
+
+template <class _Sig>
+inline constexpr __disposition __signature_disposition = __disposition::__invalid;
+template <class... _Ts>
+inline constexpr __disposition __signature_disposition<set_value_t(_Ts...)> = __disposition::__value;
+template <class _Ty>
+inline constexpr __disposition __signature_disposition<set_error_t(_Ty)> = __disposition::__error;
+template <>
+inline constexpr __disposition __signature_disposition<set_stopped_t()> = __disposition::__stopped;
+
 } // namespace __detail
+
+struct stream_domain;
+struct stream_context;
+struct stream_scheduler;
+
 } // namespace execution
+
 } // namespace cuda::experimental
+
+_CCCL_NV_DIAG_DEFAULT(2642)
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/discard_iterator.h>
+#include <cuda/__iterator/strided_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/std/iterator>
 

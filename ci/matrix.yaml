@@ -58,9 +58,9 @@ workflows:
     ## TODO: Python test jobs cannot be run on consumer cards unless the runners have at least
     ## the same version of CUDA as the build jobs (forward compatibility does not work on consumer cards).
     - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
-    # cccl-infra:
-    - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
-    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # packaging:
+    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     # NVHPC stdpar smoke tests
     - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.9', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
@@ -108,9 +108,9 @@ workflows:
     # Python and c/parallel jobs:
     - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
-    # cccl-infra:
-    - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
-    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # packaging:
+    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     # NVHPC stdpar smoke tests
     - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.9', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
@@ -208,9 +208,6 @@ jobs:
 
   compute_sanitizer: { gpu: true, name: 'ComputeSanitizer', needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer' } }
 
-  # CCCL:
-  infra: { gpu: true } # example project launches a kernel
-
   # libcudacxx:
   nvrtc: { gpu: true, name: 'NVRTC' }
   verify_codegen: { gpu: false, name: 'VerifyCodegen' }
@@ -244,11 +241,9 @@ jobs:
 
   # Python:
   build_cuda_cccl:        { name: "Build cuda.cccl",        gpu: false }
-  build_cuda_cooperative: { name: "Build cuda.cooperative", gpu: false }
-  build_cuda_parallel:    { name: "Build cuda.parallel",    gpu: false }
-  test_cuda_cccl:         { name: "Test cuda.cccl",         gpu: true, needs: 'build_cuda_cccl' }
-  test_cuda_cooperative:  { name: "Test cuda.cooperative",  gpu: true, needs: 'build_cuda_cooperative' }
-  test_cuda_parallel:     { name: "Test cuda.parallel",     gpu: true, needs: 'build_cuda_parallel' }
+  test_cuda_cccl_headers: { name: "Test cuda.cccl.headers", gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_cooperative:  { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_parallel:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_cuda_cccl' }
 
 # Projects have the following properties:
 #
@@ -261,9 +256,12 @@ jobs:
 #            E.g. "job_map: { test: ['test_cpu', 'test_gpu'] }" replaces
 #            the "test" job with distinct "test_cpu" and "test_gpu" jobs.
 projects:
-  cccl:
-    name: 'CCCL'
+  packaging:
+    name: 'CCCL Packaging'
     stds: [17, 20]
+    job_map:
+      build: []
+      test: ['test_nobuild']
   libcudacxx:
     name: 'libcu++'
     stds: [17, 20]
@@ -293,8 +291,8 @@ projects:
   python:
     name: "Python"
     job_map:
-      build: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel']
-      test:  ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel']
+      build: ['build_cuda_cccl']
+      test:  ['test_cuda_cccl_headers', 'test_cuda_cccl_cooperative', 'test_cuda_cccl_parallel']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

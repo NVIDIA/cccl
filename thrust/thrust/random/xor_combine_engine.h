@@ -37,6 +37,7 @@
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
 #include <cuda/std/cstddef> // for size_t
+#include <cuda/std/type_traits>
 
 #include <iostream>
 
@@ -99,8 +100,8 @@ public:
    */
   using result_type = typename thrust::detail::eval_if<
     (sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
-    thrust::detail::identity_<typename base2_type::result_type>,
-    thrust::detail::identity_<typename base1_type::result_type>>::type;
+    ::cuda::std::type_identity<typename base2_type::result_type>,
+    ::cuda::std::type_identity<typename base1_type::result_type>>::type;
 
   /*! The size of the first shift used in the generation algorithm.
    */

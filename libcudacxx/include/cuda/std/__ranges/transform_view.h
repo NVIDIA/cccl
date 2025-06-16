@@ -91,16 +91,16 @@ template <class _Fn, class _View>
 inline constexpr bool __nothrow_subscript<_Fn, _View, enable_if_t<random_access_range<_View>>> =
   is_nothrow_invocable_v<_Fn&, range_reference_t<_View>>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <input_range _View, move_constructible _Fn>
   requires __transform_view_constraints<_View, _Fn>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View,
           class _Fn,
           class = enable_if_t<input_range<_View>>,
           class = enable_if_t<move_constructible<_Fn>>,
           class = enable_if_t<__transform_view_constraints<_View, _Fn>>>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class transform_view : public view_interface<transform_view<_View, _Fn>>
 {
   _CCCL_NO_UNIQUE_ADDRESS _View __base_ = _View();
@@ -136,17 +136,17 @@ public:
     using value_type      = remove_cvref_t<invoke_result_t<__maybe_const<_Const, _Fn>&, range_reference_t<_Base>>>;
     using difference_type = range_difference_t<_Base>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
     _CCCL_HIDE_FROM_ABI __iterator()
       requires default_initializable<iterator_t<_Base>>
     = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(default_initializable<iterator_t<_Base2>>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator() noexcept(is_nothrow_default_constructible_v<_Base2>) {}
-#endif // _CCCL_NO_CONCEPTS
+    _CCCL_API constexpr __iterator() noexcept(is_nothrow_default_constructible_v<_Base2>) {}
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator(_Parent& __parent, iterator_t<_Base> __current)
+    _CCCL_API constexpr __iterator(_Parent& __parent, iterator_t<_Base> __current)
         : __parent_(_CUDA_VSTD::addressof(__parent))
         , __current_(_CUDA_VSTD::move(__current))
     {}
@@ -156,28 +156,28 @@ public:
     // (see http://wg21.link/class.copy.ctor#5).
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
     _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<iterator_t<_View>, iterator_t<_Base>>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator(__iterator<!_OtherConst> __i)
+    _CCCL_API constexpr __iterator(__iterator<!_OtherConst> __i)
         : __parent_(__i.__parent_)
         , __current_(_CUDA_VSTD::move(__i.__current_))
     {}
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const iterator_t<_Base>& base() const& noexcept
+    [[nodiscard]] _CCCL_API constexpr const iterator_t<_Base>& base() const& noexcept
     {
       return __current_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Base> base() &&
+    [[nodiscard]] _CCCL_API constexpr iterator_t<_Base> base() &&
     {
       return _CUDA_VSTD::move(__current_);
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator*() const
+    [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
       noexcept(noexcept(_CUDA_VSTD::invoke(*__parent_->__func_, *__current_)))
     {
       return _CUDA_VSTD::invoke(*__parent_->__func_, *__current_);
     }
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator++()
+    _CCCL_API constexpr __iterator& operator++()
     {
       ++__current_;
       return *this;
@@ -185,14 +185,14 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES((!forward_range<_Base2>) )
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator++(int)
+    _CCCL_API constexpr void operator++(int)
     {
       ++__current_;
     }
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(forward_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator++(int)
+    _CCCL_API constexpr __iterator operator++(int)
     {
       auto __tmp = *this;
       ++*this;
@@ -201,7 +201,7 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(bidirectional_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator--()
+    _CCCL_API constexpr __iterator& operator--()
     {
       --__current_;
       return *this;
@@ -209,7 +209,7 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(bidirectional_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator--(int)
+    _CCCL_API constexpr __iterator operator--(int)
     {
       auto __tmp = *this;
       --*this;
@@ -218,7 +218,7 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator+=(difference_type __n)
+    _CCCL_API constexpr __iterator& operator+=(difference_type __n)
     {
       __current_ += __n;
       return *this;
@@ -226,7 +226,7 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator-=(difference_type __n)
+    _CCCL_API constexpr __iterator& operator-=(difference_type __n)
     {
       __current_ -= __n;
       return *this;
@@ -234,23 +234,21 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator[](difference_type __n) const
+    [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
       noexcept(__nothrow_subscript<_Fn, _Base2>)
     {
       return _CUDA_VSTD::invoke(*__parent_->__func_, __current_[__n]);
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator==(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator==(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base2>>)
     {
       return __x.__current_ == __y.__current_;
     }
 #if _CCCL_STD_VER <= 2017
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator!=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base2>>)
     {
       return __x.__current_ != __y.__current_;
@@ -258,29 +256,29 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator<(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator<(const __iterator& __x, const __iterator& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
     {
       return __x.__current_ < __y.__current_;
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator>(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator>(const __iterator& __x, const __iterator& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
     {
       return __x.__current_ > __y.__current_;
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator<=(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator<=(const __iterator& __x, const __iterator& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
     {
       return __x.__current_ <= __y.__current_;
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator>=(const __iterator& __x, const __iterator& __y) _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator>=(const __iterator& __x, const __iterator& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
     {
       return __x.__current_ >= __y.__current_;
     }
@@ -288,36 +286,35 @@ public:
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2> _CCCL_AND three_way_comparable<iterator_t<_Base>>)
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator<=>(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ <=> __y.__current_;
     }
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator+(__iterator __i, difference_type __n)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator+(__iterator __i, difference_type __n)
       _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
     {
       return __iterator{*__i.__parent_, __i.__current_ + __n};
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator+(difference_type __n, __iterator __i)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator+(difference_type __n, __iterator __i)
       _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
     {
       return __iterator{*__i.__parent_, __i.__current_ + __n};
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator-(__iterator __i, difference_type __n)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator-(__iterator __i, difference_type __n)
       _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
     {
       return __iterator{*__i.__parent_, __i.__current_ - __n};
     }
 
     template <class _Base2 = _Base>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto operator-(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator-(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(difference_type)(sized_sentinel_for<iterator_t<_Base2>, iterator_t<_Base2>>)
     {
       return __x.__current_ - __y.__current_;
@@ -341,7 +338,7 @@ public:
   public:
     _CCCL_HIDE_FROM_ABI __sentinel() = default;
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __sentinel(sentinel_t<_Base> __end)
+    _CCCL_API constexpr explicit __sentinel(sentinel_t<_Base> __end)
         : __end_(__end)
     {}
 
@@ -350,42 +347,38 @@ public:
     // (see http://wg21.link/class.copy.ctor#5).
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
     _CCCL_REQUIRES(_OtherConst&& convertible_to<sentinel_t<_View>, sentinel_t<_Base>>)
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __sentinel(__sentinel<!_OtherConst> __i)
+    _CCCL_API constexpr __sentinel(__sentinel<!_OtherConst> __i)
         : __end_(_CUDA_VSTD::move(__i.__end_))
     {}
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr sentinel_t<_Base> base() const
+    [[nodiscard]] _CCCL_API constexpr sentinel_t<_Base> base() const
     {
       return __end_;
     }
 
     template <bool _OtherConst>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator==(const __iterator<_OtherConst>& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator==(const __iterator<_OtherConst>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__current_ == __y.__end_;
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator==(const __sentinel& __x, const __iterator<_OtherConst>& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator==(const __sentinel& __x, const __iterator<_OtherConst>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__end_ == __y.__current_;
     }
 
     template <bool _OtherConst>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator!=(const __iterator<_OtherConst>& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const __iterator<_OtherConst>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__current_ != __y.__end_;
     }
 
     template <bool _OtherConst>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator!=(const __sentinel& __x, const __iterator<_OtherConst>& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const __sentinel& __x, const __iterator<_OtherConst>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __x.__end_ != __y.__current_;
@@ -393,8 +386,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
     template <bool _OtherConst>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(
         sized_sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
@@ -402,8 +394,7 @@ public:
     }
 
     template <bool _OtherConst>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator-(const __sentinel& __x, const __iterator<_OtherConst>& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator-(const __sentinel& __x, const __iterator<_OtherConst>& __y)
       _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(
         sized_sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
@@ -411,19 +402,19 @@ public:
     }
   };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI transform_view()
     requires default_initializable<_View> && default_initializable<_Fn>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(default_initializable<_View2>&& default_initializable<_Fn>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_view() noexcept(
-    is_nothrow_default_constructible_v<_View2> && is_nothrow_default_constructible_v<_Fn>)
+  _CCCL_API constexpr transform_view() noexcept(is_nothrow_default_constructible_v<_View2>
+                                                && is_nothrow_default_constructible_v<_Fn>)
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_view(_View __base, _Fn __func)
+  _CCCL_API constexpr transform_view(_View __base, _Fn __func)
       : view_interface<transform_view<_View, _Fn>>()
       , __base_(_CUDA_VSTD::move(__base))
       , __func_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__func))
@@ -431,27 +422,27 @@ public:
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(copy_constructible<_View2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _View base() const&
+  [[nodiscard]] _CCCL_API constexpr _View base() const&
   {
     return __base_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _View base() &&
+  [[nodiscard]] _CCCL_API constexpr _View base() &&
   {
     return _CUDA_VSTD::move(__base_);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator<false> begin()
+  [[nodiscard]] _CCCL_API constexpr __iterator<false> begin()
   {
     return __iterator<false>{*this, _CUDA_VRANGES::begin(__base_)};
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2> _CCCL_AND __regular_invocable_with_range_ref<const _Fn&, const _View2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator<true> begin() const
+  [[nodiscard]] _CCCL_API constexpr __iterator<true> begin() const
   {
     return __iterator<true>(*this, _CUDA_VRANGES::begin(__base_));
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end()
+  [[nodiscard]] _CCCL_API constexpr auto end()
   {
     if constexpr (common_range<_View>)
     {
@@ -465,7 +456,7 @@ public:
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2> _CCCL_AND __regular_invocable_with_range_ref<const _Fn&, const _View2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end() const
+  [[nodiscard]] _CCCL_API constexpr auto end() const
   {
     if constexpr (common_range<const _View>)
     {
@@ -479,13 +470,13 @@ public:
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<_View2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size()
+  [[nodiscard]] _CCCL_API constexpr auto size()
   {
     return _CUDA_VRANGES::size(__base_);
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
+  [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     return _CUDA_VRANGES::size(__base_);
   }
@@ -501,7 +492,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__transform)
 struct __fn
 {
   template <class _Range, class _Fn>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Range&& __range, _Fn&& __f) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Fn&& __f) const
     noexcept(noexcept(transform_view(_CUDA_VSTD::forward<_Range>(__range), _CUDA_VSTD::forward<_Fn>(__f))))
       -> transform_view<all_t<_Range>, remove_cvref_t<_Fn>>
   {
@@ -510,7 +501,7 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Fn)
   _CCCL_REQUIRES(constructible_from<decay_t<_Fn>, _Fn>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Fn&& __f) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __f) const
     noexcept(is_nothrow_constructible_v<decay_t<_Fn>, _Fn>)
   {
     return __pipeable(_CUDA_VSTD::__bind_back(*this, _CUDA_VSTD::forward<_Fn>(__f)));

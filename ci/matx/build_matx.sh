@@ -72,6 +72,11 @@ pip install numpy
 rm -rf MatX
 git clone ${matx_repo} -b ${matx_branch}
 
+cd MatX
+echo "MatX HEAD:"
+git log -1 --format=short
+cd ..
+
 # Write out version override file
 jq -r ".packages.CCCL *=
   {

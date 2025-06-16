@@ -45,7 +45,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Size>
-_LIBCUDACXX_HIDE_FROM_ABI _Size __loadword(const void* __p)
+_CCCL_API inline _Size __loadword(const void* __p)
 {
   _Size __r;
   _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
@@ -282,7 +282,7 @@ struct __scalar_hash;
 template <class _Tp>
 struct __scalar_hash<_Tp, 0> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -298,7 +298,7 @@ struct __scalar_hash<_Tp, 0> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 1> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -313,7 +313,7 @@ struct __scalar_hash<_Tp, 1> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 2> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -332,7 +332,7 @@ struct __scalar_hash<_Tp, 2> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 3> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -352,7 +352,7 @@ struct __scalar_hash<_Tp, 3> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 4> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -376,7 +376,7 @@ struct _PairT
   size_t second;
 };
 
-_LIBCUDACXX_HIDE_FROM_ABI size_t __hash_combine(size_t __lhs, size_t __rhs) noexcept
+_CCCL_API inline size_t __hash_combine(size_t __lhs, size_t __rhs) noexcept
 {
   using _HashT     = __scalar_hash<_PairT>;
   const _PairT __p = {__lhs, __rhs};
@@ -386,7 +386,7 @@ _LIBCUDACXX_HIDE_FROM_ABI size_t __hash_combine(size_t __lhs, size_t __rhs) noex
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<_Tp*> : public __unary_function<_Tp*, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp* __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp* __v) const noexcept
   {
     union
     {
@@ -401,7 +401,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<_Tp*> : public __unary_function<_Tp*, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<bool> : public __unary_function<bool, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(bool __v) const noexcept
+  _CCCL_API inline size_t operator()(bool __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -410,7 +410,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<bool> : public __unary_function<bool, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char> : public __unary_function<char, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(char __v) const noexcept
+  _CCCL_API inline size_t operator()(char __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -419,7 +419,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char> : public __unary_function<char, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<signed char> : public __unary_function<signed char, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(signed char __v) const noexcept
+  _CCCL_API inline size_t operator()(signed char __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -428,7 +428,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<signed char> : public __unary_function
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned char> : public __unary_function<unsigned char, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned char __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned char __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -437,7 +437,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned char> : public __unary_functi
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char16_t> : public __unary_function<char16_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(char16_t __v) const noexcept
+  _CCCL_API inline size_t operator()(char16_t __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -446,7 +446,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char16_t> : public __unary_function<ch
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char32_t> : public __unary_function<char32_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(char32_t __v) const noexcept
+  _CCCL_API inline size_t operator()(char32_t __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -455,7 +455,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char32_t> : public __unary_function<ch
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<wchar_t> : public __unary_function<wchar_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(wchar_t __v) const noexcept
+  _CCCL_API inline size_t operator()(wchar_t __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -464,7 +464,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<wchar_t> : public __unary_function<wch
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<short> : public __unary_function<short, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(short __v) const noexcept
+  _CCCL_API inline size_t operator()(short __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -473,7 +473,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<short> : public __unary_function<short
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned short> : public __unary_function<unsigned short, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned short __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned short __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -482,7 +482,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned short> : public __unary_funct
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<int> : public __unary_function<int, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(int __v) const noexcept
+  _CCCL_API inline size_t operator()(int __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -491,7 +491,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<int> : public __unary_function<int, si
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned int> : public __unary_function<unsigned int, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned int __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned int __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -500,7 +500,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned int> : public __unary_functio
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long> : public __unary_function<long, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(long __v) const noexcept
+  _CCCL_API inline size_t operator()(long __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -509,7 +509,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long> : public __unary_function<long, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned long> : public __unary_function<unsigned long, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned long __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned long __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -538,7 +538,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__uint128_t> : public __scalar_hash<__
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(float __v) const noexcept
+  _CCCL_API inline size_t operator()(float __v) const noexcept
   {
     // -0.0 and 0.0 should return same hash
     if (__v == 0.0f)
@@ -552,7 +552,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<double> : public __scalar_hash<double>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(double __v) const noexcept
+  _CCCL_API inline size_t operator()(double __v) const noexcept
   {
     // -0.0 and 0.0 should return same hash
     if (__v == 0.0)
@@ -566,7 +566,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<double> : public __scalar_hash<double>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<long double>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(long double __v) const noexcept
+  _CCCL_API inline size_t operator()(long double __v) const noexcept
   {
     // -0.0 and 0.0 should return same hash
     if (__v == 0.0L)
@@ -597,7 +597,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<lo
 template <class _Tp, bool = is_enum<_Tp>::value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __enum_hash : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     using type = typename underlying_type<_Tp>::type;
     return hash<type>()(static_cast<type>(__v));
@@ -618,7 +618,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash : public __enum_hash<_Tp>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<nullptr_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(nullptr_t) const noexcept
+  _CCCL_API inline size_t operator()(nullptr_t) const noexcept
   {
     return 662607004ull;
   }

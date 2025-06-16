@@ -36,9 +36,11 @@ get_policy(std::string_view policy_wrapper_expr, std::string_view translation_un
     policy_wrapper_expr,
     tag_name);
 
-  auto nvrtc_ptx = make_nvrtc_command_list()
-                     .add_program(nvrtc_translation_unit{fixed_source.c_str(), "runtime_policy.cu"})
-                     .compile_program_to_ptx({fixed_args.data(), fixed_args.size()});
+  auto nvrtc_ptx =
+    begin_linking_nvrtc_program(0, nullptr)
+      ->add_program(nvrtc_translation_unit{fixed_source.c_str(), "runtime_policy.cu"})
+      ->compile_program({fixed_args.data(), fixed_args.size()})
+      ->get_program_ptx();
 
   return cub::detail::ptx_json::parse(tag_name, nvrtc_ptx.ptx.get());
 }

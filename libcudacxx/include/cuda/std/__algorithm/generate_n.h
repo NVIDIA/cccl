@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _OutputIterator, class _Size, class _Generator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator generate_n(_OutputIterator __first, _Size __orig_n, _Generator __gen)
+_CCCL_API constexpr _OutputIterator generate_n(_OutputIterator __first, _Size __orig_n, _Generator __gen)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
   _IntegralSize __n   = static_cast<_IntegralSize>(__orig_n);

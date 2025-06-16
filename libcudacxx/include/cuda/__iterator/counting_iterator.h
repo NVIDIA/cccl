@@ -58,7 +58,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <class _Int>
 struct __get_wider_signed
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __call() noexcept
+  _CCCL_API inline static auto __call() noexcept
   {
     if constexpr (sizeof(_Int) < sizeof(short))
     {
@@ -107,24 +107,24 @@ _CCCL_CONCEPT __advanceable = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i, const _Ite
   requires(_CUDA_VSTD::convertible_to<decltype(__j - __j), _IotaDiffT<_Iter>>));
 
 template <class, class = void>
-struct counting_iterator_category
+struct __counting_iterator_category
 {};
 
 template <class _Tp>
-struct counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
+struct __counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
 {
   using iterator_category = _CUDA_VSTD::input_iterator_tag;
 };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <_CUDA_VSTD::weakly_incrementable _Start>
   requires _CUDA_VSTD::copyable<_Start>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
           _CUDA_VSTD::enable_if_t<_CUDA_VSTD::weakly_incrementable<_Start>, int> = 0,
           _CUDA_VSTD::enable_if_t<_CUDA_VSTD::copyable<_Start>, int>             = 0>
-#endif // _CCCL_NO_CONCEPTS
-struct counting_iterator : public counting_iterator_category<_Start>
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+struct counting_iterator : public __counting_iterator_category<_Start>
 {
   using iterator_concept = _CUDA_VSTD::conditional_t<
     __advanceable<_Start>,
@@ -140,24 +140,22 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _Start __value_ = _Start();
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counting_iterator()
     requires _CUDA_VSTD::default_initializable<_Start>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator() noexcept(
-    _CUDA_VSTD::is_nothrow_default_constructible_v<_Start2>)
-  {}
-#endif // _CCCL_NO_CONCEPTS
+  _CCCL_API constexpr counting_iterator() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Start2>) {}
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit counting_iterator(_Start __value) noexcept(
+  _CCCL_API constexpr explicit counting_iterator(_Start __value) noexcept(
     _CUDA_VSTD::is_nothrow_move_constructible_v<_Start>)
       : __value_(_CUDA_VSTD::move(__value))
   {}
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Start operator*() const
+  [[nodiscard]] _CCCL_API constexpr _Start operator*() const
     noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Start>)
   {
     return __value_;
@@ -165,7 +163,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Start2 operator[](difference_type __n) const
+  [[nodiscard]] _CCCL_API constexpr _Start2 operator[](difference_type __n) const
     noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Start2>
              && noexcept(_CUDA_VSTD::declval<const _Start2&>() + __n))
   {
@@ -179,14 +177,13 @@ struct counting_iterator : public counting_iterator_category<_Start>
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator&
-  operator++() noexcept(noexcept(++_CUDA_VSTD::declval<_Start&>()))
+  _CCCL_API constexpr counting_iterator& operator++() noexcept(noexcept(++_CUDA_VSTD::declval<_Start&>()))
   {
     ++__value_;
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int) noexcept(
+  _CCCL_API constexpr auto operator++(int) noexcept(
     noexcept(++_CUDA_VSTD::declval<_Start&>()) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Start>)
   {
     if constexpr (_CUDA_VSTD::incrementable<_Start>)
@@ -203,8 +200,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__decrementable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator&
-  operator--() noexcept(noexcept(--_CUDA_VSTD::declval<_Start2&>()))
+  _CCCL_API constexpr counting_iterator& operator--() noexcept(noexcept(--_CUDA_VSTD::declval<_Start2&>()))
   {
     --__value_;
     return *this;
@@ -212,7 +208,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__decrementable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator operator--(int) noexcept(
+  _CCCL_API constexpr counting_iterator operator--(int) noexcept(
     noexcept(--_CUDA_VSTD::declval<_Start2&>()) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Start>)
   {
     auto __tmp = *this;
@@ -222,8 +218,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator&
-  operator+=(difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  _CCCL_API constexpr counting_iterator& operator+=(difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)
     {
@@ -249,8 +244,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_iterator&
-  operator-=(difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  _CCCL_API constexpr counting_iterator& operator-=(difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)
     {
@@ -276,7 +270,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() == _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -286,7 +280,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 #if _CCCL_STD_VER <= 2017
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() != _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -296,7 +290,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -305,7 +299,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -314,7 +308,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -323,7 +317,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -331,7 +325,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
   }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
+  [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() <=> _CUDA_VSTD::declval<const _Start2&>()))
     requires _CUDA_VSTD::totally_ordered<_Start> && _CUDA_VSTD::three_way_comparable<_Start>
@@ -342,7 +336,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr counting_iterator
+  [[nodiscard]] _CCCL_API friend constexpr counting_iterator
   operator+(counting_iterator __i, difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     __i += __n;
@@ -351,7 +345,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr counting_iterator
+  [[nodiscard]] _CCCL_API friend constexpr counting_iterator
   operator+(difference_type __n, counting_iterator __i) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     return __i + __n;
@@ -359,7 +353,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr counting_iterator
+  [[nodiscard]] _CCCL_API friend constexpr counting_iterator
   operator-(counting_iterator __i, difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     __i -= __n;
@@ -368,7 +362,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const counting_iterator& __x, const counting_iterator& __y) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)
@@ -395,7 +389,7 @@ struct counting_iterator : public counting_iterator_category<_Start>
 //! @brief make_counting_iterator creates a \p counting_iterator from an __integer-like__ \c _Start
 //! @param __start The __integer-like__ \c _Start representing the initial count
 template <class _Start>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto make_counting_iterator(_Start __start)
+[[nodiscard]] _CCCL_API constexpr auto make_counting_iterator(_Start __start)
 {
   return counting_iterator<_Start>{__start};
 }

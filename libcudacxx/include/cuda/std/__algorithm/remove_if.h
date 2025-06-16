@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 remove_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   __first = _CUDA_VSTD::find_if<_ForwardIterator, add_lvalue_reference_t<_Predicate>>(__first, __last, __pred);

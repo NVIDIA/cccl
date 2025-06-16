@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -110,7 +111,7 @@ public:
   using difference_type        = _CUDA_VSTD::ptrdiff_t;
 
   using __env_t          = ::cuda::experimental::env_t<_Properties...>;
-  using __policy_t       = ::cuda::experimental::execution::execution_policy;
+  using __policy_t       = ::cuda::experimental::execution::any_execution_policy;
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
   using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
   using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
@@ -638,6 +639,23 @@ using async_device_buffer = async_buffer<_Tp, _CUDA_VMR::device_accessible>;
 template <class _Tp>
 using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
+template <class _Tp, class _PropsList>
+using __buffer_type_for_props = typename _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
+
+template <typename _BufferTo, typename _BufferFrom>
+void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+{
+  __stream.wait(__from.get_stream());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "make_async_buffer: failed to copy data",
+    __to.__unwrapped_begin(),
+    __from.__unwrapped_begin(),
+    sizeof(typename _BufferTo::value_type) * __from.size(),
+    cudaMemcpyKind::cudaMemcpyDefault,
+    __stream.get());
+}
+
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   stream_ref __stream,
@@ -647,19 +665,151 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), no_init};
 
-  // We need some opt-out for the wait here, but I don't know how yet
-  __stream.wait(__source.get_stream());
-
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemcpyAsync,
-    "cudax::async_buffer::__copy_cross: failed to copy data",
-    __res.__unwrapped_begin(),
-    __source.__unwrapped_begin(),
-    sizeof(_Tp) * __source.size(),
-    cudaMemcpyKind::cudaMemcpyDefault,
-    __stream.get());
+  __copy_cross_buffers(__stream, __res, __source);
 
   return __res;
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  auto __res = __buffer_type{__env, __source.size(), uninit};
+
+  __copy_cross_buffers(__stream, __res, __source);
+
+  return __res;
+}
+
+// Empty buffer make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env};
+}
+
+// Size-only make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __size};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __size};
+}
+
+// Size and value make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, const _Tp& __value)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __size, __value};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __size, __value};
+}
+
+// Size with no initialization make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...> make_async_buffer(
+  stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, ::cuda::experimental::no_init_t)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __size, ::cuda::experimental::no_init};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __size, ::cuda::experimental::no_init};
+}
+
+// Iterator range make function
+_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter)
+_CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Iter __first, _Iter __last)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __first, __last};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
+                 _CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __first, __last};
+}
+
+// Initializer list make function
+template <class _Tp, class... _Properties>
+async_buffer<_Tp, _Properties...> make_async_buffer(
+  stream_ref __stream, any_async_resource<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, __ilist};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, __ilist};
+}
+
+// Range make function for ranges
+_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Range)
+_CCCL_REQUIRES(_CUDA_VRANGES::forward_range<_Range>)
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Range&& __range)
+{
+  env_t<_Properties...> __env{__mr, __stream};
+  return async_buffer<_Tp, _Properties...>{__env, _CUDA_VSTD::forward<_Range>(__range)};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class _Range)
+_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
+                 _CUDA_VRANGES::forward_range<_Range>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range)
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  typename __buffer_type::__env_t __env{__mr, __stream};
+  return __buffer_type{__env, _CUDA_VSTD::forward<_Range>(__range)};
 }
 
 } // namespace cuda::experimental

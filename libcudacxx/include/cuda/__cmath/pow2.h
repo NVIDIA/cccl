@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_power_of_two(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr bool is_power_of_two(_Tp __t) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {
@@ -45,7 +45,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp next_power_of_two(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp next_power_of_two(_Tp __t) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {
@@ -57,7 +57,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp prev_power_of_two(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp prev_power_of_two(_Tp __t) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {

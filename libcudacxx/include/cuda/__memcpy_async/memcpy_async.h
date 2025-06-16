@@ -29,10 +29,12 @@
 #  include <cuda/__barrier/barrier.h>
 #  include <cuda/__barrier/barrier_block_scope.h>
 #  include <cuda/__barrier/barrier_thread_scope.h>
+#  include <cuda/__memcpy_async/check_preconditions.h>
 #  include <cuda/__memcpy_async/memcpy_async_barrier.h>
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -97,62 +99,69 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  ***********************************************************************/
 
 template <typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Tp* __destination,
   _Tp const* __source,
   aligned_size_t<_Alignment> __size,
   barrier<_Sco, _CompF>& __barrier)
 {
+  static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template <class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
+_CCCL_API inline async_contract_fulfillment
 memcpy_async(_Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_barrier(__single_thread_group{}, __destination, __source, __size, __barrier);
 }
 
 template <typename _Group, class _Tp, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Tp* __destination,
   _Tp const* __source,
   _CUDA_VSTD::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template <typename _Group, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
   void const* __source,
   _CUDA_VSTD::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_barrier(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
 
 template <typename _Group, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
   void const* __source,
   aligned_size_t<_Alignment> __size,
   barrier<_Sco, _CompF>& __barrier)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_barrier(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
 
 template <typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
+_CCCL_API inline async_contract_fulfillment
 memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_barrier(
     __single_thread_group{},
     reinterpret_cast<char*>(__destination),

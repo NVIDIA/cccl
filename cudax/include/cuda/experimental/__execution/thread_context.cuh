@@ -21,30 +21,28 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HOST_COMPILATION()
+#include <cuda/experimental/__execution/run_loop.cuh>
 
-#  include <cuda/experimental/__execution/run_loop.cuh>
+#include <thread>
 
-#  include <thread>
-
-#  include <cuda/experimental/__execution/prologue.cuh>
+#include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
 {
-  thread_context() noexcept
+  _CCCL_HOST_API thread_context() noexcept
       : __thrd_{[this] {
         __loop_.run();
       }}
   {}
 
-  ~thread_context() noexcept
+  _CCCL_HOST_API ~thread_context() noexcept
   {
     join();
   }
 
-  void join() noexcept
+  _CCCL_HOST_API void join() noexcept
   {
     if (__thrd_.joinable())
     {
@@ -53,7 +51,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
     }
   }
 
-  auto get_scheduler()
+  _CCCL_HOST_API auto get_scheduler()
   {
     return __loop_.get_scheduler();
   }
@@ -64,8 +62,6 @@ private:
 };
 } // namespace cuda::experimental::execution
 
-#  include <cuda/experimental/__execution/epilogue.cuh>
-
-#endif // _CCCL_HOST_COMPILATION()
+#include <cuda/experimental/__execution/epilogue.cuh>
 
 #endif // __CUDAX_EXECUTION_THREAD_CONTEXT

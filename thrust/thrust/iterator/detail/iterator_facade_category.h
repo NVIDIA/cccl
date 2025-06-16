@@ -36,6 +36,7 @@
 #include <thrust/iterator/iterator_categories.h>
 
 #include <cuda/std/iterator>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -190,7 +191,7 @@ struct iterator_facade_category
 {
   using type = typename ::cuda::std::_If<
     is_iterator_category<CategoryOrTraversal>,
-    identity_<CategoryOrTraversal>,
+    ::cuda::std::type_identity<CategoryOrTraversal>,
     iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal, ValueParam, Reference>>::type;
 }; // end iterator_facade_category
 
