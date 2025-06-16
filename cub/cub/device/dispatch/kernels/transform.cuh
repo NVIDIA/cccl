@@ -59,17 +59,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
 }
 
 template <int BlockDim, typename It>
-_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int tile_size)
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 {
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>)
   {
     constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to
                                               // be architecture dependent?
-    const int tile_size_bytes = tile_size * sizeof(it_value_t<It>);
+    const int items_bytes = items * sizeof(it_value_t<It>);
 
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
     _CCCL_PRAGMA_NOUNROLL()
-    for (int offset = threadIdx.x * prefetch_byte_stride; offset < tile_size_bytes;
+    for (int offset = threadIdx.x * prefetch_byte_stride; offset < items_bytes;
          offset += BlockDim * prefetch_byte_stride)
     {
       prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
@@ -95,9 +95,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorIn... ins)
 {
   constexpr int block_dim = PrefetchPolicy::block_threads;
-  const int tile_stride   = block_dim * num_elem_per_thread;
-  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
+  const int tile_size     = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items   = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -105,7 +105,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     out += offset;
   }
 
-  (..., prefetch_tile<block_dim>(ins, tile_size));
+  (..., prefetch_tile<block_dim>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -114,14 +114,14 @@ _CCCL_DEVICE void transform_kernel_impl(
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_dim + threadIdx.x;
-      if (full_tile || idx < tile_size)
+      if (full_tile || idx < valid_items)
       {
         // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
         out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...);
       }
     }
   };
-  if (tile_stride == tile_size)
+  if (tile_size == valid_items)
   {
     process_tile(::cuda::std::true_type{}, ins...);
   }
@@ -131,48 +131,51 @@ _CCCL_DEVICE void transform_kernel_impl(
   }
 }
 
-template <int Length>
+struct alignas(32) aligned32_t
+{
+  longlong4 data;
+};
+
+template <int Bytes>
 _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
 {
-  static_assert(::cuda::is_power_of_two(Length));
-  if constexpr (Length == 1)
+  static_assert(::cuda::is_power_of_two(Bytes));
+  if constexpr (Bytes == 1)
   {
     return ::cuda::std::int8_t{};
   }
-  else if constexpr (Length == 2)
+  else if constexpr (Bytes == 2)
   {
     return ::cuda::std::int16_t{};
   }
-  else if constexpr (Length == 4)
+  else if constexpr (Bytes == 4)
   {
     return ::cuda::std::int32_t{};
   }
-  else if constexpr (Length == 8)
+  else if constexpr (Bytes == 8)
   {
     return ::cuda::std::int64_t{};
   }
-  else if constexpr (Length == 16)
+  else if constexpr (Bytes == 16)
   {
+    static_assert(alignof(int4) == 16);
     return int4{};
   }
-  else if constexpr (Length == 32)
+  else if constexpr (Bytes == 32)
   {
-    return longlong4{};
+    static_assert(alignof(aligned32_t) == 32);
+    return aligned32_t{};
   }
   else
   {
-    return ::cuda::std::array<int, Length / sizeof(int)>{};
+    return ::cuda::std::array<int, Bytes / sizeof(int)>{};
   }
 }
 
 template <typename T, typename U>
 using larger_t = ::cuda::std::conditional_t<(sizeof(T) > sizeof(U)), T, U>;
 
-template <typename VectorizedPolicy,
-          typename Offset,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... RandomAccessIteratorIn>
+template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::vectorized>,
   Offset num_items,
@@ -180,17 +183,15 @@ _CCCL_DEVICE void transform_kernel_impl(
   bool can_vectorize,
   F f,
   RandomAccessIteratorOut out,
-  RandomAccessIteratorIn... ins)
+  const InputT*... ins)
 {
-  static_assert((THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorIn> && ...));
-
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
-  constexpr int tile_stride      = block_dim * items_per_thread;
-  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size            = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
+  constexpr int tile_size        = block_dim * items_per_thread;
+  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items          = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
 
-  if (!can_vectorize || tile_size != tile_stride)
+  if (!can_vectorize || valid_items != tile_size)
   {
     // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
     transform_kernel_impl<VectorizedPolicy>(
@@ -242,7 +243,7 @@ _CCCL_DEVICE void transform_kernel_impl(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(::cuda::std::array<it_value_t<RandomAccessIteratorIn>, items_per_thread>{}...);
+  provide_array(::cuda::std::array<InputT, items_per_thread>{}...);
 
   // write output
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
@@ -352,9 +353,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   namespace ptx = ::cuda::ptx;
 
   constexpr int block_dim = BulkCopyPolicy::block_threads;
-  const int tile_stride   = block_dim * num_elem_per_thread;
-  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
+  const int tile_size     = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items   = (::cuda::std::min)(num_items - offset, Offset{tile_size});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -379,13 +380,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         // TODO(bgruber): we could precompute bytes_to_copy on the host
         const int bytes_to_copy = round_up_to_po2_multiple(
-          aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
+          aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size, bulk_copy_size_multiple);
 
         ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
         total_copied += bytes_to_copy;
 
         // add bulk_copy_alignment to make space for the next tile's head padding
-        smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
+        smem_offset += static_cast<int>(sizeof(T)) * tile_size + bulk_copy_alignment;
       };
 
       // Order of evaluation is left-to-right
@@ -412,11 +413,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
-      const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
+      const int bytes_to_copy = static_cast<int>(sizeof(T)) * valid_items;
       cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
 
       // add bulk_copy_alignment to make space for the next tile's head padding
-      smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
+      smem_offset += static_cast<int>(sizeof(T)) * tile_size + bulk_copy_alignment;
     };
 
     // Order of evaluation is left-to-right
@@ -434,13 +435,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_dim + threadIdx.x;
-      if (full_tile || idx < tile_size)
+      if (full_tile || idx < valid_items)
       {
         int smem_offset    = 0;
         auto fetch_operand = [&](auto aligned_ptr) {
           using T                         = typename decltype(aligned_ptr)::value_type;
           const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
-          smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
+          smem_offset += int{sizeof(T)} * tile_size + bulk_copy_alignment;
           return smem_operand_tile_base[idx];
         };
 
@@ -454,7 +455,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     }
   };
   // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
-  if (tile_stride == tile_size)
+  if (tile_size == valid_items)
   {
     process_tile(::cuda::std::true_type{});
   }
