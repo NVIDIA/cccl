@@ -86,10 +86,63 @@ using iota = ::cuda::std::__type_iota<std::size_t, Start, Size, Stride>;
 template <typename TypeList, typename T>
 using remove = ::cuda::std::__type_remove<TypeList, T>;
 
+/**
+ * Return a value of type `T` with the same bitwise representation of `in`.
+ * Types `T` and `U` must be the same size.
+ */
+template <typename T, typename U>
+__host__ __device__ constexpr T SafeBitCast(const U& in) noexcept
+{
+  static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
+  T out;
+  memcpy(&out, &in, sizeof(T));
+  return out;
+}
+
 template <typename T>
 [[nodiscard]] constexpr bool isnan(T value) noexcept
 {
   return cuda::std::isnan(value);
+}
+
+[[nodiscard]] constexpr bool isnan(float1 val) noexcept
+{
+  return (cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(float2 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(float3 val) noexcept
+{
+  return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(float4 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
+}
+
+[[nodiscard]] constexpr bool isnan(double1 val) noexcept
+{
+  return (cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(double2 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(double3 val) noexcept
+{
+  return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(double4 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
 }
 
 // TODO: move to libcu++
@@ -100,6 +153,13 @@ template <typename T>
   return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
 }
 
+[[nodiscard]] constexpr bool isnan(half_t val) noexcept
+{
+  const auto bits = SafeBitCast<uint16_t>(val);
+  // commented bit is always true, leaving for documentation:
+  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
+}
+
 #endif // TEST_HALF_T()
 
 #if TEST_BF_T()
@@ -107,6 +167,13 @@ template <typename T>
 [[nodiscard]] constexpr bool isnan(__nv_bfloat162 value) noexcept
 {
   return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+[[nodiscard]] constexpr bool isnan(bfloat16_t val) noexcept
+{
+  const auto bits = SafeBitCast<uint16_t>(val);
+  // commented bit is always true, leaving for documentation:
+  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
 }
 
 #endif // TEST_BF_T()
