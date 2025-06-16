@@ -233,7 +233,7 @@ CUresult cccl_device_unary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy(cc * 10);
+    const auto policy            = transform::get_policy(cc * 10 /* convert to ptx version */);
     const auto input_it_value_t  = cccl_type_enum_to_name<input_storage_t>(input_it.value_type.type);
     const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
