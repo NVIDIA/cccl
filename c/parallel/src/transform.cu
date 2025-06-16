@@ -165,6 +165,11 @@ struct transform_kernel_source
   cccl_device_transform_build_result_t& build;
   std::vector<cuda::std::size_t> it_value_sizes;
 
+  static constexpr bool CanCacheConfiguration()
+  {
+    return false;
+  }
+
   CUkernel TransformKernel() const
   {
     return build.transform_kernel;
