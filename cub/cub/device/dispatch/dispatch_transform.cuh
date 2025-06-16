@@ -181,9 +181,9 @@ struct dispatch_t<StableAddress,
       tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
   {
     // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
-    using policy_t          = typename ActivePolicy::algo_policy;
-    constexpr int block_dim = policy_t::block_threads;
-    _CCCL_ASSERT(block_dim % alignment == 0,
+    using policy_t              = typename ActivePolicy::algo_policy;
+    constexpr int block_threads = policy_t::block_threads;
+    _CCCL_ASSERT(block_threads % alignment == 0,
                  "block_threads needs to be a multiple of the copy alignment"); // then tile_size is a multiple
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
       const auto max_smem = get_max_shared_memory();
@@ -200,7 +200,7 @@ struct dispatch_t<StableAddress,
         // ensures the loop below runs at least once
         static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread);
 
-        const int tile_size = block_dim * elem_per_thread;
+        const int tile_size = block_threads * elem_per_thread;
         const int smem_size = smem_for_tile_size(tile_size);
         if (smem_size > *max_smem)
         {
@@ -216,7 +216,7 @@ struct dispatch_t<StableAddress,
 
         int max_occupancy = 0;
         const auto error  = CubDebug(
-          launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_dim, smem_size));
+          launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_threads, smem_size));
         if (error != cudaSuccess)
         {
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
@@ -250,7 +250,7 @@ struct dispatch_t<StableAddress,
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      launcher_factory(grid_dim, block_dim, config->smem_size, stream),
+      launcher_factory(grid_dim, block_threads, config->smem_size, stream),
       kernel_source.TransformKernel(),
       config->elem_per_thread);
   }
@@ -279,12 +279,12 @@ struct dispatch_t<StableAddress,
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   invoke_prefetch_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy)
   {
-    const int block_dim = policy.BlockThreads();
+    const int block_threads = policy.BlockThreads();
 
     auto determine_config = [&]() -> cuda_expected<prefetch_config> {
       int max_occupancy = 0;
       auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_dim, 0));
+        CubDebug(launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_threads, 0));
       if (error != cudaSuccess)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
@@ -319,18 +319,18 @@ struct dispatch_t<StableAddress,
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? +policy.ItemsPerThreadNoInput()
-        : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+        : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
-    const int items_per_thread_evenly_spread = static_cast<int>(
-      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+    const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
+      Offset{items_per_thread}, num_items / (config->sm_count * block_threads * config->max_occupancy)));
 
     const int items_per_thread_clamped =
       ::cuda::std::clamp(items_per_thread_evenly_spread, +policy.MinItemsPerThread(), +policy.MaxItemsPerThread());
-    const int tile_size = block_dim * items_per_thread_clamped;
+    const int tile_size = block_threads * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      launcher_factory(grid_dim, block_dim, 0, stream)
+      launcher_factory(grid_dim, block_threads, 0, stream)
         .doit(kernel_source.TransformKernel(),
               num_items,
               items_per_thread_clamped,

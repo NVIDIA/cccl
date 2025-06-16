@@ -89,10 +89,10 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_dim = PrefetchPolicy::block_threads;
-  const int tile_stride   = block_dim * num_elem_per_thread;
-  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
+  constexpr int block_threads = PrefetchPolicy::block_threads;
+  const int tile_stride       = block_threads * num_elem_per_thread;
+  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size         = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -100,7 +100,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     out += offset;
   }
 
-  (..., prefetch_tile<block_dim>(THRUST_NS_QUALIFIER::raw_reference_cast(ins), tile_size));
+  (..., prefetch_tile<block_threads>(THRUST_NS_QUALIFIER::raw_reference_cast(ins), tile_size));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -108,7 +108,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     // _CCCL_PRAGMA_NOUNROLL()
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
-      const int idx = j * block_dim + threadIdx.x;
+      const int idx = j * block_threads + threadIdx.x;
       if (full_tile || idx < tile_size)
       {
         // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
@@ -202,10 +202,10 @@ _CCCL_DEVICE void transform_kernel_impl(
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
                                  // 16-byte aligned by default.
 
-  constexpr int block_dim = MemcpyAsyncPolicy::block_threads;
-  const int tile_stride   = block_dim * num_elem_per_thread;
-  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
+  constexpr int block_threads = MemcpyAsyncPolicy::block_threads;
+  const int tile_stride       = block_threads * num_elem_per_thread;
+  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size         = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
 
   auto group                       = cooperative_groups::this_thread_block();
   [[maybe_unused]] int smem_offset = 0;
@@ -266,7 +266,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     _CCCL_PRAGMA_NOUNROLL()
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
-      const int idx = j * block_dim + threadIdx.x;
+      const int idx = j * block_threads + threadIdx.x;
       if (full_tile || idx < tile_size)
       {
         out[idx] = ::cuda::std::apply(
@@ -309,10 +309,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   namespace ptx = ::cuda::ptx;
 
-  constexpr int block_dim = BulkCopyPolicy::block_threads;
-  const int tile_stride   = block_dim * num_elem_per_thread;
-  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
+  constexpr int block_threads = BulkCopyPolicy::block_threads;
+  const int tile_stride       = block_threads * num_elem_per_thread;
+  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size         = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -391,7 +391,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     _CCCL_PRAGMA_NOUNROLL()
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
-      const int idx = j * block_dim + threadIdx.x;
+      const int idx = j * block_threads + threadIdx.x;
       if (full_tile || idx < tile_size)
       {
         int smem_offset    = 0;
