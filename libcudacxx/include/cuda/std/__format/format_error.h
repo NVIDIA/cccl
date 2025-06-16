@@ -43,10 +43,10 @@ using ::std::format_error;
 class _CCCL_TYPE_VISIBILITY_DEFAULT format_error : public ::std::runtime_error
 {
 public:
-  _CCCL_API explicit format_error(const ::std::string& __s)
+  _CCCL_HOST_API explicit format_error(const ::std::string& __s)
       : ::std::runtime_error(__s)
   {}
-  _CCCL_API explicit format_error(const char* __s)
+  _CCCL_HOST_API explicit format_error(const char* __s)
       : ::std::runtime_error(__s)
   {}
   _CCCL_HIDE_FROM_ABI format_error(const format_error&)            = default;
