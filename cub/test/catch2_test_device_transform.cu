@@ -544,3 +544,23 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   STATIC_REQUIRE(::cuda::std::is_constructible_v<kernel_arg>);
   STATIC_REQUIRE(::cuda::std::is_copy_constructible_v<kernel_arg>);
 }
+
+C2H_TEST("DeviceTransform::Transform vectorized output bug", "[device][device_transform]")
+{
+  using thrust::placeholders::_1;
+
+  int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
+  c2h::device_vector<std::uint16_t> input(num_items);
+  c2h::device_vector<std::uint16_t> output(num_items);
+  thrust::sequence(input.begin(), input.end());
+
+  // auto out_it = output.begin(); // works
+  auto out_it = thrust::make_transform_output_iterator(output.begin(), _1);
+  transform_many(input.begin(), out_it, num_items, _1 + 1);
+
+  c2h::host_vector<std::uint16_t> reference(num_items);
+  thrust::generate(reference.begin(), reference.end(), [i = 0]() mutable {
+    return ++i;
+  });
+  CHECK(output == reference);
+}

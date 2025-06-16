@@ -246,14 +246,14 @@ _CCCL_DEVICE void transform_kernel_impl(
   provide_array(::cuda::std::array<InputT, items_per_thread>{}...);
 
   // write output
+  static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
+  constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
+  using store_t        = larger_t<load_store_t, output_t>;
+
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
                 && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorOut>>)
   {
     // vector path
-    static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
-    constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
-
-    using store_t   = larger_t<load_store_t, output_t>;
     auto output_vec = reinterpret_cast<const store_t*>(output.data());
     auto out_vec    = reinterpret_cast<store_t*>(out);
 
@@ -267,9 +267,15 @@ _CCCL_DEVICE void transform_kernel_impl(
   {
     // serial path
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < items_per_thread; ++i)
+    for (int i = 0; i < stores; ++i)
     {
-      out[i * VectorizedPolicy::block_threads + threadIdx.x] = output[i];
+      constexpr int elems = sizeof(store_t) / sizeof(output_t);
+      static_assert(sizeof(store_t) % sizeof(output_t) == 0);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < elems; ++j)
+      {
+        out[(i * VectorizedPolicy::block_threads + threadIdx.x) * elems + j] = output[i * elems + j];
+      }
     }
   }
 }
