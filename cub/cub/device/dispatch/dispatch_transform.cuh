@@ -231,17 +231,17 @@ struct dispatch_t<StableAddress,
       }
       return last_counts;
     };
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
     cuda_expected<elem_counts> config = [&]() {
       NV_IF_TARGET(NV_IS_HOST, (if constexpr (KernelSource::CanCacheConfiguration()) {
                      static auto cached_config = determine_element_counts();
                      return cached_config;
                    }))
       // we cannot cache the determined element count in device code or when not allowed
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
       return determine_element_counts();
-      _CCCL_DIAG_POP
     }();
+    _CCCL_DIAG_POP
     if (!config)
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 with GCC 7 fails CTAD here */>(config.error());
@@ -354,6 +354,8 @@ struct dispatch_t<StableAddress,
       return prefetch_config{max_occupancy, sm_count};
     };
 
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
     cuda_expected<prefetch_config> config = [&]() {
       NV_IF_TARGET(NV_IS_HOST,
                    (
@@ -366,11 +368,9 @@ struct dispatch_t<StableAddress,
                        return cached_config;
                      }))
       // we cannot cache the determined element count in device code or when not allowed
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
       return determine_config();
-      _CCCL_DIAG_POP
     }();
+    _CCCL_DIAG_POP
     if (!config)
     {
       return config.error();
