@@ -237,7 +237,10 @@ struct dispatch_t<StableAddress,
                      return cached_config;
                    }))
       // we cannot cache the determined element count in device code or when not allowed
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
       return determine_element_counts();
+      _CCCL_DIAG_POP
     }();
     if (!config)
     {
@@ -363,7 +366,10 @@ struct dispatch_t<StableAddress,
                        return cached_config;
                      }))
       // we cannot cache the determined element count in device code or when not allowed
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
       return determine_config();
+      _CCCL_DIAG_POP
     }();
     if (!config)
     {
