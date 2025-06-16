@@ -133,18 +133,11 @@ public:
   _CCCL_API constexpr tabulate_output_iterator() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Fn2>) {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-  //! @brief Constructs a \p tabulate_output_iterator with a given functor \p __func and index 0
-  _CCCL_API constexpr tabulate_output_iterator(_Fn __func) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Fn>)
-      : __func_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__func))
-  {}
-
-  //! @brief Constructs a \p tabulate_output_iterator with a given functor \p __func and an index
-  _CCCL_TEMPLATE(class _Integer)
-  _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
-  _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Integer __index) noexcept(
+  //! @brief Constructs a \p tabulate_output_iterator with a given functor \p __func and and optional index
+  _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Index __index = 0) noexcept(
     _CUDA_VSTD::is_nothrow_move_constructible_v<_Fn>)
       : __func_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__func))
-      , __index_(static_cast<_Index>(__index))
+      , __index_(__index)
   {}
 
   //! @brief Returns the stored index
