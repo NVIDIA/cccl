@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
+_CCCL_API constexpr _ForwardIterator __shift_left(
   _ForwardIterator __first,
   _ForwardIterator __last,
   typename iterator_traits<_ForwardIterator>::difference_type __n,
@@ -46,7 +46,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
+_CCCL_API constexpr _ForwardIterator __shift_left(
   _ForwardIterator __first,
   _ForwardIterator __last,
   typename iterator_traits<_ForwardIterator>::difference_type __n,
@@ -65,7 +65,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator shift_left(
+_CCCL_API constexpr _ForwardIterator shift_left(
   _ForwardIterator __first, _ForwardIterator __last, typename iterator_traits<_ForwardIterator>::difference_type __n)
 {
   if (__n == 0)

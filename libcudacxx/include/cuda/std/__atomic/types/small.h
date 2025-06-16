@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp
 }
 
 template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
-_CCCL_HOST_DEVICE constexpr inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+_CCCL_HOST_DEVICE constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   return static_cast<_Tp>(__val);
 }
@@ -75,11 +75,11 @@ struct __atomic_small_storage
   using __proxy_t                     = __atomic_small_proxy_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
-  _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage() noexcept
+  _CCCL_HOST_DEVICE constexpr explicit __atomic_small_storage() noexcept
       : __a_value{__proxy_t{}}
   {}
 
-  _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage(_Tp __value) noexcept
+  _CCCL_HOST_DEVICE constexpr explicit __atomic_small_storage(_Tp __value) noexcept
       : __a_value{__atomic_small_to_32(__value)}
   {}
 

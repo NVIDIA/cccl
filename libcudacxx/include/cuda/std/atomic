@@ -52,7 +52,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp kill_dependency(_Tp __y) noexcept
+_CCCL_API inline _Tp kill_dependency(_Tp __y) noexcept
 {
   return __y;
 }
@@ -63,11 +63,11 @@ struct atomic : public __atomic_impl<_Tp>
 {
   using value_type = _Tp;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr atomic() noexcept
+  _CCCL_API constexpr atomic() noexcept
       : __atomic_impl<_Tp>()
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr atomic(_Tp __d) noexcept
+  _CCCL_API constexpr atomic(_Tp __d) noexcept
       : __atomic_impl<_Tp>(__d)
   {}
 
@@ -75,12 +75,12 @@ struct atomic : public __atomic_impl<_Tp>
   atomic& operator=(const atomic&)          = delete;
   atomic& operator=(const atomic&) volatile = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Tp operator=(_Tp __d) volatile noexcept
+  _CCCL_API inline _Tp operator=(_Tp __d) volatile noexcept
   {
     this->store(__d);
     return __d;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _Tp operator=(_Tp __d) noexcept
+  _CCCL_API inline _Tp operator=(_Tp __d) noexcept
   {
     this->store(__d);
     return __d;
@@ -97,11 +97,11 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
 
   static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit atomic_ref(_Tp& __ref)
+  _CCCL_API inline explicit atomic_ref(_Tp& __ref)
       : __atomic_ref_impl<_Tp>(__ref)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Tp operator=(_Tp __v) const noexcept
+  _CCCL_API inline _Tp operator=(_Tp __v) const noexcept
   {
     this->store(__v);
     return __v;
@@ -115,13 +115,13 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
 // atomic_is_lock_free
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_is_lock_free(const volatile atomic<_Tp>* __o) noexcept
+_CCCL_API inline bool atomic_is_lock_free(const volatile atomic<_Tp>* __o) noexcept
 {
   return __o->is_lock_free();
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_is_lock_free(const atomic<_Tp>* __o) noexcept
+_CCCL_API inline bool atomic_is_lock_free(const atomic<_Tp>* __o) noexcept
 {
   return __o->is_lock_free();
 }
@@ -129,13 +129,13 @@ _LIBCUDACXX_HIDE_FROM_ABI bool atomic_is_lock_free(const atomic<_Tp>* __o) noexc
 // atomic_init
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
+_CCCL_API inline void atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
   __atomic_init_dispatch(&__o->__a, __d);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
+_CCCL_API inline void atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 {
   __atomic_init_dispatch(&__o->__a, __d);
 }
@@ -143,13 +143,13 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 // atomic_store
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_store(volatile atomic<_Tp>* __o, _Tp __d) noexcept
+_CCCL_API inline void atomic_store(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
   __o->store(__d);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_store(atomic<_Tp>* __o, _Tp __d) noexcept
+_CCCL_API inline void atomic_store(atomic<_Tp>* __o, _Tp __d) noexcept
 {
   __o->store(__d);
 }
@@ -157,14 +157,14 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_store(atomic<_Tp>* __o, _Tp __d) noexcept
 // atomic_store_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_store_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
+_CCCL_API inline void atomic_store_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
 {
   __o->store(__d, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_store_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
+_CCCL_API inline void atomic_store_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
 {
   __o->store(__d, __m);
@@ -173,13 +173,13 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_store_explicit(atomic<_Tp>* __o, _Tp __d, 
 // atomic_load
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_load(const volatile atomic<_Tp>* __o) noexcept
+_CCCL_API inline _Tp atomic_load(const volatile atomic<_Tp>* __o) noexcept
 {
   return __o->load();
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_load(const atomic<_Tp>* __o) noexcept
+_CCCL_API inline _Tp atomic_load(const atomic<_Tp>* __o) noexcept
 {
   return __o->load();
 }
@@ -187,14 +187,14 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_load(const atomic<_Tp>* __o) noexcept
 // atomic_load_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_load_explicit(const volatile atomic<_Tp>* __o, memory_order __m) noexcept
+_CCCL_API inline _Tp atomic_load_explicit(const volatile atomic<_Tp>* __o, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
 {
   return __o->load(__m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_load_explicit(const atomic<_Tp>* __o, memory_order __m) noexcept
+_CCCL_API inline _Tp atomic_load_explicit(const atomic<_Tp>* __o, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
 {
   return __o->load(__m);
@@ -203,13 +203,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_load_explicit(const atomic<_Tp>* __o, memor
 // atomic_exchange
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_exchange(volatile atomic<_Tp>* __o, _Tp __d) noexcept
+_CCCL_API inline _Tp atomic_exchange(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
   return __o->exchange(__d);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_exchange(atomic<_Tp>* __o, _Tp __d) noexcept
+_CCCL_API inline _Tp atomic_exchange(atomic<_Tp>* __o, _Tp __d) noexcept
 {
   return __o->exchange(__d);
 }
@@ -217,13 +217,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_exchange(atomic<_Tp>* __o, _Tp __d) noexcep
 // atomic_exchange_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_exchange_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
+_CCCL_API inline _Tp atomic_exchange_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
 {
   return __o->exchange(__d, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_exchange_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
+_CCCL_API inline _Tp atomic_exchange_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
 {
   return __o->exchange(__d, __m);
 }
@@ -231,13 +231,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp atomic_exchange_explicit(atomic<_Tp>* __o, _Tp __d
 // atomic_compare_exchange_weak
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_weak(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
+_CCCL_API inline bool atomic_compare_exchange_weak(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
   return __o->compare_exchange_weak(*__e, __d);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_weak(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
+_CCCL_API inline bool atomic_compare_exchange_weak(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
   return __o->compare_exchange_weak(*__e, __d);
 }
@@ -245,13 +245,13 @@ _LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_weak(atomic<_Tp>* __o, _T
 // atomic_compare_exchange_strong
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
+_CCCL_API inline bool atomic_compare_exchange_strong(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
   return __o->compare_exchange_strong(*__e, __d);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
+_CCCL_API inline bool atomic_compare_exchange_strong(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
   return __o->compare_exchange_strong(*__e, __d);
 }
@@ -259,7 +259,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong(atomic<_Tp>* __o, 
 // atomic_compare_exchange_weak_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_weak_explicit(
+_CCCL_API inline bool atomic_compare_exchange_weak_explicit(
   volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d, memory_order __s, memory_order __f) noexcept
   _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
 {
@@ -267,7 +267,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_weak_explicit(
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool
+_CCCL_API inline bool
 atomic_compare_exchange_weak_explicit(atomic<_Tp>* __o, _Tp* __e, _Tp __d, memory_order __s, memory_order __f) noexcept
   _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
 {
@@ -277,7 +277,7 @@ atomic_compare_exchange_weak_explicit(atomic<_Tp>* __o, _Tp* __e, _Tp __d, memor
 // atomic_compare_exchange_strong_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong_explicit(
+_CCCL_API inline bool atomic_compare_exchange_strong_explicit(
   volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d, memory_order __s, memory_order __f) noexcept
   _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
 {
@@ -285,7 +285,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong_explicit(
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong_explicit(
+_CCCL_API inline bool atomic_compare_exchange_strong_explicit(
   atomic<_Tp>* __o, _Tp* __e, _Tp __d, memory_order __s, memory_order __f) noexcept
   _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
 {
@@ -295,14 +295,13 @@ _LIBCUDACXX_HIDE_FROM_ABI bool atomic_compare_exchange_strong_explicit(
 // atomic_wait
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void
-atomic_wait(const volatile atomic<_Tp>* __o, typename atomic<_Tp>::value_type __v) noexcept
+_CCCL_API inline void atomic_wait(const volatile atomic<_Tp>* __o, typename atomic<_Tp>::value_type __v) noexcept
 {
   return __o->wait(__v);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_wait(const atomic<_Tp>* __o, typename atomic<_Tp>::value_type __v) noexcept
+_CCCL_API inline void atomic_wait(const atomic<_Tp>* __o, typename atomic<_Tp>::value_type __v) noexcept
 {
   return __o->wait(__v);
 }
@@ -310,7 +309,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_wait(const atomic<_Tp>* __o, typename atom
 // atomic_wait_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 atomic_wait_explicit(const volatile atomic<_Tp>* __o, typename atomic<_Tp>::value_type __v, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
 {
@@ -318,7 +317,7 @@ atomic_wait_explicit(const volatile atomic<_Tp>* __o, typename atomic<_Tp>::valu
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 atomic_wait_explicit(const atomic<_Tp>* __o, typename atomic<_Tp>::value_type __v, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
 {
@@ -328,12 +327,12 @@ atomic_wait_explicit(const atomic<_Tp>* __o, typename atomic<_Tp>::value_type __
 // atomic_notify_one
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_one(volatile atomic<_Tp>* __o) noexcept
+_CCCL_API inline void atomic_notify_one(volatile atomic<_Tp>* __o) noexcept
 {
   __o->notify_one();
 }
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_one(atomic<_Tp>* __o) noexcept
+_CCCL_API inline void atomic_notify_one(atomic<_Tp>* __o) noexcept
 {
   __o->notify_one();
 }
@@ -341,12 +340,12 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_one(atomic<_Tp>* __o) noexcept
 // atomic_notify_one
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_all(volatile atomic<_Tp>* __o) noexcept
+_CCCL_API inline void atomic_notify_all(volatile atomic<_Tp>* __o) noexcept
 {
   __o->notify_all();
 }
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_all(atomic<_Tp>* __o) noexcept
+_CCCL_API inline void atomic_notify_all(atomic<_Tp>* __o) noexcept
 {
   __o->notify_all();
 }
@@ -354,29 +353,29 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_all(atomic<_Tp>* __o) noexcept
 // atomic_fetch_add
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
+_CCCL_API inline _Tp* atomic_fetch_add(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
   return __o->fetch_add(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
+_CCCL_API inline _Tp* atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
   return __o->fetch_add(__op);
 }
@@ -384,30 +383,29 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __o
 // atomic_fetch_add_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp*
-atomic_fetch_add_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
+_CCCL_API inline _Tp* atomic_fetch_add_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
+_CCCL_API inline _Tp* atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
@@ -415,29 +413,29 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrd
 // atomic_fetch_sub
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
+_CCCL_API inline _Tp* atomic_fetch_sub(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
+_CCCL_API inline _Tp* atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
@@ -445,30 +443,29 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __o
 // atomic_fetch_sub_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+_CCCL_API inline enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
+                             _Tp>
 atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp*
-atomic_fetch_sub_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
+_CCCL_API inline _Tp* atomic_fetch_sub_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
+_CCCL_API inline _Tp* atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
@@ -476,14 +473,14 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrd
 // atomic_fetch_and
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_and(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_and(__op);
@@ -492,14 +489,14 @@ atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_and_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_and(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_and(__op, __m);
@@ -508,14 +505,14 @@ atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 // atomic_fetch_or
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_or(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_or(__op);
@@ -524,14 +521,14 @@ atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_or_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_or(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_or(__op, __m);
@@ -540,14 +537,14 @@ atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 // atomic_fetch_xor
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_xor(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_xor(__op);
@@ -556,14 +553,14 @@ atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_xor_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_xor(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_CCCL_API inline enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_xor(__op, __m);
@@ -575,62 +572,61 @@ struct atomic_flag
 {
   __atomic_storage_t<_LIBCUDACXX_ATOMIC_FLAG_TYPE> __a;
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool test(memory_order __m = memory_order_seq_cst) const volatile noexcept
+  _CCCL_API inline bool test(memory_order __m = memory_order_seq_cst) const volatile noexcept
   {
     return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool test(memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_API inline bool test(memory_order __m = memory_order_seq_cst) const noexcept
   {
     return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
+  _CCCL_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
     return __atomic_exchange_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
+  _CCCL_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
   {
     return __atomic_exchange_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
+  _CCCL_API inline void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
     __atomic_store_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void clear(memory_order __m = memory_order_seq_cst) noexcept
+  _CCCL_API inline void clear(memory_order __m = memory_order_seq_cst) noexcept
   {
     __atomic_store_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const
+  _CCCL_API inline void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const
     volatile noexcept
   {
     __atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void
-  wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_API inline void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const noexcept
   {
     __atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void notify_one() volatile noexcept
+  _CCCL_API inline void notify_one() volatile noexcept
   {
     __atomic_notify_one(&__a, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void notify_one() noexcept
+  _CCCL_API inline void notify_one() noexcept
   {
     __atomic_notify_one(&__a, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void notify_all() volatile noexcept
+  _CCCL_API inline void notify_all() volatile noexcept
   {
     __atomic_notify_all(&__a, __thread_scope_system_tag{});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void notify_all() noexcept
+  _CCCL_API inline void notify_all() noexcept
   {
     __atomic_notify_all(&__a, __thread_scope_system_tag{});
   }
 
   _CCCL_HIDE_FROM_ABI atomic_flag() noexcept = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr atomic_flag(bool __b) noexcept
+  _CCCL_API constexpr atomic_flag(bool __b) noexcept
       : __a(__b)
   {} // EXTENSION
 
@@ -639,105 +635,104 @@ struct atomic_flag
   atomic_flag& operator=(const atomic_flag&) volatile = delete;
 };
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test(const volatile atomic_flag* __o) noexcept
+_CCCL_API inline bool atomic_flag_test(const volatile atomic_flag* __o) noexcept
 {
   return __o->test();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test(const atomic_flag* __o) noexcept
+_CCCL_API inline bool atomic_flag_test(const atomic_flag* __o) noexcept
 {
   return __o->test();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_explicit(const volatile atomic_flag* __o, memory_order __m) noexcept
+_CCCL_API inline bool atomic_flag_test_explicit(const volatile atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test(__m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_explicit(const atomic_flag* __o, memory_order __m) noexcept
+_CCCL_API inline bool atomic_flag_test_explicit(const atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test(__m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set(volatile atomic_flag* __o) noexcept
+_CCCL_API inline bool atomic_flag_test_and_set(volatile atomic_flag* __o) noexcept
 {
   return __o->test_and_set();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set(atomic_flag* __o) noexcept
+_CCCL_API inline bool atomic_flag_test_and_set(atomic_flag* __o) noexcept
 {
   return __o->test_and_set();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
+_CCCL_API inline bool atomic_flag_test_and_set_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test_and_set(__m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set_explicit(atomic_flag* __o, memory_order __m) noexcept
+_CCCL_API inline bool atomic_flag_test_and_set_explicit(atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test_and_set(__m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear(volatile atomic_flag* __o) noexcept
+_CCCL_API inline void atomic_flag_clear(volatile atomic_flag* __o) noexcept
 {
   __o->clear();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear(atomic_flag* __o) noexcept
+_CCCL_API inline void atomic_flag_clear(atomic_flag* __o) noexcept
 {
   __o->clear();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
+_CCCL_API inline void atomic_flag_clear_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
 {
   __o->clear(__m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear_explicit(atomic_flag* __o, memory_order __m) noexcept
+_CCCL_API inline void atomic_flag_clear_explicit(atomic_flag* __o, memory_order __m) noexcept
 {
   __o->clear(__m);
 }
 
 #if !defined(__CUDA_MINIMUM_ARCH__) || __CUDA_MINIMUM_ARCH__ >= 700
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait(const volatile atomic_flag* __o, bool __v) noexcept
+_CCCL_API inline void atomic_flag_wait(const volatile atomic_flag* __o, bool __v) noexcept
 {
   __o->wait(__v);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait(const atomic_flag* __o, bool __v) noexcept
+_CCCL_API inline void atomic_flag_wait(const atomic_flag* __o, bool __v) noexcept
 {
   __o->wait(__v);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void
-atomic_flag_wait_explicit(const volatile atomic_flag* __o, bool __v, memory_order __m) noexcept
+_CCCL_API inline void atomic_flag_wait_explicit(const volatile atomic_flag* __o, bool __v, memory_order __m) noexcept
 {
   __o->wait(__v, __m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait_explicit(const atomic_flag* __o, bool __v, memory_order __m) noexcept
+_CCCL_API inline void atomic_flag_wait_explicit(const atomic_flag* __o, bool __v, memory_order __m) noexcept
 {
   __o->wait(__v, __m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_one(volatile atomic_flag* __o) noexcept
+_CCCL_API inline void atomic_flag_notify_one(volatile atomic_flag* __o) noexcept
 {
   __o->notify_one();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_one(atomic_flag* __o) noexcept
+_CCCL_API inline void atomic_flag_notify_one(atomic_flag* __o) noexcept
 {
   __o->notify_one();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(volatile atomic_flag* __o) noexcept
+_CCCL_API inline void atomic_flag_notify_all(volatile atomic_flag* __o) noexcept
 {
   __o->notify_all();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(atomic_flag* __o) noexcept
+_CCCL_API inline void atomic_flag_notify_all(atomic_flag* __o) noexcept
 {
   __o->notify_all();
 }
@@ -746,12 +741,12 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(atomic_flag* __o) noexcept
 
 // fences
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_thread_fence(memory_order __m) noexcept
+_CCCL_API inline void atomic_thread_fence(memory_order __m) noexcept
 {
   __atomic_thread_fence_dispatch(__m);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void atomic_signal_fence(memory_order __m) noexcept
+_CCCL_API inline void atomic_signal_fence(memory_order __m) noexcept
 {
   __atomic_signal_fence_dispatch(__m);
 }

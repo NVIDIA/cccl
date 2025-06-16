@@ -25,10 +25,12 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
@@ -50,7 +52,7 @@ private:
 
     _Rcvr __rcvr_;
 
-    _CCCL_API explicit __opstate_t(_Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
@@ -132,7 +134,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>)
+    -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }

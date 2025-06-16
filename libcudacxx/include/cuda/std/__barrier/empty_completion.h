@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __empty_completion
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()() noexcept {}
+  _CCCL_API constexpr void operator()() noexcept {}
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

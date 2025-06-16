@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct __bind_front_op
 {
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) const
+  _CCCL_API constexpr auto operator()(_Args&&... __args) const
     noexcept(noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...)))
       -> decltype(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...))
   {
@@ -59,7 +59,7 @@ _CCCL_CONCEPT __can_bind_front =
 
 _CCCL_TEMPLATE(class _Fn, class... _Args)
 _CCCL_REQUIRES(__can_bind_front<_Fn, _Args...>)
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+_CCCL_API constexpr auto
 bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tuple<decay_t<_Args>...>, _Args&&...>)
 {
   return __bind_front_t<decay_t<_Fn>, decay_t<_Args>...>(

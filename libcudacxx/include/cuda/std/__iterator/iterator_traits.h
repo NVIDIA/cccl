@@ -169,58 +169,55 @@ using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
 #if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
+_CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #endif // _GLIBCXX_DEBUG
 #if defined(__GLIBCXX__)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
+_CCCL_API inline auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #endif // __GLIBCXX__
 #if defined(_LIBCPP_VERSION)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>)
-  -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
 #elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_const_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_const_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_const_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_view_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 #endif // _MSVC_STL_VERSION
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
+_CCCL_API inline auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
 
 template <class _Iter>
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<2>) ->
-  typename _ITER_TRAITS<_Iter>::iterator_concept;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<2>) -> typename _ITER_TRAITS<_Iter>::iterator_concept;
 template <class _Iter>
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<1>) ->
-  typename _ITER_TRAITS<_Iter>::iterator_category;
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<1>) -> typename _ITER_TRAITS<_Iter>::iterator_category;
 template <class _Iter>
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<0>)
+_CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<0>)
   -> enable_if_t<__is_primary_cccl_template<_Iter>::value && __is_primary_std_template<_Iter>::value,
                  random_access_iterator_tag>;
 
@@ -245,9 +242,9 @@ struct __has_iterator_category
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API inline static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::iterator_category* = nullptr);
+  _CCCL_API inline static true_type __test(typename _Up::iterator_category* = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
@@ -258,9 +255,9 @@ struct __has_iterator_concept
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API inline static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::iterator_concept* = nullptr);
+  _CCCL_API inline static true_type __test(typename _Up::iterator_concept* = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;

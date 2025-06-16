@@ -37,7 +37,7 @@ using ::std::addressof;
 #elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
@@ -45,7 +45,7 @@ template <class _Tp>
 #else
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }

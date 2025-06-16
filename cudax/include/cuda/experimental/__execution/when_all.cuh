@@ -34,6 +34,7 @@
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -43,6 +44,7 @@
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -87,15 +89,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
     __state_t& __state_;
 
-    [[nodiscard]] _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
+    [[nodiscard]] _CCCL_API constexpr auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
 
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query>)
-    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
-      -> __query_result_t<env_of_t<__rcvr_t>, _Query>
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>) -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
       return execution::get_env(__state_.__rcvr_).query(_Query{});
     }
@@ -110,7 +112,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_TRIVIAL_API void set_value(_Ts&&... __ts) noexcept
+    _CCCL_TRIVIAL_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
       constexpr _CUDA_VSTD::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -118,19 +120,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API void set_error(_Error&& __error) noexcept
+    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
     }
 
-    _CCCL_API void set_stopped() noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       __state_.__set_stopped();
       __state_.__arrive();
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t<_StateZip>
+    _CCCL_API constexpr auto get_env() const noexcept -> __env_t<_StateZip>
     {
       return {__state_};
     }
@@ -318,7 +320,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     struct __connect_subs_fn
     {
       template <class... _CvSndrs>
-      _CCCL_API auto
+      _CCCL_API constexpr auto
       operator()(__state_t& __state, _CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _CvSndrs&&... __sndrs_) const
       {
         using __state_ref_t _CCCL_NODEBUG_ALIAS = __zip<__state_t>;
@@ -342,7 +344,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
     /// Initialize the data member, connect all the sub-operations and
     /// save the resulting operation states in __sub_ops_.
-    _CCCL_API __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
         , __sub_ops_{_CUDA_VSTD::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
@@ -350,7 +352,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
     /// Start all the sub-operations.
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       // register stop callback:
       __state_.__on_stop_.construct(
@@ -475,13 +477,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cp, __sndrs_t>(static_cast<__sndrs_t&&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }

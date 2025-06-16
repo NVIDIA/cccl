@@ -82,7 +82,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     return *this;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API auto get_env() const noexcept -> __env_t
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __env_t
   {
     return __env_t{this};
   }

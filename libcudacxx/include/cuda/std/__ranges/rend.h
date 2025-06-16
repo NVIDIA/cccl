@@ -108,7 +108,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_rend<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rend())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.rend());
@@ -117,7 +117,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_rend<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rend(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(rend(__t));
@@ -126,8 +126,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_reverse<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::begin(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CUDA_VRANGES::begin(__t)))
   {
     return _CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::begin(__t));
   }
@@ -151,7 +150,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
@@ -161,7 +160,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t))))
       -> decltype(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))
   {

@@ -47,18 +47,18 @@ private:
     void (*__destroy)(__opstate_base_t*) noexcept;
 
     template <class... _As>
-    void set_value(_As&&...) && noexcept
+    constexpr void set_value(_As&&...) noexcept
     {
       __destroy(__opstate_);
     }
 
     template <class _Error>
-    void set_error(_Error&&) && noexcept
+    constexpr void set_error(_Error&&) noexcept
     {
       _CUDA_VSTD_NOVERSION::terminate();
     }
 
-    void set_stopped() && noexcept
+    constexpr void set_stopped() noexcept
     {
       __destroy(__opstate_);
     }
@@ -75,13 +75,13 @@ private:
       delete static_cast<__opstate_t*>(__ptr);
     }
 
-    _CCCL_API explicit __opstate_t(_Sndr&& __sndr)
+    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr)
         : __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate_);
     }

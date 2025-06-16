@@ -41,24 +41,23 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco_impl
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem_ = _Elem)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem_))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco_impl() noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Elem_))
+  _CCCL_API constexpr __mdspan_ebco_impl() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem_))
       : __elem_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND _CCCL_TRAIT(is_constructible, _Elem, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(
+  _CCCL_API constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Elem, _Args...))
       : __elem_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem& __get() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Elem& __get() noexcept
   {
     return __elem_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem& __get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Elem& __get() const noexcept
   {
     return __elem_;
   }
@@ -70,24 +69,23 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco_impl<_Index, _Elem, true> : _Ele
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem_ = _Elem)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem_))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco_impl() noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Elem_))
+  _CCCL_API constexpr __mdspan_ebco_impl() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem_))
       : _Elem()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND _CCCL_TRAIT(is_constructible, _Elem, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(
+  _CCCL_API constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Elem, _Args...))
       : _Elem(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem& __get() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Elem& __get() noexcept
   {
     return *static_cast<_Elem*>(this);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem& __get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Elem& __get() const noexcept
   {
     return *static_cast<const _Elem*>(this);
   }
@@ -104,34 +102,33 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem1_))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_))
+  _CCCL_API constexpr __mdspan_ebco() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_))
       : __base1()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND _CCCL_TRAIT(is_constructible, _Elem1, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco(_Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Args...))
+  _CCCL_API constexpr __mdspan_ebco(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Args...))
       : __base1(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 1))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem1& __get() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Elem1& __get() noexcept
   {
     return static_cast<__base1*>(this)->__get();
   }
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 1))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem1& __get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Elem1& __get() const noexcept
   {
     return static_cast<const __base1*>(this)->__get();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
   {
     swap(__x.__get<0>(), __y.__get<0>());
   }
@@ -149,8 +146,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem1_)
                    _CCCL_AND _CCCL_TRAIT(is_default_constructible, _Elem2_))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco() noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_) && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2_))
+  _CCCL_API constexpr __mdspan_ebco() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_)
+                                               && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2_))
       : __base1()
       , __base2()
   {}
@@ -166,8 +163,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(
-    __is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(_CUDA_VSTD::forward<_Arg1>(__arg1))
       , __base2()
   {}
@@ -183,15 +179,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1, class _Arg2)
   _CCCL_REQUIRES(__is_constructible_from_two_args<_Arg1, _Arg2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
-    __is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
+  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1,
+                                    _Arg2&& __arg2) noexcept(__is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
       : __base1(_CUDA_VSTD::forward<_Arg1>(__arg1))
       , __base2(_CUDA_VSTD::forward<_Arg2>(__arg2))
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 2))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() noexcept
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) __get() noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -206,7 +202,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 2))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) __get() const noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -220,7 +216,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -241,7 +237,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem1_) _CCCL_AND _CCCL_TRAIT(is_default_constructible, _Elem2_)
                    _CCCL_AND _CCCL_TRAIT(is_default_constructible, _Elem3_))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco() noexcept(
+  _CCCL_API constexpr __mdspan_ebco() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_) && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2_)
     && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem3_))
       : __base1()
@@ -262,8 +258,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(
-    __is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(_CUDA_VSTD::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()
@@ -282,8 +277,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1, class _Arg2)
   _CCCL_REQUIRES(__is_constructible_from_two_args<_Arg1, _Arg2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
-    __is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
+  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1,
+                                    _Arg2&& __arg2) noexcept(__is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
       : __base1(_CUDA_VSTD::forward<_Arg1>(__arg1))
       , __base2(_CUDA_VSTD::forward<_Arg2>(__arg2))
       , __base3()
@@ -302,7 +297,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1, class _Arg2, class _Arg3)
   _CCCL_REQUIRES(__is_constructible_from_three_args<_Arg1, _Arg2, _Arg3>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __mdspan_ebco(_Arg1&& __arg1, _Arg2&& __arg2, _Arg3&& __arg3) noexcept(
+  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1, _Arg2&& __arg2, _Arg3&& __arg3) noexcept(
     __is_nothrow_constructible_from_three_args<_Arg1, _Arg2, _Arg3>)
       : __base1(_CUDA_VSTD::forward<_Arg1>(__arg1))
       , __base2(_CUDA_VSTD::forward<_Arg2>(__arg2))
@@ -311,7 +306,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 3))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() noexcept
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) __get() noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -330,7 +325,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 3))
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) __get() const noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -348,7 +343,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
