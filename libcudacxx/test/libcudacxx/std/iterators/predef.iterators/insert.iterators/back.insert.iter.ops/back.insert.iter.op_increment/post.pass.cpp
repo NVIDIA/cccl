@@ -17,7 +17,6 @@
 #include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
 
-#include "nasty_containers.h"
 #include "test_macros.h"
 
 template <class C>
