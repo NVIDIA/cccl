@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _SizeType,
-          _SizeType _Offset,
+          _SizeType _Start,
           _SizeType _Step,
           typename _Operator,
           _SizeType... _Indices,
