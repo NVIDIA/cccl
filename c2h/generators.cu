@@ -68,11 +68,6 @@ struct random_to_item_t<cuda::std::complex<T>, false>
       , m_max(max)
   {}
 
-  __device__ cuda::std::complex<T> operator()(cuda::std::complex<T> random_value)
-  {
-    return (m_max - m_min) * random_value + m_min;
-  }
-
   __device__ cuda::std::complex<T> operator()(float random_value)
   {
     return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
