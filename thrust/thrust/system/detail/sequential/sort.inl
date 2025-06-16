@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE void stable_sort(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator first,
   RandomAccessIterator last,
-  StrictWeakOrdering comp)
+  [[maybe_unused]] StrictWeakOrdering comp) // GCC 7-9 warn that comp is unused
 {
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -72,6 +72,9 @@ _CCCL_HOST_DEVICE void stable_sort(
     ( // NV_IS_DEVICE:
       // the compilation time of stable_primitive_sort is too expensive to use within a single CUDA thread
       thrust::system::detail::sequential::stable_merge_sort(exec, first, last, comp);));
+#if _CCCL_COMPILER(GCC, <, 10)
+  (void) comp; // GCC 7-9 warn that comp is unused
+#endif // _CCCL_COMPILER(GCC, <, 10)
 }
 
 template <typename DerivedPolicy,
@@ -83,7 +86,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   RandomAccessIterator1 first1,
   RandomAccessIterator1 last1,
   RandomAccessIterator2 first2,
-  StrictWeakOrdering comp)
+  [[maybe_unused]] StrictWeakOrdering comp) // GCC 7-9 warn that comp is unused
 {
   NV_IF_TARGET(
     NV_IS_HOST,
