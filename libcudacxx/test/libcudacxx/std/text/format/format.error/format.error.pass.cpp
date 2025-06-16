@@ -26,6 +26,10 @@
 
 void test_format_error()
 {
+#  if _CCCL_STD_VER >= 2020 && __cpp_lib_format >= 201907L
+  static_assert(cuda::std::is_same_v<cuda::std::format_error, std::format_error>);
+#  endif // _CCCL_STD_VER >= 2020 && __cpp_lib_format >= 201907L
+
   static_assert(cuda::std::is_base_of_v<std::runtime_error, cuda::std::format_error>);
   static_assert(cuda::std::is_polymorphic_v<cuda::std::format_error>);
 
