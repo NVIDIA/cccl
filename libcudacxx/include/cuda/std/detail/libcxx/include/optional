@@ -282,11 +282,28 @@ struct __optional_destruct_base<_Tp, false>
   using value_type = _Tp;
   static_assert(_CCCL_TRAIT(is_object, value_type),
                 "instantiation of optional with a non-object type is undefined behavior");
-  union
+  union __storage
   {
     char __null_state_;
     remove_cv_t<value_type> __val_;
+
+    _CCCL_API constexpr __storage() noexcept
+        : __null_state_()
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class... _Args>
+    _CCCL_API constexpr __storage(in_place_t,
+                                  _Args&&... __args) noexcept(is_nothrow_constructible_v<value_type, _Args...>)
+        : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class _Fp, class... _Args>
+    _CCCL_API constexpr __storage(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
+        : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
+    {}
+    _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__storage() noexcept {}
   };
+  __storage __storage_;
   bool __engaged_;
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -294,26 +311,26 @@ struct __optional_destruct_base<_Tp, false>
   {
     if (__engaged_)
     {
-      __val_.~value_type();
+      __storage_.__val_.~value_type();
     }
   }
 
   _CCCL_API constexpr __optional_destruct_base() noexcept
-      : __null_state_()
+      : __storage_()
       , __engaged_(false)
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
-      : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<value_type, _Args...>)
+      : __storage_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fp, class... _Args>
   _CCCL_API constexpr __optional_destruct_base(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-      : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
+      : __storage_(
+          __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -322,7 +339,7 @@ struct __optional_destruct_base<_Tp, false>
   {
     if (__engaged_)
     {
-      __val_.~value_type();
+      __storage_.__val_.~value_type();
       __engaged_ = false;
     }
   }
@@ -334,29 +351,45 @@ struct __optional_destruct_base<_Tp, true>
   using value_type = _Tp;
   static_assert(_CCCL_TRAIT(is_object, value_type),
                 "instantiation of optional with a non-object type is undefined behavior");
-  union
+  union __storage
   {
     char __null_state_;
     remove_cv_t<value_type> __val_;
+
+    _CCCL_API constexpr __storage() noexcept
+        : __null_state_()
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class... _Args>
+    _CCCL_API constexpr __storage(in_place_t,
+                                  _Args&&... __args) noexcept(is_nothrow_constructible_v<value_type, _Args...>)
+        : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class _Fp, class... _Args>
+    _CCCL_API constexpr __storage(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
+        : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
+    {}
   };
+  __storage __storage_;
   bool __engaged_;
 
   _CCCL_API constexpr __optional_destruct_base() noexcept
-      : __null_state_()
+      : __storage_()
       , __engaged_(false)
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
-      : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<value_type, _Args...>)
+      : __storage_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fp, class... _Args>
   _CCCL_API constexpr __optional_destruct_base(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-      : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
+      : __storage_(
+          __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -383,19 +416,19 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 
   _CCCL_API constexpr value_type& __get() & noexcept
   {
-    return this->__val_;
+    return this->__storage_.__val_;
   }
   _CCCL_API constexpr const value_type& __get() const& noexcept
   {
-    return this->__val_;
+    return this->__storage_.__val_;
   }
   _CCCL_API constexpr value_type&& __get() && noexcept
   {
-    return _CUDA_VSTD::move(this->__val_);
+    return _CUDA_VSTD::move(this->__storage_.__val_);
   }
   _CCCL_API constexpr const value_type&& __get() const&& noexcept
   {
-    return _CUDA_VSTD::move(this->__val_);
+    return _CUDA_VSTD::move(this->__storage_.__val_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -404,9 +437,9 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   {
     _CCCL_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
 #if _CCCL_STD_VER > 2017
-    _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__val_), _CUDA_VSTD::forward<_Args>(__args)...);
+    _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__storage_.__val_), _CUDA_VSTD::forward<_Args>(__args)...);
 #else
-    ::new ((void*) _CUDA_VSTD::addressof(this->__val_)) value_type(_CUDA_VSTD::forward<_Args>(__args)...);
+    ::new ((void*) _CUDA_VSTD::addressof(this->__storage_.__val_)) value_type(_CUDA_VSTD::forward<_Args>(__args)...);
 #endif
     this->__engaged_ = true;
   }
@@ -428,7 +461,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     {
       if (this->__engaged_)
       {
-        this->__val_ = _CUDA_VSTD::forward<_That>(__opt).__get();
+        this->__storage_.__val_ = _CUDA_VSTD::forward<_That>(__opt).__get();
       }
     }
     else
