@@ -416,7 +416,7 @@ CUresult cccl_device_binary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy(cc * 10);
+    const auto policy            = transform::get_policy(cc * 10 /* convert to ptx version */);
     const auto input1_it_value_t = cccl_type_enum_to_name<input1_storage_t>(input1_it.value_type.type);
     const auto input2_it_value_t = cccl_type_enum_to_name<input2_storage_t>(input2_it.value_type.type);
 
