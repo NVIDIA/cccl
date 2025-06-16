@@ -194,11 +194,12 @@ struct dispatch_t<StableAddress,
 
       elem_counts last_counts{};
       // Increase the number of output elements per thread until we reach the required bytes in flight.
-      static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread, ""); // ensures the loop below
-                                                                                           // runs at least once
       for (int elem_per_thread = +policy_t::min_items_per_thread; elem_per_thread <= +policy_t::max_items_per_thread;
            ++elem_per_thread)
       {
+        // ensures the loop below runs at least once
+        static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread);
+
         const int tile_size = block_dim * elem_per_thread;
         const int smem_size = smem_for_tile_size(tile_size);
         if (smem_size > *max_smem)
@@ -348,7 +349,7 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm<ActivePolicyT>(
         bulk_copy_align,
-        [&](int tile_size) {
+        [this](int tile_size) {
           return bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size, bulk_copy_align);
         },
         seq);
