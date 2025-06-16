@@ -232,15 +232,12 @@ struct dispatch_t<StableAddress,
       return last_counts;
     };
     cuda_expected<elem_counts> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (if constexpr (kernel_source.CanCacheConfiguration()) {
-          static auto cached_config = determine_element_counts();
-          return cached_config;
-        }),
-        (
-          // we cannot cache the determined element count in device code or when not allowed
-          return determine_element_counts();));
+      NV_IF_TARGET(NV_IS_HOST, (if constexpr (KernelSource::CanCacheConfiguration()) {
+                     static auto cached_config = determine_element_counts();
+                     return cached_config;
+                   }))
+      // we cannot cache the determined element count in device code or when not allowed
+      return determine_element_counts();
     }();
     if (!config)
     {
@@ -355,19 +352,18 @@ struct dispatch_t<StableAddress,
     };
 
     cuda_expected<prefetch_config> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (
-          // this static variable exists for each template instantiation of the surrounding function and class, on which
-          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
-          if constexpr (kernel_source.CanCacheConfiguration()) {
-            // we can cache the determined element count in host code if allowed
-            static auto cached_config = determine_config();
-            return cached_config;
-          }),
-        (
-          // we cannot cache the determined element count in device code or when not allowed
-          return determine_config();));
+      NV_IF_TARGET(NV_IS_HOST,
+                   (
+                     // this static variable exists for each template instantiation of the surrounding function and
+                     // class, on which the chosen element count solely depends (assuming max SMEM is constant during a
+                     // program execution)
+                     if constexpr (KernelSource::CanCacheConfiguration()) {
+                       // we can cache the determined element count in host code if allowed
+                       static auto cached_config = determine_config();
+                       return cached_config;
+                     }))
+      // we cannot cache the determined element count in device code or when not allowed
+      return determine_config();
     }();
     if (!config)
     {
