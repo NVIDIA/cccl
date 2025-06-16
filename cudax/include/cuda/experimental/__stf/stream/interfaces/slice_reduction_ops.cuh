@@ -30,6 +30,7 @@
 namespace cuda::experimental::stf
 {
 
+/// @cond NEVER_DOCUMENT
 template <typename element_type, size_t dimensions = 1, typename ReduxOp>
 __global__ void
 slice_reduction_op_kernel(const slice<element_type, dimensions> in, const slice<element_type, dimensions> inout)
@@ -88,6 +89,7 @@ __global__ void slice_reduction_op_init_kernel(slice<element_type, dimensions> o
     static_assert(dimensions == 1 || dimensions == 2, "Dimensionality not supported.");
   }
 }
+/// @endcond
 
 /**
  * @brief Helper class to define element-wise reduction operators applied to slices

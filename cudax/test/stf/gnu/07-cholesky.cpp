@@ -678,11 +678,11 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventCreate(&startEvent_pdpotrf));
   cuda_safe_call(cudaEventCreate(&stopEvent_pdpotrf));
 
-  cuda_safe_call(cudaEventRecord(startEvent_pdpotrf, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(startEvent_pdpotrf, ctx.fence()));
 
   PDPOTRF(A);
 
-  cuda_safe_call(cudaEventRecord(stopEvent_pdpotrf, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stopEvent_pdpotrf, ctx.fence()));
 
   /*
    *  POTRS
