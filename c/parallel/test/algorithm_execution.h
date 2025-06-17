@@ -82,7 +82,7 @@ public:
 template <typename Build, typename = void>
 struct build_traits
 {
-  static bool should_check_sass(int cc_major)
+  static bool should_check_sass(int)
   {
     return true;
   }
