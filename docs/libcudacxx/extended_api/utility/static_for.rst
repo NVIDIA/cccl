@@ -41,7 +41,7 @@ The function is ``noexcept`` if ``op`` is ``noexcept``.
 - ``Start``, ``End``, ``Step``: the start, end, and step of the range. Note that ``End`` and ``Step`` are converted to the type of ``Start``.
 - ``T``: type of the loop index.
 - ``op``: the function to execute.
-- ``args``: optional arguments to pass to ``op``.
+- ``args``: additional arguments to pass to ``op``.
 
 ``op`` is a callable object that accepts an ``integral_constant`` of the same type of ``Size`` or ``Start``.
 
