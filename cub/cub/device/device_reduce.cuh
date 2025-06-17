@@ -454,8 +454,7 @@ public:
     // fallback to run-to-run determinism
     constexpr auto fp_min_max_fallback =
       gpu_gpu_determinism
-      && (::cuda::is_floating_point_v<accum_t>
-          && detail::is_one_of_v<ReductionOpT, ::cuda::minimum<>, ::cuda::maximum<>>);
+      && (::cuda::is_floating_point_v<accum_t> && detail::reduce::is_min_or_max<ReductionOpT>::value);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
     constexpr auto float_double_plus = gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double>
