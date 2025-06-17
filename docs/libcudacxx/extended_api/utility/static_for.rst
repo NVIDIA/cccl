@@ -51,7 +51,7 @@ The function is ``noexcept`` if ``op`` is ``noexcept``.
 
 **Performance considerations**
 
-- The functions are useful as metaprogramming utility and when a loop requires fully unrolling, independently of the compiler constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which be used in a constant expression and further optimize the code.
+- The functions are useful as metaprogramming utility and when a loop requires ful unrolling, independently of the compiler's constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which can be used in a constant expression and further optimize the code.
 
 - Conversely, ``static_for`` is more expensive to compile compared to ``#pragma unroll``. Additionally, the preprocessor directive interacts with the compiler, which tunes the loop unrolling based on register usage, binary size, and instruction cache.
 
