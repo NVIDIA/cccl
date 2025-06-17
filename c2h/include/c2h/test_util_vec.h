@@ -1,37 +1,16 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
 #include <thrust/detail/config/device_system.h>
 
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <iostream>
+
+#include <c2h/extended_types.h>
 
 /******************************************************************************
  * Console printing utilities
@@ -345,5 +324,53 @@ C2H_VEC_TRAITS_OVERLOAD(double, double)
 #  undef REPEAT_TO_LIST_3
 #  undef REPEAT_TO_LIST_4
 #  undef REPEAT_TO_LIST
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 type traits
+
+template <typename T>
+inline constexpr bool is_vector2_type_v = cuda::std::__is_one_of_v<
+  cuda::std::remove_cv_t<T>,
+  char2,
+  short2,
+  int2,
+  long2,
+  longlong2,
+  uchar2,
+  ushort2,
+  uint2,
+  ulong2,
+  ulonglong2,
+  float2,
+  double2
+#  if TEST_HALF_T()
+  ,
+  __half2
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+  ,
+  __nv_bfloat162
+#  endif // TEST_BF_T()
+  >;
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 floating point type traits
+
+template <typename T>
+inline constexpr bool is_vector2_fp_type_v = cuda::std::__is_one_of_v<cuda::std::remove_cv_t<T>, float2, double2>;
+
+#  if TEST_HALF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_v<__half2> = true;
+
+#  endif // TEST_HALF_T()
+
+#  if TEST_BF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_v<__nv_bfloat162> = true;
+
+#  endif // TEST_BF_T()
 
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
