@@ -471,51 +471,53 @@ public:
     {
       return cudaErrorNotSupported;
     }
-
-    using determinism_t =
-      ::cuda::std::conditional_t<integral_fallback || fp_min_max_fallback,
-                                 ::cuda::execution::determinism::run_to_run_t,
-                                 default_determinism_t>;
-
-    // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
-
-    // Query the required temporary storage size
-    cudaError_t error = reduce_impl<tuning_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
-    if (error != cudaSuccess)
+    else
     {
-      return error;
+      using determinism_t =
+        ::cuda::std::conditional_t<integral_fallback || fp_min_max_fallback,
+                                   ::cuda::execution::determinism::run_to_run_t,
+                                   default_determinism_t>;
+
+      // Query relevant properties from the environment
+      auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+      auto mr = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+      void* d_temp_storage      = nullptr;
+      size_t temp_storage_bytes = 0;
+
+      using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+
+      // Query the required temporary storage size
+      cudaError_t error = reduce_impl<tuning_t>(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
+      // TODO(gevtushenko): use uninitialized buffer whenit's available
+      error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
+      // Run the algorithm
+      error = reduce_impl<tuning_t>(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+
+      // Try to deallocate regardless of the error to avoid memory leaks
+      cudaError_t deallocate_error =
+        CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+
+      if (error != cudaSuccess)
+      {
+        // Reduction error takes precedence over deallocation error since it happens first
+        return error;
+      }
+
+      return deallocate_error;
     }
-
-    // TODO(gevtushenko): use uninitialized buffer whenit's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
-    if (error != cudaSuccess)
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    error = reduce_impl<tuning_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
   }
 
   //! @rst
