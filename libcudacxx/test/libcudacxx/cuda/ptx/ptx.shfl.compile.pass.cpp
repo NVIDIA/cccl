@@ -158,6 +158,6 @@ int main(int, char**)
   test_shfl_full_mask();
   test_shfl_partial_mask();
   test_shfl_partial_warp();
-  test_shfl_divergence();
+  NV_IF_TARGET(NV_PROVIDES_SM_70, test_shfl_divergence();)
   return 0;
 }
