@@ -658,11 +658,11 @@ endmacro()
 function(thrust_fixup_omp_target omp_target)
   get_target_property(opts ${omp_target} INTERFACE_COMPILE_OPTIONS)
   foreach (opt IN LISTS opts)
-    if (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:SHELL:([^>]*)>")
+    if (opt MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:SHELL:([^>]*)>")
       target_compile_options(${omp_target} INTERFACE
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:SHELL:-Xcompiler=${CMAKE_MATCH_1}>
       )
-    elseif (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:([^>]*)>")
+    elseif (opt MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:([^>]*)>")
       target_compile_options(${omp_target} INTERFACE
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${CMAKE_MATCH_1}>
       )
