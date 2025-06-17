@@ -101,7 +101,7 @@ public:
           set_value(static_cast<_Rcvr&&>(__rcvr));
         }
       }
-      _CCCL_CATCH (...)
+      _CCCL_CATCH_ALL
       {
         if constexpr (!noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()))
         {

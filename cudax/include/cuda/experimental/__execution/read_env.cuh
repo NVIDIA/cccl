@@ -76,7 +76,7 @@ private:
         {
           execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
         }
-        _CCCL_CATCH (...)
+        _CCCL_CATCH_ALL
         {
           execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
         }

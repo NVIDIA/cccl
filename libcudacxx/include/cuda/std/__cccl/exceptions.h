@@ -12,6 +12,7 @@
 #define __CCCL_EXCEPTIONS_H
 
 #include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -40,23 +41,39 @@
 // Usage:
 //   _CCCL_TRY
 //   {
-//     ...                       // Code that may throw an exception
+//     can_throw();               // Code that may throw an exception
 //   }
-//   _CCCL_CATCH(cuda_error& e)  // Handle CUDA exceptions
+//   _CCCL_CATCH (cuda_error& e)  // Handle CUDA exceptions
 //   {
-//     ...
+//     printf("CUDA error: %s\n", e.what());
 //   }
-//   _CCCL_CATCH(...)            // Handle any other exceptions
+//   _CCCL_CATCH_ALL              // Handle any other exceptions
 //   {
-//     ...
+//     printf("unknown error\n");
 //   }
 #if !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC))
 #  define _CCCL_TRY
-#  define _CCCL_CATCH(...) if constexpr (false)
+#  define _CCCL_CATCH(...)                                               \
+    if constexpr (true)                                                  \
+      ;                                                                  \
+    else if constexpr (__VA_ARGS__ = ::__cccl_catch_any_lvalue{}; false) \
+      ;                                                                  \
+    else
+#  define _CCCL_CATCH_ALL \
+    if constexpr (true)   \
+      ;                   \
+    else
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) ^^^
       // vvv _CCCL_HAS_EXCEPTIONS() && (!_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)) vvv
-#  define _CCCL_TRY   try
-#  define _CCCL_CATCH catch
+#  define _CCCL_TRY       try
+#  define _CCCL_CATCH     catch
+#  define _CCCL_CATCH_ALL catch (...)
 #endif // ^^^ _CCCL_HAS_EXCEPTIONS() && (!_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)) ^^^
+
+struct __cccl_catch_any_lvalue
+{
+  template <class _Tp>
+  _CCCL_HOST_DEVICE operator _Tp&() const noexcept;
+};
 
 #endif // __CCCL_EXCEPTIONS_H

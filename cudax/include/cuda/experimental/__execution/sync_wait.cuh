@@ -123,7 +123,7 @@ struct sync_wait_t
       {
         __state_->__values_->emplace(static_cast<_As&&>(__as)...);
       }
-      _CCCL_CATCH (...)
+      _CCCL_CATCH_ALL
       { //
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is
         // unreachable.

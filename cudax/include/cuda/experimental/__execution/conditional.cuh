@@ -153,7 +153,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
           execution::start(__op);
         }
       }
-      _CCCL_CATCH (...)
+      _CCCL_CATCH_ALL
       {
         execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
       }

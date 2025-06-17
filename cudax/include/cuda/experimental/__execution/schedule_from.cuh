@@ -212,7 +212,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
         {
           __result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
         }
-        _CCCL_CATCH (...)
+        _CCCL_CATCH_ALL
         {
           execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
         }

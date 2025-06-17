@@ -142,7 +142,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PRE
             execution::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __ref_rcvr(__rcvr_));
           execution::start(__next_op);
         }
-        _CCCL_CATCH (...)
+        _CCCL_CATCH_ALL
         {
           execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
         }
