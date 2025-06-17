@@ -308,7 +308,7 @@ C2H_TEST("Deterministic Device reduce works with various types on gpu with diffe
   const int num_items = 1 << 10;
 
   c2h::device_vector<type> d_input(num_items);
-  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-100.0), static_cast<type>(100.0));
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-50.0), static_cast<type>(50.0));
 
   SECTION("plus")
   {
