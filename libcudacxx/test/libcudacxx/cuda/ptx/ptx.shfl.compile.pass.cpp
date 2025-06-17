@@ -140,11 +140,24 @@ __host__ __device__ void test_shfl_partial_warp()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
+__host__ __device__ void test_shfl_divergence()
+{
+#if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
+  if (threadIdx.x == 0)
+  {
+    __nanosleep(10000000u);
+  }
+  auto value = cuda::ptx::shfl_sync_idx(threadIdx.x, 0, 0b11111, 0xFFFFFFFF);
+  assert(value == 0);
+#endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
+}
+
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 32;)
   test_shfl_full_mask();
   test_shfl_partial_mask();
   test_shfl_partial_warp();
+  test_shfl_divergence();
   return 0;
 }
