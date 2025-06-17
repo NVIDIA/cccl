@@ -77,7 +77,9 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IfMacros: [
-  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C'
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C',
+  '_CCCL_TRY',
+  '_CCCL_CATCH',
 ]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
@@ -169,9 +171,6 @@ SpacesInSquareBrackets: false
 Standard: c++20
 StatementMacros: [
   '_CCCL_EXEC_CHECK_DISABLE',
-  '_CCCL_TRY',
-  '_CCCL_CATCH',
-  '_CCCL_CATCH_OR',
   'CUB_NAMESPACE_BEGIN',
   'CUB_NAMESPACE_END',
   'THRUST_NAMESPACE_BEGIN',

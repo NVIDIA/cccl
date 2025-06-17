@@ -119,17 +119,19 @@ struct sync_wait_t
     template <class... _As>
     _CCCL_API void set_value(_As&&... __as) noexcept
     {
-      _CCCL_TRY({ //
+      _CCCL_TRY
+      {
         __state_->__values_->emplace(static_cast<_As&&>(__as)...);
-      })
-      _CCCL_CATCH((...) { //
+      }
+      _CCCL_CATCH (...)
+      { //
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is
         // unreachable.
         if constexpr (!__nothrow_constructible<__values_t, _As...>)
         {
           __state_->__errors_.__emplace(::std::current_exception());
         }
-      }) //
+      }
       __state_->__loop_.finish();
     }
 

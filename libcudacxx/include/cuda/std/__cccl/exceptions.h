@@ -33,53 +33,30 @@
 #endif // has exceptions
 
 // The following macros are used to conditionally compile exception handling code. They
-// are used in the same way as `try` and `catch` blocks, but they allow for different
-// behavior based on whether exceptions are enabled or not, and whether the code is being
-// compiled for device or not.
+// are used in the same way as `try` and `catch`, but they allow for different behavior
+// based on whether exceptions are enabled or not, and whether the code is being compiled
+// for device or not.
 //
 // Usage:
-//   _CCCL_TRY({
-//     ...                             // Code that may throw an exception
-//   })
-//   _CCCL_CATCH_OR((cuda_error& e) {  // Handle CUDA exceptions
+//   _CCCL_TRY
+//   {
+//     ...                       // Code that may throw an exception
+//   }
+//   _CCCL_CATCH(cuda_error& e)  // Handle CUDA exceptions
+//   {
 //     ...
-//   })
-//   _CCCL_CATCH((...) {               // Handle any other exceptions
+//   }
+//   _CCCL_CATCH(...)            // Handle any other exceptions
+//   {
 //     ...
-//   })
+//   }
 #if !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC))
-#  define _CCCL_TRY(...) {__VA_ARGS__}
-#  define _CCCL_CATCH(...)
-#  define _CCCL_CATCH_OR(...)
-#elif _CCCL_CUDA_COMPILATION() && _CCCL_CUDA_COMPILER(NVHPC) // ^^^ no exceptions, or device code ^^^
-                                                             // vvv CUDA compilation with NVHPC vvv
-// In the following macro, it is intentional for the `else` branch to not have braces
-// around the `try` block. This is to support the case where there is more than one
-// `catch` clause.
-#  define _CCCL_TRY(...)              \
-    if target (nv::target::is_device) \
-    {                                 \
-      __VA_ARGS__                     \
-    }                                 \
-    else                              \
-    {                                 \
-      try                             \
-      {                               \
-        __VA_ARGS__                   \
-      }
-#  define _CCCL_CATCH(...) \
-    catch __VA_ARGS__      \
-    }
-#  define _CCCL_CATCH_OR(...) catch __VA_ARGS__
-#else // ^^^ CUDA compilation with NVHPC ^^^
-      // vvv Host compilation with exceptions vvv
-#  define _CCCL_TRY(...) \
-    try                  \
-    {                    \
-      __VA_ARGS__        \
-    }
-#  define _CCCL_CATCH(...)    catch __VA_ARGS__
-#  define _CCCL_CATCH_OR(...) catch __VA_ARGS__
-#endif // ^^^ Host compilation with exceptions ^^^
+#  define _CCCL_TRY
+#  define _CCCL_CATCH(...) if constexpr (false)
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) ^^^
+      // vvv _CCCL_HAS_EXCEPTIONS() && (!_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)) vvv
+#  define _CCCL_TRY   try
+#  define _CCCL_CATCH catch
+#endif // ^^^ _CCCL_HAS_EXCEPTIONS() && (!_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)) ^^^
 
 #endif // __CCCL_EXCEPTIONS_H

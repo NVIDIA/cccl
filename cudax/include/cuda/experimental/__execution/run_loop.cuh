@@ -90,7 +90,8 @@ public:
     _CCCL_API static void __execute_impl(__task* __p) noexcept
     {
       auto& __rcvr = static_cast<__opstate_t*>(__p)->__rcvr_;
-      _CCCL_TRY({
+      _CCCL_TRY
+      {
         if (get_stop_token(get_env(__rcvr)).stop_requested())
         {
           set_stopped(static_cast<_Rcvr&&>(__rcvr));
@@ -99,13 +100,14 @@ public:
         {
           set_value(static_cast<_Rcvr&&>(__rcvr));
         }
-      })
-      _CCCL_CATCH((...) {
+      }
+      _CCCL_CATCH (...)
+      {
         if constexpr (!noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()))
         {
           set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
         }
-      })
+      }
     }
 
     _CCCL_API constexpr explicit __opstate_t(__atomic_intrusive_queue<&__task::__next_>* __queue, _Rcvr __rcvr)

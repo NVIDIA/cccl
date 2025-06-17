@@ -138,7 +138,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     _CCCL_API void set_value(_As&&... __as) noexcept
     {
       auto __just = just_from(conditional_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
-      _CCCL_TRY({
+      _CCCL_TRY
+      {
         if (static_cast<_Pred&&>(__params_.pred)(__as...))
         {
           auto& __op =
@@ -151,10 +152,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
             __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __ref_rcvr(__rcvr_));
           execution::start(__op);
         }
-      })
-      _CCCL_CATCH((...) { //
+      }
+      _CCCL_CATCH (...)
+      {
         execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-      })
+      }
     }
 
     template <class _Error>
