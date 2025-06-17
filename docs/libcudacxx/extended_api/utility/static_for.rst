@@ -11,19 +11,23 @@ Defined in ``<cuda/utility>`` header.
 
     template <auto Size, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
+    constexpr void static_for(Operator op, TArgs&&... args)
+        noexcept(noexcept(op(/*integral_constant*/, args...)))
 
     template <auto Start, auto End, auto Step = 1, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
+    constexpr void static_for(Operator op, TArgs&&... args)
+        noexcept(noexcept(op(/*integral_constant*/, args...)))
 
     template <typename T, T Size, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
+    constexpr void static_for(Operator op, TArgs&&... args)
+        noexcept(noexcept(op(/*integral_constant*/, args...)))
 
     template <typename T, T Start, T End, T Step = 1, typename Operator, typename... TArgs>
     __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args) /* noexcept */
+    constexpr void static_for(Operator op, TArgs&&... args)
+        noexcept(noexcept(op(/*integral_constant*/, args...)))
 
     } // namespace cuda
 
@@ -32,8 +36,6 @@ Defined in ``<cuda/utility>`` header.
 
 - Executes ``op`` for each value in the range ``[0, Size)``.
 - Executes ``op`` for each value in the range ``[Start, End)`` with step ``Step``.
-
-The function is ``noexcept`` if ``op`` is ``noexcept``.
 
 **Parameters**
 
@@ -45,13 +47,9 @@ The function is ``noexcept`` if ``op`` is ``noexcept``.
 
 ``op`` is a callable object that accepts an ``integral_constant`` of the same type of ``Size`` or ``Start``.
 
-**Constrains**
-
-- ``Size`` must be greater than zero.
-
 **Performance considerations**
 
-- The functions are useful as metaprogramming utility and when a loop requires ful unrolling, independently of the compiler's constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which can be used in a constant expression and further optimize the code.
+- The functions are useful as metaprogramming utility and when a loop requires full unrolling, independently of the compiler's constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which can be used in a constant expression and further optimize the code.
 
 - Conversely, ``static_for`` is more expensive to compile compared to ``#pragma unroll``. Additionally, the preprocessor directive interacts with the compiler, which tunes the loop unrolling based on register usage, binary size, and instruction cache.
 
