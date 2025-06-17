@@ -12,7 +12,7 @@
 
 C2H_TEST("Fill", "[data_manipulation]")
 {
-  cudax::stream _stream;
+  cudax::stream _stream{cudax::device_ref{0}};
   SECTION("Host resource")
   {
     cudax::legacy_pinned_memory_resource host_resource;
@@ -25,7 +25,7 @@ C2H_TEST("Fill", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cudax::device_memory_resource device_resource;
+    cudax::device_memory_resource device_resource{cudax::device_ref{0}};
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(device_resource, buffer_size);
     cudax::fill_bytes(_stream, buffer, fill_byte);
 
@@ -47,7 +47,7 @@ C2H_TEST("Fill", "[data_manipulation]")
 
 C2H_TEST("Mdspan Fill", "[data_manipulation]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   {
     cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
     auto buffer = make_buffer_for_mdspan(dynamic_extents, 0);
@@ -77,7 +77,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
 
 C2H_TEST("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cudax::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 

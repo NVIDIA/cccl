@@ -39,6 +39,8 @@
 #include <thrust/tuple.h>
 
 #include <cuda/__iterator/discard_iterator.h>
+#include <cuda/__iterator/tabulate_output_iterator.h>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -88,16 +90,16 @@ struct tuple_binary_predicate
   mutable Predicate pred;
 };
 
+// We need to mark proxy iterators as such
+template <>
+inline constexpr bool is_proxy_reference_v<::cuda::discard_iterator::__discard_proxy> = true;
+
+template <class Fn, class Index>
+inline constexpr bool is_proxy_reference_v<::cuda::__tabulate_proxy<Fn, Index>> = true;
+
 template <typename T>
 inline constexpr bool is_non_const_reference_v =
   !::cuda::std::is_const_v<T> && (::cuda::std::is_reference_v<T> || detail::is_proxy_reference_v<T>);
-
-// We treat the discarding proxy of cuda::discard_iterator as a const reference, we discard the value
-template <typename T>
-inline constexpr bool is_discard_proxy = false;
-
-template <>
-inline constexpr bool is_discard_proxy<::cuda::discard_iterator::__discard_proxy> = true;
 
 template <typename T>
 inline constexpr bool is_tuple_of_iterator_references_v = false;
@@ -109,8 +111,7 @@ inline constexpr bool is_tuple_of_iterator_references_v<tuple_of_iterator_refere
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 using enable_if_assignable_ref =
-  ::cuda::std::enable_if_t<is_non_const_reference_v<T> || is_tuple_of_iterator_references_v<T> || is_discard_proxy<T>,
-                           int>;
+  ::cuda::std::enable_if_t<is_non_const_reference_v<T> || is_tuple_of_iterator_references_v<T>, int>;
 
 template <typename UnaryFunction>
 struct unary_transform_functor
@@ -211,8 +212,8 @@ struct device_destroy_functor
 template <typename System, typename T>
 struct destroy_functor
     : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
-                              thrust::detail::identity_<host_destroy_functor<T>>,
-                              thrust::detail::identity_<device_destroy_functor<T>>>
+                              ::cuda::std::type_identity<host_destroy_functor<T>>,
+                              ::cuda::std::type_identity<device_destroy_functor<T>>>
 {};
 
 template <typename T>

@@ -29,8 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
-accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
+[[nodiscard]] _CCCL_API constexpr _Tp accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
   for (; __first != __last; ++__first)
   {
@@ -40,7 +39,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 }
 
 template <class _InputIterator, class _Tp, class _BinaryOperation>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOperation __binary_op)
 {
   for (; __first != __last; ++__first)

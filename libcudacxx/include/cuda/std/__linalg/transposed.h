@@ -57,7 +57,7 @@ using __transpose_extents_t = typename __transpose_extents_t_impl<_Extents>::__t
 
 _CCCL_TEMPLATE(class _Extents)
 _CCCL_REQUIRES((_Extents::rank() == 2))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
+_CCCL_API constexpr __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
 {
   static_assert(is_same_v<typename __transpose_extents_t<_Extents>::index_type, typename _Extents::index_type>,
                 "Please fix __transpose_extents_t to account for P2553, which adds a template parameter SizeType to "
@@ -118,18 +118,17 @@ public:
     using rank_type    = typename extents_type::rank_type;
     using layout_type  = layout_transpose;
 
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(const __nested_mapping_type& __map)
+    _CCCL_API constexpr explicit mapping(const __nested_mapping_type& __map)
         : __nested_mapping_(__map)
         , __extents_(__detail::__transpose_extents(__map.extents()))
     {}
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+    [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
     {
       return __extents_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
-      noexcept(__required_span_size_noexcept)
+    [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept(__required_span_size_noexcept)
     {
       return __nested_mapping_.required_span_size();
     }
@@ -137,47 +136,47 @@ public:
     _CCCL_TEMPLATE(class _IndexType0, class _IndexType1)
     _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _IndexType0, index_type)
                      _CCCL_AND _CCCL_TRAIT(is_convertible, _IndexType1, index_type))
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()(_IndexType0 __i, _IndexType1 __j) const
+    _CCCL_API constexpr index_type operator()(_IndexType0 __i, _IndexType1 __j) const
     {
       return __nested_mapping_(__j, __i);
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nested_mapping_type& nested_mapping() const noexcept
+    [[nodiscard]] _CCCL_API constexpr const __nested_mapping_type& nested_mapping() const noexcept
     {
       return __nested_mapping_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
+    [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
     {
       return __nested_mapping_type::is_always_unique();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+    [[nodiscard]] _CCCL_API static constexpr bool is_always_exhaustive() noexcept
     {
       return __nested_mapping_type::is_always_exhaustive();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
+    [[nodiscard]] _CCCL_API static constexpr bool is_always_strided() noexcept
     {
       return __nested_mapping_type::is_always_strided();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept)
+    [[nodiscard]] _CCCL_API constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept)
     {
       return __nested_mapping_.is_unique();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept)
+    [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept)
     {
       return __nested_mapping_.is_exhaustive();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept(__is_strided_noexcept)
+    [[nodiscard]] _CCCL_API constexpr bool is_strided() const noexcept(__is_strided_noexcept)
     {
       return __nested_mapping_.is_strided();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
+    [[nodiscard]] _CCCL_API constexpr index_type stride(size_t __r) const
     {
       _CCCL_ASSERT(this->is_strided(), "layout must be strided");
       _CCCL_ASSERT(__r < extents_type::rank(), "rank must be less than extents rank");
@@ -185,15 +184,13 @@ public:
     }
 
     template <class _OtherExtents>
-    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+    _CCCL_API friend constexpr bool operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     {
       return __lhs.__nested_mapping_ == __rhs.__nested_mapping_;
     }
 
     template <class _OtherExtents>
-    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+    _CCCL_API friend constexpr bool operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     {
       return __lhs.__nested_mapping_ != __rhs.__nested_mapping_;
     }
@@ -213,7 +210,7 @@ struct __transposed_element_accessor
   using __element_type  = _ElementType;
   using __accessor_type = _Accessor;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr __accessor_type __accessor(const _Accessor& __a)
+  _CCCL_API static constexpr __accessor_type __accessor(const _Accessor& __a)
   {
     return __accessor_type(__a);
   }
@@ -225,7 +222,7 @@ struct __transposed_element_accessor<_ElementType, default_accessor<_ElementType
   using __element_type  = _ElementType;
   using __accessor_type = default_accessor<__element_type>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr __accessor_type __accessor(const default_accessor<_ElementType>& __a)
+  _CCCL_API static constexpr __accessor_type __accessor(const default_accessor<_ElementType>& __a)
   {
     return __accessor_type(__a);
   }
@@ -237,7 +234,7 @@ struct __transposed_layout
   using __layout_type = layout_transpose<_Layout>;
 
   template <class __OriginalMapping>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mapping(const __OriginalMapping& __orig_map)
+  _CCCL_API static constexpr auto __mapping(const __OriginalMapping& __orig_map)
   {
     using __extents_type        = __transpose_extents_t<typename __OriginalMapping::__extents_type>;
     using __return_mapping_type = typename __layout_type::template __mapping<__extents_type>;
@@ -251,8 +248,7 @@ struct __transposed_layout<layout_left>
   using __layout_type = layout_right;
 
   template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __mapping(const typename layout_left::template mapping<_OriginalExtents>& __orig_map)
+  _CCCL_API static constexpr auto __mapping(const typename layout_left::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename layout_left::template mapping<_OriginalExtents>;
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
@@ -267,8 +263,7 @@ struct __transposed_layout<layout_right>
   using __layout_type = layout_left;
 
   template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __mapping(const typename layout_right::template mapping<_OriginalExtents>& __orig_map)
+  _CCCL_API static constexpr auto __mapping(const typename layout_right::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename layout_right::template mapping<_OriginalExtents>;
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
@@ -283,8 +278,7 @@ struct __transposed_layout<layout_stride>
   using __layout_type = layout_stride;
 
   template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __mapping(const typename layout_stride::template mapping<_OriginalExtents>& __orig_map)
+  _CCCL_API static constexpr auto __mapping(const typename layout_stride::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename layout_stride::template mapping<_OriginalExtents>;
     using __original_extents_type = typename __original_mapping_type::extents_type;
@@ -308,7 +302,7 @@ struct __transposed_layout<layout_transpose<_NestedLayout>>
 } // namespace __detail
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+[[nodiscard]] _CCCL_API constexpr auto transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __element_type  = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__element_type;
   using __layout_type   = typename __detail::__transposed_layout<_Layout>::__layout_type;

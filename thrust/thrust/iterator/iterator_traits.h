@@ -204,6 +204,17 @@ struct iterator_traversal<::cuda::discard_iterator>
   using type = random_access_traversal_tag;
 };
 
+template <class T, class Index>
+struct iterator_system<::cuda::constant_iterator<T, Index>>
+{
+  using type = any_system_tag;
+};
+template <class T, class Index>
+struct iterator_traversal<::cuda::constant_iterator<T, Index>>
+{
+  using type = random_access_traversal_tag;
+};
+
 template <class Start>
 struct iterator_system<::cuda::counting_iterator<Start>>
 {
@@ -221,6 +232,17 @@ struct iterator_system<::cuda::strided_iterator<Iter, Stride>> : iterator_system
 template <class Iter, class Stride>
 struct iterator_traversal<::cuda::strided_iterator<Iter, Stride>> : iterator_traversal<Iter>
 {};
+
+template <class Fn, class Index>
+struct iterator_system<::cuda::tabulate_output_iterator<Fn, Index>>
+{
+  using type = any_system_tag;
+};
+template <class Fn, class Index>
+struct iterator_traversal<::cuda::tabulate_output_iterator<Fn, Index>>
+{
+  using type = random_access_traversal_tag;
+};
 
 template <class Iter, class Fn>
 struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<Iter>

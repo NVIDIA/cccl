@@ -171,7 +171,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    .. code-block:: python
 //!
-//!        import cuda.cooperative.experimental as cudax
+//!        import cuda.cccl.cooperative.experimental as cudax
 //!        from pynvjitlink import patch
 //!        patch.patch_numba_linker(lto=True)
 //!

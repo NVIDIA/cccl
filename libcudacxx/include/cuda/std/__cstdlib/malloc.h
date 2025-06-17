@@ -57,7 +57,7 @@ using ::malloc;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_API inline void* calloc(size_t __n, size_t __size) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
 }

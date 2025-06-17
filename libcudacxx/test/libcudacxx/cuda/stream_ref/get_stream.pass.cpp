@@ -12,7 +12,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream_ref>
 
-void test()
+__host__ __device__ void test()
 {
   ::cudaStream_t stream = reinterpret_cast<::cudaStream_t>(42);
   { // Can call get_stream on a cudaStream_t
@@ -25,7 +25,7 @@ void test()
     {
       ::cudaStream_t stream_;
 
-      ::cuda::stream_ref get_stream() const noexcept
+      __host__ __device__ ::cuda::stream_ref get_stream() const noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -40,7 +40,7 @@ void test()
     {
       ::cudaStream_t stream_;
 
-      ::cuda::stream_ref get_stream() noexcept
+      __host__ __device__ ::cuda::stream_ref get_stream() noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -53,7 +53,7 @@ void test()
     {
       ::cudaStream_t stream_{};
 
-      ::cudaStream_t get_stream() const noexcept
+      __host__ __device__ ::cudaStream_t get_stream() const noexcept
       {
         return stream_;
       }
@@ -66,7 +66,7 @@ void test()
   { // Cannot call get_stream on a type with a non-const get_stream method
     struct returns_not_convertible_to_stream_ref
     {
-      int get_stream() const noexcept
+      __host__ __device__ int get_stream() const noexcept
       {
         return 42;
       }
@@ -79,7 +79,7 @@ void test()
     {
       ::cudaStream_t stream_{};
 
-      ::cuda::stream_ref query(::cuda::get_stream_t) const noexcept
+      __host__ __device__ ::cuda::stream_ref query(::cuda::get_stream_t) const noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -94,7 +94,7 @@ void test()
     {
       ::cudaStream_t stream_{};
 
-      ::cudaStream_t query(::cuda::get_stream_t) const noexcept
+      __host__ __device__ ::cudaStream_t query(::cuda::get_stream_t) const noexcept
       {
         return stream_;
       }
@@ -107,7 +107,7 @@ void test()
   { // Cannot call get_stream on a type with a non-const get_stream method
     struct with_query_not_convertible_to_stream_ref
     {
-      int query(::cuda::get_stream_t) const noexcept
+      __host__ __device__ int query(::cuda::get_stream_t) const noexcept
       {
         return 42;
       }
@@ -118,7 +118,7 @@ void test()
 
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, test();)
+  test();
 
   return 0;
 }

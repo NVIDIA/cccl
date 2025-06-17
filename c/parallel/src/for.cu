@@ -104,25 +104,25 @@ CUresult cccl_device_for_build(
     std::string lowered_name;
 
     auto cl =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{device_for_kernel, name})
-        .add_expression({for_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({for_kernel_name, lowered_name})
-        .cleanup_program()
-        .add_link({op.ltoir, op.ltoir_size});
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{device_for_kernel, name})
+        ->add_expression({for_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({for_kernel_name, lowered_name})
+        ->link_program()
+        ->add_link({op.ltoir, op.ltoir_size});
 
     nvrtc_link_result result{};
 
     if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
     {
-      result = cl.add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
-                 .add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
-                 .finalize_program(num_lto_args, lopts);
+      result = cl->add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
+                 ->add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
+                 ->finalize_program();
     }
     else
     {
-      result = cl.finalize_program(num_lto_args, lopts);
+      result = cl->finalize_program();
     }
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);

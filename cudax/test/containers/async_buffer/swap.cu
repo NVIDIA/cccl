@@ -38,7 +38,7 @@ C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
   using T         = typename Buffer::value_type;
   using size_type = typename Buffer::size_type;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())), void>);

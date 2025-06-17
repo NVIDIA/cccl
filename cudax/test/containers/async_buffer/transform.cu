@@ -27,78 +27,13 @@
 #include "helper.h"
 #include "types.h"
 
-using cub::detail::transform::Algorithm;
-
-template <Algorithm Alg>
-struct policy_hub_for_alg
+C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]")
 {
-  struct max_policy : cub::ChainedPolicy<300, max_policy, max_policy>
-  {
-    static constexpr int min_bif         = 64 * 1024;
-    static constexpr Algorithm algorithm = Alg;
-    using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256, 128>>;
-  };
-};
-
-template <Algorithm Alg,
-          typename Offset,
-          typename... RandomAccessIteratorsIn,
-          typename RandomAccessIteratorOut,
-          typename TransformOp>
-CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg(
-  ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-  RandomAccessIteratorOut output,
-  Offset num_items,
-  TransformOp transform_op,
-  cudaStream_t stream = nullptr)
-{
-  return cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
-                                            Offset,
-                                            ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                            RandomAccessIteratorOut,
-                                            TransformOp,
-                                            policy_hub_for_alg<Alg>>{}
-    .dispatch(inputs, output, num_items, transform_op, stream);
-}
-
-using algorithms =
-  c2h::type_list<::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-                 ,
-                 ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
-                 >;
-
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-#  define FILTER_UBLKCP                                \
-    if (alg == Algorithm::ublkcp && ptx_version < 900) \
-    {                                                  \
-      return;                                          \
-    }
-#else // _CUB_HAS_TRANSFORM_UBLKCP
-#  define FILTER_UBLKCP
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
-
-#define FILTER_UNSUPPORTED_ALGS                                           \
-  int ptx_version = 0;                                                    \
-  REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);                   \
-  _CCCL_DIAG_PUSH                                                         \
-  _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */ \
-  FILTER_UBLKCP                                                           \
-  _CCCL_DIAG_POP
-
-C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]", algorithms)
-{
-  using type         = int;
-  constexpr auto alg = c2h::get<0, TestType>::value;
-  FILTER_UNSUPPORTED_ALGS
+  using type          = int;
   const int num_items = 1 << 24;
 
-  cudax::stream stream{};
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
+  cudax::stream stream{cudax::device_ref{0}};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cudax::device_ref{0}}, stream};
 
   cudax::async_device_buffer<type> a{env, num_items, cudax::no_init};
   cudax::async_device_buffer<type> b{env, num_items, cudax::no_init};
@@ -107,7 +42,7 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
 
   cudax::async_device_buffer<type> result{env, num_items, cudax::no_init};
 
-  transform_many_with_alg<alg>(
+  cub::DeviceTransform::Transform(
     ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
 
   // copy back to host
@@ -144,8 +79,8 @@ struct add_kernel
 
 C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
 {
-  cudax::stream stream{};
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
+  cudax::stream stream{cudax::device_ref{0}};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cudax::device_ref{0}}, stream};
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 

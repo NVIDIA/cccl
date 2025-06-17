@@ -359,7 +359,7 @@ public:
 CUB_NAMESPACE_BEGIN
 
 template <>
-struct NumericTraits<half_t> : detail::BaseTraits<FLOATING_POINT, true, unsigned short, half_t>
+struct NumericTraits<half_t> : BaseTraits<FLOATING_POINT, true, uint16_t, half_t>
 {};
 
 CUB_NAMESPACE_END

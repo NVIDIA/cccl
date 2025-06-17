@@ -22,6 +22,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__fwd/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
@@ -34,7 +35,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 class stream_ref;
-struct get_stream_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __convertible_to_stream_ref = _CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>;
@@ -56,7 +56,7 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__convertible_to_stream_ref<_Tp>)
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
   {
     return static_cast<::cuda::stream_ref>(__t);
@@ -65,7 +65,7 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_stream<_Tp>)
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(__t.get_stream()))
   {
     return __t.get_stream();
@@ -74,13 +74,13 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_stream<_Env>)
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)), "");
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
   {
     return true;
   }

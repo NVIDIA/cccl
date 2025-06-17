@@ -26,49 +26,14 @@ jobs:
       contents: read
 
   test-cccl:
-    name: Test CCCL Wheels
+    name: Test CCCL Core
     needs: build-cccl
     uses: ./.github/workflows/run-ci-script.yml
     with:
-      script-command: ci/test_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
+      script-command: ci/test_cuda_cccl_headers_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
       artifact-name: wheel-cccl-${{ matrix.python-version }}
-      artifact-path: wheelhouse/
-      runner: linux-amd64-cpu16
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-    permissions:
-      id-token: write
-      contents: read
-
-  build-cooperative:
-    name: Build Cooperative Wheels
-    uses: ./.github/workflows/run-ci-script.yml
-    with:
-      script-command: ci/build_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
-      python-version: ${{ matrix.python-version }}
-      upload-artifact: true
-      upload-artifact-name: wheel-cooperative-${{ matrix.python-version }}
-      upload-artifact-path: wheelhouse/
-      runner: linux-amd64-cpu16
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-    permissions:
-      id-token: write
-      contents: read
-
-  test-cooperative:
-    name: Test Cooperative Wheels
-    needs: build-cooperative
-    uses: ./.github/workflows/run-ci-script.yml
-    with:
-      script-command: ci/test_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
-      python-version: ${{ matrix.python-version }}
-      needs-artifact: true
-      artifact-name: wheel-cooperative-${{ matrix.python-version }}
       artifact-path: wheelhouse/
       runner: linux-amd64-gpu-rtxa6000-latest-1
     strategy:
@@ -78,16 +43,17 @@ jobs:
       id-token: write
       contents: read
 
-  build-parallel:
-    name: Build Parallel Wheels
+  test-cooperative:
+    name: Test CCCL Cooperative
+    needs: build-cccl
     uses: ./.github/workflows/run-ci-script.yml
     with:
-      script-command: ci/build_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
+      script-command: ci/test_cuda_cccl_cooperative_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
-      upload-artifact: true
-      upload-artifact-name: wheel-parallel-${{ matrix.python-version }}
-      upload-artifact-path: wheelhouse/
-      runner: linux-amd64-cpu16
+      needs-artifact: true
+      artifact-name: wheel-cccl-${{ matrix.python-version }}
+      artifact-path: wheelhouse/
+      runner: linux-amd64-gpu-rtxa6000-latest-1
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
@@ -96,14 +62,14 @@ jobs:
       contents: read
 
   test-parallel:
-    name: Test Parallel Wheels
-    needs: build-parallel
+    name: Test CCCL Parallel
+    needs: build-cccl
     uses: ./.github/workflows/run-ci-script.yml
     with:
-      script-command: ci/test_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
+      script-command: ci/test_cuda_cccl_parallel_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
-      artifact-name: wheel-parallel-${{ matrix.python-version }}
+      artifact-name: wheel-cccl-${{ matrix.python-version }}
       artifact-path: wheelhouse/
       runner: linux-amd64-gpu-rtxa6000-latest-1
     strategy:

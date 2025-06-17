@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 #if defined(_CCCL_BUILTIN_BITREVERSE32)
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_builtin(_Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __bit_reverse_builtin(_Tp __value) noexcept
 {
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -97,7 +97,7 @@ template <typename _Tp>
 #endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_generic(_Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __bit_reverse_generic(_Tp __value) noexcept
 {
 #if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -150,7 +150,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_reverse(_Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp bit_reverse(_Tp __value) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())

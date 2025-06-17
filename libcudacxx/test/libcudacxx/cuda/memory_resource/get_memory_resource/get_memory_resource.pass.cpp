@@ -15,33 +15,33 @@
 
 struct test_resource
 {
-  void* allocate(std::size_t, std::size_t)
+  __host__ __device__ void* allocate(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept
+  __host__ __device__ void deallocate(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  __host__ __device__ void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return &_val;
   }
 
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
+  __host__ __device__ void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  bool operator==(const test_resource& other) const
+  __host__ __device__ bool operator==(const test_resource& other) const
   {
     return _val == other._val;
   }
-  bool operator!=(const test_resource& other) const
+  __host__ __device__ bool operator!=(const test_resource& other) const
   {
     return _val != other._val;
   }
@@ -49,14 +49,14 @@ struct test_resource
   int _val = 0;
 };
 
-void test()
+__host__ __device__ void test()
 {
   { // Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue
     struct with_get_resource_const_lvalue
     {
       test_resource res_{};
 
-      const test_resource& get_memory_resource() const noexcept
+      __host__ __device__ const test_resource& get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -72,7 +72,7 @@ void test()
     {
       test_resource res_{};
 
-      test_resource get_memory_resource() const noexcept
+      __host__ __device__ test_resource get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -88,7 +88,7 @@ void test()
     {
       test_resource res_{};
 
-      test_resource get_memory_resource() noexcept
+      __host__ __device__ test_resource get_memory_resource() noexcept
       {
         return res_;
       }
@@ -101,7 +101,7 @@ void test()
     {
       test_resource res_{};
 
-      const test_resource& query(::cuda::mr::get_memory_resource_t) const noexcept
+      __host__ __device__ const test_resource& query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -117,7 +117,7 @@ void test()
     {
       test_resource res_{};
 
-      test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
+      __host__ __device__ test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -134,7 +134,7 @@ void test()
     {
       test_resource res_{};
 
-      const test_resource& query(::cuda::mr::get_memory_resource_t) noexcept
+      __host__ __device__ const test_resource& query(::cuda::mr::get_memory_resource_t) noexcept
       {
         return res_;
       }
@@ -147,12 +147,12 @@ void test()
     {
       test_resource res_{};
 
-      const test_resource& get_memory_resource() const noexcept
+      __host__ __device__ const test_resource& get_memory_resource() const noexcept
       {
         return res_;
       }
 
-      test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
+      __host__ __device__ test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -169,25 +169,26 @@ void test()
     {
       struct resource
       {
-        void* allocate(std::size_t, std::size_t)
+        __host__ __device__ void* allocate(std::size_t, std::size_t)
         {
           return nullptr;
         }
 
-        void deallocate(void*, std::size_t, std::size_t) noexcept {}
+        __host__ __device__ void deallocate(void*, std::size_t, std::size_t) noexcept {}
 
-        bool operator==(const resource&) const noexcept
+        __host__ __device__ bool operator==(const resource&) const noexcept
         {
           return true;
         }
-        bool operator!=(const resource&) const noexcept
+
+        __host__ __device__ bool operator!=(const resource&) const noexcept
         {
           return false;
         }
       };
       resource res_{};
 
-      resource get_memory_resource() const noexcept
+      __host__ __device__ resource get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -198,7 +199,7 @@ void test()
 
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, test();)
+  test();
 
   return 0;
 }

@@ -47,7 +47,7 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND __fp_is_implicit_conversion_v<_Tp, __cccl_fp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp(const _Tp&) noexcept
+  _CCCL_API constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
     // todo: implement construction from a floating-point type using __fp_cast
@@ -55,7 +55,7 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__fp_is_implicit_conversion_v<_Tp, __cccl_fp>))
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __cccl_fp(const _Tp&) noexcept
+  _CCCL_API explicit constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
     // todo: implement construction from a floating-point type using __fp_cast
@@ -63,7 +63,7 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_integral_v<_Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp(const _Tp&) noexcept
+  _CCCL_API constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
     // todo: implement construction from an integral type using __fp_cast
@@ -76,7 +76,7 @@ public:
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__is_ext_cccl_fp_v<_Tp>)
                    _CCCL_AND __fp_is_implicit_conversion_v<__cccl_fp, _Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Tp() const noexcept
+  _CCCL_API constexpr operator _Tp() const noexcept
   {
     // todo: implement conversion to a floating-point type using __fp_cast
     return _Tp{};
@@ -85,7 +85,7 @@ public:
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__is_ext_cccl_fp_v<_Tp>)
                    _CCCL_AND(!__fp_is_implicit_conversion_v<__cccl_fp, _Tp>))
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator _Tp() const noexcept
+  _CCCL_API explicit constexpr operator _Tp() const noexcept
   {
     // todo: implement conversion to a floating-point type using __fp_cast
     return _Tp{};
@@ -93,27 +93,27 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_integral_v<_Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Tp() const noexcept
+  _CCCL_API constexpr operator _Tp() const noexcept
   {
     // todo: implement conversion to an integral type using __fp_cast
     return _Tp{};
   }
 
   template <class _Tp>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept;
+  friend _CCCL_API constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept;
   template <class _Tp>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
+  friend _CCCL_API constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
 };
 
 template <__fp_format _Fmt>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator+(__cccl_fp<_Fmt> __v) noexcept
+[[nodiscard]] _CCCL_API constexpr __cccl_fp<_Fmt> operator+(__cccl_fp<_Fmt> __v) noexcept
 {
   return __v;
 }
 
 _CCCL_TEMPLATE(__fp_format _Fmt)
 _CCCL_REQUIRES(__fp_is_signed_v<_Fmt>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
+[[nodiscard]] _CCCL_API constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
 {
   return _CUDA_VSTD::__fp_neg(__v);
 }
