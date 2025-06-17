@@ -144,15 +144,16 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 }
 } // namespace detail
 
-using checked_cuda_memory_resource =
-  thrust::system::cuda::detail::cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
+using checked_cuda_memory_resource = THRUST_NS_QUALIFIER::system::cuda::detail::
+  cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, THRUST_NS_QUALIFIER::cuda::pointer<void>>;
 
 template <typename T>
 class checked_cuda_allocator
-    : public thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>
+    : public THRUST_NS_QUALIFIER::mr::
+        stateless_resource_allocator<T, THRUST_NS_QUALIFIER::device_ptr_memory_resource<checked_cuda_memory_resource>>
 {
-  using base =
-    thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
+  using base = THRUST_NS_QUALIFIER::mr::
+    stateless_resource_allocator<T, THRUST_NS_QUALIFIER::device_ptr_memory_resource<checked_cuda_memory_resource>>;
 
 public:
   template <typename U>
@@ -177,7 +178,7 @@ public:
   _CCCL_HOST_DEVICE ~checked_cuda_allocator() {}
 };
 
-struct checked_host_memory_resource final : public thrust::mr::new_delete_resource_base
+struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base
 {
   void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
   {
@@ -202,6 +203,6 @@ struct checked_host_memory_resource final : public thrust::mr::new_delete_resour
 };
 
 template <typename T>
-using checked_host_allocator = thrust::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
+using checked_host_allocator = THRUST_NS_QUALIFIER::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
 
 } // namespace c2h
