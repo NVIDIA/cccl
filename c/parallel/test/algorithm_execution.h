@@ -79,6 +79,24 @@ public:
   }
 };
 
+template <typename Build, typename = void>
+struct build_traits
+{
+  static bool should_check_sass(int cc_major)
+  {
+    return true;
+  }
+};
+
+template <typename Build>
+struct build_traits<Build, std::void_t<decltype(Build::should_check_sass())>>
+{
+  static bool should_check_sass(int cc_major)
+  {
+    return Build::should_check_sass(cc_major);
+  }
+};
+
 template <typename BuildResultT,
           typename Build,
           typename Cleanup,
@@ -130,8 +148,11 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
 
   const std::string& sass = inspect_sass(build.cubin, build.cubin_size);
 
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
+  if (build_traits<Build>::should_check_sass(build_info.get_cc_major()))
+  {
+    REQUIRE(sass.find("LDL") == std::string::npos);
+    REQUIRE(sass.find("STL") == std::string::npos);
+  }
 
   CUstream null_stream = 0;
 
