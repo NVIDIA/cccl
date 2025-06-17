@@ -140,6 +140,7 @@ __device__ void test(int base_i, int base_j)
 }
 
 #if !TEST_COMPILER(NVRTC)
+#  if CUDART_VERSION < 12050
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -148,7 +149,18 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif // ! TEST_COMPILER(NVRTC)
+#  else // ^^^ CUDART_VERSION < 12050 ^^^ / vvv CUDART_VERSION >= 12050 vvv
+PFN_cuTensorMapEncodeTiled_v12000 get_cuTensorMapEncodeTiled()
+{
+  void* driver_ptr = nullptr;
+  cudaDriverEntryPointQueryResult driver_status;
+  auto code =
+    cudaGetDriverEntryPointByVersion("cuTensorMapEncodeTiled", &driver_ptr, 12000, cudaEnableDefault, &driver_status);
+  assert(code == cudaSuccess && "Could not get driver API");
+  return reinterpret_cast<PFN_cuTensorMapEncodeTiled_v12000>(driver_ptr);
+}
+#  endif // CUDART_VERSION < 12050
+#endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {
