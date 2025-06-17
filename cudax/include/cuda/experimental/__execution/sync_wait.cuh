@@ -172,7 +172,7 @@ struct sync_wait_t
       }
       else if constexpr (_CUDA_VSTD::is_same_v<_Error, cudaError_t>)
       {
-        cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
+        ::cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
       }
       else
       {

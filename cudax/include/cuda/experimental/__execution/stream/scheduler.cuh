@@ -118,7 +118,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       auto const __launch_dims      = get_launch_config(execution::get_env(__rcvr_)).dims;
       constexpr int __block_threads = decltype(__launch_dims)::static_count(experimental::thread, experimental::block);
       int const __grid_blocks       = __launch_dims.count(experimental::block, experimental::grid);
-      static_assert(__block_threads != cuda::std::dynamic_extent);
+      static_assert(__block_threads != ::cuda::std::dynamic_extent);
 
       // printf("Launching completion kernel for stream_scheduler with %d block threads and %d grid blocks\n",
       //        __block_threads,

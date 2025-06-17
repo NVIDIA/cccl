@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__tuple_dir/ignore.h>
@@ -61,16 +62,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_state_t
 template <class _Sndr, class _Shape>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_attrs_t
 {
-  _CCCL_HOST_API constexpr auto query(get_launch_config_t) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr auto query(get_launch_config_t) const noexcept
   {
     constexpr int __block_threads = 256;
-    const int __grid_blocks       = (static_cast<int>(__shape_) + __block_threads - 1) / __block_threads;
+    const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape_), __block_threads);
     return experimental::make_config(block_dims<__block_threads>, grid_dims(__grid_blocks));
   }
 
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-  _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
     -> decltype(auto)
   {
     return execution::get_env(__sndr_).query(_Query{});
@@ -198,7 +199,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     }
 
     // The bulk algorithm lowers to a bulk_chunked sender. The bulk sender itself should
-    // not have `connect` functions, shince they should never be called. Hence, we
+    // not have `connect` functions, since they should never be called. Hence, we
     // constrain these functions with !same_as<_BulkTag, bulk_t>.
     _CCCL_TEMPLATE(class _Rcvr)
     _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_BulkTag, bulk_t>) )
@@ -232,7 +233,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_state_t<_Policy, _Shape, _Fn>
   {
     template <class _Sndr>
-    _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_t __self)
     {
       using __domain_t = __early_domain_of_t<_Sndr>;
       using __sndr_t   = __bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>;
@@ -245,7 +246,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   // predecessor sender, a policy, a shape, and a function, and returns a sender that can
   // be connected to a receiver.
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  _CCCL_API auto operator()(_Sndr&& __sndr, _Policy __policy, _Shape __shape, _Fn __fn) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Policy __policy, _Shape __shape, _Fn __fn) const
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(_CUDA_VSTD::integral<_Shape>);
@@ -266,7 +267,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   // This function call operator creates a sender adaptor closure object that can appear
   // on the right-hand side of a pipe operator, like: sndr | bulk(par, shape, fn).
   template <class _Policy, class _Shape, class _Fn>
-  _CCCL_TRIVIAL_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
+  [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
     -> __closure_t<_Policy, _Shape, _Fn>
   {
     static_assert(_CUDA_VSTD::integral<_Shape>);
@@ -312,7 +313,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t : __bulk_t<bulk_chunked_t>
     }
   };
 
-  _CCCL_API static constexpr bool __is_chunked() noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
   {
     return true;
   }
@@ -402,7 +403,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
     return this->__bulk_t::operator()(par, __shape, static_cast<_Fn&&>(__fn));
   }
 
-  _CCCL_API static constexpr bool __is_chunked() noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
   {
     return false;
   }
@@ -421,7 +422,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Ts>
-    _CCCL_TRIVIAL_API auto operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
+    _CCCL_TRIVIAL_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
       __nothrow_callable<_Fn&, _Shape, decltype(__values)&...>)
     {
       for (; __begin != __end; ++__begin)
@@ -437,7 +438,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   // This function is called when `connect` is called on a `bulk` sender. It transforms
   // the `bulk` sender into a `bulk_chunked` sender.
   template <class _Sndr>
-  _CCCL_API static auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t)
+  [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t)
   {
     static_assert(_CUDA_VSTD::is_same_v<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;
@@ -453,7 +454,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
                         __chunked_fn_t{_CUDA_VSTD::forward_like<_Sndr>(__fn)});
   }
 
-  _CCCL_API static constexpr bool __is_chunked() noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
   {
     return false;
   }
