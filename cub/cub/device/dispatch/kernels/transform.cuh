@@ -216,7 +216,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     // for types with larger alignment
     if constexpr (alignof(T) > memcpy_async_alignment)
     {
-      smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
+      smem_offset = round_up_to_po2_multiple(smem_offset, int{alignof(T)});
     }
     const char* const src = aligned_ptr.ptr + offset * sizeof(T);
     char* const dst       = smem + smem_offset;
@@ -226,10 +226,7 @@ _CCCL_DEVICE void transform_kernel_impl(
       aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
     cooperative_groups::memcpy_async(
-      group,
-      dst,
-      src,
-      ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(bytes_to_copy)});
+      group, dst, src, ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<size_t>(bytes_to_copy)});
 
     const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
@@ -240,12 +237,12 @@ _CCCL_DEVICE void transform_kernel_impl(
     using T = typename decltype(aligned_ptr)::value_type;
     // TODO(ahendriksen): the codegen for memcpy_async for char and short is really verbose (300 instructions). we may
     // rather want to just do an unrolled loop here.
-    smem_offset  = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
+    smem_offset  = round_up_to_po2_multiple(smem_offset, int{alignof(T)});
     const T* src = aligned_ptr.ptr_to_elements() + offset;
-    T* dst       = reinterpret_cast<T*>(smem + smem_offset);
+    auto dst     = reinterpret_cast<T*>(smem + smem_offset);
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-    const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
+    const int bytes_to_copy = int{sizeof(T)} * tile_size;
     smem_offset += bytes_to_copy;
     cooperative_groups::memcpy_async(group, dst, src, bytes_to_copy);
 
@@ -260,6 +257,8 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
+
+  // TODO(bgruber): fbusato suggests to move the tile_size and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
     // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
