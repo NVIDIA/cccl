@@ -190,15 +190,6 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
   }
 } get_delegation_scheduler{};
 
-//////////////////////////////////////////////////////////////////////////////////////////
-// get_forward_progress_guarantee
-enum class forward_progress_guarantee
-{
-  concurrent,
-  parallel,
-  weakly_parallel
-};
-
 // This query is not a forwarding query.
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {

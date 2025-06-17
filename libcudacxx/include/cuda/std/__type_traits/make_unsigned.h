@@ -136,7 +136,7 @@ struct make_unsigned
 };
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
+_CCCL_API constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 {
   return static_cast<make_unsigned_t<_Tp>>(__x);
 }

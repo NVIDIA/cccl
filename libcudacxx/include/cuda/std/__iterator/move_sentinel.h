@@ -39,25 +39,25 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT move_sentinel
 public:
   _CCCL_HIDE_FROM_ABI constexpr move_sentinel() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit move_sentinel(_Sent __s)
+  _CCCL_API constexpr explicit move_sentinel(_Sent __s)
       : __last_(_CUDA_VSTD::move(__s))
   {}
 
   _CCCL_TEMPLATE(class _S2)
   _CCCL_REQUIRES(convertible_to<const _S2&, _Sent>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel(const move_sentinel<_S2>& __s)
+  _CCCL_API constexpr move_sentinel(const move_sentinel<_S2>& __s)
       : __last_(__s.base())
   {}
 
   _CCCL_TEMPLATE(class _S2)
   _CCCL_REQUIRES(assignable_from<const _S2&, _Sent>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel& operator=(const move_sentinel<_S2>& __s)
+  _CCCL_API constexpr move_sentinel& operator=(const move_sentinel<_S2>& __s)
   {
     __last_ = __s.base();
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent base() const
+  _CCCL_API constexpr _Sent base() const
   {
     return __last_;
   }

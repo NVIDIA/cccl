@@ -13,7 +13,12 @@ Functional
 
 .. list-table::
    :widths: 25 45 30 30
-   :header-rows: 0
+   :header-rows: 1
+
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
 
    * - :ref:`cuda::maximum <libcudacxx-extended-api-functional-maximum-minimum>`
      - Returns the maximum of two values

@@ -111,7 +111,7 @@ public:
   using difference_type        = _CUDA_VSTD::ptrdiff_t;
 
   using __env_t          = ::cuda::experimental::env_t<_Properties...>;
-  using __policy_t       = ::cuda::experimental::execution::execution_policy;
+  using __policy_t       = ::cuda::experimental::execution::any_execution_policy;
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
   using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
   using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;

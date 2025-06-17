@@ -30,12 +30,12 @@ template <class _Compare>
 struct __debug_less
 {
   _Compare& __comp_;
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __debug_less(_Compare& __c)
+  _CCCL_API constexpr __debug_less(_Compare& __c)
       : __comp_(__c)
   {}
 
   template <class _Tp, class _Up>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Up& __y)
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Up& __y)
   {
     bool __r = __comp_(__x, __y);
     if (__r)
@@ -46,7 +46,7 @@ struct __debug_less
   }
 
   template <class _Tp, class _Up>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp& __x, _Up& __y)
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp& __x, _Up& __y)
   {
     bool __r = __comp_(__x, __y);
     if (__r)
@@ -57,14 +57,14 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
+  _CCCL_API constexpr decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
   __do_compare_assert(int, [[maybe_unused]] _LHS& __l, [[maybe_unused]] _RHS& __r)
   {
     _CCCL_ASSERT(!__comp_(__l, __r), "Comparator does not induce a strict weak ordering");
   }
 
   template <class _LHS, class _RHS>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __do_compare_assert(long, _LHS&, _RHS&)
+  _CCCL_API constexpr void __do_compare_assert(long, _LHS&, _RHS&)
   {}
 };
 

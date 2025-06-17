@@ -54,7 +54,7 @@ struct __tupl<>
   template <class _Ty>
   using __maybe_insert _CCCL_NODEBUG_ALIAS = __tupl<_Ty>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  _CCCL_API static constexpr size_t __size() noexcept
   {
     return 0;
   }
@@ -69,7 +69,7 @@ struct __tupl<_Ty, _Ts...>
   using __maybe_insert _CCCL_NODEBUG_ALIAS =
     _If<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  _CCCL_API static constexpr size_t __size() noexcept
   {
     return sizeof...(_Ts) + 1;
   }
@@ -87,7 +87,7 @@ struct __bulk_insert<false>
 {
 #if _CCCL_COMPILER(MSVC, <, 19, 20)
   template <class _Set, class _Ty, class... _Us>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
+  _CCCL_API inline static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
     typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
 
   template <class _Set, class... _Us>

@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-atomic:
 
-cuda::atomic
+``cuda::atomic``
 ================
 
 .. toctree::

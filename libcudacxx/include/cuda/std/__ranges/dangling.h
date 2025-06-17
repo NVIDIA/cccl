@@ -33,7 +33,7 @@ struct dangling
 {
   _CCCL_HIDE_FROM_ABI dangling() = default;
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr dangling(_Args&&...) noexcept
+  _CCCL_API constexpr dangling(_Args&&...) noexcept
   {}
 };
 

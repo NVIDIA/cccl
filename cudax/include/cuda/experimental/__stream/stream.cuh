@@ -27,7 +27,7 @@
 
 #include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
-#include <cuda/experimental/__stream/stream_ref.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -139,6 +139,12 @@ struct stream : stream_ref
   [[nodiscard]] ::cudaStream_t release()
   {
     return _CUDA_VSTD::exchange(__stream, __detail::__invalid_stream);
+  }
+
+  //! @brief Returns a \c execution::scheduler that enqueues work on this stream.
+  auto get_scheduler() const noexcept -> stream_ref
+  {
+    return *this;
   }
 
 private:

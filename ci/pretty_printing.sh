@@ -1,3 +1,5 @@
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Print "ARG=${ARG}" for all args.
 function print_var_values() {
     # Iterate through the arguments
@@ -70,8 +72,14 @@ function run_command() {
     echo "Running command: ${command[*]}"
     set +e
     local start_time=$(date +%s)
-    "${command[@]}"
-    status=$?
+    # If RUN_COMMAND_RETRY_PARAMS is set to "<retries> <sleep_time>", use retry.sh to run the command:
+    if [[ -n "${RUN_COMMAND_RETRY_PARAMS:-}" ]]; then
+        status=0
+        "$ci_dir/util/retry.sh" $RUN_COMMAND_RETRY_PARAMS "${command[@]}" || status=$?
+    else
+        status=0
+        "${command[@]}" || status=$?
+    fi
     local end_time=$(date +%s)
     set -e
     local duration=$((end_time - start_time))

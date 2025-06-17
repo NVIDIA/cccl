@@ -33,8 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
-__cccl_str_find(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
+_CCCL_API constexpr _SizeT __cccl_str_find(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
   if (__pos >= __sz)
   {
@@ -49,7 +48,7 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexce
 }
 
 template <class _CharT, class _Traits>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const _CharT*
+_CCCL_API constexpr const _CharT*
 __cccl_search_substring(const _CharT* __first1, const _CharT* __last1, const _CharT* __first2, const _CharT* __last2)
 {
   // Take advantage of knowing source and pattern lengths.
@@ -99,7 +98,7 @@ __cccl_search_substring(const _CharT* __first1, const _CharT* __last1, const _Ch
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_find(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
   if (__pos > __sz)
@@ -122,8 +121,7 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos,
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
-__cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
+_CCCL_API constexpr _SizeT __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
   if (__sz < 1)
   {
@@ -148,7 +146,7 @@ __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexc
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
   __pos = _CUDA_VSTD::min(__pos, __sz);
@@ -170,7 +168,7 @@ __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_find_first_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
   if (__pos >= __sz || __n == 0)
@@ -186,7 +184,7 @@ __cccl_str_find_first_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Siz
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
   if (__n == 0)
@@ -212,7 +210,7 @@ __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Size
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
   if (__pos >= __sz)
@@ -231,7 +229,7 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, 
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
   if (__pos < __sz)
@@ -249,7 +247,7 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT 
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
+_CCCL_API constexpr _SizeT
 __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
   if (__pos < __sz)
@@ -271,8 +269,7 @@ __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
-__cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
+_CCCL_API constexpr _SizeT __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
   if (__pos < __sz)
   {
