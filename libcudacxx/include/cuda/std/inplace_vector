@@ -1113,8 +1113,15 @@ public:
   }
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  using __base::empty;
-  using __base::size;
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  {
+    return __base::empty();
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  {
+    return __base::size();
+  }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
   {
