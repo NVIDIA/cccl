@@ -28,8 +28,8 @@ __host__ __device__ constexpr void test()
     static_assert(noexcept(context.begin()));
   }
   {
-    cuda::std::basic_string_view view{fmt};
-    cuda::std::basic_format_parse_context context(view);
+    cuda::std::basic_string_view<CharT> view{fmt};
+    cuda::std::basic_format_parse_context<CharT> context(view);
     assert(context.begin() == view.begin());
     static_assert(noexcept(context.begin()));
   }

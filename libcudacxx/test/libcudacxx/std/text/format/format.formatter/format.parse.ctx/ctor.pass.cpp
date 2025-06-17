@@ -44,8 +44,8 @@ __host__ __device__ constexpr void test()
     assert(cuda::std::to_address(context.end()) == &fmt[3]);
   }
   {
-    cuda::std::basic_string_view view{fmt};
-    cuda::std::basic_format_parse_context context(view);
+    cuda::std::basic_string_view<CharT> view{fmt};
+    cuda::std::basic_format_parse_context<CharT> context(view);
     assert(context.begin() == view.begin());
     assert(context.end() == view.end());
   }
