@@ -50,6 +50,7 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/forward_like.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -402,10 +403,12 @@ struct __fn
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND sized_range<_RawRange>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const noexcept(noexcept(views::repeat(
-    *__range.__value_, _CUDA_VSTD::min<_Dist>(ranges::distance(__range), _CUDA_VSTD::forward<_Np>(__n))))) -> _RawRange
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
+    noexcept(noexcept(views::repeat(_CUDA_VSTD::forward_like<_Range>(*__range.__value_),
+                                    _CUDA_VSTD::min<_Dist>(ranges::distance(__range), _CUDA_VSTD::forward<_Np>(__n)))))
+      -> _RawRange
   {
-    return views::repeat(*__range.__value_,
+    return views::repeat(_CUDA_VSTD::forward_like<_Range>(*__range.__value_),
                          _CUDA_VSTD::min<_Dist>(ranges::distance(__range), _CUDA_VSTD::forward<_Np>(__n)));
   }
 
@@ -415,10 +418,10 @@ struct __fn
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND(!sized_range<_RawRange>))
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
-    noexcept(noexcept(views::repeat(*__range.__value_, static_cast<_Dist>(__n))))
+    noexcept(noexcept(views::repeat(_CUDA_VSTD::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n))))
       -> repeat_view<range_value_t<_RawRange>, _Dist>
   {
-    return views::repeat(*__range.__value_, static_cast<_Dist>(__n));
+    return views::repeat(_CUDA_VSTD::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n));
   }
 
   // [range.take.overview]: the `iota_view` case.
