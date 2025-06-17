@@ -114,8 +114,8 @@ public:
       return static_cast<result_type>(__e_() & __mask0_);
     }
 
-    const size_t __w_rt = numeric_limits<result_type>::digits;
-    result_type __sp    = 0;
+    constexpr size_t __w_rt = numeric_limits<result_type>::digits;
+    result_type __sp        = 0;
     for (size_t __k = 0; __k < __n0_; ++__k)
     {
       _Engine_result_type __u;
@@ -133,6 +133,7 @@ public:
       }
       __sp += __u & __mask0_;
     }
+
     for (size_t __k = __n0_; __k < __n_; ++__k)
     {
       _Engine_result_type __u;
@@ -171,7 +172,7 @@ public:
   public:
     using distribution_type = uniform_int_distribution;
 
-    _CCCL_API explicit param_type(result_type __a = 0, result_type __b = (numeric_limits<result_type>::max)())
+    _CCCL_API explicit param_type(result_type __a = 0, result_type __b = (numeric_limits<result_type>::max)()) noexcept
         : __a_(__a)
         , __b_(__b)
     {}
@@ -200,16 +201,17 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API uniform_int_distribution()
+  _CCCL_API uniform_int_distribution() noexcept
       : uniform_int_distribution(0)
   {}
-  _CCCL_API explicit uniform_int_distribution(result_type __a, result_type __b = (numeric_limits<result_type>::max)())
+  _CCCL_API explicit uniform_int_distribution(result_type __a,
+                                              result_type __b = (numeric_limits<result_type>::max)()) noexcept
       : __p_(param_type(__a, __b))
   {}
-  _CCCL_API explicit uniform_int_distribution(const param_type& __p)
+  _CCCL_API explicit uniform_int_distribution(const param_type& __p) noexcept
       : __p_(__p)
   {}
-  _CCCL_API void reset() {}
+  _CCCL_API void reset() noexcept {}
 
   // generating functions
   template <class _URng>
@@ -228,23 +230,27 @@ public:
     {
       return __p.a();
     }
-    const size_t __dt = numeric_limits<_UIntType>::digits;
-    using _Eng        = __independent_bits_engine<_URng, _UIntType>;
+    constexpr size_t __dt = numeric_limits<_UIntType>::digits;
+
+    using _Eng = __independent_bits_engine<_URng, _UIntType>;
     if (__rp == 0)
     {
       return static_cast<result_type>(_Eng(__g, __dt)());
     }
+
     size_t __w = __dt - _CUDA_VSTD::countl_zero(__rp) - 1;
     if ((__rp & ((numeric_limits<_UIntType>::max)() >> (__dt - __w))) != 0)
     {
       ++__w;
     }
+
     _Eng __e(__g, __w);
     _UIntType __u;
     do
     {
       __u = __e();
     } while (__u >= __rp);
+
     return static_cast<result_type>(__u + __p.a());
   }
 
