@@ -107,7 +107,7 @@ using index_types =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if TEST_INT128()
+#  if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
@@ -120,7 +120,7 @@ using index_types_dynamic =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if TEST_INT128()
+#  if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
