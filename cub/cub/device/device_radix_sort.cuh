@@ -124,7 +124,7 @@ CUB_NAMESPACE_BEGIN
 //! Stability
 //! --------------------------------------------------
 //!
-//! DeviceRadixSort is stable. For floating-point types, `-0.0` and `+0.0` are
+//! DeviceRadixSort is stable. For floating-point types, ``-0.0`` and ``+0.0`` are
 //! considered equal and appear in the result in the same order as they appear in
 //! the input.
 //!
@@ -257,8 +257,9 @@ public:
   //! Snippet
   //! --------------------------------------------------
   //!
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
   //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
@@ -289,7 +290,6 @@ public:
   //! // d_keys_out            <-- [0, 3, 5, 6, 7, 8, 9]
   //! // d_values_out          <-- [5, 4, 3, 1, 2, 0, 6]
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -301,12 +301,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -330,7 +330,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., sizeof(unsigned int) * 8)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -356,8 +356,8 @@ public:
     //      assert that the key type is fundamental.
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -397,7 +397,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -438,12 +438,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -473,7 +473,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -505,8 +505,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -545,7 +545,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -586,12 +586,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -643,8 +643,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -692,9 +692,10 @@ public:
   //! Snippet
   //! --------------------------------------------------
   //!
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
+  //!
   //! @code
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -729,7 +730,6 @@ public:
   //! // d_values.Current()    <-- [5, 4, 3, 1, 2, 0, 6]
   //!
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -741,11 +741,11 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -766,7 +766,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -818,7 +818,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -859,12 +859,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -953,7 +953,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -994,12 +994,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1026,7 +1026,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1096,9 +1096,10 @@ public:
   //! Snippet
   //! --------------------------------------------------
   //!
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
+  //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -1130,7 +1131,6 @@ public:
   //! // d_keys_out            <-- [9, 8, 7, 6, 5, 3, 0]
   //! // d_values_out          <-- [6, 0, 2, 1, 3, 4, 5]
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -1142,12 +1142,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1171,7 +1171,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1195,8 +1195,8 @@ public:
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -1228,7 +1228,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1269,12 +1269,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1304,7 +1304,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1338,8 +1338,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -1378,7 +1378,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1419,12 +1419,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1478,8 +1478,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -1527,9 +1527,10 @@ public:
   //! Snippet
   //! --------------------------------------------------
   //!
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
+  //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -1563,7 +1564,6 @@ public:
   //! // d_keys.Current()      <-- [9, 8, 7, 6, 5, 3, 0]
   //! // d_values.Current()    <-- [6, 0, 2, 1, 3, 4, 5]
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -1575,12 +1575,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1601,7 +1601,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1653,7 +1653,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1694,12 +1694,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1789,7 +1789,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1830,12 +1830,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1862,7 +1862,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1936,8 +1936,9 @@ public:
   //! --------------------------------------------------
   //!
   //! The code snippet below illustrates the sorting of a device vector of
-  //! `int` keys.
-  //! @par
+  //! ``int`` keys.
+  //! @endrst
+  //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -1964,7 +1965,6 @@ public:
   //!
   //! // d_keys_out            <-- [0, 3, 5, 6, 7, 8, 9]
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -1976,12 +1976,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1998,7 +1998,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2020,8 +2020,8 @@ public:
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -2060,7 +2060,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2098,12 +2098,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2126,7 +2126,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2157,8 +2157,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -2198,7 +2198,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2236,12 +2236,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2285,8 +2285,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -2307,7 +2307,6 @@ public:
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
   //!
-  //! @par
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -2329,11 +2328,12 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! The code snippet below illustrates the sorting of a device vector of
-  //! `int` keys.
-  //! @par
+  //! ``int`` keys.
+  //! @endrst
+  //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -2363,7 +2363,6 @@ public:
   //!
   //! // d_keys.Current()      <-- [0, 3, 5, 6, 7, 8, 9]
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -2372,12 +2371,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -2393,7 +2392,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2443,7 +2442,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2481,12 +2480,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -2566,7 +2565,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2604,12 +2603,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -2631,7 +2630,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2688,7 +2687,7 @@ public:
   //!   - ``[d_keys_in,    d_keys_in    + num_items)``
   //!   - ``[d_keys_out,   d_keys_out   + num_items)``
   //!
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageNP For sorting using only ``O(P)`` temporary storage, see
@@ -2699,8 +2698,9 @@ public:
   //! --------------------------------------------------
   //!
   //! The code snippet below illustrates the sorting of a device vector of
-  //! `int` keys.
-  //! @par
+  //! ``int`` keys.
+  //! @endrst
+  //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -2729,9 +2729,7 @@ public:
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
   //!
   //! // d_keys_out            <-- [9, 8, 7, 6, 5, 3, 0]s
-  //!
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -2740,12 +2738,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2762,7 +2760,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2784,8 +2782,8 @@ public:
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -2815,7 +2813,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2853,12 +2851,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2881,7 +2879,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2913,8 +2911,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -2951,7 +2949,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2989,12 +2987,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -3039,8 +3037,8 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -3085,7 +3083,8 @@ public:
   //! --------------------------------------------------
   //!
   //! The code snippet below illustrates the sorting of a device vector of ``int`` keys.
-  //! @par
+  //! @endrst
+  //!
   //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -3115,7 +3114,6 @@ public:
   //!
   //! // d_keys.Current()      <-- [9, 8, 7, 6, 5, 3, 0]
   //! @endcode
-  //! @endrst
   //!
   //! @tparam KeyT
   //!   **[inferred]** KeyT type
@@ -3124,12 +3122,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -3145,7 +3143,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -3195,7 +3193,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -3233,12 +3231,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -3319,7 +3317,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -3357,12 +3355,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -3384,7 +3382,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
