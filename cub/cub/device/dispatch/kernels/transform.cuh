@@ -203,9 +203,9 @@ _CCCL_DEVICE void transform_kernel_impl(
                                  // 16-byte aligned by default.
 
   constexpr int block_threads = MemcpyAsyncPolicy::block_threads;
-  const int tile_stride       = block_threads * num_elem_per_thread;
-  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size         = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
+  const int tile_size         = block_threads * num_elem_per_thread;
+  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
   auto group                       = cooperative_groups::this_thread_block();
   [[maybe_unused]] int smem_offset = 0;
@@ -223,7 +223,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % memcpy_async_alignment == 0, "");
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % memcpy_async_alignment == 0, "");
     const int bytes_to_copy = round_up_to_po2_multiple(
-      aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size, memcpy_async_size_multiple);
+      aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * valid_items, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
     cooperative_groups::memcpy_async(
       group, dst, src, ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<size_t>(bytes_to_copy)});
@@ -239,10 +239,10 @@ _CCCL_DEVICE void transform_kernel_impl(
     // rather want to just do an unrolled loop here.
     smem_offset  = round_up_to_po2_multiple(smem_offset, int{alignof(T)});
     const T* src = aligned_ptr.ptr_to_elements() + offset;
-    auto dst     = reinterpret_cast<T*>(smem + smem_offset);
+    T* dst       = reinterpret_cast<T*>(smem + smem_offset);
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-    const int bytes_to_copy = int{sizeof(T)} * tile_size;
+    const int bytes_to_copy = int{sizeof(T)} * valid_items;
     smem_offset += bytes_to_copy;
     cooperative_groups::memcpy_async(group, dst, src, bytes_to_copy);
 
@@ -258,7 +258,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
-  // TODO(bgruber): fbusato suggests to move the tile_size and smem_base_ptrs by threadIdx.x before the loop below
+  // TODO(bgruber): fbusato suggests to move the valid_items and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
     // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
@@ -266,7 +266,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_threads + threadIdx.x;
-      if (full_tile || idx < tile_size)
+      if (full_tile || idx < valid_items)
       {
         out[idx] = ::cuda::std::apply(
           [&](const auto* __restrict__... smem_base_ptrs) {
@@ -278,7 +278,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   };
 
   // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
-  if (tile_stride == tile_size)
+  if (tile_size == valid_items)
   {
     process_tile(::cuda::std::true_type{});
   }
