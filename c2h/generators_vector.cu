@@ -16,48 +16,41 @@
 namespace c2h
 {
 
-template <typename T, int VecItem>
-struct random_to_vec_item_t;
+template <typename T, int VecSize>
+struct random_to_vec_item_t
+{
+  __device__ void operator()(std::size_t idx)
+  {
+#define SET_FIELD(VEC_FIELD) \
+  m_out[idx].VEC_FIELD = random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(m_in[idx]);
 
-#define RANDOM_TO_VEC_ITEM_SPEC(VEC_ITEM, VEC_FIELD)                               \
-  template <typename T>                                                            \
-  struct random_to_vec_item_t<T, VEC_ITEM>                                         \
-  {                                                                                \
-    __device__ void operator()(std::size_t idx)                                    \
-    {                                                                              \
-      auto min             = m_min.VEC_FIELD;                                      \
-      auto max             = m_max.VEC_FIELD;                                      \
-      m_out[idx].VEC_FIELD = random_to_item_t<decltype(min)>(min, max)(m_in[idx]); \
-    }                                                                              \
-    random_to_vec_item_t(T min, T max, float* in, T* out)                          \
-        : m_min(min)                                                               \
-        , m_max(max)                                                               \
-        , m_in(in)                                                                 \
-        , m_out(out)                                                               \
-    {}                                                                             \
-    T m_min;                                                                       \
-    T m_max;                                                                       \
-    float* m_in{};                                                                 \
-    T* m_out{};                                                                    \
+    if constexpr (VecSize >= 4)
+    {
+      SET_FIELD(w);
+    }
+    if constexpr (VecSize >= 3)
+    {
+      SET_FIELD(z);
+    }
+    if constexpr (VecSize >= 2)
+    {
+      SET_FIELD(y);
+    }
+    if constexpr (VecSize >= 1)
+    {
+      SET_FIELD(x);
+    }
+#undef SET_FIELD
   }
 
-RANDOM_TO_VEC_ITEM_SPEC(0, x);
-RANDOM_TO_VEC_ITEM_SPEC(1, y);
-RANDOM_TO_VEC_ITEM_SPEC(2, z);
-RANDOM_TO_VEC_ITEM_SPEC(3, w);
-#undef RANDOM_TO_VEC_ITEM_SPEC
-
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-template <typename T, int VecItem>
-struct vec_gen_helper_t;
-
-template <typename T>
-struct vec_gen_helper_t<T, -1>
-{
-  static void gen(c2h::device_vector<T>&, T, T) {}
+  T m_min;
+  T m_max;
+  float* m_in{};
+  T* m_out{};
 };
 
-template <typename T, int VecItem>
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <typename T, int VecSize>
 struct vec_gen_helper_t
 {
   static void gen(c2h::device_vector<T>& data, T min, T max)
@@ -71,9 +64,7 @@ struct vec_gen_helper_t
 
     generator.generate();
 
-    thrust::for_each(c2h::device_policy, cnt_begin, cnt_end, random_to_vec_item_t<T, VecItem>{min, max, d_in, d_out});
-
-    vec_gen_helper_t<T, VecItem - 1>::gen(data, min, max);
+    thrust::for_each(c2h::device_policy, cnt_begin, cnt_end, random_to_vec_item_t<T, VecSize>{min, max, d_in, d_out});
   }
 };
 
@@ -83,7 +74,7 @@ struct vec_gen_helper_t
     {                                                                                                        \
       generator_t& generator = generator_t::instance();                                                      \
       generator.prepare_random_generator(seed, data.size());                                                 \
-      vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
+      vec_gen_helper_t<TYPE##SIZE, SIZE>::gen(data, min, max);                                               \
     }
 
 VEC_SPECIALIZATION(char, 2);
