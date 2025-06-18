@@ -24,6 +24,7 @@
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/discard_iterator.h>
+#include <cuda/__iterator/permutation_iterator.h>
 #include <cuda/__iterator/strided_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
