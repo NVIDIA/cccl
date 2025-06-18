@@ -216,13 +216,13 @@ _CCCL_DEVICE void transform_kernel_impl(
     // for types with larger alignment
     if constexpr (alignof(T) > memcpy_async_alignment)
     {
-      smem_offset = round_up_to_po2_multiple(smem_offset, int{alignof(T)});
+      smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
     }
     const char* const src = aligned_ptr.ptr + offset * sizeof(T);
     char* const dst       = smem + smem_offset;
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % memcpy_async_alignment == 0, "");
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % memcpy_async_alignment == 0, "");
-    const int bytes_to_copy = round_up_to_po2_multiple(
+    const int bytes_to_copy = ::cuda::round_up(
       aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * valid_items, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
     cooperative_groups::memcpy_async(
@@ -237,7 +237,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     using T = typename decltype(aligned_ptr)::value_type;
     // TODO(ahendriksen): the codegen for memcpy_async for char and short is really verbose (300 instructions). we may
     // rather want to just do an unrolled loop here.
-    smem_offset  = round_up_to_po2_multiple(smem_offset, int{alignof(T)});
+    smem_offset  = ::cuda::round_up(smem_offset, int{alignof(T)});
     const T* src = aligned_ptr.ptr_to_elements() + offset;
     T* dst       = reinterpret_cast<T*>(smem + smem_offset);
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
@@ -335,7 +335,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
 
         // TODO(bgruber): we could precompute bytes_to_copy on the host
-        const int bytes_to_copy = round_up_to_po2_multiple(
+        const int bytes_to_copy = ::cuda::round_up(
           aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
 
         ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);

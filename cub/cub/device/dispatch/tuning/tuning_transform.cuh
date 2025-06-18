@@ -43,6 +43,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/cmath>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
@@ -91,14 +92,6 @@ struct async_copy_policy_t
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
-// mult must be a power of 2
-template <typename Integral>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
-{
-  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
-  return (x + mult - 1) & ~(mult - 1);
-}
-
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
@@ -113,7 +106,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) 
 {
   int smem_size                    = 0;
   [[maybe_unused]] auto count_smem = [&](int size, int alignment) {
-    smem_size = round_up_to_po2_multiple(smem_size, alignment);
+    smem_size = ::cuda::round_up(smem_size, alignment);
     // max aligned_base_ptr head_padding + max padding after == 16
     smem_size += size * tile_size + memcpy_async_alignment;
   };
@@ -132,7 +125,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int ptx_version) -> int
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
 {
-  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
+  return ::cuda::round_up(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
        // 128 bytes of padding for each input tile (handles before + after)
        + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
