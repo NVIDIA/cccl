@@ -258,24 +258,25 @@ _CCCL_DEVICE void transform_kernel_impl(
   {
     // vector path
     auto output_vec = reinterpret_cast<const load_store_t*>(output.data());
-    auto out_vec    = reinterpret_cast<load_store_t*>(out);
+    auto out_vec    = reinterpret_cast<load_store_t*>(out) + threadIdx.x;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
-      out_vec[i * VectorizedPolicy::block_threads + threadIdx.x] = output_vec[i];
+      out_vec[i * VectorizedPolicy::block_threads] = output_vec[i];
     }
   }
   else
   {
     // serial path
+    constexpr int elems = load_store_size / input_type_size;
+    out += threadIdx.x * elems;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
-      constexpr int elems = load_store_size / input_type_size;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < elems; ++j)
       {
-        out[(i * VectorizedPolicy::block_threads + threadIdx.x) * elems + j] = output[i * elems + j];
+        out[i * elems * VectorizedPolicy::block_threads + j] = output[i * elems + j];
       }
     }
   }

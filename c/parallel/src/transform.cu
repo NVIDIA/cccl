@@ -108,8 +108,8 @@ struct transform_runtime_tuning_policy
 
 transform_runtime_tuning_policy get_policy(int sm_arch)
 {
-  const int load_store_word_size = 8; // TODO(bgruber): should be fused with the constant in CUB
-  const int value_type_size      = 4; // FIXME(bgruber): this should be derived from the value types of the iterators
+  constexpr int load_store_word_size = 8; // TODO(bgruber): should be fused with the constant in CUB
+  constexpr int value_type_size = 4; // FIXME(bgruber): this should be derived from the value types of the iterators
   constexpr int target_bytes_per_thread = 32; // TODO(bgruber): should be fused with the constant in CUB
   return {
     .min_bif                     = cub::detail::transform::arch_to_min_bytes_in_flight(sm_arch),
