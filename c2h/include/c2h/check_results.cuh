@@ -40,8 +40,8 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, 0.01));
-      REQUIRE_THAT(expected_data[i].y, Catch::Matchers::WithinRel(test_results[i].y, 0.01));
+      REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, T{0.01}));
+      REQUIRE_THAT(expected_data[i].y, Catch::Matchers::WithinRel(test_results[i].y, T{0.01}));
     }
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat162> || cuda::std::is_same_v<T, __half2>)
