@@ -187,6 +187,83 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
   return aligned_base_ptr<T>{base_ptr, static_cast<int>(reinterpret_cast<const char*>(ptr) - base_ptr)};
 }
 
+// this is a simplified version from the cooperative groups implementation. src and dst must be aligned to 16 bytes.
+template <int BlockThreads>
+_CG_STATIC_QUALIFIER void
+memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy)
+{
+  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % 16 == 0, "");
+  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % 16 == 0, "");
+  _CCCL_ASSERT(bytes_to_copy % 16 == 0, "");
+
+  // printf("thread %u block %u memcpy_async_16: %p -> %p, bytes_to_copy = %d\n",
+  //        threadIdx.x,
+  //        blockIdx.x,
+  //        src,
+  //        dst,
+  //        (int) bytes_to_copy);
+
+  // Efficient copies require warps to operate on the same amount of work at each step.
+  // remainders are handled in a separate stage to prevent branching
+  const unsigned int subWarpMask   = (BlockThreads - 1);
+  const unsigned int subwarpCopies = (subWarpMask & (bytes_to_copy / 16));
+
+  const unsigned int warpCopies = ((bytes_to_copy / 16) & (~subWarpMask));
+
+  const unsigned int stride = BlockThreads;
+  const unsigned int rank   = threadIdx.x;
+
+  for (size_t idx = 0; idx < warpCopies; idx += stride)
+  {
+    size_t _srcIdx = rank + idx;
+    size_t _dstIdx = rank + idx;
+    __pipeline_memcpy_async((char*) dst + _dstIdx * 16, (const char*) src + _srcIdx * 16, 16);
+  }
+
+  if (subwarpCopies)
+  {
+    const unsigned int maxSubwarpRank = min(threadIdx.x, subwarpCopies - 1); // TODO(bgruber): this causes a lot of
+                                                                             // duplicated copies with the same src and
+                                                                             // dst
+    size_t _srcIdx = warpCopies + maxSubwarpRank;
+    size_t _dstIdx = warpCopies + maxSubwarpRank;
+    __pipeline_memcpy_async((char*) dst + _dstIdx * 16, (const char*) src + _srcIdx * 16, 16);
+  }
+
+  __pipeline_commit();
+}
+
+// This is a simplified version from the cooperative groups implementation. Only dst must be aligned to 16 bytes.
+template <int BlockThreads>
+_CG_STATIC_QUALIFIER void memcpy_async_unaligned(
+  void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy, int head_padding)
+{
+  const char* src_ptr = static_cast<const char*>(src);
+  char* dst_ptr       = static_cast<char*>(dst);
+
+  const unsigned int head_bytes = (16 - head_padding) % 16;
+  const unsigned int tail_bytes = (bytes_to_copy - head_bytes) % 16;
+
+  // pipeline the async copies before loading the head and tail elements
+  const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
+  if (aligned_bytes_to_copy)
+  {
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % 16 == 0, "");
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % 16 == 0, "");
+    _CCCL_ASSERT(aligned_bytes_to_copy % 16 == 0, "");
+    memcpy_async_16<BlockThreads>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
+  }
+
+  if (threadIdx.x < head_bytes)
+  {
+    dst_ptr[threadIdx.x] = src_ptr[threadIdx.x];
+  }
+  if (threadIdx.x < tail_bytes)
+  {
+    dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = src_ptr[bytes_to_copy - tail_bytes + threadIdx.x];
+  }
+}
+
 template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
@@ -225,9 +302,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     const int bytes_to_copy =
       ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
-    cooperative_groups::memcpy_async(
-      group, dst, src, ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<size_t>(bytes_to_copy)});
-
+    memcpy_async_16<block_threads>(dst, src, bytes_to_copy);
     const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
     return reinterpret_cast<const T*>(dst_start_of_data);
@@ -235,16 +310,30 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   auto copy_and_return_smem_dst_fallback = [&](auto aligned_ptr) {
     using T = typename decltype(aligned_ptr)::value_type;
-    // TODO(ahendriksen): the codegen for memcpy_async for char and short is really verbose (300 instructions). we may
-    // rather want to just do an unrolled loop here.
-    smem_offset  = ::cuda::round_up(smem_offset, int{alignof(T)});
+    // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
+    // for types with larger alignment
+    if constexpr (alignof(T) > memcpy_async_alignment)
+    {
+      smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
+    }
+    else if constexpr (alignof(T) < memcpy_async_alignment)
+    {
+      smem_offset += aligned_ptr.head_padding;
+    }
     const T* src = aligned_ptr.ptr_to_elements() + offset;
     T* dst       = reinterpret_cast<T*>(smem + smem_offset);
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % alignof(T) == 0, "");
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % alignof(T) == 0, "");
     const int bytes_to_copy = int{sizeof(T)} * valid_items;
-    smem_offset += bytes_to_copy;
-    cooperative_groups::memcpy_async(group, dst, src, bytes_to_copy);
+    memcpy_async_unaligned<block_threads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
+    if (tile_size == valid_items)
+    {
+      smem_offset += bytes_to_copy; // full tiles will retain alignment
+    }
+    else
+    {
+      smem_offset += ::cuda::round_up(bytes_to_copy, memcpy_async_size_multiple);
+    }
 
     return dst;
   };
@@ -253,7 +342,8 @@ _CCCL_DEVICE void transform_kernel_impl(
   const bool inner_blocks               = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst(aligned_ptrs) : copy_and_return_smem_dst_fallback(aligned_ptrs))...};
-  cooperative_groups::wait(group);
+  __pipeline_wait_prior(0);
+  __syncthreads();
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
