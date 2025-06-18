@@ -109,7 +109,7 @@
 
 // We need to treat host and device separately
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
+#  define _CCCL_GLOBAL_CONSTANT constexpr
 #else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
       // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 #  define _CCCL_GLOBAL_CONSTANT inline constexpr
