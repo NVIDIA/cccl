@@ -282,6 +282,9 @@ template<class T> complex<T> tanh (const complex<T>&);
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
+struct __get_complex_impl;
+
+template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 {
   _Tp __re_;
