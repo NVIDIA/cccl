@@ -172,8 +172,11 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename T, typename U>
-using larger_t = ::cuda::std::conditional_t<(sizeof(T) > sizeof(U)), T, U>;
+template <typename T>
+inline constexpr size_t size_of = sizeof(T);
+
+template <>
+inline constexpr size_t size_of<void> = 0;
 
 template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
 _CCCL_DEVICE void transform_kernel_impl(
@@ -211,25 +214,30 @@ _CCCL_DEVICE void transform_kernel_impl(
     out += offset;
   }
 
-  constexpr int load_store_word_size = VectorizedPolicy::load_store_word_size;
-  using load_store_t                 = decltype(load_store_type<load_store_word_size>());
+  constexpr int load_store_size  = VectorizedPolicy::load_store_word_size;
+  using load_store_t             = decltype(load_store_type<load_store_size>());
+  using result_t                 = ::cuda::std::invoke_result_t<F, InputT...>;
+  using output_t                 = it_value_t<RandomAccessIteratorOut>;
+  constexpr int input_type_size  = int{first_item(sizeof(InputT)...)};
+  constexpr int load_store_count = (items_per_thread * input_type_size) / load_store_size;
+  static_assert((items_per_thread * input_type_size) % load_store_size == 0);
+  static_assert(load_store_size % input_type_size == 0);
 
-  using output_t = it_value_t<RandomAccessIteratorOut>;
-  ::cuda::std::array<output_t, items_per_thread> output;
+  constexpr bool can_vectorize_store =
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && size_of<output_t> == input_type_size;
+
+  // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
+  ::cuda::std::array<::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>, items_per_thread> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
-    // TODO(bgruber): we could support fancy iterators for loading here
-    [[maybe_unused]] auto load_tile_vectorized = [&](auto in, auto& input) {
-      using input_t = it_value_t<decltype(in)>;
-      static_assert((items_per_thread * sizeof(input_t)) % load_store_word_size == 0);
-      constexpr int loads = (items_per_thread * sizeof(input_t)) / load_store_word_size;
-
-      using load_t   = larger_t<load_store_t, input_t>;
-      auto in_vec    = reinterpret_cast<const load_t*>(in);
-      auto input_vec = reinterpret_cast<load_t*>(input.data());
+    // TODO(bgruber): we could support fancy iterators for loading here as well (and only vectorize some inputs)
+    [[maybe_unused]] auto load_tile_vectorized = [&](auto* in, auto& input) {
+      auto in_vec    = reinterpret_cast<const load_store_t*>(in);
+      auto input_vec = reinterpret_cast<load_store_t*>(input.data());
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < loads; ++i)
+      for (int i = 0; i < load_store_count; ++i)
       {
         input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
       }
@@ -246,19 +254,13 @@ _CCCL_DEVICE void transform_kernel_impl(
   provide_array(::cuda::std::array<InputT, items_per_thread>{}...);
 
   // write output
-  static_assert((items_per_thread * sizeof(output_t)) % load_store_word_size == 0);
-  constexpr int stores = (items_per_thread * sizeof(output_t)) / load_store_word_size;
-  using store_t        = larger_t<load_store_t, output_t>;
-
-  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-                && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorOut>>)
+  if constexpr (can_vectorize_store)
   {
     // vector path
-    auto output_vec = reinterpret_cast<const store_t*>(output.data());
-    auto out_vec    = reinterpret_cast<store_t*>(out);
-
+    auto output_vec = reinterpret_cast<const load_store_t*>(output.data());
+    auto out_vec    = reinterpret_cast<load_store_t*>(out);
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < stores; ++i)
+    for (int i = 0; i < load_store_count; ++i)
     {
       out_vec[i * VectorizedPolicy::block_threads + threadIdx.x] = output_vec[i];
     }
@@ -267,10 +269,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   {
     // serial path
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < stores; ++i)
+    for (int i = 0; i < load_store_count; ++i)
     {
-      constexpr int elems = sizeof(store_t) / sizeof(output_t);
-      static_assert(sizeof(store_t) % sizeof(output_t) == 0);
+      constexpr int elems = load_store_size / input_type_size;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < elems; ++j)
       {
