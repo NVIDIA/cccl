@@ -89,7 +89,7 @@ struct build_traits
 };
 
 template <typename Build>
-struct build_traits<Build, std::void_t<decltype(Build::should_check_sass())>>
+struct build_traits<Build, std::void_t<decltype(Build::should_check_sass(0))>>
 {
   static bool should_check_sass(int cc_major)
   {
