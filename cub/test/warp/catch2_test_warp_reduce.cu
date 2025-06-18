@@ -159,7 +159,19 @@ void warp_reduce_multiple_items_launch(c2h::device_vector<T>& input, c2h::device
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
-using full_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t, custom_t, ulonglong4, uchar3, short2>;
+using full_type_list =
+  c2h::type_list<uint8_t,
+                 uint16_t,
+                 int32_t,
+                 int64_t,
+                 custom_t,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+                 uchar3,
+                 short2>;
 
 using builtin_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t>;
 
