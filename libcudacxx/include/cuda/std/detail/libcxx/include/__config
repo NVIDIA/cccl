@@ -213,17 +213,6 @@ extern "C++" {
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) static_assert(true, "")
 #  endif
 
-// Older nvcc do not handle the constraint of `construct_at` in earlier std modes
-// So to preserve our performance optimization we default to the unconstrained
-// `__construct_at` and only in C++20 use `construct_at`
-#  if _CCCL_STD_VER > 2017
-#    define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
-      _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
-#  else
-#    define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
-#  endif
-
 // We can only expose constexpr allocations if the compiler supports it
 // For now disable constexpr allocation support until we can actually use
 #  if 0 && defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) \

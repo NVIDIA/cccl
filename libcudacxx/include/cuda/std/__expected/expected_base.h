@@ -455,7 +455,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
   {
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
-    _LIBCUDACXX_CONSTRUCT_AT(__newval, _CUDA_VSTD::forward<_Args>(__args)...);
+    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__newval), _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -466,7 +466,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   {
     _T1 __tmp(_CUDA_VSTD::forward<_Args>(__args)...);
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
-    _LIBCUDACXX_CONSTRUCT_AT(__newval, _CUDA_VSTD::move(__tmp));
+    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__newval), _CUDA_VSTD::move(__tmp));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -482,9 +482,9 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _T2 __tmp(_CUDA_VSTD::move(__oldval));
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
     auto __trans = _CUDA_VSTD::__make_exception_guard([&] {
-      _LIBCUDACXX_CONSTRUCT_AT(__oldval, _CUDA_VSTD::move(__tmp));
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__oldval), _CUDA_VSTD::move(__tmp));
     });
-    _LIBCUDACXX_CONSTRUCT_AT(__newval, _CUDA_VSTD::forward<_Args>(__args)...);
+    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__newval), _CUDA_VSTD::forward<_Args>(__args)...);
     __trans.__complete();
   }
 
@@ -497,12 +497,13 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _Err __tmp(_CUDA_VSTD::move(__with_err.__union_.__unex_));
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
     auto __trans = _CUDA_VSTD::__make_exception_guard([&] {
-      _LIBCUDACXX_CONSTRUCT_AT(__with_err.__union_.__unex_, _CUDA_VSTD::move(__tmp));
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_), _CUDA_VSTD::move(__tmp));
     });
-    _LIBCUDACXX_CONSTRUCT_AT(__with_err.__union_.__val_, _CUDA_VSTD::move(__with_val.__union_.__val_));
+    _CUDA_VSTD::__construct_at(
+      _CUDA_VSTD::addressof(__with_err.__union_.__val_), _CUDA_VSTD::move(__with_val.__union_.__val_));
     __trans.__complete();
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_val.__union_.__val_));
-    _LIBCUDACXX_CONSTRUCT_AT(__with_val.__union_.__unex_, _CUDA_VSTD::move(__tmp));
+    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_val.__union_.__unex_), _CUDA_VSTD::move(__tmp));
     __with_val.__has_val_ = false;
     __with_err.__has_val_ = true;
   }
@@ -519,12 +520,13 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _Tp __tmp(_CUDA_VSTD::move(__with_val.__union_.__val_));
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_val.__union_.__val_));
     auto __trans = _CUDA_VSTD::__make_exception_guard([&] {
-      _LIBCUDACXX_CONSTRUCT_AT(__with_val.__union_.__val_, _CUDA_VSTD::move(__tmp));
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_val.__union_.__val_), _CUDA_VSTD::move(__tmp));
     });
-    _LIBCUDACXX_CONSTRUCT_AT(__with_val.__union_.__unex_, _CUDA_VSTD::move(__with_err.__union_.__unex_));
+    _CUDA_VSTD::__construct_at(
+      _CUDA_VSTD::addressof(__with_val.__union_.__unex_), _CUDA_VSTD::move(__with_err.__union_.__unex_));
     __trans.__complete();
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
-    _LIBCUDACXX_CONSTRUCT_AT(__with_err.__union_.__val_, _CUDA_VSTD::move(__tmp));
+    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_err.__union_.__val_), _CUDA_VSTD::move(__tmp));
     __with_val.__has_val_ = false;
     __with_err.__has_val_ = true;
   }
@@ -557,11 +559,11 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_
   {
     if (__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
     }
     else
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -610,11 +612,13 @@ struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_
   {
     if (__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
+      _CUDA_VSTD::__construct_at(
+        _CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
     }
     else
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      _CUDA_VSTD::__construct_at(
+        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -946,7 +950,8 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
     __expected_storage& __with_val,
     __expected_storage& __with_err) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Err))
   {
-    _LIBCUDACXX_CONSTRUCT_AT(__with_val.__union_.__unex_, _CUDA_VSTD::move(__with_err.__union_.__unex_));
+    _CUDA_VSTD::__construct_at(
+      _CUDA_VSTD::addressof(__with_val.__union_.__unex_), _CUDA_VSTD::move(__with_err.__union_.__unex_));
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
     __with_val.__has_val_ = false;
     __with_err.__has_val_ = true;
@@ -964,7 +969,7 @@ struct __expected_copy<void, _Err, __smf_availability::__available> : __expected
   {
     if (!__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -986,7 +991,8 @@ struct __expected_move<void, _Err, __smf_availability::__available> : __expected
   {
     if (!__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      _CUDA_VSTD::__construct_at(
+        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -1013,7 +1019,7 @@ struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __e
     }
     else if (this->__has_val_ && !__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
       this->__has_val_ = false;
     }
     else if (!this->__has_val_ && __other.__has_val_)
@@ -1050,7 +1056,8 @@ struct __expected_move_assign<void, _Err, __smf_availability::__available> : __e
     }
     else if (this->__has_val_ && !__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      _CUDA_VSTD::__construct_at(
+        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
       this->__has_val_ = false;
     }
     else if (!this->__has_val_ && __other.__has_val_)

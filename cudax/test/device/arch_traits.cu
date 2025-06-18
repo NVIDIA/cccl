@@ -46,6 +46,9 @@ template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<800
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<860>>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<890>>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<900>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1000>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1030>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1200>>();
 
 template <unsigned int Arch>
 void constexpr compare_static_and_dynamic()
@@ -105,11 +108,14 @@ C2H_CCCLRT_TEST("Traits", "[device]")
   compare_static_and_dynamic<860>();
   compare_static_and_dynamic<890>();
   compare_static_and_dynamic<900>();
+  compare_static_and_dynamic<1000>();
+  compare_static_and_dynamic<1030>();
+  compare_static_and_dynamic<1200>();
 
   // Compare arch traits with attributes
   for (const cudax::device& dev : cudax::devices)
   {
-    auto traits = dev.get_arch_traits();
+    auto traits = dev.arch_traits();
 
     CUDAX_REQUIRE(traits.max_threads_per_block == dev.attribute(cudax::device::attributes::max_threads_per_block));
     CUDAX_REQUIRE(traits.max_block_dim_x == dev.attribute(cudax::device::attributes::max_block_dim_x));

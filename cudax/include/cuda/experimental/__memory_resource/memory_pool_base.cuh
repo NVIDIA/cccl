@@ -272,12 +272,13 @@ public:
   //! @brief Gets the value of an attribute of the pool.
   //! @param __attribute the attribute to be set.
   //! @return The value of the attribute. For boolean attributes any value not equal to 0 equates to true.
-  size_t get_attribute(::cudaMemPoolAttr __attr) const
+  // TODO rename to configuration
+  size_t attribute(::cudaMemPoolAttr __attr) const
   {
     size_t __value = 0;
     _CCCL_TRY_CUDA_API(
       ::cudaMemPoolGetAttribute,
-      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::get_attribute ",
+      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::attribute ",
       __pool_handle_,
       __attr,
       static_cast<void*>(&__value));
@@ -288,6 +289,7 @@ public:
   //! @param __attribute the attribute to be set.
   //! @param __value the new value of that attribute.
   //! @note For boolean attributes any non-zero value equates to true.
+  // TODO: rename to set_configuration
   void set_attribute(::cudaMemPoolAttr __attr, size_t __value)
   {
     switch (__attr)

@@ -134,7 +134,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
       CUDAX_CHECK(buf.data() == old_input_ptr);
       CUDAX_CHECK(buf.size() == 42);
       CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
-      CUDAX_CHECK(buf.get_memory_resource() == other_resource);
+      CUDAX_CHECK(buf.memory_resource() == other_resource);
 
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
@@ -163,7 +163,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(buf.begin() == buf.data());
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
-    CUDAX_CHECK(buf.get_memory_resource() == resource);
+    CUDAX_CHECK(buf.memory_resource() == resource);
 
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value, "");
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value, "");
@@ -172,7 +172,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
     CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CUDAX_CHECK(cuda::std::as_const(buf).get_memory_resource() == resource);
+    CUDAX_CHECK(cuda::std::as_const(buf).memory_resource() == resource);
   }
 
   SECTION("properties")
@@ -299,7 +299,7 @@ C2H_TEST("uninitialized_buffer's memory resource does not dangle", "[container]"
 
     CHECK(test_device_memory_resource::count == 1);
 
-    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> dst_buffer{src_buffer.get_memory_resource(), 1024};
+    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> dst_buffer{src_buffer.memory_resource(), 1024};
 
     CHECK(test_device_memory_resource::count == 2);
 

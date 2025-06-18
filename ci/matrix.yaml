@@ -54,10 +54,10 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     # Python and c/parallel jobs:
-    - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: ['rtx2080', 'h100']}
     ## TODO: Python test jobs cannot be run on consumer cards unless the runners have at least
     ## the same version of CUDA as the build jobs (forward compatibility does not work on consumer cards).
-    - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: ['rtxa6000', 'h100']}
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
