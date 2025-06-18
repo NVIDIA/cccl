@@ -39,22 +39,22 @@ C2H_TEST("Green context", "[green_context]")
     {
       cudax::green_context green_ctx_dev0(cudax::devices[0]);
       cudax::stream stream_under_green_ctx(green_ctx_dev0);
-      CUDAX_REQUIRE(stream_under_green_ctx.get_device() == 0);
+      CUDAX_REQUIRE(stream_under_green_ctx.device() == 0);
       if (cudax::devices.size() > 1)
       {
         cudax::green_context green_ctx_dev1(cudax::devices[1]);
         cudax::stream stream_dev1(green_ctx_dev1);
-        CUDAX_REQUIRE(stream_dev1.get_device() == 1);
+        CUDAX_REQUIRE(stream_dev1.device() == 1);
       }
 
       INFO("Can create a side stream");
       {
-        auto ldev1 = stream_under_green_ctx.get_logical_device();
-        CUDAX_REQUIRE(ldev1.get_kind() == cudax::logical_device::kinds::green_context);
+        auto ldev1 = stream_under_green_ctx.logical_device();
+        CUDAX_REQUIRE(ldev1.kind() == cudax::logical_device::kinds::green_context);
         cudax::stream side_stream(ldev1);
-        CUDAX_REQUIRE(side_stream.get_device() == 0);
-        auto ldev2 = side_stream.get_logical_device();
-        CUDAX_REQUIRE(ldev2.get_kind() == cudax::logical_device::kinds::green_context);
+        CUDAX_REQUIRE(side_stream.device() == 0);
+        auto ldev2 = side_stream.logical_device();
+        CUDAX_REQUIRE(ldev2.kind() == cudax::logical_device::kinds::green_context);
         CUDAX_REQUIRE(ldev1 == ldev2);
       }
     }
