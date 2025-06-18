@@ -21,19 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILATION()
+#include <cuda/__cmath/pow2.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
-#  include <cuda/__cmath/pow2.h>
-#  include <cuda/std/__type_traits/is_pointer.h>
-#  include <cuda/std/cstddef>
-#  include <cuda/std/cstdint>
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API inline _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_pointer_v<_Tp>, _Tp>
+[[nodiscard]] _CCCL_API _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_pointer_v<_Tp>, _Tp>
 align_up(_Tp __ptr, size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
@@ -48,8 +46,6 @@ align_up(_Tp __ptr, size_t __alignment) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CCCL_CUDA_COMPILATION()
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MEMORY_ALIGN_DOWN_H

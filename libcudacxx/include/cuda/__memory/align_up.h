@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API inline _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_pointer_v<_Tp>, _Tp>
+[[nodiscard]] _CCCL_API _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_pointer_v<_Tp>, _Tp>
 align_up(_Tp __ptr, size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");

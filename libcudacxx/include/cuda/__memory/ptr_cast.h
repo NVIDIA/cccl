@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API inline _Up* ptr_cast(_Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API _Up* ptr_cast(_Tp* __ptr) noexcept
 {
   constexpr auto __max_alignment = alignof(_Tp) > alignof(_Up) ? alignof(_Tp) : alignof(_Up);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
