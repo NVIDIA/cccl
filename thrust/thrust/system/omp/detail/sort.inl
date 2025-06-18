@@ -131,7 +131,7 @@ void stable_sort(
 
     THRUST_PRAGMA_OMP(barrier)
 
-    // XXX For some reason, MSVC 2015 yields an error unless we include this meaningless semicolon here
+    // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
     ;
 
     IndexType nseg = decomp.size();
@@ -160,6 +160,9 @@ void stable_sort(
       h *= 2;
 
       THRUST_PRAGMA_OMP(barrier)
+
+      // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
+      ;
     }
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
@@ -216,7 +219,7 @@ void stable_sort_by_key(
 
     THRUST_PRAGMA_OMP(barrier)
 
-    // XXX For some reason, MSVC 2015 yields an error unless we include this meaningless semicolon here
+    // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
     ;
 
     IndexType nseg = decomp.size();
@@ -250,6 +253,9 @@ void stable_sort_by_key(
       h *= 2;
 
       THRUST_PRAGMA_OMP(barrier)
+
+      // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
+      ;
     }
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
