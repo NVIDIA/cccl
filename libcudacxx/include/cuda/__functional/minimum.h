@@ -21,8 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_bf16.h>
-#include <cuda_fp16.h>
+#if _CCCL_HAS_NVBF16()
+#  include <cuda_bf16.h>
+#endif
+#if _CCCL_HAS_NVFP16()
+#  include <cuda_fp16.h>
+#endif
 
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -49,14 +53,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
       {
         NV_IF_TARGET(NV_IS_DEVICE, (return ::fmin(__lhs, __rhs);))
       }
+#if _CCCL_HAS_NVFP16()
       else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __half>)
       {
         NV_IF_TARGET(NV_PROVIDES_SM_53, (return ::__hmin(__lhs, __rhs);))
       }
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
       else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __nv_bfloat16>)
       {
         NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__hmin(__lhs, __rhs);))
       }
+#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_FLOAT128()
       else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __float128>)
       {
