@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_MEMORY
-#define _CUDA_MEMORY
+#ifndef _CUDA___MEMORY_IS_ALIGN_H
+#define _CUDA___MEMORY_IS_ALIGN_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,12 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/get_device_address.h>
-#include <cuda/__memory/address_space.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__memory/ptr_cast.h>
-#include <cuda/std/memory>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
-#endif // _CUDA_MEMORY
+#include <cuda/std/__cccl/prologue.h>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+[[nodiscard]] _CCCL_API inline bool is_aligned(const void* __ptr, size_t __alignment) noexcept
+{
+  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
+  return (reinterpret_cast<uintptr_t>(__ptr) & (__alignment - 1)) == 0;
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMORY_IS_ALIGN_H
