@@ -240,7 +240,18 @@ void compute_host_reference(
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 using full_type_list =
-  c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t, custom_t, ulonglong4, uchar3, short2>;
+  c2h::type_list<std::uint8_t,
+                 std::uint16_t,
+                 std::int32_t,
+                 std::int64_t,
+                 custom_t,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+                 uchar3,
+                 short2>;
 
 using builtin_type_list = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
 
