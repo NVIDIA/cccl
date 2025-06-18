@@ -8,14 +8,6 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    # MSVC build coverage of extended GPU nightly tests:
-    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: '70;75;89;90', cxx: 'msvc'}
-    # Build-only coverage of extended arches. `sm` split up to parallelize.
-    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['86;90a', '100;103', '120'], cxx: ['msvc', 'gcc'] }
-
-    - {jobs: ['build'], std: 'max', cxx: ['gcc', 'msvc'],  sm: ['90;90a', '100;120']}
-
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'msvc'], sm: ['90;90a', '100;120']}
 
   pull_request:
     # Old CTK/compiler
