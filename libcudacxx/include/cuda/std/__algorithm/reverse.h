@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
+_CCCL_API constexpr void
 __reverse_impl(_BidirectionalIterator __first, _BidirectionalIterator __last, bidirectional_iterator_tag)
 {
   while (__first != __last)
@@ -47,7 +47,7 @@ __reverse_impl(_BidirectionalIterator __first, _BidirectionalIterator __last, bi
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
+_CCCL_API constexpr void
 __reverse_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, random_access_iterator_tag)
 {
   if (__first != __last)
@@ -61,7 +61,7 @@ __reverse_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, rand
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __reverse(_BidirectionalIterator __first, _Sentinel __last)
+_CCCL_API constexpr void __reverse(_BidirectionalIterator __first, _Sentinel __last)
 {
   using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_BidirectionalIterator>;
   _CUDA_VSTD::__reverse_impl<_AlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _IterCategory());
@@ -69,7 +69,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __reverse(_BidirectionalIterator __firs
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
+_CCCL_API constexpr void reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   _CUDA_VSTD::__reverse<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }

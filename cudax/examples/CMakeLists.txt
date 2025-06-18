@@ -53,9 +53,11 @@ file(GLOB example_srcs
   *.cu *.cpp
 )
 
+find_package(CUDAToolkit REQUIRED) # for CUDAToolkit_VERSION
+
 # Example requires pinned_memory_resource.
 if(CUDAToolkit_VERSION VERSION_LESS 12.6)
-  list(REMOVE_ITEM example_srcs async_buffer_add.cu)
+  list(REMOVE_ITEM example_srcs async_buffer_add.cu cub_reduce.cu)
 endif()
 
 foreach(cudax_target IN LISTS cudax_TARGETS)

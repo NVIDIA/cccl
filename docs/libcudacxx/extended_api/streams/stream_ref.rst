@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-streams-stream-ref:
 
-``cuda::stream_ref``: a wrapper around a ``cudaStream_t``
-==========================================================
+``cuda::stream_ref``
+====================
 
 CUDA `stream-ordered allocations <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-ordered-memory-allocator>`__
 rely on ``cudaStream_t`` as a handle to the cuda stream.

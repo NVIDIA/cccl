@@ -25,8 +25,8 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
-#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
@@ -37,20 +37,20 @@ namespace cuda::experimental::execution
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
-template <__disposition_t, class _Void = void>
+template <__disposition, class _Void = void>
 extern _CUDA_VSTD::__undefined<_Void> __just_from_tag;
 template <class _Void>
-extern __fn_t<just_from_t>* __just_from_tag<__value, _Void>;
+extern __fn_t<just_from_t>* __just_from_tag<__disposition::__value, _Void>;
 template <class _Void>
-extern __fn_t<just_error_from_t>* __just_from_tag<__error, _Void>;
+extern __fn_t<just_error_from_t>* __just_from_tag<__disposition::__error, _Void>;
 template <class _Void>
-extern __fn_t<just_stopped_from_t>* __just_from_tag<__stopped, _Void>;
+extern __fn_t<just_stopped_from_t>* __just_from_tag<__disposition::__stopped, _Void>;
 } // namespace __detail
 
 struct _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT;
 struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(just_from_t) _CCCL_PREFERRED_NAME(just_error_from_t)
   _CCCL_PREFERRED_NAME(just_stopped_from_t) __just_from_t
 {
@@ -71,9 +71,9 @@ private:
   {
     template <class... _Ts>
     auto operator()(_Ts&&... __ts) const noexcept
-      -> _CUDA_VSTD::conditional_t<__signature_disposition<_SetTag(_Ts...)> != __invalid_disposition,
-                                   completion_signatures<_SetTag(_Ts...)>,
-                                   __error_t<_Ts...>>;
+      -> _CUDA_VSTD::_If<__detail::__signature_disposition<_SetTag(_Ts...)> != __disposition::__invalid,
+                         completion_signatures<_SetTag(_Ts...)>,
+                         __error_t<_Ts...>>;
   };
 
   template <class _Rcvr>
@@ -94,7 +94,7 @@ private:
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});
     }
@@ -111,7 +111,7 @@ public:
   _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
 {
@@ -127,21 +127,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>) -> __opstate<_Rcvr, _Fn>
   {
     return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate<_Rcvr, _Fn>
   {
     return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
 {

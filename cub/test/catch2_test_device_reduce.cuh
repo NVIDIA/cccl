@@ -54,7 +54,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
@@ -65,7 +65,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));

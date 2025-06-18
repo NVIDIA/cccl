@@ -59,7 +59,7 @@ C2H_TEST("managed_memory_resource construction", "[memory_resource]")
 C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
 {
   managed_resource res{};
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);

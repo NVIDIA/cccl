@@ -39,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @warning If \p __v is negative, the behavior is undefined
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp isqrt(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp isqrt(_Tp __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {

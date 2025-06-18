@@ -41,7 +41,6 @@ AttributeMacros: [
                   'THRUST_DETAIL_KERNEL_ATTRIBUTES',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
-                  '_LIBCUDACXX_HIDE_FROM_ABI',
                   '_CCCL_API',
                   '_CCCL_HOST_API',
                   '_CCCL_DEVICE_API',
@@ -78,7 +77,8 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IfMacros: [
-  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C'
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C',
+  '_CCCL_CATCH'
 ]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup

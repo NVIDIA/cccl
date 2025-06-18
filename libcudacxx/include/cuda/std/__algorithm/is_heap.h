@@ -31,15 +31,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _CCCL_API constexpr bool
 is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare>>(__comp)) == __last;
 }
 
 template <class _RandomAccessIterator>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+[[nodiscard]] _CCCL_API constexpr bool is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   return _CUDA_VSTD::is_heap(__first, __last, __less{});
 }

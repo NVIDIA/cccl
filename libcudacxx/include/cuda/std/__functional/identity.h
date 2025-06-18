@@ -36,7 +36,7 @@ struct __is_identity : false_type
 struct identity
 {
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
     return _CUDA_VSTD::forward<_Tp>(__t);
   }

@@ -424,7 +424,9 @@ struct AgentHistogram
         {
           if (bins[PIXEL] >= 0)
           {
-            atomicAdd(privatized_histograms[CHANNEL] + bins[PIXEL], accumulator);
+            NV_IF_TARGET(NV_PROVIDES_SM_60,
+                         (atomicAdd_block(privatized_histograms[CHANNEL] + bins[PIXEL], accumulator);),
+                         (atomicAdd(privatized_histograms[CHANNEL] + bins[PIXEL], accumulator);));
           }
 
           accumulator = 0;
@@ -435,7 +437,9 @@ struct AgentHistogram
       // Last pixel
       if (bins[PIXELS_PER_THREAD - 1] >= 0)
       {
-        atomicAdd(privatized_histograms[CHANNEL] + bins[PIXELS_PER_THREAD - 1], accumulator);
+        NV_IF_TARGET(NV_PROVIDES_SM_60,
+                     (atomicAdd_block(privatized_histograms[CHANNEL] + bins[PIXELS_PER_THREAD - 1], accumulator);),
+                     (atomicAdd(privatized_histograms[CHANNEL] + bins[PIXELS_PER_THREAD - 1], accumulator);));
       }
     }
   }
@@ -457,7 +461,9 @@ struct AgentHistogram
         privatized_decode_op[CHANNEL].template BinSelect<LOAD_MODIFIER>(samples[PIXEL][CHANNEL], bin, is_valid[PIXEL]);
         if (bin >= 0)
         {
-          atomicAdd(privatized_histograms[CHANNEL] + bin, 1);
+          NV_IF_TARGET(NV_PROVIDES_SM_60,
+                       (atomicAdd_block(privatized_histograms[CHANNEL] + bin, 1);),
+                       (atomicAdd(privatized_histograms[CHANNEL] + bin, 1);));
         }
       }
     }

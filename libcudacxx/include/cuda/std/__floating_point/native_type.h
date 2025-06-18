@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <__fp_format _Fmt>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_native_type_impl()
+_CCCL_API constexpr auto __fp_native_type_impl()
 {
   if constexpr (_Fmt == __fp_format::__binary32)
   {

@@ -38,7 +38,7 @@ __host__ void run()
   try
   {
     task::thread_context tctx;
-    task::stream_context sctx;
+    task::stream_context sctx{cuda::experimental::device_ref{0}};
     auto sch = sctx.get_scheduler();
 
     auto start = //

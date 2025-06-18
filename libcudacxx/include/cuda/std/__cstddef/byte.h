@@ -33,75 +33,75 @@ enum class byte : unsigned char
 {
 };
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator|(byte __lhs, byte __rhs) noexcept
+_CCCL_API constexpr byte operator|(byte __lhs, byte __rhs) noexcept
 {
   return static_cast<byte>(
     static_cast<unsigned char>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator|=(byte& __lhs, byte __rhs) noexcept
+_CCCL_API constexpr byte& operator|=(byte& __lhs, byte __rhs) noexcept
 {
   return __lhs = __lhs | __rhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator&(byte __lhs, byte __rhs) noexcept
+_CCCL_API constexpr byte operator&(byte __lhs, byte __rhs) noexcept
 {
   return static_cast<byte>(
     static_cast<unsigned char>(static_cast<unsigned int>(__lhs) & static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator&=(byte& __lhs, byte __rhs) noexcept
+_CCCL_API constexpr byte& operator&=(byte& __lhs, byte __rhs) noexcept
 {
   return __lhs = __lhs & __rhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator^(byte __lhs, byte __rhs) noexcept
+_CCCL_API constexpr byte operator^(byte __lhs, byte __rhs) noexcept
 {
   return static_cast<byte>(
     static_cast<unsigned char>(static_cast<unsigned int>(__lhs) ^ static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator^=(byte& __lhs, byte __rhs) noexcept
+_CCCL_API constexpr byte& operator^=(byte& __lhs, byte __rhs) noexcept
 {
   return __lhs = __lhs ^ __rhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator~(byte __b) noexcept
+_CCCL_API constexpr byte operator~(byte __b) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(~static_cast<unsigned int>(__b)));
 }
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator<<=(byte& __lhs, _Integer __shift) noexcept
+_CCCL_API constexpr byte& operator<<=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs << __shift;
 }
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator<<(byte __lhs, _Integer __shift) noexcept
+_CCCL_API constexpr byte operator<<(byte __lhs, _Integer __shift) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift));
 }
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator>>=(byte& __lhs, _Integer __shift) noexcept
+_CCCL_API constexpr byte& operator>>=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs >> __shift;
 }
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator>>(byte __lhs, _Integer __shift) noexcept
+_CCCL_API constexpr byte operator>>(byte __lhs, _Integer __shift) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift));
 }
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer to_integer(byte __b) noexcept
+_CCCL_API constexpr _Integer to_integer(byte __b) noexcept
 {
   return static_cast<_Integer>(__b);
 }
