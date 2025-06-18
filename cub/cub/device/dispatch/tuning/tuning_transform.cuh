@@ -39,15 +39,16 @@
 
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/bit>
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
-// Also, cooperative groups do not support NVHPC yet.
 #if !_CCCL_CUDA_COMPILER(NVHPC)
 #  ifndef _CUB_HAS_TRANSFORM_UBLKCP
 #    define _CUB_HAS_TRANSFORM_UBLKCP 1
@@ -80,6 +81,14 @@ struct prefetch_policy_t
   static constexpr int max_items_per_thread      = 32;
 };
 
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  TransformAgentPrefetchPolicy,
+  (always_true),
+  (block_threads, BlockThreads, int),
+  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
+  (min_items_per_thread, MinItemsPerThread, int),
+  (max_items_per_thread, MaxItemsPerThread, int) )
+
 template <int BlockThreads, int BulkCopyAlignment>
 struct async_copy_policy_t
 {
@@ -91,24 +100,78 @@ struct async_copy_policy_t
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  TransformAgentAsyncPolicy,
+  (always_true),
+  (block_threads, BlockThreads, int),
+  (min_items_per_thread, MinItemsPerThread, int),
+  (max_items_per_thread, MaxItemsPerThread, int),
+  (bulk_copy_alignment, BulkCopyAlignment, int) )
+
+_CCCL_TEMPLATE(typename PolicyT)
+_CCCL_REQUIRES((!TransformAgentPrefetchPolicy<PolicyT> && !TransformAgentAsyncPolicy<PolicyT>) )
+__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
+{
+  return policy;
+}
+
+template <typename PolicyT, typename = void>
+struct TransformPolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct TransformPolicyWrapper<
+  StaticPolicyT,
+  ::cuda::std::
+    void_t<decltype(StaticPolicyT::algorithm), decltype(StaticPolicyT::min_bif), typename StaticPolicyT::algo_policy>>
+    : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr Algorithm Algorithm()
+  {
+    return StaticPolicyT::algorithm;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MinBif()
+  {
+    return StaticPolicyT::min_bif;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto AlgorithmPolicy()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::algo_policy());
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"min_bif">()     = value<StaticPolicyT::min_bif>(),
+                  key<"algorithm">()   = value<static_cast<int>(StaticPolicyT::algorithm)>(),
+                  key<"algo_policy">() = AlgorithmPolicy().EncodedPolicy()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
+{
+  return TransformPolicyWrapper<PolicyT>(base);
+}
+
 // mult must be a power of 2
 template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
   _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
   return (x + mult - 1) & ~(mult - 1);
-}
-
-_CCCL_HOST_DEVICE constexpr int sum()
-{
-  return 0;
-}
-
-// TODO(bgruber): remove with C++17
-template <typename... Ts>
-_CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
-{
-  return head + sum(tail...);
 }
 
 template <typename... Its>
@@ -124,13 +187,14 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int ptx_version) -> int
   return ptx_version < 1000 ? 128 : 16;
 }
 
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(
+  ::cuda::std::span<const ::cuda::std::size_t> it_value_sizes, int tile_size, int bulk_copy_align) -> int
 {
-  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
-       // 128 bytes of padding for each input tile (handles before + after)
-       + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
+  return static_cast<int>(
+    round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
+    // 128 bytes of padding for each input tile (handles before + after)
+    + tile_size * ::cuda::std::reduce(it_value_sizes.begin(), it_value_sizes.end())
+    + it_value_sizes.size() * bulk_copy_align);
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
@@ -148,53 +212,6 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
     return 16 * 1024; // A100
   }
   return 12 * 1024; // V100 and below
-}
-
-template <typename PolicyT, typename = void>
-struct TransformPolicyWrapper : PolicyT
-{
-  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::algorithm)>> : StaticPolicyT
-{
-  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  _CCCL_HOST_DEVICE static constexpr Algorithm GetAlgorithm()
-  {
-    return StaticPolicyT::algorithm;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
-  {
-    return StaticPolicyT::algo_policy::block_threads;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadNoInput()
-  {
-    return StaticPolicyT::algo_policy::items_per_thread_no_input;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MinItemsPerThread()
-  {
-    return StaticPolicyT::algo_policy::min_items_per_thread;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MaxItemsPerThread()
-  {
-    return StaticPolicyT::algo_policy::max_items_per_thread;
-  }
-};
-
-template <typename PolicyT>
-_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
-{
-  return TransformPolicyWrapper<PolicyT>(base);
 }
 
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
@@ -232,14 +249,15 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr int bulk_copy_align = bulk_copy_alignment(PtxVersion);
     using async_policy                   = async_copy_policy_t<BlockSize, bulk_copy_align>;
     static constexpr bool exhaust_smem =
-      bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::block_threads * async_policy::min_items_per_thread, bulk_copy_align)
+      bulk_copy_smem_for_tile_size({sizeof(it_value_t<RandomAccessIteratorsIn>)...},
+                                   async_policy::block_threads* async_policy::min_items_per_thread,
+                                   bulk_copy_align)
       > int{max_smem_per_block};
-    static constexpr bool any_type_is_overalinged =
+    static constexpr bool any_type_is_overaligned =
       ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_align) || ...);
 
     static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
+      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overaligned;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);

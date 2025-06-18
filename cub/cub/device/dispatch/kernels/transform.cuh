@@ -19,16 +19,12 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() >= 900 && !_CCCL_CUDA_COMPILER(NVHPC)
+#  include <cuda/pipeline>
+#endif
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/expected>
-
-// cooperative groups do not support NVHPC yet
-#if !_CCCL_CUDA_COMPILER(NVHPC)
-#  include <cooperative_groups.h>
-
-#  include <cooperative_groups/memcpy_async.h>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -88,7 +84,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_dim = PrefetchPolicy::block_threads;
+  constexpr int block_dim = PrefetchPolicy::algo_policy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
   const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
@@ -192,18 +188,36 @@ _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
   return ::cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
 }
 
+struct thread_block
+{
+  _CCCL_DEVICE int size() const
+  {
+    return blockDim.x;
+  }
+
+  _CCCL_DEVICE int thread_rank() const
+  {
+    return threadIdx.x;
+  }
+};
+
+_CCCL_DEVICE constexpr thread_block this_thread_block()
+{
+  return thread_block{};
+}
+
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
+  constexpr int bulk_copy_alignment = BulkCopyPolicy::algo_policy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
   extern __shared__ char __align__(bulk_copy_alignment) smem[];
 
   namespace ptx = ::cuda::ptx;
 
-  constexpr int block_dim = BulkCopyPolicy::block_threads;
+  constexpr int block_dim = BulkCopyPolicy::algo_policy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
   const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
@@ -245,36 +259,47 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+
+      while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+        ;
     }
 
     // all threads wait for bulk copy
     __syncthreads();
-    while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-      ;
   }
   else
   {
-    // use all threads to schedule an async_memcpy
-    int smem_offset = 0;
+    // Hide the use of facilities from <cuda/pipeline> when compiling for pre-sm90 arches.
+    // The header guards for pre-sm70, but may as well hide it unless the kernel is actually useful.
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90,
+      (
+        // use all threads to schedule an async_memcpy
+        int smem_offset = 0; auto pipe = cuda::make_pipeline();
 
-    auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
-      using T      = typename decltype(aligned_ptr)::value_type;
-      const T* src = aligned_ptr.ptr_to_elements() + offset;
-      T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+        auto bulk_copy_tile_fallback =
+          [&](auto aligned_ptr) {
+            using T      = typename decltype(aligned_ptr)::value_type;
+            const T* src = aligned_ptr.ptr_to_elements() + offset;
+            T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
+            _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
+            _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
-      const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
-      cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
+            const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
+            cuda::memcpy_async(this_thread_block(), dst, src, bytes_to_copy, pipe);
 
-      // add bulk_copy_alignment to make space for the next tile's head padding
-      smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
-    };
+            // add bulk_copy_alignment to make space for the next tile's head padding
+            smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
+          };
 
-    // Order of evaluation is left-to-right
-    (..., bulk_copy_tile_fallback(aligned_ptrs));
+        pipe.producer_acquire();
+        // Order of evaluation is left-to-right
+        (..., bulk_copy_tile_fallback(aligned_ptrs));
+        pipe.producer_commit();
 
-    cooperative_groups::wait(cooperative_groups::this_thread_block());
+        pipe.consumer_wait();
+        pipe.consumer_release();
+        __syncthreads();))
   }
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
@@ -413,7 +438,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     kernel_arg<RandomAccessIteartorsIn>... ins)
 {
   constexpr auto alg = ::cuda::std::integral_constant<Algorithm, MaxPolicy::ActivePolicy::algorithm>{};
-  transform_kernel_impl<typename MaxPolicy::ActivePolicy::algo_policy>(
+  transform_kernel_impl<typename MaxPolicy::ActivePolicy>(
     alg,
     num_items,
     num_elem_per_thread,
