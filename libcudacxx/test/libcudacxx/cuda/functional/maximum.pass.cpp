@@ -32,12 +32,31 @@ __host__ __device__ constexpr bool test()
          test<int>(1, 0, 1) && //
          test<int>(0, 0, 0) && //
          test<int>(-1, 1, 1) && //
-         test<char>('a', 'b', 'b');
+         test<char>('a', 'b', 'b') && //
+         test<float>(1.0f, 2.0f, 2.0f) && //
+         test<double>(1.0f, 2.0f, 2.0f)
+#if _CCCL_HAS_FLOAT128()
+      && test<__float128>(__float128(1.0f), __float128(2.0f), __float128(2.0f))
+#endif
+    ;
+}
+
+__host__ __device__ bool runtime_test()
+{
+  return true
+#if _CCCL_HAS_NVFP16
+      && test<__half>(__half(1.0f), __half(2.0f), __half(2.0f))
+#endif
+#if _CCCL_HAS_NVBF16()
+      && test<__nv_bfloat16>(__nv_bfloat16(1.0f), __nv_bfloat16(2.0f), __nv_bfloat16(2.0f))
+#endif
+    ;
 }
 
 int main(int, char**)
 {
   assert(test());
-  static_assert(test(), "");
+  assert(runtime_test());
+  static_assert(test());
   return 0;
 }

@@ -21,7 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
+
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,6 +39,31 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    {
+      if constexpr (_CUDA_VSTD::is_same_v<_Tp, float>)
+      {
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::fmaxf(__lhs, __rhs);))
+      }
+      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, double>)
+      {
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::fmax(__lhs, __rhs);))
+      }
+      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __half>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_53, (return ::__hmax(__lhs, __rhs);))
+      }
+      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __nv_bfloat16>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__hmax(__lhs, __rhs);))
+      }
+#if _CCCL_HAS_FLOAT128()
+      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __float128>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__nv_fp128_fmax(__lhs, __rhs);))
+      }
+#endif
+    }
     return (__lhs < __rhs) ? __rhs : __lhs;
   }
 };
