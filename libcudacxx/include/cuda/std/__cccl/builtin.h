@@ -414,6 +414,19 @@
 #  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
 
+#if _CCCL_CHECK_BUILTIN(builtin_fmod) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMODF(...) __builtin_fmodf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMOD(...)  __builtin_fmod(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMODL(...) __builtin_fmodl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmod)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "modf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_FMODF
+#  undef _CCCL_BUILTIN_FMOD
+#  undef _CCCL_BUILTIN_FMODL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_HAS_BUILTIN(__builtin_FILE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FILE() __builtin_FILE()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
@@ -610,12 +623,24 @@
 #  define _CCCL_BUILTIN_LROUNDL(...) __builtin_lroundl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_lround)
 
-// Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "lround"
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LROUNDF
 #  undef _CCCL_BUILTIN_LROUND
 #  undef _CCCL_BUILTIN_LROUNDL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_modf) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_MODFF(...) __builtin_modff(__VA_ARGS__)
+#  define _CCCL_BUILTIN_MODF(...)  __builtin_modf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_MODFL(...) __builtin_modfl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_modf)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "modf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_MODFF
+#  undef _CCCL_BUILTIN_MODF
+#  undef _CCCL_BUILTIN_MODFL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
