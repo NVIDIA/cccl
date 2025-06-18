@@ -284,21 +284,28 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
   REQUIRE(approx_eq(h_expected, d_output[0]));
 }
 
-using test_types =
-  c2h::type_list<char,
-                 int,
-                 long int,
-                 float,
-                 double
+using test_types = c2h::type_list<
+  int8_t,
+  int,
+  long int,
+  float,
+  double
 #if TEST_HALF_T()
-                 ,
-                 half_t
+  ,
+  half_t,
+  __half
 #endif // TEST_HALF_T()
 #if TEST_BF_T()
-                 ,
-                 bfloat16_t,
+  ,
+  bfloat16_t,
+  __nv_bfloat16
 #endif // TEST_BF_T()
-                 >;
+#if _CCCL_HAS_INT128()
+  ,
+  __int128_t
+#endif
+  >;
+
 C2H_TEST("Deterministic Device reduce works with various types on gpu with different input types and reduction op",
          "[reduce][deterministic]",
          test_types)
