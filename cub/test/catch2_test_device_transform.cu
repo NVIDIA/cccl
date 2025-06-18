@@ -576,7 +576,7 @@ C2H_TEST("DeviceTransform::Transform vectorized output bug", "[device][device_tr
 
   c2h::host_vector<std::uint16_t> reference(num_items);
   thrust::generate(reference.begin(), reference.end(), [i = 0]() mutable {
-    return ++i;
+    return static_cast<std::uint16_t>(++i);
   });
   CHECK(output == reference);
 }
