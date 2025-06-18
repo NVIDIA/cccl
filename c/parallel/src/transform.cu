@@ -108,16 +108,17 @@ struct transform_runtime_tuning_policy
 
 transform_runtime_tuning_policy get_policy(int sm_arch)
 {
-  const int load_store_word_size = 8;
+  const int load_store_word_size = 8; // TODO(bgruber): should be fused with the constant in CUB
   const int value_type_size      = 4; // FIXME(bgruber): this should be derived from the value types of the iterators
-  return {.min_bif                   = cub::detail::transform::arch_to_min_bytes_in_flight(sm_arch),
-          .block_threads             = 256,
-          .items_per_thread_no_input = 2,
-          .min_items_per_thread      = 1,
-          .max_items_per_thread      = 32,
-          .items_per_thread_vectorized =
-            cub::detail::transform::items_per_thread_vectorized(load_store_word_size, value_type_size),
-          .load_store_word_size = load_store_word_size};
+  constexpr int target_bytes_per_thread = 32; // TODO(bgruber): should be fused with the constant in CUB
+  return {
+    .min_bif                     = cub::detail::transform::arch_to_min_bytes_in_flight(sm_arch),
+    .block_threads               = 256,
+    .items_per_thread_no_input   = 2,
+    .min_items_per_thread        = 1,
+    .max_items_per_thread        = 32,
+    .items_per_thread_vectorized = ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / value_type_size,
+    .load_store_word_size        = load_store_word_size};
 }
 
 template <typename StorageT>
