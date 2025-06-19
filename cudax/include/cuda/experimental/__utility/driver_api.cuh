@@ -234,6 +234,22 @@ inline void eventElapsedTime(CUevent start, CUevent end, float* ms)
   call_driver_fn(driver_fn, "Failed to get CUDA event elapsed time", ms, start, end);
 }
 
+inline CUfunction kernelGetFunction(CUkernel kernel)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetFunction);
+  CUfunction result;
+  call_driver_fn(driver_fn, "Failed to get kernel function", &result, kernel);
+  return result;
+}
+
+inline int kernelGetAttribute(CUfunction_attribute attr, CUkernel kernel, CUdevice dev)
+{
+  int value;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetAttribute);
+  call_driver_fn(driver_fn, "Failed to get kernel attribute", &value, attr, kernel, dev);
+  return value;
+}
+
 #if _CCCL_CTK_AT_LEAST(12, 3)
 inline const char* kernelGetName(CUkernel kernel)
 {
@@ -243,14 +259,6 @@ inline const char* kernelGetName(CUkernel kernel)
   return name;
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
-
-inline int kernelGetAttribute(CUfunction_attribute attr, CUkernel kernel, CUdevice dev)
-{
-  int value;
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetAttribute);
-  call_driver_fn(driver_fn, "Failed to get kernel attribute", &value, attr, kernel, dev);
-  return value;
-}
 
 #if CUDART_VERSION >= 12050
 // Add actual resource description input once exposure is ready

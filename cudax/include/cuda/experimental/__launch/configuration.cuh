@@ -17,6 +17,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
+#include <cuda.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_STD_VER >= 2017
@@ -38,11 +40,19 @@ protected:
   {
     return cudaSuccess;
   }
+  [[nodiscard]] cudaError_t apply(CUlaunchConfig&, CUfunction) const noexcept
+  {
+    return cudaSuccess;
+  }
 };
 
 template <typename Dimensions, typename... Options>
 cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
+
+template <typename Dimensions, typename... Options>
+cudaError_t apply_kernel_config(
+  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
 
 // Might need to go to the main namespace?
 enum class launch_option_kind
@@ -135,6 +145,9 @@ struct cooperative_launch : public __detail::launch_option
   template <typename Dimensions, typename... Options>
   friend cudaError_t __detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
+  template <typename Dimensions, typename... Options>
+  friend cudaError_t __detail::apply_kernel_config(
+    const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
 
 private:
   [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
@@ -142,6 +155,16 @@ private:
     cudaLaunchAttribute attr;
     attr.id              = cudaLaunchAttributeCooperative;
     attr.val.cooperative = true;
+
+    config.attrs[config.numAttrs++] = attr;
+
+    return cudaSuccess;
+  }
+  [[nodiscard]] cudaError_t apply(CUlaunchConfig& config, CUfunction) const noexcept
+  {
+    CUlaunchAttribute attr;
+    attr.id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
+    attr.value.cooperative = true;
 
     config.attrs[config.numAttrs++] = attr;
 
@@ -214,6 +237,9 @@ struct dynamic_shared_memory_option : public __detail::launch_option
   template <typename Dimensions, typename... Options>
   friend cudaError_t __detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
+  template <typename Dimensions, typename... Options>
+  friend cudaError_t __detail::apply_kernel_config(
+    const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
 
 private:
   [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
@@ -234,6 +260,35 @@ private:
     }
 
     config.dynamicSmemBytes = size_needed;
+    return cudaSuccess;
+  }
+  [[nodiscard]] cudaError_t apply(CUlaunchConfig& config, CUfunction kernel) const noexcept
+  {
+    cudaError_t status = cudaSuccess;
+
+    int max_dynamic_shared_size{};
+    status = static_cast<cudaError_t>(
+      cuFuncGetAttribute(&max_dynamic_shared_size, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, kernel));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    int size_needed = static_cast<int>(size * sizeof(Content));
+
+    if ((size_needed > max_dynamic_shared_size) && NonPortableSize)
+    {
+      // TODO since 12.6 there is a per launch option available, we should switch once compatibility is not an issue
+      // TODO should we validate the max amount with device props or just pass it through and rely on driver error?
+      status = static_cast<cudaError_t>(
+        cuFuncSetAttribute(kernel, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, size_needed));
+      if (status != cudaSuccess)
+      {
+        return status;
+      }
+    }
+
+    config.sharedMemBytes = static_cast<unsigned>(size_needed);
     return cudaSuccess;
   }
 };
@@ -302,6 +357,9 @@ struct launch_priority : public __detail::launch_option
   template <typename Dimensions, typename... Options>
   friend cudaError_t __detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
+  template <typename Dimensions, typename... Options>
+  friend cudaError_t __detail::apply_kernel_config(
+    const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
 
 private:
   [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
@@ -309,6 +367,16 @@ private:
     cudaLaunchAttribute attr;
     attr.id           = cudaLaunchAttributePriority;
     attr.val.priority = priority;
+
+    config.attrs[config.numAttrs++] = attr;
+
+    return cudaSuccess;
+  }
+  [[nodiscard]] cudaError_t apply(CUlaunchConfig& config, CUfunction) const noexcept
+  {
+    CUlaunchAttribute attr;
+    attr.id             = CU_LAUNCH_ATTRIBUTE_PRIORITY;
+    attr.value.priority = priority;
 
     config.attrs[config.numAttrs++] = attr;
 
@@ -591,6 +659,25 @@ inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config
 template <typename Dimensions, typename... Options>
 [[nodiscard]] cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept
+{
+  cudaError_t status = cudaSuccess;
+
+  ::cuda::std::apply(
+    [&](auto&... config_options) {
+      // Use short-cutting && to skip the rest on error, is this too convoluted?
+      (void) (... && [&](cudaError_t call_status) {
+        status = call_status;
+        return call_status == cudaSuccess;
+      }(config_options.apply(cuda_config, kernel)));
+    },
+    config.options);
+
+  return status;
+}
+
+template <typename Dimensions, typename... Options>
+[[nodiscard]] cudaError_t apply_kernel_config(
+  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
 {
   cudaError_t status = cudaSuccess;
 
