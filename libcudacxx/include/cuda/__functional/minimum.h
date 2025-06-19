@@ -29,7 +29,7 @@
 #endif
 #if _CCCL_HAS_FLOAT128()
 #  include <crt/device_fp128_functions.h>
-#endif // _CCCL_HAS_FLOAT128()
+#endif
 
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
