@@ -21,14 +21,14 @@ using namespace cuda::experimental::stf;
 
 // Lazy cache by string content (can be replaced with hash or stronger keying)
 template <typename... Args>
-inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, Args&&... args)
+inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, const Args&... args)
 {
   static ::std::mutex cache_mutex;
   static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
 
-  auto make_printfable = [](auto&& arg) {
+  auto make_printfable = [](const auto& arg) {
     using T = ::std::decay_t<decltype(arg)>;
-    if constexpr (::std::is_same_v<T, ::std::string>)
+    if constexpr (::std::is_same_v<const T, const ::std::string>)
     {
       return arg.c_str();
     }
@@ -44,7 +44,7 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   // This will be our cache lookup key: a pair of options and the source code string
   auto key = ::std::pair(mv(opts), ::std::string(size, '\0'));
   ::std::snprintf(
-    key.second.data(), key.second.size(), template_str, make_printfable(::std::forward<decltype(args)>(args))...);
+    key.second.data(), key.second.size() + 1, template_str, make_printfable(args)...);
 
   {
     ::std::lock_guard lock(cache_mutex);
@@ -147,21 +147,6 @@ using slice =
     ::cuda::std::mdspan<T,
                         ::cuda::std::dextents<size_t, dimensions>,
                         ::cuda::std::layout_stride>;
-
-//extern "C"
-//__global__ void heat_kernel(slice<const double, 2> U, slice<double, 2> U1, double c, double dx2, double dy2)
-//{
-//  int tidx = blockIdx.x * blockDim.x + threadIdx.x;
-//  int tidy = blockIdx.y * blockDim.y + threadIdx.y;
-//  int dimx = blockDim.x * gridDim.x;
-//  int dimy = blockDim.y * gridDim.y;
-//
-//  for (size_t i = tidx + 1; i < U.extent(0)-1; i+= dimx)
-//    for (size_t j = tidy + 1; j < U.extent(1)-1; j += dimy)
-//    {
-//      U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
-//    }
-//}
 
 extern "C"
 __global__ void heat_kernel(%s U, %s U1, double c, double dx2, double dy2)
