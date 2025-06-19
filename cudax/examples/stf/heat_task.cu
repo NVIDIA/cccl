@@ -50,11 +50,15 @@ __global__ void heat_kernel(slice<const double, 2> U, slice<double, 2> U1, doubl
   int dimx = blockDim.x * gridDim.x;
   int dimy = blockDim.y * gridDim.y;
 
-  for (size_t i = tidx + 1; i < U.extent(0)-1; i+= dimx)
-    for (size_t j = tidy + 1; j < U.extent(1)-1; j += dimy)
+  for (size_t i = tidx + 1; i < U.extent(0) - 1; i += dimx)
+  {
+    for (size_t j = tidy + 1; j < U.extent(1) - 1; j += dimy)
     {
-      U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
+      U1(i, j) =
+        U(i, j)
+        + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
     }
+  }
 }
 
 int main()
@@ -121,9 +125,8 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
-    ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2](cudaStream_t stream, auto U, auto U1)
-    {
-        heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
+    ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2](cudaStream_t stream, auto U, auto U1) {
+      heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
     };
 
     std::swap(lU, lU1);

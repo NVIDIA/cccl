@@ -23,55 +23,57 @@ using namespace cuda::experimental::stf;
 template <typename... Args>
 inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, Args&&... args)
 {
-    static ::std::mutex cache_mutex;
-    static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
+  static ::std::mutex cache_mutex;
+  static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
 
-    // Format code
-    const int size = ::std::snprintf(nullptr, 0, template_str, args...);
-    // This will be our cache lookup key: a pair of options and the source code string
-    auto key = ::std::pair(mv(opts), ::std::string(size, '\0'));
-    ::std::snprintf(key.second.data(), key.second.size(), template_str, ::std::forward<decltype(args)>(args)...);
+  // Format code
+  const int size = ::std::snprintf(nullptr, 0, template_str, args...);
+  // This will be our cache lookup key: a pair of options and the source code string
+  auto key = ::std::pair(mv(opts), ::std::string(size, '\0'));
+  ::std::snprintf(key.second.data(), key.second.size(), template_str, ::std::forward<decltype(args)>(args)...);
 
+  {
+    ::std::lock_guard lock(cache_mutex);
+    if (auto it = cache.find(key); it != cache.end())
     {
-        ::std::lock_guard lock(cache_mutex);
-        if (auto it = cache.find(key); it != cache.end())
-            return it->second;
+      return it->second;
     }
+  }
 
-    // Compile kernel
-    nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(key.second.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
-    ::std::vector<const char*> raw_opts;
-    raw_opts.reserve(key.first.size());
-    for (const auto& s : key.first)
-    {
-      raw_opts.push_back(s.c_str());
-    }
-    nvrtcResult res = nvrtcCompileProgram(prog, raw_opts.size(), raw_opts.data());
-    if (res != NVRTC_SUCCESS)
-    {
-        size_t log_size = 0;
-        cuda_safe_call(nvrtcGetProgramLogSize(prog, &log_size));
-        ::std::string log(log_size, '\0');
-        cuda_safe_call(nvrtcGetProgramLog(prog, log.data()));
-        ::std::cerr << "NVRTC compile error:\n" << log << ::std::endl;
-        ::std::exit(1);
-    }
+  // Compile kernel
+  nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(key.second.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
+  ::std::vector<const char*> raw_opts;
+  raw_opts.reserve(key.first.size());
+  for (const auto& s : key.first)
+  {
+    raw_opts.push_back(s.c_str());
+  }
+  nvrtcResult res = nvrtcCompileProgram(prog, raw_opts.size(), raw_opts.data());
+  if (res != NVRTC_SUCCESS)
+  {
+    size_t log_size = 0;
+    cuda_safe_call(nvrtcGetProgramLogSize(prog, &log_size));
+    ::std::string log(log_size, '\0');
+    cuda_safe_call(nvrtcGetProgramLog(prog, log.data()));
+    ::std::cerr << "NVRTC compile error:\n" << log << ::std::endl;
+    ::std::exit(1);
+  }
 
-    size_t ptx_size = 0;
-    cuda_safe_call(nvrtcGetPTXSize(prog, &ptx_size));
-    ::std::string ptx(ptx_size, '\0');
-    cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
-    cuda_safe_call(nvrtcDestroyProgram(&prog));
+  size_t ptx_size = 0;
+  cuda_safe_call(nvrtcGetPTXSize(prog, &ptx_size));
+  ::std::string ptx(ptx_size, '\0');
+  cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
+  cuda_safe_call(nvrtcDestroyProgram(&prog));
 
-    CUmodule module = cuda_try<cuModuleLoadData>(ptx.data());
-    CUfunction kernel = cuda_try<cuModuleGetFunction>(module, "heat_kernel");
+  CUmodule module   = cuda_try<cuModuleLoadData>(ptx.data());
+  CUfunction kernel = cuda_try<cuModuleGetFunction>(module, "heat_kernel");
 
-    {
-        ::std::lock_guard lock(cache_mutex);
-        cache[mv(key)] = kernel;
-    }
+  {
+    ::std::lock_guard lock(cache_mutex);
+    cache[mv(key)] = kernel;
+  }
 
-    return kernel;
+  return kernel;
 }
 
 ::std::string run_command(const char* cmd)
@@ -97,7 +99,6 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
 
   return result;
 }
-
 
 void dump_iter(slice<const double, 2> sUn, int iter)
 {
@@ -212,10 +213,11 @@ int main()
   ::std::string s =
     run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
 
-  //fprintf(stderr, "COMMAND %s\n", s.c_str());
-  // Split by whitespace
+  // fprintf(stderr, "COMMAND %s\n", s.c_str());
+  //  Split by whitespace
   ::std::istringstream iss(s);
-  nvrtc_flags.insert(nvrtc_flags.end(), ::std::istream_iterator<::std::string>{iss}, ::std::istream_iterator<::std::string>{});
+  nvrtc_flags.insert(
+    nvrtc_flags.end(), ::std::istream_iterator<::std::string>{iss}, ::std::istream_iterator<::std::string>{});
 
   // Compute the exact machine
   const int device          = cuda_try<cudaGetDevice>();
@@ -285,13 +287,13 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
-    ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &nvrtc_flags](cudaStream_t stream, auto U, auto U1)
-    {
-        CUfunction kernel = lazy_jit(heat_kernel_template, nvrtc_flags, U.extent(0), U.extent(1), U1.extent(0), U1.extent(1));
+    ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &nvrtc_flags](cudaStream_t stream, auto U, auto U1) {
+      CUfunction kernel =
+        lazy_jit(heat_kernel_template, nvrtc_flags, U.extent(0), U.extent(1), U1.extent(0), U1.extent(1));
 
-        void* args[] = {&U, &U1, const_cast<double*>(&c), const_cast<double*>(&dx2), const_cast<double*>(&dy2)};
-        // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
-        cuda_safe_call(cuLaunchKernel(kernel, 128, 1, 1, 32, 1, 1, 0, stream, args, nullptr));
+      void* args[] = {&U, &U1, const_cast<double*>(&c), const_cast<double*>(&dx2), const_cast<double*>(&dy2)};
+      // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
+      cuda_safe_call(cuLaunchKernel(kernel, 128, 1, 1, 32, 1, 1, 0, stream, args, nullptr));
     };
 
     ::std::swap(lU, lU1);
