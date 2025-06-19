@@ -19,6 +19,55 @@
 
 using namespace cuda::experimental::stf;
 
+// Lazy cache by string content (can be replaced with hash or stronger keying)
+template <typename... Args>
+inline CUfunction lazy_jit(const char* template_str, const std::vector<const char *>& opts, Args&&... args)
+{
+    static std::mutex cache_mutex;
+    static std::unordered_map<std::string, CUfunction> cache;
+
+    // Format code
+    std::vector<char> formatted(8192);
+    std::snprintf(formatted.data(), formatted.size(), template_str, std::forward<decltype(args)>(args)...);
+    std::string source = formatted.data();
+
+    {
+        std::lock_guard<std::mutex> lock(cache_mutex);
+        auto it = cache.find(source);
+        if (it != cache.end())
+            return it->second;
+    }
+
+    // Compile kernel
+    nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(source.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
+    nvrtcResult res = nvrtcCompileProgram(prog, opts.size(), opts.data());
+    if (res != NVRTC_SUCCESS)
+    {
+        size_t log_size = 0;
+        cuda_safe_call(nvrtcGetProgramLogSize(prog, &log_size));
+        std::string log(log_size, '\0');
+        cuda_safe_call(nvrtcGetProgramLog(prog, log.data()));
+        std::cerr << "NVRTC compile error:\n" << log << std::endl;
+        std::exit(1);
+    }
+
+    size_t ptx_size = 0;
+    cuda_safe_call(nvrtcGetPTXSize(prog, &ptx_size));
+    std::string ptx(ptx_size, '\0');
+    cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
+    cuda_safe_call(nvrtcDestroyProgram(&prog));
+
+    CUmodule module = cuda_try<cuModuleLoadData>(ptx.data());
+    CUfunction kernel = cuda_try<cuModuleGetFunction>(module, "heat_kernel");
+
+    {
+        std::lock_guard<std::mutex> lock(cache_mutex);
+        cache[source] = kernel;
+    }
+
+    return kernel;
+}
+
 ::std::string run_command(const char* cmd)
 {
   std::array<char, 1024 * 64> buffer;
@@ -240,39 +289,7 @@ int main()
     // Update Un using Un1 value with a finite difference scheme
     ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &opts](cudaStream_t stream, auto U, auto U1)
     {
-        static auto kernel = [&]() {
-            std::vector<char> heat_kernel_filled(8192); // XXX big enough buffer
-            std::snprintf(heat_kernel_filled.data(), heat_kernel_filled.size(), heat_kernel_template, U.extent(0), U.extent(1), U1.extent(0), U1.extent(1));
-            nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(heat_kernel_filled.data(), "heat_kernel.cu", 0, nullptr, nullptr);
-            nvrtcResult res   = nvrtcCompileProgram(prog, opts.size(), opts.data());
-            if (res != NVRTC_SUCCESS)
-            {
-              size_t logSize;
-              cuda_safe_call(nvrtcGetProgramLogSize(prog, &logSize));
-
-              std::string log(logSize, '\0');
-              cuda_safe_call(nvrtcGetProgramLog(prog, log.data()));
-
-              std::cerr << "NVRTC compilation failed:\n" << log << std::endl;
-              std::cerr << "Error code: " << res << " (" << nvrtcGetErrorString(res) << ")\n";
-
-              exit(1); // or handle as appropriate
-            }
-
-            size_t ptxSize = 0;
-            cuda_safe_call(nvrtcGetPTXSize(prog, &ptxSize));
-
-            std::string ptx(ptxSize, '\0');
-            cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
-            cuda_safe_call(nvrtcDestroyProgram(&prog));
-            std::cerr << "Try to compile : " << ptx;
-
-            // Load PTX
-            const CUmodule module   = cuda_try<cuModuleLoadData>(ptx.data());
-            const CUfunction kernel = cuda_try<cuModuleGetFunction>(module, "heat_kernel");
-
-            return kernel;
-        }();
+        CUfunction kernel = lazy_jit(heat_kernel_template, opts, U.extent(0), U.extent(1), U1.extent(0), U1.extent(1));
 
         void* args[] = {&U, &U1, const_cast<double*>(&c), const_cast<double*>(&dx2), const_cast<double*>(&dy2)};
         // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
