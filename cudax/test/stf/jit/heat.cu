@@ -217,7 +217,9 @@ std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std:
     // layout   (omit default)
     if constexpr (!std::is_same_v<Layout, cuda::std::layout_right>)
     {
-      oss << ", " << type_name<Layout>;
+      // @@@ HACK HACK HACK
+      // oss << ", " << type_name<Layout>;
+      oss << ", " << "::cuda::std::layout_stride";
     }
 
     // accessor (omit default)
