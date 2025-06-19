@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: no-exceptions
-
 // <cuda/std/format>
 
 // constexpr size_t next_arg_id();

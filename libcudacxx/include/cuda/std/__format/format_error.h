@@ -22,24 +22,23 @@
 
 #include <cuda/std/__exception/terminate.h>
 
-#if _CCCL_HAS_EXCEPTIONS()
-#  if _CCCL_STD_VER >= 2020 && __cpp_lib_format >= 201907L
+#if !_CCCL_COMPILER(NVRTC)
+#  if __cpp_lib_format >= 201907L
 #    include <format>
-#  else // ^^^ _CCCL_STD_VER >= 2020 && __cpp_lib_format >= 201907L ^^^ /
-        // vvv _CCCL_STD_VER < 2020 || __cpp_lib_format < 201907L vvv
+#  else // ^^^ __cpp_lib_format >= 201907L ^^^ / vvv __cpp_lib_format < 201907L vvv
 #    include <stdexcept>
-#  endif // ^^^ _CCCL_STD_VER < 2020 || __cpp_lib_format < 201907L ^^^
-#endif // _CCCL_HAS_EXCEPTIONS()
+#  endif // ^^^ __cpp_lib_format < 201907L ^^^
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
-#if _CCCL_HAS_EXCEPTIONS()
-#  if _CCCL_STD_VER >= 2020 && __cpp_lib_format >= 201907L
+#  if __cpp_lib_format >= 201907L
 using ::std::format_error;
-#  else // ^^^ _CCCL_STD_VER >= 2020 && __cpp_lib_format >= 201907L ^^^ /
-        // vvv _CCCL_STD_VER < 2020 || __cpp_lib_format < 201907L vvv
+#  else // ^^^ __cpp_lib_format >= 201907L ^^^ / vvv __cpp_lib_format < 201907L vvv
 class _CCCL_TYPE_VISIBILITY_DEFAULT format_error : public ::std::runtime_error
 {
 public:
@@ -53,10 +52,11 @@ public:
   _CCCL_HIDE_FROM_ABI format_error& operator=(const format_error&) = default;
   _CCCL_HIDE_FROM_ABI virtual ~format_error() noexcept override    = default;
 };
-#  endif // ^^^ _CCCL_STD_VER < 2020 || __cpp_lib_format < 201907L ^^^
-#endif // _CCCL_HAS_EXCEPTIONS()
+#  endif // ^^^ __cpp_lib_format < 201907L ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -73,4 +73,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMAT_PARSE_CONTEXT_H
+#endif // _LIBCUDACXX___FORMAT_FORMAT_ERROR_H

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: no-exceptions
-
 // <cuda/std/format>
 
 // constexpr void check_arg_id(size_t id);

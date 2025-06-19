@@ -46,9 +46,10 @@ public:
       , __num_args_(__num_args)
   {}
 
-  basic_format_parse_context(const basic_format_parse_context&) = delete;
-
+  basic_format_parse_context(const basic_format_parse_context&)            = delete;
+  basic_format_parse_context(basic_format_parse_context&&)                 = delete;
   basic_format_parse_context& operator=(const basic_format_parse_context&) = delete;
+  basic_format_parse_context& operator=(basic_format_parse_context&&)      = delete;
 
   [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
   {
