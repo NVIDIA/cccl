@@ -27,6 +27,9 @@
 #if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
 #endif
+#if _CCCL_HAS_FLOAT128()
+#  include <crt/device_fp128_functions.h>
+#endif // _CCCL_HAS_FLOAT128()
 
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -68,9 +71,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
 #if _CCCL_HAS_FLOAT128()
       else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __float128>)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__nv_fp128_fmin(__lhs, __rhs);))
+        NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__lhs, __rhs);))
       }
-#endif
+#endif // _CCCL_HAS_FLOAT128()
     }
     return (__lhs < __rhs) ? __lhs : __rhs;
   }
