@@ -41,6 +41,9 @@
 #if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
 #  include <cusolverDn.h>
 #endif
+#if _CCCL_HAS_INCLUDE(<nvrtc.h>)
+#  include <nvrtc.h>
+#endif
 
 namespace cuda::experimental::stf
 {
@@ -157,6 +160,14 @@ public:
     }
     else
 #endif // _CCCL_HAS_INCLUDE(<cublas_v2.h>)
+#if _CCCL_HAS_INCLUDE(<nvrtc.h>)
+      if constexpr (::std::is_same_v<T, nvrtcResult>)
+    {
+      format(
+        "%s(%u) NVRTC error in %s: %s.", loc.file_name(), loc.line(), loc.function_name(), nvrtcGetErrorString(status));
+    }
+    else
+#endif // _CCCL_HAS_INCLUDE(<nvrtc.h>)
       if constexpr (::std::is_same_v<T, cudaOccError>)
       {
         format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
