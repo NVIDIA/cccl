@@ -43,8 +43,7 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
   // This will be our cache lookup key: a pair of options and the source code string
   auto key = ::std::pair(mv(opts), ::std::string(size, '\0'));
-  ::std::snprintf(
-    key.second.data(), key.second.size() + 1, template_str, make_printfable(args)...);
+  ::std::snprintf(key.second.data(), key.second.size() + 1, template_str, make_printfable(args)...);
 
   {
     ::std::lock_guard lock(cache_mutex);
@@ -53,6 +52,8 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
       return it->second;
     }
   }
+
+  ::std::cout << key.second << ::std::endl;
 
   // Compile kernel
   nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(key.second.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
@@ -141,15 +142,12 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 const char* heat_kernel_template = R"(
 #include <cuda/mdspan>
 
-// Alias identical to the one you use on the host
-template <typename T, size_t dimensions = 1>
-using slice =
-    ::cuda::std::mdspan<T,
-                        ::cuda::std::dextents<size_t, dimensions>,
-                        ::cuda::std::layout_stride>;
+const double c = %a;
+const double dx2 = %a;
+const double dy2 = %a;
 
 extern "C"
-__global__ void heat_kernel(%s U, %s U1, double c, double dx2, double dy2)
+__global__ void heat_kernel(%s U, %s U1)
 {
   int tidx = blockIdx.x * blockDim.x + threadIdx.x;
   int tidy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -307,9 +305,10 @@ int main()
 
     // Update Un using Un1 value with a finite difference scheme
     ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &nvrtc_flags](cudaStream_t stream, auto U, auto U1) {
-      CUfunction kernel = lazy_jit(heat_kernel_template, nvrtc_flags, stringize_mdspan(U), stringize_mdspan(U1));
+      CUfunction kernel =
+        lazy_jit(heat_kernel_template, nvrtc_flags, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
 
-      void* args[] = {&U, &U1, const_cast<double*>(&c), const_cast<double*>(&dx2), const_cast<double*>(&dy2)};
+      void* args[] = {&U, &U1};
       // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
       cuda_safe_call(cuLaunchKernel(kernel, 128, 1, 1, 32, 1, 1, 0, stream, args, nullptr));
     };
