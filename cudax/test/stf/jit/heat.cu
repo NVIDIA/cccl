@@ -19,6 +19,71 @@
 
 using namespace cuda::experimental::stf;
 
+inline void check_printf(const char* format)
+{
+  for (; *format; ++format)
+  {
+    if (*format == '%' && *++format != '%')
+      throw ::std::runtime_error("Orphan format specifier: " + ::std::string(format - 1, 2));
+  }
+}
+
+template <typename Head, typename... Tail>
+inline void check_printf(const char* format, Head, Tail... rest)
+{
+  auto bailout = [&]() {
+    throw ::std::runtime_error("Format specifier mismatch: " + ::std::string(format - 1, 2)
+      + " for type " + ::std::string(type_name<Head>) + ".");
+  };
+
+  for (; *format; ++format)
+  {
+    if (*format != '%')
+      continue;
+    switch(*++format) // Move to the next character after '%'
+    {
+      case '%':
+        continue; // Skip escaped '%'
+      case 'a': case 'A': case 'f': case 'F': case 'e': case 'E': case 'g': case 'G':
+        if (!::std::is_floating_point_v<Head>)
+        {
+          bailout();
+        }
+        break;
+      case 'd': case 'i': case 'u': case 'o': case 'x': case 'X': case 'c':
+        if (!::std::is_integral_v<Head>)
+        {
+          bailout();
+        }
+        break;
+      case 's':
+        if (!::std::is_same_v<Head, const char*>)
+        {
+          bailout();
+        }
+        break;
+      case 'p':
+        if (!::std::is_pointer_v<Head>)
+        {
+          bailout();
+        }
+        break;
+      case 'n':
+        if (!::std::is_same_v<Head, int*>)
+        {
+          bailout();
+        }
+        break;
+      default:
+        throw std::runtime_error("Invalid format specifier: " + ::std::string(format - 1, 2));
+    }
+    return check_printf(format + 1, rest...);
+  }
+  // No more format specifiers, but still have arguments left
+  throw std::runtime_error("No format specifier for the argument of type "
+                           + ::std::string(type_name<Head>) + ".");
+}
+
 // Lazy cache by string content (can be replaced with hash or stronger keying)
 template <typename... Args>
 inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, const Args&... args)
@@ -38,6 +103,9 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
       return arg;
     }
   };
+
+  // Check if the format string is valid
+  check_printf(template_str, make_printfable(args)...);
 
   // Format code
   const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
