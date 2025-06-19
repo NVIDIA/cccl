@@ -41,22 +41,28 @@ __host__ __device__ constexpr bool test()
     ;
 }
 
+#if _CCCL_CTK_AT_LEAST(12, 2)
+
 __host__ __device__ bool runtime_test()
 {
   return true
-#if _CCCL_HAS_NVFP16
+#  if _CCCL_HAS_NVFP16
       && test<__half>(__half(1.0f), __half(2.0f), __half(2.0f))
-#endif
-#if _CCCL_HAS_NVBF16()
+#  endif
+#  if _CCCL_HAS_NVBF16()
       && test<__nv_bfloat16>(__nv_bfloat16(1.0f), __nv_bfloat16(2.0f), __nv_bfloat16(2.0f))
-#endif
+#  endif
     ;
 }
+
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
 int main(int, char**)
 {
   assert(test());
+#if _CCCL_CTK_AT_LEAST(12, 2)
   assert(runtime_test());
+#endif
   static_assert(test());
   return 0;
 }
