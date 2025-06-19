@@ -26,11 +26,25 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   static ::std::mutex cache_mutex;
   static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
 
+  auto make_printfable = [](auto&& arg) {
+    using T = ::std::decay_t<decltype(arg)>;
+    if constexpr (::std::is_same_v<T, ::std::string>)
+    {
+      return arg.c_str();
+    }
+    else
+    {
+      static_assert(::std::is_arithmetic_v<T>, "Unsupported type for JIT kernel argument");
+      return arg;
+    }
+  };
+
   // Format code
-  const int size = ::std::snprintf(nullptr, 0, template_str, args...);
+  const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
   // This will be our cache lookup key: a pair of options and the source code string
   auto key = ::std::pair(mv(opts), ::std::string(size, '\0'));
-  ::std::snprintf(key.second.data(), key.second.size(), template_str, ::std::forward<decltype(args)>(args)...);
+  ::std::snprintf(
+    key.second.data(), key.second.size(), template_str, make_printfable(::std::forward<decltype(args)>(args))...);
 
   {
     ::std::lock_guard lock(cache_mutex);
@@ -134,41 +148,6 @@ using slice =
                         ::cuda::std::dextents<size_t, dimensions>,
                         ::cuda::std::layout_stride>;
 
-template <typename T, size_t M, size_t N>
-class static_slice
-{
-public:
-    using extents_t = ::cuda::std::extents<size_t, M, N>;
-    using layout_t = ::cuda::std::layout_stride;
-    using mdspan_t = ::cuda::std::mdspan<T, extents_t, layout_t>;
-
-    __host__ __device__
-    static_slice(T* data, typename layout_t::template mapping<extents_t> mapping)
-        : view_{data, mapping} {}
-
-    // Conversion from dynamic mdspan if extents match
-    template <typename OtherMapping>
-    __host__ __device__
-    static_slice(const ::cuda::std::mdspan<T, ::cuda::std::dextents<size_t, 2>, OtherMapping>& dyn)
-    {
-        auto ext = dyn.extents();
-        assert(ext.extent(0) == M && ext.extent(1) == N);
-        view_ = mdspan_t(dyn.data_handle(), typename layout_t::template mapping<extents_t>(dyn.mapping()));
-    }
-
-    // Access mdspan interface
-    __host__ __device__ T& operator()(size_t i, size_t j) const { return view_(i, j); }
-    __host__ __device__ T* data() const { return view_.data_handle(); }
-    __host__ __device__ auto mapping() const { return view_.mapping(); }
-    __host__ __device__ auto extents() const { return view_.extents(); }
-
-    __host__ __device__
-    size_t extent(size_t i) const { return view_.extent(i); }
-
-private:
-    mdspan_t view_;
-};
-
 //extern "C"
 //__global__ void heat_kernel(slice<const double, 2> U, slice<double, 2> U1, double c, double dx2, double dy2)
 //{
@@ -185,7 +164,7 @@ private:
 //}
 
 extern "C"
-__global__ void heat_kernel(static_slice<const double, %zu, %zu> U, static_slice<double, %zu, %zu> U1, double c, double dx2, double dy2)
+__global__ void heat_kernel(%s U, %s U1, double c, double dx2, double dy2)
 {
   int tidx = blockIdx.x * blockDim.x + threadIdx.x;
   int tidy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -200,6 +179,59 @@ __global__ void heat_kernel(static_slice<const double, %zu, %zu> U, static_slice
 }
 
 )";
+
+template <typename Mdspan, std::size_t... Is>
+std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std::index_sequence<>{})
+{
+  constexpr std::size_t R = Mdspan::rank();
+  if constexpr (R != sizeof...(Is))
+  {
+    return stringize_mdspan(md, std::make_index_sequence<R>{});
+  }
+  else
+  {
+    using ET       = typename Mdspan::element_type;
+    using Layout   = typename Mdspan::layout_type;
+    using Accessor = typename Mdspan::accessor_type;
+    using XT       = typename Mdspan::extents_type;
+
+    std::ostringstream oss;
+
+    // mdspan<element_type,
+    oss << "cuda::std::mdspan<" << type_name<ET>;
+
+    // extents<size_t, e0, e1, ...>,
+    oss << ", cuda::std::extents<size_t";
+    if constexpr (R > 0)
+    {
+      oss << ", ";
+    }
+
+    ((oss << (Is ? ", " : "")
+          << (XT::static_extent(Is) != cuda::std::dynamic_extent ? std::to_string(XT::static_extent(Is))
+                                                                 : std::to_string(md.extent(Is)))),
+     ...);
+
+    oss << ">";
+
+    // layout   (omit default)
+    if constexpr (!std::is_same_v<Layout, cuda::std::layout_right>)
+    {
+      oss << ", " << type_name<Layout>;
+    }
+
+    // accessor (omit default)
+    if constexpr (!std::is_same_v<Accessor, cuda::std::default_accessor<ET>>)
+    {
+      oss << ", " << type_name<Accessor>;
+    }
+
+    std::string out = oss.str();
+    out += '>';
+
+    return out;
+  }
+}
 
 int main()
 {
@@ -288,8 +320,7 @@ int main()
 
     // Update Un using Un1 value with a finite difference scheme
     ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &nvrtc_flags](cudaStream_t stream, auto U, auto U1) {
-      CUfunction kernel =
-        lazy_jit(heat_kernel_template, nvrtc_flags, U.extent(0), U.extent(1), U1.extent(0), U1.extent(1));
+      CUfunction kernel = lazy_jit(heat_kernel_template, nvrtc_flags, stringize_mdspan(U), stringize_mdspan(U1));
 
       void* args[] = {&U, &U1, const_cast<double*>(&c), const_cast<double*>(&dx2), const_cast<double*>(&dy2)};
       // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
@@ -300,4 +331,13 @@ int main()
   }
 
   ctx.finalize();
+  return 0;
+}
+
+int main2()
+{
+  float X[100 * 200];
+  auto s = make_slice(&X[0], std::tuple{100, 200}, 200);
+  ::std::cout << stringize_mdspan(s) << '\n';
+  return 0;
 }
