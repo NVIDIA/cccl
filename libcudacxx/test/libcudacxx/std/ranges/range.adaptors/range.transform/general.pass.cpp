@@ -18,9 +18,7 @@
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #  include <cuda/std/string_view>
 #endif // _LIBCUDACXX_HAS_STRING_VIEW
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif // _LIBCUDACXX_HAS_VECTOR
+#include <cuda/std/inplace_vector>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -88,18 +86,16 @@ __host__ __device__ constexpr bool equal(Range&& range, Expected&& expected)
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   {
-    cuda::std::vector<int> vec = {1, 2, 3, 4};
-    auto transformed           = cuda::std::ranges::transform_view(vec, [](int x) {
+    cuda::std::inplace_vector<int, 5> vec = {1, 2, 3, 4};
+    auto transformed                      = cuda::std::ranges::transform_view(vec, [](int x) {
       return x + 42;
     });
-    int expected[]             = {43, 44, 45, 46};
+    int expected[]                        = {43, 44, 45, 46};
     assert(equal(transformed, expected));
     const auto& ct = transformed;
     assert(equal(ct, expected));
   }
-#endif // _LIBCUDACXX_HAS_VECTOR
 
   {
     // Test a view type that is not const-iterable.

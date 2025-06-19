@@ -25,12 +25,11 @@
 //   typedef void                        pointer;
 // };
 
+#include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
 
-#  include "test_macros.h"
+#include "test_macros.h"
 
 template <class C>
 struct find_container : private cuda::std::back_insert_iterator<C>
@@ -53,7 +52,11 @@ __host__ __device__ void test()
   q.test();
   static_assert((cuda::std::is_same<typename R::container_type, C>::value), "");
   static_assert((cuda::std::is_same<typename R::value_type, void>::value), "");
+#if _CCCL_STD_VER < 2020
   static_assert((cuda::std::is_same<typename R::difference_type, void>::value), "");
+#else // ^^^ _CCCL_STD_VER < 2020 ^^^ / vvv _CCCL_STD_VER >= 2020 vvv
+  static_assert((cuda::std::is_same<typename R::difference_type, cuda::std::ptrdiff_t>::value), "");
+#endif // _CCCL_STD_VER < 2020
   static_assert((cuda::std::is_same<typename R::reference, void>::value), "");
   static_assert((cuda::std::is_same<typename R::pointer, void>::value), "");
   static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::output_iterator_tag>::value), "");
@@ -61,13 +64,7 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
-  test<cuda::std::vector<int>>();
+  test<cuda::std::inplace_vector<int, 3>>();
 
   return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif

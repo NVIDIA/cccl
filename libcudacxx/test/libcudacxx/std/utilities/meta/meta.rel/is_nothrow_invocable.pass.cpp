@@ -11,10 +11,8 @@
 // is_nothrow_invocable
 
 #include <cuda/std/functional>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/type_traits>
-#ifdef _LIBCUDACXX_HAS_VECTOR
-#  include <cuda/std/vector>
-#endif // _LIBCUDACXX_HAS_VECTOR
 
 #include "test_macros.h"
 
@@ -101,11 +99,9 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_invocable<const int&>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable<int&&>::value, "");
 
-#ifdef _LIBCUDACXX_HAS_VECTOR
-    static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int>>::value, "");
-    static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int*>>::value, "");
-    static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int**>>::value, "");
-#endif // _LIBCUDACXX_HAS_VECTOR
+    static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::inplace_vector<int, 3>>::value, "");
+    static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::inplace_vector<int*, 3>>::value, "");
+    static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::inplace_vector<int**, 3>>::value, "");
 
     static_assert(!cuda::std::is_nothrow_invocable<AbominableFunc>::value, "");
 
@@ -138,11 +134,9 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_invocable_r<int, const int&>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, int&&>::value, "");
 
-#ifdef _LIBCUDACXX_HAS_VECTOR
-    static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int>>::value, "");
-    static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int*>>::value, "");
-    static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int**>>::value, "");
-#endif // _LIBCUDACXX_HAS_VECTOR
+    static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::inplace_vector<int, 3>>::value, "");
+    static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::inplace_vector<int*, 3>>::value, "");
+    static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::inplace_vector<int**, 3>>::value, "");
 
     static_assert(!cuda::std::is_nothrow_invocable_r<void, AbominableFunc>::value, "");
 
