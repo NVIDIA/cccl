@@ -1,6 +1,7 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit REQUIRED)
 
 ## cudax_add_test
 #
@@ -25,6 +26,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
+    CUDA::cuda_driver
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -141,6 +143,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target green_context ${cn_target}
     green_context/green_ctx_smoke.cu
+  )
+
+  cudax_add_catch2_test(test_target kernel ${cn_target}
+    kernel/kernel_ref.cu
   )
 
   cudax_add_catch2_test(test_target algorithm ${cn_target}

@@ -20,10 +20,12 @@
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch_transform.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
+#include <cuda.h>
 #include <cuda_runtime.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -82,6 +84,49 @@ template <typename Config, typename Kernel, typename... Args>
 
   // TODO lower to cudaLaunchKernelExC?
   return cudaLaunchKernelEx(&config, kernel_fn, _CUDA_VSTD::forward<Args>(args)...);
+}
+
+template <typename Config, typename... Args>
+[[nodiscard]] cudaError_t launch_impl(::cuda::stream_ref stream, Config conf, CUfunction kernel, Args&&... args)
+{
+  static_assert(!::cuda::std::is_same_v<decltype(conf.dims), no_init_t>,
+                "Can't launch a configuration without hierarchy dimensions");
+  CUlaunchConfig config{};
+  cudaError_t status                      = cudaSuccess;
+  constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
+  constexpr unsigned int num_attrs_needed = __detail::kernel_config_count_attr_space(conf) + has_cluster_level;
+  CUlaunchAttribute attrs[num_attrs_needed == 0 ? 1 : num_attrs_needed];
+  config.attrs    = attrs;
+  config.numAttrs = 0;
+  config.hStream  = stream.get();
+
+  status = __detail::apply_kernel_config(conf, config, kernel);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
+
+  config.gridDimX  = conf.dims.extents(block, grid).x;
+  config.gridDimY  = conf.dims.extents(block, grid).y;
+  config.gridDimZ  = conf.dims.extents(block, grid).z;
+  config.blockDimX = conf.dims.extents(thread, block).x;
+  config.blockDimY = conf.dims.extents(thread, block).y;
+  config.blockDimZ = conf.dims.extents(thread, block).z;
+
+  if constexpr (has_cluster_level)
+  {
+    auto cluster_dims                              = conf.dims.extents(block, cluster);
+    config.attrs[config.numAttrs].id               = CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
+    config.attrs[config.numAttrs].value.clusterDim = {
+      static_cast<unsigned int>(cluster_dims.x),
+      static_cast<unsigned int>(cluster_dims.y),
+      static_cast<unsigned int>(cluster_dims.z)};
+    config.numAttrs++;
+  }
+
+  const void* arg_ptrs[] = {_CUDA_VSTD::addressof(args)...};
+
+  return static_cast<cudaError_t>(cuLaunchKernelEx(&config, kernel, const_cast<void**>(arg_ptrs), nullptr));
 }
 } // namespace __detail
 
@@ -221,6 +266,71 @@ void launch(::cuda::stream_ref stream,
 }
 
 /**
+ * @brief Launch a kernel with specified configuration and arguments
+ *
+ * Launches a kernel on the specified stream and with specified configuration.
+ * Function might or might not accept the configuration as its first argument.
+ *
+ *
+ * @par Snippet
+ * @code
+ * #include <cstdio>
+ * #include <cuda/experimental/launch.cuh>
+ * #include <cuda/experimental/kernel.cuh>
+ *
+ * template <typename Configuration>
+ * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+ *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+ *         printf("Hello from the GPU\n");
+ *     }
+ * }
+ *
+ * void launch_kernel(cuda::stream_ref stream) {
+ *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
+ *
+ *     cudax::launch(stream, config, cudax::kernel_ref{kernel<decltype(config)>}, 42);
+ * }
+ * @endcode
+ *
+ * @param stream
+ * cuda::stream_ref to launch the kernel into
+ *
+ * @param conf
+ * configuration for this launch
+ *
+ * @param kernel
+ * kernel function to be launched
+ *
+ * @param args
+ * arguments to be passed into the kernel function
+ */
+template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
+void launch(::cuda::stream_ref stream,
+            const kernel_config<Dimensions, Config...>& conf,
+            kernel_ref<void(kernel_config<Dimensions, Config...>, ExpArgs...)> kernel,
+            ActArgs&&... args)
+{
+  static_assert(sizeof...(ExpArgs) == sizeof...(ActArgs),
+                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
+  __ensure_current_device __dev_setter(stream);
+
+  CUfunction kernel_func = __detail::driver::kernelGetFunction(kernel.get());
+
+  cudaError_t status = __detail::launch_impl(
+    stream, //
+    conf,
+    kernel_func,
+    conf,
+    __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
+
+  if (status != cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
+  }
+}
+
+/**
  * @brief Launch a kernel function with specified configuration and arguments
  *
  * Launches a kernel function on the specified stream and with specified configuration.
@@ -272,6 +382,69 @@ void launch(::cuda::stream_ref stream,
     stream, //
     conf,
     kernel,
+    __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
+
+  if (status != cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
+  }
+}
+
+/**
+ * @brief Launch a kernel function with specified configuration and arguments
+ *
+ * Launches a kernel on the specified stream and with specified configuration.
+ * Function might or might not accept the configuration as its first argument.
+ *
+ * @par Snippet
+ * @code
+ * #include <cstdio>
+ * #include <cuda/experimental/launch.cuh>
+ * #include <cuda/experimental/kernel.cuh>
+ *
+ * template <typename Configuration>
+ * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+ *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+ *         printf("Hello from the GPU\n");
+ *     }
+ * }
+ *
+ * void launch_kernel(cuda::stream_ref stream) {
+ *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
+ *
+ *     cudax::launch(stream, config, cudax::kernel_ref{kernel}, 42);
+ * }
+ * @endcode
+ *
+ * @param stream
+ * cuda::stream_ref to launch the kernel into
+ *
+ * @param conf
+ * configuration for this launch
+ *
+ * @param kernel
+ * kernel_ref object to be launched
+ *
+ * @param args
+ * arguments to be passed into the kernel function
+ */
+template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
+void launch(::cuda::stream_ref stream,
+            const kernel_config<Dimensions, Config...>& conf,
+            kernel_ref<void(ExpArgs...)> kernel,
+            ActArgs&&... args)
+{
+  static_assert(sizeof...(ExpArgs) == sizeof...(ActArgs),
+                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
+  __ensure_current_device __dev_setter(stream);
+
+  CUfunction kernel_func = __detail::driver::kernelGetFunction(kernel.get());
+
+  cudaError_t status = __detail::launch_impl(
+    stream, //
+    conf,
+    kernel_func,
     __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
 
   if (status != cudaSuccess)
