@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -158,15 +159,19 @@ struct sync_wait_t
   struct __throw_error_fn
   {
     template <class _Error>
-    _CCCL_HOST_API void operator()(_Error&& __err) const
+    _CCCL_HOST_API void operator()(_Error __err) const
     {
-      if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::exception_ptr>)
+      if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::exception_ptr>)
       {
         ::std::rethrow_exception(static_cast<_Error&&>(__err));
       }
-      else if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::error_code>)
+      else if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::error_code>)
       {
-        throw ::std::system_error(static_cast<_Error&&>(__err));
+        throw ::std::system_error(__err);
+      }
+      else if constexpr (_CUDA_VSTD::is_same_v<_Error, cudaError_t>)
+      {
+        ::cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
       }
       else
       {
