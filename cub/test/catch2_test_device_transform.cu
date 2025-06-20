@@ -5,15 +5,16 @@
 
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
+#include <cub/iterator/cache_modified_output_iterator.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
 
 #include <sstream>
@@ -33,7 +34,7 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>,
          offset_types)
 {
   using type     = c2h::get<0, TestType>;
@@ -378,6 +379,21 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type", "[device][devi
   REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) + 4));
 }
 
+C2H_TEST("DeviceTransform::Transform fancy output iterator type with void value type", "[device][device_transform]")
+{
+  using type          = int;
+  const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
+  c2h::device_vector<type> a(num_items, 1);
+  c2h::device_vector<type> b(num_items, 2);
+  c2h::device_vector<type> result(num_items, thrust::no_init);
+
+  using It = cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, int>;
+  static_assert(cuda::std::is_void_v<It::value_type>);
+  auto out = It{thrust::raw_pointer_cast(result.data())};
+  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, ::cuda::std::plus<type>{});
+  REQUIRE(result == c2h::device_vector<type>(num_items, 3));
+}
+
 C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][device_transform]")
 {
   using type          = int;
@@ -543,4 +559,102 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
 
   STATIC_REQUIRE(::cuda::std::is_constructible_v<kernel_arg>);
   STATIC_REQUIRE(::cuda::std::is_copy_constructible_v<kernel_arg>);
+}
+
+C2H_TEST("DeviceTransform::Transform vectorized output bug", "[device][device_transform]")
+{
+  using thrust::placeholders::_1;
+
+  int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
+  c2h::device_vector<std::uint16_t> input(num_items);
+  c2h::device_vector<std::uint16_t> output(num_items);
+  thrust::sequence(input.begin(), input.end());
+
+  // auto out_it = output.begin(); // works
+  auto out_it = thrust::make_transform_output_iterator(output.begin(), _1);
+  transform_many(input.begin(), out_it, num_items, _1 + 1);
+
+  c2h::host_vector<std::uint16_t> reference(num_items);
+  thrust::generate(reference.begin(), reference.end(), [i = 0]() mutable {
+    return static_cast<std::uint16_t>(++i);
+  });
+  CHECK(output == reference);
+}
+
+// See discussion on: https://github.com/NVIDIA/cccl/pull/4815
+C2H_TEST("DeviceTransform::Transform vectorized output bug", "[device][device_transform]")
+{
+  using thrust::placeholders::_1;
+
+  int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
+  c2h::device_vector<std::uint16_t> input(num_items);
+  c2h::device_vector<std::uint16_t> output(num_items);
+  thrust::sequence(input.begin(), input.end());
+
+  // auto out_it = output.begin(); // works
+  auto out_it = thrust::make_transform_output_iterator(output.begin(), _1);
+  transform_many(input.begin(), out_it, num_items, _1 + 1);
+
+  c2h::host_vector<std::uint16_t> reference(num_items);
+  thrust::generate(reference.begin(), reference.end(), [i = 0]() mutable {
+    return static_cast<std::uint16_t>(++i);
+  });
+  CHECK(output == reference);
+}
+
+// See discussion on: https://github.com/NVIDIA/cccl/pull/4815
+struct A
+{
+  int value;
+};
+
+struct B
+{
+  int value;
+};
+
+struct C
+{
+  int value;
+
+  __host__ __device__ friend auto operator==(C a, C b) -> bool
+  {
+    return a.value == b.value;
+  }
+
+  friend auto operator<<(std::ostream& os, C c) -> std::ostream&
+  {
+    return os << "C{" << c.value << "}";
+  }
+};
+
+struct AtoB
+{
+  __host__ __device__ B operator()(A a) const
+  {
+    return B{a.value + 1};
+  }
+};
+
+struct BtoC
+{
+  __host__ __device__ C operator()(B b) const
+  {
+    return C{-b.value};
+  }
+};
+
+C2H_TEST("DeviceTransform::Transform function/output_iter return type not convertible", "[device][device_transform]")
+{
+  using thrust::placeholders::_1;
+
+  const int num_items = 10'000;
+  c2h::device_vector<A> input(num_items, A{42});
+  c2h::device_vector<C> output(num_items, thrust::no_init);
+
+  auto out_it = thrust::make_transform_output_iterator(output.begin(), BtoC{});
+  transform_many(input.begin(), out_it, num_items, AtoB{});
+
+  c2h::device_vector<C> reference(num_items, C{-43});
+  CHECK(output == reference);
 }
