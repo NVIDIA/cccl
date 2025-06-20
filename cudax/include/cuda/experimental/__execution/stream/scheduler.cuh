@@ -78,7 +78,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       return {};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_late_t) noexcept -> stream_domain
+    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
     {
       return {};
     }
