@@ -395,6 +395,7 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
+#if 0
     ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &nvrtc_flags](cudaStream_t stream, auto U, auto U1) {
       CUfunction kernel =
         lazy_jit(heat_kernel_template, nvrtc_flags, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
@@ -403,6 +404,14 @@ int main()
       // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
       cuda_safe_call(cuLaunchKernel(kernel, 128, 1, 1, 32, 1, 1, 0, stream, args, nullptr));
     };
+#else
+    ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
+      CUfunction kernel =
+        lazy_jit(heat_kernel_template, nvrtc_flags, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
+
+      return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
+    };
+#endif
 
     ::std::swap(lU, lU1);
   }
