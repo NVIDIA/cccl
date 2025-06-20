@@ -294,7 +294,7 @@ int main()
   cuda_safe_call(cuInit(0));
 
   // Put the include paths in the NVRTC flags
-  ::std::vector<::std::string> nvrtc_flags{"-I../../libcudacxx/include"};
+  ::std::vector<::std::string> nvrtc_flags{"-I../../libcudacxx/include", "-I../../cudax/include/"};
   ::std::string s =
     run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
 
