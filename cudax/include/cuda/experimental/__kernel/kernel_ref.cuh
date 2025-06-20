@@ -52,7 +52,11 @@ class kernel_ref<void(_Args...)>
   }
 
 public:
+#if _CCCL_CTK_BELOW(12, 1)
   using value_type = ::CUkernel;
+#else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
+  using value_type = ::cudaKernel_t;
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 1) ^^^
 
   kernel_ref(_CUDA_VSTD::nullptr_t) = delete;
 
