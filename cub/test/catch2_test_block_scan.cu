@@ -375,7 +375,13 @@ T host_scan(scan_mode mode, c2h::host_vector<T>& result, ScanOpT scan_op, T init
 
 using types = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
 // FIXME(bgruber): uchar3 fails the test, see #3835
-using vec_types              = c2h::type_list<ulonglong4, /*uchar3,*/ short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  /*uchar3,*/ short2>;
 using block_dim_x            = c2h::enum_type_list<int, 17, 32, 65, 96>;
 using block_dim_yz           = c2h::enum_type_list<int, 1, 2>;
 using items_per_thread       = c2h::enum_type_list<int, 1, 9>;

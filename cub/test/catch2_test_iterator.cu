@@ -63,10 +63,16 @@ using types = ::cuda::std::__type_push_back<
   char4,
   short4,
   int4,
+  float4,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  long4_16a,
+  longlong4_16a,
+  double4_16a,
+#else
   long4,
   longlong4,
-  float4,
   double4,
+#endif
   c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
 
 template <typename InputIteratorT, typename T>
