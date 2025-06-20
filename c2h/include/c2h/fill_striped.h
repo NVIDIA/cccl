@@ -35,7 +35,7 @@ struct scalar_to_vec_t
   template <typename T>
   __host__ __device__ __forceinline__ auto operator()(T scalar) -> VectorT
   {
-    return scalar;
+    return static_cast<VectorT>(scalar);
   }
 };
 
