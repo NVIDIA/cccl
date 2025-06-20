@@ -160,6 +160,11 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
   cudax::device_ref device{0};
   cudax::__ensure_current_device device_guard{device};
 
+  SECTION("Types")
+  {
+    STATIC_REQUIRE(cuda::std::is_same_v<typename cudax::kernel_ref<void()>::value_type, CUkernel>);
+  }
+
   SECTION("Default constructor")
   {
     STATIC_REQUIRE(!cuda::std::is_default_constructible_v<cudax::kernel_ref<void()>>);
