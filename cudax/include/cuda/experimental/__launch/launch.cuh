@@ -134,8 +134,8 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
     __config.numAttrs++;
   }
 
-  void* __pArgs[] = {reinterpret_cast<void*>(&__args)...};
-  return __do_launch(_CUDA_VSTD::forward<_Dst>(__dst), __config, __kernel_fn, __pArgs);
+  const void* __pArgs[] = {_CUDA_VSTD::addressof(__args)...};
+  return __do_launch(_CUDA_VSTD::forward<_Dst>(__dst), __config, __kernel_fn, const_cast<void**>(__pArgs));
 }
 
 _CCCL_TEMPLATE(typename _GraphInserter)
