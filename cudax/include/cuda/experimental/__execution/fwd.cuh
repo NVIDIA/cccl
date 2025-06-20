@@ -178,7 +178,7 @@ struct get_forward_progress_guarantee_t;
 template <class _Tag>
 struct get_completion_scheduler_t;
 struct get_domain_t;
-struct get_domain_late_t;
+struct get_domain_override_t;
 
 // get_forward_progress_guarantee:
 enum class forward_progress_guarantee

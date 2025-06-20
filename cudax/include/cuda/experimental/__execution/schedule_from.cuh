@@ -106,13 +106,13 @@ struct __transfer_sndr_t
     // the sender.
     _CCCL_TEMPLATE(class _LateDomain = __late_domain_t)
     _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_LateDomain, __nil>) )
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_late_t) noexcept -> _LateDomain
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_override_t) noexcept -> _LateDomain
     {
       return {};
     }
 
-    // The following overload will not be considered when _Query is get_domain_late_t
-    // because get_domain_late_t is not a forwarding query.
+    // The following overload will not be considered when _Query is get_domain_override_t
+    // because get_domain_override_t is not a forwarding query.
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
