@@ -113,7 +113,7 @@ public:
   //! @return The size in bytes of statically allocated shared memory for the kernel on the specified device
   //!
   //! @throws cuda_error if the shared memory size cannot be obtained
-  [[nodiscard]] _CUDA_VSTD::size_t static_shared_size(device_ref __dev) const
+  [[nodiscard]] _CUDA_VSTD::size_t static_shared_memory_size(device_ref __dev) const
   {
     return static_cast<_CUDA_VSTD::size_t>(
       __get_attrib(::CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __dev));
@@ -126,7 +126,7 @@ public:
   //! @return The size in bytes of user-allocated constant memory for the kernel on the specified device
   //!
   //! @throws cuda_error if the constant memory size cannot be obtained
-  [[nodiscard]] _CUDA_VSTD::size_t const_size(device_ref __dev) const
+  [[nodiscard]] _CUDA_VSTD::size_t const_memory_size(device_ref __dev) const
   {
     return static_cast<_CUDA_VSTD::size_t>(
       __get_attrib(::CUfunction_attribute::CU_FUNC_ATTRIBUTE_CONST_SIZE_BYTES, __dev));
@@ -139,7 +139,7 @@ public:
   //! @return The size in bytes of local memory used by each thread of the kernel on the specified device
   //!
   //! @throws cuda_error if the local memory size cannot be obtained
-  [[nodiscard]] _CUDA_VSTD::size_t local_size(device_ref __dev) const
+  [[nodiscard]] _CUDA_VSTD::size_t local_memory_size(device_ref __dev) const
   {
     return static_cast<_CUDA_VSTD::size_t>(
       __get_attrib(::CUfunction_attribute::CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES, __dev));

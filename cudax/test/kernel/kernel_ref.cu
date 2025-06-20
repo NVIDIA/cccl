@@ -249,29 +249,31 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
   SECTION("Static shared memory size")
   {
     STATIC_REQUIRE(
-      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().static_shared_size(device)),
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().static_shared_memory_size(device)),
                            cuda::std::size_t>);
 
     cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
-    CUDAX_REQUIRE(kernel_ref.static_shared_size(device) >= sizeof(int) * 32);
+    CUDAX_REQUIRE(kernel_ref.static_shared_memory_size(device) >= sizeof(int) * 32);
   }
 
   SECTION("Constant memory size")
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().const_size(device)),
-                                        cuda::std::size_t>);
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().const_memory_size(device)),
+                           cuda::std::size_t>);
 
     cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
-    CUDAX_REQUIRE(kernel_ref.const_size(device) >= sizeof(int));
+    CUDAX_REQUIRE(kernel_ref.const_memory_size(device) >= sizeof(int));
   }
 
   SECTION("Local memory size")
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().local_size(device)),
-                                        cuda::std::size_t>);
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().local_memory_size(device)),
+                           cuda::std::size_t>);
 
     cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
-    [[maybe_unused]] const auto local_size = kernel_ref.local_size(device);
+    [[maybe_unused]] const auto local_size = kernel_ref.local_memory_size(device);
   }
 
   SECTION("Number of registers")
