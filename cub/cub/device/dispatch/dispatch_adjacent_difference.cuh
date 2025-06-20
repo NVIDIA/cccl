@@ -38,7 +38,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_adjacent_difference.cuh>
-#include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_debug.cuh>
