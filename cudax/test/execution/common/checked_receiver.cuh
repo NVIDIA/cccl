@@ -12,6 +12,8 @@
 
 #include <cuda/experimental/execution.cuh>
 
+#include <exception>
+
 #include "testing.cuh"
 
 namespace
@@ -69,7 +71,7 @@ struct checked_value_receiver
 template <class... Values>
 _CCCL_HOST_DEVICE checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
 
-template <class Error>
+template <class Error = ::std::exception_ptr>
 struct checked_error_receiver
 {
   using receiver_concept = cudax_async::receiver_t;
