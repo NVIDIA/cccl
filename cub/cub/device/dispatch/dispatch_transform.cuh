@@ -206,7 +206,7 @@ struct dispatch_t<StableAddress,
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
-          _CCCL_ASSERT_HOST(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
+          _CCCL_ASSERT(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_counts;
         }
 
@@ -244,10 +244,10 @@ struct dispatch_t<StableAddress,
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 with GCC 7 fails CTAD here */>(config.error());
     }
-    _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
-    _CCCL_ASSERT_HOST(config->tile_size > 0, "");
-    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_alignment == 0, "");
-    _CCCL_ASSERT_HOST((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
+    _CCCL_ASSERT(config->elem_per_thread > 0, "");
+    _CCCL_ASSERT(config->tile_size > 0, "");
+    _CCCL_ASSERT(config->tile_size % bulk_copy_alignment == 0, "");
+    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
