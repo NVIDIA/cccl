@@ -19,6 +19,17 @@
 
 using namespace cuda::experimental::stf;
 
+// Replaces all occurrences of 'from' with 'to' in the input string 'str'.
+// This is a simple utility for named placeholder substitution (e.g., replacing %KERNEL_NAME%).
+::std::string replace_all(::std::string str, ::std::string_view from, ::std::string_view to) {
+    size_t pos = 0;
+    while ((pos = str.find(from, pos)) != std::string::npos) {
+        str.replace(pos, from.length(), to);
+        pos += to.length(); // Prevent infinite loop
+    }
+    return str;
+}
+
 inline void check_printf(const char* format)
 {
   for (; *format; ++format)
@@ -104,8 +115,14 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
     }
   };
 
+  // XXX FIXME : we currently detect %KERNEL_NAME% in the template to replace
+  // it, but if this is part of the key used to index kernels the string will
+  // differ everytime. So we defer the substitution of kernel names later,
+  // which introduces a problem with check_printf that will not work with
+  // %KERNEL_NAME%.
+
   // Check if the format string is valid
-  check_printf(template_str, make_printfable(args)...);
+  //  check_printf(template_with_name.c_str(), make_printfable(args)...);
 
   // Format code
   const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
@@ -121,10 +138,16 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
     }
   }
 
-  ::std::cout << key.second << ::std::endl;
+  // Select generated kernel name: this cannot be hardcoded because we may instantiate the same template with different values
+  static int jit_kernel_cnt = 0;
+  ::std::string kernel_name = "jit_kernel" + ::std::to_string(jit_kernel_cnt++);
+  fprintf(stderr, "kernel_name: %s\n", kernel_name.c_str());
+  ::std::string template_with_name = replace_all(key.second.c_str(), "%KERNEL_NAME%", kernel_name.c_str());
+
+  ::std::cout << template_with_name << ::std::endl;
 
   // Compile kernel
-  nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(key.second.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
+  nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(template_with_name.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
   ::std::vector<const char*> raw_opts;
   raw_opts.reserve(key.first.size());
   for (const auto& s : key.first)
@@ -148,8 +171,8 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
   cuda_safe_call(nvrtcDestroyProgram(&prog));
 
-  CUmodule module   = cuda_try<cuModuleLoadData>(ptx.data());
-  CUfunction kernel = cuda_try<cuModuleGetFunction>(module, "heat_kernel");
+  CUmodule cuda_module   = cuda_try<cuModuleLoadData>(ptx.data());
+  CUfunction kernel = cuda_try<cuModuleGetFunction>(cuda_module, kernel_name.c_str());
 
   {
     ::std::lock_guard lock(cache_mutex);
@@ -215,7 +238,7 @@ const double dx2 = %a;
 const double dy2 = %a;
 
 extern "C"
-__global__ void heat_kernel(%s U, %s U1)
+__global__ void %KERNEL_NAME%(%s U, %s U1)
 {
   int tidx = blockIdx.x * blockDim.x + threadIdx.x;
   int tidy = blockIdx.y * blockDim.y + threadIdx.y;
