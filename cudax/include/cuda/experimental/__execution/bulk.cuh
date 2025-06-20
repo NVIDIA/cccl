@@ -298,18 +298,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t : __bulk_t<bulk_chunked_t>
     template <class... _Values>
     _CCCL_API void set_value(_Values&&... __values) noexcept
     {
-      _CUDAX_TRY( //
-        ({
+      _CCCL_TRY //
+        {
           this->__fn_(_Shape(0), _Shape(this->__shape_), __values...);
           execution::set_value(static_cast<_Rcvr&&>(this->__rcvr_), static_cast<_Values&&>(__values)...);
-        }),
-        _CUDAX_CATCH(...) //
-        ({
+        }
+        _CCCL_CATCH_ALL //
+        {
           if constexpr (!__nothrow_callable<_Fn&, _Shape, _Shape, _Values&...>)
           {
             execution::set_error(static_cast<_Rcvr&&>(this->__rcvr_), ::std::current_exception());
           }
-        }))
+        }
     }
   };
 
@@ -370,21 +370,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
     template <class... _Values>
     _CCCL_API void set_value(_Values&&... __values) noexcept
     {
-      _CUDAX_TRY( //
-        ({
+      _CCCL_TRY //
+        {
           for (_Shape __index{}; __index != this->__shape_; ++__index)
           {
             this->__fn_(_Shape(__index), __values...);
           }
           execution::set_value(static_cast<_Rcvr&&>(this->__rcvr_), static_cast<_Values&&>(__values)...);
-        }),
-        _CUDAX_CATCH(...) //
-        ({
+        }
+        _CCCL_CATCH_ALL //
+        {
           if constexpr (!__nothrow_callable<_Fn&, _Shape, _Values&...>)
           {
             execution::set_error(static_cast<_Rcvr&&>(this->__rcvr_), ::std::current_exception());
           }
-        }))
+        }
     }
   };
 
