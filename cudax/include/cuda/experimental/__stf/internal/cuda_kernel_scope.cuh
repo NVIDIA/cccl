@@ -60,7 +60,8 @@ struct cuda_kernel_desc
     auto arg_tuple = ::std::make_shared<TupleType>(std::forward<Args>(args)...);
 
     // Ensure we are packing arguments of the proper types to call func
-    static_assert(::std::is_invocable_v<Fun, Args...>);
+    // FIXME, only valid if runtime API
+    // static_assert(::std::is_invocable_v<Fun, Args...>);
 
     // Get the address of every tuple entry
     ::std::apply(
@@ -171,7 +172,7 @@ private:
   static func_variant_t store_func(CUfunction f) { return f; }
 
   template <typename T>
-  static func_variant_t store_func(T* f) { return static_cast<const void*>(f); }
+  static func_variant_t store_func(T* f) { return (const void*)(f); }
 };
 
 namespace reserved
