@@ -52,8 +52,7 @@ struct pointer_raw_pointer : pointer_traits_detail::pointer_raw_pointer_impl<T>
 // this could be a lot better, but for our purposes, it's probably
 // sufficient just to check if pointer_raw_pointer<T> has meaning
 template <typename T>
-struct is_thrust_pointer : is_metafunction_defined<pointer_raw_pointer<T>>
-{};
+inline constexpr bool is_thrust_pointer_v = is_metafunction_defined<pointer_raw_pointer<T>>::value;
 
 } // namespace detail
 
