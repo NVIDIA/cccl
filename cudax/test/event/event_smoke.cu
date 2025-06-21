@@ -94,6 +94,17 @@ C2H_CCCLRT_TEST("can construct an event with a stream_ref", "[event]")
   CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
 }
 
+C2H_CCCLRT_TEST("can construct an event with a device_ref", "[event]")
+{
+  cudax::device_ref device{0};
+  cudax::event ev(device);
+  CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
+  cudax::stream stream{device};
+  ev.record(stream);
+  ev.sync();
+  CUDAX_REQUIRE(ev.is_done());
+}
+
 C2H_CCCLRT_TEST("can wait on an event", "[event]")
 {
   cudax::stream stream{cudax::device_ref{0}};
