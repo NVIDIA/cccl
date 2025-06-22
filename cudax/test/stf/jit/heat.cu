@@ -254,6 +254,69 @@ __global__ void %KERNEL_NAME%(%s U, %s U1)
 
 )";
 
+const char *init_kernel_template = R"(
+#include <cuda/mdspan>
+
+__global__ void %KERNEL_NAME%(%s U)
+{
+  size_t i          = blockIdx.x * blockDim.x + threadIdx.x; // STATIC dims ?
+  const size_t step = blockDim.x * gridDim.x;
+
+  const size_t n = U.size();
+  const auto targs = ::cuda::std::make_tuple(U);
+//  auto shape = shape(U);// static_shape_t shape = FILLED AUTOMATICALLY
+
+  auto f = [](size_t i, size_t j, %s U) {
+    double rad = U.extent(0) / 8.0;
+    double dx  = (double) i - U.extent(0) / 2;
+    double dy  = (double) j - U.extent(1) / 2;
+
+    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+
+    /* Set up boundary conditions */
+    if (j == 0.0)
+    {
+      U(i, j) = 100.0;
+    }
+    if (j == U.extent(1) - 1)
+    {
+      U(i, j) = 0.0;
+    }
+    if (i == 0.0)
+    {
+      U(i, j) = 0.0;
+    }
+    if (i == U.extent(0) - 1)
+    {
+      U(i, j) = 0.0;
+    }
+  };
+
+  // XXX HARDCODED ...
+  // This transforms a tuple of (shape, 1D index) into a coordinate
+  auto shape_index_to_coords = [&U](size_t index)
+  {
+    return ::cuda::std::make_tuple(index % U.extent(0), index / U.extent(0));
+  }
+
+
+  // This will explode the targs tuple into a pack of data
+
+  // Help the compiler which may not detect that a device lambda is calling a device lambda
+  auto explode_args = [&](auto&&... data) {
+    auto const explode_coords = [&](auto&&... coords) {
+      f(coords..., data...);
+    };
+    // For every linearized index in the shape
+    for (; i < n; i += step)
+    {
+      ::cuda::std::apply(explode_coords, shape_index_to_coords(i));
+    }
+  };
+  ::cuda::std::apply(explode_args, ::std::move(targs));
+}
+)";
+
 template <typename Mdspan, std::size_t... Is>
 std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std::index_sequence<>{})
 {
@@ -317,7 +380,7 @@ int main()
   cuda_safe_call(cuInit(0));
 
   // Put the include paths in the NVRTC flags
-  ::std::vector<::std::string> nvrtc_flags{"-I../../libcudacxx/include", "-I../../cudax/include/"};
+  ::std::vector<::std::string> nvrtc_flags{"-I../../libcudacxx/include", "-I../../cudax/include/","-default-device"};
   ::std::string s =
     run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
 
@@ -342,31 +405,39 @@ int main()
 
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
-  ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
-    double rad = U.extent(0) / 8.0;
-    double dx  = (double) i - U.extent(0) / 2;
-    double dy  = (double) j - U.extent(1) / 2;
+//  ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
+//    double rad = U.extent(0) / 8.0;
+//    double dx  = (double) i - U.extent(0) / 2;
+//    double dy  = (double) j - U.extent(1) / 2;
+//
+//    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+//
+//    /* Set up boundary conditions */
+//    if (j == 0.0)
+//    {
+//      U(i, j) = 100.0;
+//    }
+//    if (j == U.extent(1) - 1)
+//    {
+//      U(i, j) = 0.0;
+//    }
+//    if (i == 0.0)
+//    {
+//      U(i, j) = 0.0;
+//    }
+//    if (i == U.extent(0) - 1)
+//    {
+//      U(i, j) = 0.0;
+//    }
+//  };
 
-    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+  ctx.cuda_kernel(lU.write())->*[&](auto U) {
+    CUfunction kernel =
+      lazy_jit(init_kernel_template, nvrtc_flags, stringize_mdspan(U), stringize_mdspan(U));
 
-    /* Set up boundary conditions */
-    if (j == 0.0)
-    {
-      U(i, j) = 100.0;
-    }
-    if (j == U.extent(1) - 1)
-    {
-      U(i, j) = 0.0;
-    }
-    if (i == 0.0)
-    {
-      U(i, j) = 0.0;
-    }
-    if (i == U.extent(0) - 1)
-    {
-      U(i, j) = 0.0;
-    }
+    return cuda_kernel_desc{kernel, 128, 32, 0, U};
   };
+
 
   // diffusion constant
   double a = 0.5;
