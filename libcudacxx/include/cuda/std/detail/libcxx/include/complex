@@ -1094,7 +1094,7 @@ template <class _Tp>
 
 // exp fp32 specialization
 template <>
-_CCCL_API complex<float> exp(const complex<float>& __x)
+[[nodiscard]] _CCCL_API inline complex<float> exp(const complex<float>& __x)
 {
   const float __r = __x.real();
   const float __i = __x.imag();
@@ -1207,7 +1207,7 @@ _CCCL_API complex<float> exp(const complex<float>& __x)
 // exp fp64 specialization
 
 template <>
-_CCCL_API complex<double> exp<double>(const complex<double>& __x)
+[[nodiscard]] _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
 {
   const double __r = __x.real();
   const double __i = __x.imag();

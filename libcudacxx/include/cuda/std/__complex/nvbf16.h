@@ -295,7 +295,7 @@ _CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
 template <>
-_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::exp(complex<float>{__x})};
 }
