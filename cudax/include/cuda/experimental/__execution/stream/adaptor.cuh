@@ -338,7 +338,7 @@ struct __attrs_t
 {
   // This makes sure that when `connect` calls `transform_sender`, it will use the stream
   // domain to find a customization.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_late_t) noexcept -> stream_domain
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
   {
     return {};
   }
