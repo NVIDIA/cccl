@@ -257,16 +257,21 @@ __global__ void %KERNEL_NAME%(%s U, %s U1)
 const char *init_kernel_template = R"(
 #include <cuda/mdspan>
 
+extern "C"
 __global__ void %KERNEL_NAME%(%s U)
 {
-  size_t i          = blockIdx.x * blockDim.x + threadIdx.x; // STATIC dims ?
-  const size_t step = blockDim.x * gridDim.x;
+  size_t _i          = blockIdx.x * blockDim.x + threadIdx.x; // STATIC dims ?
+  const size_t _step = blockDim.x * gridDim.x;
 
   const size_t n = U.size();
+  printf("N=%%ld\n", n);
   const auto targs = ::cuda::std::make_tuple(U);
 //  auto shape = shape(U);// static_shape_t shape = FILLED AUTOMATICALLY
 
   auto f = [](size_t i, size_t j, %s U) {
+    // printf("U(%%ld,%%ld) = 100.0\n", (long)i, (long)j);
+    U(i, j) = 100.0;
+    return;
     double rad = U.extent(0) / 8.0;
     double dx  = (double) i - U.extent(0) / 2;
     double dy  = (double) j - U.extent(1) / 2;
@@ -296,9 +301,9 @@ __global__ void %KERNEL_NAME%(%s U)
   // This transforms a tuple of (shape, 1D index) into a coordinate
   auto shape_index_to_coords = [&U](size_t index)
   {
+  //  printf("%%ld -> %%ld,%%ld\n", (long)index, index % U.extent(0),  index / U.extent(0));
     return ::cuda::std::make_tuple(index % U.extent(0), index / U.extent(0));
-  }
-
+  };
 
   // This will explode the targs tuple into a pack of data
 
@@ -308,9 +313,9 @@ __global__ void %KERNEL_NAME%(%s U)
       f(coords..., data...);
     };
     // For every linearized index in the shape
-    for (; i < n; i += step)
+    for (; _i < n; _i += _step)
     {
-      ::cuda::std::apply(explode_coords, shape_index_to_coords(i));
+      ::cuda::std::apply(explode_coords, shape_index_to_coords(_i));
     }
   };
   ::cuda::std::apply(explode_args, ::std::move(targs));
@@ -398,7 +403,7 @@ int main()
   const CUdevice cuDevice = cuda_try<cuDeviceGet>(0);
   const CUcontext context = cuda_try<cuCtxCreate>(0, cuDevice);
 
-  const size_t N = 800;
+  const size_t N = 128;
 
   auto lU  = ctx.logical_data(shape_of<slice<double, 2>>(N, N));
   auto lU1 = ctx.logical_data(lU.shape());
