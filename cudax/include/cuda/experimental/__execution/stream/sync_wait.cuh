@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/move.h>
+
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>

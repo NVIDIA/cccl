@@ -13,13 +13,11 @@
 // template <class T, size_t N> constexpr T* data(T (&array)[N]) noexcept;           // C++17
 // template <class E> constexpr const E* data(initializer_list<E> il) noexcept;      // C++17
 
-#include <cuda/std/cassert>
-#include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
 #include <cuda/std/array>
+#include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
+#include <cuda/std/inplace_vector>
+#include <cuda/std/iterator>
 
 #include "test_macros.h"
 
@@ -66,23 +64,17 @@ TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-  cuda::std::vector<int> v;
+  cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
-#endif
   cuda::std::array<int, 1> a;
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   test_container(v);
-#endif
   test_container(a);
   test_container(il);
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   test_const_container(v);
-#endif
   test_const_container(a);
   test_const_container(il);
 

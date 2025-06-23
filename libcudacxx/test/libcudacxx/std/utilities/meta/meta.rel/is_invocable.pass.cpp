@@ -22,9 +22,7 @@
 #ifdef _LIBCUDACXX_HAS_MEMORY
 #  include <cuda/std/memory>
 #endif // _LIBCUDACXX_HAS_MEMORY
-#ifdef _LIBCUDACXX_HAS_VECTOR
-#  include <cuda/std/vector>
-#endif // _LIBCUDACXX_HAS_VECTOR
+#include <cuda/std/inplace_vector>
 
 #include "test_macros.h"
 
@@ -84,11 +82,9 @@ int main(int, char**)
     static_assert(!cuda::std::is_invocable<const int&>::value, "");
     static_assert(!cuda::std::is_invocable<int&&>::value, "");
 
-#ifdef _LIBCUDACXX_HAS_VECTOR
-    static_assert(!cuda::std::is_invocable<cuda::std::vector<int>>::value, "");
-    static_assert(!cuda::std::is_invocable<cuda::std::vector<int*>>::value, "");
-    static_assert(!cuda::std::is_invocable<cuda::std::vector<int**>>::value, "");
-#endif // _LIBCUDACXX_HAS_VECTOR
+    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int, 3>>::value, "");
+    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int*, 3>>::value, "");
+    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int**, 3>>::value, "");
 
     static_assert(!cuda::std::is_invocable<AbominableFunc>::value, "");
 
@@ -119,11 +115,10 @@ int main(int, char**)
     static_assert(!cuda::std::is_invocable_r<int, const int&>::value, "");
     static_assert(!cuda::std::is_invocable_r<int, int&&>::value, "");
 
-#ifdef _LIBCUDACXX_HAS_VECTOR
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::vector<int>>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::vector<int*>>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::vector<int**>>::value, "");
-#endif // _LIBCUDACXX_HAS_VECTOR
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int, 3>>::value, "");
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int*, 3>>::value, "");
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int**, 3>>::value, "");
+
     static_assert(!cuda::std::is_invocable_r<void, AbominableFunc>::value, "");
 
     //  with parameters

@@ -162,6 +162,8 @@ struct starts_on_t;
 struct continues_on_t;
 struct schedule_from_t;
 struct bulk_t;
+struct bulk_chunked_t;
+struct bulk_unchunked_t;
 
 // sender consumer algorithms:
 struct sync_wait_t;
@@ -205,7 +207,7 @@ template <class _Sndr>
 using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class _Tag>
-_CCCL_CONCEPT __sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
+_CCCL_CONCEPT sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
 
 namespace __detail
 {
