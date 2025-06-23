@@ -40,7 +40,7 @@ inline void check_printf(const char* format)
 }
 
 template <typename Head, typename... Tail>
-inline void check_printf(const char* format, Head, Tail... rest)
+void check_printf(const char* format, Head, Tail... rest)
 {
   auto bailout = [&]() {
     throw ::std::runtime_error("Format specifier mismatch: " + ::std::string(format - 1, 2)
@@ -139,12 +139,12 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   }
 
   // Select generated kernel name: this cannot be hardcoded because we may instantiate the same template with different values
-  static int jit_kernel_cnt = 0;
+  static ::std::atomic<int> jit_kernel_cnt = 0;
   ::std::string kernel_name = "jit_kernel" + ::std::to_string(jit_kernel_cnt++);
   fprintf(stderr, "kernel_name: %s\n", kernel_name.c_str());
   ::std::string template_with_name = replace_all(key.second.c_str(), "%KERNEL_NAME%", kernel_name.c_str());
 
-  ::std::cout << template_with_name << ::std::endl;
+  //::std::cout << template_with_name << ::std::endl;
 
   // Compile kernel
   nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(template_with_name.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
@@ -264,7 +264,7 @@ __global__ void %KERNEL_NAME%(%s U)
   const size_t _step = blockDim.x * gridDim.x;
 
   const size_t n = U.size();
-  printf("N=%%ld\n", n);
+  //printf("N=%%ld\n", n);
   const auto targs = ::cuda::std::make_tuple(U);
 //  auto shape = shape(U);// static_shape_t shape = FILLED AUTOMATICALLY
 

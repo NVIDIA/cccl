@@ -593,4 +593,28 @@ struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() <
 
 } // end namespace reserved
 
+/**
+ * @brief Checks whether a type is an instantiation of a given class template.
+ *
+ * This variable template yields `true` if `T` is an instantiation of the class template `Template`,
+ * and `false` otherwise. It works for class templates of the form `template <typename...>`.
+ *
+ * @tparam T The type to check.
+ * @tparam Template The class template to match against.
+ *
+ * @code
+ * template <typename T> struct Wrapper {};
+ * static_assert(is_instance_of<Wrapper<int>, Wrapper>); // true
+ * static_assert(!is_instance_of<int, Wrapper>);         // false
+ * @endcode
+ */
+template <typename T, template <typename...> class Template>
+inline constexpr bool is_instance_of = false;
+
+/**
+ * @brief Specialization that evaluates to true when T is an instantiation of Template.
+ */
+template <typename... Ts, template <typename...> class Template>
+inline constexpr bool is_instance_of<Template<Ts...>, Template> = true;
+
 } // namespace cuda::experimental::stf
