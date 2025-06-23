@@ -49,6 +49,14 @@ public:
     record(__stream);
   }
 
+  //! @brief Construct a new `timed_event` object with the specified flags. The event can only be recorded on streams
+  //! from the specified device.
+  //!
+  //! @throws cuda_error if the event creation fails.
+  explicit timed_event(device_ref __device, flags __flags = flags::none)
+      : event(__device, static_cast<unsigned int>(__flags))
+  {}
+
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
