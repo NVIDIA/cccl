@@ -207,7 +207,8 @@ _CCCL_CONCEPT work_submitter = graph_inserter<_Submitter> || _CUDA_VSTD::is_conv
 //! @param args
 //! arguments to be passed into the kernel functor
 _CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
-_CCCL_REQUIRES(work_submitter<_Submitter>)
+_CCCL_REQUIRES(work_submitter<_Submitter>
+               && ((!::cuda::std::is_pointer_v<_Kernel>) || (!::cuda::std::is_function_v<_Kernel>) ))
 _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const kernel_config<_Dimensions, _Config...>& __conf,
                            const _Kernel& __kernel,
@@ -279,14 +280,12 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //!
 _CCCL_TEMPLATE(
   typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
-_CCCL_REQUIRES(work_submitter<_Submitter>)
+_CCCL_REQUIRES(work_submitter<_Submitter> && (sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
 _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const kernel_config<_Dimensions, _Config...>& __conf,
                            void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
-  static_assert(sizeof...(_ExpArgs) == sizeof...(_ActArgs),
-                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
   __ensure_current_device __dev_setter{__submitter};
   return __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
     __forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
@@ -335,14 +334,12 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! arguments to be passed into the kernel function
 _CCCL_TEMPLATE(
   typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
-_CCCL_REQUIRES(work_submitter<_Submitter>)
+_CCCL_REQUIRES(work_submitter<_Submitter> && (sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
 _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const kernel_config<_Dimensions, _Config...>& __conf,
                            void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
-  static_assert(sizeof...(_ExpArgs) == sizeof...(_ActArgs),
-                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
   __ensure_current_device __dev_setter{__submitter};
   return __launch_impl<_ExpArgs...>(
     __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)), //
