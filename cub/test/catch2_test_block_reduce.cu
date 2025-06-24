@@ -123,7 +123,14 @@ struct max_full_tile_op_t
 };
 
 using types     = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t, float, double>;
-using vec_types = c2h::type_list<ulonglong4, uchar3, short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  uchar3,
+  short2>;
 
 // %PARAM% TEST_DIM_X dimx 1:7:32:65:128
 // %PARAM% TEST_DIM_YZ dimyz 1:2

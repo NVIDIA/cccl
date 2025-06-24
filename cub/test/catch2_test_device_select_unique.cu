@@ -56,11 +56,21 @@ inline ulonglong2 to_bound(const unsigned long long bound)
   return {bound, bound};
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
 inline ulonglong4 to_bound(const unsigned long long bound)
 {
   return {bound, bound, bound, bound};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline ulonglong4_16a to_bound(const unsigned long long bound)
+{
+  return {bound, bound, bound, bound};
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <>
 inline long2 to_bound(const unsigned long long bound)
@@ -96,7 +106,11 @@ using all_types =
                  std::uint32_t,
                  std::uint64_t,
                  ulonglong2,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
                  int,
                  long2,
                  c2h::custom_type_t<c2h::equal_comparable_t>>;

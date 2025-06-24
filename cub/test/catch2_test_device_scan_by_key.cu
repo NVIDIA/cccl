@@ -64,7 +64,17 @@ using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, floa
 using full_type_list = c2h::type_list<type_quad<std::int32_t>, type_quad<std::uint64_t>>;
 #elif TEST_TYPES == 2
 using full_type_list =
-  c2h::type_list<type_quad<uchar3, uchar3, custom_t>, type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
+  c2h::type_list<type_quad<uchar3, uchar3, custom_t>,
+                 type_quad<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a,
+                   ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4,
+                   ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   std::uint8_t,
+                   Mod2Equality>>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
