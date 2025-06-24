@@ -196,47 +196,14 @@ memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned i
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % 16 == 0, "");
   _CCCL_ASSERT(bytes_to_copy % 16 == 0, "");
 
-  // Efficient copies require warps to operate on the same amount of work at each step.
-  // remainders are handled in a separate stage to prevent branching
-  const unsigned int copy_instructions = bytes_to_copy / 16;
-  const unsigned int subWarpMask       = BlockThreads - 1;
-  const unsigned int subwarpCopies     = subWarpMask & copy_instructions;
-
-  const unsigned int warpCopies = copy_instructions & ~subWarpMask;
-
-  // printf("thread %u block %u memcpy_async_16: %p -> %p, bytes_to_copy = %u, copy_instructions = %u, warpCopies = %u,
-  // subwarpCopies = %u\n",
-  //        threadIdx.x,
-  //        blockIdx.x,
-  //        src,
-  //        dst,
-  //        bytes_to_copy,
-  //        copy_instructions,
-  //        warpCopies,
-  //        subwarpCopies);
-
-  // #pragma unroll 1 reduced instructions a lot but decreases babelstream I8 memory throughput from 93% to 89% on L40
-  auto s = static_cast<const char*>(src);
-  auto d = static_cast<char*>(dst);
-  for (size_t idx = 0; idx < warpCopies; idx += BlockThreads)
+  for (unsigned int offset = threadIdx.x * 16; offset < bytes_to_copy; offset += BlockThreads * 16)
   {
-    size_t _srcIdx = threadIdx.x + idx;
-    size_t _dstIdx = threadIdx.x + idx;
-    __pipeline_memcpy_async(d + _dstIdx * 16, s + _srcIdx * 16, 16);
+    __pipeline_memcpy_async(static_cast<char*>(dst) + offset, static_cast<const char*>(src) + offset, 16);
   }
-
-  if (subwarpCopies)
-  {
-    const unsigned int maxSubwarpRank = min(threadIdx.x, subwarpCopies - 1);
-    size_t _srcIdx                    = warpCopies + maxSubwarpRank;
-    size_t _dstIdx                    = warpCopies + maxSubwarpRank;
-    __pipeline_memcpy_async(d + _dstIdx * 16, s + _srcIdx * 16, 16);
-  }
-
   __pipeline_commit();
 }
 
-// This is a simplified version from the cooperative groups implementation. Only dst must be aligned to 16 bytes.
+// This is a simplified version from the cooperative groups implementation.
 template <int BlockThreads>
 _CG_STATIC_QUALIFIER void memcpy_async_unaligned(
   void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy, int head_padding)
