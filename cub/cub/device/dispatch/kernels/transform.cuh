@@ -267,6 +267,65 @@ _CG_STATIC_QUALIFIER void memcpy_async_unaligned(
   }
 }
 
+// Turning this function into a lambda will make nvcc generate it once for each iterator instead of for each distinct
+// value type (which may be less).
+template <int BlockThreads, typename AlignedPtr, typename Offset>
+_CCCL_DEVICE auto
+copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items)
+{
+  using T = typename decltype(aligned_ptr)::value_type;
+  // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
+  // for types with larger alignment
+  if constexpr (alignof(T) > memcpy_async_alignment)
+  {
+    smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
+  }
+  const char* const src = aligned_ptr.ptr + offset * sizeof(T);
+  char* const dst       = smem + smem_offset;
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % memcpy_async_alignment == 0, "");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % memcpy_async_alignment == 0, "");
+  const int bytes_to_copy =
+    ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, memcpy_async_size_multiple);
+  smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
+  memcpy_async_16<BlockThreads>(dst, src, bytes_to_copy);
+  const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
+  return reinterpret_cast<const T*>(dst_start_of_data);
+}
+
+template <int BlockThreads, typename AlignedPtr, typename Offset>
+_CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
+  AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
+{
+  using T = typename decltype(aligned_ptr)::value_type;
+  // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
+  // for types with larger alignment
+  if constexpr (alignof(T) > memcpy_async_alignment)
+  {
+    smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
+  }
+  else if constexpr (alignof(T) < memcpy_async_alignment)
+  {
+    smem_offset += aligned_ptr.head_padding;
+  }
+  const T* src = aligned_ptr.ptr_to_elements() + offset;
+  T* dst       = reinterpret_cast<T*>(smem + smem_offset);
+  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % alignof(T) == 0, "");
+  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+  const int bytes_to_copy = int{sizeof(T)} * valid_items;
+  memcpy_async_unaligned<BlockThreads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
+  if (tile_size == valid_items)
+  {
+    smem_offset += bytes_to_copy; // full tiles will retain alignment
+  }
+  else
+  {
+    smem_offset += ::cuda::round_up(bytes_to_copy, memcpy_async_size_multiple);
+  }
+
+  return dst;
+}
+
 template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
@@ -287,64 +346,13 @@ _CCCL_DEVICE void transform_kernel_impl(
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
-  auto group                       = cooperative_groups::this_thread_block();
   [[maybe_unused]] int smem_offset = 0;
-
-  auto copy_and_return_smem_dst = [&](auto aligned_ptr) {
-    using T = typename decltype(aligned_ptr)::value_type;
-    // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
-    // for types with larger alignment
-    if constexpr (alignof(T) > memcpy_async_alignment)
-    {
-      smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
-    }
-    const char* const src = aligned_ptr.ptr + offset * sizeof(T);
-    char* const dst       = smem + smem_offset;
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % memcpy_async_alignment == 0, "");
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % memcpy_async_alignment == 0, "");
-    const int bytes_to_copy =
-      ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, memcpy_async_size_multiple);
-    smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
-    memcpy_async_16<block_threads>(dst, src, bytes_to_copy);
-    const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
-    return reinterpret_cast<const T*>(dst_start_of_data);
-  };
-
-  auto copy_and_return_smem_dst_fallback = [&](auto aligned_ptr) {
-    using T = typename decltype(aligned_ptr)::value_type;
-    // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
-    // for types with larger alignment
-    if constexpr (alignof(T) > memcpy_async_alignment)
-    {
-      smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
-    }
-    else if constexpr (alignof(T) < memcpy_async_alignment)
-    {
-      smem_offset += aligned_ptr.head_padding;
-    }
-    const T* src = aligned_ptr.ptr_to_elements() + offset;
-    T* dst       = reinterpret_cast<T*>(smem + smem_offset);
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % alignof(T) == 0, "");
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-    const int bytes_to_copy = int{sizeof(T)} * valid_items;
-    memcpy_async_unaligned<block_threads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
-    if (tile_size == valid_items)
-    {
-      smem_offset += bytes_to_copy; // full tiles will retain alignment
-    }
-    else
-    {
-      smem_offset += ::cuda::round_up(bytes_to_copy, memcpy_async_size_multiple);
-    }
-
-    return dst;
-  };
-
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we only need half the registers
   const bool inner_blocks               = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    (inner_blocks ? copy_and_return_smem_dst(aligned_ptrs) : copy_and_return_smem_dst_fallback(aligned_ptrs))...};
+    (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
+                  : copy_and_return_smem_dst_fallback<block_threads>(
+                      aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
   __pipeline_wait_prior(0);
   __syncthreads();
 
