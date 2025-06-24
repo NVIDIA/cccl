@@ -107,9 +107,9 @@ using all_types =
                  ulonglong2,
 #if _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4_16a,
-#else
+#else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
-#endif
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
                  int,
                  long2,
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
