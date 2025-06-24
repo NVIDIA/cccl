@@ -33,7 +33,10 @@
 namespace cuda::experimental
 {
 class physical_device;
-struct arch_traits_t;
+namespace arch
+{
+struct traits_t;
+} // namespace arch
 
 namespace __detail
 {
@@ -152,7 +155,7 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& arch_traits() const;
+  const arch::traits_t& arch_traits() const;
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide

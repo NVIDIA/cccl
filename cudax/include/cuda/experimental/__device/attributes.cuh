@@ -705,8 +705,8 @@ struct compute_capability_t
 {
   [[nodiscard]] int operator()(device_ref __dev_id) const
   {
-    return 100 * ::cuda::experimental::device_attributes::compute_capability_major(__dev_id)
-         + 10 * ::cuda::experimental::device_attributes::compute_capability_minor(__dev_id);
+    return 10 * ::cuda::experimental::device_attributes::compute_capability_major(__dev_id)
+         + ::cuda::experimental::device_attributes::compute_capability_minor(__dev_id);
   }
 };
 static constexpr compute_capability_t compute_capability{};

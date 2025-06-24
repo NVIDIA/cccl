@@ -84,7 +84,7 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& arch_traits() const noexcept
+  const arch::traits_t& arch_traits() const noexcept
   {
     return __traits;
   }
@@ -121,11 +121,11 @@ private:
   // TODO should this be a reference/pointer to the constexpr traits instances?
   //  Do we care about lazy init?
   //  We should have some of the attributes just return from the arch traits
-  arch_traits_t __traits;
+  arch::traits_t __traits;
 
   explicit physical_device(int __id)
       : device_ref(__id)
-      , __traits(__detail::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
+      , __traits(arch::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
