@@ -71,13 +71,6 @@ template <class _Fn, class _Iter>
 inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
   noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::declval<_Fn&>(), _CUDA_VSTD::declval<_Iter&>()[0]));
 
-//! \addtogroup iterators
-//! \{
-
-//!! \addtogroup fancyiterator Fancy Iterators
-//!  \ingroup iterators
-//!  \{
-
 //! @brief \p transform_iterator is an iterator which represents a pointer into a range of values after transformation
 //! by a function. This iterator is useful for creating a range filled with the result of applying an operation to
 //! another range without either explicitly storing it in memory, or explicitly executing the transformation. Using
