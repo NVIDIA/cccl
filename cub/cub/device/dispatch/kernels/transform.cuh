@@ -187,7 +187,6 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
   return aligned_base_ptr<T>{base_ptr, static_cast<int>(reinterpret_cast<const char*>(ptr) - base_ptr)};
 }
 
-// this is a simplified version from the cooperative groups implementation. src and dst must be aligned to 16 bytes.
 template <int BlockThreads>
 _CG_STATIC_QUALIFIER void
 memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy)
@@ -204,7 +203,6 @@ memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned i
   __pipeline_commit();
 }
 
-// This is a simplified version from the cooperative groups implementation.
 template <int BlockThreads>
 _CG_STATIC_QUALIFIER void memcpy_async_unaligned(
   void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy, int head_padding)
