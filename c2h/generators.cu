@@ -575,17 +575,17 @@ struct vec_gen_helper_t
   }
 };
 
-#  define VEC_SPECIALIZATION(TYPE, SIZE, ...)                               \
-    template <>                                                             \
-    void gen<TYPE##SIZE##__VA_ARGS__>(                                      \
-      seed_t seed,                                                          \
-      c2h::device_vector<TYPE##SIZE##__VA_ARGS__> & data,                   \
-      TYPE##SIZE##__VA_ARGS__ min,                                          \
-      TYPE##SIZE##__VA_ARGS__ max)                                          \
-    {                                                                       \
-      generator_t& generator = generator_t::instance();                     \
-      generator.prepare_random_generator(seed, data.size());                \
-      vec_gen_helper_t<TYPE##SIZE##__VA_ARGS__, SIZE>::gen(data, min, max); \
+#  define VEC_SPECIALIZATION(TYPE, SIZE, ...)                                   \
+    template <>                                                                 \
+    void gen<TYPE##SIZE##__VA_ARGS__>(                                          \
+      seed_t seed,                                                              \
+      c2h::device_vector<TYPE##SIZE##__VA_ARGS__> & data,                       \
+      TYPE##SIZE##__VA_ARGS__ min,                                              \
+      TYPE##SIZE##__VA_ARGS__ max)                                              \
+    {                                                                           \
+      generator_t& generator = generator_t::instance();                         \
+      generator.prepare_random_generator(seed, data.size());                    \
+      vec_gen_helper_t<TYPE##SIZE##__VA_ARGS__, SIZE - 1>::gen(data, min, max); \
     }
 
 VEC_SPECIALIZATION(char, 2);
