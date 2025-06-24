@@ -155,7 +155,7 @@ private:
       }
 
       // Fallback to non-vectorized version
-      return for_each_n(first, num_items, op, stream, _CUDA_VSTD::false_type{});
+      return for_each_n<false>(first, num_items, op, stream);
     }
     else
     {
