@@ -443,11 +443,13 @@ inline bool IsNaN<double3>(double3 val)
   return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
 inline bool IsNaN<double4>(double4 val)
 {
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #if TEST_HALF_T()
 template <>
