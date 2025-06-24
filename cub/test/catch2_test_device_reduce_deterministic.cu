@@ -300,7 +300,7 @@ using test_types = c2h::type_list<
   bfloat16_t,
   __nv_bfloat16
 #endif // TEST_BF_T()
-#if _CCCL_HAS_INT128()
+#if TEST_INT128()
   ,
   __int128_t
 #endif
