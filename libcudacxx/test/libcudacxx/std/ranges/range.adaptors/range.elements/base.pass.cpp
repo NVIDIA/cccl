@@ -31,16 +31,9 @@ struct MoveOnlyView : View
   MoveOnly mo;
 };
 
-#if TEST_STD_VER >= 2020
 template <class T>
-concept HasBase = requires(T&& t) { cuda::std::forward<T>(t).base(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-inline constexpr bool HasBase = false;
+_CCCL_CONCEPT HasBase = _CCCL_REQUIRES_EXPR((T), T&& t)((cuda::std::forward<T>(t).base()));
 
-template <class T>
-inline constexpr bool HasBase<T, cuda::std::void_t<decltype(cuda::std::declval<T>().base())>> = true;
-#endif // TEST_STD_VER <= 2017
 static_assert(HasBase<cuda::std::ranges::elements_view<View, 0> const&>);
 static_assert(HasBase<cuda::std::ranges::elements_view<View, 0>&&>);
 

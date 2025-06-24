@@ -42,19 +42,10 @@ static_assert(!cuda::std::is_invocable_v<decltype((cuda::std::views::values)), V
 static_assert(cuda::std::is_invocable_v<decltype((cuda::std::views::values)), View<cuda::std::pair<int, int>>>);
 static_assert(!cuda::std::is_invocable_v<decltype((cuda::std::views::values)), View<cuda::std::tuple<int>>>);
 
-#if TEST_STD_VER >= 2020
 template <class View, class T>
-concept CanBePiped = requires(View&& view, T&& t) {
-  { cuda::std::forward<View>(view) | cuda::std::forward<T>(t) };
-};
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class View, class T, class = void>
-inline constexpr bool CanBePiped = false;
+_CCCL_CONCEPT CanBePiped =
+  _CCCL_REQUIRES_EXPR((View, T), View&& view, T&& t)((cuda::std::forward<View>(view) | cuda::std::forward<T>(t)));
 
-template <class View, class T>
-inline constexpr bool
-  CanBePiped<View, T, cuda::std::void_t<decltype(cuda::std::declval<View>() | cuda::std::declval<T>())>> = true;
-#endif // TEST_STD_VER <= 2017
 static_assert(!CanBePiped<View<int>, decltype((cuda::std::views::elements<0>) )>);
 static_assert(CanBePiped<View<cuda::std::pair<int, int>>, decltype((cuda::std::views::elements<0>) )>);
 static_assert(CanBePiped<View<cuda::std::tuple<int>>, decltype((cuda::std::views::elements<0>) )>);
