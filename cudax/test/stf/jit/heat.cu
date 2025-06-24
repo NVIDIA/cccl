@@ -97,7 +97,7 @@ void check_printf(const char* format, Head, Tail... rest)
 
 // Lazy cache by string content (can be replaced with hash or stronger keying)
 template <typename... Args>
-inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, const Args&... args)
+inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, const char* header_template,  const Args&... args)
 {
   static ::std::mutex cache_mutex;
   static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
@@ -126,10 +126,16 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   //  check_printf(template_with_name.c_str(), make_printfable(args)...);
 
   // Format code
+  const int header_size = ::std::strlen(header_template);
   const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
   // This will be our cache lookup key: a pair of options and the source code string
-  auto key = ::std::pair(mv(opts), ::std::string(size, '\0'));
-  ::std::snprintf(key.second.data(), key.second.size() + 1, template_str, make_printfable(args)...);
+  auto key = ::std::pair(mv(opts), ::std::string(size + header_size + 1, '\0'));
+
+  // Write header
+  ::std::strcpy(key.second.data(), header_template);
+  key.second.data()[header_size] = '\n'; // replace '\0'
+
+  ::std::snprintf(key.second.data() + header_size, key.second.size() + 1, template_str, make_printfable(args)...);
 
   {
     ::std::lock_guard lock(cache_mutex);
@@ -233,7 +239,7 @@ void dump_iter(slice<const double, 2> sUn, int iter)
   fclose(f);
 }
 
-const char* heat_kernel_template = R"(
+const char *header_template = R"(
 #include <cuda/mdspan>
 
 template <typename T, size_t dimensions = 1>
@@ -281,7 +287,10 @@ public:
 private:
     mdspan_t view_;
 };
+)";
 
+
+const char* heat_kernel_template = R"(
 const double c = %a;
 const double dx2 = %a;
 const double dy2 = %a;
@@ -306,66 +315,16 @@ __global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn
 )";
 
 const char *init_kernel_template = R"(
-#include <cuda/mdspan>
-
-template <typename T, size_t dimensions = 1>
-using slice = cuda::std::mdspan<T, ::cuda::std::dextents<size_t, dimensions>, ::cuda::std::layout_stride>;
-
-template <typename T, size_t M, size_t N>
-class static_slice
-{
-public:
-    using extents_t = cuda::std::extents<size_t, M, N>;
-    using layout_t  = cuda::std::layout_stride;
-    using mdspan_t  = cuda::std::mdspan<T, extents_t, layout_t>;
-
-    __host__ __device__
-    static_slice(T* data,
-                 typename layout_t::template mapping<extents_t> mapping)      // explicit ctor
-        : view_{data, mapping}
-    {}
-
-    // convert from a dynamic-extents mdspan
-    template <typename OtherMapping>
-    __host__ __device__
-    static_slice(const cuda::std::mdspan<T,
-                                         cuda::std::dextents<size_t, 2>,
-                                         OtherMapping>& dyn)
-        : view_{dyn.data_handle(),
-                typename layout_t::template mapping<extents_t>(dyn.mapping())}
-    {
-        assert(dyn.extent(0) == M && dyn.extent(1) == N);
-    }
-
-    __host__ __device__       T& operator()(size_t i, size_t j)       { return view_(i, j); }
-    __host__ __device__ const T& operator()(size_t i, size_t j) const { return view_(i, j); }
-
-    __host__ __device__ T* data()      const { return view_.data_handle(); }
-    __host__ __device__ auto mapping() const { return view_.mapping();     }
-    __host__ __device__ auto extents() const { return view_.extents();     }
-    __host__ __device__ size_t extent(size_t i) const { return view_.extent(i); }
-
-    __host__ __device__ constexpr size_t size() const noexcept
-    {
-        return M * N;
-    }
-
-private:
-    mdspan_t view_;
-};
-
 extern "C"
 __global__ void %KERNEL_NAME%(slice<double, 2> dyn_U)
 {
+/// BEGIN TYPE CONVERSION SECTION
   %s U{dyn_U};
-
-  size_t _i          = blockIdx.x * blockDim.x + threadIdx.x; // STATIC dims ?
-  const size_t _step = blockDim.x * gridDim.x;
-
-  const size_t n = U.size();
-  // printf("N=%%ld\n", n);
   const auto targs = ::cuda::std::make_tuple(U);
+/// END TYPE CONVERSION SECTION
 
+
+/// BEGIN BODY_SECTION (exclude "auto f =")
   auto f = [](size_t i, size_t j, auto U) {
     // printf("U(%%ld,%%ld) %%p = 100.0\n", (long)i, (long)j, &U(i, j));
     double rad = U.extent(0) / 8.0;
@@ -392,16 +351,25 @@ __global__ void %KERNEL_NAME%(slice<double, 2> dyn_U)
       U(i, j) = 0.0;
     }
   };
+/// END BODY_SECTION
 
+/// BEGIN SHAPE SECTION
   // XXX HARDCODED ...
+  // TODO size and index_to_coords should be "generated" from strings in a trait jit_shape<...>
+  const size_t n = U.size();
+
   // This transforms a tuple of (shape, 1D index) into a coordinate
   auto shape_index_to_coords = [&U](size_t index)
   {
   //  printf("%%ld -> %%ld,%%ld\n", (long)index, index % U.extent(0),  index / U.extent(0));
     return ::cuda::std::make_tuple(index % U.extent(0), index / U.extent(0));
   };
+/// END SHAPE SECTION
 
   // This will explode the targs tuple into a pack of data
+
+  size_t _i          = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t _step = blockDim.x * gridDim.x;
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   auto explode_args = [&](auto&&... data) {
@@ -516,7 +484,7 @@ int main()
 #else
   ctx.cuda_kernel(lU.write())->*[&](auto U) {
     CUfunction kernel =
-      lazy_jit(init_kernel_template, nvrtc_flags, stringize_mdspan(U));
+      lazy_jit(init_kernel_template, nvrtc_flags, header_template, stringize_mdspan(U));
     return cuda_kernel_desc{kernel, 128, 32, 0, U};
   };
 #endif
@@ -561,7 +529,7 @@ int main()
 #else
     ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
       CUfunction kernel =
-        lazy_jit(heat_kernel_template, nvrtc_flags, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
+        lazy_jit(heat_kernel_template, nvrtc_flags, header_template, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
 
       return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
     };
