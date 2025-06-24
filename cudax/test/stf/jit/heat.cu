@@ -240,7 +240,7 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 }
 
 const char *header_template = R"(
-#include <cuda/mdspan>
+#include <cuda/experimental/__stf/nvrtc/slice.cuh>
 
 template <typename T, size_t dimensions = 1>
 using slice = cuda::std::mdspan<T, ::cuda::std::dextents<size_t, dimensions>, ::cuda::std::layout_stride>;
