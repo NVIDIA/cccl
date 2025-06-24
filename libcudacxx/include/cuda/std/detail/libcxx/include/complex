@@ -1120,8 +1120,8 @@ template <>
   // e^real, deal with overflow after.
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
-  const float __round_shift = 12582912.0f; // 1.5 * 2^23;
-  const float __log2_e      = _CUDA_VSTD::numbers::log2e_v<float>;
+  constexpr float __round_shift = 12582912.0f; // 1.5 * 2^23;
+  constexpr float __log2_e      = _CUDA_VSTD::numbers::log2e_v<float>;
   float __j                 = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
   __j                       = __j - __round_shift;
 
