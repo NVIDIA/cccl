@@ -36,6 +36,12 @@ void TestIsContiguousIterator()
 
   ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>, true);
 
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>&>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>&>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>&>, true);
+
   using HostIteratorTuple = thrust::tuple<HostVector::iterator, HostVector::iterator>;
 
   using ConstantIterator  = thrust::constant_iterator<int>;
