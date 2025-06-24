@@ -56,7 +56,7 @@ C2H_TEST("cub::DeviceReduce::Sum accepts determinism requirements", "[reduce][en
 {
   // TODO(gevtushenko): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
 
-  // example-begin reduce-env-determinism
+  // example-begin sum-env-determinism
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 
@@ -65,14 +65,14 @@ C2H_TEST("cub::DeviceReduce::Sum accepts determinism requirements", "[reduce][en
   cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
 
   c2h::device_vector<float> expected{6.0f};
-  // example-end reduce-env-determinism
+  // example-end sum-env-determinism
 
   REQUIRE(output == expected);
 }
 
 C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
 {
-  // example-begin reduce-env-sum-stream
+  // example-begin sum-env-sum-stream
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 
@@ -82,7 +82,7 @@ C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
   cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), stream_ref);
 
   c2h::device_vector<float> expected{6.0f};
-  // example-end reduce-env-stream
+  // example-end sum-env-stream
 
   REQUIRE(output == expected);
 }
