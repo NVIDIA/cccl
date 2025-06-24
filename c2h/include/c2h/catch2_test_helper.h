@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
@@ -42,6 +18,7 @@
 
 #include <c2h/catch2_main.h>
 #include <c2h/device_policy.h>
+#include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>
@@ -109,6 +86,100 @@ using iota = ::cuda::std::__type_iota<std::size_t, Start, Size, Stride>;
 template <typename TypeList, typename T>
 using remove = ::cuda::std::__type_remove<TypeList, T>;
 
+/**
+ * Return a value of type `T` with the same bitwise representation of `in`.
+ * Types `T` and `U` must be the same size.
+ */
+template <typename T, typename U>
+__host__ __device__ constexpr T SafeBitCast(const U& in) noexcept
+{
+  static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
+  T out;
+  memcpy(&out, &in, sizeof(T));
+  return out;
+}
+
+template <typename T>
+[[nodiscard]] constexpr bool isnan(T value) noexcept
+{
+  return cuda::std::isnan(value);
+}
+
+[[nodiscard]] constexpr bool isnan(float1 val) noexcept
+{
+  return (cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(float2 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(float3 val) noexcept
+{
+  return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(float4 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
+}
+
+[[nodiscard]] constexpr bool isnan(double1 val) noexcept
+{
+  return (cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(double2 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+[[nodiscard]] constexpr bool isnan(double3 val) noexcept
+{
+  return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
+}
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+[[nodiscard]] constexpr bool isnan(double4 val) noexcept
+{
+  return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
+}
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+// TODO: move to libcu++
+#if TEST_HALF_T()
+
+[[nodiscard]] constexpr bool isnan(__half2 value) noexcept
+{
+  return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+[[nodiscard]] constexpr bool isnan(half_t val) noexcept
+{
+  const auto bits = SafeBitCast<uint16_t>(val);
+  // commented bit is always true, leaving for documentation:
+  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
+}
+
+#endif // TEST_HALF_T()
+
+#if TEST_BF_T()
+
+[[nodiscard]] constexpr bool isnan(__nv_bfloat162 value) noexcept
+{
+  return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+[[nodiscard]] constexpr bool isnan(bfloat16_t val) noexcept
+{
+  const auto bits = SafeBitCast<uint16_t>(val);
+  // commented bit is always true, leaving for documentation:
+  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
+}
+
+#endif // TEST_BF_T()
+
 } // namespace c2h
 
 namespace detail
@@ -140,6 +211,13 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
   }
 
+#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                          \
+  {                                                                       \
+    auto vec_ref = detail::to_vec(ref);                                   \
+    auto vec_out = detail::to_vec(out);                                   \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
+  }
+
 namespace detail
 {
 // Returns true if values are equal, or both NaN:
@@ -148,7 +226,7 @@ struct equal_or_nans
   template <typename T>
   bool operator()(const T& a, const T& b) const
   {
-    return (cuda::std::isnan(a) && cuda::std::isnan(b)) || a == b;
+    return (c2h::isnan(a) && c2h::isnan(b)) || a == b;
   }
 };
 

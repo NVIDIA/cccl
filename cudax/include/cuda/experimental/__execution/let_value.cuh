@@ -131,23 +131,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PRE
     {
       if constexpr (_Tag{} == _SetTag())
       {
-        _CUDAX_TRY( //
-          ({ //
-            // Store the results so the lvalue refs we pass to the function
-            // will be valid for the duration of the async op.
-            auto& __tupl =
-              __result_.template __emplace<_CUDA_VSTD::__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
-            // Call the function with the results and connect the resulting
-            // sender, storing the operation state in __opstate2_.
-            auto& __next_op = __opstate2_.__emplace_from(
-              execution::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __ref_rcvr(__rcvr_));
-            execution::start(__next_op);
-          }),
-          _CUDAX_CATCH(...) //
-          ({ //
-            execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-          }) //
-        )
+        _CCCL_TRY
+        {
+          // Store the results so the lvalue refs we pass to the function
+          // will be valid for the duration of the async op.
+          auto& __tupl = __result_.template __emplace<_CUDA_VSTD::__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
+          // Call the function with the results and connect the resulting
+          // sender, storing the operation state in __opstate2_.
+          auto& __next_op = __opstate2_.__emplace_from(
+            execution::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __ref_rcvr(__rcvr_));
+          execution::start(__next_op);
+        }
+        _CCCL_CATCH_ALL
+        {
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        }
       }
       else
       {

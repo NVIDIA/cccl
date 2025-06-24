@@ -44,8 +44,6 @@ template <class _Tp>
   return _CUDA_VSTD::minmax(__a, __b, __less{});
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr pair<_Tp, _Tp> minmax(initializer_list<_Tp> __t, _Compare __comp)
 {
@@ -60,8 +58,6 @@ template <class _Tp>
 {
   return _CUDA_VSTD::minmax(__t, __less{});
 }
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

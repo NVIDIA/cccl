@@ -42,12 +42,12 @@ namespace c2h
 {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 template <typename T>
-using host_vector = thrust::detail::vector_base<T, c2h::checked_host_allocator<T>>;
+using host_vector = THRUST_NS_QUALIFIER::detail::vector_base<T, c2h::checked_host_allocator<T>>;
 
 template <typename T>
-using device_vector = thrust::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;
+using device_vector = THRUST_NS_QUALIFIER::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;
 #else // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-using thrust::device_vector;
-using thrust::host_vector;
+using THRUST_NS_QUALIFIER::device_vector;
+using THRUST_NS_QUALIFIER::host_vector;
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h

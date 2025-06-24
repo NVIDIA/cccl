@@ -77,7 +77,8 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IfMacros: [
-  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C'
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C',
+  '_CCCL_CATCH'
 ]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup

@@ -90,9 +90,9 @@ enum CacheStoreModifier
  * short val;
  * cub::ThreadStore<cub::STORE_DEFAULT>(d_out + threadIdx.x, val);
  *
- * // 256-bit store using write-through modifier
- * double4 *d_out;
- * double4 val;
+ * // 128-bit store using write-through modifier
+ * float4 *d_out;
+ * float4 val;
  * cub::ThreadStore<cub::STORE_WT>(d_out + threadIdx.x, val);
  *
  * // 96-bit store using cache-streaming cache modifier

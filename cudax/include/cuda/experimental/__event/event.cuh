@@ -62,6 +62,14 @@ public:
     record(__stream);
   }
 
+  //! @brief Construct a new `event` object with timing disabled. The event can only be recorded on streams from the
+  //! specified device.
+  //!
+  //! @throws cuda_error if the event creation fails.
+  explicit event(device_ref __device, flags __flags = flags::none)
+      : event(__device, static_cast<unsigned int>(__flags) | cudaEventDisableTiming)
+  {}
+
   //! @brief Construct a new `event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
@@ -155,6 +163,14 @@ private:
       : event_ref(::cudaEvent_t{})
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__stream);
+    _CCCL_TRY_CUDA_API(
+      ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
+  }
+
+  explicit event(device_ref __device, unsigned int __flags)
+      : event_ref(::cudaEvent_t{})
+  {
+    [[maybe_unused]] __ensure_current_device __dev_setter(__device);
     _CCCL_TRY_CUDA_API(
       ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
   }

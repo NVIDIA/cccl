@@ -24,11 +24,13 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
@@ -44,6 +46,13 @@ namespace cuda::experimental
 {
 namespace execution
 {
+template <class _Env, class _Query>
+_CCCL_CONCEPT __statically_queryable_with = //
+  _CCCL_REQUIRES_EXPR((_Env, _Query)) //
+  ( //
+    (_CUDA_VSTD::remove_cvref_t<_Env>::query(_Query{})) //
+  );
+
 // For senders that adapt other senders, the attribute queries are forwarded. __fwd_env_
 // is a utility that forwards queries to a given environment.
 template <class _Env>
