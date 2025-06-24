@@ -21,12 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_NVBF16()
-#  include <cuda_bf16.h>
-#endif
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif
+#  include <cuda/std/__floating_point/nvfp_types.h>
 #if _CCCL_HAS_FLOAT128()
 #  include <crt/device_fp128_functions.h>
 #endif
