@@ -115,6 +115,54 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
   REQUIRE(approx_eq(h_expected, d_output[0]));
 }
 
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with NaN",
+         "[reduce][deterministic]",
+         float_type_list)
+{
+  using type     = typename c2h::get<0, TestType>;
+  using limits_t = cuda::std::numeric_limits<type>;
+
+  constexpr int num_items = 1 << 20;
+
+  constexpr auto reduction_op = cuda::minimum<type>{};
+  constexpr auto init         = cuda::std::numeric_limits<type>::max();
+
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
+
+  const int num_indices = GENERATE_COPY(take(2, random(1 << 10, num_items)));
+
+  CAPTURE(num_indices, num_items);
+
+  // generate random indices to scatter NaNs
+  c2h::device_vector<int> indices(num_indices);
+  for (int i = 0; i < 2; ++i)
+  {
+    const type nan_val = i == 0 ? limits_t::signaling_NaN() : limits_t::quiet_NaN();
+
+    c2h::gen(C2H_SEED(2), indices, 0, num_items - 1);
+    auto begin = thrust::make_constant_iterator(nan_val);
+    auto end   = begin + num_indices;
+
+    // sprinkle some NaNs randomly throughout the input
+    thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), d_input.begin());
+  }
+
+  c2h::device_vector<type> d_output_p1(1);
+  c2h::device_vector<type> d_output_p2(1);
+
+  auto env1 = cuda::std::execution::env{
+    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<1, 128>{})};
+
+  auto env2 = cuda::std::execution::env{
+    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<2, 256>{})};
+
+  cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, reduction_op, init, env1);
+  cub::DeviceReduce::Reduce(d_input.begin(), d_output_p2.begin(), num_items, reduction_op, init, env2);
+
+  REQUIRE_EQ_WITH_NAN_MATCHING(d_output_p1, d_output_p2);
+}
+
 C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
          "[reduce][deterministic]",
          float_type_list)
