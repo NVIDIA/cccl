@@ -222,8 +222,8 @@ _CCCL_DEVICE void transform_kernel_impl(
     char* const dst       = smem + smem_offset;
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % memcpy_async_alignment == 0, "");
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % memcpy_async_alignment == 0, "");
-    const int bytes_to_copy = ::cuda::round_up(
-      aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * valid_items, memcpy_async_size_multiple);
+    const int bytes_to_copy =
+      ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, memcpy_async_size_multiple);
     smem_offset += bytes_to_copy; // leave aligned address for follow-up copy
     cooperative_groups::memcpy_async(
       group, dst, src, ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<size_t>(bytes_to_copy)});
@@ -335,14 +335,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
 
         // TODO(bgruber): we could precompute bytes_to_copy on the host
-        const int bytes_to_copy = ::cuda::round_up(
-          aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
+        const int bytes_to_copy =
+          ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_stride, bulk_copy_size_multiple);
 
         ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
         total_copied += bytes_to_copy;
 
         // add bulk_copy_alignment to make space for the next tile's head padding
-        smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
+        smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
       };
 
       // Order of evaluation is left-to-right
@@ -369,11 +369,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
-      const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
+      const int bytes_to_copy = int{sizeof(T)} * tile_size;
       cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
 
       // add bulk_copy_alignment to make space for the next tile's head padding
-      smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
+      smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
     };
 
     // Order of evaluation is left-to-right
