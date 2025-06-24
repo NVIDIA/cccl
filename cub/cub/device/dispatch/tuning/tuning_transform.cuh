@@ -208,7 +208,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 {
   static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
   static constexpr bool all_contiguous =
-    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorsIn>...>;
+    (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn> && ...);
   static constexpr bool all_values_trivially_reloc =
     ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<it_value_t<RandomAccessIteratorsIn>>...>;
 
