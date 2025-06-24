@@ -196,6 +196,7 @@ memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned i
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % 16 == 0, "");
   _CCCL_ASSERT(bytes_to_copy % 16 == 0, "");
 
+#pragma unroll 1
   for (unsigned int offset = threadIdx.x * 16; offset < bytes_to_copy; offset += BlockThreads * 16)
   {
     __pipeline_memcpy_async(static_cast<char*>(dst) + offset, static_cast<const char*>(src) + offset, 16);
