@@ -399,7 +399,7 @@ struct __sndr_t
 };
 
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr __sndr, stream_ref __stream) -> decltype(auto)
+_CCCL_API constexpr auto __adapt(_Sndr __sndr, [[maybe_unused]] stream_ref __stream) -> decltype(auto)
 {
   // Ensure that we are not trying to adapt a sender that is already adapted.
   if constexpr (__is_specialization_of_v<_Sndr, __sndr_t>)
