@@ -263,6 +263,8 @@ template <int BlockThreads, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
 {
+  // TODO(bgruber): drop handling of head bytes and just read OOB, since gmem buffers are always sufficiently aligned
+
   using T = typename decltype(aligned_ptr)::value_type;
   // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
   // for types with larger alignment
@@ -313,8 +315,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
   [[maybe_unused]] int smem_offset = 0;
+  // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned
+  const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we only need half the registers
-  const bool inner_blocks               = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
                   : copy_and_return_smem_dst_fallback<block_threads>(
