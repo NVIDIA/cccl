@@ -241,52 +241,7 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 
 const char *header_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
-
-template <typename T, size_t dimensions = 1>
-using slice = cuda::std::mdspan<T, ::cuda::std::dextents<size_t, dimensions>, ::cuda::std::layout_stride>;
-
-template <typename T, size_t M, size_t N>
-class static_slice
-{
-public:
-    using extents_t = cuda::std::extents<size_t, M, N>;
-    using layout_t  = cuda::std::layout_stride;
-    using mdspan_t  = cuda::std::mdspan<T, extents_t, layout_t>;
-
-    __host__ __device__
-    static_slice(T* data,
-                 typename layout_t::template mapping<extents_t> mapping)      // explicit ctor
-        : view_{data, mapping}
-    {}
-
-    // convert from a dynamic-extents mdspan
-    template <typename OtherMapping>
-    __host__ __device__
-    static_slice(const cuda::std::mdspan<T,
-                                         cuda::std::dextents<size_t, 2>,
-                                         OtherMapping>& dyn)
-        : view_{dyn.data_handle(),
-                typename layout_t::template mapping<extents_t>(dyn.mapping())}
-    {
-        assert(dyn.extent(0) == M && dyn.extent(1) == N);
-    }
-
-    __host__ __device__       T& operator()(size_t i, size_t j)       { return view_(i, j); }
-    __host__ __device__ const T& operator()(size_t i, size_t j) const { return view_(i, j); }
-
-    __host__ __device__ T* data()      const { return view_.data_handle(); }
-    __host__ __device__ auto mapping() const { return view_.mapping();     }
-    __host__ __device__ auto extents() const { return view_.extents();     }
-    __host__ __device__ size_t extent(size_t i) const { return view_.extent(i); }
-
-    __host__ __device__ constexpr size_t size() const noexcept
-    {
-        return M * N;
-    }
-
-private:
-    mdspan_t view_;
-};
+using namespace cuda::experimental::stf;
 )";
 
 
@@ -300,6 +255,7 @@ __global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn
 {
   %s U{dyn_U};
   %s U1{dyn_U1};
+
   int tidx = blockIdx.x * blockDim.x + threadIdx.x;
   int tidy = blockIdx.y * blockDim.y + threadIdx.y;
   int dimx = blockDim.x * gridDim.x;
@@ -404,7 +360,7 @@ std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std:
     std::ostringstream oss;
 
     // mdspan<element_type,
-    oss << "static_slice<" << type_name<ET>;
+    oss << "::cuda::experimental::stf::static_slice<" << type_name<ET>;
 
     // extents<size_t, e0, e1, ...>,
     if constexpr (R > 0)
