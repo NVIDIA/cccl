@@ -28,7 +28,7 @@ workflows:
     # Modded builds:
     - {jobs: ['build'], std: 'all', ctk: '12.9', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'max', cxx: ['gcc', 'clang'], cpu: 'arm64'}
-    - {jobs: ['build'], std: 'max', cxx: 'gcc', sm: ['90;90a;100']}
+    - {jobs: ['build'], std: 'max', cxx: ['gcc', 'msvc'],  sm: ['90;90a', '100;120']}
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', gpu: 'h100', sm: 'gpu' }
     - {jobs: ['test_gpu'],                project: 'thrust',                std: 'max', gpu: 'h100', sm: 'gpu' }
     - {jobs: ['test'],                    project: ['libcudacxx', 'cudax'], std: 'max', gpu: 'h100', sm: 'gpu' }
@@ -49,15 +49,14 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.9'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['msvc']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,    cxx: ['gcc'], sm: "90"}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc'], sm: "90a"}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'msvc'], sm: ['90;90a', '100;120']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     # Python and c/parallel jobs:
-    - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: ['rtx2080', 'h100']}
     ## TODO: Python test jobs cannot be run on consumer cards unless the runners have at least
     ## the same version of CUDA as the build jobs (forward compatibility does not work on consumer cards).
-    - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: ['rtxa6000', 'h100']}
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
@@ -83,10 +82,16 @@ workflows:
     # Modded builds:
     - {jobs: ['build'], std: 'all', ctk: '12.9', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
-    - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', gpu: ['v100', 't4', 'l4', 'h100'], sm: '70;75;89;90;100'}
-    - {jobs: ['test_gpu'],                project: 'thrust',                std: 'max', gpu: ['v100', 't4', 'l4', 'h100'], sm: '70;75;89;90;100'}
-    - {jobs: ['test'],                    project: ['libcudacxx', 'cudax'], std: 'max', gpu: ['v100', 't4', 'l4', 'h100'], sm: '70;75;89;90;100'}
+
+    # Extended GPU tests:
+    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', sm: '70;75;89;90', gpu: ['v100', 't4', 'l4', 'h100']}
+    - {jobs: ['test_gpu'],                project: 'thrust',                std: 'max', sm: '70;75;89;90', gpu: ['v100', 't4', 'l4', 'h100']}
+    - {jobs: ['test'],                    project: ['libcudacxx', 'cudax'], std: 'max', sm: '70;75;89;90', gpu: ['v100', 't4', 'l4', 'h100']}
+    # MSVC build coverage of extended GPU nightly tests:
+    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: '70;75;89;90',                cxx: 'msvc'}
+    # Build-only coverage of extended arches. `sm` split up to parallelize.
+    - {jobs: ['build'], project: ['cub', 'thrust', 'libcudacxx', 'cudax'],  std: 'max', sm: ['86;90a', '100;103', '120'], cxx: ['msvc', 'gcc'] }
+
     # default_projects: clang-cuda
     - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang'}
     # Disabled; see discussion on #3633. Should be fixed in clang-20.
@@ -98,8 +103,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: [        '12.9'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: '20',  cxx: ['msvc14.39']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: '20',  cxx: ['msvc']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['gcc12'], sm: "90"}
-    - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc'], sm: "90a"}
+    - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: '20',  cxx: ['gcc', 'msvc'], sm: ['90;90a', '100;120']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']  , gpu: 'rtx2080'}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc']  ,   gpu: 'rtx2080'}

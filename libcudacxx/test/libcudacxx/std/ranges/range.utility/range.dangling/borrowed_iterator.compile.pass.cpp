@@ -21,9 +21,7 @@
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #  include <cuda/std/string_view>
 #endif
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
+#include <cuda/std/inplace_vector>
 
 #if defined(_LIBCUDACXX_HAS_STRING)
 static_assert(
@@ -31,10 +29,8 @@ static_assert(
 static_assert(
   cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::string&&>, cuda::std::ranges::dangling>);
 #endif
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(
-  cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::vector<int>>, cuda::std::ranges::dangling>);
-#endif
+static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::inplace_vector<int, 3>>,
+                                 cuda::std::ranges::dangling>);
 
 #if defined(_LIBCUDACXX_HAS_STRING)
 static_assert(

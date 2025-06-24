@@ -26,6 +26,7 @@
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda_runtime_api.h>
@@ -67,13 +68,11 @@ struct stream_ref : ::cuda::stream_ref
   /// Disallow construction from `nullptr`.
   stream_ref(_CUDA_VSTD::nullptr_t) = delete;
 
-  /**
-   * \brief Queries if all operations on the stream have completed.
-   *
-   * \throws cuda::cuda_error if the query fails.
-   *
-   * \return `true` if all operations have completed, or `false` if not.
-   */
+  //! \brief Queries if all operations on the stream have completed.
+  //!
+  //! \throws cuda::cuda_error if the query fails.
+  //!
+  //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] bool is_done() const
   {
     const auto __result = __detail::driver::streamQuery(__stream);
@@ -99,7 +98,6 @@ struct stream_ref : ::cuda::stream_ref
   //! @return The priority of the stream
   //!
   //! @throws cuda_error if the priority query fails
-  // Needs to be without "get_" prefix, because it is this way in cuda::stream_ref
   [[nodiscard]] _CCCL_HOST_API int priority() const
   {
     return __detail::driver::streamGetPriority(__stream);
@@ -145,6 +143,11 @@ struct stream_ref : ::cuda::stream_ref
     __detail::driver::streamWaitEvent(get(), __ev.get());
   }
 
+  //! @brief Returns a \c execution::sender that completes on this stream.
+  //!
+  //! @note Equivalent to `execution::schedule(execution::stream_scheduler{*this})`.
+  _CCCL_HOST_API auto schedule() const noexcept;
+
   //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
   //! stream
   //!
@@ -167,7 +170,7 @@ struct stream_ref : ::cuda::stream_ref
   //!
   //! Compared to `device()` member function the returned \c logical_device will
   //! hold a green context for streams created under one.
-  _CCCL_HOST_API logical_device get_logical_device() const
+  _CCCL_HOST_API logical_device logical_device() const
   {
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
@@ -206,10 +209,24 @@ struct stream_ref : ::cuda::stream_ref
   //! returned
   //!
   //! @throws cuda_error if device check fails
-  _CCCL_HOST_API device_ref get_device() const
+  _CCCL_HOST_API device_ref device() const
   {
-    return get_logical_device().get_underlying_device();
+    return logical_device().underlying_device();
   }
+
+  [[nodiscard]] _CCCL_API constexpr auto query(const get_stream_t&) const noexcept -> stream_ref
+  {
+    return *this;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_forward_progress_guarantee_t&) noexcept
+    -> execution::forward_progress_guarantee
+  {
+    return execution::forward_progress_guarantee::weakly_parallel;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_domain_t&) noexcept
+    -> execution::stream_domain;
 };
 
 } // namespace cuda::experimental

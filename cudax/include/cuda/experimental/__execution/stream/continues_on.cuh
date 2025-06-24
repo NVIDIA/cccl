@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/experimental/__execution/visit.cuh"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,12 +24,14 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
@@ -52,7 +52,7 @@ struct stream_domain::__apply_t<continues_on_t>
     using operation_state_concept = operation_state_t;
     using __env_t                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
-    _CCCL_API explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
+    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __stream_(__stream)
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __ref_rcvr(*this)))
@@ -76,22 +76,22 @@ struct stream_domain::__apply_t<continues_on_t>
     }
 
     template <class... _Values>
-    _CCCL_API void set_value(_Values&&...) noexcept
+    _CCCL_API constexpr void set_value(_Values&&...) noexcept
     {
       // no-op
     }
 
-    _CCCL_API void set_error(_CUDA_VSTD::__ignore_t) noexcept
+    _CCCL_API constexpr void set_error(_CUDA_VSTD::__ignore_t) noexcept
     {
       // no-op
     }
 
-    _CCCL_API void set_stopped() noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       // no-op
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return __fwd_env(execution::get_env(__rcvr_));
     }
@@ -116,18 +116,18 @@ struct stream_domain::__apply_t<continues_on_t>
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
     {
       return __opstate_t<_Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), __stream_};
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
     {
       return __opstate_t<const _Sndr&, _Rcvr>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __stream_};
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> env_of_t<_Sndr>
     {
       return execution::get_env(__sndr_);
     }

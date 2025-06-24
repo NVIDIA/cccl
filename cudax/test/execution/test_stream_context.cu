@@ -12,11 +12,17 @@
 #include <cuda/experimental/execution.cuh>
 
 // Then include the test helpers
+#include <thrust/equal.h>
+
+#include <cuda/experimental/container.cuh>
+
 #include <nv/target>
 
 #include "testing.cuh" // IWYU pragma: keep
 
 _CCCL_NV_DIAG_SUPPRESS(177) // function "_is_on_device" was declared but never referenced
+
+namespace ex = cuda::experimental::execution;
 
 namespace
 {
@@ -41,34 +47,34 @@ struct _say_hello
 
 void stream_context_test1()
 {
-  cudax_async::stream_context ctx{cuda::experimental::device_ref{0}};
+  ex::stream_context ctx{cuda::experimental::device_ref{0}};
   auto sched = ctx.get_scheduler();
 
-  auto sndr = cudax_async::schedule(sched) //
-            | cudax_async::then([] __device__() noexcept -> bool {
+  auto sndr = ex::schedule(sched) //
+            | ex::then([] __host__ __device__() noexcept -> bool {
                 return _is_on_device();
               });
 
-  auto [on_device] = cudax_async::sync_wait(std::move(sndr)).value();
+  auto [on_device] = ex::sync_wait(std::move(sndr)).value();
   CHECK(on_device);
 }
 
 void stream_context_test2()
 {
-  cudax_async::thread_context tctx;
-  cudax_async::stream_context sctx{cuda::experimental::device_ref{0}};
+  ex::thread_context tctx;
+  ex::stream_context sctx{cuda::experimental::device_ref{0}};
   auto sch = sctx.get_scheduler();
 
   auto start = //
-    cudax_async::schedule(sch) // begin work on the GPU
-    | cudax_async::then(_say_hello{42}) // enqueue a function object on the GPU
-    | cudax_async::then([] __device__(int i) noexcept -> int { // enqueue a lambda on the GPU
+    ex::schedule(sch) // begin work on the GPU
+    | ex::then(_say_hello{42}) // enqueue a function object on the GPU
+    | ex::then([] __device__(int i) noexcept -> int { // enqueue a lambda on the GPU
         CUDAX_CHECK(_is_on_device());
         printf("Hello again from lambda on device! i = %d\n", i);
         return i + 1;
       })
-    | cudax_async::continues_on(tctx.get_scheduler()) // continue work on the CPU
-    | cudax_async::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
+    | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
+    | ex::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
         CUDAX_CHECK(!_is_on_device());
         NV_IF_TARGET(NV_IS_HOST,
                      (printf("Hello from lambda on host! i = %d\n", i);),
@@ -76,10 +82,72 @@ void stream_context_test2()
         return i;
       });
 
-  // run the cudax_async, wait for it to finish, and get the result
-  auto [i] = cudax_async::sync_wait(std::move(start)).value();
+  // run the ex, wait for it to finish, and get the result
+  auto [i] = ex::sync_wait(std::move(start)).value();
   CHECK(i == 43);
   printf("All done on the host! result = %d\n", i);
+}
+
+void stream_ref_as_scheduler()
+{
+  ex::thread_context tctx;
+  cudax::stream sctx{cuda::experimental::device_ref{0}};
+  auto sch = sctx.get_scheduler();
+
+  auto start = //
+    ex::schedule(sch) // begin work on the GPU
+    | ex::then(_say_hello{42}) // enqueue a function object on the GPU
+    | ex::then([] __device__(int i) noexcept -> int { // enqueue a lambda on the GPU
+        CUDAX_CHECK(_is_on_device());
+        printf("Hello again from lambda on device! i = %d\n", i);
+        return i + 1;
+      })
+    | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
+    | ex::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
+        CUDAX_CHECK(!_is_on_device());
+        NV_IF_TARGET(NV_IS_HOST,
+                     (printf("Hello from lambda on host! i = %d\n", i);),
+                     (printf("OOPS! still on the device! i = %d\n", i);))
+        return i;
+      });
+
+  // run the ex, wait for it to finish, and get the result
+  auto [i] = ex::sync_wait(std::move(start)).value();
+  CHECK(i == 43);
+  printf("All done on the host! result = %d\n", i);
+}
+
+void bulk_on_stream_scheduler()
+{
+  cuda::experimental::device_ref _dev{0};
+  cudax::stream sctx{_dev};
+  auto sch = sctx.get_scheduler();
+
+  using _env_t = cudax::env_t<cuda::mr::device_accessible>;
+  _env_t env{cudax::device_memory_resource{_dev}, cuda::get_stream(sch), ex::par_unseq};
+  cudax::async_device_buffer<int> buf{env, 10, 40}; // a device buffer of 10 integers, initialized to 40
+  cuda::std::span data{buf};
+
+  auto start = //
+    ex::schedule(sch) // begin work on the GPU
+    | ex::then([data] __host__ __device__() -> cuda::std::span<int> {
+        printf("Hello from lambda on device!\n");
+        return data;
+      })
+    // enqueue a bulk kernel on the GPU
+    | ex::bulk(ex::par_unseq, 10, [] __host__ __device__(int i, cuda::std::span<int> data) -> void {
+        printf("Hello from bulk kernel on device! i = %d\n", i);
+        CUDAX_CHECK(_is_on_device());
+        CUDAX_CHECK(i < data.size());
+        data[i] += 2;
+      });
+
+  cudax::async_device_buffer<int> expected{env, 10, 42}; // a device buffer of 10 integers, initialized to 42
+
+  // start the sender and wait for it to finish
+  auto [span] = ex::sync_wait(std::move(start)).value();
+
+  CHECK(thrust::equal(thrust::device, span.begin(), span.end(), expected.begin()));
 }
 
 // Test code is placed in separate functions to avoid an nvc++ issue with
@@ -94,5 +162,15 @@ C2H_TEST("a simple use of the stream context", "[context][stream]")
 C2H_TEST("a simple use of the stream context", "[context][stream]")
 {
   REQUIRE_NOTHROW(stream_context_test2());
+}
+
+C2H_TEST("use stream_ref as a scheduler", "[context][stream]")
+{
+  REQUIRE_NOTHROW(stream_ref_as_scheduler());
+}
+
+C2H_TEST("launch a bulk kernel", "[context][stream]")
+{
+  REQUIRE_NOTHROW(bulk_on_stream_scheduler());
 }
 } // namespace

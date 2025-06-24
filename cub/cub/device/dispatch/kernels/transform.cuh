@@ -189,17 +189,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
 {
-  const ::cuda::std::uint32_t membermask = ~0;
-  ::cuda::std::uint32_t is_elected;
-  asm volatile(
-    "{\n\t .reg .pred P_OUT; \n\t"
-    "elect.sync _|P_OUT, %1;\n\t"
-    "selp.b32 %0, 1, 0, P_OUT; \n"
-    "}"
-    : "=r"(is_elected)
-    : "r"(membermask)
-    :);
-  return threadIdx.x < 32 && static_cast<bool>(is_elected);
+  return ::cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
 }
 
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>

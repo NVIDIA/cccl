@@ -396,6 +396,12 @@
 #  define _CCCL_BUILTIN_FLOORL(...) __builtin_floorl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_floor)
 
+#if _CCCL_CHECK_BUILTIN(builtin_fma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMAF(...) __builtin_fmaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMA(...)  __builtin_fma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAL(...) __builtin_fmal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
+
 #if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)

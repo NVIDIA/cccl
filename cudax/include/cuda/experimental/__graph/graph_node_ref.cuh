@@ -174,6 +174,15 @@ struct graph_node_ref
     return __node_;
   }
 
+  //! \brief Retrieves the CUDA graph this node belongs to.
+  //! \return The CUDA graph.
+  // internal for now because of a clash with get_graph() in path_builder. We could store the device in the
+  // graph_node_ref, but that feels like going a bit too far.
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
+  {
+    return __graph_;
+  }
+
   //! \brief Retrieves the type of the CUDA graph node.
   //! \return The type of the graph node as a graph_node_type.
   //! \pre The internal graph node handle is not null.
@@ -246,7 +255,7 @@ struct graph_node_ref
   }
 
 private:
-  friend struct graph_builder;
+  friend struct graph_builder_ref;
 
   template <class... _Nodes>
   friend _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
