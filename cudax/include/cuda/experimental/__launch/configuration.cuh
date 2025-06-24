@@ -36,7 +36,7 @@ struct __launch_option_wrapper
       : __option_(__option)
   {}
 
-  constexpr _Option _CCCL_HOST_DEVICE query(const _Option::__tag&) const noexcept
+  constexpr _Option _CCCL_HOST_DEVICE query(const typename _Option::__tag&) const noexcept
   {
     return __option_;
   }
