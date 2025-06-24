@@ -64,30 +64,48 @@ namespace cuda_cub
 template <typename T>
 using pointer = thrust::pointer<T, thrust::cuda_cub::tag, thrust::tagged_reference<T, thrust::cuda_cub::tag>>;
 
-/*! \p cuda::universal_pointer stores a pointer to an object allocated in
- *  memory accessible by the \p cuda system and host systems.
- *
- *  \p cuda::universal_pointer has pointer semantics: it may be dereferenced
- *  and manipulated with pointer arithmetic.
- *
- *  \p cuda::universal_pointer can be created with \p cuda::universal_allocator
- *  or by explicitly calling its constructor with a raw pointer.
- *
- *  The raw pointer encapsulated by a \p cuda::universal_pointer may be
- *  obtained by either its <tt>get</tt> member function or the \p
- *  raw_pointer_cast function.
- *
- *  \note \p cuda::universal_pointer is not a "smart" pointer; it is the
- *        programmer's responsibility to deallocate memory pointed to by
- *        \p cuda::universal_pointer.
- *
- *  \tparam T specifies the type of the pointee.
- *
- *  \see cuda::universal_allocator
- *  \see raw_pointer_cast
- */
+//! \p cuda::universal_pointer stores a pointer to an object allocated in memory accessible by the \p cuda system and
+//! host systems. Algorithms dispatching based on this pointer type will prefer the cuda system.
+//!
+//! \p cuda::universal_pointer has pointer semantics: it may be dereferenced and manipulated with pointer arithmetic.
+//!
+//! \p cuda::universal_pointer can be created with \p cuda::universal_allocator or by explicitly calling its constructor
+//! with a raw pointer.
+//!
+//! The raw pointer encapsulated by a \p cuda::universal_pointer may be obtained by either its <tt>get</tt> member
+//! function or the \p raw_pointer_cast function.
+//!
+//! \note \p cuda::universal_pointer is not a "smart" pointer; it is the programmer's responsibility to deallocate
+//! memory pointed to by \p cuda::universal_pointer.
+//!
+//! \tparam T specifies the type of the pointee.
+//!
+//! \see cuda::universal_allocator
+//! \see raw_pointer_cast
 template <typename T>
 using universal_pointer = thrust::pointer<T, thrust::cuda_cub::tag, ::cuda::std::add_lvalue_reference_t<T>>;
+
+//! \p cuda::universal_host_pinned_pointer stores a pointer to an object allocated in memory accessible by the \p cuda
+//! system and host systems. Algorithms dispatching based on this pointer type will prefer the host system.
+//!
+//! \p cuda::universal_host_pinned_pointer has pointer semantics: it may be dereferenced and manipulated with pointer
+//! arithmetic.
+//!
+//! \p cuda::universal_host_pinned_pointer can be created with \p cuda::universal_host_pinned_allocator or by explicitly
+//! calling its constructor with a raw pointer.
+//!
+//! The raw pointer encapsulated by a \p cuda::universal_host_pinned_pointer may be obtained by either its <tt>get</tt>
+//! member function or the \p raw_pointer_cast function.
+//!
+//! \note \p cuda::universal_host_pinned_pointer is not a "smart" pointer; it is the programmer's responsibility to
+//! deallocate memory pointed to by \p cuda::universal_host_pinned_pointer.
+//!
+//! \tparam T specifies the type of the pointee.
+//!
+//! \see cuda::universal_host_pinned_allocator
+//! \see raw_pointer_cast
+template <typename T>
+using universal_host_pinned_pointer = thrust::pointer<T, cpp::tag, ::cuda::std::add_lvalue_reference_t<T>>;
 
 /*! \p cuda::reference is a wrapped reference to an object stored in memory
  *  accessible by the \p cuda system. \p cuda::reference is the type of the
@@ -121,6 +139,7 @@ namespace cuda
 {
 using thrust::cuda_cub::pointer;
 using thrust::cuda_cub::reference;
+using thrust::cuda_cub::universal_host_pinned_pointer;
 using thrust::cuda_cub::universal_pointer;
 } // namespace cuda
 } // namespace system
@@ -134,6 +153,7 @@ namespace cuda
 {
 using thrust::cuda_cub::pointer;
 using thrust::cuda_cub::reference;
+using thrust::cuda_cub::universal_host_pinned_pointer;
 using thrust::cuda_cub::universal_pointer;
 } // namespace cuda
 
