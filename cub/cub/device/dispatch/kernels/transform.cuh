@@ -196,38 +196,41 @@ memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned i
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % 16 == 0, "");
   _CCCL_ASSERT(bytes_to_copy % 16 == 0, "");
 
-  // printf("thread %u block %u memcpy_async_16: %p -> %p, bytes_to_copy = %d\n",
+  // Efficient copies require warps to operate on the same amount of work at each step.
+  // remainders are handled in a separate stage to prevent branching
+  const unsigned int copy_instructions = bytes_to_copy / 16;
+  const unsigned int subWarpMask       = BlockThreads - 1;
+  const unsigned int subwarpCopies     = subWarpMask & copy_instructions;
+
+  const unsigned int warpCopies = copy_instructions & ~subWarpMask;
+
+  // printf("thread %u block %u memcpy_async_16: %p -> %p, bytes_to_copy = %u, copy_instructions = %u, warpCopies = %u,
+  // subwarpCopies = %u\n",
   //        threadIdx.x,
   //        blockIdx.x,
   //        src,
   //        dst,
-  //        (int) bytes_to_copy);
+  //        bytes_to_copy,
+  //        copy_instructions,
+  //        warpCopies,
+  //        subwarpCopies);
 
-  // Efficient copies require warps to operate on the same amount of work at each step.
-  // remainders are handled in a separate stage to prevent branching
-  const unsigned int subWarpMask   = (BlockThreads - 1);
-  const unsigned int subwarpCopies = (subWarpMask & (bytes_to_copy / 16));
-
-  const unsigned int warpCopies = ((bytes_to_copy / 16) & (~subWarpMask));
-
-  const unsigned int stride = BlockThreads;
-  const unsigned int rank   = threadIdx.x;
-
-  for (size_t idx = 0; idx < warpCopies; idx += stride)
+  // #pragma unroll 1 reduced instructions a lot but decreases babelstream I8 memory throughput from 93% to 89% on L40
+  auto s = static_cast<const char*>(src);
+  auto d = static_cast<char*>(dst);
+  for (size_t idx = 0; idx < warpCopies; idx += BlockThreads)
   {
-    size_t _srcIdx = rank + idx;
-    size_t _dstIdx = rank + idx;
-    __pipeline_memcpy_async((char*) dst + _dstIdx * 16, (const char*) src + _srcIdx * 16, 16);
+    size_t _srcIdx = threadIdx.x + idx;
+    size_t _dstIdx = threadIdx.x + idx;
+    __pipeline_memcpy_async(d + _dstIdx * 16, s + _srcIdx * 16, 16);
   }
 
   if (subwarpCopies)
   {
-    const unsigned int maxSubwarpRank = min(threadIdx.x, subwarpCopies - 1); // TODO(bgruber): this causes a lot of
-                                                                             // duplicated copies with the same src and
-                                                                             // dst
-    size_t _srcIdx = warpCopies + maxSubwarpRank;
-    size_t _dstIdx = warpCopies + maxSubwarpRank;
-    __pipeline_memcpy_async((char*) dst + _dstIdx * 16, (const char*) src + _srcIdx * 16, 16);
+    const unsigned int maxSubwarpRank = min(threadIdx.x, subwarpCopies - 1);
+    size_t _srcIdx                    = warpCopies + maxSubwarpRank;
+    size_t _dstIdx                    = warpCopies + maxSubwarpRank;
+    __pipeline_memcpy_async(d + _dstIdx * 16, s + _srcIdx * 16, 16);
   }
 
   __pipeline_commit();
