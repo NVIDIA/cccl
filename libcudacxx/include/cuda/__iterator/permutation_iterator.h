@@ -49,7 +49,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //!
 //! Note that \p permutation_iterator is not limited to strict permutations of the given range \c V. The distance
 //! between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range \c V,
-//! in which case the \p permutation_iterator only provides a "permutation" of a subrange of \c V. The indices neither
+//! in which case the \p permutation_iterator only provides a "permutation" of a subrange of \c V. The indices do not
 //! need to be unique. In this same context, it must be noted that the past-the-end \p permutation_iterator is
 //! completely defined by means of the past-the-end iterator to the indices.
 //!
@@ -64,7 +64,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! thrust::device_vector<int> indices{2, 6, 1, 3};
 //!
 //! using ElementIterator = thrust::device_vector<float>::iterator;
-//! using IndexIterator = thrust::device_vector<int>::iterator  ;
+//! using IndexIterator = thrust::device_vector<int>::iterator;
 //!
 //! cuda::permutation_iterator<ElementIterator,IndexIterator> iter(values.begin(), indices.begin());
 //!

@@ -22,9 +22,12 @@ __host__ __device__ constexpr bool test()
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
   {
-    const int offset[] = {2};
+    const int offset[] = {5, 3, 1, 7, 5, 2, 6, 1};
     cuda::permutation_iterator iter(random_access_iterator<int*>{buffer}, offset);
-    assert(*iter == buffer[*offset]);
+    for (size_t i = 0; i < 8; ++i, ++iter)
+    {
+      assert(*iter == buffer[offset[i]]);
+    }
   }
 
   {
