@@ -102,6 +102,7 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   static ::std::mutex cache_mutex;
   static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
 
+  [[maybe_unused]]
   auto make_printfable = [](const auto& arg) {
     using T = ::std::decay_t<decltype(arg)>;
     if constexpr (::std::is_same_v<const T, const ::std::string>)
@@ -144,7 +145,7 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   fprintf(stderr, "kernel_name: %s\n", kernel_name.c_str());
   ::std::string template_with_name = replace_all(key.second.c_str(), "%KERNEL_NAME%", kernel_name.c_str());
 
-  //::std::cout << template_with_name << ::std::endl;
+  ::std::cout << template_with_name << ::std::endl;
 
   // Compile kernel
   nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(template_with_name.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
@@ -170,6 +171,8 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   ::std::string ptx(ptx_size, '\0');
   cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
   cuda_safe_call(nvrtcDestroyProgram(&prog));
+
+  fprintf(stderr, "loading function %s\n", kernel_name.c_str());
 
   CUmodule cuda_module   = cuda_try<cuModuleLoadData>(ptx.data());
   CUfunction kernel = cuda_try<cuModuleGetFunction>(cuda_module, kernel_name.c_str());
@@ -233,13 +236,61 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 const char* heat_kernel_template = R"(
 #include <cuda/mdspan>
 
+template <typename T, size_t dimensions = 1>
+using slice = cuda::std::mdspan<T, ::cuda::std::dextents<size_t, dimensions>, ::cuda::std::layout_stride>;
+
+template <typename T, size_t M, size_t N>
+class static_slice
+{
+public:
+    using extents_t = cuda::std::extents<size_t, M, N>;
+    using layout_t  = cuda::std::layout_stride;
+    using mdspan_t  = cuda::std::mdspan<T, extents_t, layout_t>;
+
+    __host__ __device__
+    static_slice(T* data,
+                 typename layout_t::template mapping<extents_t> mapping)      // explicit ctor
+        : view_{data, mapping}
+    {}
+
+    // convert from a dynamic-extents mdspan
+    template <typename OtherMapping>
+    __host__ __device__
+    static_slice(const cuda::std::mdspan<T,
+                                         cuda::std::dextents<size_t, 2>,
+                                         OtherMapping>& dyn)
+        : view_{dyn.data_handle(),
+                typename layout_t::template mapping<extents_t>(dyn.mapping())}
+    {
+        assert(dyn.extent(0) == M && dyn.extent(1) == N);
+    }
+
+    __host__ __device__       T& operator()(size_t i, size_t j)       { return view_(i, j); }
+    __host__ __device__ const T& operator()(size_t i, size_t j) const { return view_(i, j); }
+
+    __host__ __device__ T* data()      const { return view_.data_handle(); }
+    __host__ __device__ auto mapping() const { return view_.mapping();     }
+    __host__ __device__ auto extents() const { return view_.extents();     }
+    __host__ __device__ size_t extent(size_t i) const { return view_.extent(i); }
+
+    __host__ __device__ constexpr size_t size() const noexcept
+    {
+        return M * N;
+    }
+
+private:
+    mdspan_t view_;
+};
+
 const double c = %a;
 const double dx2 = %a;
 const double dy2 = %a;
 
 extern "C"
-__global__ void %KERNEL_NAME%(%s U, %s U1)
+__global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn_U1)
 {
+  %s U{dyn_U};
+  %s U1{dyn_U1};
   int tidx = blockIdx.x * blockDim.x + threadIdx.x;
   int tidy = blockIdx.y * blockDim.y + threadIdx.y;
   int dimx = blockDim.x * gridDim.x;
@@ -257,21 +308,66 @@ __global__ void %KERNEL_NAME%(%s U, %s U1)
 const char *init_kernel_template = R"(
 #include <cuda/mdspan>
 
-extern "C"
-__global__ void %KERNEL_NAME%(%s U)
+template <typename T, size_t dimensions = 1>
+using slice = cuda::std::mdspan<T, ::cuda::std::dextents<size_t, dimensions>, ::cuda::std::layout_stride>;
+
+template <typename T, size_t M, size_t N>
+class static_slice
 {
+public:
+    using extents_t = cuda::std::extents<size_t, M, N>;
+    using layout_t  = cuda::std::layout_stride;
+    using mdspan_t  = cuda::std::mdspan<T, extents_t, layout_t>;
+
+    __host__ __device__
+    static_slice(T* data,
+                 typename layout_t::template mapping<extents_t> mapping)      // explicit ctor
+        : view_{data, mapping}
+    {}
+
+    // convert from a dynamic-extents mdspan
+    template <typename OtherMapping>
+    __host__ __device__
+    static_slice(const cuda::std::mdspan<T,
+                                         cuda::std::dextents<size_t, 2>,
+                                         OtherMapping>& dyn)
+        : view_{dyn.data_handle(),
+                typename layout_t::template mapping<extents_t>(dyn.mapping())}
+    {
+        assert(dyn.extent(0) == M && dyn.extent(1) == N);
+    }
+
+    __host__ __device__       T& operator()(size_t i, size_t j)       { return view_(i, j); }
+    __host__ __device__ const T& operator()(size_t i, size_t j) const { return view_(i, j); }
+
+    __host__ __device__ T* data()      const { return view_.data_handle(); }
+    __host__ __device__ auto mapping() const { return view_.mapping();     }
+    __host__ __device__ auto extents() const { return view_.extents();     }
+    __host__ __device__ size_t extent(size_t i) const { return view_.extent(i); }
+
+    __host__ __device__ constexpr size_t size() const noexcept
+    {
+        return M * N;
+    }
+
+private:
+    mdspan_t view_;
+};
+
+extern "C"
+__global__ void %KERNEL_NAME%(slice<double, 2> dyn_U)
+{
+  %s U{dyn_U};
+
   size_t _i          = blockIdx.x * blockDim.x + threadIdx.x; // STATIC dims ?
   const size_t _step = blockDim.x * gridDim.x;
 
   const size_t n = U.size();
-  //printf("N=%%ld\n", n);
+  // printf("N=%%ld\n", n);
   const auto targs = ::cuda::std::make_tuple(U);
-//  auto shape = shape(U);// static_shape_t shape = FILLED AUTOMATICALLY
 
-  auto f = [](size_t i, size_t j, %s U) {
-    // printf("U(%%ld,%%ld) = 100.0\n", (long)i, (long)j);
-    U(i, j) = 100.0;
-    return;
+  auto f = [](size_t i, size_t j, auto U) {
+    // printf("U(%%ld,%%ld) %%p = 100.0\n", (long)i, (long)j, &U(i, j));
     double rad = U.extent(0) / 8.0;
     double dx  = (double) i - U.extent(0) / 2;
     double dy  = (double) j - U.extent(1) / 2;
@@ -340,10 +436,9 @@ std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std:
     std::ostringstream oss;
 
     // mdspan<element_type,
-    oss << "cuda::std::mdspan<" << type_name<ET>;
+    oss << "static_slice<" << type_name<ET>;
 
     // extents<size_t, e0, e1, ...>,
-    oss << ", cuda::std::extents<size_t";
     if constexpr (R > 0)
     {
       oss << ", ";
@@ -356,22 +451,7 @@ std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std:
 
     oss << ">";
 
-    // layout   (omit default)
-    if constexpr (!std::is_same_v<Layout, cuda::std::layout_right>)
-    {
-      // @@@ HACK HACK HACK
-      // oss << ", " << type_name<Layout>;
-      oss << ", " << "::cuda::std::layout_stride";
-    }
-
-    // accessor (omit default)
-    if constexpr (!std::is_same_v<Accessor, cuda::std::default_accessor<ET>>)
-    {
-      oss << ", " << type_name<Accessor>;
-    }
-
     std::string out = oss.str();
-    out += '>';
 
     return out;
   }
@@ -400,48 +480,46 @@ int main()
   const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(device);
   nvrtc_flags.push_back("--gpu-architecture=compute_" + ::std::to_string(prop.major) + ::std::to_string(prop.minor));
 
-  const CUdevice cuDevice = cuda_try<cuDeviceGet>(0);
-  const CUcontext context = cuda_try<cuCtxCreate>(0, cuDevice);
-
-  const size_t N = 128;
+  const size_t N = 800;
 
   auto lU  = ctx.logical_data(shape_of<slice<double, 2>>(N, N));
   auto lU1 = ctx.logical_data(lU.shape());
 
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
-//  ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
-//    double rad = U.extent(0) / 8.0;
-//    double dx  = (double) i - U.extent(0) / 2;
-//    double dy  = (double) j - U.extent(1) / 2;
-//
-//    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
-//
-//    /* Set up boundary conditions */
-//    if (j == 0.0)
-//    {
-//      U(i, j) = 100.0;
-//    }
-//    if (j == U.extent(1) - 1)
-//    {
-//      U(i, j) = 0.0;
-//    }
-//    if (i == 0.0)
-//    {
-//      U(i, j) = 0.0;
-//    }
-//    if (i == U.extent(0) - 1)
-//    {
-//      U(i, j) = 0.0;
-//    }
-//  };
+#if 0
+  ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
+    double rad = U.extent(0) / 8.0;
+    double dx  = (double) i - U.extent(0) / 2;
+    double dy  = (double) j - U.extent(1) / 2;
 
+    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+
+    /* Set up boundary conditions */
+    if (j == 0.0)
+    {
+      U(i, j) = 100.0;
+    }
+    if (j == U.extent(1) - 1)
+    {
+      U(i, j) = 0.0;
+    }
+    if (i == 0.0)
+    {
+      U(i, j) = 0.0;
+    }
+    if (i == U.extent(0) - 1)
+    {
+      U(i, j) = 0.0;
+    }
+  };
+#else
   ctx.cuda_kernel(lU.write())->*[&](auto U) {
     CUfunction kernel =
-      lazy_jit(init_kernel_template, nvrtc_flags, stringize_mdspan(U), stringize_mdspan(U));
-
+      lazy_jit(init_kernel_template, nvrtc_flags, stringize_mdspan(U));
     return cuda_kernel_desc{kernel, 128, 32, 0, U};
   };
+#endif
 
 
   // diffusion constant
