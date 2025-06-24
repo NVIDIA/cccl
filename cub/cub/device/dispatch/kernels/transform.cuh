@@ -390,6 +390,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     _CCCL_PRAGMA_NOUNROLL()
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
+      // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
       const int idx = j * block_threads + threadIdx.x;
       if (full_tile || idx < tile_size)
       {
