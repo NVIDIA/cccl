@@ -177,8 +177,6 @@ struct traits_t
 
   // true if architecture supports tensor memory access instructions
   bool tma_supported;
-
-  constexpr bool operator==(const traits_t& other) const = default;
 };
 
 // @brief Architecture type
@@ -565,7 +563,7 @@ _CCCL_HOST_DEVICE constexpr inline id __special_id_for_compute_capability(int va
 }
 
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
-_CCCL_DEVICE constexpr arch::traits_t current_arch()
+_CCCL_DEVICE constexpr arch::traits_t current_traits()
 {
   // fixme: this doesn't work with nvc++ -cuda
 #ifdef __CUDA_ARCH__

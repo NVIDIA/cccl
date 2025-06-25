@@ -16,7 +16,7 @@ template <typename Arch>
 __global__ void arch_specific_kernel_mock_do_not_launch()
 {
   // I will try to pack something like this into an API
-  if constexpr (Arch::traits.compute_capability != cudax::arch::current_arch().compute_capability)
+  if constexpr (Arch::traits.compute_capability != cudax::arch::current_traits().compute_capability)
   {
     return;
   }
@@ -24,20 +24,22 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
   [[maybe_unused]] __shared__ int array[Arch::traits.max_shared_memory_per_block / sizeof(int)];
 
   // constexpr is useless and I can't use intrinsics here :(
-  if constexpr (cudax::arch::current_arch().cluster_supported)
+  if constexpr (cudax::arch::current_traits().cluster_supported)
   {
     [[maybe_unused]] int dummy;
     asm volatile("mov.u32 %0, %%cluster_ctarank;" : "=r"(dummy));
   }
-  if constexpr (cudax::arch::current_arch().redux_intrinisic)
+  if constexpr (cudax::arch::current_traits().redux_intrinisic)
   {
     [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
     asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
   }
-  if constexpr (cudax::arch::current_arch().cp_async_supported)
+  if constexpr (cudax::arch::current_traits().cp_async_supported)
   {
     asm volatile("cp.async.commit_group;");
   }
+  using type = cudax::arch::type<Arch::traits.id>;
+  static_assert(type::traits.id == Arch::traits.id);
 }
 
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::sm_70>();
@@ -62,7 +64,6 @@ void constexpr compare_static_and_dynamic()
 
   static_assert(sizeof(ArchType) == 1);
 
-  static_assert(ArchType::traits == dynamic_traits);
   static_assert(ArchType::traits.id == dynamic_traits.id);
   static_assert(ArchType::traits.max_threads_per_block == dynamic_traits.max_threads_per_block);
   static_assert(ArchType::traits.max_block_dim_x == dynamic_traits.max_block_dim_x);
@@ -102,7 +103,7 @@ void constexpr compare_static_and_dynamic()
   static_assert(ArchType::traits.cp_async_supported == dynamic_traits.cp_async_supported);
   static_assert(ArchType::traits.tma_supported == dynamic_traits.tma_supported);
 
-  static_assert(cudax::arch::type<ArchType::traits.id>::traits == ArchType::traits);
+  static_assert(cudax::arch::type<ArchType::traits.id>::traits.id == ArchType::traits.id);
 }
 
 C2H_CCCLRT_TEST("Traits", "[device]")
