@@ -372,8 +372,8 @@ C2H_TEST("Deterministic Device reduce works with various types on gpu with diffe
   }
   else
   {
-    min_value = type{-50};
-    max_value = type{50};
+    min_value = static_cast<type>(-50);
+    max_value = static_cast<type>(50);
   }
 
   c2h::device_vector<type> d_input(num_items);
