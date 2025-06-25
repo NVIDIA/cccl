@@ -251,15 +251,6 @@ class Constant:
         return self.val
 
 
-class DependentFunction:
-    def __init__(self, dep, op):
-        self.dep = dep
-        self.op = op
-
-    def resolve(self, template_arguments):
-        return template_arguments[self.dep]
-
-
 class StatefulFunction:
     def __init__(self, op, dtype):
         self.op = op
