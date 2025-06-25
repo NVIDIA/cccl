@@ -137,14 +137,13 @@ int main()
        }
     )";
 
-
     auto gen_template = parallel_for_template_generator(lU.shape(), body, U);
     ::std::cout << "BEGIN GEN TEMPLATE\n";
     ::std::cout << gen_template;
     ::std::cout << "END GEN TEMPLATE\n";
 
     CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template);
-    return cuda_kernel_desc{kernel, 128, 32, 0, shape(U), U};
+    return cuda_kernel_desc{kernel, 128, 32, 0, U};
   };
 
   // diffusion constant
@@ -201,10 +200,11 @@ int main()
       }
       )";
 
-    static_box<1,799, 1, 799> inner_sh;
-    auto gen_template = parallel_for_template_generator(inner_sh, body, U, U1);
+    ::std::cout << "stringize_box lU.shape()" << stringize(lU.shape()) << ::std::endl;
+    ::std::cout << "stringize_box inner<1>(lU.shape())" << stringize(inner<1>(lU.shape())) << ::std::endl;
+    auto gen_template = parallel_for_template_generator(inner<1>(lU.shape()), body, U, U1);
     CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template, c, dx2, dy2);
-    return cuda_kernel_desc{kernel, 128, 32, 0, inner_sh, U, U1};
+    return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
   };
 
 

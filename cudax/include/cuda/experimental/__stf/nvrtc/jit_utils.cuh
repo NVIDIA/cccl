@@ -228,6 +228,22 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   return result;
 }
 
+template <size_t Dimensions>
+::std::string stringize_box(const box<Dimensions> &b)
+{
+    ::std::ostringstream oss;
+    oss << "::cuda::experimental::stf::static_box<";
+    for (size_t ind : each(0, Dimensions))
+    {
+      if (ind > 0) {
+           oss << ", ";
+      }
+      oss << b.get_begin(ind) << ", " << b.get_end(ind);
+    }
+    oss << ">";
+    return oss.str();
+}
+
 template <typename Mdspan, std::size_t... Is>
 ::std::string stringize_mdspan(const Mdspan& md, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
 {
@@ -265,7 +281,52 @@ template <typename Mdspan, std::size_t... Is>
   }
 }
 
+template <typename Mdspan, std::size_t... Is>
+::std::string stringize_mdspan_shape(const shape_of<Mdspan>& md_sh, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
+{
+  constexpr std::size_t R = Mdspan::rank();
+  if constexpr (R != sizeof...(Is))
+  {
+    return stringize_mdspan_shape(md_sh, ::std::make_index_sequence<R>{});
+  }
+  else
+  {
+    using ET       = typename Mdspan::element_type;
+    using Layout   = typename Mdspan::layout_type;
+    using Accessor = typename Mdspan::accessor_type;
+    using XT       = typename Mdspan::extents_type;
 
+    ::std::ostringstream oss;
+
+    // mdspan<element_type,
+    oss << "::cuda::experimental::stf::static_box<";
+
+    ((oss << (Is ? ", " : "")
+          << "0, " << (XT::static_extent(Is) != ::cuda::std::dynamic_extent ? ::std::to_string(XT::static_extent(Is))
+                                                                   : ::std::to_string(md_sh.extent(Is)))),
+     ...);
+
+    oss << ">";
+
+    return oss.str();
+  }
+}
+
+template <typename Mdspan>
+::std::string stringize(const shape_of<Mdspan>& md_sh) {
+     return stringize_mdspan_shape(md_sh);
+}
+
+//// TODO better type detection !
+//template <typename Mdspan>
+//::std::string stringize(const Mdspan& md) {
+//     return stringize_mdspan(md);
+//}
+//
+template <size_t Dimensions>
+::std::string stringize(const box<Dimensions>& b) {
+     return stringize_box(b);
+}
 
 template <typename shape_t, typename ...Args>
 ::std::string parallel_for_template_generator([[maybe_unused]] shape_t shape, const char *body_template, Args... args)
@@ -282,7 +343,8 @@ template <typename shape_t, typename ...Args>
     ::std::ostringstream args_tuple_oss;
     args_tuple_oss << "const auto targs = ::cuda::std::make_tuple(";
 
-    args_prototype_oss << ::std::string(type_name<shape_t>) << " dyn_shape, ";
+    // the shape is hardcoded with its type
+    // args_prototype_oss << ::std::string(type_name<shape_t>) << " dyn_shape, ";
 
     // TODO use    each_in_pack([&](auto i, const auto& e) {...
     size_t arg_index = 0;
@@ -306,6 +368,8 @@ template <typename shape_t, typename ...Args>
 
     args_tuple_oss << ");\n";
 
+    args_conversion_oss << stringize(shape) << " static_shape;//{dyn_shape};\n";
+
     oss << "extern \"C\"\n";
     oss << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n";
     oss << "{\n";
@@ -318,7 +382,7 @@ template <typename shape_t, typename ...Args>
     oss << R"(
            size_t _i          = blockIdx.x * blockDim.x + threadIdx.x;
            const size_t _step = blockDim.x * gridDim.x;
-           const size_t n = dyn_shape.size();
+           const size_t n = static_shape.size();
 
            auto explode_args = [&](auto&&... data) {
              auto const explode_coords = [&](auto&&... coords) {
@@ -327,7 +391,7 @@ template <typename shape_t, typename ...Args>
              // For every linearized index in the shape
              for (; _i < n; _i += _step)
              {
-               ::cuda::std::apply(explode_coords, dyn_shape.index_to_coords(_i));
+               ::cuda::std::apply(explode_coords, static_shape.index_to_coords(_i));
              }
            };
            ::cuda::std::apply(explode_args, ::std::move(targs));
