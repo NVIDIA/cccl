@@ -98,6 +98,8 @@ struct cuda_kernel_desc
     auto adjust_arg = [](auto&& arg)
     {
       using A = decltype(arg);
+
+#if 0
       if constexpr (is_instance_of<A, ::cuda::std::mdspan>)
       {
         // Create a statically-sized mdspan with the same dimensionality
@@ -111,8 +113,11 @@ struct cuda_kernel_desc
       else
       {
         // No processing necessary
+#endif
         return ::std::forward<A>(arg);
+#if 0
       }
+#endif
     };
 
     using TupleType = ::std::tuple<decltype(adjust_arg(::std::forward<Args>(args)))...>;
