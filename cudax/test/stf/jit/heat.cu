@@ -137,7 +137,7 @@ int main()
        }
     )";
 
-    auto gen_template = parallel_for_template_generator(lU.shape(), body, U);
+    auto gen_template = parallel_for_template_generator(lU.shape(), body, ::std::make_tuple(U));
     ::std::cout << "BEGIN GEN TEMPLATE\n";
     ::std::cout << gen_template;
     ::std::cout << "END GEN TEMPLATE\n";
@@ -173,42 +173,18 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
-#if 0
-    ctx.task(lU.read(), lU1.write())->*[c, dx2, dy2, &nvrtc_flags](cudaStream_t stream, auto U, auto U1) {
-      CUfunction kernel =
-        lazy_jit(heat_kernel_template, nvrtc_flags, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
-
-      void* args[] = {&U, &U1};
-      // heat_kernel<<<128, 32, 0, stream>>>(U, U1, c, dx2, dy2);
-      cuda_safe_call(cuLaunchKernel(kernel, 128, 1, 1, 32, 1, 1, 0, stream, args, nullptr));
-    };
-#else
-//    ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
-//      CUfunction kernel =
-//        lazy_jit(heat_kernel_template, nvrtc_flags, header_template, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
-//
-//      return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
-//    };
-
-  ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
-    const char *body = R"(
-     (size_t i, size_t j, auto U, auto U1) {
-        const double c = %a;
-        const double dx2 = %a;
-        const double dy2 = %a;
-        U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
-      }
-      )";
-
-    ::std::cout << "stringize_box lU.shape()" << stringize(lU.shape()) << ::std::endl;
-    ::std::cout << "stringize_box inner<1>(lU.shape())" << stringize(inner<1>(lU.shape())) << ::std::endl;
-    auto gen_template = parallel_for_template_generator(inner<1>(lU.shape()), body, U, U1);
-    CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template, c, dx2, dy2);
-    return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
+   parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())->*[a, dx2, dy2](auto, auto) {
+      ::std::ostringstream body_stream;
+      body_stream << R"(
+      (size_t i, size_t j, auto U, auto U1) {
+        const double c = )" << a << R"(;
+        const double dx2 = )" << dx2 << R"(;
+        const double dy2 = )" << dy2 << R"(;
+        U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2
+                               + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
+      })";
+    return ::std::pair(::std::string(header_template), body_stream.str());
   };
-
-
-#endif
 
     ::std::swap(lU, lU1);
   }

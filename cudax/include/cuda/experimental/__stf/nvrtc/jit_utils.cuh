@@ -110,7 +110,7 @@ void check_printf(const char* format, Head, Tail... rest)
 
 // Lazy cache by string content (can be replaced with hash or stronger keying)
 template <typename... Args>
-inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string> opts, const char* header_template,  const Args&... args)
+inline CUfunction lazy_jit(const char* template_str, const ::std::vector<::std::string> &opts, const char* header_template,  const Args&... args)
 {
   static ::std::mutex cache_mutex;
   static ::std::map<::std::pair<::std::vector<::std::string>, ::std::string>, CUfunction> cache;
@@ -142,7 +142,7 @@ inline CUfunction lazy_jit(const char* template_str, ::std::vector<::std::string
   const int header_size = ::std::strlen(header_template);
   const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
   // This will be our cache lookup key: a pair of options and the source code string
-  auto key = ::std::pair(mv(opts), ::std::string(size + header_size + 1, '\0'));
+  auto key = ::std::pair(opts, ::std::string(size + header_size + 1, '\0'));
 
   // Write header
   ::std::strcpy(key.second.data(), header_template);
@@ -329,7 +329,7 @@ template <size_t Dimensions>
 }
 
 template <typename shape_t, typename ...Args>
-::std::string parallel_for_template_generator([[maybe_unused]] shape_t shape, const char *body_template, Args... args)
+::std::string parallel_for_template_generator([[maybe_unused]] shape_t shape, const char *body_template, ::std::tuple<Args...> targs)
 {
     ::std::ostringstream oss;
 
@@ -346,9 +346,7 @@ template <typename shape_t, typename ...Args>
     // the shape is hardcoded with its type
     // args_prototype_oss << ::std::string(type_name<shape_t>) << " dyn_shape, ";
 
-    // TODO use    each_in_pack([&](auto i, const auto& e) {...
-    size_t arg_index = 0;
-    auto emit_arg = [&]([[maybe_unused]] auto &&arg) {
+    each_in_tuple(targs, [&](auto arg_index, const auto& arg) {
         using raw_arg = ::cuda::std::remove_reference_t<decltype(arg)>;
 
         if (arg_index > 0) {
@@ -360,11 +358,7 @@ template <typename shape_t, typename ...Args>
         args_prototype_oss << ::std::string(type_name<raw_arg>) << " dyn_arg" << arg_index;
 
         args_tuple_oss << "static_arg" << arg_index;
-
-        arg_index++;
-    };
-
-    (emit_arg(args), ...);
+    });
 
     args_tuple_oss << ");\n";
 
@@ -402,6 +396,80 @@ template <typename shape_t, typename ...Args>
     return oss.str();
 }
 
+static const ::std::vector<::std::string>& get_nvrtc_flags()
+{
+    static ::std::vector<::std::string> flags = [] {
+        ::std::vector<::std::string> result;
+        result.push_back("-I../../libcudacxx/include");
+        result.push_back("-I../../cudax/include/");
+        result.push_back("-default-device");
 
+        ::std::string s = run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
+        ::std::istringstream iss(s);
+        result.insert(result.end(), ::std::istream_iterator<::std::string>{iss}, {});
+
+        int device = cuda_try<cudaGetDevice>();
+        const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(device);
+        result.push_back("--gpu-architecture=compute_" + ::std::to_string(prop.major) + ::std::to_string(prop.minor));
+
+        return result;
+    }();
+    return flags;
+}
+
+template <typename context, typename exec_place_t, typename shape_t, typename... deps_ops_t>
+struct parallel_for_scope_jit {
+  //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
+  // tuple<slice<double>, slice<int>> ...
+  using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
+
+  parallel_for_scope_jit(context& ctx,  exec_place_t e_place, shape_t shape, deps_ops_t... deps) : deps(mv(deps)...), ctx(ctx), e_place(mv(e_place)), shape(mv(shape)), nvrtc_flags(get_nvrtc_flags()) {}
+
+  auto& set_symbol(::std::string s)
+  {
+    symbol = mv(s);
+    return *this;
+  }
+
+  template <typename Fun>
+  void operator->*(Fun&& f)
+  {
+      auto k = ::std::apply([&](auto&&... unpacked_deps) {
+          return ctx.cuda_kernel(::std::forward<decltype(unpacked_deps)>(unpacked_deps)...);
+      }, deps);
+
+    if (!symbol.empty())
+    {
+      k.set_symbol(symbol);
+    }
+
+    k->*[&](auto... args) {
+        ::std::pair<::std::string, ::std::string> f_res = f(args...);
+        ::std::cout << "->* GEN TEMPLATE BEGIN\n";
+        ::std::cout << f_res.first << ::std::endl;
+        ::std::cout << "->* GEN TEMPLATE THEN\n";
+        ::std::cout << f_res.second << ::std::endl;
+        ::std::cout << "->* GEN TEMPLATE END\n";
+
+        auto gen_template = parallel_for_template_generator(shape, f_res.second.c_str(), ::std::make_tuple(args...));
+        ::std::cout << "->* GEN TEMPLATE ALL\n";
+        ::std::cout << gen_template << ::std::endl;
+        ::std::cout << "->* GEN TEMPLATE END\n";
+
+
+        CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, f_res.first.c_str());
+        return cuda_kernel_desc{kernel, 1280, 128, 0, args...};
+    };
+
+  }
+
+private:
+  ::std::tuple<deps_ops_t...> deps;
+  context& ctx;
+  exec_place_t e_place;
+  ::std::string symbol;
+  shape_t shape;
+  ::std::vector<::std::string> nvrtc_flags;
+};
 
 } // end namespace cuda::experimental::stf
