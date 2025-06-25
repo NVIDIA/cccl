@@ -568,4 +568,135 @@ struct hash<dim4> : hash<pos4>
 {};
 #endif // !__CUDACC_RTC__
 
+
+//
+//  static_box — the whole shape is encoded in the template parameter list
+//               Usage examples:
+//                   static_box<10, 20>                 // 1-D  [10,20)
+//                   static_box<0, 20, 0, 10>           // 2-D  [0,20)×[0,10)
+//
+template<::cuda::std::ptrdiff_t... Bounds>
+class static_box
+{
+    static_assert(sizeof...(Bounds) % 2 == 0,
+                  "static_box needs begin/end pairs (2⋅dimensions values)");
+
+    //----------------------------------------------------------------------
+    // compile-time constants
+    //----------------------------------------------------------------------
+    static constexpr size_t dimensions = sizeof...(Bounds) / 2;
+
+    // fold expression checks every pair “upper > lower”
+    static constexpr bool all_pairs_valid =
+        ([]() constexpr {
+            constexpr ::cuda::std::ptrdiff_t b[] = { Bounds... };
+            for (size_t i = 0; i < dimensions; ++i)
+                if (b[2 * i + 1] <= b[2 * i]) return false;
+            return true;
+        })();
+    static_assert(all_pairs_valid,
+                  "each upper bound must be strictly larger than its lower");
+
+    //----------------------------------------------------------------------
+    // public aliases
+    //----------------------------------------------------------------------
+    using coords_t = array_tuple<size_t, dimensions>;
+
+    //----------------------------------------------------------------------
+    // helpers that work both at run time and at compile time
+    //----------------------------------------------------------------------
+    _CCCL_HOST_DEVICE static constexpr ::cuda::std::ptrdiff_t
+    get_begin(size_t dim)
+    {
+        constexpr ::cuda::std::ptrdiff_t b[] = { Bounds... };
+        return b[2 * dim];
+    }
+
+    _CCCL_HOST_DEVICE static constexpr ::cuda::std::ptrdiff_t
+    get_extent(size_t dim)
+    {
+        constexpr ::cuda::std::ptrdiff_t b[] = { Bounds... };
+        return b[2 * dim + 1] - b[2 * dim];
+    }
+
+    template<size_t Dim>
+    static constexpr ::cuda::std::ptrdiff_t get_begin_c()   // compile-time
+    {
+        constexpr ::cuda::std::ptrdiff_t b[] = { Bounds... };
+        return b[2 * Dim];
+    }
+
+    template<size_t Dim>
+    static constexpr ::cuda::std::ptrdiff_t get_extent_c()  // compile-time
+    {
+        constexpr ::cuda::std::ptrdiff_t b[] = { Bounds... };
+        return b[2 * Dim + 1] - b[2 * Dim];
+    }
+
+public:
+    //--------------------------------------------------------------------------
+    // index → coordinate explosion (unchanged algorithm, but everything static)
+    //--------------------------------------------------------------------------
+    _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+    {
+        CUDASTF_NO_DEVICE_STACK
+        return make_cuda_tuple_indexwise<dimensions>(
+            [&](auto dim_cst) {
+                constexpr size_t dim = decltype(dim_cst)::value;
+                const auto extent_i  = get_extent_c<dim>();
+                auto result          = get_begin_c<dim>() + (index % extent_i);
+                index               /= extent_i;
+                return result;
+            });
+        CUDASTF_NO_DEVICE_STACK
+    }
+
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t size() const
+  {
+    if constexpr (dimensions == 1)
+    {
+      return get_extent(0);
+    }
+    else
+    {
+      size_t res = 1;
+      for (size_t d = 0; d < dimensions; d++)
+      {
+        res *= get_extent(d);
+      }
+      return res;
+    }
+  }
+
+
+    //--------------------------------------------------------------------------
+    // explicit conversion from a dynamic box<dimensions> (run-time assert only)
+    //--------------------------------------------------------------------------
+    template<size_t DynDims>
+    _CCCL_HOST_DEVICE
+    explicit constexpr static_box(const box<DynDims>& dyn)
+    {
+        static_assert(DynDims == dimensions,
+                      "dimension mismatch between static_box and box");
+
+#ifndef __CUDA_ARCH__   // run-time checks only on the host
+        for (size_t i = 0; i < dimensions; ++i)
+        {
+            assert(dyn.get_begin(i)  == get_begin(i)  &&
+                   dyn.get_extent(i) == get_extent(i) &&
+                   "dynamic box does not match the compile-time extents");
+        }
+#endif
+    }
+
+    //--------------------------------------------------------------------------
+    // default constructor: nothing to store, the shape is in the type
+    //--------------------------------------------------------------------------
+    constexpr static_box() = default;
+};
+
+// deduction guide → allows   static_box b{ box_obj };   to work
+template<::cuda::std::ptrdiff_t... B>
+static_box(const box<sizeof...(B) / 2>&) -> static_box<B...>;
+
 } // end namespace cuda::experimental::stf

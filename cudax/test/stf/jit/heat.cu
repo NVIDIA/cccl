@@ -201,9 +201,10 @@ int main()
       }
       )";
 
-    auto gen_template = parallel_for_template_generator(inner<1>(shape(U)), body, U, U1);
+    static_box<1,799, 1, 799> inner_sh;
+    auto gen_template = parallel_for_template_generator(inner_sh, body, U, U1);
     CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template, c, dx2, dy2);
-    return cuda_kernel_desc{kernel, 128, 32, 0, inner<1>(shape(U)), U, U1};
+    return cuda_kernel_desc{kernel, 128, 32, 0, inner_sh, U, U1};
   };
 
 
