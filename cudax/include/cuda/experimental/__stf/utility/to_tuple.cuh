@@ -25,8 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/tuple>
 #include <cuda/std/array>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
 namespace cuda::experimental::stf
 {
@@ -102,7 +103,7 @@ using array_tuple = decltype(to_tuple(::cuda::std::array<T, n>{}));
 
 #ifndef __CUDACC_RTC__
 // Mini-unittest
-static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::cuda::std::tuple<size_t, size_t, size_t>>);
+static_assert(::cuda::std::is_same_v<array_tuple<size_t, 3>, ::cuda::std::tuple<size_t, size_t, size_t>>);
 #endif // __CUDACC_RTC__
 
 } // end namespace cuda::experimental::stf
