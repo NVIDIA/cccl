@@ -33,6 +33,8 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #endif // __CUDACC_RTC__
 
+#include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
+
 namespace cuda::experimental::stf
 {
 
@@ -196,7 +198,16 @@ public:
       s[ind].first  = _s[ind].first;
       s[ind].second = _s[ind].second;
     }
+  }
 
+  template <typename Int1, typename Int2>
+  _CCCL_HOST_DEVICE box(const ::cuda::std::array<::cuda::std::pair<Int1, Int2>, dimensions>& _s)
+  {
+    for (size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = _s[ind].first;
+      s[ind].second = _s[ind].second;
+    }
   }
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
@@ -273,27 +284,28 @@ public:
       printf("    %ld -> %ld\n", s[ind].first, s[ind].second);
     }
   }
+#endif // !__CUDACC_RTC__
 
   /// Get the number of elements along a dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_extent(size_t dim) const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t get_extent(size_t dim) const
   {
     return s[dim].second - s[dim].first;
   }
 
   /// Get the first coordinate (included) in a specific dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_begin(size_t dim) const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t get_begin(size_t dim) const
   {
     return s[dim].first;
   }
 
   /// Get the last coordinate (excluded) in a specific dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_end(size_t dim) const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t get_end(size_t dim) const
   {
     return s[dim].second;
   }
 
   /// Get the total number of elements in this explicit shape
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t size() const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t size() const
   {
     if constexpr (dimensions == 1)
     {
@@ -316,6 +328,7 @@ public:
     return dimensions;
   }
 
+#ifndef __CUDACC_RTC__
   // Iterator class for box
   class iterator
   {
@@ -445,8 +458,8 @@ public:
     CUDASTF_NO_DEVICE_STACK
     return make_cuda_tuple_indexwise<dimensions>([&](auto i) {
       // included
-      const ::std::ptrdiff_t begin_i  = get_begin(i);
-      const ::std::ptrdiff_t extent_i = get_extent(i);
+      const ::cuda::std::ptrdiff_t begin_i  = get_begin(i);
+      const ::cuda::std::ptrdiff_t extent_i = get_extent(i);
       auto result                     = begin_i + (index % extent_i);
       index /= extent_i;
       return result;

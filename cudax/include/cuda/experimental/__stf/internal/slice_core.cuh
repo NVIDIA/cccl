@@ -295,9 +295,9 @@ public:
    *
    * @return const std::array<size_t, dimensions>&
    */
-  _CCCL_HOST_DEVICE ::std::array<size_t, rank()> get_sizes() const
+  _CCCL_HOST_DEVICE ::cuda::std::array<size_t, rank()> get_sizes() const
   {
-    ::std::array<size_t, rank()> result;
+    ::cuda::std::array<size_t, rank()> result;
     for (size_t i = 0; i < rank(); ++i)
     {
       result[i] = extents.extent(i);

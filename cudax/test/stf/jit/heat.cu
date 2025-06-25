@@ -47,6 +47,7 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 const char *header_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/places/inner_shape.cuh>
 
 using namespace cuda::experimental::stf;
 )";
@@ -196,16 +197,13 @@ int main()
         const double c = %a;
         const double dx2 = %a;
         const double dy2 = %a;
-        // until we have box support
-        if (i > 0 && j > 0 && i < U.extent(0) - 1 && j < U.extent(1) - 1) {
-            U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
-        }
+        U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
       }
       )";
 
-    auto gen_template = parallel_for_template_generator(/*inner<1>(shape(U))*/shape(U), body, U, U1);
+    auto gen_template = parallel_for_template_generator(inner<1>(shape(U)), body, U, U1);
     CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template, c, dx2, dy2);
-    return cuda_kernel_desc{kernel, 128, 32, 0, /*inner<1>(shape(U))*/shape(U), U, U1};
+    return cuda_kernel_desc{kernel, 128, 32, 0, inner<1>(shape(U)), U, U1};
   };
 
 

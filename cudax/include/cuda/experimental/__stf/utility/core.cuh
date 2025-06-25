@@ -27,6 +27,7 @@
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/each.cuh>
 #include <cuda/experimental/__stf/utility/mv.cuh>
+#include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
 
 #include <cstddef>
 #include <functional>
@@ -188,20 +189,10 @@ constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
     mv(tuple));
 }
 
-template <typename T, typename... P>
-constexpr auto cuda_tuple_prepend(T&& prefix, ::cuda::std::tuple<P...> tuple)
-{
-  return ::cuda::std::apply(
-    [&](auto&&... p) {
-      return ::cuda::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
-    },
-    mv(tuple));
-}
-
 namespace reserved
 {
 
-// Like ::std::make_tuple, but skips all values of the same type as `::std::ignore`.
+// Like ::std::make_tuple, but skips all values of the same type as `::cuda::std::ignore`.
 inline constexpr auto make_tuple()
 {
   return ::std::tuple<>();
@@ -210,7 +201,7 @@ inline constexpr auto make_tuple()
 template <typename T, typename... P>
 constexpr auto make_tuple([[maybe_unused]] T t, P... p)
 {
-  if constexpr (::std::is_same_v<const T, const decltype(::std::ignore)>)
+  if constexpr (::std::is_same_v<const T, const decltype(::cuda::std::ignore)>)
   {
     // Recurse skipping the first parameter
     return make_tuple(mv(p)...);
@@ -221,28 +212,6 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
     return tuple_prepend(mv(t), make_tuple(mv(p)...));
   }
 }
-
-inline constexpr auto make_cuda_tuple()
-{
-  return ::cuda::std::tuple<>();
-}
-
-template <typename T, typename... P>
-constexpr auto make_cuda_tuple([[maybe_unused]] T t, P... p)
-{
-  if constexpr (::cuda::std::is_same_v<const T, const decltype(::std::ignore)>)
-  {
-    // Recurse skipping the first parameter
-    return make_cuda_tuple(mv(p)...);
-  }
-  else
-  {
-    // Keep first parameter, concatenate with recursive call
-    return cuda_tuple_prepend(mv(t), make_cuda_tuple(mv(p)...));
-  }
-}
-
-
 
 } // namespace reserved
 
@@ -290,21 +259,6 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
     return reserved::make_tuple(f(::std::integral_constant<size_t, i>())...);
   }
 }
-
-template <size_t n, typename F, size_t... i>
-constexpr auto make_cuda_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
-{
-  if constexpr (sizeof...(i) != n)
-  {
-    return make_cuda_tuple_indexwise<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
-  }
-  else
-  {
-    return reserved::make_cuda_tuple(f(::std::integral_constant<size_t, i>())...);
-  }
-}
-
-
 
 /**
  * @brief Iterates over the elements of a tuple, applying a given function object to each element.
