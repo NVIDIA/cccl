@@ -218,6 +218,7 @@ _CCCL_DEVICE void memcpy_async_unaligned(
   const unsigned int tail_bytes = (bytes_to_copy - head_bytes) % ldgsts_size_and_align;
 
   // pipeline the async copies before loading the head and tail elements
+  _CCCL_ASSERT(bytes_to_copy > head_bytes + tail_bytes, "");
   const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
   if (aligned_bytes_to_copy)
   {
