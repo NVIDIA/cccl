@@ -31,16 +31,14 @@ template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_API _Up* ptr_cast(_Tp* __ptr) noexcept
 {
   constexpr auto __max_alignment = alignof(_Tp) > alignof(_Up) ? alignof(_Tp) : alignof(_Up);
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-  return _CCCL_BUILTIN_ASSUME_ALIGNED(reinterpret_cast<_Up*>(__ptr), __max_alignment);
+  _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
+  return reinterpret_cast<_Up*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr), __max_alignment);
 }
 
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_API inline const _Up* ptr_cast(const _Tp* __ptr) noexcept
 {
-  constexpr auto __max_alignment = alignof(_Tp) > alignof(_Up) ? alignof(_Tp) : alignof(_Up);
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-  return _CCCL_BUILTIN_ASSUME_ALIGNED(reinterpret_cast<const _Up*>(__ptr), __max_alignment);
+  return ::cuda::ptr_cast<const _Up>(__ptr);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

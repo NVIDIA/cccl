@@ -45,17 +45,17 @@ template <typename _Tp>
   switch (__alignment)
   {
     case 1:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 1);
+      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 1));
     case 2:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 2);
+      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 2));
     case 4:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 4);
+      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 4));
     case 8:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 8);
+      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 8));
     case 16:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 16);
+      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 16));
     default:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 32);
+      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ret, 32));
   }
 #else
   return __ret;
