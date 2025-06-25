@@ -36,28 +36,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! @brief Demangles a CUDA C++ mangled name.
-//!
-//! @param __name The mangled name to demangle.
-//!
-//! @return A `std::string` containing the demangled name.
-//!
-//! @throws cuda::cuda_error if memory allocation fails, or if the input name is invalid.
-[[nodiscard]] ::std::string demangle(_CUDA_VSTD::string_view __name)
+template <bool = true>
+[[nodiscard]] _CCCL_HOST_API ::std::string __cccl_demangle_impl(const char* __name)
 {
-  // input must be zero-terminated, so we convert string_view to std::string
-  ::std::string __name_in{__name.begin(), __name.end()};
-
   int __status{};
-  char* __dname_ptr = ::__cu_demangle(__name_in.c_str(), nullptr, nullptr, &__status);
+  char* __dname = ::__cu_demangle(__name, nullptr, nullptr, &__status);
 
   _CCCL_TRY
   {
     switch (__status)
     {
       case 0: {
-        ::std::string __ret{__dname_ptr};
-        _CUDA_VSTD::free(__dname_ptr);
+        ::std::string __ret{__dname};
+        _CUDA_VSTD::free(__dname);
         return __ret;
       }
       case -1:
@@ -74,9 +65,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
   _CCCL_CATCH_ALL
   {
     // If an exception is thrown, free the allocated memory and rethrow the exception
-    _CUDA_VSTD::free(__dname_ptr);
+    _CUDA_VSTD::free(__dname);
     throw;
   }
+}
+
+//! @brief Demangles a CUDA C++ mangled name.
+//!
+//! @param __name The mangled name to demangle.
+//!
+//! @return A `std::string` containing the demangled name.
+//!
+//! @throws cuda::cuda_error if memory allocation fails, or if the input name is invalid.
+[[nodiscard]] _CCCL_HOST_API ::std::string demangle(_CUDA_VSTD::string_view __name)
+{
+  // input must be zero-terminated, so we convert string_view to std::string
+  ::std::string __name_in{__name.begin(), __name.end()};
+
+  return ::cuda::__cccl_demangle_impl(__name_in.c_str());
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
