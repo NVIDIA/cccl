@@ -29,10 +29,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_API inline bool is_aligned(const void* __ptr, size_t __alignment) noexcept
+[[nodiscard]] _CCCL_API inline bool is_aligned(const void* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
-  return (reinterpret_cast<uintptr_t>(__ptr) & (__alignment - 1)) == 0;
+  return (reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) & (__alignment - 1)) == 0;
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
