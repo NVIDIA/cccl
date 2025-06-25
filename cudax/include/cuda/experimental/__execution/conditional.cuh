@@ -119,7 +119,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 
     _Rcvr __rcvr_;
     __params_t __params_;
-    __next_ops_variant_t __ops_;
+    __next_ops_variant_t __ops_{};
   };
 
   template <class _Rcvr, class _Pred, class _Then, class _Else, class _Completions>
