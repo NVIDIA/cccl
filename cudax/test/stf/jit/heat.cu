@@ -80,26 +80,7 @@ __global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn
 
 int main()
 {
-  context ctx;
-
-  // Initialize CUDA
-  cuda_safe_call(cuInit(0));
-
-  // Put the include paths in the NVRTC flags
-  ::std::vector<::std::string> nvrtc_flags{"-I../../libcudacxx/include", "-I../../cudax/include/","-default-device"};
-  ::std::string s =
-    run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
-
-  // fprintf(stderr, "COMMAND %s\n", s.c_str());
-  //  Split by whitespace
-  ::std::istringstream iss(s);
-  nvrtc_flags.insert(
-    nvrtc_flags.end(), ::std::istream_iterator<::std::string>{iss}, ::std::istream_iterator<::std::string>{});
-
-  // Compute the exact machine
-  const int device          = cuda_try<cudaGetDevice>();
-  const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(device);
-  nvrtc_flags.push_back("--gpu-architecture=compute_" + ::std::to_string(prop.major) + ::std::to_string(prop.minor));
+  context ctx = graph_ctx();
 
   const size_t N = 800;
 
@@ -108,7 +89,7 @@ int main()
 
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
-  ctx.cuda_kernel(lU.write())->*[&](auto U) {
+  parallel_for_scope_jit(ctx, exec_place::current_device(), lU.shape(), lU.write())->*[](auto) {
     const char *body =
      R"((size_t i, size_t j, auto U) {
             double rad = U.extent(0) / 8.0;
@@ -136,14 +117,7 @@ int main()
             }
        }
     )";
-
-    auto gen_template = parallel_for_template_generator(lU.shape(), body, ::std::make_tuple(U));
-    ::std::cout << "BEGIN GEN TEMPLATE\n";
-    ::std::cout << gen_template;
-    ::std::cout << "END GEN TEMPLATE\n";
-
-    CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template);
-    return cuda_kernel_desc{kernel, 128, 32, 0, U};
+    return ::std::pair(::std::string(header_template), ::std::string(body));
   };
 
   // diffusion constant
@@ -173,11 +147,11 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
-   parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())->*[a, dx2, dy2](auto, auto) {
+   parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())->*[c, dx2, dy2](auto, auto) {
       ::std::ostringstream body_stream;
       body_stream << R"(
       (size_t i, size_t j, auto U, auto U1) {
-        const double c = )" << a << R"(;
+        const double c = )" << c << R"(;
         const double dx2 = )" << dx2 << R"(;
         const double dy2 = )" << dy2 << R"(;
         U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2
@@ -190,13 +164,5 @@ int main()
   }
 
   ctx.finalize();
-  return 0;
-}
-
-int main2()
-{
-  float X[100 * 200];
-  auto s = make_slice(&X[0], std::tuple{100, 200}, 200);
-  ::std::cout << stringize_mdspan(s) << '\n';
   return 0;
 }

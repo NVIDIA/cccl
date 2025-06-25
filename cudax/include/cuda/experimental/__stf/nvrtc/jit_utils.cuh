@@ -152,8 +152,9 @@ inline CUfunction lazy_jit(const char* template_str, const ::std::vector<::std::
 
   {
     ::std::lock_guard lock(cache_mutex);
+
     if (auto it = cache.find(key); it != cache.end())
-    {
+   {
       return it->second;
     }
   }
@@ -445,17 +446,11 @@ struct parallel_for_scope_jit {
 
     k->*[&](auto... args) {
         ::std::pair<::std::string, ::std::string> f_res = f(args...);
-        ::std::cout << "->* GEN TEMPLATE BEGIN\n";
-        ::std::cout << f_res.first << ::std::endl;
-        ::std::cout << "->* GEN TEMPLATE THEN\n";
-        ::std::cout << f_res.second << ::std::endl;
-        ::std::cout << "->* GEN TEMPLATE END\n";
 
         auto gen_template = parallel_for_template_generator(shape, f_res.second.c_str(), ::std::make_tuple(args...));
-        ::std::cout << "->* GEN TEMPLATE ALL\n";
-        ::std::cout << gen_template << ::std::endl;
-        ::std::cout << "->* GEN TEMPLATE END\n";
-
+        // ::std::cout << "->* GEN TEMPLATE ALL\n";
+        // ::std::cout << gen_template << ::std::endl;
+        // ::std::cout << "->* GEN TEMPLATE END\n";
 
         CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, f_res.first.c_str());
         return cuda_kernel_desc{kernel, 1280, 128, 0, args...};
