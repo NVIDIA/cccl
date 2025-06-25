@@ -536,6 +536,58 @@ _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
   return ::cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
 }
 
+template <int BulkCopyAlignment>
+_CCCL_DEVICE void bulk_copy_maybe_unaligned(
+  void* dst,
+  const void* src,
+  unsigned int bytes_to_copy,
+  int head_padding,
+  uint64_t& bar,
+  ::cuda::std::uint32_t& total_copied,
+  bool elected)
+{
+  const char* src_ptr = static_cast<const char*>(src);
+  char* dst_ptr       = static_cast<char*>(dst);
+
+  // handle tiny copies to simplify head/tail bytes computations below
+  if (bytes_to_copy < bulk_copy_size_multiple)
+  {
+    if (threadIdx.x < bytes_to_copy)
+    {
+      dst_ptr[threadIdx.x] = src_ptr[threadIdx.x];
+    }
+    return;
+  }
+
+  const unsigned int head_bytes = (BulkCopyAlignment - head_padding) % BulkCopyAlignment;
+  const unsigned int tail_bytes = (bytes_to_copy - head_bytes) % bulk_copy_size_multiple;
+
+  // pipeline the async copies before loading the head and tail elements
+  _CCCL_ASSERT(bytes_to_copy >= (head_bytes + tail_bytes), "");
+  const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
+  if (aligned_bytes_to_copy > 0)
+  {
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % BulkCopyAlignment == 0, "");
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % BulkCopyAlignment == 0, "");
+    _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
+
+    if (elected)
+    {
+      ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
+      total_copied += bytes_to_copy;
+    }
+  }
+
+  if (threadIdx.x < head_bytes)
+  {
+    dst_ptr[threadIdx.x] = src_ptr[threadIdx.x];
+  }
+  if (threadIdx.x < tail_bytes)
+  {
+    dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = src_ptr[bytes_to_copy - tail_bytes + threadIdx.x];
+  }
+}
+
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -592,16 +644,19 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
     }
-
-    // all threads wait for bulk copy
-    __syncthreads();
-    while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-      ;
   }
   else
   {
+    const bool elected = elect_one();
+    if (elected)
+    {
+      ptx::mbarrier_init(&bar, 1);
+      ptx::fence_proxy_async(ptx::space_shared);
+    }
+
     // use all threads to schedule an async_memcpy
-    int smem_offset = 0;
+    int smem_offset                    = 0;
+    ::cuda::std::uint32_t total_copied = 0;
 
     // turning this lambda into a function does not change SASS
     auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
@@ -612,7 +667,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
       const int bytes_to_copy = int{sizeof(T)} * valid_items;
-      memcpy_async_maybe_unaligned<block_threads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
+      bulk_copy_maybe_unaligned<bulk_copy_alignment>(
+        dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
 
       // add bulk_copy_alignment to make space for the next tile's head padding
       smem_offset += int{sizeof(T)} * tile_size + bulk_copy_alignment;
@@ -621,9 +677,17 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // Order of evaluation is left-to-right
     (..., bulk_copy_tile_fallback(aligned_ptrs));
 
-    __pipeline_wait_prior(0);
-    __syncthreads();
+    if (elected)
+    {
+      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+    }
   }
+
+  // all threads wait for bulk copy
+  __syncthreads();
+  while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+    ;
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
