@@ -45,6 +45,35 @@ namespace cuda::experimental::execution
 template <>
 struct stream_domain::__apply_t<continues_on_t>
 {
+  template <class _Rcvr>
+  struct __rcvr_t
+  {
+    using receiver_concept = receiver_t;
+
+    template <class... _Values>
+    _CCCL_API constexpr void set_value(_Values&&...) noexcept
+    {
+      // no-op
+    }
+
+    _CCCL_API constexpr void set_error(_CUDA_VSTD::__ignore_t) noexcept
+    {
+      // no-op
+    }
+
+    _CCCL_API constexpr void set_stopped() noexcept
+    {
+      // no-op
+    }
+
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    {
+      return __fwd_env(execution::get_env(__rcvr_));
+    }
+
+    _Rcvr& __rcvr_;
+  };
+
   // This opstate will be stored in host memory.
   template <class _Sndr, class _Rcvr>
   struct __opstate_t
@@ -55,7 +84,7 @@ struct stream_domain::__apply_t<continues_on_t>
     _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __stream_(__stream)
-        , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __ref_rcvr(*this)))
+        , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr>{__rcvr_}))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -75,30 +104,9 @@ struct stream_domain::__apply_t<continues_on_t>
       }
     }
 
-    template <class... _Values>
-    _CCCL_API constexpr void set_value(_Values&&...) noexcept
-    {
-      // no-op
-    }
-
-    _CCCL_API constexpr void set_error(_CUDA_VSTD::__ignore_t) noexcept
-    {
-      // no-op
-    }
-
-    _CCCL_API constexpr void set_stopped() noexcept
-    {
-      // no-op
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
-    {
-      return __fwd_env(execution::get_env(__rcvr_));
-    }
-
     _Rcvr __rcvr_;
     stream_ref __stream_;
-    connect_result_t<_Sndr, __rcvr_ref_t<__opstate_t, __env_t>> __opstate_;
+    connect_result_t<_Sndr, __rcvr_t<_Rcvr>> __opstate_;
   };
 
   struct __thunk_t

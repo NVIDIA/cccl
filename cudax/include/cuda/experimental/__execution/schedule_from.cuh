@@ -187,7 +187,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     _Rcvr& __rcvr_;
   };
 
-  template <class _Rcvr, class _Result>
+  template <class _Rcvr, class _Results>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
+  {
+    _Rcvr __rcvr_;
+    _Results __result_;
+  };
+
+  // This receiver is connected to the scheduler. It forwards the results of the child sender,
+  // which are stored in a variant, to the parent receiver.
+  template <class _Rcvr, class _Results>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
     using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
@@ -195,8 +204,45 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     template <class _Tag, class... _As>
     _CCCL_API constexpr void operator()(_Tag, _As&... __as) noexcept
     {
-      _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_As&&>(__as)...);
+      _Tag{}(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_As&&>(__as)...);
     }
+
+    _CCCL_API constexpr void set_value() noexcept
+    {
+      __state_->__result_.__visit(__send_result_visitor<_Rcvr>{__state_->__rcvr_}, __state_->__result_);
+    }
+
+    template <class _Error>
+    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
+    }
+
+    _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+    {
+      execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
+    }
+
+    _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    {
+      return __fwd_env(execution::get_env(__state_->__rcvr_));
+    }
+
+    __state_base_t<_Rcvr, _Results>* __state_;
+  };
+
+  template <class _Sch, class _Rcvr, class _Results>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Rcvr, _Results>
+  {
+    connect_result_t<schedule_result_t<_Sch>, __rcvr_t<_Rcvr, _Results>> __opstate2_;
+  };
+
+  // This receiver is connected to the child sender. It stashes the sender's results into
+  // a variant.
+  template <class _Sch, class _Rcvr, class _Results>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __stash_rcvr_t
+  {
+    using receiver_concept = receiver_t;
 
     template <class _Tag, class... _As>
     _CCCL_API void __set_result(_Tag, _As&&... __as) noexcept
@@ -204,60 +250,62 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
       using __tupl_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<_Tag, _CUDA_VSTD::decay_t<_As>...>;
       if constexpr (__nothrow_decay_copyable<_As...>)
       {
-        __result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
+        __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
       }
       else
       {
         _CCCL_TRY
         {
-          __result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
+          __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
         }
         _CCCL_CATCH_ALL
         {
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
         }
       }
     }
 
-    _CCCL_API constexpr void set_value() noexcept
+    template <class... _As>
+    _CCCL_API void set_value(_As&&... __as) noexcept
     {
-      _Result::__visit(__send_result_visitor<_Rcvr>{__rcvr_}, __result_);
+      __set_result(set_value_t{}, static_cast<_As&&>(__as)...);
+      execution::start(__state_->__opstate2_);
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_API void set_error(_Error&& __error) noexcept
     {
-      execution::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
+      __set_result(set_error_t{}, static_cast<_Error&&>(__error));
+      execution::start(__state_->__opstate2_);
     }
 
-    _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+    _CCCL_API void set_stopped() noexcept
     {
-      execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
+      __set_result(set_stopped_t{});
+      execution::start(__state_->__opstate2_);
     }
 
-    _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
-      return __fwd_env(execution::get_env(__rcvr_));
+      return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
 
-    _Rcvr __rcvr_;
-    _Result __result_;
+    __state_t<_Sch, _Rcvr, _Results>* __state_;
   };
 
-  template <class _Rcvr, class _CvSndr, class _Sch>
+  template <class _CvSndr, class _Sch, class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
-    using __completions_t _CCCL_NODEBUG_ALIAS         = completion_signatures_of_t<_CvSndr, __env_t>;
-
-    using __result_t _CCCL_NODEBUG_ALIAS =
+    using operation_state_concept             = operation_state_t;
+    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
+    using __results_t _CCCL_NODEBUG_ALIAS =
       typename __completions_t::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
+    using __rcvr_t       = schedule_from_t::__rcvr_t<_Rcvr, __results_t>;
+    using __stash_rcvr_t = schedule_from_t::__stash_rcvr_t<_Sch, _Rcvr, __results_t>;
 
     _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
-        : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}}
-        , __opstate1_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
-        , __opstate2_{execution::connect(schedule(__sch), __ref_rcvr(__rcvr_))}
+        : __state_{{static_cast<_Rcvr&&>(__rcvr), {}}, execution::connect(schedule(__sch), __rcvr_t{&__state_})}
+        , __opstate1_{execution::connect(static_cast<_CvSndr&&>(__sndr), __stash_rcvr_t{&__state_})}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -267,35 +315,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
       execution::start(__opstate1_);
     }
 
-    template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) noexcept
-    {
-      __rcvr_.__set_result(set_value_t{}, static_cast<_As&&>(__as)...);
-      execution::start(__opstate2_);
-    }
-
-    template <class _Error>
-    _CCCL_API void set_error(_Error&& __error) noexcept
-    {
-      __rcvr_.__set_result(set_error_t{}, static_cast<_Error&&>(__error));
-      execution::start(__opstate2_);
-    }
-
-    _CCCL_API void set_stopped() noexcept
-    {
-      __rcvr_.__set_result(set_stopped_t{});
-      execution::start(__opstate2_);
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
-    {
-      return __fwd_env(execution::get_env(__rcvr_.__rcvr_));
-    }
-
-    __rcvr_t<_Rcvr, __result_t> __rcvr_;
-    // FUTURE: these two opstates have disjoint lifetimes, so store them in a variant:
-    connect_result_t<_CvSndr, __rcvr_ref_t<__opstate_t, __env_t>> __opstate1_;
-    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref_t<__rcvr_t<_Rcvr, __result_t>>> __opstate2_;
+    __state_t<_Sch, _Rcvr, __results_t> __state_;
+    connect_result_t<_CvSndr, __stash_rcvr_t> __opstate1_;
   };
 
 public:
@@ -303,16 +324,16 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<schedule_from_t, _Sch, _Sndr>
   {
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Sch, _Rcvr>
     {
-      return __opstate_t<_Rcvr, _Sndr, _Sch>{
+      return __opstate_t<_Sndr, _Sch, _Rcvr>{
         static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Sch, _Rcvr>
     {
-      return __opstate_t<_Rcvr, const _Sndr&, _Sch>{this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+      return __opstate_t<const _Sndr&, _Sch, _Rcvr>{this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
   };
 

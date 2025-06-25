@@ -35,20 +35,13 @@
 
 namespace cuda::experimental::execution
 {
-template <>
-struct stream_domain::__apply_t<bulk_chunked_t> : __bulk_t<__apply_t<bulk_chunked_t>>
+namespace __stream
 {
-  template <class _CvSndr, class _Rcvr, class _Shape, class _Fn>
-  using __base_opstate_t = __bulk_t<__apply_t<bulk_chunked_t>>::__opstate_t<_CvSndr, _Rcvr, _Shape, _Fn>;
-
-  template <class _CvSndr, class _Rcvr, class _Shape, class _Fn>
-  struct __opstate_t : __base_opstate_t<_CvSndr, _Rcvr, _Shape, _Fn>
+struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
+{
+  template <class _Shape, class _Fn, class _Rcvr>
+  struct __rcvr_t : __bulk_t::__rcvr<_Shape, _Fn, _Rcvr>
   {
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Shape __shape, _Fn __fn)
-        : __base_opstate_t<_CvSndr, _Rcvr, _Shape, _Fn>{
-            static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr), __shape, static_cast<_Fn&&>(__fn)}
-    {}
-
     // We permit this `set_value` function to be called multiple times, once for each
     // thread in the block.
     template <class... _Values>
@@ -56,19 +49,19 @@ struct stream_domain::__apply_t<bulk_chunked_t> : __bulk_t<__apply_t<bulk_chunke
     {
       const _Shape __tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-      if (__tid < this->__shape_)
+      if (__tid < this->__state_->__shape_)
       {
         if constexpr (__is_specialization_of_v<_Fn, bulk_t::__bulk_chunked_fn>)
         {
           // If the chunked function was adapted from an unchunked function, we can call
           // the unchunked functions directly.
-          this->__fn_.__fn_(_Shape(__tid), __values...);
+          this->__state_->__fn_.__fn_(_Shape(__tid), __values...);
         }
         else
         {
           // Otherwise, we call the function with the half-open range [__tid, __tid + 1)
           // to process a single element.
-          this->__fn_(_Shape(__tid), _Shape(__tid + 1), __values...);
+          this->__state_->__fn_(_Shape(__tid), _Shape(__tid + 1), __values...);
         }
       }
 
@@ -78,10 +71,18 @@ struct stream_domain::__apply_t<bulk_chunked_t> : __bulk_t<__apply_t<bulk_chunke
       // elements.
       if (__tid == 0)
       {
-        execution::set_value(static_cast<_Rcvr&&>(this->__rcvr_), static_cast<_Values&&>(__values)...);
+        execution::set_value(static_cast<_Rcvr&&>(this->__state_->__rcvr_), static_cast<_Values&&>(__values)...);
       }
     }
   };
+
+  template <class _Sndr, class _Policy, class _Shape, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  {};
+
+  template <class _Policy, class _Shape, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  {};
 
   // This function is called when the `bulk_chunked` CPO calls `transform_sender` with a
   // domain argument of stream_domain. It adapts a `bulk_chunked` sender to the stream
@@ -93,9 +94,10 @@ struct stream_domain::__apply_t<bulk_chunked_t> : __bulk_t<__apply_t<bulk_chunke
     auto& [__tag, __state, __child] = __sndr;
     auto& [__policy, __shape, __fn] = __state;
 
-    using __sndr_t = __bulk_t::__sndr_t<decltype(__child), decltype(__policy), decltype(__shape), decltype(__fn)>;
+    using __sndr_t =
+      __bulk_chunked_t::__sndr_t<decltype(__child), decltype(__policy), decltype(__shape), decltype(__fn)>;
     return __stream::__adapt(__sndr_t{
-      {}, {__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)}, _CUDA_VSTD::forward_like<_Sndr>(__child)});
+      {{}, {__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)}, _CUDA_VSTD::forward_like<_Sndr>(__child)}});
   }
 
   _CCCL_API static constexpr bool __is_chunked() noexcept
@@ -104,20 +106,11 @@ struct stream_domain::__apply_t<bulk_chunked_t> : __bulk_t<__apply_t<bulk_chunke
   }
 };
 
-template <>
-struct stream_domain::__apply_t<bulk_unchunked_t> : __bulk_t<__apply_t<bulk_unchunked_t>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__bulk_unchunked_t>
 {
-  template <class _CvSndr, class _Rcvr, class _Shape, class _Fn>
-  using __base_opstate_t = __bulk_t<__apply_t<bulk_unchunked_t>>::__opstate_t<_CvSndr, _Rcvr, _Shape, _Fn>;
-
-  template <class _CvSndr, class _Rcvr, class _Shape, class _Fn>
-  struct __opstate_t : __base_opstate_t<_CvSndr, _Rcvr, _Shape, _Fn>
+  template <class _Shape, class _Fn, class _Rcvr>
+  struct __rcvr_t : __bulk_t::__rcvr<_Shape, _Fn, _Rcvr>
   {
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Shape __shape, _Fn __fn)
-        : __base_opstate_t<_CvSndr, _Rcvr, _Shape, _Fn>{
-            static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr), __shape, static_cast<_Fn&&>(__fn)}
-    {}
-
     // We permit this `set_value` function to be called multiple times, once for each
     // thread in the block.
     template <class... _Values>
@@ -141,6 +134,14 @@ struct stream_domain::__apply_t<bulk_unchunked_t> : __bulk_t<__apply_t<bulk_unch
     }
   };
 
+  template <class _Sndr, class _Policy, class _Shape, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  {};
+
+  template <class _Policy, class _Shape, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  {};
+
   // This function is called when the `bulk_unchunked` CPO calls `transform_sender` with a
   // domain argument of stream_domain. It adapts a `bulk_unchunked` sender to the stream
   // domain.
@@ -151,9 +152,10 @@ struct stream_domain::__apply_t<bulk_unchunked_t> : __bulk_t<__apply_t<bulk_unch
     auto& [__tag, __state, __child] = __sndr;
     auto& [__policy, __shape, __fn] = __state;
 
-    using __sndr_t = __bulk_t::__sndr_t<decltype(__child), decltype(__policy), decltype(__shape), decltype(__fn)>;
+    using __sndr_t =
+      __bulk_unchunked_t::__sndr_t<decltype(__child), decltype(__policy), decltype(__shape), decltype(__fn)>;
     return __stream::__adapt(__sndr_t{
-      {}, {__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)}, _CUDA_VSTD::forward_like<_Sndr>(__child)});
+      {{}, {__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)}}, _CUDA_VSTD::forward_like<_Sndr>(__child)});
   }
 
   _CCCL_API static constexpr bool __is_chunked() noexcept
@@ -162,31 +164,48 @@ struct stream_domain::__apply_t<bulk_unchunked_t> : __bulk_t<__apply_t<bulk_unch
   }
 };
 
-template <>
-struct stream_domain::__apply_t<bulk_t>
+struct __bulk_t : execution::__bulk_t<__bulk_t>
 {
+  template <class _Sndr, class _Policy, class _Shape, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  {};
+
+  template <class _Policy, class _Shape, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  {};
+
   template <class _Sndr>
   _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const -> decltype(auto)
   {
     // This converts a bulk sender into a bulk_chunked sender, which will then be
-    // further transformed by the __apply_t<bulk_chunked_t> specialization above.
+    // further transformed by the __bulk_chunked_t above.
     return bulk.transform_sender(static_cast<_Sndr&&>(__sndr), env{});
   }
 };
 
-template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t
-  structured_binding_size<__bulk_t<stream_domain::__apply_t<bulk_chunked_t>>::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> =
-    3;
+} // namespace __stream
+
+template <>
+struct stream_domain::__apply_t<bulk_chunked_t> : __stream::__bulk_chunked_t
+{};
+
+template <>
+struct stream_domain::__apply_t<bulk_unchunked_t> : __stream::__bulk_unchunked_t
+{};
+
+template <>
+struct stream_domain::__apply_t<bulk_t> : __stream::__bulk_t
+{};
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t
-  structured_binding_size<__bulk_t<stream_domain::__apply_t<bulk_unchunked_t>>::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> =
-    3;
+inline constexpr size_t structured_binding_size<__stream::__bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t
-  structured_binding_size<__bulk_t<stream_domain::__apply_t<bulk_t>>::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<__stream::__bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> =
+  3;
+
+template <class _Sndr, class _Policy, class _Shape, class _Fn>
+inline constexpr size_t structured_binding_size<__stream::__bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 } // namespace cuda::experimental::execution
 

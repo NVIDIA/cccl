@@ -99,7 +99,7 @@ void bulk_chunked_returns_a_sender()
 
 void bulk_unchunked_returns_a_sender()
 {
-  auto sndr = ex::bulk_unchunked(ex::just(19), 8, [] _CCCL_HOST_DEVICE(int, int) {});
+  auto sndr = ex::bulk_unchunked(ex::just(19), ex::par, 8, [] _CCCL_HOST_DEVICE(int, int) {});
   STATIC_REQUIRE(ex::sender<decltype(sndr)>);
   (void) sndr;
 }
@@ -120,7 +120,7 @@ void bulk_chunked_with_environment_returns_a_sender()
 
 void bulk_unchunked_with_environment_returns_a_sender()
 {
-  auto sndr = ex::bulk_unchunked(ex::just(19), 8, [] _CCCL_HOST_DEVICE(int, int) {});
+  auto sndr = ex::bulk_unchunked(ex::just(19), ex::par, 8, [] _CCCL_HOST_DEVICE(int, int) {});
   STATIC_REQUIRE(ex::sender_in<decltype(sndr), ex::env<>>);
   (void) sndr;
 }
@@ -142,7 +142,7 @@ void bulk_chunked_can_be_piped()
 void bulk_unchunked_can_be_piped()
 {
   auto sndr = ex::just() //
-            | ex::bulk_unchunked(42, [] _CCCL_HOST_DEVICE(int) {});
+            | ex::bulk_unchunked(ex::par, 42, [] _CCCL_HOST_DEVICE(int) {});
   (void) sndr;
 }
 
@@ -172,11 +172,12 @@ void bulk_unchunked_keeps_values_type_from_input_sender()
 {
   constexpr int n = 42;
   check_value_types<types<>>(ex::just() //
-                             | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int) {}));
+                             | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) {}));
   check_value_types<types<double>>(ex::just(4.2) //
-                                   | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int, double) {}));
-  check_value_types<types<double, string>>(ex::just(4.2, string{}) //
-                                           | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int, double, string) {}));
+                                   | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, double) {}));
+  check_value_types<types<double, string>>(
+    ex::just(4.2, string{}) //
+    | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, double, string) {}));
 }
 
 void bulk_keeps_error_types_from_input_sender()
@@ -265,29 +266,29 @@ void bulk_unchunked_keeps_error_types_from_input_sender()
 
   check_error_types<>(ex::just() //
                       | ex::continues_on(sched1) //
-                      | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
+                      | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
   check_error_types<_exception_ptr>(
     ex::just() //
     | ex::continues_on(sched2) //
-    | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
+    | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
   check_error_types<int>(ex::just_error(n) //
-                         | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
+                         | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
   check_error_types<int>(
     ex::just() //
     | ex::continues_on(sched3) //
-    | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
+    | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
 #if !defined(__CUDA_ARCH__)
   check_error_types<::std::exception_ptr, int>(
     ex::just() //
     | ex::continues_on(sched3) //
-    | ex::bulk_unchunked(n, [](int) {
+    | ex::bulk_unchunked(ex::par, n, [](int) {
         throw std::logic_error{"err"};
       }));
 #else
   check_error_types<int>(
     ex::just() //
     | ex::continues_on(sched3) //
-    | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int) {
+    | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) {
         cuda::std::__cccl_terminate();
       }));
 #endif
@@ -334,7 +335,7 @@ void bulk_unchunked_can_be_used_with_a_function()
   _CUDA_VSTD::fill_n(counter3, n, 0);
 
   auto sndr = ex::just(&counter3) //
-            | ex::bulk_unchunked(n, function<int, n>);
+            | ex::bulk_unchunked(ex::par, n, function<int, n>);
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter3});
   ex::start(op);
 
@@ -385,7 +386,7 @@ void bulk_unchunked_can_be_used_with_a_function_object()
   function_object_t<int> fn{counter};
 
   auto sndr = ex::just() //
-            | ex::bulk_unchunked(n, fn);
+            | ex::bulk_unchunked(ex::par, n, fn);
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
@@ -441,7 +442,7 @@ void bulk_unchunked_can_be_used_with_a_lambda()
   int counter[n]{0};
 
   auto sndr = ex::just() //
-            | ex::bulk_unchunked(n, [&](int i) {
+            | ex::bulk_unchunked(ex::par, n, [&](int i) {
                 counter[i]++;
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
@@ -550,7 +551,7 @@ void bulk_unchunked_forwards_values()
   int counter[n]{0};
 
   auto sndr = ex::just(magic_number) //
-            | ex::bulk_unchunked(n, [&](int i, int val) {
+            | ex::bulk_unchunked(ex::par, n, [&](int i, int val) {
                 if (val == magic_number)
                 {
                   counter[i]++;
@@ -605,7 +606,7 @@ void bulk_unchunked_forwards_values_that_can_be_taken_by_reference()
   _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_unchunked(n, [&](std::size_t i, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, _CUDA_VSTD::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
@@ -646,7 +647,7 @@ void bulk_unchunked_cannot_be_used_to_change_the_value_type()
   constexpr int n            = 2;
 
   auto sndr = ex::just(magic_number) //
-            | ex::bulk_unchunked(n, [] _CCCL_HOST_DEVICE(int, int) {
+            | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, int) {
                 return function_object_t<int>{nullptr};
               });
 
@@ -684,7 +685,7 @@ void bulk_unchunked_can_throw_and_set_error_will_be_called()
   constexpr int n = 2;
 
   auto sndr = ex::just() //
-            | ex::bulk_unchunked(n, [](int) -> int {
+            | ex::bulk_unchunked(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
@@ -724,7 +725,7 @@ void bulk_unchunked_function_is_not_called_on_error()
   int called{};
 
   auto sndr = ex::just_error(string{"err"}) //
-            | ex::bulk_unchunked(n, [&called](int) {
+            | ex::bulk_unchunked(ex::par, n, [&called](int) {
                 called++;
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
@@ -763,7 +764,7 @@ void bulk_unchunked_function_in_not_called_on_stop()
   int called{};
 
   auto sndr = ex::just_stopped() //
-            | ex::bulk_unchunked(n, [&called](int) {
+            | ex::bulk_unchunked(ex::par, n, [&called](int) {
                 called++;
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
@@ -787,7 +788,7 @@ void default_bulk_chunked_works_with_non_default_constructible_types()
 void default_bulk_unchunked_works_with_non_default_constructible_types()
 {
   auto s = ex::just(non_default_constructible{42}) //
-         | ex::bulk_unchunked(1, [] _CCCL_HOST_DEVICE(int, ignore_lvalue_ref) {});
+         | ex::bulk_unchunked(ex::par, 1, [] _CCCL_HOST_DEVICE(int, ignore_lvalue_ref) {});
   ex::sync_wait(cuda::std::move(s));
 }
 

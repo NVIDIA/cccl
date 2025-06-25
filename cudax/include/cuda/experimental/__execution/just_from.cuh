@@ -34,29 +34,16 @@
 
 namespace cuda::experimental::execution
 {
-// Map from a disposition to the corresponding tag types:
-namespace __detail
-{
-template <__disposition, class _Void = void>
-extern _CUDA_VSTD::__undefined<_Void> __just_from_tag;
-template <class _Void>
-extern __fn_t<just_from_t>* __just_from_tag<__disposition::__value, _Void>;
-template <class _Void>
-extern __fn_t<just_error_from_t>* __just_from_tag<__disposition::__error, _Void>;
-template <class _Void>
-extern __fn_t<just_stopped_from_t>* __just_from_tag<__disposition::__stopped, _Void>;
-} // namespace __detail
-
 struct _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT;
 struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 
-template <__disposition _Disposition>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(just_from_t) _CCCL_PREFERRED_NAME(just_error_from_t)
-  _CCCL_PREFERRED_NAME(just_stopped_from_t) __just_from_t
+template <class _JustFromTag, class _SetTag>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
 {
-private:
-  using _JustTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__just_from_tag<_Disposition>());
-  using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
+  _CUDAX_SEMI_PRIVATE:
+  friend struct just_from_t;
+  friend struct just_error_from_t;
+  friend struct just_stopped_from_t;
 
   using __diag_t _CCCL_NODEBUG_ALIAS =
     _CUDA_VSTD::conditional_t<_SetTag{} == set_error,
@@ -65,7 +52,7 @@ private:
 
   template <class... _Ts>
   using __error_t _CCCL_NODEBUG_ALIAS =
-    _ERROR<_WHERE(_IN_ALGORITHM, _JustTag), _WHAT(__diag_t), _WITH_COMPLETION_SIGNATURE<_SetTag(_Ts...)>>;
+    _ERROR<_WHERE(_IN_ALGORITHM, _JustFromTag), _WHAT(__diag_t), _WITH_COMPLETION_SIGNATURE<_SetTag(_Ts...)>>;
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __probe_fn
   {
@@ -103,21 +90,39 @@ private:
     _Fn __fn_;
   };
 
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr;
+
 public:
   template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
-
-  template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
-template <__disposition _Disposition>
+struct just_from_t : __just_from_t<just_from_t, set_value_t>
+{
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+struct just_error_from_t : __just_from_t<just_error_from_t, set_error_t>
+{
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+struct just_stopped_from_t : __just_from_t<just_stopped_from_t, set_stopped_t>
+{
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+template <class _JustFromTag, class _SetTag>
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__sndr
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
-  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS _JustFromTag __tag_;
   _Fn __fn_;
 
   template <class _Self, class...>
@@ -141,15 +146,28 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   }
 };
 
-template <__disposition _Disposition>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
+struct just_from_t::__sndr_t : __just_from_t<just_t, set_value_t>::__sndr<_Fn>
+{};
+
+template <class _Fn>
+struct just_error_from_t::__sndr_t : __just_from_t<just_error_t, set_error_t>::__sndr<_Fn>
+{};
+
+template <class _Fn>
+struct just_stopped_from_t::__sndr_t : __just_from_t<just_stopped_t, set_stopped_t>::__sndr<_Fn>
+{};
+
+template <class _JustFromTag, class _SetTag>
+template <class _Fn>
+_CCCL_TRIVIAL_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
+  using __sndr_t                          = typename _JustFromTag::template __sndr_t<_Fn>;
   using __completions _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, __probe_fn>;
   static_assert(__valid_completion_signatures<__completions>,
                 "The function passed to just_from must return an instance of a specialization of "
                 "completion_signatures<>.");
-  return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};
+  return __sndr_t{{{}, static_cast<_Fn&&>(__fn)}};
 }
 
 template <class _Fn>
