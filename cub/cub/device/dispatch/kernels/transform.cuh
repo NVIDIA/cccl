@@ -190,7 +190,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 }
 
 template <int BlockThreads>
-_CCCL_DEVICE void memcpy_async_aligned(void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy)
+_CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int bytes_to_copy)
 {
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % ldgsts_size_and_align == 0, "");
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % ldgsts_size_and_align == 0, "");
@@ -208,8 +208,7 @@ _CCCL_DEVICE void memcpy_async_aligned(void* __restrict__ dst, const void* __res
 }
 
 template <int BlockThreads>
-_CCCL_DEVICE void memcpy_async_maybe_unaligned(
-  void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy, int head_padding)
+_CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
 {
   // TODO(bgruber): would it be worth it to just:
   // if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0)
