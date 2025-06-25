@@ -25,6 +25,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/experimental/__stf/utility/each.cuh>
+#include <cuda/experimental/__stf/utility/mv.cuh>
 
 #include <cstddef>
 #include <functional>
@@ -79,26 +81,6 @@ inline int setenv(const char* name, const char* value, int overwrite)
 }
 #endif
 
-#ifndef _CCCL_DOXYGEN_INVOKED // FIXME Doxygen is lost with decltype(auto)
-/**
- * @brief Custom move function that performs checks on the argument type.
- *
- * @tparam T Type of the object being moved. The type should satisfy certain conditions for the move to be performed.
- * @param obj The object to be moved.
- * @return The moved object, ready to be passed to another owner.
- *
- * @pre The argument `obj` must be an lvalue, i.e., the function will fail to compile for rvalues.
- * @pre The argument `obj` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
- */
-template <typename T>
-_CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
-{
-  static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
-  static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
-  return ::std::move(obj);
-}
-#endif // _CCCL_DOXYGEN_INVOKED
-
 /**
  * @brief Creates a `std::shared_ptr` managing a copy of the given object.
  *
@@ -129,100 +111,6 @@ template <typename T>
 auto to_shared(T&& obj)
 {
   return ::std::make_shared<::std::remove_cv_t<::std::remove_reference_t<T>>>(::std::forward<T>(obj));
-}
-
-/**
- * @brief   Create an iterable range from 'from' to 'to'
- *
- * @tparam  T   The type of the start range value
- * @tparam  U   The type of the end range value
- * @param   from    The start value of the range
- * @param   to      The end value of the range
- *
- * @return  A range of values from 'from' to 'to'
- *
- * @note    The range includes 'from' and excludes 'to'. The actual type iterated is determined as the type of the
- * expression `true ? from : to`. This ensures expected behavior for iteration with different `from` and `to` types.
- */
-template <typename T, typename U>
-_CCCL_HOST_DEVICE auto each(T from, U to)
-{
-  using common = ::std::remove_reference_t<decltype(true ? from : to)>;
-
-  class iterator
-  {
-    common value;
-
-  public:
-    _CCCL_HOST_DEVICE iterator(common value)
-        : value(mv(value))
-    {}
-
-    _CCCL_HOST_DEVICE common operator*() const
-    {
-      return value;
-    }
-
-    _CCCL_HOST_DEVICE iterator& operator++()
-    {
-      if constexpr (::std::is_enum_v<common>)
-      {
-        value = static_cast<T>(static_cast<::std::underlying_type_t<T>>(value) + 1);
-      }
-      else
-      {
-        ++value;
-      }
-      return *this;
-    }
-
-    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
-    {
-      return value != other.value;
-    }
-  };
-
-  class each_t
-  {
-    common begin_, end_;
-
-  public:
-    _CCCL_HOST_DEVICE each_t(T begin, U end)
-        : begin_(mv(begin))
-        , end_(mv(end))
-    {}
-    _CCCL_HOST_DEVICE iterator begin() const
-    {
-      return iterator(begin_);
-    }
-    _CCCL_HOST_DEVICE iterator end() const
-    {
-      return iterator(end_);
-    }
-  };
-
-  return each_t{mv(from), mv(to)};
-}
-
-/**
- * @brief   Create an iterable range from `T(0)` to `to`
- *
- * @tparam  T   The type of the end range value
- * @param   to   The end value of the range
- *
- * @return  A range of values from `T(0)` to `to`
- *
- * @note    The range includes 0 and excludes `to`
- */
-template <typename T>
-auto each(T to)
-{
-  static_assert(!::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
-  if constexpr (::std::is_signed_v<T>)
-  {
-    _CCCL_ASSERT(to >= 0, "Attempt to iterate from 0 to a negative value.");
-  }
-  return each(T(0), mv(to));
 }
 
 /**
