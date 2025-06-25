@@ -47,6 +47,38 @@ namespace cuda::experimental::execution
 // Declare types to use for diagnostics:
 struct _FUNCTION_MUST_RETURN_A_SENDER;
 
+namespace __let
+{
+template <class _Sndr, class _Domain>
+struct __attrs_t : __attrs_t<_Sndr, __nil>
+{
+  using __attrs_t<_Sndr, __nil>::query;
+
+  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> _Domain
+  {
+    return {};
+  }
+};
+
+template <class _Sndr>
+struct __attrs_t<_Sndr, __nil>
+{
+  template <class _Tag>
+  _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
+
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!_CUDA_VSTD::same_as<_Query, get_domain_t>)
+                   _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
+    -> __query_result_t<env_of_t<_Sndr>, _Query>
+  {
+    return execution::get_env(__sndr_).query(_Query{});
+  }
+
+  const _Sndr& __sndr_;
+};
+} // namespace __let
+
 template <class _LetTag, class _SetTag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 {
@@ -308,31 +340,7 @@ template <class _Sndr, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-
-  struct __attrs_t
-  {
-    template <class _Tag>
-    _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
-
-    // Returns the domain on which the let sender will complete:
-    _CCCL_TEMPLATE(class _Sndr2 = _Sndr)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<__completion_domain_of_t<_Sndr2, _Fn>, __nil>) )
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> __completion_domain_of_t<_Sndr2, _Fn>
-    {
-      return {};
-    }
-
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!_CUDA_VSTD::same_as<_Query, get_domain_t>)
-                     _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
-    {
-      return execution::get_env(__self_->__sndr_).query(_Query{});
-    }
-
-    const __sndr* __self_;
-  };
+  using __domain_t                         = __completion_domain_of_t<_Sndr, _Fn>;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -373,9 +381,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr
     return __opstate_t<const _Sndr&, _Fn, _Rcvr>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __let::__attrs_t<_Sndr, __domain_t>
   {
-    return __attrs_t{this};
+    return {__sndr_};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
