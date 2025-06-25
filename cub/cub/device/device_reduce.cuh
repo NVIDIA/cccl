@@ -463,10 +463,10 @@ public:
 
     constexpr auto supported = integral_fallback || fp_min_max_fallback || float_double_plus || !gpu_gpu_determinism;
 
-    static_assert(supported,
-                  "gpu_to_gpu determinism is only supported for integral types, or "
-                  "float and double types with ::cuda::std::plus operator, or "
-                  "any floating point types with ::cuda::minimum<> or ::cuda::maximum<> operators.");
+    // gpu_to_gpu determinism is only supported for integral types, or
+    // float and double types with ::cuda::std::plus operator, or
+    // any floating point types with ::cuda::minimum<> or ::cuda::maximum<> operators
+    static_assert(supported, "gpu_to_gpu determinism is unsupported");
 
     if constexpr (!supported)
     {
