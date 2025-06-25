@@ -16,6 +16,7 @@
 
 // template<class _URng> result_type operator()(_URng& g);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -135,32 +136,33 @@ __host__ __device__ void test_statistics(cuda::std::span<unsigned char, N * 16> 
 
 __host__ __device__ void test()
 {
-  cuda::std::array<unsigned char, N * 16> array;
+  cuda::std::unique_ptr<unsigned char[]> array = cuda::std::make_unique<unsigned char[]>(N * 16);
+  cuda::std::span<unsigned char, N * 16> span{array.get(), array.get() + N * 16};
 
-  test_statistics<cuda::std::minstd_rand0>(array);
+  test_statistics<cuda::std::minstd_rand0>(span);
 
 #if 0 // not implemented
-  test_statistics<int, cuda::std::minstd_rand>(array);
-  test_statistics<int, cuda::std::mt19937>(array);
-  test_statistics<int, cuda::std::mt19937_64>(array);
-  test_statistics<int, cuda::std::ranlux24_base>(array);
-  test_statistics<int, cuda::std::ranlux48_base>(array);
-  test_statistics<int, cuda::std::ranlux24>(array);
-  test_statistics<int, cuda::std::ranlux48>(array);
-  test_statistics<int, cuda::std::knuth_b>(array);
-  test_statistics<int, cuda::std::minstd_rand>(array, 5, 100);
+  test_statistics<int, cuda::std::minstd_rand>(span);
+  test_statistics<int, cuda::std::mt19937>(span);
+  test_statistics<int, cuda::std::mt19937_64>(span);
+  test_statistics<int, cuda::std::ranlux24_base>(span);
+  test_statistics<int, cuda::std::ranlux48_base>(span);
+  test_statistics<int, cuda::std::ranlux24>(span);
+  test_statistics<int, cuda::std::ranlux48>(span);
+  test_statistics<int, cuda::std::knuth_b>(span);
+  test_statistics<int, cuda::std::minstd_rand>(span, 5, 100);
 #endif // not implemented
-  test_statistics<int, cuda::std::minstd_rand0>(convert_to<int>(array), -6, 106);
-  test_statistics<short, cuda::std::minstd_rand0>(convert_to<short>(array), SHRT_MIN, SHRT_MAX);
+  test_statistics<int, cuda::std::minstd_rand0>(convert_to<int>(span), -6, 106);
+  test_statistics<short, cuda::std::minstd_rand0>(convert_to<short>(span), SHRT_MIN, SHRT_MAX);
 
 #if _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
-  test_statistics<__int128_t, cuda::std::minstd_rand0>(convert_to<__int128_t>(array), -100, 900);
-  test_statistics<__int128_t, cuda::std::minstd_rand0>(convert_to<__int128_t>(array), 0, UINT64_MAX);
+  test_statistics<__int128_t, cuda::std::minstd_rand0>(convert_to<__int128_t>(span), -100, 900);
+  test_statistics<__int128_t, cuda::std::minstd_rand0>(convert_to<__int128_t>(span), 0, UINT64_MAX);
   test_statistics<__int128_t, cuda::std::minstd_rand0>(
-    convert_to<__int128_t>(array),
+    convert_to<__int128_t>(span),
     cuda::std::numeric_limits<__int128_t>::min(),
     cuda::std::numeric_limits<__int128_t>::max());
-  test_statistics<__uint128_t, cuda::std::minstd_rand0>(convert_to<__uint128_t>(array), 0, UINT64_MAX);
+  test_statistics<__uint128_t, cuda::std::minstd_rand0>(convert_to<__uint128_t>(span), 0, UINT64_MAX);
 #endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
 }
 
