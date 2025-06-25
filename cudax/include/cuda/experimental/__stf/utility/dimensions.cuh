@@ -189,9 +189,15 @@ public:
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
-  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& s)
-      : s(s)
-  {}
+  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& _s)
+  {
+    for (size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = _s[ind].first;
+      s[ind].second = _s[ind].second;
+    }
+
+  }
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename Int>
@@ -449,9 +455,10 @@ public:
   }
 
 private:
-  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> s;
+  ::cuda::std::array<::cuda::std::pair<::cuda::std::ptrdiff_t, ::cuda::std::ptrdiff_t>, dimensions> s;
 };
 
+#ifndef __CUDACC_RTC__
 // Deduction guides
 template <typename... Int>
 box(Int...) -> box<sizeof...(Int)>;
@@ -459,6 +466,7 @@ template <typename... E>
 box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
 template <typename E, size_t dimensions>
 box(::std::array<E, dimensions>) -> box<dimensions>;
+#endif // !__CUDACC_RTC__
 
 #ifdef UNITTESTED_FILE
 UNITTEST("box<3>")

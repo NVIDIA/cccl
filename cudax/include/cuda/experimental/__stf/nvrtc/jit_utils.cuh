@@ -284,6 +284,7 @@ template <typename shape_t, typename ...Args>
 
     args_prototype_oss << ::std::string(type_name<shape_t>) << " dyn_shape, ";
 
+    // TODO use    each_in_pack([&](auto i, const auto& e) {...
     size_t arg_index = 0;
     auto emit_arg = [&]([[maybe_unused]] auto &&arg) {
         using raw_arg = ::cuda::std::remove_reference_t<decltype(arg)>;
