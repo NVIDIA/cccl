@@ -487,9 +487,12 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
          c2h::type_list<std::uint8_t, std::uint16_t, float, double>)
 {
   using type          = c2h::get<0, TestType>;
-  const int num_items = GENERATE(130, 100'000); // try to hit the small and full tile code paths
+  const int num_items = GENERATE(10, 130, 100'000); // try to hit sub-size-alignment, small and full tile code paths
   const int offset    = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
-  REQUIRE(num_items > offset);
+  if (num_items <= offset)
+  {
+    return;
+  }
   CAPTURE(c2h::type_name<type>(), num_items, offset);
 
   c2h::device_vector<type> input(num_items, thrust::no_init);

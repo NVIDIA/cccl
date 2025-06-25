@@ -208,19 +208,35 @@ _CCCL_DEVICE void memcpy_async_aligned(void* __restrict__ dst, const void* __res
 }
 
 template <int BlockThreads>
-_CCCL_DEVICE void memcpy_async_unaligned(
+_CCCL_DEVICE void memcpy_async_maybe_unaligned(
   void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy, int head_padding)
 {
+  // TODO(bgruber): would it be worth it to just:
+  // if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0)
+  // {
+  //   return memcpy_async_aligned<BlockThreads>(dst, src, bytes_to_copy, head_padding);
+  // }
+
   const char* src_ptr = static_cast<const char*>(src);
   char* dst_ptr       = static_cast<char*>(dst);
+
+  // handle tiny copies to simplify head/tail bytes computations below
+  if (bytes_to_copy < ldgsts_size_and_align)
+  {
+    if (threadIdx.x < bytes_to_copy)
+    {
+      dst_ptr[threadIdx.x] = src_ptr[threadIdx.x];
+    }
+    return;
+  }
 
   const unsigned int head_bytes = (ldgsts_size_and_align - head_padding) % ldgsts_size_and_align;
   const unsigned int tail_bytes = (bytes_to_copy - head_bytes) % ldgsts_size_and_align;
 
   // pipeline the async copies before loading the head and tail elements
-  _CCCL_ASSERT(bytes_to_copy > head_bytes + tail_bytes, "");
+  _CCCL_ASSERT(bytes_to_copy >= (head_bytes + tail_bytes), "");
   const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
-  if (aligned_bytes_to_copy)
+  if (aligned_bytes_to_copy > 0)
   {
     _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % ldgsts_size_and_align == 0, "");
     _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % ldgsts_size_and_align == 0, "");
@@ -287,7 +303,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % alignof(T) == 0, "");
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % alignof(T) == 0, "");
   const int bytes_to_copy = int{sizeof(T)} * valid_items;
-  memcpy_async_unaligned<BlockThreads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
+  memcpy_async_maybe_unaligned<BlockThreads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
   if (tile_size == valid_items)
   {
     smem_offset += bytes_to_copy; // full tiles will retain alignment
@@ -321,9 +337,10 @@ _CCCL_DEVICE void transform_kernel_impl(
   const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
   [[maybe_unused]] int smem_offset = 0;
-  // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned
+  // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
+  // work for inputs in host stack memory ...
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  // TODO(bgruber): if we used SMEM offsets instead of pointers, we only need half the registers
+  // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
                   : copy_and_return_smem_dst_fallback<block_threads>(
