@@ -48,6 +48,7 @@
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
@@ -454,7 +455,7 @@ public:
     // fallback to run-to-run determinism
     constexpr auto fp_min_max_fallback =
       gpu_gpu_determinism
-      && (::cuda::is_floating_point_v<accum_t> && detail::reduce::is_min_or_max<ReductionOpT>::value);
+      && (::cuda::is_floating_point_v<accum_t> && detail::is_cuda_minimum_maximum_v<ReductionOpT, accum_t>);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
     constexpr auto float_double_plus = gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double>
