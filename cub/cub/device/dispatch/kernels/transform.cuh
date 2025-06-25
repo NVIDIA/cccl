@@ -565,6 +565,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       int smem_offset                    = 0;
       ::cuda::std::uint32_t total_copied = 0;
 
+      // turning this lambda into a function does not change SASS
       auto bulk_copy_tile = [&](auto aligned_ptr) {
         using T = typename decltype(aligned_ptr)::value_type;
         static_assert(alignof(T) <= bulk_copy_alignment, "");
@@ -602,6 +603,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // use all threads to schedule an async_memcpy
     int smem_offset = 0;
 
+    // turning this lambda into a function does not change SASS
     auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
       using T      = typename decltype(aligned_ptr)::value_type;
       const T* src = aligned_ptr.ptr_to_elements() + offset;
