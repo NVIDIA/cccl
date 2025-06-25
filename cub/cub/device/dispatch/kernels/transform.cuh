@@ -188,8 +188,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 }
 
 template <int BlockThreads>
-_CG_STATIC_QUALIFIER void
-memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy)
+_CCCL_DEVICE void memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy)
 {
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % 16 == 0, "");
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % 16 == 0, "");
@@ -204,7 +203,7 @@ memcpy_async_16(void* __restrict__ dst, const void* __restrict__ src, unsigned i
 }
 
 template <int BlockThreads>
-_CG_STATIC_QUALIFIER void memcpy_async_unaligned(
+_CCCL_DEVICE void memcpy_async_unaligned(
   void* __restrict__ dst, const void* __restrict__ src, unsigned int bytes_to_copy, int head_padding)
 {
   const char* src_ptr = static_cast<const char*>(src);
