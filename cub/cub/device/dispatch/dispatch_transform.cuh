@@ -357,7 +357,7 @@ struct dispatch_t<StableAddress,
     else if constexpr (Algorithm::memcpy_async == wrapped_policy.GetAlgorithm())
     {
       return invoke_async_algorithm<ActivePolicyT>(
-        memcpy_async_alignment, &memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>, seq);
+        ldgsts_size_and_align, &memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>, seq);
     }
     else
     {

@@ -98,8 +98,7 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
-constexpr int memcpy_async_alignment     = 16;
-constexpr int memcpy_async_size_multiple = 16;
+constexpr int ldgsts_size_and_align = 16;
 
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) -> int
@@ -108,7 +107,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) 
   [[maybe_unused]] auto count_smem = [&](int size, int alignment) {
     smem_size = ::cuda::round_up(smem_size, alignment);
     // max aligned_base_ptr head_padding + max padding after == 16
-    smem_size += size * tile_size + memcpy_async_alignment;
+    smem_size += size * tile_size + ldgsts_size_and_align;
   };
   // left to right evaluation!
   (..., count_smem(sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)));
@@ -245,7 +244,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
   struct policy800
-      : async_policy_base<Algorithm::memcpy_async, 256, memcpy_async_alignment, 800, _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()>
+      : async_policy_base<Algorithm::memcpy_async, 256, ldgsts_size_and_align, 800, _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()>
       , ChainedPolicy<800, policy800, policy300>
   {};
 
