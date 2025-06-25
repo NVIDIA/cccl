@@ -443,11 +443,13 @@ inline bool IsNaN<double3>(double3 val)
   return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
 inline bool IsNaN<double4>(double4 val)
 {
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #if TEST_HALF_T()
 template <>
@@ -779,7 +781,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_OVERLOAD_1_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_1_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -789,7 +791,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_OVERLOAD_2_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_2_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -800,7 +802,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_OVERLOAD_3_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_3_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -812,7 +814,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_OVERLOAD_4_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_4_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -825,27 +827,49 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * All vector overloads
  */
-#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T, BaseT) \
-  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1, BaseT)  \
-  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2, BaseT)  \
-  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3, BaseT)  \
-  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4, BaseT)
+#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T) \
+  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1)  \
+  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2)  \
+  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3)  \
+  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4)
 
 /**
  * Define for types
  */
-CUB_VEC_OVERLOAD_OLD(char, signed char)
-CUB_VEC_OVERLOAD_OLD(short, short)
-CUB_VEC_OVERLOAD_OLD(int, int)
-CUB_VEC_OVERLOAD_OLD(long, long)
-CUB_VEC_OVERLOAD_OLD(longlong, long long)
-CUB_VEC_OVERLOAD_OLD(uchar, unsigned char)
-CUB_VEC_OVERLOAD_OLD(ushort, unsigned short)
-CUB_VEC_OVERLOAD_OLD(uint, unsigned int)
-CUB_VEC_OVERLOAD_OLD(ulong, unsigned long)
-CUB_VEC_OVERLOAD_OLD(ulonglong, unsigned long long)
-CUB_VEC_OVERLOAD_OLD(float, float)
-CUB_VEC_OVERLOAD_OLD(double, double)
+CUB_VEC_OVERLOAD_OLD(char)
+CUB_VEC_OVERLOAD_OLD(short)
+CUB_VEC_OVERLOAD_OLD(int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(long)
+CUB_VEC_OVERLOAD_OLD(longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(long4_16a)
+CUB_VEC_OVERLOAD_4_OLD(long4_32a)
+CUB_VEC_OVERLOAD_4_OLD(longlong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(longlong4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_OLD(uchar)
+CUB_VEC_OVERLOAD_OLD(ushort)
+CUB_VEC_OVERLOAD_OLD(uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(ulong)
+CUB_VEC_OVERLOAD_OLD(ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(ulong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(ulong4_32a)
+CUB_VEC_OVERLOAD_4_OLD(ulonglong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(ulonglong4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_OLD(float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(double4_16a)
+CUB_VEC_OVERLOAD_4_OLD(double4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 //---------------------------------------------------------------------
 // Complex data type TestFoo

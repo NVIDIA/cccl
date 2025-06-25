@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_HAS_CTK()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
@@ -34,16 +34,20 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 
-#  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size)              \
-    template <>                                                                       \
-    struct tuple_size<__name##__size> : _CUDA_VSTD::integral_constant<size_t, __size> \
-    {};                                                                               \
-                                                                                      \
-    template <size_t _Ip>                                                             \
-    struct tuple_element<_Ip, __name##__size>                                         \
-    {                                                                                 \
-      static_assert(_Ip < __size, "tuple_element index out of range");                \
-      using type = __type;                                                            \
+#  if !_CCCL_CUDA_COMPILATION()
+#    include <cuda_runtime_api.h>
+#  endif // !_CCCL_CUDA_COMPILATION()
+
+#  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size, ...)                      \
+    template <>                                                                                    \
+    struct tuple_size<__name##__size##__VA_ARGS__> : _CUDA_VSTD::integral_constant<size_t, __size> \
+    {};                                                                                            \
+                                                                                                   \
+    template <size_t _Ip>                                                                          \
+    struct tuple_element<_Ip, __name##__size##__VA_ARGS__>                                         \
+    {                                                                                              \
+      static_assert(_Ip < __size, "tuple_element index out of range");                             \
+      using type = __type;                                                                         \
     };
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(__name, __type) \
@@ -88,12 +92,26 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(short, short)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ushort, unsigned short)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(int, int)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uint, unsigned int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(long, long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(longlong, long long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulonglong, unsigned long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulong, unsigned long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulong, unsigned long, 4, _32a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(float, float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(double, double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(dim, unsigned int, 3)
 
 template <size_t _Ip>
@@ -216,11 +234,14 @@ _LIBCUDACXX_SPECIALIZE_GET_VECTOR(short, short)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ushort, unsigned short)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(int, int)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(uint, unsigned int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(long, long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(longlong, long long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulonglong, unsigned long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(float, float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
 _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
 
@@ -233,6 +254,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_HAS_CTK()
 
 #endif // _LIBCUDACXX___TUPLE_VECTOR_TYPES_H

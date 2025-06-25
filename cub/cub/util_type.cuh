@@ -377,14 +377,32 @@ __CUB_ALIGN_BYTES(ulong2, 16)
 __CUB_ALIGN_BYTES(int4, 16)
 __CUB_ALIGN_BYTES(uint4, 16)
 __CUB_ALIGN_BYTES(float4, 16)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 __CUB_ALIGN_BYTES(long4, 16)
 __CUB_ALIGN_BYTES(ulong4, 16)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+__CUB_ALIGN_BYTES(long4_16a, 16)
+__CUB_ALIGN_BYTES(long4_32a, 32)
+__CUB_ALIGN_BYTES(ulong4_16a, 16)
+__CUB_ALIGN_BYTES(ulong4_32a, 32)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 __CUB_ALIGN_BYTES(longlong2, 16)
 __CUB_ALIGN_BYTES(ulonglong2, 16)
 __CUB_ALIGN_BYTES(double2, 16)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 __CUB_ALIGN_BYTES(longlong4, 16)
 __CUB_ALIGN_BYTES(ulonglong4, 16)
 __CUB_ALIGN_BYTES(double4, 16)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+__CUB_ALIGN_BYTES(longlong4_16a, 16)
+__CUB_ALIGN_BYTES(longlong4_32a, 32)
+__CUB_ALIGN_BYTES(ulonglong4_16a, 16)
+__CUB_ALIGN_BYTES(ulonglong4_32a, 32)
+__CUB_ALIGN_BYTES(double4_16a, 16)
+__CUB_ALIGN_BYTES(double4_32a, 32)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // clang-format off
 template <typename T> struct AlignBytes<volatile T> : AlignBytes<T> {};
@@ -530,6 +548,7 @@ struct CubVector<T, 4>
   using Type     = CubVector;
 };
 
+// TODO(bgruber): should CubVectorType support (and how?) the new type4_16a and type4_32a vector types from CTK 13?
 /**
  * Macro for expanding partially-specialized built-in vector types
  */
@@ -629,15 +648,21 @@ CUB_DEFINE_VECTOR_TYPE(char,               char)
 CUB_DEFINE_VECTOR_TYPE(signed char,        char)
 CUB_DEFINE_VECTOR_TYPE(short,              short)
 CUB_DEFINE_VECTOR_TYPE(int,                int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_DEFINE_VECTOR_TYPE(long,               long)
 CUB_DEFINE_VECTOR_TYPE(long long,          longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(unsigned char,      uchar)
 CUB_DEFINE_VECTOR_TYPE(unsigned short,     ushort)
 CUB_DEFINE_VECTOR_TYPE(unsigned int,       uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_DEFINE_VECTOR_TYPE(unsigned long,      ulong)
 CUB_DEFINE_VECTOR_TYPE(unsigned long long, ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(float,              float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_DEFINE_VECTOR_TYPE(double,             double)
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
 // clang-format on
 

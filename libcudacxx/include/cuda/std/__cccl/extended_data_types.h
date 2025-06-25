@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/architecture.h>
+#include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
@@ -56,7 +57,7 @@
 #  define _CCCL_HAS_LONG_DOUBLE() 1
 #endif // !_CCCL_HAS_CUDA_COMPILER()
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CTK() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1

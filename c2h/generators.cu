@@ -575,13 +575,17 @@ struct vec_gen_helper_t
   }
 };
 
-#  define VEC_SPECIALIZATION(TYPE, SIZE)                                                                     \
-    template <>                                                                                              \
-    void gen<TYPE##SIZE>(seed_t seed, c2h::device_vector<TYPE##SIZE> & data, TYPE##SIZE min, TYPE##SIZE max) \
-    {                                                                                                        \
-      generator_t& generator = generator_t::instance();                                                      \
-      generator.prepare_random_generator(seed, data.size());                                                 \
-      vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
+#  define VEC_SPECIALIZATION(TYPE, SIZE, ...)                                   \
+    template <>                                                                 \
+    void gen<TYPE##SIZE##__VA_ARGS__>(                                          \
+      seed_t seed,                                                              \
+      c2h::device_vector<TYPE##SIZE##__VA_ARGS__> & data,                       \
+      TYPE##SIZE##__VA_ARGS__ min,                                              \
+      TYPE##SIZE##__VA_ARGS__ max)                                              \
+    {                                                                           \
+      generator_t& generator = generator_t::instance();                         \
+      generator.prepare_random_generator(seed, data.size());                    \
+      vec_gen_helper_t<TYPE##SIZE##__VA_ARGS__, SIZE - 1>::gen(data, min, max); \
     }
 
 VEC_SPECIALIZATION(char, 2);
@@ -610,7 +614,12 @@ VEC_SPECIALIZATION(int, 4);
 
 VEC_SPECIALIZATION(long, 2);
 VEC_SPECIALIZATION(long, 3);
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 VEC_SPECIALIZATION(long, 4);
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+VEC_SPECIALIZATION(long, 4, _16a);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // VEC_SPECIALIZATION(ulong, 2);
 // VEC_SPECIALIZATION(ulong, 3);
@@ -618,11 +627,21 @@ VEC_SPECIALIZATION(long, 4);
 
 VEC_SPECIALIZATION(longlong, 2);
 VEC_SPECIALIZATION(longlong, 3);
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 VEC_SPECIALIZATION(longlong, 4);
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+VEC_SPECIALIZATION(longlong, 4, _16a);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 VEC_SPECIALIZATION(ulonglong, 2);
 // VEC_SPECIALIZATION(ulonglong, 3);
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 VEC_SPECIALIZATION(ulonglong, 4);
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+VEC_SPECIALIZATION(ulonglong, 4, _16a);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 VEC_SPECIALIZATION(float, 2);
 VEC_SPECIALIZATION(float, 3);
@@ -630,7 +649,12 @@ VEC_SPECIALIZATION(float, 4);
 
 VEC_SPECIALIZATION(double, 2);
 VEC_SPECIALIZATION(double, 3);
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 VEC_SPECIALIZATION(double, 4);
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+VEC_SPECIALIZATION(double, 4, _16a);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename VecType, typename Type>
 struct vec_gen_t
@@ -658,7 +682,12 @@ struct vec_gen_t
 
 VEC_GEN_MOD_SPECIALIZATION(short2, short);
 VEC_GEN_MOD_SPECIALIZATION(uchar3, unsigned char);
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+VEC_GEN_MOD_SPECIALIZATION(ulonglong4_16a, unsigned long long);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h
