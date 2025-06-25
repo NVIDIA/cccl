@@ -30,13 +30,6 @@
 
 #include <cuda_pipeline_primitives.h>
 
-// cooperative groups do not support NVHPC yet
-#if !_CCCL_CUDA_COMPILER(NVHPC)
-#  include <cooperative_groups.h>
-
-#  include <cooperative_groups/memcpy_async.h>
-#endif
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -617,7 +610,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
       const int bytes_to_copy = int{sizeof(T)} * valid_items;
-      cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
+      memcpy_async_maybe_unaligned<block_threads>(dst, src, bytes_to_copy, aligned_ptr.head_padding);
 
       // add bulk_copy_alignment to make space for the next tile's head padding
       smem_offset += int{sizeof(T)} * tile_size + bulk_copy_alignment;
@@ -626,7 +619,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // Order of evaluation is left-to-right
     (..., bulk_copy_tile_fallback(aligned_ptrs));
 
-    cooperative_groups::wait(cooperative_groups::this_thread_block());
+    __pipeline_wait_prior(0);
+    __syncthreads();
   }
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
