@@ -25,9 +25,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/std/__algorithm_> // cuda::std::min
+#include <cuda/std/cstddef>
+
+#ifndef __CUDACC_RTC__
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#endif // __CUDACC_RTC__
 
 namespace cuda::experimental::stf
 {
@@ -96,12 +100,14 @@ public:
     return x == rhs.x && y == rhs.y && z == rhs.z && t == rhs.t;
   }
 
+#ifndef __CUDACC_RTC__
   /// Convert the pos4 to a string
   ::std::string to_string() const
   {
     return ::std::string("pos4(" + ::std::to_string(x) + "," + ::std::to_string(y) + "," + ::std::to_string(z) + ","
                          + ::std::to_string(t) + ")");
   }
+#endif
 
   int x = 0;
   int y = 0;
@@ -134,7 +140,7 @@ public:
   /// Compute the dim4 class obtained by taking the minimum of two dim4 along each axis
   _CCCL_HOST_DEVICE static constexpr dim4 min(const dim4& a, const dim4& b)
   {
-    return dim4(::std::min(a.x, b.x), ::std::min(a.y, b.y), ::std::min(a.z, b.z), ::std::min(a.t, b.t));
+    return dim4(::cuda::std::min(a.x, b.x), ::cuda::std::min(a.y, b.y), ::cuda::std::min(a.z, b.z), ::cuda::std::min(a.t, b.t));
   }
 
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
@@ -206,7 +212,7 @@ public:
     static_assert(sizeof...(Int) == dimensions, "Number of dimensions must match");
     each_in_pack(
       [&](auto i, const auto& e) {
-        if constexpr (::std::is_arithmetic_v<::std::remove_reference_t<decltype(e)>>)
+        if constexpr (::cuda::std::is_arithmetic_v<::cuda::std::remove_reference_t<decltype(e)>>)
         {
           s[i].first  = 0;
           s[i].second = e;
@@ -520,6 +526,7 @@ UNITTEST("mix of integrals and pairs")
 
 #endif // UNITTESTED_FILE
 
+#ifndef __CUDACC_RTC__
 // So that we can create unordered_map of pos4 entries
 template <>
 struct hash<pos4>
@@ -534,5 +541,6 @@ struct hash<pos4>
 template <>
 struct hash<dim4> : hash<pos4>
 {};
+#endif // !__CUDACC_RTC__
 
 } // end namespace cuda::experimental::stf

@@ -270,85 +270,13 @@ __global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn
 
 )";
 
-const char *init_kernel_template = R"(
-extern "C"
-__global__ void %KERNEL_NAME%(slice<double, 2> dyn_U)
-{
-/// BEGIN TYPE CONVERSION SECTION
-  %s U{dyn_U};
-  const auto targs = ::cuda::std::make_tuple(U);
-/// END TYPE CONVERSION SECTION
-
-
-/// BEGIN BODY_SECTION (exclude "auto f =")
-  auto f = [](size_t i, size_t j, auto U) {
-    // printf("U(%%ld,%%ld) %%p = 100.0\n", (long)i, (long)j, &U(i, j));
-    double rad = U.extent(0) / 8.0;
-    double dx  = (double) i - U.extent(0) / 2;
-    double dy  = (double) j - U.extent(1) / 2;
-
-    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
-
-    /* Set up boundary conditions */
-    if (j == 0.0)
-    {
-      U(i, j) = 100.0;
-    }
-    if (j == U.extent(1) - 1)
-    {
-      U(i, j) = 0.0;
-    }
-    if (i == 0.0)
-    {
-      U(i, j) = 0.0;
-    }
-    if (i == U.extent(0) - 1)
-    {
-      U(i, j) = 0.0;
-    }
-  };
-/// END BODY_SECTION
-
-/// BEGIN SHAPE SECTION
-  // XXX HARDCODED ...
-  // TODO size and index_to_coords should be "generated" from strings in a trait jit_shape<...>
-  const size_t n = U.size();
-
-  // This transforms a tuple of (shape, 1D index) into a coordinate
-  auto shape_index_to_coords = [&U](size_t index)
-  {
-  //  printf("%%ld -> %%ld,%%ld\n", (long)index, index % U.extent(0),  index / U.extent(0));
-    return ::cuda::std::make_tuple(index % U.extent(0), index / U.extent(0));
-  };
-/// END SHAPE SECTION
-
-  // This will explode the targs tuple into a pack of data
-
-  size_t _i          = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t _step = blockDim.x * gridDim.x;
-
-  // Help the compiler which may not detect that a device lambda is calling a device lambda
-  auto explode_args = [&](auto&&... data) {
-    auto const explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
-    };
-    // For every linearized index in the shape
-    for (; _i < n; _i += _step)
-    {
-      ::cuda::std::apply(explode_coords, shape_index_to_coords(_i));
-    }
-  };
-  ::cuda::std::apply(explode_args, ::std::move(targs));
-}
-)";
-
 template <typename Mdspan, std::size_t... Is>
-std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std::index_sequence<>{})
+::std::string stringize_mdspan(const Mdspan& md, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
 {
   constexpr std::size_t R = Mdspan::rank();
   if constexpr (R != sizeof...(Is))
   {
-    return stringize_mdspan(md, std::make_index_sequence<R>{});
+    return stringize_mdspan(md, ::std::make_index_sequence<R>{});
   }
   else
   {
@@ -369,16 +297,86 @@ std::string stringize_mdspan(const Mdspan& md, std::index_sequence<Is...> = std:
     }
 
     ((oss << (Is ? ", " : "")
-          << (XT::static_extent(Is) != cuda::std::dynamic_extent ? std::to_string(XT::static_extent(Is))
-                                                                 : std::to_string(md.extent(Is)))),
+          << (XT::static_extent(Is) != ::cuda::std::dynamic_extent ? ::std::to_string(XT::static_extent(Is))
+                                                                   : ::std::to_string(md.extent(Is)))),
      ...);
 
     oss << ">";
 
-    std::string out = oss.str();
-
-    return out;
+    return oss.str();
   }
+}
+
+
+
+template <typename shape_t, typename ...Args>
+::std::string parallel_for_template_generator([[maybe_unused]] shape_t shape, const char *body_template, Args... args)
+{
+    ::std::ostringstream oss;
+
+    // kernel arguments
+    ::std::ostringstream args_prototype_oss;
+
+    // Convert dynamic args to static args
+    ::std::ostringstream args_conversion_oss;
+
+    // this will contain "auto targs = make_tuple(...);"
+    ::std::ostringstream args_tuple_oss;
+    args_tuple_oss << "const auto targs = ::cuda::std::make_tuple(";
+
+    args_prototype_oss << ::std::string(type_name<shape_t>) << " dyn_shape, ";
+
+    size_t arg_index = 0;
+    auto emit_arg = [&]([[maybe_unused]] auto &&arg) {
+        using raw_arg = ::cuda::std::remove_reference_t<decltype(arg)>;
+
+        if (arg_index > 0) {
+             args_tuple_oss << ", ";
+             args_prototype_oss << ", ";
+        }
+
+        args_conversion_oss << stringize_mdspan(arg) << " static_arg" << arg_index << "{dyn_arg" << arg_index << "};\n";
+        args_prototype_oss << ::std::string(type_name<raw_arg>) << " dyn_arg" << arg_index;
+
+        args_tuple_oss << "static_arg" << arg_index;
+
+        arg_index++;
+    };
+
+    (emit_arg(args), ...);
+
+    args_tuple_oss << ");\n";
+
+    oss << "extern \"C\"\n";
+    oss << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n";
+    oss << "{\n";
+
+    oss << args_conversion_oss.str() << ::std::endl;
+    oss << args_tuple_oss.str() << ::std::endl;
+
+    oss << "auto _body_impl = []" << body_template << ";\n";
+
+    oss << R"(
+           size_t _i          = blockIdx.x * blockDim.x + threadIdx.x;
+           const size_t _step = blockDim.x * gridDim.x;
+           const size_t n = dyn_shape.size();
+
+           auto explode_args = [&](auto&&... data) {
+             auto const explode_coords = [&](auto&&... coords) {
+               _body_impl(coords..., data...);
+             };
+             // For every linearized index in the shape
+             for (; _i < n; _i += _step)
+             {
+               ::cuda::std::apply(explode_coords, dyn_shape.index_to_coords(_i));
+             }
+           };
+           ::cuda::std::apply(explode_args, ::std::move(targs));
+)";
+
+    oss << "}\n";
+
+    return oss.str();
 }
 
 int main()
@@ -411,40 +409,44 @@ int main()
 
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
-#if 0
-  ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
-    double rad = U.extent(0) / 8.0;
-    double dx  = (double) i - U.extent(0) / 2;
-    double dy  = (double) j - U.extent(1) / 2;
-
-    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
-
-    /* Set up boundary conditions */
-    if (j == 0.0)
-    {
-      U(i, j) = 100.0;
-    }
-    if (j == U.extent(1) - 1)
-    {
-      U(i, j) = 0.0;
-    }
-    if (i == 0.0)
-    {
-      U(i, j) = 0.0;
-    }
-    if (i == U.extent(0) - 1)
-    {
-      U(i, j) = 0.0;
-    }
-  };
-#else
   ctx.cuda_kernel(lU.write())->*[&](auto U) {
-    CUfunction kernel =
-      lazy_jit(init_kernel_template, nvrtc_flags, header_template, stringize_mdspan(U));
-    return cuda_kernel_desc{kernel, 128, 32, 0, U};
-  };
-#endif
+    const char *body =
+     R"((size_t i, size_t j, auto U) {
+            double rad = U.extent(0) / 8.0;
+            double dx  = (double) i - U.extent(0) / 2;
+            double dy  = (double) j - U.extent(1) / 2;
 
+            U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+
+            /* Set up boundary conditions */
+            if (j == 0.0)
+            {
+              U(i, j) = 100.0;
+            }
+            if (j == U.extent(1) - 1)
+            {
+              U(i, j) = 0.0;
+            }
+            if (i == 0.0)
+            {
+              U(i, j) = 0.0;
+            }
+            if (i == U.extent(0) - 1)
+            {
+              U(i, j) = 0.0;
+            }
+       }
+    )";
+
+
+    auto gen_template = parallel_for_template_generator(lU.shape(), body, U);
+    ::std::cout << "BEGIN GEN TEMPLATE\n";
+    ::std::cout << gen_template;
+    ::std::cout << "END GEN TEMPLATE\n";
+
+    CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template);
+    return cuda_kernel_desc{kernel, 128, 32, 0, shape(U), U};
+  };
 
   // diffusion constant
   double a = 0.5;
@@ -483,12 +485,32 @@ int main()
       cuda_safe_call(cuLaunchKernel(kernel, 128, 1, 1, 32, 1, 1, 0, stream, args, nullptr));
     };
 #else
-    ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
-      CUfunction kernel =
-        lazy_jit(heat_kernel_template, nvrtc_flags, header_template, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
+//    ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
+//      CUfunction kernel =
+//        lazy_jit(heat_kernel_template, nvrtc_flags, header_template, c, dx2, dy2, stringize_mdspan(U), stringize_mdspan(U1));
+//
+//      return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
+//    };
 
-      return cuda_kernel_desc{kernel, 128, 32, 0, U, U1};
-    };
+  ctx.cuda_kernel(lU.read(), lU1.write())->*[&](auto U, auto U1) {
+    const char *body = R"(
+     (size_t i, size_t j, auto U, auto U1) {
+        const double c = %a;
+        const double dx2 = %a;
+        const double dy2 = %a;
+        // until we have box support
+        if (i > 0 && j > 0 && i < U.extent(0) - 1 && j < U.extent(1) - 1) {
+            U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
+        }
+      }
+      )";
+
+    auto gen_template = parallel_for_template_generator(/*inner<1>(shape(U))*/shape(U), body, U, U1);
+    CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header_template, c, dx2, dy2);
+    return cuda_kernel_desc{kernel, 128, 32, 0, /*inner<1>(shape(U))*/shape(U), U, U1};
+  };
+
+
 #endif
 
     ::std::swap(lU, lU1);
