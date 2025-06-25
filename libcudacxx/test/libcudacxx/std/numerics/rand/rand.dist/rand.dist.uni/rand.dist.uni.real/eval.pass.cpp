@@ -16,6 +16,7 @@
 
 // template<class _URng> result_type operator()(_URng& g);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -75,8 +76,8 @@ __host__ __device__ void test_statistics(cuda::std::span<ResultType, N> arr, Res
 
 __host__ __device__ void test()
 {
-  double* array = new double[N];
-  cuda::std::span<double, N> span{array, array + N};
+  cuda::std::unique_ptr<double[]> array = cuda::std::make_unique<double[]>(N);
+  cuda::std::span<double, N> span{array.get(), array.get() + N};
 
   test_statistics<double, cuda::std::minstd_rand0>(span);
   test_statistics<double, cuda::std::minstd_rand0>(span, -1.0, 1.0);

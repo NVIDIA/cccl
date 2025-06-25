@@ -14,6 +14,7 @@
 
 // template<class _URng> result_type operator()(_URng& g, const param_type& parm);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -39,9 +40,9 @@ int main(int, char**)
     G g;
     D d(5, 100);
     P p(-10, 20);
-    constexpr int N       = 10000;
-    D::result_type* array = new D::result_type[N];
-    cuda::std::span<D::result_type, N> u{array, array + N};
+    constexpr int N                               = 10000;
+    cuda::std::unique_ptr<D::result_type[]> array = cuda::std::make_unique<D::result_type[]>(N);
+    cuda::std::span<D::result_type, N> u{array.get(), array.get() + N};
     for (int i = 0; i < N; ++i)
     {
       D::result_type v = d(g, p);
@@ -73,8 +74,6 @@ int main(int, char**)
     assert(cuda::std::abs((var - x_var) / x_var) < 0.01);
     assert(cuda::std::abs(skew - x_skew) < 0.02);
     assert(cuda::std::abs((kurtosis - x_kurtosis) / x_kurtosis) < 0.01);
-
-    delete[] array;
   }
 
   return 0;

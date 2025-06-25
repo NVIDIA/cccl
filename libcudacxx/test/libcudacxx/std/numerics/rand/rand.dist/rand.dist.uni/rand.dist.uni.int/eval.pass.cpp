@@ -16,6 +16,7 @@
 
 // template<class _URng> result_type operator()(_URng& g);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -135,8 +136,8 @@ __host__ __device__ void test_statistics(cuda::std::span<unsigned char, N * 16> 
 
 __host__ __device__ void test()
 {
-  unsigned char* array = new unsigned char[N * 16];
-  cuda::std::span<unsigned char, N * 16> span{array, array + N * 16};
+  cuda::std::unique_ptr<unsigned char[]> array = cuda::std::make_unique<unsigned char[]>(N * 16);
+  cuda::std::span<unsigned char, N * 16> span{array.get(), array.get() + N * 16};
 
   test_statistics<cuda::std::minstd_rand0>(span);
 
@@ -163,8 +164,6 @@ __host__ __device__ void test()
     cuda::std::numeric_limits<__int128_t>::max());
   test_statistics<__uint128_t, cuda::std::minstd_rand0>(convert_to<__uint128_t>(span), 0, UINT64_MAX);
 #endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
-
-  delete[] array;
 }
 
 int main(int, char**)
