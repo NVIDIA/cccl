@@ -80,7 +80,7 @@ __global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn
 
 int main()
 {
-  context ctx = graph_ctx();
+  context ctx;
 
   const size_t N = 800;
 
