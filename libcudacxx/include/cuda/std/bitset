@@ -679,7 +679,7 @@ public:
     const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {
     size_t __rlen = _CUDA_VSTD::min(__n, char_traits<_CharT>::length(__str));
-    __init_from_string_view(basic_string_view<_CharT>(__str, __rlen), __zero, __one);
+    __init_from_cstr(__str, __rlen, __zero, __one);
   }
 
   template <class _CharT, class _Traits>
@@ -696,7 +696,7 @@ public:
     }
 
     size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
-    __init_from_string_view(basic_string_view<_CharT, _Traits>(__str.data() + __pos, __rlen), __zero, __one);
+    __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 
 #if defined(_LIBCUDACXX_HAS_STRING)
@@ -714,7 +714,7 @@ public:
     }
 
     size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
-    __init_from_string_view(basic_string_view<_CharT, _Traits>(__str.data() + __pos, __rlen), __zero, __one);
+    __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 #endif // defined(_LIBCUDACXX_HAS_STRING)
 
@@ -919,30 +919,24 @@ public:
 
 private:
   template <class _CharT, class _Traits = char_traits<_CharT>>
-  _CCCL_API constexpr void __init_from_string_view(basic_string_view<_CharT, _Traits> __str, _CharT __zero, _CharT __one)
+  _CCCL_API constexpr void __init_from_cstr(const _CharT* __str, size_t __size, _CharT __zero, _CharT __one)
   {
-    size_t __mp = _CUDA_VSTD::min(__str.size(), _Size);
-    size_t __i  = 0;
-    for (; __i < __mp; ++__i)
+    for (size_t __i = 0; __i < __size; ++__i)
     {
       if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one))
       {
         _CUDA_VSTD::__throw_invalid_argument("bitset string ctor has invalid argument");
       }
+    }
 
+    size_t __mp = _CUDA_VSTD::min(__size, _Size);
+    size_t __i  = 0;
+    for (; __i < __mp; ++__i)
+    {
       _CharT __c   = __str[__mp - 1 - __i];
       (*this)[__i] = _Traits::eq(__c, __one);
     }
     _CUDA_VSTD::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
-
-    // Check the remaining string
-    for (; __i < __str.size(); ++__i)
-    {
-      if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one))
-      {
-        _CUDA_VSTD::__throw_invalid_argument("bitset string ctor has invalid argument");
-      }
-    }
   }
 
   _CCCL_API inline size_t __hash_code() const noexcept
