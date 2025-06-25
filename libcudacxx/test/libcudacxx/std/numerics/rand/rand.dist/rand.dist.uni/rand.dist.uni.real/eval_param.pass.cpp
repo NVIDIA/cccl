@@ -20,6 +20,7 @@
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 #include <cuda/std/numeric>
+#include <cuda/std/span>
 
 #include "test_macros.h"
 
@@ -37,8 +38,9 @@ __host__ __device__ void test()
   G g;
   D d(5.5, 100);
   P p(-10, 20);
-  constexpr int N = 10000;
-  cuda::std::array<D::result_type, N> u;
+  constexpr int N       = 10000;
+  D::result_type* array = new D::result_type[N];
+  cuda::std::span<D::result_type, N> u{array, array + N};
   for (int i = 0; i < N; ++i)
   {
     D::result_type v = d(g, p);
@@ -70,6 +72,8 @@ __host__ __device__ void test()
   assert(cuda::std::abs((var - x_var) / x_var) < 0.1);
   assert(cuda::std::abs(skew - x_skew) < 0.01);
   assert(cuda::std::abs((kurtosis - x_kurtosis) / x_kurtosis) < 0.1);
+
+  delete[] array;
 }
 
 int main(int, char**)
