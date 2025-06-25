@@ -71,7 +71,7 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      ::cuda::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
   ::std::apply(explode_args, mv(targs));

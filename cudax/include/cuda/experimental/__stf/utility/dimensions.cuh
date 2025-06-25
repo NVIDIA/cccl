@@ -132,7 +132,7 @@ public:
   /// Get the total size (multiply all dimensions)
   _CCCL_HOST_DEVICE constexpr size_t size() const
   {
-    const ::std::ptrdiff_t result = ::std::ptrdiff_t(x) * y * z * t;
+    const ::cuda::std::ptrdiff_t result = ::cuda::std::ptrdiff_t(x) * y * z * t;
     assert(result >= 0);
     return result;
   }
@@ -183,6 +183,9 @@ template <size_t dimensions>
 class box
 {
 public:
+  box() = default;
+
+#ifndef __CUDACC_RTC__
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
@@ -248,7 +251,6 @@ public:
       },
       args...);
   }
-
   // _CCCL_HOST_DEVICE box(const typename ::std::experimental::dextents<size_t, dimensions>& extents) {
   //     for (size_t i: each(0, dimensions)) {
   //         s[i].first = 0;
@@ -426,6 +428,8 @@ public:
     return !(*this == rhs);
   }
 
+#endif // !__CUDACC_RTC__
+
   using coords_t = array_tuple<size_t, dimensions>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
@@ -433,7 +437,7 @@ public:
   {
     // Help the compiler which may not detect that a device lambda is calling a device lambda
     CUDASTF_NO_DEVICE_STACK
-    return make_tuple_indexwise<dimensions>([&](auto i) {
+    return make_cuda_tuple_indexwise<dimensions>([&](auto i) {
       // included
       const ::std::ptrdiff_t begin_i  = get_begin(i);
       const ::std::ptrdiff_t extent_i = get_extent(i);

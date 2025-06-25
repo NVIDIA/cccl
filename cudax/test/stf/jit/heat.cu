@@ -46,6 +46,8 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 
 const char *header_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+
 using namespace cuda::experimental::stf;
 )";
 
