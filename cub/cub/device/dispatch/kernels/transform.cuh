@@ -210,11 +210,7 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
 template <int BlockThreads>
 _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
 {
-  // TODO(bgruber): would it be worth it to just:
-  // if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0)
-  // {
-  //   return memcpy_async_aligned<BlockThreads>(dst, src, bytes_to_copy, head_padding);
-  // }
+  // early exiting if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0) does not yield a benefit
 
   const char* src_ptr = static_cast<const char*>(src);
   char* dst_ptr       = static_cast<char*>(dst);
