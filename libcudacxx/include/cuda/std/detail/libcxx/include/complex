@@ -1092,6 +1092,72 @@ template <class _Tp>
   return complex<_Tp>(__e * _CUDA_VSTD::cos(__i), __e * _CUDA_VSTD::sin(__i));
 }
 
+// A real exp that doesn't combine the final polynomial estimate with the ldexp factor.
+// Useful in cases where an extended-range exp is needed for intermediate calculations.
+// fp32
+_CCCL_API static inline float __internal_unsafe_exp_with_reduction(float __r, float* __ldexp_factor)
+{
+  // A slightly more efficient way of doing
+  //    __j = round(__r * L2E)
+  constexpr float __round_shift = 12582912.0f; // 1.5 * 2^23;
+  constexpr float __log2_e      = _CUDA_VSTD::numbers::log2e_v<float>;
+  float __j                     = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
+  __j                           = __j - __round_shift;
+
+  // exp() range reduction. Constants taken from:
+  // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
+  float __r_reduced;
+  __r_reduced = _CUDA_VSTD::fmaf(-__j, 0.693147182464599609375f, __r);
+  __r_reduced = _CUDA_VSTD::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
+
+  // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
+  float __exp_mant = 1.95693559362553060054779052734375e-4f;
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.39354146085679531097412109375e-3f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 8.333896286785602569580078125e-3f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 4.16664592921733856201171875e-2f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.16666664183139801025390625f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.5f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
+  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
+
+  *__ldexp_factor = __j;
+  return __exp_mant;
+}
+
+// fp64:
+_CCCL_API static inline double __internal_unsafe_exp_with_reduction(double __r, double* __ldexp_factor)
+{
+  // A slightly more efficient way of doing
+  //    __j = round(__r * L2E)
+  constexpr double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
+  constexpr double __log2_e      = _CUDA_VSTD::numbers::log2e_v<double>;
+  double __j                     = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
+  __j                            = __j - __round_shift;
+
+  // exp() range reduction. Constants taken from:
+  // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
+  double __r_reduced;
+  __r_reduced = _CUDA_VSTD::fma(-__j, 0.6931471805599453972491, __r);
+  __r_reduced = _CUDA_VSTD::fma(-__j, -8.78318343240526554e-17, __r_reduced);
+
+  // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
+  double __exp_mant = 2.5022322536502990e-8;
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7630903488173108e-7);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7557514545882439e-6);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.4801491039099165e-5);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.9841269589115497e-4);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.3888888945916380e-3);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 8.3333333334550432e-3);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 4.1666666666519754e-2);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.6666666666666477e-1);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 5.0000000000000122e-1);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
+  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
+
+  *__ldexp_factor = __j;
+  return __exp_mant;
+}
+
 // exp fp32 specialization
 template <>
 [[nodiscard]] _CCCL_API inline complex<float> exp(const complex<float>& __x)
@@ -1117,29 +1183,9 @@ template <>
     }
   }
 
-  // e^real, deal with overflow after.
-  // A slightly more efficient way of doing
-  //    __j = round(__r * L2E)
-  constexpr float __round_shift = 12582912.0f; // 1.5 * 2^23;
-  constexpr float __log2_e      = _CUDA_VSTD::numbers::log2e_v<float>;
-  float __j                 = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
-  __j                       = __j - __round_shift;
-
-  // exp() range reduction. Constants taken from:
-  // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
-  float __r_reduced;
-  __r_reduced = _CUDA_VSTD::fmaf(-__j, 0.693147182464599609375f, __r);
-  __r_reduced = _CUDA_VSTD::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
-
-  // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
-  float __exp_mant = 1.95693559362553060054779052734375e-4f;
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.39354146085679531097412109375e-3f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 8.333896286785602569580078125e-3f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 4.16664592921733856201171875e-2f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.16666664183139801025390625f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.5f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
+  // exp(__r), but without the range-reduced re-combination:
+  float __exp_r_ldexp_factor;
+  float __exp_r_reduced = __internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
 
   // Get some close bounds when the answer is fully guaranteed to under/overflow.
   // Sometime close to but >= log(max_flt / min_denom_float):
@@ -1148,7 +1194,7 @@ template <>
     // real/imag return value must always underflow or overflow.
     // Clamp to a low value that still under/overflows.
     // This helps avoids multiple other branches earlier/later.
-    __exp_mant = (__r < 0.0f) ? 0.0f : 1e3f;
+    __exp_r_reduced = (__r < 0.0f) ? 0.0f : 1e3f;
   }
 
   // Compile to sincos when possible:
@@ -1158,8 +1204,8 @@ template <>
                     (::sincosf(__i, &__sin_i, &__cos_i);),
                     (__sin_i = _CUDA_VSTD::sinf(__i); __cos_i = _CUDA_VSTD::cosf(__i);))
 
-  // Our answer now is: (ldexp(__exp_mant * __sin_r, __j_int), ldexp(__exp_mant * __sin_r, __j_int))
-  // However we don't need a full ldexp here, and if __exp_mant*__sin_r is denormal we can lose bits.
+  // Our answer now is: (ldexp(__exp_r_reduced * __sin_r, __j_int), ldexp(__exp_r_reduced * __sin_r, __j_int))
+  // However we don't need a full ldexp here, and if __exp_r_reduced*__sin_r is denormal we can lose bits.
   // Instead, do an inlined/simplified ldexp.
 
   // With fabs(sin or cos) <= 1, the unbiased exponent of sin or cos is in [-149, 0].
@@ -1170,36 +1216,36 @@ template <>
   // __j converted to int32, clamp so nothing bad happens. Will not change any results.
   // 151 = 127 + 24
   // 277 = 23 + 2*127 + 1
-  if (__j > 278.0f)
+  if (__exp_r_ldexp_factor > 278.0f)
   {
-    __j = 278.0f;
+    __exp_r_ldexp_factor = 278.0f;
   }
-  if (__j < -151.0f)
+  if (__exp_r_ldexp_factor < -151.0f)
   {
-    __j = -151.0f;
+    __exp_r_ldexp_factor = -151.0f;
   }
 
-  const int32_t __j_int = static_cast<int32_t>(__j);
+  const int32_t __ans_ldexp_factor = static_cast<int32_t>(__exp_r_ldexp_factor);
 
   // Split this j up into four parts to fit it into four float exponents's.
   // (Splitting j in 4 better than in 3).
-  uint32_t __j_quarter   = (__j_int / 4);
-  uint32_t __j_remainder = __j_int - (3 * __j_quarter);
+  uint32_t __ans_ldexp_factor_quarter   = (__ans_ldexp_factor / 4);
+  uint32_t __ans_ldexp_factor_remainder = __ans_ldexp_factor - (3 * __ans_ldexp_factor_quarter);
 
   // Pack these into exponents:
-  __j_quarter   = (__j_quarter + 127) << 23;
-  __j_remainder = (__j_remainder + 127) << 23;
+  __ans_ldexp_factor_quarter   = (__ans_ldexp_factor_quarter + 127) << 23;
+  __ans_ldexp_factor_remainder = (__ans_ldexp_factor_remainder + 127) << 23;
 
-  const float __ldexp_factor_1 = _CUDA_VSTD::bit_cast<float>(__j_quarter);
-  const float __ldexp_factor_2 = _CUDA_VSTD::bit_cast<float>(__j_remainder);
+  const float __ldexp_factor_1 = _CUDA_VSTD::bit_cast<float>(__ans_ldexp_factor_quarter);
+  const float __ldexp_factor_2 = _CUDA_VSTD::bit_cast<float>(__ans_ldexp_factor_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all
   // inputs:
   const float __ans_r =
-    ((((__cos_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_mant * __ldexp_factor_2));
+    (((__cos_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_r_reduced * __ldexp_factor_2);
   const float __ans_i =
-    ((((__sin_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_mant * __ldexp_factor_2));
+    (((__sin_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_r_reduced * __ldexp_factor_2);
 
   return complex<float>(__ans_r, __ans_i);
 }
@@ -1230,39 +1276,15 @@ template <>
     }
   }
 
-  // e^real, deal with overflow after.
-  // A slightly more efficient way of doing
-  //    __j = round(__r * L2E)
-  constexpr double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
-  constexpr double __log2_e      = _CUDA_VSTD::numbers::log2e_v<double>;
-  double __j                 = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
-  __j                        = __j - __round_shift;
-
-  // exp() range reduction. Constants taken from:
-  // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
-  double __r_reduced;
-  __r_reduced = _CUDA_VSTD::fma(-__j, 0.6931471805599453972491, __r);
-  __r_reduced = _CUDA_VSTD::fma(-__j, -8.78318343240526554e-17, __r_reduced);
-
-  // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
-  double __exp_mant = 2.5022322536502990e-8;
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7630903488173108e-7);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7557514545882439e-6);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.4801491039099165e-5);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.9841269589115497e-4);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.3888888945916380e-3);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 8.3333333334550432e-3);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 4.1666666666519754e-2);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.6666666666666477e-1);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 5.0000000000000122e-1);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
+  // exp(__r), but without the range-reduced re-combination:
+  double __exp_r_ldexp_factor;
+  double __exp_r_reduced = __internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
 
   if (_CUDA_VSTD::fabs(__r) >= 1457.0)
   {
     // real/imag return value must always underflow or overflow.
     // This helps avoid other checks later.
-    __exp_mant = (__r < 0.0) ? 0.0 : 1e10;
+    __exp_r_reduced = (__r < 0.0) ? 0.0 : 1e10;
   }
 
   // Compile to sincos when possible:
@@ -1285,36 +1307,36 @@ template <>
   // Need to add 1 for rounding reasons
   // 1076 = 1023 + 53
   // 2099 = 52 + 2*1023 + 1
-  if (__j > 2099.0)
+  if (__exp_r_ldexp_factor > 2099.0)
   {
-    __j = 2099.0;
+    __exp_r_ldexp_factor = 2099.0;
   }
-  if (__j < -1076.0)
+  if (__exp_r_ldexp_factor < -1076.0)
   {
-    __j = -1076.0;
+    __exp_r_ldexp_factor = -1076.0;
   }
 
-  const int64_t __j_int = static_cast<int64_t>(__j);
+  const int64_t __ans_ldexp_factor = static_cast<int64_t>(__exp_r_ldexp_factor);
 
-  // We can split this j up into three parts to fit it into three double exponents's.
-  // j can be in a set of 3174 values.
+  // Split this j up into four parts to fit it into four float exponents's.
   // (Splitting j in 4 better than in 3).
-  uint64_t __j_quarter   = (__j_int / 4);
-  uint64_t __j_remainder = __j_int - (3 * __j_quarter);
+  uint64_t __ans_ldexp_factor_quarter   = (__ans_ldexp_factor / 4);
+  uint64_t __ans_ldexp_factor_remainder = __ans_ldexp_factor - (3 * __ans_ldexp_factor_quarter);
 
   // Pack these into exponents:
-  __j_quarter   = (__j_quarter + 1023) << 52;
-  __j_remainder = (__j_remainder + 1023) << 52;
+  __ans_ldexp_factor_quarter   = (__ans_ldexp_factor_quarter + 1023) << 52;
+  __ans_ldexp_factor_remainder = (__ans_ldexp_factor_remainder + 1023) << 52;
 
-  const double __ldexp_factor_1 = _CUDA_VSTD::bit_cast<double>(__j_quarter);
-  const double __ldexp_factor_2 = _CUDA_VSTD::bit_cast<double>(__j_remainder);
+  const double __ldexp_factor_1 = _CUDA_VSTD::bit_cast<double>(__ans_ldexp_factor_quarter);
+  const double __ldexp_factor_2 = _CUDA_VSTD::bit_cast<double>(__ans_ldexp_factor_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
-  // Experiment suggests this is (one of) the best way to do it:
+  // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all
+  // inputs:
   const double __ans_r =
-    ((((__cos_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_mant * __ldexp_factor_2));
+    (((__cos_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_r_reduced * __ldexp_factor_2);
   const double __ans_i =
-    ((((__sin_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_mant * __ldexp_factor_2));
+    (((__sin_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_r_reduced * __ldexp_factor_2);
 
   return complex<double>(__ans_r, __ans_i);
 }
