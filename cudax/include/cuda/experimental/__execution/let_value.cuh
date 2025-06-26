@@ -87,6 +87,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   friend struct let_error_t;
   friend struct let_stopped_t;
 
+  using __let_tag_t = _LetTag;
+
   /// @brief Computes the type of a variant of tuples to hold the results of
   /// the predecessor sender.
   template <class _Completions, class _Env>
@@ -294,7 +296,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct __sndr_base_t;
 
   template <class _Fn>
-  struct __closure_base_t;
+  struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
+                                                  // extended (host/device) lambda
+  {
+    template <class _Sndr>
+    _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
+    {
+      return __let_tag_t{}(static_cast<_Sndr&&>(__sndr), __fn_);
+    }
+
+    template <class _Sndr>
+    _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_base_t& __self)
+      -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
+    {
+      return __let_tag_t{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
+    }
+
+    _Fn __fn_;
+  };
 
 public:
   /// @brief The `let_(value|error|stopped)` sender.
@@ -386,29 +405,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     return {__sndr_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __let_tag_t __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
-};
-
-template <class _LetTag, class _SetTag>
-template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__closure_base_t
-{
-  _Fn __fn_;
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
-  {
-    return _LetTag{}(static_cast<_Sndr&&>(__sndr), __fn_);
-  }
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_base_t& __self)
-    -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
-  {
-    return _LetTag{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
-  }
 };
 
 template <class _Sndr, class _Fn>

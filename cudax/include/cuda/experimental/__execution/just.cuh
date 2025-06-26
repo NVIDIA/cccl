@@ -41,6 +41,8 @@ private:
   friend struct just_error_t;
   friend struct just_stopped_t;
 
+  using __just_tag_t = _JustTag;
+
   template <class _Rcvr, class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
@@ -124,7 +126,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
   _CUDA_VSTD::__tuple<_Ts...> __values_;
 };
 

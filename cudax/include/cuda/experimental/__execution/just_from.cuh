@@ -45,6 +45,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   friend struct just_error_from_t;
   friend struct just_stopped_from_t;
 
+  using __just_from_tag_t = _JustFromTag;
+
   using __diag_t _CCCL_NODEBUG_ALIAS =
     _CUDA_VSTD::conditional_t<_SetTag{} == set_error,
                               _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
@@ -142,7 +144,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__snd
     return __opstate_t<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _JustFromTag __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __just_from_tag_t __tag_;
   _Fn __fn_;
 };
 

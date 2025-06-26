@@ -97,6 +97,8 @@ struct __upon_t
   friend struct upon_error_t;
   friend struct upon_stopped_t;
 
+  using __upon_tag_t = _UponTag;
+
   template <class _Fn, class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
@@ -216,7 +218,24 @@ struct __upon_t
   struct __sndr_base_t;
 
   template <class _Fn>
-  struct __closure_base_t;
+  struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
+                                                  // extended (host/device) lambda
+  {
+    template <class _Sndr>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    {
+      return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
+    }
+
+    template <class _Sndr>
+    _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
+      -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    {
+      return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
+    }
+
+    _Fn __fn_;
+  };
 
 public:
   template <class _Sndr, class _Fn>
@@ -306,29 +325,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr_base_t
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _UponTag __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __upon_tag_t __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
-};
-
-template <class _UponTag, class _SetTag>
-template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__closure_base_t
-{
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
-  {
-    return _UponTag{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
-  }
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
-    -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
-  {
-    return _UponTag{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
-  }
-
-  _Fn __fn_;
 };
 
 template <class _Sndr, class _Fn>
