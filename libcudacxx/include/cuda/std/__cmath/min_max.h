@@ -133,6 +133,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 {
   return ::cuda::std::fmax(__x, __y);
 }
+
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -144,7 +145,9 @@ _CCCL_REQUIRES(::cuda::is_floating_point_v<_Tp> _CCCL_AND ::cuda::is_floating_po
   return ::cuda::std::fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 
-// fmin
+/***********************************************************************************************************************
+ * fmin
+ **********************************************************************************************************************/
 
 // We do explicitly also enable GCC here, because that makes the condition below simpler
 #if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
@@ -242,6 +245,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 {
   return ::cuda::std::fmin(__x, __y);
 }
+
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
