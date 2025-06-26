@@ -24,8 +24,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/utility>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/each.cuh>
 #include <cuda/experimental/__stf/utility/mv.cuh>

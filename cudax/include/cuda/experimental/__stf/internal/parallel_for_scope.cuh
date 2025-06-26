@@ -311,7 +311,7 @@ __global__ void loop_redux(
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      ::cuda::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
 
@@ -954,7 +954,7 @@ public:
         auto h = [&](auto... coords) {
           f(coords..., data...);
         };
-        ::std::apply(h, shape.index_to_coords(i));
+        ::cuda::std::apply(h, shape.index_to_coords(i));
       };
 
       // Finally we get to do the workload on every 1D item of the shape

@@ -51,8 +51,9 @@ struct cuda_kernel_desc
 {
   // Helper to generate std::extents<size_t, 1, 1, ..., 1> with N dimensions
   template <std::size_t N, std::size_t... Is>
-  static constexpr auto make_static_extents(std::index_sequence<Is...>) {
-    return ::cuda::std::extents<std::size_t, (Is+1)...>{};
+  static constexpr auto make_static_extents(std::index_sequence<Is...>)
+  {
+    return ::cuda::std::extents<std::size_t, (Is + 1)...>{};
   }
 
   template <std::size_t N>
@@ -95,8 +96,7 @@ struct cuda_kernel_desc
       , blockDim(blockDim_)
       , sharedMem(sharedMem_)
   {
-    auto adjust_arg = [](auto&& arg)
-    {
+    auto adjust_arg = [](auto&& arg) {
       using A = decltype(arg);
 
 #if 0
@@ -114,7 +114,7 @@ struct cuda_kernel_desc
       {
         // No processing necessary
 #endif
-        return ::std::forward<A>(arg);
+      return ::std::forward<A>(arg);
 #if 0
       }
 #endif
@@ -157,90 +157,92 @@ struct cuda_kernel_desc
   // Helper to launch the kernel using CUDA stream based API
   void launch(cudaStream_t stream) const
   {
-    ::std::visit([&](auto&& kernel_func)
-    {
-      using T = ::std::decay_t<decltype(kernel_func)>;
-      if constexpr (::std::is_same_v<T, const void*>)
-      {
-        cuda_safe_call(cudaLaunchKernel(
-          kernel_func,
-          gridDim,
-          blockDim,
-          args_ptr.data(),
-          sharedMem,
-          stream));
-      }
-      else if constexpr (::std::is_same_v<T, CUfunction>)
-      {
-        cuda_safe_call(cuLaunchKernel(
-          kernel_func,
-          gridDim.x, gridDim.y, gridDim.z,
-          blockDim.x, blockDim.y, blockDim.z,
-          sharedMem,
-          stream,
-          args_ptr.data(),
-          nullptr));
-      }
-      else
-      {
-        static_assert(sizeof(T) == 0, "Unsupported function type in func_variant");
-      }
-    }, func_variant);
+    ::std::visit(
+      [&](auto&& kernel_func) {
+        using T = ::std::decay_t<decltype(kernel_func)>;
+        if constexpr (::std::is_same_v<T, const void*>)
+        {
+          cuda_safe_call(cudaLaunchKernel(kernel_func, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
+        }
+        else if constexpr (::std::is_same_v<T, CUfunction>)
+        {
+          cuda_safe_call(cuLaunchKernel(
+            kernel_func,
+            gridDim.x,
+            gridDim.y,
+            gridDim.z,
+            blockDim.x,
+            blockDim.y,
+            blockDim.z,
+            sharedMem,
+            stream,
+            args_ptr.data(),
+            nullptr));
+        }
+        else
+        {
+          static_assert(sizeof(T) == 0, "Unsupported function type in func_variant");
+        }
+      },
+      func_variant);
   }
 
   void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
   {
-    ::std::visit([&](auto&& kernel_func)
-    {
-      using T = ::std::decay_t<decltype(kernel_func)>;
+    ::std::visit(
+      [&](auto&& kernel_func) {
+        using T = ::std::decay_t<decltype(kernel_func)>;
 
-      if constexpr (::std::is_same_v<T, CUfunction>)
-      {
-        CUDA_KERNEL_NODE_PARAMS params{};
-        params.func            = kernel_func;
-        params.gridDimX        = gridDim.x;
-        params.gridDimY        = gridDim.y;
-        params.gridDimZ        = gridDim.z;
-        params.blockDimX       = blockDim.x;
-        params.blockDimY       = blockDim.y;
-        params.blockDimZ       = blockDim.z;
-        params.sharedMemBytes  = sharedMem;
-        params.kernelParams    = const_cast<void**>(args_ptr.data());
-        params.extra           = nullptr;
+        if constexpr (::std::is_same_v<T, CUfunction>)
+        {
+          CUDA_KERNEL_NODE_PARAMS params{};
+          params.func           = kernel_func;
+          params.gridDimX       = gridDim.x;
+          params.gridDimY       = gridDim.y;
+          params.gridDimZ       = gridDim.z;
+          params.blockDimX      = blockDim.x;
+          params.blockDimY      = blockDim.y;
+          params.blockDimZ      = blockDim.z;
+          params.sharedMemBytes = sharedMem;
+          params.kernelParams   = const_cast<void**>(args_ptr.data());
+          params.extra          = nullptr;
 
-        cuda_safe_call(cuGraphAddKernelNode(
-          reinterpret_cast<CUgraphNode*>(&node),
-          reinterpret_cast<CUgraph>(graph),
-          nullptr, 0,
-          &params));
-      }
-      else if constexpr (::std::is_same_v<T, const void*>)
-      {
-        cudaKernelNodeParams params{};
-        params.func            = const_cast<void*>(kernel_func);
-        params.gridDim         = gridDim;
-        params.blockDim        = blockDim;
-        params.sharedMemBytes  = sharedMem;
-        params.kernelParams    = args_ptr.data();
-        params.extra           = nullptr;
+          cuda_safe_call(cuGraphAddKernelNode(
+            reinterpret_cast<CUgraphNode*>(&node), reinterpret_cast<CUgraph>(graph), nullptr, 0, &params));
+        }
+        else if constexpr (::std::is_same_v<T, const void*>)
+        {
+          cudaKernelNodeParams params{};
+          params.func           = const_cast<void*>(kernel_func);
+          params.gridDim        = gridDim;
+          params.blockDim       = blockDim;
+          params.sharedMemBytes = sharedMem;
+          params.kernelParams   = args_ptr.data();
+          params.extra          = nullptr;
 
-        cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
-      }
-      else
-      {
-        static_assert(sizeof(T) == 0, "Unsupported kernel function type");
-      }
-
-    }, func_variant);
+          cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+        }
+        else
+        {
+          static_assert(sizeof(T) == 0, "Unsupported kernel function type");
+        }
+      },
+      func_variant);
   }
 
 private:
   ::std::shared_ptr<void> arg_tuple_type_erased;
 
-  static func_variant_t store_func(CUfunction f) { return f; }
+  static func_variant_t store_func(CUfunction f)
+  {
+    return f;
+  }
 
   template <typename T>
-  static func_variant_t store_func(T* f) { return (const void*)(f); }
+  static func_variant_t store_func(T* f)
+  {
+    return (const void*) (f);
+  }
 };
 
 namespace reserved

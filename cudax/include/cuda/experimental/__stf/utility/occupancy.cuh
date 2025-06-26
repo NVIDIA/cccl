@@ -48,11 +48,15 @@ compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0
   }
   // Miss
   auto& result = occupancy_cache[key];
-  if constexpr (::std::is_same_v<::std::decay_t<Kernel>, CUfunction>) {
-      cuda_safe_call(cuOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, nullptr, dynamicSMemSize, blockSizeLimit));
+  if constexpr (::std::is_same_v<::std::decay_t<Kernel>, CUfunction>)
+  {
+    cuda_safe_call(
+      cuOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, nullptr, dynamicSMemSize, blockSizeLimit));
   }
-  else {
-      cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, dynamicSMemSize, blockSizeLimit));
+  else
+  {
+    cuda_safe_call(
+      cudaOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, dynamicSMemSize, blockSizeLimit));
   }
   return result;
 }

@@ -26,8 +26,10 @@
 #endif // no system header
 
 #include <cuda/std/mdspan>
-#include <cuda/experimental/__stf/utility/to_tuple.cuh>
+
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/each.cuh>
+#include <cuda/experimental/__stf/utility/to_tuple.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -67,12 +69,12 @@ class shape_of;
 //   struct mapping : ::cuda::std::layout_stride::mapping<Extents>
 //   {
 //     constexpr mapping() = default;
-// 
+//
 //     template <typename... A>
 //     constexpr _CCCL_HOST_DEVICE mapping(A&&... a)
 //         : ::cuda::std::layout_stride::mapping<Extents>(::std::forward<A>(a)...)
 //     {}
-// 
+//
 //     template <typename... is_t>
 //     constexpr _CCCL_HOST_DEVICE auto operator()(is_t&&... is) const
 //     {
@@ -359,7 +361,7 @@ public:
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
     ::cuda::std::array<size_t, shape_of::rank()> coordinates{};
-    //for (int i = shape_of::rank() - 1; i >= 0; i--)
+    // for (int i = shape_of::rank() - 1; i >= 0; i--)
     for (auto i : each(0, shape_of::rank()))
     {
       coordinates[i] = index % extent(i);

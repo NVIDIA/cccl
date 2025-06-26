@@ -55,8 +55,6 @@ constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
     t);
 }
 
-
-
 /**
  * @brief Converts an array-like object (such as an `std::array`) to an `std::tuple`.
  *
@@ -107,4 +105,3 @@ static_assert(::cuda::std::is_same_v<array_tuple<size_t, 3>, ::cuda::std::tuple<
 #endif // __CUDACC_RTC__
 
 } // end namespace cuda::experimental::stf
-

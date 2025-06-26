@@ -15,8 +15,8 @@
  * CUDA kernel
  */
 
-#include <cuda/experimental/stf.cuh>
 #include <cuda/experimental/__stf/nvrtc/jit_utils.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 
@@ -44,13 +44,12 @@ void dump_iter(slice<const double, 2> sUn, int iter)
   fclose(f);
 }
 
-const char *header_template = R"(
+const char* header_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
 #include <cuda/experimental/__stf/places/inner_shape.cuh>
 
 using namespace cuda::experimental::stf;
 )";
-
 
 const char* heat_kernel_template = R"(
 const double c = %a;
@@ -89,8 +88,8 @@ int main()
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
   parallel_for_scope_jit(ctx, exec_place::current_device(), lU.shape(), lU.write())->*[]() {
-    const char *body =
-     R"((size_t i, size_t j, auto U) {
+    const char* body =
+      R"((size_t i, size_t j, auto U) {
             double rad = U.extent(0) / 8.0;
             double dx  = (double) i - U.extent(0) / 2;
             double dy  = (double) j - U.extent(1) / 2;
@@ -146,18 +145,23 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
-   parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())->*[c, dx2, dy2]() {
-      ::std::ostringstream body_stream;
-      body_stream << R"(
+    parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())
+        ->*[c, dx2, dy2]() {
+              ::std::ostringstream body_stream;
+              body_stream
+                << R"(
       (size_t i, size_t j, auto U, auto U1) {
-        const double c = )" << c << R"(;
-        const double dx2 = )" << dx2 << R"(;
-        const double dy2 = )" << dy2 << R"(;
+        const double c = )"
+                << c << R"(;
+        const double dx2 = )"
+                << dx2 << R"(;
+        const double dy2 = )"
+                << dy2 << R"(;
         U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2
                                + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
       })";
-    return ::std::pair(::std::string(header_template), body_stream.str());
-  };
+              return ::std::pair(::std::string(header_template), body_stream.str());
+            };
 
     ::std::swap(lU, lU1);
   }

@@ -24,10 +24,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/each.cuh>
 #include <cuda/experimental/__stf/utility/mv.cuh>
-#include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
 
 #include <cstddef>
 #include <functional>

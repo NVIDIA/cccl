@@ -1489,8 +1489,6 @@ UNITTEST("grid exec place equality")
 };
 #endif // UNITTESTED_FILE
 
-
-
 template <auto... spec>
 template <typename Fun>
 interpreted_execution_policy<spec...>::interpreted_execution_policy(

@@ -25,11 +25,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/internal/slice_core.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
-#include <cuda/experimental/__stf/internal/slice_core.cuh>
 
 #include <iostream>
 
@@ -288,7 +288,6 @@ UNITTEST("implicit contiguous strides", (slice<int, 3>()))
 
 #  endif // STF_HAS_UNITTEST_WITH_ARGS
 #endif // UNITTESTED_FILE
-
 
 #ifdef UNITTESTED_FILE
 #  ifdef STF_HAS_UNITTEST_WITH_ARGS

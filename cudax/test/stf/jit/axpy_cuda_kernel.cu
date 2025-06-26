@@ -15,9 +15,9 @@
  *
  */
 
-#include <cuda/experimental/stf.cuh>
 #include <cuda/experimental/__stf/nvrtc/jit_utils.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 
@@ -31,7 +31,7 @@ double Y0(int i)
   return cos((double) i);
 }
 
-const char *header_template = R"(
+const char* header_template = R"(
 )";
 
 const char* axpy_kernel_template = R"(
@@ -54,7 +54,6 @@ __global__ void %KERNEL_NAME%(%s dynX, %s dynY)
 
 )";
 
-
 int main()
 {
   const size_t N = 16;
@@ -73,11 +72,18 @@ int main()
   auto lY = ctx.logical_data(Y);
 
   /* Compute Y = Y + alpha X */
-  ctx.cuda_kernel(lX.read(), lY.rw())->*[alpha](auto dX, auto dY)
-  {
-    CUfunction axpy_kernel = lazy_jit(axpy_kernel_template, get_nvrtc_flags(), header_template, jit_reduced_type_name(dX), jit_reduced_type_name(dY), jit_typename(dX), jit_typename(dY), alpha);
+  ctx.cuda_kernel(lX.read(), lY.rw())->*[alpha](auto dX, auto dY) {
+    CUfunction axpy_kernel = lazy_jit(
+      axpy_kernel_template,
+      get_nvrtc_flags(),
+      header_template,
+      jit_reduced_type_name(dX),
+      jit_reduced_type_name(dY),
+      jit_typename(dX),
+      jit_typename(dY),
+      alpha);
     auto [grid_size, block_size] = reserved::compute_occupancy(axpy_kernel);
-    return cuda_kernel_desc{axpy_kernel, (unsigned)grid_size, (unsigned)block_size, 0, jit_reduce(dX), jit_reduce(dY)};
+    return cuda_kernel_desc{axpy_kernel, (unsigned) grid_size, (unsigned) block_size, 0, jit_reduce(dX), jit_reduce(dY)};
   };
 
   ctx.finalize();
