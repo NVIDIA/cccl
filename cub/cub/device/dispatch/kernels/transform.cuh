@@ -80,14 +80,8 @@ template <typename PrefetchPolicy,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteratorIn>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>,
-  Offset num_items,
-  int num_elem_per_thread,
-  bool /*can_vectorize*/,
-  F f,
-  RandomAccessIteratorOut out,
-  RandomAccessIteratorIn... ins)
+_CCCL_DEVICE void transform_kernel_prefetch(
+  Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, RandomAccessIteratorIn... ins)
 {
   constexpr int block_threads = PrefetchPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
@@ -174,10 +168,9 @@ template <>
 inline constexpr size_t size_of<void> = 0;
 
 template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::vectorized>,
+_CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
-  [[maybe_unused]] int num_elem_per_thread,
+  int num_elem_per_thread_prefetch,
   bool can_vectorize,
   F f,
   RandomAccessIteratorOut out,
@@ -185,22 +178,16 @@ _CCCL_DEVICE void transform_kernel_impl(
 {
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
-  _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread), "");
+  _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_dim * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items   = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
 
+  // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
-    transform_kernel_impl<VectorizedPolicy>(
-      ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>{},
-      num_items,
-      num_elem_per_thread, // items_per_thread would be wrong here
-      can_vectorize,
-      ::cuda::std::move(f),
-      ::cuda::std::move(out),
-      ::cuda::std::move(ins)...);
+    transform_kernel_prefetch<VectorizedPolicy>(
+      num_items, num_elem_per_thread_prefetch, ::cuda::std::move(f), ::cuda::std::move(out), ins...);
     return;
   }
 
@@ -311,8 +298,8 @@ _CCCL_DEVICE void transform_kernel_impl(
 // the element type.
 
 // Pointer with metadata to describe readonly input memory for memcpy_async and UBLKCP kernels.
-// cg::memcpy_async is most efficient when the data is 16-byte aligned and the size a multiple of 16 bytes
-// UBLKCP is most efficient when the data is 128-byte aligned (on Hopper) and the size a multiple of 16 bytes
+// LDGSTS is most efficient when the data is 16-byte aligned and the size a multiple of 16 bytes
+// UBLKCP is most efficient when the data is 128/16-byte aligned (Hopper/Blackwell) and the size a multiple of 16 bytes
 template <typename T> // Cannot add alignment to signature, because we need a uniform kernel template instantiation
 struct aligned_base_ptr
 {
@@ -462,15 +449,9 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return dst;
 }
 
-template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
-  Offset num_items,
-  int num_elem_per_thread,
-  bool /*can_vectorize*/,
-  F f,
-  RandomAccessIteratorOut out,
-  aligned_base_ptr<InTs>... aligned_ptrs)
+template <typename LdgstsPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
+_CCCL_DEVICE void transform_kernel_ldgsts(
+  Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
 #if _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
   extern __shared__ char smem[]; // this should be __attribute((aligned(ldgsts_size_and_align))), but then it clashes
@@ -478,7 +459,7 @@ _CCCL_DEVICE void transform_kernel_impl(
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
                                  // 16-byte aligned by default.
 
-  constexpr int block_threads = MemcpyAsyncPolicy::block_threads;
+  constexpr int block_threads = LdgstsPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
@@ -543,7 +524,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   unsigned int bytes_to_copy,
   int head_padding,
   uint64_t& bar,
-  ::cuda::std::uint32_t& total_copied,
+  /* inout */ ::cuda::std::uint32_t& total_copied,
   bool elected)
 {
   const char* src_ptr = static_cast<const char*>(src);
@@ -748,21 +729,6 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 #endif // _CUB_HAS_TRANSFORM_UBLKCP()
 }
 
-template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
-  Offset num_items,
-  int num_elem_per_thread,
-  bool /*can_vectorize*/,
-  F f,
-  RandomAccessIteratorOut out,
-  aligned_base_ptr<InTs>... aligned_ptrs)
-{
-  // only call the real kernel for sm90 and later
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (transform_kernel_ublkcp<BulkCopyPolicy>(num_items, num_elem_per_thread, f, out, aligned_ptrs...);));
-}
-
 template <typename It>
 union kernel_arg
 {
@@ -804,23 +770,6 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
   return arg;
 }
 
-template <Algorithm Alg>
-inline constexpr bool needs_aligned_ptr_v = Alg == Algorithm::memcpy_async || Alg == Algorithm::ublkcp;
-
-template <Algorithm Alg, typename It>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto
-select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg)
-{
-  if constexpr (needs_aligned_ptr_v<Alg>)
-  {
-    return ::cuda::std::move(arg.aligned_ptr);
-  }
-  else
-  {
-    return ::cuda::std::move(arg.iterator);
-  }
-}
-
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
 // saves some compile-time and binary size.
@@ -833,20 +782,54 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
     Offset num_items,
     int num_elem_per_thread,
-    bool can_vectorize,
+    [[maybe_unused]] bool can_vectorize,
     F f,
     RandomAccessIteratorOut out,
     kernel_arg<RandomAccessIteartorsIn>... ins)
 {
-  constexpr auto alg = ::cuda::std::integral_constant<Algorithm, MaxPolicy::ActivePolicy::algorithm>{};
-  transform_kernel_impl<typename MaxPolicy::ActivePolicy::algo_policy>(
-    alg,
-    num_items,
-    num_elem_per_thread,
-    can_vectorize,
-    ::cuda::std::move(f),
-    ::cuda::std::move(out),
-    select_kernel_arg(alg, ::cuda::std::move(ins))...);
+  _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
+
+  if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::prefetch)
+  {
+    transform_kernel_prefetch<typename MaxPolicy::ActivePolicy::algo_policy>(
+      num_items, num_elem_per_thread, ::cuda::std::move(f), ::cuda::std::move(out), ::cuda::std::move(ins.iterator)...);
+  }
+  else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::vectorized)
+  {
+    transform_kernel_vectorized<typename MaxPolicy::ActivePolicy::algo_policy>(
+      num_items,
+      num_elem_per_thread,
+      can_vectorize,
+      ::cuda::std::move(f),
+      ::cuda::std::move(out),
+      ::cuda::std::move(ins.iterator)...);
+  }
+  else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::memcpy_async)
+  {
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_80,
+      (transform_kernel_ldgsts<typename MaxPolicy::ActivePolicy::algo_policy>(
+         num_items,
+         num_elem_per_thread,
+         ::cuda::std::move(f),
+         ::cuda::std::move(out),
+         ::cuda::std::move(ins.aligned_ptr)...);));
+  }
+  else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::ublkcp)
+  {
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90,
+      (transform_kernel_ublkcp<typename MaxPolicy::ActivePolicy::algo_policy>(
+         num_items,
+         num_elem_per_thread,
+         ::cuda::std::move(f),
+         ::cuda::std::move(out),
+         ::cuda::std::move(ins.aligned_ptr)...);));
+  }
+  else
+  {
+    static_assert(!sizeof(Offset), "Algorithm not implemented");
+  }
 }
 
 } // namespace detail::transform
