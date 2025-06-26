@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
