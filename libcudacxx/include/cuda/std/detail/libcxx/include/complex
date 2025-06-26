@@ -1179,7 +1179,7 @@ template <>
     __j = -151.0f;
   }
 
-  const int32_t __j_int = int32_t(__j);
+  const int32_t __j_int = static_cast<int32_t>(__j);
 
   // Split this j up into four parts to fit it into four float exponents's.
   // (Splitting j in 4 better than in 3).
@@ -1233,8 +1233,8 @@ template <>
   // e^real, deal with overflow after.
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
-  const double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
-  const double __log2_e      = _CUDA_VSTD::numbers::log2e_v<double>;
+  constexpr double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
+  constexpr double __log2_e      = _CUDA_VSTD::numbers::log2e_v<double>;
   double __j                 = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
   __j                        = __j - __round_shift;
 
@@ -1294,7 +1294,7 @@ template <>
     __j = -1076.0;
   }
 
-  const int64_t __j_int = int64_t(__j);
+  const int64_t __j_int = static_cast<int64_t>(__j);
 
   // We can split this j up into three parts to fit it into three double exponents's.
   // j can be in a set of 3174 values.
