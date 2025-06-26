@@ -562,17 +562,17 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   const unsigned int head_bytes = (BulkCopyAlignment - head_padding) % BulkCopyAlignment;
   const unsigned int tail_bytes = (bytes_to_copy - head_bytes) % bulk_copy_size_multiple;
 
-  // pipeline the async copies before loading the head and tail elements
-  _CCCL_ASSERT(bytes_to_copy >= (head_bytes + tail_bytes), "");
-  const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
-  if (aligned_bytes_to_copy > 0)
+  // launch the bulk copy only from the elected thread
+  if (elected)
   {
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % BulkCopyAlignment == 0, "");
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % BulkCopyAlignment == 0, "");
-    _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
-
-    if (elected)
+    _CCCL_ASSERT(bytes_to_copy >= (head_bytes + tail_bytes), "");
+    const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
+    if (aligned_bytes_to_copy > 0)
     {
+      _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % BulkCopyAlignment == 0, "");
+      _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % BulkCopyAlignment == 0, "");
+      _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
+
       ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
       total_copied += bytes_to_copy;
     }
@@ -654,7 +654,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       ptx::fence_proxy_async(ptx::space_shared);
     }
 
-    // use all threads to schedule an async_memcpy
+    // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
     int smem_offset                    = 0;
     ::cuda::std::uint32_t total_copied = 0;
 
