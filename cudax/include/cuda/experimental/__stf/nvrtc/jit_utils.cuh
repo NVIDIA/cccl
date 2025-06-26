@@ -603,4 +603,26 @@ private:
   ::std::vector<::std::string> nvrtc_flags;
 };
 
+template <typename Arg>
+::std::string jit_reduced_type_name(const Arg&)
+{
+    using raw_arg = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
+    using reduced_arg = typename reserved::jit_helper<raw_arg>::reduced_type;
+    return ::std::string(type_name<reduced_arg>);
+}
+
+template <typename Arg>
+auto jit_reduce(Arg&& arg)
+{
+    using raw_arg = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
+    return reserved::jit_helper<raw_arg>::reduce(::std::forward<Arg>(arg));
+}
+
+template <typename Arg>
+::std::string jit_typename(const Arg& arg)
+{
+    using raw_arg = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
+    return reserved::jit_helper<raw_arg>::stringize(arg);
+}
+
 } // end namespace cuda::experimental::stf
