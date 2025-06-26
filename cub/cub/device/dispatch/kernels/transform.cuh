@@ -550,7 +550,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   char* dst_ptr       = static_cast<char*>(dst);
 
   // handle tiny copies to simplify head/tail bytes computations below
-  if (bytes_to_copy < bulk_copy_size_multiple)
+  if (bytes_to_copy < BulkCopyAlignment)
   {
     if (threadIdx.x < bytes_to_copy)
     {
