@@ -48,15 +48,6 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
-// The memcpy_async and ublkcp kernels need cooperative groups which are not support on NVHPC and from cccl.c yet.
-#if _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL)
-#  define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC() 0
-#  define _CUB_HAS_TRANSFORM_UBLKCP()       0
-#else // _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL))
-#  define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC() 1
-#  define _CUB_HAS_TRANSFORM_UBLKCP()       1
-#endif // _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL))
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -275,7 +266,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   // TODO(bgruber): should we add a tuning for 750? They should have items_per_thread_from_occupancy(256, 4, ...)
 
-  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion, int EnableAsyncCopy>
+  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion>
   struct async_policy_base
   {
   private:
@@ -285,8 +276,8 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
         AsyncBlockSize * async_policy::min_items_per_thread, Alignment)
       > int{max_smem_per_block}; // TODO(bgruber): we should use the architecture specific limit for SMEM here
     static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > Alignment) || ...);
-    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem
-                                      || any_type_is_overalinged || !EnableAsyncCopy;
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
@@ -295,17 +286,17 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
   struct policy800
-      : async_policy_base<Algorithm::memcpy_async, 256, ldgsts_size_and_align, 800, _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()>
+      : async_policy_base<Algorithm::memcpy_async, 256, ldgsts_size_and_align, 800>
       , ChainedPolicy<800, policy800, policy300>
   {};
 
   struct policy900
-      : async_policy_base<Algorithm::ublkcp, 256, bulk_copy_alignment(900), 900, _CUB_HAS_TRANSFORM_UBLKCP()>
+      : async_policy_base<Algorithm::ublkcp, 256, bulk_copy_alignment(900), 900>
       , ChainedPolicy<900, policy900, policy800>
   {};
 
   struct policy1000
-      : async_policy_base<Algorithm::ublkcp, 128, bulk_copy_alignment(1000), 1000, _CUB_HAS_TRANSFORM_UBLKCP()>
+      : async_policy_base<Algorithm::ublkcp, 128, bulk_copy_alignment(1000), 1000>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 

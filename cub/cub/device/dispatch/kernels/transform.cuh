@@ -453,7 +453,6 @@ template <typename LdgstsPolicy, typename Offset, typename F, typename RandomAcc
 _CCCL_DEVICE void transform_kernel_ldgsts(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
-#if _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
   extern __shared__ char smem[]; // this should be __attribute((aligned(ldgsts_size_and_align))), but then it clashes
                                  // with the ublkcp kernel, which sets a higher alignment, since they are both called
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
@@ -507,9 +506,6 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   {
     process_tile(::cuda::std::false_type{});
   }
-#else // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
-  _CCCL_ASSERT(false, "Disabled");
-#endif // _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()
 }
 
 _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
@@ -589,7 +585,6 @@ template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomA
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
-#if _CUB_HAS_TRANSFORM_UBLKCP()
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
@@ -724,9 +719,6 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   {
     process_tile(::cuda::std::false_type{});
   }
-#else // _CUB_HAS_TRANSFORM_UBLKCP()
-  _CCCL_ASSERT(false, "Disabled");
-#endif // _CUB_HAS_TRANSFORM_UBLKCP()
 }
 
 template <typename It>
