@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     };
   }
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   size_t niter = 10;
 
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 
     /* We introduce a fence because the actual pipeline would introduce
      * some all to all communication to update coefficients */
-    cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+    cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
   }
 
   ctx.finalize();
