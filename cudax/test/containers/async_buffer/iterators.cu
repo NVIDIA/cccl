@@ -47,7 +47,7 @@ C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_type
   using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::begin/end properties")
@@ -69,8 +69,8 @@ C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_type
 
   SECTION("cudax::async_buffer::begin/end thrust properties")
   {
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<iterator>::value);
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<const_iterator>::value);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<iterator>);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<const_iterator>);
 
     STATIC_REQUIRE(cuda::std::is_same_v<thrust::try_unwrap_contiguous_iterator_t<iterator>, int*>);
     STATIC_REQUIRE(

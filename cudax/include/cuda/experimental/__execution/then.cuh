@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -45,14 +46,14 @@ namespace cuda::experimental::execution
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
-template <__disposition_t, class _Void = void>
+template <__disposition, class _Void = void>
 extern _CUDA_VSTD::__undefined<_Void> __upon_tag;
 template <class _Void>
-extern __fn_t<then_t>* __upon_tag<__value, _Void>;
+extern __fn_t<then_t>* __upon_tag<__disposition::__value, _Void>;
 template <class _Void>
-extern __fn_t<upon_error_t>* __upon_tag<__error, _Void>;
+extern __fn_t<upon_error_t>* __upon_tag<__disposition::__error, _Void>;
 template <class _Void>
-extern __fn_t<upon_stopped_t>* __upon_tag<__stopped, _Void>;
+extern __fn_t<upon_stopped_t>* __upon_tag<__disposition::__stopped, _Void>;
 } // namespace __detail
 
 namespace __upon
@@ -94,7 +95,7 @@ using __completion _CCCL_NODEBUG_ALIAS =
   __completion_<_CUDA_VSTD::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 } // namespace __upon
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRED_NAME(upon_error_t)
   _CCCL_PREFERRED_NAME(upon_stopped_t) __upon_t
 {
@@ -109,7 +110,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
     using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
     using __rcvr_t _CCCL_NODEBUG_ALIAS                = __rcvr_ref_t<__opstate_t, __env_t>;
 
-    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
         , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
@@ -117,7 +118,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() & noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate_);
     }
@@ -140,15 +141,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
       }
       else
       {
-        _CUDAX_TRY( //
-          ({ //
-            __set<true>(static_cast<_Ts&&>(__ts)...); //
-          }), //
-          _CUDAX_CATCH(...) //
-          ({ //
-            execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-          }) //
-        )
+        _CCCL_TRY
+        {
+          __set<true>(static_cast<_Ts&&>(__ts)...);
+        }
+        _CCCL_CATCH_ALL
+        {
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        }
       }
     }
 
@@ -182,7 +182,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
       __complete(set_stopped_t());
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return execution::get_env(__rcvr_);
     }
@@ -226,7 +226,7 @@ public:
   _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
 {
@@ -240,11 +240,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      if constexpr (_Disposition == __disposition_t::__value)
+      if constexpr (_Disposition == __disposition::__value)
       {
         return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn>{});
       }
-      else if constexpr (_Disposition == __disposition_t::__error)
+      else if constexpr (_Disposition == __disposition::__error)
       {
         return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn>{});
       }
@@ -258,7 +258,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
     -> __opstate_t<_Rcvr, _Sndr, _Fn>
   {
@@ -267,7 +267,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& //
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
                                      const _Sndr&,
                                      _Rcvr,
@@ -277,13 +277,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
 {
@@ -304,7 +304,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
   }
 };
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Sndr, class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
@@ -318,7 +318,7 @@ _CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr
   return transform_sender(__dom_t{}, __sndr_t<_Fn, _Sndr>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
 }
 
-template <__disposition_t _Disposition>
+template <__disposition _Disposition>
 template <class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Fn __fn) const
 {

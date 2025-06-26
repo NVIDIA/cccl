@@ -48,7 +48,7 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/type_traits>
 
 #include <nv/target>
 
@@ -296,7 +296,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
+    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>::type
 {};
 
 // returns AgentPlan corresponding to a given ptx version
@@ -544,51 +544,32 @@ template <class T, size_t N>
 struct uninitialized_array
 {
   using value_type = T;
-  using ref        = T[N];
-  enum
-  {
-    SIZE = N
-  };
+  static constexpr ::cuda::std::integral_constant<size_t, N> size{};
+  alignas(T) char data_[N * sizeof(T)];
 
-private:
-  char data_[N * sizeof(T)];
-
-public:
   _CCCL_HOST_DEVICE T* data()
   {
-    return data_;
+    return reinterpret_cast<T*>(data_);
   }
+
   _CCCL_HOST_DEVICE const T* data() const
   {
-    return data_;
+    return reinterpret_cast<T*>(data_);
   }
+
   _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
   {
-    return ((T*) data_)[idx];
+    return data()[idx];
   }
+
   _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
   {
-    return ((T*) data_)[idx];
+    return data()[idx];
   }
-  _CCCL_HOST_DEVICE T& operator[](int idx)
+
+  _CCCL_HOST_DEVICE T (&as_array())[N]
   {
-    return ((T*) data_)[idx];
-  }
-  _CCCL_HOST_DEVICE T const& operator[](int idx) const
-  {
-    return ((T*) data_)[idx];
-  }
-  _CCCL_HOST_DEVICE unsigned int size() const
-  {
-    return N;
-  }
-  _CCCL_HOST_DEVICE operator ref&()
-  {
-    return *reinterpret_cast<ref*>(data_);
-  }
-  _CCCL_HOST_DEVICE ref& get_ref()
-  {
-    return (ref&) *this;
+    return static_cast<T(&)[N]>(data_);
   }
 };
 

@@ -38,7 +38,7 @@ private:
   uint_least32_t __column_     = 0;
 
   // Needed to make C++11 happy
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr source_location(
+  _CCCL_API explicit constexpr source_location(
     const char* __file, const char* __func, uint_least32_t __line, uint_least32_t __column) noexcept
       : __file_name_(__file)
       , __function_name_(__func)
@@ -47,7 +47,7 @@ private:
   {}
 
 public:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr source_location current(
+  [[nodiscard]] _CCCL_API static constexpr source_location current(
     const char* __file      = _CCCL_BUILTIN_FILE(),
     const char* __func      = _CCCL_BUILTIN_FUNCTION(),
     uint_least32_t __line   = _CCCL_BUILTIN_LINE(),
@@ -58,19 +58,19 @@ public:
 
   _CCCL_HIDE_FROM_ABI constexpr source_location() = default;
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t line() const noexcept
+  [[nodiscard]] _CCCL_API constexpr uint_least32_t line() const noexcept
   {
     return __line_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t column() const noexcept
+  [[nodiscard]] _CCCL_API constexpr uint_least32_t column() const noexcept
   {
     return __column_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* file_name() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const char* file_name() const noexcept
   {
     return __file_name_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* function_name() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const char* function_name() const noexcept
   {
     return __function_name_;
   }

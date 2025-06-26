@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
+[[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
   if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
@@ -69,7 +69,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
+  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
   {
     iter_difference_t<_Ip> __n = 0;
     while (__first != __last)
@@ -83,7 +83,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
+  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
   {
     if constexpr (sized_sentinel_for<_Sp, remove_cvref_t<_Ip>>)
     {
@@ -99,7 +99,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rp)
   _CCCL_REQUIRES((range<_Rp>) )
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
+  [[nodiscard]] _CCCL_API constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
   {
     if constexpr (sized_range<_Rp>)
     {

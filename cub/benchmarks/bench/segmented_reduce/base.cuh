@@ -101,7 +101,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     >;
 
   // Retrieve axis parameters
-  const size_t num_elements = static_cast<size_t>(state.get_int64("NumElements{io}"));
+  const size_t num_elements = static_cast<size_t>(state.get_int64("Elements{io}"));
   const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize"));
   const size_t num_segments = std::max<std::size_t>(1, (num_elements / segment_size));
   const size_t elements     = num_segments * segment_size;
@@ -142,17 +142,17 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("small")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(16, 28, 4))
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(0, 4, 1));
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("medium")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(16, 28, 4))
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(5, 8, 1));
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("large")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(16, 28, 4))
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(9, 16, 1));

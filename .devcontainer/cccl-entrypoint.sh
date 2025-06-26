@@ -8,7 +8,16 @@ devcontainer-utils-post-create-command;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
 
-sudo apt-get update && sudo apt-get install -y ca-certificates
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::group::Installing ca-certificates..."
+fi
+if ! sudo apt-get install -y ca-certificates; then
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates
+fi
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::endgroup::"
+fi
 
 cd /home/coder/cccl/
 

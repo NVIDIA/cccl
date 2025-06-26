@@ -89,7 +89,7 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_T1, _T2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
+  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const
     noexcept(noexcept(iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y))))
   {
     (void) iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y));
@@ -97,7 +97,7 @@ struct __fn
 
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__readable_swappable<_T1, _T2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
+  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const
     noexcept(noexcept(_CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y))))
   {
     _CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y));
@@ -105,7 +105,7 @@ struct __fn
 
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__moveable_storable<_T2, _T1>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
+  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const
     noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y)))
              && noexcept(*__y = _CUDA_VRANGES::iter_move(__x))
              && noexcept(*_CUDA_VSTD::forward<_T1>(__x) = declval<iter_value_t<_T2>>()))

@@ -24,6 +24,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
@@ -56,7 +57,9 @@ _CCCL_HOST_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
   _CUDA_VSTD::swap(*static_cast<void**>(__lhs), *static_cast<void**>(__rhs));
 }
 
-template <class _Tp, class _Up, class _Vp = decltype(true ? __identity_t<_Tp*>() : __identity_t<_Up*>())>
+template <class _Tp,
+          class _Up,
+          class _Vp = decltype(true ? _CUDA_VSTD::type_identity_t<_Tp*>() : _CUDA_VSTD::type_identity_t<_Up*>())>
 [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
 {
   return static_cast<_Vp>(__lhs) == static_cast<_Vp>(__rhs);

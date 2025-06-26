@@ -42,7 +42,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 union _AnyResourceStorage
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _AnyResourceStorage(void* __ptr = nullptr) noexcept
+  _CCCL_API constexpr _AnyResourceStorage(void* __ptr = nullptr) noexcept
       : __ptr_(__ptr)
   {}
 

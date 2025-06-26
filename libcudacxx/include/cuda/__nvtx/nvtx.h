@@ -32,8 +32,8 @@
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
                       && (!_CCCL_COMPILER(NVHPC))                                                    \
                       && !_CCCL_COMPILER(NVRTC)
-// Include our NVTX3 C++ wrapper if not available from the CTK
-// TODO(bgruber): replace by a check for the first CTK version shipping the header
+// Include our NVTX3 C++ wrapper if not available from the CTK or not provided by the user
+// Note: NVTX3 is available in the CTK since 12.9, so we can drop our copy once this is the minimum supported version
 #  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
 #    include <nvtx3/nvtx3.hpp>
 #  else // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
@@ -59,8 +59,6 @@ struct NVTXCCCLDomain
 } // namespace detail
 
 // Hook for the NestedNVTXRangeGuard from the unit tests
-// todo(giannis): This hook serves no purpose currently since removed.
-// See TODO in cub/test/insert_nested_NVTX_range_guard.h
 #    ifndef _CCCL_BEFORE_NVTX_RANGE_SCOPE
 #      define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
 #    endif // !CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE

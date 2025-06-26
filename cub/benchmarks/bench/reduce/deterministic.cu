@@ -55,12 +55,10 @@ struct policy_hub_t
 {
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
-    constexpr static int ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
-
-    using DeterministicReducePolicy = AgentReducePolicy;
+    using ReducePolicy = AgentReducePolicy;
 
     // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
+    using SingleTilePolicy = ReducePolicy;
   };
 
   using MaxPolicy = Policy350;
@@ -74,27 +72,26 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using output_it_t = T*;
   using offset_t    = cub::detail::choose_offset_t<OffsetT>;
 
-  using init_t      = cub::detail::rfa::InitT<input_it_t, output_it_t>;
-  using accum_t     = cub::detail::rfa::AccumT<::cuda::std::plus<>, init_t, input_it_t>;
-  using transform_t = ::cuda::std::__identity;
+  using init_t      = T;
+  using accum_t     = T;
+  using transform_t = ::cuda::std::identity;
 
   using dispatch_t = cub::detail::DispatchReduceDeterministic<
     input_it_t,
     output_it_t,
     offset_t,
     init_t,
-    accum_t,
-    transform_t
+    transform_t,
+    accum_t
 #if !TUNE_BASE
     ,
     policy_hub_t
 #endif
     >;
 
-  const auto elements       = static_cast<T>(state.get_int64("Elements{io}"));
-  const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
+  const auto elements = static_cast<T>(state.get_int64("Elements{io}"));
 
-  thrust::device_vector<T> in = generate(elements, entropy);
+  thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
 
   input_it_t d_in   = thrust::raw_pointer_cast(in.data());
@@ -115,10 +112,10 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-using types = nvbench::type_list<float, double>;
+using types               = nvbench::type_list<float, double>;
+using custom_offset_types = nvbench::type_list<int32_t>;
 
-NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
+NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, custom_offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

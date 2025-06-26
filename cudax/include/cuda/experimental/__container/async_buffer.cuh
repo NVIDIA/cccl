@@ -111,7 +111,7 @@ public:
   using difference_type        = _CUDA_VSTD::ptrdiff_t;
 
   using __env_t          = ::cuda::experimental::env_t<_Properties...>;
-  using __policy_t       = ::cuda::experimental::execution::execution_policy;
+  using __policy_t       = ::cuda::experimental::execution::any_execution_policy;
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
   using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
   using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
@@ -154,7 +154,7 @@ private:
   //! @brief Helper to return an async_resource_ref to the currently used resource. Used to grow the async_buffer
   __resource_ref_t __borrow_resource() const noexcept
   {
-    return const_cast<__resource_t&>(__buf_.get_memory_resource());
+    return const_cast<__resource_t&>(__buf_.memory_resource());
   }
 
   //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in
@@ -182,7 +182,7 @@ private:
       _CUDA_VSTD::to_address(__first),
       sizeof(_Tp) * __count,
       ::cudaMemcpyDefault,
-      __buf_.get_stream().get());
+      __buf_.stream().get());
   }
 
   //! @brief Value-initializes elements in the range `[__first, __first + __count)`.
@@ -198,12 +198,12 @@ private:
     if constexpr (__is_host_only)
     {
       ::cuda::experimental::host_launch(
-        __buf_.get_stream(), _CUDA_VSTD::uninitialized_value_construct_n<pointer, size_type>, __first, __count);
+        __buf_.stream(), _CUDA_VSTD::uninitialized_value_construct_n<pointer, size_type>, __first, __count);
     }
     else
     {
-      ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, _Tp());
+      ::cuda::experimental::__ensure_current_device __guard(__buf_.stream());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.stream().get()), __first, __count, _Tp());
     }
   }
 
@@ -220,12 +220,12 @@ private:
     if constexpr (__is_host_only)
     {
       ::cuda::experimental::host_launch(
-        __buf_.get_stream(), _CUDA_VSTD::uninitialized_fill_n<pointer, size_type, _Tp>, __first, __count, __value);
+        __buf_.stream(), _CUDA_VSTD::uninitialized_fill_n<pointer, size_type, _Tp>, __first, __count, __value);
     }
     else
     {
-      ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
+      ::cuda::experimental::__ensure_current_device __guard(__buf_.stream());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.stream().get()), __first, __count, __value);
     }
   }
 
@@ -236,7 +236,7 @@ public:
   //! @brief Copy-constructs from a async_buffer
   //! @param __other The other async_buffer.
   _CCCL_HIDE_FROM_ABI async_buffer(const async_buffer& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -254,7 +254,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const async_buffer<_Tp, _OtherProperties...>& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -543,15 +543,15 @@ public:
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the async_buffer
   //! @endrst
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
   {
-    return __buf_.get_memory_resource();
+    return __buf_.memory_resource();
   }
 
   //! @brief Returns the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref stream() const noexcept
   {
-    return __buf_.get_stream();
+    return __buf_.stream();
   }
 
   //! @brief Replaces the stored stream
@@ -645,7 +645,7 @@ using __buffer_type_for_props = typename _CUDA_VSTD::remove_reference_t<_PropsLi
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
-  __stream.wait(__from.get_stream());
+  __stream.wait(__from.stream());
   _CCCL_TRY_CUDA_API(
     ::cudaMemcpyAsync,
     "make_async_buffer: failed to copy data",

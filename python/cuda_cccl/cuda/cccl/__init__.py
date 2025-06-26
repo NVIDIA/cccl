@@ -1,8 +1,14 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
-#
-# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+"""
+CUDA Core Library (CCCL) Python Package
+"""
 
-from cuda.cccl._version import __version__
-from cuda.cccl.include_paths import get_include_paths
+import importlib.metadata
 
-__all__ = ["__version__", "get_include_paths"]
+try:
+    __version__ = importlib.metadata.version("cuda-cccl")
+except Exception:
+    __version__ = "0.0.0"
+
+from .headers.include_paths import get_include_paths
+
+__all__ = ["get_include_paths", "__version__"]

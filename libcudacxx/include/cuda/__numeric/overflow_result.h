@@ -30,7 +30,7 @@ struct overflow_result
   _Tp value;
   bool overflow;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return overflow;
   }

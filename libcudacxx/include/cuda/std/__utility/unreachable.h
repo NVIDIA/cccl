@@ -24,7 +24,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+[[noreturn]] _CCCL_API inline void unreachable()
 {
   _CCCL_ASSERT(false, "unreachable");
   _CCCL_UNREACHABLE();

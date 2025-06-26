@@ -26,6 +26,24 @@ TEST_CASE("discard_iterator", "[iterators]")
   }
 }
 
+TEST_CASE("constant_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{1, 2, 3, 4};
+    thrust::copy(cuda::constant_iterator{42, 0}, cuda::constant_iterator{42, 4}, vec.begin());
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{1, 2, 3, 4};
+    thrust::copy(cuda::constant_iterator{42, 0}, cuda::constant_iterator{42, 4}, vec.begin());
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{1, 2, 3, 4};
+    thrust::copy(cuda::constant_iterator{42, 0}, cuda::constant_iterator{42, 4}, vec.begin());
+  }
+}
+
 TEST_CASE("counting_iterator", "[iterators]")
 {
   { // device system
@@ -60,6 +78,33 @@ TEST_CASE("strided_iterator", "[iterators]")
   { // plain std::vector
     std::vector<int> vec{1, 2, 3, 4, 5, 6};
     thrust::copy(cuda::strided_iterator{vec.begin(), 2}, cuda::strided_iterator{vec.end(), 2}, discard);
+  }
+}
+
+struct is_equal_index
+{
+  _CCCL_HOST_DEVICE constexpr void
+  operator()([[maybe_unused]] const int index, [[maybe_unused]] const int expected) const noexcept
+  {
+    _CCCL_VERIFY(index == expected, "should have right value");
+  }
+};
+
+TEST_CASE("tabulate_output_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{5, 6, 7, 8, 9};
+    thrust::copy(vec.begin(), vec.end(), cuda::make_tabulate_output_iterator(is_equal_index{}, 5));
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{5, 6, 7, 8, 9};
+    thrust::copy(vec.begin(), vec.end(), cuda::make_tabulate_output_iterator(is_equal_index{}, 5));
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{5, 6, 7, 8, 9};
+    thrust::copy(vec.begin(), vec.end(), cuda::make_tabulate_output_iterator(is_equal_index{}, 5));
   }
 }
 

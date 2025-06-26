@@ -51,3 +51,10 @@
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__nvtx/nvtx.h>
 #endif // !_CCCL_COMPILER(NVRTC)
+
+// cccl.c needs to weaken some compile-time branches to runtime branches in CUB
+#ifdef CCCL_C_EXPERIMENTAL
+#  define _CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C if
+#else
+#  define _CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C if constexpr
+#endif // CCCL_C_EXPERIMENTAL

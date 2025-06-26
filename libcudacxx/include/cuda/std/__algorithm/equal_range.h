@@ -43,7 +43,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _Iter, class _Sent, class _Tp, class _Proj>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Iter, _Iter>
+_CCCL_API constexpr pair<_Iter, _Iter>
 __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp, _Proj&& __proj)
 {
   auto __len  = _IterOps<_AlgPolicy>::distance(__first, __last);
@@ -74,7 +74,7 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Tp, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
+[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
@@ -84,11 +84,11 @@ equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
     _CUDA_VSTD::move(__last),
     __value,
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    _CUDA_VSTD::__identity());
+    _CUDA_VSTD::identity());
 }
 
 template <class _ForwardIterator, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
+[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
   return _CUDA_VSTD::equal_range(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __value, __less{});

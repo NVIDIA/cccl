@@ -41,6 +41,8 @@
 #include <cub/detail/rfa.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -231,7 +233,7 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
-          typename TransformOpT = ::cuda::std::__identity>
+          typename TransformOpT = ::cuda::std::identity>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
@@ -322,7 +324,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
+__launch_bounds__(int(ChainedPolicyT::ReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
   InputIteratorT d_in,
   AccumT* d_out,
   OffsetT num_items,
@@ -332,22 +334,22 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
 {
   using BlockReduceT =
     BlockReduce<AccumT,
-                ChainedPolicyT::ActivePolicy::DeterministicReducePolicy::BLOCK_THREADS,
-                ChainedPolicyT::ActivePolicy::DeterministicReducePolicy::BLOCK_ALGORITHM>;
+                ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS,
+                ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_ALGORITHM>;
   // Shared memory storage
   __shared__ typename BlockReduceT::TempStorage temp_storage;
 
   using FloatType                 = typename AccumT::ftype;
   constexpr int BinLength         = AccumT::max_index + AccumT::max_fold;
-  constexpr auto ITEMS_PER_THREAD = ChainedPolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
-  constexpr auto BLOCK_THREADS    = ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS;
+  constexpr auto ITEMS_PER_THREAD = ChainedPolicyT::ReducePolicy::ITEMS_PER_THREAD;
+  constexpr auto BLOCK_THREADS    = ChainedPolicyT::ReducePolicy::BLOCK_THREADS;
   const int GRID_DIM              = reduce_grid_size;
   const int tid                   = BLOCK_THREADS * blockIdx.x + threadIdx.x;
 
   FloatType* shared_bins = detail::rfa::get_shared_bin_array<FloatType, BinLength>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < BinLength; index += ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)
+  for (int index = threadIdx.x; index < BinLength; index += ChainedPolicyT::ReducePolicy::BLOCK_THREADS)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -455,7 +457,7 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
-          typename TransformOpT = ::cuda::std::__identity>
+          typename TransformOpT = ::cuda::std::identity>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void DeterministicDeviceReduceSingleTileKernel(
   InputIteratorT d_in,
@@ -513,7 +515,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
   }
 }
 

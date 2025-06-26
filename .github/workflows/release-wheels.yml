@@ -19,15 +19,6 @@ description: "Manually triggered release workflow for wheels build and upload."
 on:
   workflow_dispatch:
     inputs:
-      component:
-        description: "Component to release"
-        required: true
-        type: choice
-        options:
-          - parallel
-          - cooperative
-          - cccl
-          - all
       run-id:
         description: "The GHA run ID that generated validated artifacts"
         required: true
@@ -58,29 +49,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ inputs.run-id }}
-          COMPONENT: ${{ inputs.component }}
         run: |
-          comp=${COMPONENT}
-          if [[ "${comp}" == "all" ]]; then
-            comp=""
-          fi
-          gh run download ${RUN_ID} -D dl -p "*${comp}*" -R ${{ github.repository }}
+          gh run download ${RUN_ID} -D dl -R ${{ github.repository }}
           mkdir dist
-
-          # This can be simplified in the future but a little special treatment is needed for now.
-          if [[ "${COMPONENT}" == "parallel" ]]; then
-            mv dl/*/*${COMPONENT}*.whl dist/
-          elif [[ "${COMPONENT}" == "cooperative" || "${COMPONENT}" == "cccl" ]]; then
-            # We build multiple copies right now so squash them into a single file.
-            mv --backup=numbered dl/*/*${COMPONENT}*.whl dist/
-            rm -f dist/*~
-          elif [[ "${COMPONENT}" == "all" ]]; then
-            # FIXME: Once we only have one cuda_cccl/cuda_cooperative wheel build this can go away, squashes into one
-            # and discards the others for now (labeled as backups).
-            mv --backup=numbered dl/*/*.whl dist/
-            rm -f dist/*~
-          fi
-
+          mv dl/*/*.whl dist/
           rm -rf dl
           ls -lh dist/
 

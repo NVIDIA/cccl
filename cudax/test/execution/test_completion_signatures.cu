@@ -108,8 +108,8 @@ struct filter_value_only
   template <class Sig>
   constexpr bool operator()(Sig*) const noexcept
   {
-    return cuda::experimental::execution::__signature_disposition<Sig>
-        == cuda::experimental::execution::__disposition_t::__value;
+    return cuda::experimental::execution::__detail::__signature_disposition<Sig>
+        == cuda::experimental::execution::__disposition::__value;
   }
 };
 

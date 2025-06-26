@@ -30,11 +30,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
   static constexpr const _Tp value = __v;
   using value_type                 = _Tp;
   using type                       = integral_constant;
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
+  _CCCL_API constexpr operator value_type() const noexcept
   {
     return value;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type operator()() const noexcept
+  _CCCL_API constexpr value_type operator()() const noexcept
   {
     return value;
   }

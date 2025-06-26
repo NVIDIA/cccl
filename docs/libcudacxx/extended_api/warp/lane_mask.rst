@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-warp-lane-mask:
 
-cuda::device::lane_mask
-=======================
+``cuda::device::lane_mask``
+===========================
 
 Defined in ``<cuda/warp>`` header.
 

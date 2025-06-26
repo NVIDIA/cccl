@@ -67,11 +67,12 @@ namespace detail
 namespace rfa
 {
 
-template <typename ReductionOpT, typename InitT, typename InputIteratorT>
-using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, it_value_t<InputIteratorT>>;
+template <typename Invokable, typename InputT>
+using transformed_input_t = _CUDA_VSTD::decay_t<typename _CUDA_VSTD::__invoke_of<Invokable, InputT>::type>;
 
-template <typename OutputIteratorT, typename InputIteratorT>
-using InitT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>;
+template <typename InitT, typename InputIteratorT, typename TransformOpT>
+using accum_t =
+  _CUDA_VSTD::__accumulator_t<_CUDA_VSTD::plus<>, InitT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
 template <typename FloatType                                                              = float,
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
@@ -95,6 +96,11 @@ struct deterministic_sum_t
     DeterministicAcc rtn = lhs;
     rtn += rhs;
     return rtn;
+  }
+
+  _CCCL_DEVICE FloatType operator()(FloatType lhs, FloatType rhs)
+  {
+    return lhs + rhs;
   }
 };
 
@@ -122,23 +128,18 @@ struct deterministic_sum_t
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename InitT        = rfa::InitT<OutputIteratorT, InputIteratorT>,
-          typename AccumT       = rfa::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
-          typename TransformOpT = ::cuda::std::__identity,
-          typename PolicyHub    = detail::rfa::policy_hub<
-               rfa::AccumT<::cuda::std::plus<>, rfa::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
-               OffsetT,
-               ::cuda::std::plus<>>>
+          typename InitT,
+          typename TransformOpT = ::cuda::std::identity,
+          typename AccumT       = rfa::accum_t<InitT, InputIteratorT, TransformOpT>,
+          typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
 struct DispatchReduceDeterministic
 {
   using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
-  using ReductionOpT        = deterministic_add_t;
+  using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
+  using input_unwrapped_it_t  = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
 
-  using AcumFloatTransformT = detail::rfa::rfa_float_transform_t<AccumT>;
-
-  using OutputIteratorTransformT = THRUST_NS_QUALIFIER::transform_output_iterator<AcumFloatTransformT, OutputIteratorT>;
   //---------------------------------------------------------------------------
   // Problem state
   //---------------------------------------------------------------------------
@@ -151,17 +152,17 @@ struct DispatchReduceDeterministic
   /// Reference to size in bytes of `d_temp_storage` allocation
   size_t& temp_storage_bytes;
 
-  /// Pointer to the input sequence of data items
-  InputIteratorT d_in;
+  /// Unwrapped Pointer to the input sequence of data items
+  input_unwrapped_it_t d_in;
 
   /// Pointer to the output aggregate
-  OutputIteratorTransformT d_out;
+  OutputIteratorT d_out;
 
   /// Total number of input items (i.e., length of `d_in`)
   OffsetT num_items;
 
   /// Binary reduction functor
-  ReductionOpT reduction_op;
+  reduction_op_t reduction_op;
 
   /// The initial value of the reduction
   InitT init;
@@ -253,8 +254,7 @@ struct DispatchReduceDeterministic
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(ReduceKernelT reduce_kernel, SingleTileKernelT single_tile_kernel)
   {
-    const auto tile_size = ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS
-                         * ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
+    const auto tile_size = ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
     // Get device ordinal
     int device_ordinal;
     auto error = CubDebug(cudaGetDevice(&device_ordinal));
@@ -271,7 +271,7 @@ struct DispatchReduceDeterministic
     }
 
     KernelConfig reduce_config;
-    error = CubDebug(reduce_config.Init<typename ActivePolicyT::DeterministicReducePolicy>(reduce_kernel));
+    error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel));
     if (cudaSuccess != error)
     {
       return error;
@@ -314,21 +314,15 @@ struct DispatchReduceDeterministic
     _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             reduce_grid_size,
-            ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS,
+            ActivePolicyT::ReducePolicy::BLOCK_THREADS,
             (long long) stream,
-            ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD,
+            ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD,
             reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-      reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(reduce_kernel,
-            d_in,
-            d_block_reductions,
-            static_cast<int>(num_items),
-            reduction_op,
-            transform_op,
-            reduce_grid_size);
+      reduce_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+      .doit(reduce_kernel, d_in, d_block_reductions, num_items, reduction_op, transform_op, reduce_grid_size);
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -361,7 +355,7 @@ struct DispatchReduceDeterministic
             reduce_grid_size, // triple_chevron is not type safe, make sure to use int
             reduction_op,
             init,
-            ::cuda::std::__identity{});
+            ::cuda::std::identity{});
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -397,10 +391,10 @@ struct DispatchReduceDeterministic
       return InvokeSingleTile<ActivePolicyT>(
         detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
-          InputIteratorT,
-          OutputIteratorTransformT,
+          input_unwrapped_it_t,
+          OutputIteratorT,
           OffsetT,
-          ReductionOpT,
+          reduction_op_t,
           InitT,
           deterministic_accum_t,
           TransformOpT>);
@@ -410,17 +404,17 @@ struct DispatchReduceDeterministic
       return InvokePasses<ActivePolicyT>(
         detail::reduce::DeterministicDeviceReduceKernel<
           MaxPolicyT,
-          InputIteratorT,
+          input_unwrapped_it_t,
           OffsetT,
-          ReductionOpT,
+          reduction_op_t,
           deterministic_accum_t,
           TransformOpT>,
         detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
           deterministic_accum_t*,
-          OutputIteratorTransformT,
+          OutputIteratorT,
           int, // Always used with int offsets
-          ReductionOpT,
+          reduction_op_t,
           InitT,
           deterministic_accum_t>);
     }
@@ -463,10 +457,12 @@ struct DispatchReduceDeterministic
     InputIteratorT d_in,
     OutputIteratorT d_out,
     OffsetT num_items,
-    rfa::InitT<OutputIteratorT, InputIteratorT> init = {},
-    cudaStream_t stream                              = {},
-    TransformOpT transform_op                        = {})
+    InitT init                = {},
+    cudaStream_t stream       = {},
+    TransformOpT transform_op = {})
   {
+    static_assert(sizeof(OffsetT) <= 4, "OffsetT must be 4 bytes or less for deterministic reduction");
+
     cudaError error = cudaSuccess;
 
     // Get PTX version
@@ -477,15 +473,14 @@ struct DispatchReduceDeterministic
       return error;
     }
 
-    OutputIteratorTransformT d_out_transformed =
-      THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
+    input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Create dispatch functor
     DispatchReduceDeterministic dispatch{
       d_temp_storage,
       temp_storage_bytes,
-      d_in,
-      d_out_transformed,
+      d_in_unwrapped,
+      d_out,
       num_items,
       deterministic_add_t{},
       init,

@@ -27,66 +27,133 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-namespace cuda::experimental::execution
+namespace cuda::experimental
 {
+namespace execution
+{
+struct sequenced_policy;
+struct parallel_policy;
+struct parallel_unsequenced_policy;
+struct unsequenced_policy;
+struct any_execution_policy;
+} // namespace execution
 
-enum class execution_policy
+// execution policy type trait
+template <class _Ty>
+inline constexpr bool is_execution_policy_v = false;
+
+template <>
+inline constexpr bool is_execution_policy_v<execution::sequenced_policy> = true;
+
+template <>
+inline constexpr bool is_execution_policy_v<execution::parallel_policy> = true;
+
+template <>
+inline constexpr bool is_execution_policy_v<execution::parallel_unsequenced_policy> = true;
+
+template <>
+inline constexpr bool is_execution_policy_v<execution::unsequenced_policy> = true;
+
+template <>
+inline constexpr bool is_execution_policy_v<execution::any_execution_policy> = true;
+
+template <class _Ty>
+struct is_execution_policy : _CUDA_VSTD::bool_constant<is_execution_policy_v<_Ty>>
+{};
+
+namespace execution
+{
+enum class __execution_policy
 {
   invalid_execution_policy,
-  sequenced_host,
-  sequenced_device,
-  parallel_host,
-  parallel_device,
-  parallel_unsequenced_host,
-  parallel_unsequenced_device,
-  unsequenced_host,
-  unsequenced_device,
+  sequenced,
+  parallel,
+  parallel_unsequenced,
+  unsequenced,
 };
 
-_CCCL_GLOBAL_CONSTANT execution_policy seq_host         = execution_policy::sequenced_host;
-_CCCL_GLOBAL_CONSTANT execution_policy seq_device       = execution_policy::sequenced_device;
-_CCCL_GLOBAL_CONSTANT execution_policy par_host         = execution_policy::parallel_host;
-_CCCL_GLOBAL_CONSTANT execution_policy par_device       = execution_policy::parallel_device;
-_CCCL_GLOBAL_CONSTANT execution_policy par_unseq_host   = execution_policy::parallel_unsequenced_host;
-_CCCL_GLOBAL_CONSTANT execution_policy par_unseq_device = execution_policy::parallel_unsequenced_device;
-_CCCL_GLOBAL_CONSTANT execution_policy unseq_host       = execution_policy::unsequenced_host;
-_CCCL_GLOBAL_CONSTANT execution_policy unseq_device     = execution_policy::unsequenced_device;
+template <__execution_policy _Policy>
+struct __policy;
 
-template <execution_policy _Policy>
+struct any_execution_policy
+{
+  using type       = any_execution_policy;
+  using value_type = __execution_policy;
+
+  _CCCL_HIDE_FROM_ABI any_execution_policy() = default;
+
+  template <__execution_policy _Policy>
+  _CCCL_HOST_API constexpr any_execution_policy(__policy<_Policy> __pol) noexcept
+      : value(__pol)
+  {}
+
+  _CCCL_HOST_API constexpr operator __execution_policy() const noexcept
+  {
+    return value;
+  }
+
+  _CCCL_HOST_API constexpr auto operator()() const noexcept -> __execution_policy
+  {
+    return value;
+  }
+
+  __execution_policy value = __execution_policy::invalid_execution_policy;
+};
+
+template <__execution_policy _Policy>
+struct _CCCL_DECLSPEC_EMPTY_BASES __policy : _CUDA_VSTD::integral_constant<__execution_policy, _Policy>
+{};
+
+struct sequenced_policy : __policy<__execution_policy::sequenced>
+{};
+
+struct parallel_policy : __policy<__execution_policy::parallel>
+{};
+
+struct parallel_unsequenced_policy : __policy<__execution_policy::parallel_unsequenced>
+{};
+
+struct unsequenced_policy : __policy<__execution_policy::unsequenced>
+{};
+
+_CCCL_GLOBAL_CONSTANT sequenced_policy seq{};
+_CCCL_GLOBAL_CONSTANT parallel_policy par{};
+_CCCL_GLOBAL_CONSTANT parallel_unsequenced_policy par_unseq{};
+_CCCL_GLOBAL_CONSTANT unsequenced_policy unseq{};
+
+template <__execution_policy _Policy>
 inline constexpr bool __is_parallel_execution_policy =
-  _Policy == execution_policy::parallel_host || _Policy == execution_policy::parallel_device
-  || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
+  _Policy == __execution_policy::parallel || _Policy == __execution_policy::parallel_unsequenced;
 
-template <execution_policy _Policy>
+template <__execution_policy _Policy>
 inline constexpr bool __is_unsequenced_execution_policy =
-  _Policy == execution_policy::unsequenced_host || _Policy == execution_policy::unsequenced_device
-  || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
+  _Policy == __execution_policy::unsequenced || _Policy == __execution_policy::parallel_unsequenced;
 
 struct get_execution_policy_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_execution_policy = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
-  requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, decltype(__t.get_execution_policy()), execution_policy)));
+  requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, decltype(__t.get_execution_policy()), __execution_policy)));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_execution_policy = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_execution_policy<_Env>),
   requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible,
                        _CUDA_STD_EXEC::__query_result_t<const _Env&, get_execution_policy_t>,
-                       execution_policy)));
+                       __execution_policy)));
 
 struct get_execution_policy_t
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_execution_policy<_Tp>)
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution_policy operator()(const _Tp& __t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI auto operator()(const _Tp& __t) const noexcept
   {
     return __t.get_execution_policy();
   }
 
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_execution_policy<_Env>)
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution_policy operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
@@ -95,7 +162,8 @@ struct get_execution_policy_t
 
 _CCCL_GLOBAL_CONSTANT get_execution_policy_t get_execution_policy{};
 
-} // namespace cuda::experimental::execution
+} // namespace execution
+} // namespace cuda::experimental
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

@@ -39,7 +39,7 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
   using Buffer   = typename extract_properties<TestT>::async_buffer;
   using T        = typename Buffer::value_type;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("Construction with explicit size")
