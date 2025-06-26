@@ -584,13 +584,23 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
     }
   }
 
+  // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
+  char head_byte, tail_byte;
   if (threadIdx.x < head_bytes)
   {
-    dst_ptr[threadIdx.x] = src_ptr[threadIdx.x];
+    head_byte = src_ptr[threadIdx.x];
   }
   if (threadIdx.x < tail_bytes)
   {
-    dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = src_ptr[bytes_to_copy - tail_bytes + threadIdx.x];
+    tail_byte = src_ptr[bytes_to_copy - tail_bytes + threadIdx.x];
+  }
+  if (threadIdx.x < head_bytes)
+  {
+    dst_ptr[threadIdx.x] = head_byte;
+  }
+  if (threadIdx.x < tail_bytes)
+  {
+    dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = tail_byte;
   }
 }
 
