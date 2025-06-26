@@ -38,7 +38,7 @@ template <typename _Up, typename _Tp>
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_API inline const _Up* ptr_cast(const _Tp* __ptr) noexcept
 {
-  return ::cuda::ptr_cast<const _Up>(__ptr);
+  return ::cuda::ptr_cast<const _Up>(const_cast<_Tp*>(__ptr));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

@@ -15,13 +15,17 @@
 
 __host__ __device__ bool test()
 {
-  uintptr_t ptr_int = 12;
+  uintptr_t ptr_int = 16;
   auto ptr          = reinterpret_cast<char*>(ptr_int);
-  assert(cuda::ptr_cast<uint16_t>(ptr) == ptr);
-  assert(cuda::ptr_cast<int>(ptr) == ptr);
-  assert(cuda::ptr_cast<uint64_t>(ptr) == ptr);
-  static_cast(cuda::std::is_same_v<int*, decltype(cuda::ptr_cast<int>(ptr))>);
-  static_cast(cuda::std::is_same_v<const int*, decltype(cuda::ptr_cast<int>((const int*) ptr))>);
+  assert(cuda::ptr_cast<uint16_t>(ptr) == (uint16_t*) ptr);
+  assert(cuda::ptr_cast<int>(ptr) == (int*) ptr);
+  assert(cuda::ptr_cast<uint64_t>(ptr) == (uint64_t*) ptr);
+  static_assert(cuda::std::is_same_v<int*, decltype(cuda::ptr_cast<int>(ptr))>);
+
+  auto const_ptr = reinterpret_cast<const char*>(ptr_int);
+  assert(cuda::ptr_cast<uint16_t>(const_ptr) == (const uint16_t*) ptr);
+  static_assert(cuda::std::is_same_v<const int*, decltype(cuda::ptr_cast<int>(const_ptr))>);
+  return true;
 }
 
 int main(int, char**)
