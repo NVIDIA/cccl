@@ -139,16 +139,28 @@ inline CUfunction lazy_jit(const char* template_str, const ::std::vector<::std::
   //  check_printf(template_with_name.c_str(), make_printfable(args)...);
 
   // Format code
-  const int header_size = ::std::strlen(header_template);
-  const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
-  // This will be our cache lookup key: a pair of options and the source code string
-  auto key = ::std::pair(opts, ::std::string(size + header_size + 1, '\0'));
+  auto key = ::std::pair(opts, ::std::string());
 
-  // Write header
-  ::std::strcpy(key.second.data(), header_template);
-  key.second.data()[header_size] = '\n'; // replace '\0'
+  if constexpr (sizeof...(args) == 0)
+  {
+    // Security warning upon calling snprintf with no arguments
+    key.second = header_template;
+    key.second += '\n';
+    key.second += template_str;
+  }
+  else
+  {
+    const int header_size = ::std::strlen(header_template);
+    const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
+    // This will be our cache lookup key: a pair of options and the source code string
+    key.second = ::std::string(size + header_size + 1, '\0');
 
-  ::std::snprintf(key.second.data() + header_size, key.second.size() + 1, template_str, make_printfable(args)...);
+    // Write header
+    ::std::strcpy(key.second.data(), header_template);
+    key.second.data()[header_size] = '\n'; // replace '\0'
+
+    ::std::snprintf(key.second.data() + header_size, key.second.size() + 1, template_str, make_printfable(args)...);
+  }
 
   {
     ::std::lock_guard lock(cache_mutex);
