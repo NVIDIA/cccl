@@ -123,7 +123,7 @@ struct cooperative_launch_option : public __detail::launch_option
   _CCCL_HIDE_FROM_ABI constexpr cooperative_launch_option() = default;
   _CCCL_API constexpr cooperative_launch_option(const cooperative_launch_option&) noexcept {}
 
-  [[nodiscard]] _CCCL_HOST_API constexpr cooperative_launch_option operator()() const noexcept
+  [[nodiscard]] _CCCL_API constexpr cooperative_launch_option operator()() const noexcept
   {
     return cooperative_launch_option();
   }
@@ -203,15 +203,17 @@ struct dynamic_shared_memory_option : public __detail::launch_option
   static constexpr std::size_t extent                = _Extent;
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
-  const std::size_t size                             = _Extent == ::cuda::std::dynamic_extent ? 0 : _Extent;
+  const std::size_t size;
 
-  _CCCL_HIDE_FROM_ABI constexpr dynamic_shared_memory_option() = default;
+  _CCCL_API constexpr dynamic_shared_memory_option()
+      : size(_Extent == ::cuda::std::dynamic_extent ? 0 : _Extent)
+  {}
 
   _CCCL_API constexpr dynamic_shared_memory_option(const dynamic_shared_memory_option& __other) noexcept
       : size(__other.size)
   {}
 
-  _CCCL_HOST_API constexpr dynamic_shared_memory_option(std::size_t __set_size) noexcept
+  _CCCL_API constexpr dynamic_shared_memory_option(std::size_t __set_size) noexcept
       : size(__set_size)
   {}
 
@@ -254,7 +256,7 @@ private:
 template <typename _Content, std::size_t _Extent, bool _NonPortableSize>
 struct __dynamic_shared_memory_t
 {
-  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
+  [[nodiscard]] _CCCL_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
   operator()() const noexcept
   {
     return dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>();
@@ -269,7 +271,7 @@ template <typename _Content, bool _NonPortableSize>
 struct __dynamic_shared_memory_t<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
 {
   [[nodiscard]]
-  _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
+  _CCCL_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
   operator()(std::size_t __size) const noexcept
   {
     return dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>(__size);
