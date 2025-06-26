@@ -40,7 +40,7 @@ namespace __stream
 struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
 {
   template <class _Shape, class _Fn, class _Rcvr>
-  struct __rcvr_t : __bulk_t::__rcvr<_Shape, _Fn, _Rcvr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr_base_t<_Shape, _Fn, _Rcvr>
   {
     // We permit this `set_value` function to be called multiple times, once for each
     // thread in the block.
@@ -77,11 +77,11 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
   };
 
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr_base_t<_Sndr, _Policy, _Shape, _Fn>
   {};
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
   // This function is called when the `bulk_chunked` CPO calls `transform_sender` with a
@@ -109,7 +109,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__bulk_unchunked_t>
 {
   template <class _Shape, class _Fn, class _Rcvr>
-  struct __rcvr_t : __bulk_t::__rcvr<_Shape, _Fn, _Rcvr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr_base_t<_Shape, _Fn, _Rcvr>
   {
     // We permit this `set_value` function to be called multiple times, once for each
     // thread in the block.
@@ -135,11 +135,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
   };
 
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr_base_t<_Sndr, _Policy, _Shape, _Fn>
   {};
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
   // This function is called when the `bulk_unchunked` CPO calls `transform_sender` with a
@@ -167,11 +167,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
 struct __bulk_t : execution::__bulk_t<__bulk_t>
 {
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr_base_t<_Sndr, _Policy, _Shape, _Fn>
   {};
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
   template <class _Sndr>

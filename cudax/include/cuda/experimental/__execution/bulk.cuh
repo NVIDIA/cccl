@@ -131,7 +131,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   };
 
   template <class _Shape, class _Fn, class _Rcvr>
-  struct __rcvr
+  struct __rcvr_base_t
   {
     using receiver_concept = receiver_t;
 
@@ -179,10 +179,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   };
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure
+  struct __closure_base_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure __self)
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
     {
       static_assert(__is_sender<_Sndr>);
 
@@ -195,7 +195,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       }
 
       return transform_sender(__domain_t{},
-                              __sndr_t{{{}, static_cast<__closure&&>(__self), static_cast<_Sndr&&>(__sndr)}});
+                              __sndr_t{{{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}});
     }
 
     _CCCL_NO_UNIQUE_ADDRESS _Policy __policy_;
@@ -205,7 +205,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
 
   // This is the sender type for the three bulk algorithms.
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr
+  struct __sndr_base_t
   {
     using sender_concept = sender_t;
 
@@ -247,7 +247,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     }
 
     _CCCL_NO_UNIQUE_ADDRESS _BulkTag __tag_;
-    __closure<_Policy, _Shape, _Fn> __state_;
+    __closure_base_t<_Policy, _Shape, _Fn> __state_;
     _Sndr __sndr_;
   };
 
@@ -277,18 +277,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t : __bulk_t<bulk_chunked_t>
 {
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr_base_t<_Sndr, _Policy, _Shape, _Fn>
   {};
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
   // This is the receiver for the bulk_chunked sender. It provides the implementation for
   // `set_value` that calls the function with the begin and end shapes, and the value
   // results of the predecessor.
   template <class _Shape, class _Fn, class _Rcvr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr<_Shape, _Fn, _Rcvr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr_base_t<_Shape, _Fn, _Rcvr>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Values>
@@ -326,7 +326,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
   // results of the predecessor. The index is monotonically increasing from 0 to the shape
   // minus one.
   template <class _Shape, class _Fn, class _Rcvr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr<_Shape, _Fn, _Rcvr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr_base_t<_Shape, _Fn, _Rcvr>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Values>
@@ -351,11 +351,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
   };
 
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr_base_t<_Sndr, _Policy, _Shape, _Fn>
   {};
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
   [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
@@ -371,11 +371,11 @@ _CCCL_GLOBAL_CONSTANT auto bulk_unchunked = bulk_unchunked_t{};
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
 {
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr<_Sndr, _Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __bulk_t::__sndr_base_t<_Sndr, _Policy, _Shape, _Fn>
   {};
 
   template <class _Policy, class _Shape, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure<_Policy, _Shape, _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
   // This is a function adaptor that transforms a `bulk` function that takes a single

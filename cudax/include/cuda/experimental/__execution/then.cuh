@@ -213,10 +213,10 @@ struct __upon_t
   };
 
   template <class _Sndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr;
+  struct __sndr_base_t;
 
   template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure;
+  struct __closure_base_t;
 
 public:
   template <class _Sndr, class _Fn>
@@ -255,7 +255,7 @@ struct upon_stopped_t : __upon_t<upon_stopped_t, set_stopped_t>
 
 template <class _UponTag, class _SetTag>
 template <class _Sndr, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr_base_t
 {
   using sender_concept = sender_t;
 
@@ -313,7 +313,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr
 
 template <class _UponTag, class _SetTag>
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__closure
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__closure_base_t
 {
   template <class _Sndr>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
@@ -322,7 +322,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__closure
   }
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure __self) //
+  _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
     -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
   {
     return _UponTag{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
@@ -332,27 +332,31 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__closure
 };
 
 template <class _Sndr, class _Fn>
-struct then_t::__sndr_t : __upon_t<then_t, set_value_t>::__sndr<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT then_t::__sndr_t : __upon_t<then_t, set_value_t>::__sndr_base_t<_Sndr, _Fn>
 {};
 
 template <class _Fn>
-struct then_t::__closure_t : __upon_t<then_t, set_value_t>::__closure<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT then_t::__closure_t : __upon_t<then_t, set_value_t>::__closure_base_t<_Fn>
 {};
 
 template <class _Sndr, class _Fn>
-struct upon_error_t::__sndr_t : __upon_t<upon_error_t, set_error_t>::__sndr<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_error_t::__sndr_t
+    : __upon_t<upon_error_t, set_error_t>::__sndr_base_t<_Sndr, _Fn>
 {};
 
 template <class _Fn>
-struct upon_error_t::__closure_t : __upon_t<upon_error_t, set_error_t>::__closure<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_error_t::__closure_t
+    : __upon_t<upon_error_t, set_error_t>::__closure_base_t<_Fn>
 {};
 
 template <class _Sndr, class _Fn>
-struct upon_stopped_t::__sndr_t : __upon_t<upon_stopped_t, set_stopped_t>::__sndr<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__sndr_t
+    : __upon_t<upon_stopped_t, set_stopped_t>::__sndr_base_t<_Sndr, _Fn>
 {};
 
 template <class _Fn>
-struct upon_stopped_t::__closure_t : __upon_t<upon_stopped_t, set_stopped_t>::__closure<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__closure_t
+    : __upon_t<upon_stopped_t, set_stopped_t>::__closure_base_t<_Fn>
 {};
 
 template <class _UponTag, class _SetTag>

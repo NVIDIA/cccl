@@ -76,7 +76,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   };
 
   template <class _Rcvr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   };
 
   template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr;
+  struct __sndr_base_t;
 
 public:
   template <class _Fn>
@@ -118,12 +118,9 @@ struct just_stopped_from_t : __just_from_t<just_stopped_from_t, set_stopped_t>
 
 template <class _JustFromTag, class _SetTag>
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__sndr
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__sndr_base_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-
-  _CCCL_NO_UNIQUE_ADDRESS _JustFromTag __tag_;
-  _Fn __fn_;
 
   template <class _Self, class...>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
@@ -133,29 +130,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__snd
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>) -> __opstate<_Rcvr, _Fn>
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>) -> __opstate_t<_Rcvr, _Fn>
   {
-    return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
+    return __opstate_t<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
   }
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate<_Rcvr, _Fn>
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate_t<_Rcvr, _Fn>
   {
-    return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
+    return __opstate_t<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
+
+  _CCCL_NO_UNIQUE_ADDRESS _JustFromTag __tag_;
+  _Fn __fn_;
 };
 
 template <class _Fn>
-struct just_from_t::__sndr_t : __just_from_t<just_t, set_value_t>::__sndr<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_from_t::__sndr_t : __just_from_t<just_t, set_value_t>::__sndr_base_t<_Fn>
 {};
 
 template <class _Fn>
-struct just_error_from_t::__sndr_t : __just_from_t<just_error_t, set_error_t>::__sndr<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_error_from_t::__sndr_t
+    : __just_from_t<just_error_t, set_error_t>::__sndr_base_t<_Fn>
 {};
 
 template <class _Fn>
-struct just_stopped_from_t::__sndr_t : __just_from_t<just_stopped_t, set_stopped_t>::__sndr<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_from_t::__sndr_t
+    : __just_from_t<just_stopped_t, set_stopped_t>::__sndr_base_t<_Fn>
 {};
 
 template <class _JustFromTag, class _SetTag>

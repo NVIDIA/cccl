@@ -46,7 +46,7 @@ template <>
 struct stream_domain::__apply_t<continues_on_t>
 {
   template <class _Rcvr>
-  struct __rcvr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
     using receiver_concept = receiver_t;
 
@@ -76,7 +76,7 @@ struct stream_domain::__apply_t<continues_on_t>
 
   // This opstate will be stored in host memory.
   template <class _Sndr, class _Rcvr>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
     using __env_t                 = __fwd_env_t<env_of_t<_Rcvr>>;
@@ -109,11 +109,11 @@ struct stream_domain::__apply_t<continues_on_t>
     connect_result_t<_Sndr, __rcvr_t<_Rcvr>> __opstate_;
   };
 
-  struct __thunk_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __thunk_t
   {};
 
   template <class _Sndr>
-  struct __sndr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
     using sender_concept = sender_t;
 

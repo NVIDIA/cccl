@@ -117,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   };
 
   template <class _Rcvr, class _Fn, class _Completions>
-  struct __rcvr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
     using receiver_concept = receiver_t;
 
@@ -291,10 +291,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   using __completion_domain_of_t _CCCL_NODEBUG_ALIAS = decltype(__get_completion_domain<_Sndr, _Fn>());
 
   template <class _Sndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr;
+  struct __sndr_base_t;
 
   template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure;
+  struct __closure_base_t;
 
 public:
   /// @brief The `let_(value|error|stopped)` sender.
@@ -337,7 +337,7 @@ struct let_stopped_t : __let_t<let_stopped_t, set_stopped_t>
 
 template <class _LetTag, class _SetTag>
 template <class _Sndr, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
   using __domain_t                         = __completion_domain_of_t<_Sndr, _Fn>;
@@ -393,7 +393,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr
 
 template <class _LetTag, class _SetTag>
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__closure
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__closure_base_t
 {
   _Fn __fn_;
 
@@ -404,7 +404,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__closure
   }
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure& __self)
+  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_base_t& __self)
     -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
   {
     return _LetTag{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
@@ -412,27 +412,31 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__closure
 };
 
 template <class _Sndr, class _Fn>
-struct let_value_t::__sndr_t : __let_t<let_value_t, set_value_t>::__sndr<_Sndr, _Fn>
-{};
-
-template <class _Fn>
-struct let_value_t::__closure_t : __let_t<let_value_t, set_value_t>::__closure<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_value_t::__sndr_t
+    : __let_t<let_value_t, set_value_t>::__sndr_base_t<_Sndr, _Fn>
 {};
 
 template <class _Sndr, class _Fn>
-struct let_error_t::__sndr_t : __let_t<let_error_t, set_error_t>::__sndr<_Sndr, _Fn>
-{};
-
-template <class _Fn>
-struct let_error_t::__closure_t : __let_t<let_error_t, set_error_t>::__closure<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_error_t::__sndr_t
+    : __let_t<let_error_t, set_error_t>::__sndr_base_t<_Sndr, _Fn>
 {};
 
 template <class _Sndr, class _Fn>
-struct let_stopped_t::__sndr_t : __let_t<let_stopped_t, set_stopped_t>::__sndr<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__sndr_t
+    : __let_t<let_stopped_t, set_stopped_t>::__sndr_base_t<_Sndr, _Fn>
 {};
 
 template <class _Fn>
-struct let_stopped_t::__closure_t : __let_t<let_stopped_t, set_stopped_t>::__closure<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_value_t::__closure_t : __let_t<let_value_t, set_value_t>::__closure_base_t<_Fn>
+{};
+
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_error_t::__closure_t : __let_t<let_error_t, set_error_t>::__closure_base_t<_Fn>
+{};
+
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__closure_t
+    : __let_t<let_stopped_t, set_stopped_t>::__closure_base_t<_Fn>
 {};
 
 template <class _LetTag, class _SetTag>

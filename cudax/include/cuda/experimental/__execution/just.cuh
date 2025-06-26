@@ -72,7 +72,7 @@ private:
   };
 
   template <class... _Ts>
-  struct __sndr;
+  struct __sndr_base_t;
 
 public:
   template <class... _Ts>
@@ -99,7 +99,7 @@ struct just_stopped_t : __just_t<just_stopped_t, set_stopped_t>
 
 template <class _JustTag, class _SetTag>
 template <class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 {
   using sender_concept = sender_t;
 
@@ -129,17 +129,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr
 };
 
 template <class... _Ts>
-struct just_t::__sndr_t : __just_t<just_t, set_value_t>::__sndr<_Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_t::__sndr_t : __just_t<just_t, set_value_t>::__sndr_base_t<_Ts...>
 {};
 
 template <class... _Ts>
-struct just_error_t::__sndr_t : __just_t<just_error_t, set_error_t>::__sndr<_Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_error_t::__sndr_t : __just_t<just_error_t, set_error_t>::__sndr_base_t<_Ts...>
 {
   static_assert(sizeof...(_Ts) == 1, "just_error_t must be called with exactly one error type.");
 };
 
 template <class... _Ts>
-struct just_stopped_t::__sndr_t : __just_t<just_stopped_t, set_stopped_t>::__sndr<_Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
+    : __just_t<just_stopped_t, set_stopped_t>::__sndr_base_t<_Ts...>
 {
   static_assert(sizeof...(_Ts) == 0, "just_stopped_t must not be called with any types.");
 };
