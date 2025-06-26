@@ -51,7 +51,7 @@ struct cuda_kernel_desc
 {
   // Helper to generate std::extents<size_t, 1, 1, ..., 1> with N dimensions
   template <std::size_t N, std::size_t... Is>
-  constexpr auto make_static_extents(std::index_sequence<Is...>) {
+  static constexpr auto make_static_extents(std::index_sequence<Is...>) {
     return ::cuda::std::extents<std::size_t, (Is+1)...>{};
   }
 
