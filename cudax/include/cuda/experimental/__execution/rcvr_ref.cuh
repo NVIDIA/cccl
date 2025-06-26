@@ -45,23 +45,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
   {}
 
   template <class... _As>
-  _CCCL_TRIVIAL_API void set_value(_As&&... __as) noexcept
+  _CCCL_TRIVIAL_API constexpr void set_value(_As&&... __as) noexcept
   {
     execution::set_value(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_As&&>(__as)...);
   }
 
   template <class _Error>
-  _CCCL_TRIVIAL_API void set_error(_Error&& __err) noexcept
+  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
   {
     execution::set_error(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_Error&&>(__err));
   }
 
-  _CCCL_TRIVIAL_API void set_stopped() noexcept
+  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
   {
     execution::set_stopped(static_cast<_Rcvr&&>(*__rcvr_));
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API auto get_env() const noexcept -> _Env
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> _Env
   {
     static_assert(_CUDA_VSTD::is_same_v<_Env, env_of_t<_Rcvr>>,
                   "get_env() must return the same type as env_of_t<_Rcvr>");

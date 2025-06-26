@@ -74,7 +74,7 @@ public:
   {
     _CCCL_TEMPLATE(class _Tp)
     _CCCL_REQUIRES((!_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Tp>, __discard_proxy>) )
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr const __discard_proxy& operator=(_Tp&&) const noexcept
+    _CCCL_API constexpr const __discard_proxy& operator=(_Tp&&) const noexcept
     {
       return *this;
     }
@@ -84,7 +84,7 @@ public:
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
   using value_type        = void;
-  using pointer           = void*;
+  using pointer           = void;
   using reference         = void;
 
   //! @brief Default constructs a \p discard_iterator at index zero
@@ -94,37 +94,37 @@ public:
   //! @param __index The index used for the discard iterator
   _CCCL_TEMPLATE(class _Integer)
   _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator(_Integer __index) noexcept
+  _CCCL_API constexpr discard_iterator(_Integer __index) noexcept
       : __index_(static_cast<_CUDA_VSTD::ptrdiff_t>(__index))
   {}
 
   //! @brief Returns the stored index
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type index() const noexcept
+  [[nodiscard]] _CCCL_API constexpr difference_type index() const noexcept
   {
     return __index_;
   }
 
   //! @brief Dereferences the \c discard_iterator returning a proxy that discards all values that are assigned to it
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __discard_proxy operator*() const noexcept
+  [[nodiscard]] _CCCL_API constexpr __discard_proxy operator*() const noexcept
   {
     return {};
   }
 
   //! @brief Subscipts the \c discard_iterator returning a proxy that discards all values that are assigned to it
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __discard_proxy operator[](difference_type) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __discard_proxy operator[](difference_type) const noexcept
   {
     return {};
   }
 
   //! @brief Increments the stored index
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator& operator++() noexcept
+  _CCCL_API constexpr discard_iterator& operator++() noexcept
   {
     ++__index_;
     return *this;
   }
 
   //! @brief Increments the stored index
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator operator++(int) noexcept
+  _CCCL_API constexpr discard_iterator operator++(int) noexcept
   {
     discard_iterator __tmp = *this;
     ++__index_;
@@ -132,14 +132,14 @@ public:
   }
 
   //! @brief Decrements the stored index
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator& operator--() noexcept
+  _CCCL_API constexpr discard_iterator& operator--() noexcept
   {
     --__index_;
     return *this;
   }
 
   //! @brief Decrements the stored index
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator operator--(int) noexcept
+  _CCCL_API constexpr discard_iterator operator--(int) noexcept
   {
     discard_iterator __tmp = *this;
     --__index_;
@@ -148,7 +148,7 @@ public:
 
   //! @brief Returns a copy of this \c discard_iterator advanced by \p __n
   //! @param __n The number of elements to advance
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator operator+(difference_type __n) const noexcept
+  [[nodiscard]] _CCCL_API constexpr discard_iterator operator+(difference_type __n) const noexcept
   {
     return discard_iterator{__index_ + __n};
   }
@@ -156,7 +156,7 @@ public:
   //! @brief Returns a copy of \p __x advanced by \p __n
   //! @param __n The number of elements to advance
   //! @param __x The original \c discard_iterator
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr discard_iterator
+  [[nodiscard]] _CCCL_API friend constexpr discard_iterator
   operator+(difference_type __n, const discard_iterator& __x) noexcept
   {
     return __x + __n;
@@ -164,7 +164,7 @@ public:
 
   //! @brief Advances the index of this \c discard_iterator by \p __n
   //! @param __n The number of elements to advance
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator& operator+=(difference_type __n) noexcept
+  _CCCL_API constexpr discard_iterator& operator+=(difference_type __n) noexcept
   {
     __index_ += __n;
     return *this;
@@ -172,7 +172,7 @@ public:
 
   //! @brief Returns a copy of this \c discard_iterator decremented by \p __n
   //! @param __n The number of elements to decrement
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator operator-(difference_type __n) const noexcept
+  [[nodiscard]] _CCCL_API constexpr discard_iterator operator-(difference_type __n) const noexcept
   {
     return discard_iterator{__index_ - __n};
   }
@@ -181,7 +181,7 @@ public:
   //! @param __lhs The left \c discard_iterator
   //! @param __rhs The right \c discard_iterator
   //! @return __rhs.__index_ - __lhs.__index_
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ - __lhs.__index_;
@@ -190,7 +190,7 @@ public:
   //! @brief Returns the distance between \p __lhs a \p default_sentinel
   //! @param __lhs The left \c discard_iterator
   //! @return -__lhs.__index_
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
   {
     return static_cast<difference_type>(-__lhs.__index_);
@@ -199,7 +199,7 @@ public:
   //! @brief Returns the distance between a \p default_sentinel and \p __rhs
   //! @param __rhs The right \c discard_iterator
   //! @return __rhs.__index_
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return static_cast<difference_type>(__rhs.__index_);
@@ -207,14 +207,14 @@ public:
 
   //! @brief Decrements the index of the \c discard_iterator by \p __n
   //! @param __n The number of elements to decrement
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator& operator-=(difference_type __n) noexcept
+  _CCCL_API constexpr discard_iterator& operator-=(difference_type __n) noexcept
   {
     __index_ -= __n;
     return *this;
   }
 
   //! @brief Compares two \c discard_iterator for equality by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ == __rhs.__index_;
@@ -222,7 +222,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two \c discard_iterator for inequality by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ != __rhs.__index_;
@@ -230,7 +230,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
   {
     return __lhs.__index_ == 0;
@@ -238,21 +238,21 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ == 0;
   }
 
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
   {
     return __lhs.__index_ != 0;
   }
 
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ != 0;
@@ -261,7 +261,7 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   //! @brief Three-way-compares two \c discard_iterator by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr strong_ordering
+  [[nodiscard]] _CCCL_API friend constexpr strong_ordering
   operator<=>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <=> __rhs.__index_;
@@ -269,28 +269,28 @@ public:
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   //! @brief Compares two \c discard_iterator for less than by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
 
   //! @brief Compares two \c discard_iterator for less equal by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
 
   //! @brief Compares two \c discard_iterator for greater than by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
 
   //! @brief Compares two \c discard_iterator for greater equal by comparing their indices
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ >= __rhs.__index_;
@@ -302,7 +302,7 @@ public:
 //! @return A new \p discard_iterator with \p __index as the couner.
 _CCCL_TEMPLATE(class _Integer = _CUDA_VSTD::ptrdiff_t)
 _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr discard_iterator make_discard_iterator(_Integer __index = 0)
+[[nodiscard]] _CCCL_API constexpr discard_iterator make_discard_iterator(_Integer __index = 0)
 {
   return discard_iterator{__index};
 }

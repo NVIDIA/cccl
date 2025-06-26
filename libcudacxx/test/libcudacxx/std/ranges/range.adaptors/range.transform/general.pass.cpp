@@ -14,13 +14,9 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/ranges>
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/string_view>
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif // _LIBCUDACXX_HAS_VECTOR
+#include <cuda/std/string_view>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -36,15 +32,23 @@ static_assert(ValidTransformView<MoveOnlyView, PlusOne>);
 static_assert(!ValidTransformView<Range, PlusOne>);
 static_assert(!ValidTransformView<MoveOnlyView, BadFunction>);
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
+struct toUpperFn
+{
+  __host__ __device__ constexpr char operator()(const char c) const noexcept
+  {
+    if (c >= 'a' && c <= 'z')
+    {
+      return static_cast<char>(c - 32);
+    }
+    return c;
+  }
+};
+
 template <class R, cuda::std::enable_if_t<cuda::std::ranges::range<R>, int> = 0>
 __host__ __device__ auto toUpper(R range)
 {
-  return cuda::std::ranges::transform_view(range, [](char c) {
-    return cuda::std::toupper(c);
-  });
+  return cuda::std::ranges::transform_view(range, toUpperFn{});
 }
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
 
 template <class E1, class E2, size_t N, class Join = cuda::std::plus<E1>>
 __host__ __device__ auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
@@ -88,18 +92,16 @@ __host__ __device__ constexpr bool equal(Range&& range, Expected&& expected)
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   {
-    cuda::std::vector<int> vec = {1, 2, 3, 4};
-    auto transformed           = cuda::std::ranges::transform_view(vec, [](int x) {
+    cuda::std::inplace_vector<int, 5> vec = {1, 2, 3, 4};
+    auto transformed                      = cuda::std::ranges::transform_view(vec, [](int x) {
       return x + 42;
     });
-    int expected[]             = {43, 44, 45, 46};
+    int expected[]                        = {43, 44, 45, 46};
     assert(equal(transformed, expected));
     const auto& ct = transformed;
     assert(equal(ct, expected));
   }
-#endif // _LIBCUDACXX_HAS_VECTOR
 
   {
     // Test a view type that is not const-iterable.
@@ -119,14 +121,12 @@ int main(int, char**)
     assert(equal(out, check));
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
   {
     cuda::std::string_view str   = "Hello, World.";
     auto upp                     = toUpper(str);
     cuda::std::string_view check = "HELLO, WORLD.";
     assert(equal(upp, check));
   }
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
 
   return 0;
 }

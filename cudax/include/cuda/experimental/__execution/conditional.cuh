@@ -26,9 +26,11 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
@@ -126,7 +128,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__op_);
     }
@@ -136,40 +138,39 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     _CCCL_API void set_value(_As&&... __as) noexcept
     {
       auto __just = just_from(conditional_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
-      _CUDAX_TRY( //
-        ({ //
-          if (static_cast<_Pred&&>(__params_.pred)(__as...))
-          {
-            auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __ref_rcvr(__rcvr_));
-            execution::start(__op);
-          }
-          else
-          {
-            auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __ref_rcvr(__rcvr_));
-            execution::start(__op);
-          }
-        }),
-        _CUDAX_CATCH(...) //
-        ({ //
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-        }) //
-      )
+      _CCCL_TRY
+      {
+        if (static_cast<_Pred&&>(__params_.pred)(__as...))
+        {
+          auto& __op =
+            __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __ref_rcvr(__rcvr_));
+          execution::start(__op);
+        }
+        else
+        {
+          auto& __op =
+            __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __ref_rcvr(__rcvr_));
+          execution::start(__op);
+        }
+      }
+      _CCCL_CATCH_ALL
+      {
+        execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+      }
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __error) noexcept
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API void set_stopped() noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return __fwd_env(execution::get_env(__rcvr_));
     }
@@ -216,18 +217,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
     return {static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
+  [[nodiscard]] _CCCL_API constexpr auto
+  connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }

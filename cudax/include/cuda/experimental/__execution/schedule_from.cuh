@@ -26,13 +26,16 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
@@ -86,9 +89,9 @@ struct __transfer_sndr_t
   struct __attrs_t
   {
     template <class _SetTag>
-    _CCCL_API auto query(get_completion_scheduler_t<_SetTag>) const = delete;
+    _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>) const = delete;
 
-    _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
+    _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
     {
       return __self_->__sch_;
     }
@@ -103,13 +106,13 @@ struct __transfer_sndr_t
     // the sender.
     _CCCL_TEMPLATE(class _LateDomain = __late_domain_t)
     _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_LateDomain, __nil>) )
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_late_t) noexcept -> _LateDomain
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_override_t) noexcept -> _LateDomain
     {
       return {};
     }
 
-    // The following overload will not be considered when _Query is get_domain_late_t
-    // because get_domain_late_t is not a forwarding query.
+    // The following overload will not be considered when _Query is get_domain_override_t
+    // because get_domain_override_t is not a forwarding query.
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
@@ -140,7 +143,7 @@ struct __transfer_sndr_t
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
   {
     return __attrs_t{this};
   }
@@ -166,7 +169,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   struct __send_result_fn
   {
     template <class _Rcvr, class _Tag, class... _As>
-    _CCCL_API void operator()(_Rcvr& __rcvr, _Tag, _As&&... __args) const noexcept
+    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&&... __args) const noexcept
     {
       _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_As&&>(__args)...);
     }
@@ -176,7 +179,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   struct __send_result_visitor
   {
     template <class _Tuple>
-    _CCCL_API void operator()(_Tuple&& __tuple) const noexcept
+    _CCCL_API constexpr void operator()(_Tuple&& __tuple) const noexcept
     {
       _CUDA_VSTD::__apply(__send_result_fn{}, static_cast<_Tuple&&>(__tuple), __rcvr_);
     }
@@ -190,7 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
 
     template <class _Tag, class... _As>
-    _CCCL_API void operator()(_Tag, _As&... __as) noexcept
+    _CCCL_API constexpr void operator()(_Tag, _As&... __as) noexcept
     {
       _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_As&&>(__as)...);
     }
@@ -205,35 +208,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
       }
       else
       {
-        _CUDAX_TRY( //
-          ({ //
-            __result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
-          }),
-          _CUDAX_CATCH(...) //
-          ({ //
-            execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-          }) //
-        )
+        _CCCL_TRY
+        {
+          __result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
+        }
+        _CCCL_CATCH_ALL
+        {
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        }
       }
     }
 
-    _CCCL_API void set_value() noexcept
+    _CCCL_API constexpr void set_value() noexcept
     {
       _Result::__visit(__send_result_visitor<_Rcvr>{__rcvr_}, __result_);
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API void set_error(_Error&& __error) noexcept
+    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_TRIVIAL_API void set_stopped() noexcept
+    _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__rcvr_));
     }
@@ -252,7 +254,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     using __result_t _CCCL_NODEBUG_ALIAS =
       typename __completions_t::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
 
-    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}}
         , __opstate1_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
         , __opstate2_{execution::connect(schedule(__sch), __ref_rcvr(__rcvr_))}
@@ -260,7 +262,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
@@ -285,7 +287,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
       execution::start(__opstate2_);
     }
 
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
     {
       return __fwd_env(execution::get_env(__rcvr_.__rcvr_));
     }
@@ -301,15 +303,16 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<schedule_from_t, _Sch, _Sndr>
   {
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
     {
-      return {static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+      return __opstate_t<_Rcvr, _Sndr, _Sch>{
+        static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
     {
-      return {this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+      return __opstate_t<_Rcvr, const _Sndr&, _Sch>{this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
   };
 

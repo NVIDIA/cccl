@@ -1,12 +1,13 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef _CUDA___ITERATOR_STRIDED_ITERATOR_H
 #define _CUDA___ITERATOR_STRIDED_ITERATOR_H
 
@@ -37,11 +38,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is incremented or
-//! decremented.
+//! @brief A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is
+//! incremented or decremented.
 //!
-//! \param _Iter A random access iterator
-//! \param _Stride Either an \ref __integer-like__ or a \ref __integral-constant-like__ specifying the stride
+//! @param _Iter A random access iterator
+//! @param _Stride Either an \ref __integer-like__ or a \ref __integral-constant-like__ specifying the stride
 template <class _Iter, class _Stride = _CUDA_VSTD::iter_difference_t<_Iter>>
 class strided_iterator
 {
@@ -73,29 +74,28 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Stride2 = _Stride)
   _CCCL_REQUIRES((!_CUDA_VSTD::__integer_like<_Stride2>) )
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit strided_iterator(_Iter __iter) noexcept(
+  _CCCL_API constexpr explicit strided_iterator(_Iter __iter) noexcept(
     _CUDA_VSTD::is_nothrow_move_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_default_constructible_v<_Stride2>)
       : __iter_(_CUDA_VSTD::move(__iter))
       , __stride_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit strided_iterator(_Iter __iter, _Stride __stride) noexcept(
+  _CCCL_API constexpr explicit strided_iterator(_Iter __iter, _Stride __stride) noexcept(
     _CUDA_VSTD::is_nothrow_move_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_move_constructible_v<_Stride>)
       : __iter_(_CUDA_VSTD::move(__iter))
       , __stride_(_CUDA_VSTD::move(__stride))
   {}
 
   //! @brief Returns a const reference to the iterator stored in this \p transform_iterator
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Iter& base() const& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Iter& base() const& noexcept
   {
     return __iter_;
   }
 
   //! @brief Extracts the iterator stored in this \p transform_iterator
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter
-  base() && noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Iter>)
+  [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Iter>)
   {
     return _CUDA_VSTD::move(__iter_);
   }
@@ -104,13 +104,13 @@ public:
     noexcept(static_cast<difference_type>(_CUDA_VSTD::__de_ice(_CUDA_VSTD::declval<const _Stride&>())));
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type stride() const noexcept(__noexcept_stride)
+  [[nodiscard]] _CCCL_API constexpr difference_type stride() const noexcept(__noexcept_stride)
   {
     return static_cast<difference_type>(_CUDA_VSTD::__de_ice(__stride_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator*() noexcept(noexcept(*__iter_))
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() noexcept(noexcept(*__iter_))
   {
     return *__iter_;
   }
@@ -118,13 +118,13 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::__dereferenceable<const _Iter2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator*() const noexcept(noexcept(*__iter_))
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const noexcept(noexcept(*__iter_))
   {
     return *__iter_;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator[](difference_type __n) noexcept(__noexcept_stride && noexcept(__iter_[__n]))
   {
     return __iter_[__n * stride()];
@@ -133,7 +133,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::__dereferenceable<const _Iter2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator[](difference_type __n) const
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
     noexcept(__noexcept_stride && noexcept(__iter_[__n]))
   {
     return __iter_[__n * stride()];
@@ -141,15 +141,14 @@ public:
 
   // Note: we cannot use __iter_ += stride() in the noexcept clause because that breaks gcc < 9
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr strided_iterator&
-  operator++() noexcept(__noexcept_stride && noexcept(__iter_ += 1))
+  _CCCL_API constexpr strided_iterator& operator++() noexcept(__noexcept_stride && noexcept(__iter_ += 1))
   {
     __iter_ += stride();
     return *this;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int) noexcept(
+  _CCCL_API constexpr auto operator++(int) noexcept(
     noexcept(__noexcept_stride && noexcept(__iter_ += 1))
     && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Stride>)
   {
@@ -159,15 +158,14 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr strided_iterator&
-  operator--() noexcept(__noexcept_stride && noexcept(__iter_ -= 1))
+  _CCCL_API constexpr strided_iterator& operator--() noexcept(__noexcept_stride && noexcept(__iter_ -= 1))
   {
     __iter_ -= stride();
     return *this;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr strided_iterator operator--(int) noexcept(
+  _CCCL_API constexpr strided_iterator operator--(int) noexcept(
     noexcept(__noexcept_stride && noexcept(__iter_ -= 1))
     && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Stride>)
   {
@@ -177,7 +175,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr strided_iterator&
+  _CCCL_API constexpr strided_iterator&
   operator+=(difference_type __n) noexcept(__noexcept_stride && noexcept(__iter_ += 1))
   {
     __iter_ += stride() * __n;
@@ -185,7 +183,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr strided_iterator&
+  _CCCL_API constexpr strided_iterator&
   operator-=(difference_type __n) noexcept(__noexcept_stride && noexcept(__iter_ -= 1))
   {
     __iter_ -= stride() * __n;
@@ -195,7 +193,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -206,7 +204,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -217,7 +215,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -227,7 +225,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -237,7 +235,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -247,7 +245,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -259,7 +257,7 @@ public:
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
   _CCCL_REQUIRES(
     _CUDA_VSTD::totally_ordered<_Iter, _OtherIter> _CCCL_AND _CUDA_VSTD::three_way_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
+  [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() <=> _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -268,7 +266,7 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr strided_iterator
+  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
   operator+(strided_iterator __i, difference_type __n) noexcept(noexcept(__iter_ += __n))
   {
     __i += __n;
@@ -276,14 +274,14 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr strided_iterator
+  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
   operator+(difference_type __n, strided_iterator __i) noexcept(noexcept(__iter_ + __n))
   {
     return __i + __n;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr strided_iterator
+  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
   operator-(strided_iterator __i, difference_type __n) noexcept(noexcept(__iter_ -= __n))
   {
     __i -= __n;
@@ -293,7 +291,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::sized_sentinel_for<_OtherIter, _Iter>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<_Iter>() - _CUDA_VSTD::declval<_OtherIter>()))
   {
@@ -311,7 +309,7 @@ _CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _S
 //! @param __iter The random_access iterator
 //! @param __stride The optional stride. Is value initialized if not provided
 template <class _Iter, class _Stride = _CUDA_VSTD::iter_difference_t<_Iter>>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto make_strided_iterator(_Iter __iter, _Stride __stride = {})
+[[nodiscard]] _CCCL_API constexpr auto make_strided_iterator(_Iter __iter, _Stride __stride = {})
 {
   return strided_iterator<_Iter, _Stride>{_CUDA_VSTD::move(__iter), _CUDA_VSTD::move(__stride)};
 }

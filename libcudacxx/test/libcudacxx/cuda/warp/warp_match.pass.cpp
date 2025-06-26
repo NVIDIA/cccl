@@ -23,8 +23,11 @@ __device__ void test_types(T valueA = T{}, T valueB = T{1})
   {
     auto mask = cuda::device::lane_mask{(1u << i) - 1};
     assert(cuda::device::warp_match_all(valueA, mask));
-    auto value = threadIdx.x == 0 ? valueA : valueB;
-    assert(!cuda::device::warp_match_all(value, mask));
+    if (i > 1)
+    {
+      [[maybe_unused]] auto value = threadIdx.x == 0 ? valueA : valueB;
+      assert(!cuda::device::warp_match_all(value, mask));
+    }
   }
 }
 

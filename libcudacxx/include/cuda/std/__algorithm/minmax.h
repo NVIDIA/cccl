@@ -33,22 +33,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<const _Tp&, const _Tp&>
-minmax(const _Tp& __a, const _Tp& __b, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr pair<const _Tp&, const _Tp&> minmax(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__b, __a) ? pair<const _Tp&, const _Tp&>(__b, __a) : pair<const _Tp&, const _Tp&>(__a, __b);
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<const _Tp&, const _Tp&> minmax(const _Tp& __a, const _Tp& __b)
+[[nodiscard]] _CCCL_API constexpr pair<const _Tp&, const _Tp&> minmax(const _Tp& __a, const _Tp& __b)
 {
   return _CUDA_VSTD::minmax(__a, __b, __less{});
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Tp, _Tp> minmax(initializer_list<_Tp> __t, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr pair<_Tp, _Tp> minmax(initializer_list<_Tp> __t, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, _Tp, _Tp>::value, "The comparator has to be callable");
   identity __proj{};
@@ -57,12 +54,10 @@ template <class _Tp, class _Compare>
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Tp, _Tp> minmax(initializer_list<_Tp> __t)
+[[nodiscard]] _CCCL_API constexpr pair<_Tp, _Tp> minmax(initializer_list<_Tp> __t)
 {
   return _CUDA_VSTD::minmax(__t, __less{});
 }
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

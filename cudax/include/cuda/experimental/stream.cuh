@@ -11,6 +11,7 @@
 #ifndef __CUDAX_STREAM__
 #define __CUDAX_STREAM__
 
+#include <cuda/experimental/__execution/stream/scheduler.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
 #endif // __CUDAX_STREAM__

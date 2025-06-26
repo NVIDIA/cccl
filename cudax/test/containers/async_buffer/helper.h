@@ -34,16 +34,14 @@ constexpr bool equal_range(const Buffer& buf)
 {
   if constexpr (Buffer::__is_host_only)
   {
-    buf.get_stream().sync();
+    buf.stream().sync();
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
   else
   {
     return buf.size() == cuda::std::size(device_data)
-        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
-                         buf.begin(),
-                         buf.end(),
-                         cuda::get_device_address(device_data[0]));
+        && thrust::equal(
+             thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
   }
 }
 
@@ -106,14 +104,14 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
 {
   if constexpr (Buffer::__is_host_only)
   {
-    buf.get_stream().sync();
+    buf.stream().sync();
     return buf.size() == size
         && cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), equal_to_value{value});
   }
   else
   {
     return buf.size() == size
-        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
+        && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
                          buf.begin(),
                          buf.end(),
                          cuda::std::begin(device_data),
@@ -127,15 +125,24 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
 {
   if constexpr (Range1::__is_host_only)
   {
-    range1.get_stream().sync();
+    range1.stream().sync();
     return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
   }
   else
   {
     return range1.size() == range2.size()
-        && thrust::equal(thrust::cuda::par.on(range1.get_stream().get()), range1.begin(), range1.end(), range2.begin());
+        && thrust::equal(thrust::cuda::par.on(range1.stream().get()), range1.begin(), range1.end(), range2.begin());
   }
 }
+
+struct dev0_device_memory_resource : cudax::device_memory_resource
+{
+  dev0_device_memory_resource()
+      : cudax::device_memory_resource{cudax::device_ref{0}}
+  {}
+
+  using default_queries = cudax::properties_list<cuda::mr::device_accessible>;
+};
 
 // helper class as we need to pass the properties in a tuple to the catch tests
 template <class>
@@ -152,7 +159,7 @@ struct extract_properties<cuda::std::tuple<Properties...>>
 #else
                                             void,
 #endif
-                                            cudax::device_memory_resource>;
+                                            dev0_device_memory_resource>;
   using iterator       = cudax::heterogeneous_iterator<int, Properties...>;
   using const_iterator = cudax::heterogeneous_iterator<const int, Properties...>;
 

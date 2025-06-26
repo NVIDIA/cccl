@@ -131,7 +131,7 @@ struct expecter
   };
 
   template <typename... Msgs>
-  [[noreturn]] static _LIBCUDACXX_HIDE_FROM_ABI void
+  [[noreturn]] static _CCCL_API inline void
   __throw_stf_failure([[maybe_unused]] _CUDA_VSTD::source_location loc, [[maybe_unused]] const Msgs&... msgs)
   {
 #  if _CCCL_HAS_EXCEPTIONS()

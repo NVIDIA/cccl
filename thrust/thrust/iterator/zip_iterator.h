@@ -64,7 +64,7 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
-  // We need this to make discard iterator work because that has a void reference type
+  // We need this to make proxy iterators work because those have a void reference type
   template <class Iter>
   using zip_iterator_reference_t =
     _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<it_reference_t<Iter>, void>,

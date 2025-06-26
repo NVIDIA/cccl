@@ -5,9 +5,8 @@ Param(
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
-    [ValidateNotNullOrEmpty()]
     [Alias("arch")]
-    [int]$CUDA_ARCH = 0
+    [string]$CUDA_ARCH = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,10 +24,10 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 }
 
 $script:GLOBAL_CMAKE_OPTIONS = ""
-if ($CUDA_ARCH -ne 0) {
-    $script:GLOBAL_CMAKE_OPTIONS += "-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH"
+if ($CUDA_ARCH -ne "") {
+    # Quote the value to ensure it's treated as a single argument, even with semicolons
+    $script:GLOBAL_CMAKE_OPTIONS += "`"-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH`" "
 }
-
 
 if (-not $env:CCCL_BUILD_INFIX) {
     $env:CCCL_BUILD_INFIX = ""
