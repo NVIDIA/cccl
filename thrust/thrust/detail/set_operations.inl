@@ -42,6 +42,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   InputIterator2 last2,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference");
   using thrust::system::detail::generic::set_difference;
   return set_difference(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result);
@@ -62,6 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   OutputIterator result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference");
   using thrust::system::detail::generic::set_difference;
   return set_difference(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result, comp);
@@ -86,6 +88,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference_by_key");
   using thrust::system::detail::generic::set_difference_by_key;
   return set_difference_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -120,6 +123,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
   OutputIterator2 values_result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference_by_key");
   using thrust::system::detail::generic::set_difference_by_key;
   return set_difference_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -144,6 +148,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   InputIterator2 last2,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection");
   using thrust::system::detail::generic::set_intersection;
   return set_intersection(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result);
@@ -164,6 +169,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   OutputIterator result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection");
   using thrust::system::detail::generic::set_intersection;
   return set_intersection(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result, comp);
@@ -186,6 +192,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection_by_key");
   using thrust::system::detail::generic::set_intersection_by_key;
   return set_intersection_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -217,6 +224,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
   OutputIterator2 values_result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection_by_key");
   using thrust::system::detail::generic::set_intersection_by_key;
   return set_intersection_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -240,6 +248,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   InputIterator2 last2,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference");
   using thrust::system::detail::generic::set_symmetric_difference;
   return set_symmetric_difference(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result);
@@ -260,6 +269,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   OutputIterator result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference");
   using thrust::system::detail::generic::set_symmetric_difference;
   return set_symmetric_difference(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result, comp);
@@ -284,6 +294,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference_by_key");
   using thrust::system::detail::generic::set_symmetric_difference_by_key;
   return set_symmetric_difference_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -318,6 +329,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
   OutputIterator2 values_result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference_by_key");
   using thrust::system::detail::generic::set_symmetric_difference_by_key;
   return set_symmetric_difference_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -342,6 +354,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   InputIterator2 last2,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union");
   using thrust::system::detail::generic::set_union;
   return set_union(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result);
@@ -362,6 +375,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   OutputIterator result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union");
   using thrust::system::detail::generic::set_union;
   return set_union(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result, comp);
@@ -386,6 +400,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union_by_key");
   using thrust::system::detail::generic::set_union_by_key;
   return set_union_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -420,6 +435,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
   OutputIterator2 values_result,
   StrictWeakCompare comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union_by_key");
   using thrust::system::detail::generic::set_union_by_key;
   return set_union_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -443,6 +459,7 @@ OutputIterator set_difference(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -460,6 +477,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator set_difference(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -491,6 +509,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -536,6 +555,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -573,6 +593,7 @@ OutputIterator set_intersection(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -590,6 +611,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator set_intersection(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -619,6 +641,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -659,6 +682,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -693,6 +717,7 @@ OutputIterator set_symmetric_difference(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -711,6 +736,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator set_symmetric_difference(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -743,6 +769,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -788,6 +815,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -825,6 +853,7 @@ OutputIterator set_union(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -842,6 +871,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator set_union(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -873,6 +903,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -918,6 +949,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_union_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

@@ -25,11 +25,13 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _CCCL_API constexpr bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _BinaryPredicate __pred)
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
@@ -43,15 +45,14 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
 }
 
 template <class _InputIterator1, class _InputIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2)
+[[nodiscard]] _CCCL_API constexpr bool equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2)
 {
   return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to{});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _InputIterator1, class _InputIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal(
+[[nodiscard]] _CCCL_API constexpr bool __equal(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -71,7 +72,7 @@ template <class _BinaryPredicate, class _InputIterator1, class _InputIterator2>
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal(
+[[nodiscard]] _CCCL_API constexpr bool __equal(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -89,7 +90,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
 }
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _CCCL_API constexpr bool
 equal(_InputIterator1 __first1,
       _InputIterator1 __last1,
       _InputIterator2 __first2,
@@ -107,7 +108,7 @@ equal(_InputIterator1 __first1,
 }
 
 template <class _InputIterator1, class _InputIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _CCCL_API constexpr bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
   return _CUDA_VSTD::__equal(
@@ -121,5 +122,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_EQUAL_H

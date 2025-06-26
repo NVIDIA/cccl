@@ -35,6 +35,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 // CRTP base that one can derive from in order to be considered a range adaptor closure
@@ -55,7 +57,7 @@ struct __pipeable
     : _Fn
     , __range_adaptor_closure<__pipeable<_Fn>>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __pipeable(_Fn&& __f)
+  _CCCL_API constexpr explicit __pipeable(_Fn&& __f)
       : _Fn(_CUDA_VSTD::move(__f))
   {}
 };
@@ -82,7 +84,7 @@ _CCCL_CONCEPT __range_adaptor_can_pipe_compose = _CCCL_REQUIRES_EXPR((_Closure, 
 
 _CCCL_TEMPLATE(class _Range, class _Closure)
 _CCCL_REQUIRES(__range_adaptor_can_pipe_invoke<_Range, _Closure>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+[[nodiscard]] _CCCL_API constexpr decltype(auto)
 operator|(_Range&& __range, _Closure&& __closure) noexcept(is_nothrow_invocable_v<_Closure, _Range>)
 {
   return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Closure>(__closure), _CUDA_VSTD::forward<_Range>(__range));
@@ -90,8 +92,7 @@ operator|(_Range&& __range, _Closure&& __closure) noexcept(is_nothrow_invocable_
 
 _CCCL_TEMPLATE(class _Closure, class _OtherClosure)
 _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-operator|(_Closure&& __closure, _OtherClosure&& __other_closure) noexcept(
+[[nodiscard]] _CCCL_API constexpr auto operator|(_Closure&& __closure, _OtherClosure&& __other_closure) noexcept(
   is_nothrow_constructible_v<decay_t<_Closure>, _Closure>
   && is_nothrow_constructible_v<decay_t<_OtherClosure>, _OtherClosure>)
 {
@@ -106,5 +107,7 @@ class range_adaptor_closure : public __range_adaptor_closure<_Tp>
 {};
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_RANGE_ADAPTOR_H

@@ -29,6 +29,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
@@ -81,7 +83,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
 _CCCL_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __test_convert(_Tp);
+_CCCL_API inline void __test_convert(_Tp);
 
 _CCCL_NV_DIAG_DEFAULT(volatile_func_param_deprecated)
 _CCCL_DIAG_POP
@@ -206,5 +208,7 @@ inline constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
 #endif // !_CCCL_BUILTIN_IS_CONVERTIBLE_TO
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H

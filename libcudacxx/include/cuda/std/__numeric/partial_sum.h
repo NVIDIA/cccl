@@ -25,11 +25,12 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
-partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
+_CCCL_API constexpr _OutputIterator partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   if (__first != __last)
   {
@@ -45,7 +46,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOperation __binary_op)
 {
   if (__first != __last)
@@ -62,5 +63,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_PARTIAL_SUM_H

@@ -30,13 +30,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda.h>
-#include <cuda_occupancy.h>
-#include <cuda_runtime.h>
-
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <cuda.h>
+#include <cuda_occupancy.h>
+#include <cuda_runtime.h>
 
 #if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
 #  include <cusolverDn.h>

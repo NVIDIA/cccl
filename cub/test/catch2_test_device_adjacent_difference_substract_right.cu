@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_adjacent_difference.cuh>
 
@@ -103,10 +102,12 @@ struct ref_diff
     return ulonglong2{rhs.x - lhs.x, rhs.y - lhs.y};
   }
 
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   __host__ __device__ constexpr ulonglong4 operator()(const ulonglong4& lhs, const ulonglong4& rhs) const noexcept
   {
     return ulonglong4{rhs.x - lhs.x, rhs.y - lhs.y, rhs.z - lhs.z, rhs.w - lhs.w};
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   __host__ __device__ constexpr long2 operator()(const long2& lhs, const long2& rhs) const noexcept
   {
@@ -207,10 +208,12 @@ struct cust_diff
     return ulonglong2{lhs.x - rhs.x, lhs.y - rhs.y};
   }
 
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   __host__ __device__ constexpr ulonglong4 operator()(const ulonglong4& lhs, const ulonglong4& rhs) const noexcept
   {
     return ulonglong4{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w};
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   __host__ __device__ constexpr long2 operator()(const long2& lhs, const long2& rhs) const noexcept
   {
@@ -319,7 +322,8 @@ struct check_difference
   }
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes", "[device][adjacent_difference]")
+C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes",
+         "[device][adjacent_difference][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
 {
   constexpr cuda::std::size_t num_items = 1ll << 33;
   c2h::device_vector<int> error(1);

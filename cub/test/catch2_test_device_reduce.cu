@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -68,7 +67,15 @@ using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::in
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_pair<uchar3>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<

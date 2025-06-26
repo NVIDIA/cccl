@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct from_range_t
@@ -28,5 +30,7 @@ struct from_range_t
 _CCCL_GLOBAL_CONSTANT from_range_t from_range{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_FROM_RANGE_H

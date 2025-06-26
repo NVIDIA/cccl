@@ -25,14 +25,16 @@
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__functional/invoke.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Fn, class... _Args>
 concept predicate = regular_invocable<_Fn, _Args...> && __boolean_testable<invoke_result_t<_Fn, _Args...>>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [concept.predicate]
 template <class _Fn, class... _Args>
@@ -43,8 +45,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Fn, class... _Args>
 _CCCL_CONCEPT predicate = _CCCL_FRAGMENT(_Predicate_, _Fn, _Args...);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_PREDICATE_H

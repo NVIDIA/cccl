@@ -55,7 +55,7 @@
 
 // Special case for NVCC -- need to inform the device path about the kernels
 // that are launched from the host path.
-#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
+#if _CCCL_DEVICE_COMPILATION()
 
 // Device-side launch not supported, fallback to sequential in device code.
 #  define THRUST_CDP_DISPATCH(par_impl, seq_impl)                    \
@@ -65,8 +65,8 @@
     }                                                                \
     NV_IF_TARGET(NV_IS_HOST, par_impl, seq_impl)
 
-#else // !(NVCC device pass):
+#else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 
 #  define THRUST_CDP_DISPATCH(par_impl, seq_impl) NV_IF_TARGET(NV_IS_HOST, par_impl, seq_impl)
 
-#endif // NVCC device pass
+#endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^

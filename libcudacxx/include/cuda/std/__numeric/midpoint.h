@@ -33,12 +33,12 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
+[[nodiscard]] _CCCL_API constexpr enable_if_t<
   _CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp),
   _Tp>
 midpoint(_Tp __a, _Tp __b) noexcept
@@ -59,25 +59,25 @@ midpoint(_Tp __a, _Tp __b) noexcept
 
 template <class _Tp,
           enable_if_t<_CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_void, _Tp) && (sizeof(_Tp) > 0), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {
   return __a + _CUDA_VSTD::midpoint(ptrdiff_t(0), __b - __a);
 }
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __sign(_Tp __val)
+[[nodiscard]] _CCCL_API constexpr int __sign(_Tp __val)
 {
   return (_Tp(0) < __val) - (__val < _Tp(0));
 }
 
 template <typename _Fp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Fp __fp_abs(_Fp __f)
+[[nodiscard]] _CCCL_API constexpr _Fp __fp_abs(_Fp __f)
 {
   return __f >= 0 ? __f : -__f;
 }
 
 template <class _Fp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
+[[nodiscard]] _CCCL_API constexpr enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
 midpoint(_Fp __a, _Fp __b) noexcept
 {
   constexpr _Fp __lo = numeric_limits<_Fp>::min() * 2;
@@ -95,6 +95,6 @@ midpoint(_Fp __a, _Fp __b) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_MIDPOINT_H

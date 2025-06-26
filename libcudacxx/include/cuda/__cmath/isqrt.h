@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the square root of the given non-negative integer rounded down
@@ -37,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @warning If \p __v is negative, the behavior is undefined
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp isqrt(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp isqrt(_Tp __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {
@@ -72,5 +74,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___CMATH_ISQRT_H

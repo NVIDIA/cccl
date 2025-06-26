@@ -22,6 +22,8 @@
 
 #include <cuda/std/__functional/invoke.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // result_of
@@ -39,5 +41,7 @@ using result_of_t _LIBCUDACXX_DEPRECATED = typename result_of<_Tp>::type;
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_RESULT_OF_H

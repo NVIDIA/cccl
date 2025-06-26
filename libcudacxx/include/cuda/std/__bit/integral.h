@@ -33,10 +33,12 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __bit_log2(_Tp __t) noexcept
+_CCCL_API constexpr uint32_t __bit_log2(_Tp __t) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -57,7 +59,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __bit_log2(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int bit_width(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int bit_width(_Tp __t) noexcept
 {
   // if __t == 0, __bit_log2(0) returns 0xFFFFFFFF. Since unsigned overflow is well-defined, the result is -1 + 1 = 0
   auto __ret = _CUDA_VSTD::__bit_log2(__t) + 1;
@@ -67,7 +69,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_ceil(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp bit_ceil(_Tp __t) noexcept
 {
   using _Up = _If<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   _CCCL_ASSERT(__t <= numeric_limits<_Tp>::max() / 2, "bit_ceil overflow");
@@ -93,7 +95,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_floor(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp bit_floor(_Tp __t) noexcept
 {
   using _Up   = _If<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __log2 = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
@@ -116,5 +118,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_INTEGRAL_H

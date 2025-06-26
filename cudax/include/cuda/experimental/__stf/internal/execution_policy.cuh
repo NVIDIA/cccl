@@ -633,6 +633,8 @@ UNITTEST("con") {
 };
 // clang-format on
 
+// These trigger a segfault in nvcc 12.9. Temporarily disabling until they can be investigated.
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
 // unittest for core.h that can't be there
 UNITTEST("optionally_static")
 {
@@ -649,7 +651,7 @@ UNITTEST("optionally_static")
   v3 = 44;
   EXPECT(v3.get() == 44UL);
 
-#  if 0
+#    if 0
   // TODO clarify these tests !
 
   // Make sure the size is optimized properly
@@ -665,7 +667,7 @@ UNITTEST("optionally_static")
     [[no_unique_address]] optionally_static<size_t(42)> x;
   };
   static_assert(sizeof(S1) == sizeof(int));
-#  endif
+#    endif
 
   // Multiplication
   static_assert(v1 * v1 == 42UL * 42UL);
@@ -681,7 +683,7 @@ UNITTEST("optionally_static")
   static_assert(v4 * v5 == (optionally_static<18, 18>(18)));
 
 // TODO solve these there are some ambiguities !
-#  if 0
+#    if 0
   // Mutating operators
   optionally_static<1, 1> v6;
   v6 += v6;
@@ -697,8 +699,9 @@ UNITTEST("optionally_static")
   v6--;
   EXPECT(v6 == 1);
   EXPECT(-v6 == -1);
-#  endif
+#    endif
 };
+#  endif
 
 UNITTEST("thread hierarchy spec equality")
 {

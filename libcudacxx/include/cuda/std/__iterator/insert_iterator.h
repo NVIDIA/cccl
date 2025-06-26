@@ -27,6 +27,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Container>
@@ -57,45 +59,45 @@ public:
   using reference      = void;
   using container_type = _Container;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
-  insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
       : container(_CUDA_VSTD::addressof(__x))
       , iter(__i)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator&
-  operator=(const typename _Container::value_type& __value)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(const typename _Container::value_type& __value)
   {
     iter = container->insert(iter, __value);
     ++iter;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(typename _Container::value_type&& __value)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(typename _Container::value_type&& __value)
   {
     iter = container->insert(iter, _CUDA_VSTD::move(__value));
     ++iter;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator*()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator*()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++(int)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++(int)
   {
     return *this;
   }
 };
 
 template <class _Container>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
 inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
 {
   return insert_iterator<_Container>(__x, __i);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_INSERT_ITERATOR_H

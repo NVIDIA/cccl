@@ -49,6 +49,8 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/type_traits>
+
 #include <nv/target>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -171,7 +173,7 @@ public:
   template <typename QualifiedT>
   cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
   {
-    this->ptr        = const_cast<std::remove_cv_t<QualifiedT>*>(ptr);
+    this->ptr        = const_cast<::cuda::std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
@@ -287,7 +289,7 @@ public:
 
 #if !_CCCL_COMPILER(NVRTC)
   /// ostream operator
-  friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";

@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __destruct_n
@@ -34,7 +36,7 @@ private:
   size_t __size_;
 
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI void __process(_Tp* __p, false_type) noexcept
+  _CCCL_API inline void __process(_Tp* __p, false_type) noexcept
   {
     for (size_t __i = 0; __i < __size_; ++__i, ++__p)
     {
@@ -43,45 +45,47 @@ private:
   }
 
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI void __process(_Tp*, true_type) noexcept
+  _CCCL_API inline void __process(_Tp*, true_type) noexcept
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI void __incr(false_type) noexcept
+  _CCCL_API inline void __incr(false_type) noexcept
   {
     ++__size_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void __incr(true_type) noexcept {}
+  _CCCL_API inline void __incr(true_type) noexcept {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI void __set(size_t __s, false_type) noexcept
+  _CCCL_API inline void __set(size_t __s, false_type) noexcept
   {
     __size_ = __s;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void __set(size_t, true_type) noexcept {}
+  _CCCL_API inline void __set(size_t, true_type) noexcept {}
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __destruct_n(size_t __s) noexcept
+  _CCCL_API inline explicit __destruct_n(size_t __s) noexcept
       : __size_(__s)
   {}
 
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI void __incr() noexcept
+  _CCCL_API inline void __incr() noexcept
   {
     __incr(integral_constant<bool, is_trivially_destructible<_Tp>::value>());
   }
 
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI void __set(size_t __s, _Tp*) noexcept
+  _CCCL_API inline void __set(size_t __s, _Tp*) noexcept
   {
     __set(__s, integral_constant<bool, is_trivially_destructible<_Tp>::value>());
   }
 
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Tp* __p) noexcept
+  _CCCL_API inline void operator()(_Tp* __p) noexcept
   {
     __process(__p, integral_constant<bool, is_trivially_destructible<_Tp>::value>());
   }
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_DESTRUCT_N_H

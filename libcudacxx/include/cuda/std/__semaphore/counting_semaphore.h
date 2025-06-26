@@ -23,7 +23,7 @@
 #include <cuda/std/__semaphore/atomic_semaphore.h>
 #include <cuda/std/cstdint>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -33,7 +33,7 @@ class counting_semaphore : public __atomic_semaphore<thread_scope_system, __leas
   static_assert(__least_max_value <= __atomic_semaphore<thread_scope_system, __least_max_value>::max(), "");
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_semaphore(ptrdiff_t __count = 0)
+  _CCCL_API constexpr counting_semaphore(ptrdiff_t __count = 0)
       : __atomic_semaphore<thread_scope_system, __least_max_value>(__count)
   {}
   _CCCL_HIDE_FROM_ABI ~counting_semaphore() = default;
@@ -46,6 +46,6 @@ using binary_semaphore = counting_semaphore<1>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___SEMAPHORE_COUNTING_SEMAPHORE_H

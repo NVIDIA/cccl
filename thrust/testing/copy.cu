@@ -17,6 +17,12 @@
 
 #include <unittest/unittest.h>
 
+#if _CCCL_COMPILER(GCC, >=, 11)
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
 void TestCopyFromConstIterator()
 {
   using T = int;
@@ -509,7 +515,7 @@ void TestCopyCountingIterator()
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyCountingIterator);
 
 template <typename Vector>
-void TestCopyZipIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestCopyZipIterator()
 {
   using T = typename Vector::value_type;
 
@@ -714,8 +720,7 @@ namespace detail
 // We need this type to pass as a non-const ref for unary_transform_functor
 // to compile:
 template <>
-struct is_non_const_reference<only_set_when_expected_it> : thrust::true_type
-{};
+inline constexpr bool is_non_const_reference_v<only_set_when_expected_it> = true;
 } // end namespace detail
 THRUST_NAMESPACE_END
 

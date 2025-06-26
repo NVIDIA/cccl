@@ -20,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #include <cuda/std/__algorithm/equal.h>
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/lexicographical_compare.h>
@@ -66,6 +64,8 @@ _CCCL_PUSH_MACROS
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, size_t _Size>
@@ -88,95 +88,95 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   _Tp __elems_[_Size];
 
   // No explicit construct/copy/destroy for aggregate type
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void fill(const value_type& __u)
+  _CCCL_API constexpr void fill(const value_type& __u)
   {
     _CUDA_VSTD::fill_n(__elems_, _Size, __u);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(array& __a) noexcept(__is_nothrow_swappable<_Tp>::value)
+  _CCCL_API constexpr void swap(array& __a) noexcept(__is_nothrow_swappable<_Tp>::value)
   {
     _CUDA_VSTD::swap_ranges(__elems_, __elems_ + _Size, __a.data());
   }
 
   // iterators:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
+  [[nodiscard]] _CCCL_API constexpr iterator begin() noexcept
   {
     return iterator(__elems_);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
   {
     return const_iterator(__elems_);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
+  [[nodiscard]] _CCCL_API constexpr iterator end() noexcept
   {
     return iterator(__elems_ + _Size);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator end() const noexcept
   {
     return const_iterator(__elems_ + _Size);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
+  [[nodiscard]] _CCCL_API constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator(end());
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator(end());
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
+  [[nodiscard]] _CCCL_API constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator(begin());
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator(begin());
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator cbegin() const noexcept
   {
     return begin();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator cend() const noexcept
   {
     return end();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator crbegin() const noexcept
   {
     return rbegin();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator crend() const noexcept
   {
     return rend();
   }
 
   // capacity:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_type size() const noexcept
   {
     return _Size;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
   {
     return _Size;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
   {
     return _Size == 0;
   }
 
   // element access:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __n) noexcept
+  [[nodiscard]] _CCCL_API constexpr reference operator[](size_type __n) noexcept
   {
     _CCCL_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
     return __elems_[__n];
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](size_type __n) const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reference operator[](size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
     return __elems_[__n];
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type __n)
+  [[nodiscard]] _CCCL_API constexpr reference at(size_type __n)
   {
     if (__n >= _Size)
     {
@@ -185,7 +185,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
     return __elems_[__n];
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(size_type __n) const
+  [[nodiscard]] _CCCL_API constexpr const_reference at(size_type __n) const
   {
     if (__n >= _Size)
     {
@@ -194,28 +194,28 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
     return __elems_[__n];
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
+  [[nodiscard]] _CCCL_API constexpr reference front() noexcept
   {
     return (*this)[0];
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reference front() const noexcept
   {
     return (*this)[0];
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
+  [[nodiscard]] _CCCL_API constexpr reference back() noexcept
   {
     return (*this)[_Size - 1];
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reference back() const noexcept
   {
     return (*this)[_Size - 1];
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type* data() noexcept
+  [[nodiscard]] _CCCL_API constexpr value_type* data() noexcept
   {
     return __elems_;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type* data() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const value_type* data() const noexcept
   {
     return __elems_;
   }
@@ -249,141 +249,141 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   };
   _CCCL_ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type* data() noexcept
+  [[nodiscard]] _CCCL_API constexpr value_type* data() noexcept
   {
     return nullptr;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type* data() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const value_type* data() const noexcept
   {
     return nullptr;
   }
 
   // No explicit construct/copy/destroy for aggregate type
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void fill(const value_type&)
+  _CCCL_API constexpr void fill(const value_type&)
   {
     static_assert(!_CCCL_TRAIT(is_const, _Tp), "cannot fill zero-sized array of type 'const T'");
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(array&) noexcept
+  _CCCL_API constexpr void swap(array&) noexcept
   {
     static_assert(!_CCCL_TRAIT(is_const, _Tp), "cannot swap zero-sized array of type 'const T'");
   }
 
   // iterators:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
+  [[nodiscard]] _CCCL_API constexpr iterator begin() noexcept
   {
     return iterator(nullptr);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
   {
     return const_iterator(nullptr);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
+  [[nodiscard]] _CCCL_API constexpr iterator end() noexcept
   {
     return iterator(nullptr);
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator end() const noexcept
   {
     return const_iterator(nullptr);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
+  [[nodiscard]] _CCCL_API constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator(end());
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator(end());
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
+  [[nodiscard]] _CCCL_API constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator(begin());
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator(begin());
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator cbegin() const noexcept
   {
     return begin();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_iterator cend() const noexcept
   {
     return end();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator crbegin() const noexcept
   {
     return rbegin();
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reverse_iterator crend() const noexcept
   {
     return rend();
   }
 
   // capacity:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_type size() const noexcept
   {
     return 0;
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
   {
     return 0;
   }
-  [[nodiscard]] [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
   {
     return true;
   }
 
   // element access:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type) noexcept
+  [[nodiscard]] _CCCL_API constexpr reference operator[](size_type) noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](size_type) const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reference operator[](size_type) const noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type)
+  [[nodiscard]] _CCCL_API constexpr reference at(size_type)
   {
     _CUDA_VSTD::__throw_out_of_range("array<T, 0>::at");
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(size_type) const
+  [[nodiscard]] _CCCL_API constexpr const_reference at(size_type) const
   {
     _CUDA_VSTD::__throw_out_of_range("array<T, 0>::at");
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
+  [[nodiscard]] _CCCL_API constexpr reference front() noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reference front() const noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
+  [[nodiscard]] _CCCL_API constexpr reference back() noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const_reference back() const noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _CCCL_UNREACHABLE();
@@ -398,51 +398,44 @@ _CCCL_REQUIRES((_CCCL_TRAIT(is_same, _Tp, _Args) && ...))
 _CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 
 template <class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator==(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
+[[nodiscard]] _CCCL_API constexpr bool operator==(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return _CUDA_VSTD::equal(__x.begin(), __x.end(), __y.begin());
 }
 
 template <class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator!=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
+[[nodiscard]] _CCCL_API constexpr bool operator!=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator<(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
+[[nodiscard]] _CCCL_API constexpr bool operator<(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return _CUDA_VSTD::lexicographical_compare(__x.begin(), __x.end(), __y.begin(), __y.end());
 }
 
 template <class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator>(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
+[[nodiscard]] _CCCL_API constexpr bool operator>(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return __y < __x;
 }
 
 template <class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator<=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
+[[nodiscard]] _CCCL_API constexpr bool operator<=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__y < __x);
 }
 
 template <class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator>=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
+[[nodiscard]] _CCCL_API constexpr bool operator>=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__x < __y);
 }
 
 _CCCL_TEMPLATE(class _Tp, size_t _Size)
 _CCCL_REQUIRES((_Size == 0) || __is_swappable<_Tp>::value)
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
+_CCCL_API constexpr void swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
 {
   __x.swap(__y);
 }
@@ -459,49 +452,49 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, array<_Tp, _Size>>
 };
 
 template <size_t _Ip, class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(array<_Tp, _Size>& __a) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp& get(array<_Tp, _Size>& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (std::array)");
   return __a.__elems_[_Ip];
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const array<_Tp, _Size>& __a) noexcept
+[[nodiscard]] _CCCL_API constexpr const _Tp& get(const array<_Tp, _Size>& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array)");
   return __a.__elems_[_Ip];
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(array<_Tp, _Size>&& __a) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp&& get(array<_Tp, _Size>&& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (std::array &&)");
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const array<_Tp, _Size>&& __a) noexcept
+[[nodiscard]] _CCCL_API constexpr const _Tp&& get(const array<_Tp, _Size>&& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array &&)");
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
 template <typename _Tp, size_t _Size, size_t... _Index>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr array<remove_cv_t<_Tp>, _Size>
+[[nodiscard]] _CCCL_API constexpr array<remove_cv_t<_Tp>, _Size>
 __to_array_lvalue_impl(_Tp (&__arr)[_Size], index_sequence<_Index...>)
 {
   return {{__arr[_Index]...}};
 }
 
 template <typename _Tp, size_t _Size, size_t... _Index>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr array<remove_cv_t<_Tp>, _Size>
+[[nodiscard]] _CCCL_API constexpr array<remove_cv_t<_Tp>, _Size>
 __to_array_rvalue_impl(_Tp (&&__arr)[_Size], index_sequence<_Index...>)
 {
   return {{_CUDA_VSTD::move(__arr[_Index])...}};
 }
 
 template <typename _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr array<remove_cv_t<_Tp>, _Size>
+[[nodiscard]] _CCCL_API constexpr array<remove_cv_t<_Tp>, _Size>
 to_array(_Tp (&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Tp&))
 {
   static_assert(!_CCCL_TRAIT(is_array, _Tp), "[array.creation]/1: to_array does not accept multidimensional arrays.");
@@ -511,7 +504,7 @@ to_array(_Tp (&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp
 }
 
 template <typename _Tp, size_t _Size>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr array<remove_cv_t<_Tp>, _Size>
+[[nodiscard]] _CCCL_API constexpr array<remove_cv_t<_Tp>, _Size>
 to_array(_Tp (&&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
 {
   static_assert(!_CCCL_TRAIT(is_array, _Tp), "[array.creation]/4: to_array does not accept multidimensional arrays.");
@@ -522,6 +515,6 @@ to_array(_Tp (&&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_move_constructibl
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_ARRAY

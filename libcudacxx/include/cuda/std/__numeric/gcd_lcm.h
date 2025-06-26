@@ -30,19 +30,19 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp __gcd(_Tp __m, _Tp __n)
+constexpr _CCCL_API inline _Tp __gcd(_Tp __m, _Tp __n)
 {
   static_assert((!_CCCL_TRAIT(is_signed, _Tp)), "");
   return __n == 0 ? __m : _CUDA_VSTD::__gcd<_Tp>(__n, __m % __n);
 }
 
 template <class _Tp, class _Up>
-constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
+constexpr _CCCL_API inline common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
 {
   static_assert((_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_integral, _Up)),
                 "Arguments to gcd must be integer types");
@@ -54,7 +54,7 @@ constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n
 }
 
 template <class _Tp, class _Up>
-constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
+constexpr _CCCL_API inline common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
 {
   static_assert((_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_integral, _Up)),
                 "Arguments to lcm must be integer types");
@@ -75,6 +75,6 @@ constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_GCD_LCM_H

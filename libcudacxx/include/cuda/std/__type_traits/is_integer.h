@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __cccl_is_integer is a trait that tests whether a type is an integral type intended for arithmetic.
@@ -37,5 +39,7 @@ inline constexpr bool __cccl_is_cv_integer_v =
   __cccl_is_cv_signed_integer_v<_Tp> || __cccl_is_cv_unsigned_integer_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H

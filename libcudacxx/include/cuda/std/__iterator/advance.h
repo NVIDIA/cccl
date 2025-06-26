@@ -29,6 +29,8 @@
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -36,7 +38,7 @@ template <class _InputIter,
           class _Distance,
           class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
           class                   = enable_if_t<is_integral<_IntegralDistance>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(_InputIter& __i, _Distance __orig_n)
+_CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
   _Difference __n   = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
@@ -82,8 +84,7 @@ struct __fn
 private:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter_difference>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b
@@ -96,7 +97,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
+  _CCCL_API constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
   {
     _CCCL_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>, "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
 
@@ -137,7 +138,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
+  _CCCL_API constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
   {
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
     if constexpr (assignable_from<_Ip&, _Sp>)
@@ -169,8 +170,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>
-  operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
     _CCCL_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
                  "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
@@ -222,5 +222,7 @@ _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ADVANCE_H

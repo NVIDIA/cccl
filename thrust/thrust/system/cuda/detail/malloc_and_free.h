@@ -48,14 +48,14 @@ namespace cuda_cub
 
 #ifdef THRUST_CACHING_DEVICE_MALLOC
 #  define __CUB_CACHING_MALLOC
-#  ifndef __CUDA_ARCH__
+#  if _CCCL_HOST_COMPILATION()
 inline cub::CachingDeviceAllocator& get_allocator()
 {
   static cub::CachingDeviceAllocator g_allocator(true);
   return g_allocator;
 }
-#  endif
-#endif
+#  endif // _CCCL_HOST_COMPILATION()
+#endif // THRUST_CACHING_DEVICE_MALLOC
 
 // note that malloc returns a raw pointer to avoid
 // depending on the heavyweight thrust/system/cuda/memory.h header

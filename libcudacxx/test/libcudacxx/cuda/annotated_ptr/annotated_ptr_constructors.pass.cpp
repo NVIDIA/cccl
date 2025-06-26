@@ -8,14 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
-
 #include "utils.h"
 
 template <typename T, typename P>
-__host__ __device__ __noinline__ void test_ctor()
+__host__ __device__ __noinline__ void test_ctor(T* ptr)
 {
   // default ctor, cpy and cpy assignment
   cuda::annotated_ptr<T, P> def;
@@ -26,11 +22,9 @@ __host__ __device__ __noinline__ void test_ctor()
   }
   cuda::annotated_ptr<T, P> other(def);
   unused(other);
-
   // from ptr
-  T* rp = nullptr;
-  cuda::annotated_ptr<T, P> a(rp);
-  assert(!a);
+  cuda::annotated_ptr<T, P> a(ptr);
+  assert(a);
 
   // cpy ctor & assign to cv
   cuda::annotated_ptr<const T, P> c(def);
@@ -59,10 +53,10 @@ __host__ __device__ __noinline__ void test_ctor()
 template <typename T, typename P>
 __host__ __device__ __noinline__ void test_global_ctor()
 {
-  test_ctor<T, P>();
-
-  // from ptr + prop
   T* rp = nullptr;
+  rp++;
+  test_ctor<T, P>(rp);
+  // from ptr + prop
   P p;
   cuda::annotated_ptr<T, cuda::access_property> a(rp, p);
   cuda::annotated_ptr<const T, cuda::access_property> b(rp, p);
@@ -77,7 +71,7 @@ __host__ __device__ __noinline__ void test_global_ctors()
   test_global_ctor<int, cuda::access_property::persisting>();
   test_global_ctor<int, cuda::access_property::global>();
   test_global_ctor<int, cuda::access_property>();
-  test_ctor<int, cuda::access_property::shared>();
+  NV_IF_TARGET(NV_IS_DEVICE, (__shared__ int smem_value; test_ctor<int, cuda::access_property::shared>(&smem_value);))
 }
 
 int main(int argc, char** argv)

@@ -1,7 +1,16 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/std/iterator>
+
+#include <iterator>
+
 #include <unittest/unittest.h>
+
+#ifdef __cpp_lib_concepts
+static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
+#endif // __cpp_lib_concepts
+static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 
 void TestDevicePointerManipulation()
 {

@@ -42,18 +42,12 @@
 #include <cstdio>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace cuda
-{
-namespace detail
+namespace system::cuda::detail
 {
 inline _CCCL_HOST_DEVICE void terminate_with_message(const char* message)
 {
   printf("%s\n", message);
   ::cuda::std::terminate();
 }
-} // namespace detail
-} // namespace cuda
-} // namespace system
+} // namespace system::cuda::detail
 THRUST_NAMESPACE_END

@@ -14,9 +14,9 @@
 #include <cuda/std/detail/__config>
 
 // Use the CCCL compiler detection
-#define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
-#define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
-#define TEST_HAS_CUDA_COMPILER  _CCCL_HAS_CUDA_COMPILER()
+#define TEST_COMPILER(...)       _CCCL_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILER(...)  _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_HAS_CUDA_COMPILER() _CCCL_HAS_CUDA_COMPILER()
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -43,6 +43,9 @@
 #else
 #  define TEST_THROW(...) assert(#__VA_ARGS__)
 #endif
+
+// Use the CCCL spaceship detection
+#define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()

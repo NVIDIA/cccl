@@ -246,7 +246,7 @@ public:
   }
 
 #if !_CCCL_COMPILER(NVRTC)
-  friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }

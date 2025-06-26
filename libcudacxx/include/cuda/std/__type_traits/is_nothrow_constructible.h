@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
@@ -48,7 +50,7 @@ struct __cccl_is_nothrow_constructible</*is constructible*/ true, /*is reference
 {};
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __implicit_conversion_to(_Tp) noexcept
+_CCCL_API inline void __implicit_conversion_to(_Tp) noexcept
 {}
 
 template <class _Tp, class _Arg>
@@ -76,5 +78,7 @@ inline constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<_Tp,
 #endif // defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H

@@ -22,11 +22,13 @@
 
 #include <cuda/std/__iterator/iterator_traits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __iter_diff_t<_InputIterator>
+[[nodiscard]] _CCCL_API constexpr __iter_diff_t<_InputIterator>
 count(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
 {
   __iter_diff_t<_InputIterator> __r{0};
@@ -41,5 +43,7 @@ count(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_COUNT_H

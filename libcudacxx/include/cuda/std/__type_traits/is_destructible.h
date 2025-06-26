@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
@@ -57,11 +59,11 @@ template <typename _Tp>
 struct __is_destructor_wellformed
 {
   template <typename _Tp1>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type
+  _CCCL_API inline static true_type
     __test(typename __is_destructible_apply<decltype(_CUDA_VSTD::declval<_Tp1&>().~_Tp1())>::type);
 
   template <typename _Tp1>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API inline static false_type __test(...);
 
   static const bool value = decltype(__test<_Tp>(12))::value;
 };
@@ -107,5 +109,7 @@ inline constexpr bool is_destructible_v = is_destructible<_Tp>::value;
 #endif // !_CCCL_BUILTIN_IS_DESTRUCTIBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H

@@ -38,6 +38,8 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_object.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ElementType, size_t _ByteAlignment>
@@ -65,32 +67,32 @@ public:
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherByteAlignment)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[])
                    _CCCL_AND((_OtherByteAlignment >= byte_alignment)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr aligned_accessor(aligned_accessor<_OtherElementType, _OtherByteAlignment>) noexcept
-  {}
+  _CCCL_API constexpr aligned_accessor(aligned_accessor<_OtherElementType, _OtherByteAlignment>) noexcept {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit aligned_accessor(default_accessor<_OtherElementType>) noexcept {}
+  _CCCL_API constexpr explicit aligned_accessor(default_accessor<_OtherElementType>) noexcept {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator default_accessor<_OtherElementType>() const noexcept
+  _CCCL_API constexpr operator default_accessor<_OtherElementType>() const noexcept
   {
     return {};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return _CUDA_VSTD::assume_aligned<byte_alignment>(__p)[__i];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
-  offset(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_API constexpr typename offset_policy::data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
   {
     return _CUDA_VSTD::assume_aligned<byte_alignment>(__p) + __i;
   }
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H

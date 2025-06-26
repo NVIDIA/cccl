@@ -25,13 +25,13 @@
  *
  ******************************************************************************/
 
-#include <cuda.h>
-
 #include <string>
 
-#include <c2h/catch2_test_helper.h>
+#include <cuda.h>
 #include <nvrtc.h>
 #include <nvrtc_args.h>
+
+#include <c2h/catch2_test_helper.h>
 
 TEST_CASE("Test nvrtc", "[test][nvrtc]")
 {
@@ -83,6 +83,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/radix_sort.cuh>
     #include <cub/device/dispatch/kernels/unique_by_key.cuh>
     #include <cub/device/dispatch/kernels/transform.cuh>
+    #include <cub/device/dispatch/kernels/histogram.cuh>
     #include <cub/iterator/arg_index_input_iterator.cuh>
     #include <cub/iterator/cache_modified_input_iterator.cuh>
     #include <cub/iterator/cache_modified_output_iterator.cuh>
@@ -322,7 +323,8 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
-  REQUIRE(CUDA_SUCCESS == cuCtxCreate(&context, 0, device));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRetain(&context, device));
+  REQUIRE(CUDA_SUCCESS == cuCtxSetCurrent(context));
   REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
@@ -365,5 +367,5 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_ptr));
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_err));
   REQUIRE(CUDA_SUCCESS == cuModuleUnload(module));
-  REQUIRE(CUDA_SUCCESS == cuCtxDestroy(context));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRelease(device));
 }

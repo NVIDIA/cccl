@@ -20,11 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator replace_copy(
+_CCCL_API constexpr _OutputIterator replace_copy(
   _InputIterator __first,
   _InputIterator __last,
   _OutputIterator __result,
@@ -46,5 +48,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator replace_copy(
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_REPLACE_COPY_H

@@ -26,11 +26,12 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp, class _BinaryOp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
-reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
+[[nodiscard]] _CCCL_API constexpr _Tp reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 {
   for (; __first != __last; ++__first)
   {
@@ -40,18 +41,20 @@ reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 }
 
 template <class _InputIterator, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
+[[nodiscard]] _CCCL_API constexpr _Tp reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
   return _CUDA_VSTD::reduce(__first, __last, __init, _CUDA_VSTD::plus<>());
 }
 
 template <class _InputIterator>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIterator>::value_type
+[[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIterator>::value_type
 reduce(_InputIterator __first, _InputIterator __last)
 {
   return _CUDA_VSTD::reduce(__first, __last, typename iterator_traits<_InputIterator>::value_type{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_REDUCE_H

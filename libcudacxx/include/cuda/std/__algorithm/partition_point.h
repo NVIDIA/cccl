@@ -25,11 +25,13 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+_CCCL_API constexpr _ForwardIterator
 partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using difference_type = typename iterator_traits<_ForwardIterator>::difference_type;
@@ -53,5 +55,7 @@ partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_PARTITION_POINT_H

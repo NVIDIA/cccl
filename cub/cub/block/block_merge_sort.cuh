@@ -89,13 +89,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int keys2_count,
   KeyT (&output)[ITEMS_PER_THREAD],
   int (&indices)[ITEMS_PER_THREAD],
-  CompareOp compare_op)
+  CompareOp compare_op,
+  KeyT oob_default)
 {
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
 
-  KeyT key1 = keys_shared[keys1_beg];
-  KeyT key2 = keys_shared[keys2_beg];
+  KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
+  KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
   _CCCL_SORT_MAYBE_UNROLL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
@@ -112,6 +113,20 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
       key1 = keys_shared[keys1_beg];
     }
   }
+}
+
+template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ITEMS_PER_THREAD],
+  int (&indices)[ITEMS_PER_THREAD],
+  CompareOp compare_op)
+{
+  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 
 /**
@@ -459,7 +474,8 @@ public:
         keys2_count_loc,
         keys,
         indices,
-        compare_op);
+        compare_op,
+        oob_default);
 
       if (!KEYS_ONLY)
       {

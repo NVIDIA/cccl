@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/mismatch.h>
 
+#include <cuda/std/atomic>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -115,7 +117,7 @@ public:
   }
 
 private:
-  static std::atomic<size_t> my_count;
+  static cuda::std::atomic<size_t> my_count;
   T dummy;
 };
 

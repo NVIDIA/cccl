@@ -25,8 +25,9 @@
  *
  ******************************************************************************/
 
-#include "histogram_common.cuh"
 #include <nvbench_helper.cuh>
+
+#include "histogram_common.cuh"
 
 // %RANGE% TUNE_ITEMS ipt 4:28:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32

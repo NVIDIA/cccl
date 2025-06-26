@@ -26,6 +26,8 @@
 #include <cuda/std/__functional/weak_result_type.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -39,13 +41,13 @@ private:
   type __f_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mem_fn(type __f) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __mem_fn(type __f) noexcept
       : __f_(__f)
   {}
 
   // invoke
   template <class... _ArgTypes>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const
   {
     return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__args)...);
@@ -53,11 +55,13 @@ public:
 };
 
 template <class _Rp, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::* __pm) noexcept
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::* __pm) noexcept
 {
   return __mem_fn<_Rp _Tp::*>(__pm);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_MEM_FN_H

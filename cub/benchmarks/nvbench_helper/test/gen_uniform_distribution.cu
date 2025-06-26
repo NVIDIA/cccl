@@ -33,11 +33,12 @@
 #include <limits>
 #include <map>
 
+#include <nvbench_helper.cuh>
+
 #include <boost/math/distributions/chi_squared.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
-#include <nvbench_helper.cuh>
 
 template <typename T>
 bool is_uniform(thrust::host_vector<T> data, T min, T max)

@@ -28,8 +28,9 @@
 #ifndef MONTECARLO_REDUCTION_CUH
 #define MONTECARLO_REDUCTION_CUH
 
-#include "MonteCarlo_common.cuh"
 #include <cooperative_groups.h>
+
+#include "MonteCarlo_common.cuh"
 
 namespace cg = cooperative_groups;
 

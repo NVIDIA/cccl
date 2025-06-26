@@ -845,7 +845,7 @@ UNITTEST("logical_data_untyped moveable")
 };
 #  endif // !_CCCL_COMPILER(MSVC)
 
-#  ifdef __CUDACC__
+#  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 
@@ -1116,7 +1116,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1210,10 +1210,8 @@ inline void unit_test_untyped_place_pfor()
   // We have to put both __host__ __device__ qualifiers as this is resolved
   // dynamically and both host and device codes will be generated
   ctx.parallel_for(where, lA.shape(), lA.write())->*[] _CCCL_HOST_DEVICE(size_t i, slice<size_t> A) {
-#    ifdef __CUDA_ARCH__
     // Even if we do have a __device__ qualifier, we are not supposed to call it
-    assert(0);
-#    endif
+    NV_IF_TARGET(NV_IS_DEVICE, (assert(0);))
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1304,7 +1302,7 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
 

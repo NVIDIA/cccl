@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
@@ -62,5 +64,7 @@ inline constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>
 #endif // !_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H

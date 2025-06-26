@@ -28,13 +28,13 @@
 
 #include <nv/target>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#  if _CCCL_HAS_INT128()
-
-#    if __cccl_ptx_isa >= 870
+#  if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
 
 template <int _Index>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
@@ -90,7 +90,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   // Initialize barrier and kick-start try_cancel pipeline:
   if (__is_leader)
   {
-    auto __leader_mask = __activemask();
+    auto __leader_mask = ::__activemask();
     asm volatile(
       "{\n\t"
       ".reg .pred p;\n\t"
@@ -103,8 +103,8 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
       "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
       "}"
       :
-      : "r"((int) __cvta_generic_to_shared(&__result)),
-        "r"((int) __cvta_generic_to_shared(&__barrier)),
+      : "r"((int) ::__cvta_generic_to_shared(&__result)),
+        "r"((int) ::__cvta_generic_to_shared(&__barrier)),
         "r"(__leader_mask)
       : "memory");
   }
@@ -122,11 +122,11 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
         "@!p bra waitLoop;\n\t"
         "}"
         :
-        : "r"((int) __cvta_generic_to_shared(&__barrier)), "r"((unsigned) __phase)
+        : "r"((int) ::__cvta_generic_to_shared(&__barrier)), "r"((unsigned) __phase)
         : "memory");
       __phase = !__phase;
     }
-    __syncthreads(); // All threads of prior thread block have "exited".
+    ::__syncthreads(); // All threads of prior thread block have "exited".
     // Note: this syncthreads provides the .acquire.cta fence preventing
     // the next query operations from being re-ordered above the poll loop.
     {
@@ -161,13 +161,13 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
 
     // Wait for all threads to read __result before issuing next async op.
     // generic->generic synchronization
-    __syncthreads();
+    ::__syncthreads();
     // TODO: only control-warp requires sync, other warps can arrive
     // TODO: double-buffering results+barrier pairs using phase to avoids this sync
 
     if (__is_leader)
     {
-      auto __leader_mask = __activemask();
+      auto __leader_mask = ::__activemask();
       asm volatile(
         "{\n\t"
         ".reg .pred p;\n\t"
@@ -181,15 +181,15 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
         "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
         "}"
         :
-        : "r"((int) __cvta_generic_to_shared(&__result)),
-          "r"((int) __cvta_generic_to_shared(&__barrier)),
+        : "r"((int) ::__cvta_generic_to_shared(&__result)),
+          "r"((int) ::__cvta_generic_to_shared(&__barrier)),
           "r"(__leader_mask)
         : "memory");
     }
   } while (true);
 }
 
-#    else // ^^^ __cccl_ptx_isa >= 870 ^^^ / vvv __cccl_ptx_isa < 870 vvv
+#  else // ^^^ _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870 ^^^ / vvv !_CCCL_HAS_INT128() || __cccl_ptx_isa < 870 vvv
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
 __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
@@ -197,8 +197,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   // We are compiling for SM100 but PTX 8.7 is not supported, so fall back to just calling the function
   _CUDA_VSTD::invoke(_CUDA_VSTD::move(__uf), __block_idx);
 }
-#    endif // __cccl_ptx_isa <= 870
-#  endif // _CCCL_HAS_INT128()
+#  endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
 
 //! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
 //! from the current grid. On success, it invokes the unary function `__uf` before trying again.
@@ -270,6 +269,8 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H

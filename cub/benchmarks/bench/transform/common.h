@@ -5,15 +5,12 @@
 
 // keep checks at the top so compilation of discarded variants fails really fast
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#if !TUNE_BASE && TUNE_ALGORITHM == 1
+#if !TUNE_BASE && TUNE_ALGORITHM == 2
 #  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 #    error "When tuning, this benchmark does not support being compiled for multiple architectures"
 #  endif
 #  if (__CUDA_ARCH_LIST__) < 900
-#    error "Cannot compile algorithm 4 (ublkcp) below sm90"
-#  endif
-#  ifndef _CUB_HAS_TRANSFORM_UBLKCP
-#    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
+#    error "Cannot compile algorithm 2 (ublkcp) below sm90"
 #  endif
 #endif
 
@@ -25,45 +22,31 @@
 
 #include <nvbench_helper.cuh>
 
-template <typename... RandomAccessIteratorsIn>
+template <typename RandomAccessIteratorOut, typename... RandomAccessIteratorsIn>
 #if TUNE_BASE
-using policy_hub_t = cub::detail::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>>;
+using policy_hub_t =
+  cub::detail::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut>;
 #else
 struct policy_hub_t
 {
   struct max_policy : cub::ChainedPolicy<500, max_policy, max_policy>
   {
-    static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
-    static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
+    static constexpr int min_bif = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
+#  if TUNE_ALGORITHM == 0
+    static constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
+#  elif TUNE_ALGORITHM == 1
+    static constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
+#  else
+#    error Policy hub does not yet implement the specified value for algorithm
+#  endif
+
     using algo_policy =
       ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
                        cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
-                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
+                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS, __CUDA_ARCH_LIST__ == 900 ? 128 : 16>>;
   };
 };
 #endif
-
-#ifdef TUNE_T
-using element_types = nvbench::type_list<TUNE_T>;
-#else
-using element_types =
-  nvbench::type_list<std::int8_t,
-                     std::int16_t,
-                     float,
-                     double
-#  ifdef NVBENCH_HELPER_HAS_I128
-                     ,
-                     __int128
-#  endif
-                     >;
-#endif
-
-// BabelStream uses 2^25, H200 can fit 2^31 int128s
-// 2^20 chars / 2^16 int128 saturate V100 (min_bif =12 * SM count =80)
-// 2^21 chars / 2^17 int128 saturate A100 (min_bif =16 * SM count =108)
-// 2^23 chars / 2^19 int128 saturate H100/H200 HBM3 (min_bif =32or48 * SM count =132)
-// inline auto array_size_powers = std::vector<nvbench::int64_t>{28};
-inline auto array_size_powers = nvbench::range(16, 28, 4);
 
 template <typename OffsetT,
           typename... RandomAccessIteratorsIn,
@@ -79,21 +62,15 @@ void bench_transform(
   ExecTag exec_tag = nvbench::exec_tag::no_batch)
 {
   state.exec(nvbench::exec_tag::gpu | exec_tag, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch_t<
-      cub::detail::transform::requires_stable_address::no,
-      OffsetT,
-      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-      RandomAccessIteratorOut,
-      TransformOp,
-      policy_hub_t<RandomAccessIteratorsIn...>>::dispatch(inputs, output, num_items, transform_op, launch.get_stream());
+    cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
+                                       OffsetT,
+                                       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                       RandomAccessIteratorOut,
+                                       TransformOp,
+                                       policy_hub_t<RandomAccessIteratorOut, RandomAccessIteratorsIn...>>::
+      dispatch(inputs, output, num_items, transform_op, launch.get_stream());
   });
 }
-
-// Modified from BabelStream to also work for integers
-inline constexpr auto startA      = 1; // BabelStream: 0.1
-inline constexpr auto startB      = 2; // BabelStream: 0.2
-inline constexpr auto startC      = 3; // BabelStream: 0.1
-inline constexpr auto startScalar = 4; // BabelStream: 0.4
 
 // TODO(bgruber): we should put those somewhere into libcu++:
 // from C++ GSL

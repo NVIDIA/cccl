@@ -28,11 +28,13 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Iter1, class _Sent1, class _Iter2, class _Sent2, class _Comp, class _Proj1, class _Proj2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __includes(
+_CCCL_API constexpr bool __includes(
   _Iter1 __first1, _Sent1 __last1, _Iter2 __first2, _Sent2 __last2, _Comp&& __comp, _Proj1&& __proj1, _Proj2&& __proj2)
 {
   for (; __first2 != __last2; ++__first1)
@@ -54,7 +56,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __includes(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool includes(
+[[nodiscard]] _CCCL_API constexpr bool includes(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first1), decltype(*__first2)>::value,
@@ -66,13 +68,13 @@ template <class _InputIterator1, class _InputIterator2, class _Compare>
     _CUDA_VSTD::move(__first2),
     _CUDA_VSTD::move(__last2),
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    __identity(),
-    __identity());
+    identity(),
+    identity());
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _CCCL_API constexpr bool
 includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
   return _CUDA_VSTD::includes(
@@ -84,5 +86,7 @@ includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __fi
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_INCLUDES_H

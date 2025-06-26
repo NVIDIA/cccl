@@ -26,28 +26,30 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct __numeric_type
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static void __test(...);
+  _CCCL_API inline static void __test(...);
 #if _LIBCUDACXX_HAS_NVFP16()
-  _LIBCUDACXX_HIDE_FROM_ABI static float __test(__half);
+  _CCCL_API inline static float __test(__half);
 #endif // _LIBCUDACXX_HAS_NVBF16()
 #if _LIBCUDACXX_HAS_NVBF16()
-  _LIBCUDACXX_HIDE_FROM_ABI static float __test(__nv_bfloat16);
+  _CCCL_API inline static float __test(__nv_bfloat16);
 #endif // _LIBCUDACXX_HAS_NVFP16()
-  _LIBCUDACXX_HIDE_FROM_ABI static float __test(float);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(char);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(int);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(long long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned long long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(double);
-  _LIBCUDACXX_HIDE_FROM_ABI static long double __test(long double);
+  _CCCL_API inline static float __test(float);
+  _CCCL_API inline static double __test(char);
+  _CCCL_API inline static double __test(int);
+  _CCCL_API inline static double __test(unsigned);
+  _CCCL_API inline static double __test(long);
+  _CCCL_API inline static double __test(unsigned long);
+  _CCCL_API inline static double __test(long long);
+  _CCCL_API inline static double __test(unsigned long long);
+  _CCCL_API inline static double __test(double);
+  _CCCL_API inline static long double __test(long double);
 
   using type              = decltype(__test(declval<_Tp>()));
   static const bool value = _IsNotSame<type, void>::value;
@@ -155,5 +157,7 @@ template <class _A1, class _A2 = void, class _A3 = void>
 using __promote_t _CCCL_NODEBUG_ALIAS = typename __promote<_A1, _A2, _A3>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_PROMOTE_H

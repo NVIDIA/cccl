@@ -32,14 +32,15 @@
 #include <cuda/std/__linalg/conjugated.h>
 #include <cuda/std/__linalg/transposed.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
 {
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+[[nodiscard]] _CCCL_API constexpr auto conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   return conjugated(transposed(__a));
 }
@@ -47,5 +48,7 @@ conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 } // end namespace linalg
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP

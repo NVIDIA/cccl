@@ -28,6 +28,8 @@
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/always_false.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class __fp_overflow_handler_kind
@@ -45,7 +47,7 @@ template <>
 struct __fp_overflow_handler<__fp_overflow_handler_kind::__no_sat>
 {
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_overflow() noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Tp __handle_overflow() noexcept
   {
     constexpr auto __fmt = __fp_format_of_v<_Tp>;
 
@@ -70,7 +72,7 @@ struct __fp_overflow_handler<__fp_overflow_handler_kind::__no_sat>
   }
 
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_underflow() noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Tp __handle_underflow() noexcept
   {
     constexpr auto __fmt = __fp_format_of_v<_Tp>;
 
@@ -101,13 +103,13 @@ template <>
 struct __fp_overflow_handler<__fp_overflow_handler_kind::__sat_finite>
 {
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_overflow() noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Tp __handle_overflow() noexcept
   {
     return _CUDA_VSTD::__fp_max<_Tp>();
   }
 
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_underflow() noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Tp __handle_underflow() noexcept
   {
     return _CUDA_VSTD::__fp_lowest<_Tp>();
   }
@@ -131,5 +133,7 @@ template <__fp_overflow_handler_kind _Kind>
 inline constexpr bool __fp_is_overflow_handler_v<__fp_overflow_handler<_Kind>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_OVERFLOW_HANDLER_H

@@ -26,10 +26,12 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _To, class _From>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
+[[nodiscard]] _CCCL_API inline _To __fp_cast(_From __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_same, _From, float))
   {
@@ -801,5 +803,7 @@ template <class _To, class _From>
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_CAST_H

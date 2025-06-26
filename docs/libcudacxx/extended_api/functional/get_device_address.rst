@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-functional-get-device-address:
 
-cuda::get_device_address
-==============================
+``cuda::get_device_address``
+============================
 
 Defined in the header ``<cuda/functional>``:
 

@@ -34,13 +34,15 @@
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __val) noexcept;
+[[nodiscard]] _CCCL_API constexpr _Tp __byteswap_impl(_Tp __val) noexcept;
 
 template <class _Full>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Full __byteswap_impl_recursive(_Full __val) noexcept
+[[nodiscard]] _CCCL_API constexpr _Full __byteswap_impl_recursive(_Full __val) noexcept
 {
   using _Half            = __make_nbit_uint_t<numeric_limits<_Full>::digits / 2>;
   constexpr auto __shift = numeric_limits<_Half>::digits;
@@ -85,7 +87,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __val) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __byteswap_impl(_Tp __val) noexcept
 {
   constexpr auto __shift = numeric_limits<uint8_t>::digits;
 
@@ -101,7 +103,7 @@ template <class _Tp>
   return __result;
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __byteswap_impl(uint16_t __val) noexcept
+[[nodiscard]] _CCCL_API constexpr uint16_t __byteswap_impl(uint16_t __val) noexcept
 {
 #if defined(_CCCL_BUILTIN_BSWAP16)
   return _CCCL_BUILTIN_BSWAP16(__val);
@@ -117,7 +119,7 @@ template <class _Tp>
 #endif // !_CCCL_BUILTIN_BSWAP16
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __byteswap_impl(uint32_t __val) noexcept
+[[nodiscard]] _CCCL_API constexpr uint32_t __byteswap_impl(uint32_t __val) noexcept
 {
 #if defined(_CCCL_BUILTIN_BSWAP32)
   return _CCCL_BUILTIN_BSWAP32(__val);
@@ -133,7 +135,7 @@ template <class _Tp>
 #endif // !_CCCL_BUILTIN_BSWAP32
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __byteswap_impl(uint64_t __val) noexcept
+[[nodiscard]] _CCCL_API constexpr uint64_t __byteswap_impl(uint64_t __val) noexcept
 {
 #if defined(_CCCL_BUILTIN_BSWAP64)
   return _CCCL_BUILTIN_BSWAP64(__val);
@@ -150,7 +152,7 @@ template <class _Tp>
 }
 
 #if _CCCL_HAS_INT128()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
+[[nodiscard]] _CCCL_API constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
 {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
   return _CCCL_BUILTIN_BSWAP128(__val);
@@ -162,7 +164,7 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer __val) noexcept
+[[nodiscard]] _CCCL_API constexpr _Integer byteswap(_Integer __val) noexcept
 {
   if constexpr (sizeof(_Integer) > 1)
   {
@@ -175,5 +177,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_BYTESWAP_H

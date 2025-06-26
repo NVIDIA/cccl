@@ -163,6 +163,9 @@ doxygen_predefined = [
     "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
     "_CCCL_TEMPLATE(x)=template<x, ",
     "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
+    "_CCCL_TRY=try",
+    "_CCCL_CATCH=catch",
+    "_CCCL_CATCH_ALL=catch (...)",
     "__device__",
     "__host__",
     "__forceinline__",
@@ -255,10 +258,13 @@ doxygen_aliases = []
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
   "_CCCL_AND=",
+  "_CCCL_API=",
   "_CCCL_DEVICE=",
+  "_CCCL_DEVICE_API=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
   "_CCCL_HOST=",
+  "_CCCL_HOST_API=",
   "_CCCL_HOST_DEVICE=",
   "_CCCL_STD_VER",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
@@ -272,6 +278,12 @@ doxygen_predefined = [
   "_CCCL_GLOBAL_CONSTANT=constexpr",
   "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
   "_CCCL_TEMPLATE(x)=template<x, ",
+  "_CCCL_TRIVIAL_API=",
+  "_CCCL_TRIVIAL_DEVICE_API=",
+  "_CCCL_TRIVIAL_HOST_API=",
+  "_CCCL_TRY=try",
+  "_CCCL_CATCH=catch",
+  "_CCCL_CATCH_ALL=catch (...)",
   "CUDASTF_HOST=",
   "CUDASTF_DEVICE=",
   "CUDASTF_HOST_DEVICE=",
@@ -282,7 +294,6 @@ doxygen_predefined = [
   "THRUST_FWD(x)=x",
   "CCCL_DEPRECATED_BECAUSE(x)=",
   "CCCL_DEPRECATED=",
-  "_LIBCUDACXX_HIDE_FROM_ABI="
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -302,7 +313,8 @@ doxygen_conf_extra = """
 """
 
 [repo_docs.projects.cuda_cooperative]
-name = "cuda.cooperative"
+name = "cuda.cccl.cooperative"
+
 docs_root = "cuda_cooperative"
 logo = "../img/logo.png"
 
@@ -323,11 +335,11 @@ autodoc.mock_imports = [
 
 enhanced_search_enabled = true
 python_paths = [
-    "${root}/../python/cuda_cooperative"
+    "${root}/../python/cuda_cccl"
 ]
 
 [repo_docs.projects.cuda_parallel]
-name = "cuda.parallel"
+name = "cuda.cccl.parallel"
 docs_root = "cuda_parallel"
 logo = "../img/logo.png"
 
@@ -341,16 +353,15 @@ autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
     "cuda.bindings",
-    "cuda.cccl",
     "llvmlite",
     "numpy",
     "cupy",
-    "cuda.parallel.experimental._bindings"
+    "cuda.cccl.parallel.experimental._bindings"
 ]
 
 enhanced_search_enabled = true
 python_paths = [
-    "${root}/../python/cuda_parallel"
+    "${root}/../python/cuda_cccl"
 ]
 
 [repo_docs.projects.cudax]
@@ -380,6 +391,8 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__container/*.cuh",
     "../../cudax/include/cuda/experimental/__device/*.cuh",
     "../../cudax/include/cuda/experimental/__event/*.cuh",
+    "../../cudax/include/cuda/experimental/graph.cuh",
+    "../../cudax/include/cuda/experimental/__graph/*.cuh",
     "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
     "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
@@ -401,6 +414,10 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
 ]
 
+doxygen_exclude = [
+    "../../cudax/include/cuda/experimental/__graph/fwd.cuh",
+]
+
 doxygen_predefined = [
   "__device__",
   "__host__",
@@ -408,16 +425,18 @@ doxygen_predefined = [
   "_CCCL_AND=&&",
   "_CCCL_CUDACC_AT_LEAST(x, y)=1",
   "_CCCL_CUDACC_BELOW(x, y)=0",
+  "_CCCL_CTK_AT_LEAST(x, y)=1",
+  "_CCCL_CTK_BELOW(x, y)=0",
   "_CCCL_DEVICE=",
   "_CCCL_DOXYGEN_INVOKED",
   "_CCCL_EAT_REST(x)=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
   "_CCCL_GLOBAL_CONSTANT=constexpr",
+  "_CCCL_HAS_CTK()=1",
   "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
-  "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
   "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
@@ -425,6 +444,8 @@ doxygen_predefined = [
   "_CUDA_VSTD=cuda::std",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
+  "_CCCL_CONSTEXPR_CXX20=constexpr",
+  "_CCCL_CONSTEXPR_CXX23=constexpr",
   "_CCCL_DIAG_PUSH=",
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
@@ -434,15 +455,18 @@ doxygen_predefined = [
   "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
   "_CCCL_TEMPLATE(x)=template<x, ",
   "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
-  "_CUDAX_API",
-  "_CUDAX_HOST_API",
-  "_CUDAX_DEVICE_API",
-  "_CUDAX_TRIVIAL_API",
-  "_CUDAX_TRIVIAL_HOST_API",
-  "_CUDAX_TRIVIAL_DEVICE_API",
-  "_CUDAX_PUBLIC_API",
+  "_CCCL_API=inline",
+  "_CCCL_DEVICE_API=inline",
+  "_CCCL_HOST_API=inline",
+  "_CCCL_TRIVIAL_API=inline",
+  "_CCCL_TRIVIAL_DEVICE_API=inline",
+  "_CCCL_TRIVIAL_HOST_API=inline",
+  "_CCCL_TRY=try",
+  "_CCCL_CATCH=catch",
+  "_CCCL_CATCH_ALL=catch (...)",
+  "_CUDAX_PUBLIC_API=inline",
+  "_CUDAX_CONSTEXPR_FRIEND=friend",
   "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()",
-  "_LIBCUDACXX_HIDE_FROM_ABI=inline",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 
