@@ -474,6 +474,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
   Offset num_items,
   int num_elem_per_thread,
+  bool /*can_vectorize*/,
   F f,
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
