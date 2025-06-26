@@ -13,18 +13,19 @@ if ! dpkg -s ca-certificates > /dev/null 2>&1; then
         echo "::group::Installing ca-certificates..."
     fi
     sudo apt-get update
+    # Install or upgrade ca-certificates
     sudo apt-get install -y ca-certificates
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         echo "::endgroup::"
     fi
-else
-    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-        echo "::group::Updating ca-certificates..."
-    fi
-    sudo update-ca-certificates
-    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-        echo "::endgroup::"
-    fi
+fi
+
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::group::Updating ca-certificates..."
+fi
+sudo update-ca-certificates
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::endgroup::"
 fi
 
 cd /home/coder/cccl/
