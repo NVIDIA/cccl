@@ -25,9 +25,9 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_CTK() && _CCCL_HAS_FLOAT128()
 #  include <crt/device_fp128_functions.h>
-#endif
+#endif // _CCCL_HAS_CTK() && _CCCL_HAS_FLOAT128()
 
 #include <cuda/std/__cccl/prologue.h>
 
