@@ -293,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     __state_t<_Sch, _Rcvr, _Results>* __state_;
   };
 
-  template <class _CvSndr, class _Sch, class _Rcvr>
+  template <class _Sch, class _CvSndr, class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept             = operation_state_t;
@@ -320,20 +320,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   };
 
 public:
-  template <class _Sndr, class _Sch>
+  template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<schedule_from_t, _Sch, _Sndr>
   {
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Sch, _Rcvr>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sch, _Sndr, _Rcvr>
     {
-      return __opstate_t<_Sndr, _Sch, _Rcvr>{
+      return __opstate_t<_Sch, _Sndr, _Rcvr>{
         static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Sch, _Rcvr>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Sch, const _Sndr&, _Rcvr>
     {
-      return __opstate_t<const _Sndr&, _Sch, _Rcvr>{this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+      return __opstate_t<_Sch, const _Sndr&, _Rcvr>{this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
   };
 
@@ -343,12 +343,12 @@ public:
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
     // schedule_from always dispatches based on the domain of the scheduler
-    return transform_sender(get_domain(__sch), __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+    return transform_sender(get_domain(__sch), __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 };
 
-template <class _Sndr, class _Sch>
-inline constexpr size_t structured_binding_size<schedule_from_t::__sndr_t<_Sndr, _Sch>> = 3;
+template <class _Sch, class _Sndr>
+inline constexpr size_t structured_binding_size<schedule_from_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT schedule_from_t schedule_from{};
 } // namespace cuda::experimental::execution

@@ -41,9 +41,10 @@
 
 namespace cuda::experimental::execution
 {
+namespace __stream
+{
 // Transition from the GPU to the CPU domain
-template <>
-struct stream_domain::__apply_t<continues_on_t>
+struct __continues_on_t
 {
   template <class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -156,6 +157,11 @@ struct stream_domain::__apply_t<continues_on_t>
     return execution::schedule_from(__sched, __sndr_t<__child_t>{{}, __stream, static_cast<__child_t&&>(__child)});
   }
 };
+} // namespace __stream
+
+template <>
+struct stream_domain::__apply_t<continues_on_t> : __stream::__continues_on_t
+{};
 
 template <class _Sndr>
 inline constexpr size_t structured_binding_size<stream_domain::__apply_t<continues_on_t>::__sndr_t<_Sndr>> = 3;
