@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -40,36 +43,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    if constexpr (::cuda::is_floating_point_v<_Tp>)
     {
-      if constexpr (_CUDA_VSTD::is_same_v<_Tp, float>)
+      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (return ::fmaxf(__lhs, __rhs);))
+        return _CUDA_VSTD::fmax(__lhs, __rhs);
       }
-      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, double>)
-      {
-        NV_IF_TARGET(NV_IS_DEVICE, (return ::fmax(__lhs, __rhs);))
-      }
-#if _CCCL_HAS_NVFP16()
-      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, ::__half>)
-      {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return ::__hmax(__lhs, __rhs);))
-      }
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, ::__nv_bfloat16>)
-      {
-        NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__hmax(__lhs, __rhs);))
-      }
-#endif // _CCCL_HAS_NVBF16()
-#if _CCCL_HAS_FLOAT128()
-      else if constexpr (_CUDA_VSTD::is_same_v<_Tp, __float128>)
-      {
-        NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__lhs, __rhs);))
-      }
-#endif // _CCCL_HAS_FLOAT128()
+      return __lhs < __rhs || _CUDA_VSTD::isnan(__lhs) ? __rhs : __lhs;
     }
-    return (__lhs < __rhs) ? __rhs : __lhs;
+    else
+    {
+      return (__lhs < __rhs) ? __rhs : __lhs;
+    }
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(maximum);
@@ -82,7 +67,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
-    return (__lhs < __rhs) ? __rhs : __lhs;
+    using _Common = _CUDA_VSTD::common_type_t<_T1, _T2>;
+    if constexpr (::cuda::is_floating_point_v<_Common>)
+    {
+      return maximum<_Common>{}(__lhs, __rhs);
+    }
+    else
+    {
+      return (__lhs < __rhs) ? __rhs : __lhs;
+    }
   }
 };
 
