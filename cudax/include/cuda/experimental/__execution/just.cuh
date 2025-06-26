@@ -42,6 +42,7 @@ private:
   friend struct just_stopped_t;
 
   using __just_tag_t = _JustTag;
+  using __set_tag_t  = _SetTag;
 
   template <class _Rcvr, class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
@@ -108,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
   template <class>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    return completion_signatures<_SetTag(_Ts...)>{};
+    return completion_signatures<__set_tag_t(_Ts...)>{};
   }
 
   template <class _Rcvr>

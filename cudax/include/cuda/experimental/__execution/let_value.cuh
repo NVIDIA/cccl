@@ -88,6 +88,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   friend struct let_stopped_t;
 
   using __let_tag_t = _LetTag;
+  using __set_tag_t = _SetTag;
 
   /// @brief Computes the type of a variant of tuples to hold the results of
   /// the predecessor sender.
@@ -366,11 +367,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      if constexpr (_SetTag{} == execution::set_value)
+      if constexpr (__set_tag_t{} == execution::set_value)
       {
         return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn>{});
       }
-      else if constexpr (_SetTag{} == execution::set_error)
+      else if constexpr (__set_tag_t{} == execution::set_error)
       {
         return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn>{});
       }
