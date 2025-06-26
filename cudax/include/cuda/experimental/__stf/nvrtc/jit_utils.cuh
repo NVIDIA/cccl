@@ -257,10 +257,54 @@ template <size_t Dimensions>
     return oss.str();
 }
 
-template <typename Mdspan, std::size_t... Is>
+template <typename MDS>
+bool is_layout_right(const MDS& mds)
+{
+  const size_t rank = mds.rank();
+  if (rank == 0)
+  {
+    return true;
+  }
+  if (mds.mapping().stride(rank - 1) != 1)
+  {
+    return false;
+  }
+  for (size_t i = 1; i < rank; ++i)
+  {
+    if (mds.mapping().stride(i - 1) != mds.mapping().stride(i) * mds.extent(i))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename MDS>
+bool is_layout_left(const MDS& mds)
+{
+  const size_t rank = mds.rank();
+  if (rank == 0)
+  {
+    return true;
+  }
+  if (mds.mapping().stride(0) != 1)
+  {
+    return false;
+  }
+  for (size_t i = 1; i < rank; ++i)
+  {
+    if (mds.mapping().stride(i) != mds.mapping().stride(i - 1) * mds.extent(i - 1))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename Mdspan, ::std::size_t... Is>
 ::std::string stringize_mdspan(const Mdspan& md, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
 {
-  constexpr std::size_t R = Mdspan::rank();
+  constexpr ::std::size_t R = Mdspan::rank();
   if constexpr (R != sizeof...(Is))
   {
     return stringize_mdspan(md, ::std::make_index_sequence<R>{});
@@ -275,29 +319,60 @@ template <typename Mdspan, std::size_t... Is>
     ::std::ostringstream oss;
 
     // mdspan<element_type,
-    oss << "::cuda::experimental::stf::static_slice<" << type_name<ET>;
+    oss << "cuda::std::mdspan<" << type_name<ET>;
 
     // extents<size_t, e0, e1, ...>,
+    oss << ", cuda::std::extents<size_t";
     if constexpr (R > 0)
     {
       oss << ", ";
     }
 
     ((oss << (Is ? ", " : "")
-          << (XT::static_extent(Is) != ::cuda::std::dynamic_extent ? ::std::to_string(XT::static_extent(Is))
-                                                                   : ::std::to_string(md.extent(Is)))),
+          << (XT::static_extent(Is) != cuda::std::dynamic_extent ? ::std::to_string(XT::static_extent(Is))
+                                                                 : ::std::to_string(md.extent(Is)))),
      ...);
 
     oss << ">";
 
-    return oss.str();
+    // layout   (omit default)
+    if constexpr (!std::is_same_v<Layout, cuda::std::layout_right>)
+    {
+      if (is_layout_right(md))
+      {
+        oss << ", cuda::std::layout_right";
+      }
+      else if (is_layout_left(md))
+      {
+        oss << ", cuda::std::layout_left";
+      }
+      else
+      {
+        throw ::std::runtime_error("Unsupported layout for mdspan: " + ::std::string(type_name<Layout>));
+      }
+    }
+    else if constexpr (!std::is_same_v<Layout, cuda::std::layout_right>)
+    {
+      oss << ", " << type_name<Layout>;
+    }
+
+    // accessor (omit default)
+    if constexpr (!std::is_same_v<Accessor, cuda::std::default_accessor<ET>>)
+    {
+      oss << ", " << type_name<Accessor>;
+    }
+
+    ::std::string out = oss.str();
+    out += '>';
+
+    return out;
   }
 }
 
-template <typename Mdspan, std::size_t... Is>
+template <typename Mdspan, ::std::size_t... Is>
 ::std::string stringize_mdspan_shape(const shape_of<Mdspan>& md_sh, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
 {
-  constexpr std::size_t R = Mdspan::rank();
+  constexpr ::std::size_t R = Mdspan::rank();
   if constexpr (R != sizeof...(Is))
   {
     return stringize_mdspan_shape(md_sh, ::std::make_index_sequence<R>{});
