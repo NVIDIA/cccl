@@ -22,15 +22,9 @@
 #endif // no system header
 
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/min_max.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
-#include <cuda/std/__type_traits/is_same.h>
-#if _CCCL_HAS_CTK() && _CCCL_HAS_FLOAT128()
-#  include <crt/device_fp128_functions.h>
-#endif // _CCCL_HAS_CTK() && _CCCL_HAS_FLOAT128()
 
 #include <cuda/std/__cccl/prologue.h>
 
