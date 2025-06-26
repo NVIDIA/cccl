@@ -578,7 +578,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
         ::cuda::ptx::space_global,
         dst_ptr + head_bytes,
         src_ptr + head_bytes,
-        bytes_to_copy,
+        aligned_bytes_to_copy,
         &bar);
       total_copied += bytes_to_copy;
     }
