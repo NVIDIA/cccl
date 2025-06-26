@@ -36,6 +36,7 @@ set(stf_test_sources
   interface/data_from_device_async.cu
   interface/move_operator.cu
   jit/axpy.cu
+  jit/axpy_pfor.cu
   jit/heat.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
@@ -312,4 +313,5 @@ endforeach()
 add_subdirectory(static_error_checks)
 
 target_link_libraries(cudax.cpp17.test.stf.jit.axpy PRIVATE nvrtc)
+target_link_libraries(cudax.cpp17.test.stf.jit.axpy_pfor PRIVATE nvrtc)
 target_link_libraries(cudax.cpp17.test.stf.jit.heat PRIVATE nvrtc)

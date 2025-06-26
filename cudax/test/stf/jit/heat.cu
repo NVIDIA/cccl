@@ -46,7 +46,6 @@ void dump_iter(slice<const double, 2> sUn, int iter)
 
 const char *header_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
-#include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/places/inner_shape.cuh>
 
 using namespace cuda::experimental::stf;
@@ -89,7 +88,7 @@ int main()
 
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
-  parallel_for_scope_jit(ctx, exec_place::current_device(), lU.shape(), lU.write())->*[](auto) {
+  parallel_for_scope_jit(ctx, exec_place::current_device(), lU.shape(), lU.write())->*[]() {
     const char *body =
      R"((size_t i, size_t j, auto U) {
             double rad = U.extent(0) / 8.0;
@@ -147,7 +146,7 @@ int main()
     }
 
     // Update Un using Un1 value with a finite difference scheme
-   parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())->*[c, dx2, dy2](auto, auto) {
+   parallel_for_scope_jit(ctx, exec_place::current_device(), inner<1>(lU.shape()), lU.read(), lU1.write())->*[c, dx2, dy2]() {
       ::std::ostringstream body_stream;
       body_stream << R"(
       (size_t i, size_t j, auto U, auto U1) {

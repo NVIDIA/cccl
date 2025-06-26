@@ -26,6 +26,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/slice_core.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+
 #include <string>
 #include <stdexcept>
 
@@ -174,10 +176,7 @@ inline CUfunction lazy_jit(const char* template_str, const ::std::vector<::std::
   // Select generated kernel name: this cannot be hardcoded because we may instantiate the same template with different values
   static ::std::atomic<int> jit_kernel_cnt = 0;
   ::std::string kernel_name = "jit_kernel" + ::std::to_string(jit_kernel_cnt++);
-  fprintf(stderr, "kernel_name: %s\n", kernel_name.c_str());
   ::std::string template_with_name = replace_all(key.second.c_str(), "%KERNEL_NAME%", kernel_name.c_str());
-
-  ::std::cout << template_with_name << ::std::endl;
 
   // Compile kernel
   nvrtcProgram prog = cuda_try<nvrtcCreateProgram>(template_with_name.c_str(), "jit_kernel.cu", 0, nullptr, nullptr);
@@ -204,10 +203,23 @@ inline CUfunction lazy_jit(const char* template_str, const ::std::vector<::std::
   cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
   cuda_safe_call(nvrtcDestroyProgram(&prog));
 
-  fprintf(stderr, "loading function %s\n", kernel_name.c_str());
-
-  CUmodule cuda_module   = cuda_try<cuModuleLoadData>(ptx.data());
+  CUmodule cuda_module = cuda_try<cuModuleLoadData>(ptx.data());
   CUfunction kernel = cuda_try<cuModuleGetFunction>(cuda_module, kernel_name.c_str());
+
+  if (getenv("CUDASTF_JIT_DEBUG_PTX") || getenv("CUDASTF_JIT_DEBUG")) {
+      int num_registers = cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, kernel);
+      ::std::cerr << "kernel_name " << kernel_name << " using " << ::std::to_string(num_registers) << " registers"<<::std::endl;
+      ::std::cerr << "SOURCE BEGIN:\n";
+      ::std::cout << template_with_name << ::std::endl;
+      ::std::cerr << "SOURCE END:\n";
+
+  }
+
+  if (getenv("CUDASTF_JIT_DEBUG_PTX")) {
+      ::std::cerr << "PTX BEGIN:\n";
+      ::std::cerr.write(ptx.data(), ptx.size()).flush();
+      ::std::cerr << "PTX END:\n";
+  }
 
   {
     ::std::lock_guard lock(cache_mutex);
@@ -400,8 +412,29 @@ template <typename Mdspan, ::std::size_t... Is>
   }
 }
 
+namespace reserved {
+template <typename T>
+struct jit_helper;
+
+template <typename T, typename... P>
+struct jit_helper<mdspan<T, P...>>
+{
+    using reduced_type = T *;
+
+    static ::std::string stringize(const mdspan<T, P...>& m) {
+         return stringize_mdspan(m);
+    }
+
+    static reduced_type reduce(const mdspan<T, P...>& m) {
+        return m.data_handle();
+    }
+};
+
+} // end namespace reserved
+
+
 template <typename Mdspan>
-::std::string stringize(const shape_of<Mdspan>& md_sh) {
+::std::string shape_stringize(const shape_of<Mdspan>& md_sh) {
      return stringize_mdspan_shape(md_sh);
 }
 
@@ -412,7 +445,7 @@ template <typename Mdspan>
 //}
 //
 template <size_t Dimensions>
-::std::string stringize(const box<Dimensions>& b) {
+::std::string shape_stringize(const box<Dimensions>& b) {
      return stringize_box(b);
 }
 
@@ -431,26 +464,28 @@ template <typename shape_t, typename ...Args>
     ::std::ostringstream args_tuple_oss;
     args_tuple_oss << "const auto targs = ::cuda::std::make_tuple(";
 
-    // the shape is hardcoded with its type
-    // args_prototype_oss << ::std::string(type_name<shape_t>) << " dyn_shape, ";
-
     each_in_tuple(targs, [&](auto arg_index, const auto& arg) {
-        using raw_arg = ::cuda::std::remove_reference_t<decltype(arg)>;
+        using raw_arg = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(arg)>>;
+        using reduced_arg = typename reserved::jit_helper<raw_arg>::reduced_type;
 
         if (arg_index > 0) {
              args_tuple_oss << ", ";
              args_prototype_oss << ", ";
         }
 
+        // Pass the reduced version of the dynamic argument as an argument of the kernel
+        args_prototype_oss << ::std::string(type_name<reduced_arg>) << " dyn_arg" << arg_index;
+
+        // Convert the dynamic argument into its statically sized counterpart.
         args_conversion_oss << stringize_mdspan(arg) << " static_arg" << arg_index << "{dyn_arg" << arg_index << "};\n";
-        args_prototype_oss << ::std::string(type_name<raw_arg>) << " dyn_arg" << arg_index;
 
         args_tuple_oss << "static_arg" << arg_index;
     });
 
     args_tuple_oss << ");\n";
 
-    args_conversion_oss << stringize(shape) << " static_shape;//{dyn_shape};\n";
+    // Note that we do not need the dynamic version of the shape at all
+    args_conversion_oss << "const " << shape_stringize(shape) << " static_shape;\n";
 
     oss << "extern \"C\"\n";
     oss << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n";
@@ -532,7 +567,7 @@ struct parallel_for_scope_jit {
     }
 
     k->*[&](auto... args) {
-        ::std::pair<::std::string, ::std::string> f_res = f(args...);
+        ::std::pair<::std::string, ::std::string> f_res = f();
 
         auto gen_template = parallel_for_template_generator(shape, f_res.second.c_str(), ::std::make_tuple(args...));
         // ::std::cout << "->* GEN TEMPLATE ALL\n";
@@ -540,12 +575,26 @@ struct parallel_for_scope_jit {
         // ::std::cout << "->* GEN TEMPLATE END\n";
 
         CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, f_res.first.c_str());
-        return cuda_kernel_desc{kernel, 1280, 128, 0, args...};
+        // We do not pass the arguments directly, but only a "reduced" form
+        // which contains all necessary information to build their static
+        // counterpart
+        return cuda_kernel_desc{kernel, 1280, 128, 0, reduce_for_jit(::std::forward<decltype(args)>(args))...};
     };
 
   }
 
 private:
+  // Get the "reduced" version of an argument so that we don't waste registers
+  // passing arguments for which we only need a subset. For example, we only
+  // need the data_handle() of an mdspan, not its extents because these are
+  // already encoded in the static version of the mdspan.
+  template <typename Arg>
+  auto reduce_for_jit(Arg&& arg)
+  {
+      using raw_t = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
+      return reserved::jit_helper<raw_t>::reduce(::std::forward<Arg>(arg));
+  }
+
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
   exec_place_t e_place;
