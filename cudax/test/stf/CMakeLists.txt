@@ -313,7 +313,7 @@ endforeach()
 
 add_subdirectory(static_error_checks)
 
-target_link_libraries(cudax.cpp17.test.stf.jit.axpy PRIVATE nvrtc)
-target_link_libraries(cudax.cpp17.test.stf.jit.axpy_pfor PRIVATE nvrtc)
-target_link_libraries(cudax.cpp17.test.stf.jit.axpy_cuda_kernel PRIVATE nvrtc)
-target_link_libraries(cudax.cpp17.test.stf.jit.heat PRIVATE nvrtc)
+# target_link_libraries(cudax.cpp17.test.stf.jit.axpy PRIVATE nvrtc)
+# target_link_libraries(cudax.cpp17.test.stf.jit.axpy_pfor PRIVATE nvrtc)
+# target_link_libraries(cudax.cpp17.test.stf.jit.axpy_cuda_kernel PRIVATE nvrtc)
+# target_link_libraries(cudax.cpp17.test.stf.jit.heat PRIVATE nvrtc)
