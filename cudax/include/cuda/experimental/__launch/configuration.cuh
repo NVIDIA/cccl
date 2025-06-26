@@ -254,7 +254,8 @@ private:
 template <typename _Content, std::size_t _Extent, bool _NonPortableSize>
 struct __dynamic_shared_memory_t
 {
-  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize> operator()() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
+  operator()() const noexcept
   {
     return dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>();
   }
@@ -267,7 +268,8 @@ struct __dynamic_shared_memory_t<void, ::cuda::std::dynamic_extent, false>
 template <typename _Content, bool _NonPortableSize>
 struct __dynamic_shared_memory_t<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
 {
-  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
+  [[nodiscard]]
+  _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
   operator()(std::size_t __size) const noexcept
   {
     return dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>(__size);
