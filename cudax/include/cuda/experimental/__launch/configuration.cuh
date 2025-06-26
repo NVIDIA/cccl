@@ -123,7 +123,7 @@ struct cooperative_launch_option : public __detail::launch_option
   _CCCL_HIDE_FROM_ABI constexpr cooperative_launch_option() = default;
   _CCCL_API constexpr cooperative_launch_option(const cooperative_launch_option&) noexcept {}
 
-  [[nodiscard]] _CCCL_HOST_API constexpr cooperative_launch_option operator()() const noexcept
+  [[nodiscard]] _CCCL_API constexpr cooperative_launch_option operator()() const noexcept
   {
     return cooperative_launch_option();
   }
@@ -203,15 +203,17 @@ struct dynamic_shared_memory_option : public __detail::launch_option
   static constexpr std::size_t extent                = _Extent;
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
-  const std::size_t size                             = _Extent == ::cuda::std::dynamic_extent ? 0 : _Extent;
+  const std::size_t size;
 
-  _CCCL_HIDE_FROM_ABI constexpr dynamic_shared_memory_option() = default;
+  _CCCL_API constexpr dynamic_shared_memory_option()
+      : size(_Extent == ::cuda::std::dynamic_extent ? 0 : _Extent)
+  {}
 
   _CCCL_API constexpr dynamic_shared_memory_option(const dynamic_shared_memory_option& __other) noexcept
       : size(__other.size)
   {}
 
-  _CCCL_HOST_API constexpr dynamic_shared_memory_option(std::size_t __set_size) noexcept
+  _CCCL_API constexpr dynamic_shared_memory_option(std::size_t __set_size) noexcept
       : size(__set_size)
   {}
 
@@ -232,7 +234,7 @@ private:
       return __status;
     }
 
-    int __size_needed = static_cast<int>(size * sizeof(Content));
+    int __size_needed = static_cast<int>(size * sizeof(_Content));
 
     if ((__size_needed > __max_dynamic_shared_size) && _NonPortableSize)
     {
@@ -254,7 +256,7 @@ private:
 template <typename _Content, std::size_t _Extent, bool _NonPortableSize>
 struct __dynamic_shared_memory_t
 {
-  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
+  [[nodiscard]] _CCCL_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
   operator()() const noexcept
   {
     return dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>();
@@ -269,7 +271,7 @@ template <typename _Content, bool _NonPortableSize>
 struct __dynamic_shared_memory_t<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
 {
   [[nodiscard]]
-  _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
+  _CCCL_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
   operator()(std::size_t __size) const noexcept
   {
     return dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>(__size);
@@ -630,7 +632,7 @@ template <typename... _Prev>
   }
   else
   {
-    constexpr auto __fn = &make_hierarchy<void, const Prev&...>;
+    constexpr auto __fn = &make_hierarchy<void, const _Prev&...>;
     return kernel_config(::cuda::std::apply(__fn, __previous));
   }
 }
@@ -649,7 +651,7 @@ __process_config_args(const ::cuda::std::tuple<_Prev...>& __previous, const _Arg
     }
     else
     {
-      constexpr auto __fn = make_hierarchy<void, const Prev&...>;
+      constexpr auto __fn = make_hierarchy<void, const _Prev&...>;
       return kernel_config(::cuda::std::apply(__fn, __previous), __arg, __rest...);
     }
   }
@@ -693,7 +695,7 @@ template <typename _Dimensions, typename... _Options>
 
 template <typename _Dimensions, typename... _Options>
 [[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
+  const kernel_config<_Dimensions, _Options...>& __config, CUlaunchConfig& __cuda_config, CUfunction __kernel) noexcept
 {
   cudaError_t __status = cudaSuccess;
 
@@ -704,25 +706,6 @@ template <typename _Dimensions, typename... _Options>
   }(static_cast<__launch_option_wrapper<_Options>>(__config).__option_.apply(__cuda_config, __kernel)));
 
   return __status;
-}
-
-template <typename Dimensions, typename... Options>
-[[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<_Dimensions, _Options...>& __config, CUlaunchConfig& __cuda_config, CUfunction __kernel) noexcept
-{
-  cudaError_t status = cudaSuccess;
-
-  ::cuda::std::apply(
-    [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too convoluted?
-      (void) (... && [&](cudaError_t call_status) {
-        status = call_status;
-        return call_status == cudaSuccess;
-      }(config_options.apply(cuda_config, kernel)));
-    },
-    config.options);
-
-  return status;
 }
 
 // Needs to be a char casted to the appropriate type, if it would be a template
