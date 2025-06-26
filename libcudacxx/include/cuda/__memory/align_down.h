@@ -31,14 +31,11 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API _Tp* align_up(_Tp* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_API _Tp* align_down(_Tp* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
+  _CCCL_ASSERT(__alignment >= alignof(_Tp), "wrong alignment");
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
-  if (alignof(_Tp) >= __alignment)
-  {
-    return __ptr;
-  }
   auto __tmp = static_cast<_CUDA_VSTD::uintptr_t>(__alignment - 1);
   auto __ret = reinterpret_cast<_Tp*>(reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
 #if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)

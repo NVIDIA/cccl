@@ -32,7 +32,7 @@ template <typename _Up, typename _Tp>
 {
   constexpr auto __max_alignment = alignof(_Tp) > alignof(_Up) ? alignof(_Tp) : alignof(_Up);
   _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-  return reinterpret_cast<_Up*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr), __max_alignment);
+  return reinterpret_cast<_Up*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, __max_alignment));
 }
 
 template <typename _Up, typename _Tp>
