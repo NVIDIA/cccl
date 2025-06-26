@@ -580,7 +580,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
         src_ptr + head_bytes,
         aligned_bytes_to_copy,
         &bar);
-      total_copied += bytes_to_copy;
+      total_copied += aligned_bytes_to_copy;
     }
   }
 
