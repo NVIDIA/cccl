@@ -260,7 +260,7 @@ inline CUfunction lazy_jit(
   return kernel;
 }
 
-::std::string run_command(const char* cmd)
+inline ::std::string run_command(const char* cmd)
 {
   ::std::array<char, 1024 * 64> buffer;
   ::std::string result;
