@@ -135,7 +135,8 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (bulk_copy_alignment, BulkCopyAlignment, int) )
 
 _CCCL_TEMPLATE(typename PolicyT)
-_CCCL_REQUIRES((!TransformAgentPrefetchPolicy<PolicyT> && !TransformAgentAsyncPolicy<PolicyT>) )
+_CCCL_REQUIRES((!TransformAgentPrefetchPolicy<PolicyT> && !TransformAgentAsyncPolicy<PolicyT>
+                && !TransformAgentVectorizedPolicy<PolicyT>) )
 __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
