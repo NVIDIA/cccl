@@ -79,16 +79,6 @@ struct hub_t
   using MaxPolicy = Policy;
 };
 
-// TODO (srinivasyadav18): Replace with macro `REQUIRE_APPROX_EQ_EPSILON` once the PR
-// https://github.com/NVIDIA/cccl/pull/4842 is merged
-template <typename T, typename U>
-bool approx_eq(const T& expected, const U& actual, const double tolerance = 0.01)
-{
-  double diff     = std::abs(static_cast<double>(expected) - static_cast<double>(actual));
-  double rel_diff = diff / std::abs(static_cast<double>(expected));
-  return rel_diff < tolerance;
-}
-
 C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
@@ -105,12 +95,60 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
 
   c2h::host_vector<type> h_input = d_input;
 
+  c2h::host_vector<type> h_expected(1);
   // Requires `std::accumulate` to produce deterministic result which is required for comparison
   // with the device RFA result.
   // NOTE: `std::reduce` is not equivalent
-  const type h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
 
-  REQUIRE(approx_eq(h_expected, d_output[0]));
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
+}
+
+C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
+         "[reduce][deterministic]",
+         float_type_list)
+{
+  using type              = typename c2h::get<0, TestType>;
+  constexpr int min_items = 1;
+  constexpr int max_items = 1 << 20;
+
+  const int num_items = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+
+  CAPTURE(num_items);
+
+  c2h::device_vector<type> d_input(num_items);
+
+  const type min_val = static_cast<type>(-1000.0f);
+  const type max_val = static_cast<type>(1000.0f);
+
+  c2h::gen(C2H_SEED(2), d_input, min_val, max_val);
+  c2h::device_vector<type> d_output_p1(1);
+  c2h::device_vector<type> d_output_p2(1);
+
+  auto env1 = cuda::std::execution::env{
+    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<1, 128>{})};
+
+  auto env2 = cuda::std::execution::env{
+    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<2, 256>{})};
+
+  cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, cuda::std::plus<type>{}, type{}, env1);
+
+  cub::DeviceReduce::Reduce(d_input.begin(), d_output_p2.begin(), num_items, cuda::std::plus<type>{}, type{}, env2);
+
+  c2h::host_vector<type> h_input = d_input;
+  c2h::host_vector<type> h_expected(1);
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+
+  // device RFA result should be approximately equal to host result
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output_p1, type{0.01});
+
+  // Both device RFA results should be strictly equal, as RFA is deterministic
+  REQUIRE(d_output_p1 == d_output_p2);
 }
 
 C2H_TEST("Deterministic Device reduce works with float and double on gpu with NaN",
@@ -161,55 +199,6 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with Na
   REQUIRE_EQ_WITH_NAN_MATCHING(d_output_p1, d_output_p2);
 }
 
-C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
-         "[reduce][deterministic]",
-         float_type_list)
-{
-  using type              = typename c2h::get<0, TestType>;
-  constexpr int min_items = 1;
-  constexpr int max_items = 50000;
-
-  const int num_items = GENERATE_COPY(
-    take(3, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
-
-  CAPTURE(num_items);
-
-  c2h::device_vector<type> input(num_items);
-
-  const type min_val = static_cast<type>(-1000.0f);
-  const type max_val = static_cast<type>(1000.0f);
-
-  c2h::gen(C2H_SEED(2), input, min_val, max_val);
-  c2h::device_vector<type> output_p1(1);
-  c2h::device_vector<type> output_p2(1);
-
-  auto env1 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<1, 128>{})};
-
-  auto env2 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<2, 256>{})};
-
-  cub::DeviceReduce::Reduce(input.begin(), output_p1.begin(), num_items, cuda::std::plus<type>{}, type{}, env1);
-
-  cub::DeviceReduce::Reduce(input.begin(), output_p2.begin(), num_items, cuda::std::plus<type>{}, type{}, env2);
-
-  type const res_p1 = output_p1[0];
-  type const res_p2 = output_p2[0];
-
-  c2h::host_vector<type> h_input = input;
-  const type h_expected          = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
-
-  // device RFA result should be approximately equal to host result
-  REQUIRE(approx_eq(h_expected, res_p1));
-
-  // Both device RFA results should be strictly equal, as RFA is deterministic
-  REQUIRE(res_p1 == res_p2);
-}
-
 C2H_TEST("Deterministic Device reduce works with float and double on gpu with different iterators",
          "[reduce][deterministic]",
          float_type_list)
@@ -230,13 +219,14 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
     c2h::host_vector<type> h_input = d_input;
 
+    c2h::host_vector<type> h_expected(1);
     // Requires `std::accumulate` to produce deterministic result which is required for comparison
     // with the device RFA result.
     // NOTE: `std::reduce` is not equivalent
-    const type h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
     c2h::host_vector<type> h_output = d_output;
 
-    REQUIRE(approx_eq(h_expected, h_output[0]));
+    REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
   }
 
   SECTION("constant iterator")
@@ -246,12 +236,14 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
     cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
 
+    c2h::host_vector<type> h_expected(1);
     // Requires `std::accumulate` to produce deterministic result which is required for comparison
     // with the device RFA result.
     // NOTE: `std::reduce` is not equivalent
-    const type h_expected = std::accumulate(input, input + num_items, type{}, ::cuda::std::plus<type>());
+    h_expected[0] = std::accumulate(input, input + num_items, type{}, ::cuda::std::plus<type>());
 
-    REQUIRE(approx_eq(h_expected, d_output[0]));
+    c2h::host_vector<type> h_output = d_output;
+    REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
   }
 }
 
@@ -296,11 +288,13 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
   REQUIRE(error == cudaSuccess);
 
   auto h_input = thrust::make_transform_iterator(input, transform_t{});
+
+  c2h::host_vector<type> h_expected(1);
   // Requires `std::accumulate` to produce deterministic result which is required for comparison
-  const type h_expected = std::accumulate(h_input, h_input + num_items, type{}, ::cuda::std::plus<type>());
+  h_expected[0] = std::accumulate(h_input, h_input + num_items, type{}, ::cuda::std::plus<type>());
 
   // device RFA result should be approximately equal to host result
-  REQUIRE(approx_eq(h_expected, d_output[0]));
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
 C2H_TEST("Deterministic Device reduce works with float and double on gpu with different init values",
@@ -323,13 +317,13 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
   cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_value, env);
 
   c2h::host_vector<type> h_input = d_input;
-
+  c2h::host_vector<type> h_expected(1);
   // Requires `std::accumulate` to produce deterministic result which is required for comparison
   // with the device RFA result.
   // NOTE: `std::reduce` is not equivalent
-  const type h_expected = std::accumulate(h_input.begin(), h_input.end(), init_value, ::cuda::std::plus<type>());
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_value, ::cuda::std::plus<type>());
 
-  REQUIRE(approx_eq(h_expected, d_output[0]));
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
 using test_types = c2h::type_list<
@@ -384,6 +378,8 @@ C2H_TEST("Deterministic Device reduce works with various types on gpu with diffe
   {
     // test with `cuda::std::plus` reduction operator only if the type is integral
     // as integral types are always deterministic
+    // NOTE: we do not test with extended floating types because they are not deterministic
+    // with `cuda::std::plus` operator
     if constexpr (::cuda::std::is_integral_v<type>)
     {
       c2h::device_vector<type> d_output(1);
@@ -392,12 +388,14 @@ C2H_TEST("Deterministic Device reduce works with various types on gpu with diffe
 
       c2h::host_vector<type> h_input = d_input;
 
+      c2h::host_vector<type> h_expected(1);
       // Requires `std::accumulate` to produce deterministic result which is required for comparison
       // with the device RFA result.
       // NOTE: `std::reduce` is not equivalent
-      const type h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>{});
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>{});
 
-      REQUIRE(approx_eq(h_expected, d_output[0]));
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
     }
   }
 
@@ -417,11 +415,18 @@ C2H_TEST("Deterministic Device reduce works with various types on gpu with diffe
       env);
 
     c2h::host_vector<type> h_input = d_input;
-
-    const type h_expected = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, ::cuda::minimum<>{});
+    c2h::host_vector<type> h_expected(1);
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, ::cuda::minimum<>{});
 
     c2h::host_vector<type> h_output = d_output;
-    REQUIRE(approx_eq(h_expected, h_output[0]));
+    if constexpr (::cuda::is_floating_point_v<type>)
+    {
+      REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
+    }
+    else
+    {
+      REQUIRE(h_expected == h_output);
+    }
   }
 
   SECTION("maximum")
@@ -440,10 +445,17 @@ C2H_TEST("Deterministic Device reduce works with various types on gpu with diffe
       env);
 
     c2h::host_vector<type> h_input = d_input;
-
-    const type h_expected = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, ::cuda::maximum<>{});
+    c2h::host_vector<type> h_expected(1);
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, ::cuda::maximum<>{});
 
     c2h::host_vector<type> h_output = d_output;
-    REQUIRE(approx_eq(h_expected, h_output[0]));
+    if constexpr (::cuda::is_floating_point_v<type>)
+    {
+      REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
+    }
+    else
+    {
+      REQUIRE(h_expected == h_output);
+    }
   }
 }
