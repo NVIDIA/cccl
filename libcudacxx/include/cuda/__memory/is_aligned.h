@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_IS_ALIGN_H
-#define _CUDA___MEMORY_IS_ALIGN_H
+#ifndef _CUDA___MEMORY_IS_ALIGNED_H
+#define _CUDA___MEMORY_IS_ALIGNED_H
 
 #include <cuda/std/detail/__config>
 
