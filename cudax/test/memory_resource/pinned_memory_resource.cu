@@ -60,7 +60,7 @@ static void ensure_pinned_ptr(void* ptr)
   // CHECK(attributes.devicePointer != nullptr);
 }
 
-C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
+C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
   pinned_resource res{};
@@ -218,7 +218,7 @@ struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
 };
 static_assert(cuda::mr::resource<derived_pinned_resource>, "");
 
-C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
+C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
   pinned_resource first{};
@@ -279,7 +279,7 @@ C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYP
 }
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-C2H_TEST("pinned_memory_resource async deallocate", "[memory_resource]")
+C2H_CCCLRT_TEST("pinned_memory_resource async deallocate", "[memory_resource]")
 {
   cudax::pinned_memory_resource resource{};
   test_deallocate_async(resource);
