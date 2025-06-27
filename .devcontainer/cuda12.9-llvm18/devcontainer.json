@@ -1,6 +1,12 @@
 {
   "shutdownAction": "stopContainer",
   "image": "rapidsai/devcontainers:25.08-cpp-llvm18-cuda12.9",
+  "runArgs": [
+    "--init",
+    "--rm",
+    "--name",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-llvm18"
+  ],
   "hostRequirements": {
     "gpu": "optional"
   },

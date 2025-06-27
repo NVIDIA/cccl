@@ -1,6 +1,11 @@
 {
   "shutdownAction": "stopContainer",
   "image": "rapidsai/devcontainers:25.08-cpp-nvhpc25.5",
+  "runArgs": [
+    "--init",
+    "--rm",
+    "--name",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-nvhpc25.5"
   "hostRequirements": {
     "gpu": "optional"
   },
