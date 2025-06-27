@@ -55,8 +55,8 @@
     "-c",
     "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"
   ],
-  "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+  "workspaceFolder": "/home/coder/cccl",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/cccl,type=bind,consistency=consistent",
   "mounts": [
     "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
