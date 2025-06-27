@@ -327,7 +327,14 @@ using types                = c2h::type_list<std::uint8_t, std::uint16_t, std::in
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
 using modes                = c2h::enum_type_list<scan_mode, scan_mode::exclusive, scan_mode::inclusive>;
 
-using vec_types = c2h::type_list<ulonglong4, uchar3, short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  uchar3,
+  short2>;
 
 using warp_combine_type = int;
 

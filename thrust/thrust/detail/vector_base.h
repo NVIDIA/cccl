@@ -525,13 +525,6 @@ protected:
   size_type m_size;
 
 private:
-  // these methods resolve the ambiguity of the constructor template of form (Iterator, Iterator)
-  template <typename IteratorOrIntegralType>
-  void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type);
-
-  template <typename IteratorOrIntegralType>
-  void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type);
-
   template <typename InputIterator>
   void range_init(InputIterator first, InputIterator last);
 
@@ -558,14 +551,6 @@ private:
   // this method performs insertion from a range
   template <typename InputIterator>
   void copy_insert(iterator position, InputIterator first, InputIterator last);
-
-  // these methods resolve the ambiguity of the assign() template of form (InputIterator, InputIterator)
-  template <typename InputIterator>
-  void assign_dispatch(InputIterator first, InputIterator last, false_type);
-
-  // these methods resolve the ambiguity of the assign() template of form (InputIterator, InputIterator)
-  template <typename Integral>
-  void assign_dispatch(Integral n, Integral x, true_type);
 
   // this method performs assignment from a range
   template <typename InputIterator>

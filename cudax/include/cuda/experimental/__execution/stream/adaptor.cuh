@@ -338,7 +338,7 @@ struct __attrs_t
 {
   // This makes sure that when `connect` calls `transform_sender`, it will use the stream
   // domain to find a customization.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_late_t) noexcept -> stream_domain
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
   {
     return {};
   }
@@ -399,7 +399,7 @@ struct __sndr_t
 };
 
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr __sndr, stream_ref __stream) -> decltype(auto)
+_CCCL_API constexpr auto __adapt(_Sndr __sndr, [[maybe_unused]] stream_ref __stream) -> decltype(auto)
 {
   // Ensure that we are not trying to adapt a sender that is already adapted.
   if constexpr (__is_specialization_of_v<_Sndr, __sndr_t>)

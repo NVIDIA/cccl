@@ -33,6 +33,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // fma
 
+#if _CCCL_CHECK_BUILTIN(builtin_fma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMAF(...) __builtin_fmaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMA(...)  __builtin_fma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAL(...) __builtin_fmal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
+
 [[nodiscard]] _CCCL_API inline float fma(float __x, float __y, float __z) noexcept
 {
 #if defined(_CCCL_BUILTIN_FMAF)
