@@ -458,8 +458,8 @@ public:
       && (::cuda::is_floating_point_v<accum_t> && detail::is_cuda_minimum_maximum_v<ReductionOpT, accum_t>);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
-    constexpr auto float_double_plus = gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double>
-                                    && detail::reduce::is_plus<ReductionOpT>::value;
+    constexpr auto float_double_plus =
+      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
 
     constexpr auto supported = integral_fallback || fp_min_max_fallback || float_double_plus || !gpu_gpu_determinism;
 
