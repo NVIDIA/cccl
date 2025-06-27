@@ -29,6 +29,7 @@
 
 #include <vector>
 
+#include <cuda/std/span>
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -53,7 +54,7 @@ public:
 
   [[nodiscard]] iterator end() const noexcept;
 
-  operator ::std::vector<device_ref>() const;
+  operator ::cuda::std::span<const device_ref>() const;
 
 private:
   struct __initializer_iterator;
@@ -143,9 +144,10 @@ struct all_devices::__initializer_iterator
   return __devices().end();
 }
 
-inline all_devices::operator ::std::vector<device_ref>() const
+inline all_devices::operator ::cuda::std::span<const device_ref>() const
 {
-  return ::std::vector<device_ref>(begin(), end());
+  static const ::std::vector<device_ref> __refs(begin(), end());
+  return ::cuda::std::span<const device_ref>(__refs);
 }
 
 inline const ::std::vector<device>& all_devices::__devices()

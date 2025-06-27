@@ -67,10 +67,10 @@ inline void __verify_device_supports_stream_ordered_allocations(const int __devi
 
 //! @brief Enable access to this memory pool from the supplied devices
 //!
-//! Device on which this pool resides can be included in the vector.
+//! Device on which this pool resides can be included in the span.
 //!
 //! @param __pool The memory pool to set access for
-//! @param __devices A vector of `device_ref`s listing devices to enable access for
+//! @param __devices A span of `device_ref`s listing devices to enable access for
 //! @param __flags The access flags to set
 //! @throws cuda_error if ``cudaMemPoolSetAccess`` fails.
 inline void
@@ -321,10 +321,10 @@ public:
 
   //! @brief Enable access to this memory pool from the supplied devices
   //!
-  //! Device on which this pool resides can be included in the vector.
+  //! Device on which this pool resides can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to enable access for
+  void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -340,10 +340,10 @@ public:
 
   //! @brief Disable access to this memory pool from the supplied devices
   //!
-  //! Device on which this pool resides can be included in the vector.
+  //! Device on which this pool resides can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to disable access for
+  void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
