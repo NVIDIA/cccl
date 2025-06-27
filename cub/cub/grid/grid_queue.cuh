@@ -64,7 +64,7 @@ CUB_NAMESPACE_BEGIN
  * will be filling.
  *
  * @par
- * Similarly, a "draining" GridQueue works by works by atomically-incrementing a
+ * Similarly, a "draining" GridQueue works by atomically-incrementing a
  * zero-initialized counter, returning a unique offset for the calling thread to
  * read its items. Threads can safely drain until the array's logical fill-size is
  * exceeded.  The drain counter must be reset using GridQueue::ResetDrain or
