@@ -38,6 +38,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // acosh
 
+#if _CCCL_CHECK_BUILTIN(builtin_acosh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSHF(...) __builtin_acoshf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSH(...)  __builtin_acosh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSHL(...) __builtin_acoshl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acosh)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ACOSHF
+#  undef _CCCL_BUILTIN_ACOSH
+#  undef _CCCL_BUILTIN_ACOSHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float acosh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ACOSHF)
@@ -107,6 +119,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // asinh
 
+#if _CCCL_CHECK_BUILTIN(builtin_asinh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINHF(...) __builtin_asinhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINH(...)  __builtin_asinh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINHL(...) __builtin_asinhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ASINHF
+#  undef _CCCL_BUILTIN_ASINH
+#  undef _CCCL_BUILTIN_ASINHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float asinh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ASINHF)
@@ -175,6 +199,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // atanh
+
+#if _CCCL_CHECK_BUILTIN(builtin_atanh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANHF(...) __builtin_atanhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANH(...)  __builtin_atanh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANHL(...) __builtin_atanhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atanh)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATANHF
+#  undef _CCCL_BUILTIN_ATANH
+#  undef _CCCL_BUILTIN_ATANHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float atanh(float __x) noexcept
 {

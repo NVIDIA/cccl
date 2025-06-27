@@ -30,6 +30,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_isnormal) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISNORMAL(...) __builtin_isnormal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isnormal)
+
+// nvcc does not implement __builtin_isnormal
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_ISNORMAL
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 [[nodiscard]] _CCCL_API constexpr bool isnormal(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNORMAL)
