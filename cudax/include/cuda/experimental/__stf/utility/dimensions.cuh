@@ -671,7 +671,7 @@ public:
   // explicit conversion from a dynamic box<dimensions> (run-time assert only)
   //--------------------------------------------------------------------------
   template <size_t DynDims>
-  _CCCL_HOST_DEVICE explicit constexpr static_box(const box<DynDims>& dyn)
+  _CCCL_HOST_DEVICE explicit constexpr static_box([[maybe_unused]] const box<DynDims>& dyn)
   {
     static_assert(DynDims == dimensions, "dimension mismatch between static_box and box");
 

@@ -398,7 +398,7 @@ public:
     // When chained is enable, we expect a vector of kernel description which should be executed one after the other
     if constexpr (chained)
     {
-      ::std::vector<cuda_kernel_desc> res = ::std::apply(f, deps.instance(t));
+      ::std::vector<cuda_kernel_desc> res = ::cuda::std::apply(f, deps.instance(t));
       assert(!res.empty());
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
