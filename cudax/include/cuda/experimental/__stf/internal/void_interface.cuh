@@ -80,7 +80,7 @@ namespace reserved
 template <typename... Ts>
 struct remove_void_interface
 {
-  using type = ::std::tuple<>;
+  using type = ::cuda::std::tuple<>;
 };
 
 template <typename T, typename... Ts>
@@ -90,10 +90,10 @@ private:
   using tail = typename remove_void_interface<Ts...>::type;
 
   // If T is void_interface, skip it, otherwise prepend it to tail
-  using filtered =
-    std::conditional_t<::std::is_same_v<T, void_interface>,
-                       tail,
-                       decltype(::std::tuple_cat(::std::declval<::std::tuple<T>>(), ::std::declval<tail>()))>;
+  using filtered = std::conditional_t<
+    ::std::is_same_v<T, void_interface>,
+    tail,
+    decltype(::cuda::std::tuple_cat(::std::declval<::cuda::std::tuple<T>>(), ::std::declval<tail>()))>;
 
 public:
   using type = filtered;
@@ -110,7 +110,7 @@ struct remove_void_interface_from_tuple
 };
 
 template <typename... Ts>
-struct remove_void_interface_from_tuple<::std::tuple<Ts...>>
+struct remove_void_interface_from_tuple<::cuda::std::tuple<Ts...>>
 {
   using type = remove_void_interface_t<Ts...>;
 };
@@ -141,12 +141,12 @@ private:
   static auto check(::std::index_sequence<Idx...>)
   {
     using filtered = remove_void_interface_t<Data...>;
-    return test<Fun, ::std::tuple_element_t<Idx, filtered>...>(0);
+    return test<Fun, ::cuda::std::tuple_element_t<Idx, filtered>...>(0);
   }
 
 public:
   static constexpr bool value =
-    decltype(check(::std::make_index_sequence<::std::tuple_size_v<remove_void_interface_t<Data...>>>{}))::value;
+    decltype(check(::std::make_index_sequence<::cuda::std::tuple_size_v<remove_void_interface_t<Data...>>>{}))::value;
 };
 
 /**
@@ -160,22 +160,22 @@ struct is_tuple_invocable_with_filtered : is_tuple_invocable<F, remove_void_inte
  * @brief Strip tuple entries with a "void_interface" type
  */
 template <typename... Ts>
-auto remove_void_interface_types(const ::std::tuple<Ts...>& tpl)
+auto remove_void_interface_types(const ::cuda::std::tuple<Ts...>& tpl)
 {
-  return ::std::apply(
+  return ::cuda::std::apply(
     [](auto&&... args) {
       auto filter_one = [](auto&& arg) {
         using T = ::std::decay_t<decltype(arg)>;
         if constexpr (::std::is_same_v<T, void_interface>)
         {
-          return ::std::tuple<>{};
+          return ::cuda::std::tuple<>{};
         }
         else
         {
-          return ::std::tuple<T>(::std::forward<decltype(arg)>(arg));
+          return ::cuda::std::tuple<T>(::std::forward<decltype(arg)>(arg));
         }
       };
-      return ::std::tuple_cat(filter_one(::std::forward<decltype(args)>(args))...);
+      return ::cuda::std::tuple_cat(filter_one(::std::forward<decltype(args)>(args))...);
     },
     tpl);
 }

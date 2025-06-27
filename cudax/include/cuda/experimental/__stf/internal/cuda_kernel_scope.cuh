@@ -444,7 +444,7 @@ public:
       // descriptor, not a vector
       static_assert(!chained);
 
-      cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
+      cuda_kernel_desc res = ::cuda::std::apply(f, deps.instance(t));
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {

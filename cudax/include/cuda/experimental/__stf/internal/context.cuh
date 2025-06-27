@@ -1290,7 +1290,7 @@ inline void unit_test_recursive_apply()
    * level */
   auto spec = par<8>(par<16>());
   ctx.launch(spec, exec_place::current_device(), lA.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
-    for (auto i : th.apply_partition(shape(A), ::std::tuple<blocked_partition, cyclic_partition>()))
+    for (auto i : th.apply_partition(shape(A), ::cuda::std::tuple<blocked_partition, cyclic_partition>()))
     {
       A(i) = 2 * i + 7;
     }
@@ -1308,7 +1308,8 @@ inline void unit_test_recursive_apply()
 
   auto spec3 = par(par<8>(par<16>()));
   ctx.launch(spec3, exec_place::current_device(), lB.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> B) {
-    for (auto i : th.apply_partition(shape(B), ::std::tuple<blocked_partition, blocked_partition, cyclic_partition>()))
+    for (auto i :
+         th.apply_partition(shape(B), ::cuda::std::tuple<blocked_partition, blocked_partition, cyclic_partition>()))
     {
       B(i) = 2 * i + 7;
     }
@@ -1348,7 +1349,7 @@ inline void unit_test_partitioner_product()
   };
 
   // Define the combination of partitioners as a product of partitioners
-  auto p = ::std::tuple<blocked_partition, cyclic_partition>();
+  auto p = ::cuda::std::tuple<blocked_partition, cyclic_partition>();
 
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(1280));
 
@@ -1385,28 +1386,28 @@ UNITTEST("make_tuple_indexwise")
   auto t1 = make_tuple_indexwise<3>([&](auto i) {
     if constexpr (i == 2)
     {
-      return ::std::ignore;
+      return ::cuda::std::ignore;
     }
     else
     {
       return int(i);
     }
   });
-  static_assert(::std::is_same_v<decltype(t1), ::std::tuple<int, int>>);
-  EXPECT(t1 == ::std::tuple(0, 1));
+  static_assert(::std::is_same_v<decltype(t1), ::cuda::std::tuple<int, int>>);
+  EXPECT(t1 == ::cuda::std::tuple(0, 1));
 
   auto t2 = make_tuple_indexwise<3>([&](auto i) {
     if constexpr (i == 1)
     {
-      return ::std::ignore;
+      return ::cuda::std::ignore;
     }
     else
     {
       return int(i);
     }
   });
-  static_assert(::std::is_same_v<decltype(t2), ::std::tuple<int, int>>);
-  EXPECT(t2 == ::std::tuple(0, 2));
+  static_assert(::std::is_same_v<decltype(t2), ::cuda::std::tuple<int, int>>);
+  EXPECT(t2 == ::cuda::std::tuple(0, 2));
 };
 
 UNITTEST("auto_dump set/get")

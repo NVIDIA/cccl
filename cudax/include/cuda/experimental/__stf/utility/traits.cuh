@@ -203,6 +203,16 @@ template <typename T0, typename... Ts>
   return result;
 }
 
+template <typename T0, typename... Ts>
+::cuda::std::array<T0, 1 + sizeof...(Ts)> to_cuda_array(const ::cuda::std::tuple<T0, Ts...>& obj)
+{
+  ::cuda::std::array<T0, 1 + sizeof...(Ts)> result;
+  each_in_tuple(obj, [&](auto index, const auto& value) {
+    result[index] = value;
+  });
+  return result;
+}
+
 /**
  * @brief Converts an `std::array` to a `cuda::std::array`
  */
@@ -491,7 +501,7 @@ namespace reserved
 {
 
 /**
- * @brief Trait class to check if a function can be invoked with std::apply using a tuple type
+ * @brief Trait class to check if a function can be invoked with cuda::std::apply using a tuple type
  */
 template <typename F, typename Tuple>
 struct is_tuple_invocable : ::std::false_type
@@ -499,7 +509,7 @@ struct is_tuple_invocable : ::std::false_type
 
 // Partial specialization that unpacks the tuple
 template <typename F, typename... Args>
-struct is_tuple_invocable<F, ::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
+struct is_tuple_invocable<F, ::cuda::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
 {};
 
 // Convenient alias template

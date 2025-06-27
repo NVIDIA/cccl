@@ -185,7 +185,7 @@ public:
     unroll<rank()>([&](auto i) {
       if (i == 0)
       {
-        strides[i] = ::std::get<0>(sizes) != 0;
+        strides[i] = ::cuda::std::get<0>(sizes) != 0;
       }
       else
       {

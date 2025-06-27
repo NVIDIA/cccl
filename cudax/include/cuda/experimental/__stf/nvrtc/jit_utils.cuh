@@ -25,8 +25,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/slice_core.cuh>
 #include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/slice_core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
@@ -487,8 +487,8 @@ template <size_t Dimensions>
 }
 
 template <typename shape_t, typename... Args>
-::std::string
-parallel_for_template_generator([[maybe_unused]] shape_t shape, const char* body_template, ::std::tuple<Args...> targs)
+::std::string parallel_for_template_generator(
+  [[maybe_unused]] shape_t shape, const char* body_template, ::cuda::std::tuple<Args...> targs)
 {
   ::std::ostringstream oss;
 
@@ -618,7 +618,8 @@ struct parallel_for_scope_jit
     k->*[&](auto... args) {
       ::std::pair<::std::string, ::std::string> f_res = f();
 
-      auto gen_template = parallel_for_template_generator(shape, f_res.second.c_str(), ::std::make_tuple(args...));
+      auto gen_template =
+        parallel_for_template_generator(shape, f_res.second.c_str(), ::cuda::std::make_tuple(args...));
       // ::std::cout << "->* GEN TEMPLATE ALL\n";
       // ::std::cout << gen_template << ::std::endl;
       // ::std::cout << "->* GEN TEMPLATE END\n";

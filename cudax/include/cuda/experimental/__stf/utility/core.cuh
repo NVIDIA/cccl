@@ -216,15 +216,15 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
 } // namespace reserved
 
 /**
- * @brief Creates a `std::tuple` by applying a callable object `f` to each integral constant within a given range `[0,
- * n)`.
+ * @brief Creates a `::cuda::std::tuple` by applying a callable object `f` to each integral constant within a given
+ * range `[0, n)`.
  *
  * This function template takes a callable object `f` and applies it to each integral constant in the range `[0, n)`.
- * The results of the calls are collected into a `std::tuple` and returned. The callable object is expected to take a
- * single argument of type `std::integral_constant<size_t, i>`, where `i` is the current index, and return a value of
- * the desired type and value.
+ * The results of the calls are collected into a `::cuda::std::tuple` and returned. The callable object is expected to
+ * take a single argument of type `std::integral_constant<size_t, i>`, where `i` is the current index, and return a
+ * value of the desired type and value.
  *
- * If `f` returns `std::ignore` for any argument(s), the corresponding value(s) will be skipped in the resulting
+ * If `f` returns `::cuda::std::ignore` for any argument(s), the corresponding value(s) will be skipped in the resulting
  * tuple.
  *
  * @tparam n The number of times the callable object `f` should be applied.
@@ -237,12 +237,12 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
  * @code
  * auto make_double = [](auto index) {
  *     if constexpr (index == 2)
- *         return std::ignore;
+ *         return ::cuda::std::ignore;
  *     else
  *         return static_cast<double>(index);
  * };
  * auto result = make_tuple_indexwise<5>(make_double);
- * // result is std::tuple<double, double, double, double>{0.0, 1.0, 3.0, 4.0}
+ * // result is ::cuda::std::tuple<double, double, double, double>{0.0, 1.0, 3.0, 4.0}
  * @endcode
  *
  * Note: Since this function is `constexpr`, it can be used at compile-time if `f` is a compile-time invocable object.
@@ -256,12 +256,12 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
   }
   else
   {
-    return reserved::make_tuple(f(::std::integral_constant<size_t, i>())...);
+    return reserved::make_cuda_tuple(f(::std::integral_constant<size_t, i>())...);
   }
 }
 
 /**
- * @brief Iterates over the elements of a tuple, applying a given function object to each element.
+ * @brief Iterates over the elements of a ::cuda::std::tuple, applying a given function object to each element.
  *
  * The function `each_in_tuple` accepts a tuple and a callable object `f`. If `f` accepts two parameters, it is invoked
  * with the index as a `std::integral_constant` and the value at that index in the tuple for each element. If `f`
@@ -280,13 +280,13 @@ constexpr void each_in_tuple(Tuple&& t, F&& f)
 {
   constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
   unroll<n>([&](auto j) {
-    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::cuda::std::get<j>(::std::forward<Tuple>(t)))>)
     {
-      f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+      f(j, ::cuda::std::get<j>(::std::forward<Tuple>(t)));
     }
     else
     {
-      f(::std::get<j>(::std::forward<Tuple>(t)));
+      f(::cuda::std::get<j>(::std::forward<Tuple>(t)));
     }
   });
 }
