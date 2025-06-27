@@ -286,10 +286,10 @@ struct dispatch_t<StableAddress,
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
   template <typename ActivePolicy, typename SMemFunc, std::size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_async_algorithm(int alignment, SMemFunc smem_for_tile_size, cuda::std::index_sequence<Is...>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
+    int alignment, SMemFunc smem_for_tile_size, cuda::std::index_sequence<Is...>, ActivePolicy policy = {})
   {
-    auto ret = configure_async_kernel<ActivePolicy>(alignment, smem_for_tile_size);
+    auto ret = configure_async_kernel(alignment, smem_for_tile_size, policy);
     if (!ret)
     {
       return ret.error();
@@ -349,7 +349,7 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy active_policy)
+  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy active_policy = {})
   {
     auto wrapped_policy     = MakeTransformPolicyWrapper(active_policy);
     const int block_threads = wrapped_policy.AlgorithmPolicy().BlockThreads();
@@ -462,21 +462,23 @@ struct dispatch_t<StableAddress,
     const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
     if CUB_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
     {
-      return invoke_async_algorithm<ActivePolicyT>(
+      return invoke_async_algorithm(
         bulk_copy_align,
         [this](int tile_size) {
           return bulk_copy_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, bulk_copy_align);
         },
-        seq);
+        seq,
+        active_policy);
     }
     else if CUB_CONSTEXPR_ISH (Algorithm::memcpy_async == wrapped_policy.Algorithm())
     {
-      return invoke_async_algorithm<ActivePolicyT>(
+      return invoke_async_algorithm(
         ldgsts_size_and_align,
         [this](int tile_size) {
           return memcpy_async_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size);
         },
-        seq);
+        seq,
+        active_policy);
     }
     else
     {

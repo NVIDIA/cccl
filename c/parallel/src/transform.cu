@@ -259,8 +259,9 @@ struct __align__({3}) output_storage_t {{
 
     nlohmann::json runtime_policy = get_policy(
       std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, "
-                  "::cuda::std::tuple<{0}>>::max_policy::ActivePolicy{{}})",
-                  transform::get_iterator_name<input_storage_t>(input_it, transform::input_iterator_name)),
+                  "::cuda::std::tuple<{0}>, {1}>::max_policy::ActivePolicy{{}})",
+                  transform::get_iterator_name<input_storage_t>(input_it, transform::input_iterator_name),
+                  transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name)),
       "#include <cub/device/dispatch/tuning/tuning_transform.cuh>\n" + src,
       ptx_args);
 
@@ -387,7 +388,7 @@ CUresult cccl_device_unary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = std::visit(
+    error = static_cast<CUresult>(std::visit(
       [&]<typename Policy>(Policy policy) {
         return cub::detail::transform::dispatch_t<
           cub::detail::transform::requires_stable_address::no, // TODO implement yes
@@ -407,12 +408,7 @@ CUresult cccl_device_unary_transform(
                    cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                    policy);
       },
-      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy));
-    if (cuda_error != cudaSuccess)
-    {
-      const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
-      std::cerr << "CUDA error: " << errorString << std::endl;
-    }
+      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
   }
   catch (const std::exception& exc)
   {
@@ -500,9 +496,10 @@ struct __align__({5}) output_storage_t {{
 
     nlohmann::json runtime_policy = get_policy(
       std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, "
-                  "::cuda::std::tuple<{0}, {1}>>::max_policy::ActivePolicy{{}})",
+                  "::cuda::std::tuple<{0}, {1}>, {2}>::max_policy::ActivePolicy{{}})",
                   transform::get_iterator_name<input1_storage_t>(input1_it, transform::input1_iterator_name),
-                  transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name)),
+                  transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name),
+                  transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name)),
       "#include <cub/device/dispatch/tuning/tuning_transform.cuh>\n" + src,
       ptx_args);
 
@@ -629,7 +626,7 @@ CUresult cccl_device_binary_transform(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto cuda_error = std::visit(
+    error = static_cast<CUresult>(std::visit(
       [&]<typename Policy>(Policy policy) {
         return cub::detail::transform::dispatch_t<
           cub::detail::transform::requires_stable_address::no, // TODO implement yes
@@ -651,7 +648,7 @@ CUresult cccl_device_binary_transform(
             cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
             policy);
       },
-      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy));
+      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
   }
   catch (const std::exception& exc)
   {
