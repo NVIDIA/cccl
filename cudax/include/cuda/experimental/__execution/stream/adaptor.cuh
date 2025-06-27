@@ -92,7 +92,7 @@ struct __results_visitor
 // __state_t lives in managed memory. It stores everything the operation state needs,
 // besides the child operation state.
 template <class _Rcvr, class _Variant>
-struct __state_base_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
 {
   _Rcvr __rcvr_;
   _Variant __results_;
@@ -129,7 +129,7 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
 
 // This is the environment of the inner receiver that is used to connect the child sender.
 template <class _Env, class _Config>
-struct __env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
 {
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
@@ -159,7 +159,7 @@ struct __env_t
 
 // This is the inner receiver that is used to connect the child sender.
 template <class _Rcvr, class _Config, class _Variant>
-struct __rcvr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
 {
   template <class _Tag, class... _Args>
   _CCCL_API void __complete(_Tag, _Args&&... __args) noexcept
@@ -209,7 +209,7 @@ struct __rcvr_t
 };
 
 template <class _CvSndr, class _Rcvr>
-struct __opstate_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
 {
   using operation_state_concept = operation_state_t;
 
@@ -334,7 +334,7 @@ private:
 };
 
 template <class _Sndr>
-struct __attrs_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
   // This makes sure that when `connect` calls `transform_sender`, it will use the stream
   // domain to find a customization.
@@ -360,7 +360,7 @@ struct __attrs_t
 
 // This is the sender adaptor that adapts a non-stream sender to a stream sender.
 template <class _Sndr>
-struct __sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
 {
   using sender_concept = sender_t;
 

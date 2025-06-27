@@ -278,12 +278,18 @@ struct write_attrs_t
   struct _sndr_t;
 
   template <class Attrs>
-  struct __closure
+  struct _closure_t
   {
     Attrs _attrs_;
 
     template <class Sndr>
-    [[nodiscard]] _CCCL_API friend auto operator|(Sndr _sndr, __closure _clsr)
+    [[nodiscard]] _CCCL_API auto operator()(Sndr _sndr) &&
+    {
+      return _sndr_t<Sndr, Attrs>{{}, static_cast<Attrs&&>(_attrs_), static_cast<Sndr&&>(_sndr)};
+    }
+
+    template <class Sndr>
+    [[nodiscard]] _CCCL_API friend auto operator|(Sndr _sndr, _closure_t _clsr)
     {
       return _sndr_t<Sndr, Attrs>{{}, static_cast<Attrs&&>(_clsr._attrs_), static_cast<Sndr&&>(_sndr)};
     }
@@ -298,7 +304,7 @@ struct write_attrs_t
   template <class Attrs>
   [[nodiscard]] _CCCL_API auto operator()(Attrs _attrs) const
   {
-    return __closure<Attrs>{static_cast<Attrs&&>(_attrs)};
+    return _closure_t<Attrs>{static_cast<Attrs&&>(_attrs)};
   }
 };
 
