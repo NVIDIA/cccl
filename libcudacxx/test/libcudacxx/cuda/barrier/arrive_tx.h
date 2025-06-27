@@ -11,6 +11,7 @@
 #define TEST_ARRIVE_TX_H_
 
 #include <cuda/barrier>
+#include <cuda/memory>
 #include <cuda/std/utility>
 
 #include "concurrent_agents.h"
@@ -26,7 +27,7 @@ inline __device__ void mbarrier_complete_tx(Barrier& b, int transaction_count)
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90,
     (
-      if (__isShared(cuda::device::barrier_native_handle(b))) {
+      if (cuda::device::is_address_from(cuda::device::address_space::shared, cuda::device::barrier_native_handle(b))) {
         asm volatile(
           "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
           :
