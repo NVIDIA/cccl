@@ -68,6 +68,16 @@ def load_devcontainer_json(path):
         return json.load(devcontainer_file)
 
 def load_devcontainer_meta(tag):
+
+    # Always pull the latest copy of the image
+    if os.environ.get("GITHUB_ACTIONS", None) is not None:
+        print(f"::group::Pulling Docker image {tag}", file=sys.stderr)
+
+    subprocess.run(["docker", "pull", tag], stdout=sys.stderr).check_returncode()
+
+    if os.environ.get("GITHUB_ACTIONS", None) is not None:
+        print("::endgroup::", file=sys.stderr)
+
     return json.loads(json.loads(subprocess.check_output(
         ["docker", "inspect", "--type", "image", "--format", r"{{json .Config.Labels}}", tag],
         text=True
