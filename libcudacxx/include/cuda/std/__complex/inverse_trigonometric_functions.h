@@ -101,7 +101,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
+_CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
@@ -109,7 +109,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__half> acos(const complex<__half>& __x)
+_CCCL_API inline complex<__half> acos(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
 }

@@ -80,7 +80,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
+_CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
@@ -88,7 +88,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__half> asinh(const complex<__half>& __x)
+_CCCL_API inline complex<__half> asinh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
@@ -142,7 +142,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+_CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
@@ -150,7 +150,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
+_CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
@@ -194,7 +194,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+_CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
@@ -202,7 +202,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__half> atanh(const complex<__half>& __x)
+_CCCL_API inline complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
