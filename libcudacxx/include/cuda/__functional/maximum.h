@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,7 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,7 +38,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
-    return (__lhs < __rhs) ? __rhs : __lhs;
+    using _Up = _CUDA_VSTD::remove_cv_t<_Tp>;
+    // don't use cuda::is_floating_point_v here to prevent fmax specialization for custom types
+    if constexpr (_CUDA_VSTD::is_floating_point_v<_Up> || _CUDA_VSTD::__is_extended_floating_point_v<_Up>)
+    {
+      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+      {
+        return _CUDA_VSTD::fmax(__lhs, __rhs);
+      }
+      return __lhs < __rhs || _CUDA_VSTD::isnan(__lhs) ? __rhs : __lhs;
+    }
+    else
+    {
+      return (__lhs < __rhs) ? __rhs : __lhs;
+    }
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(maximum);
@@ -47,7 +64,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
   [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
-    return (__lhs < __rhs) ? __rhs : __lhs;
+    using _Common = _CUDA_VSTD::remove_cv_t<_CUDA_VSTD::common_type_t<_T1, _T2>>;
+    // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
+    if constexpr (_CUDA_VSTD::is_floating_point_v<_Common> || _CUDA_VSTD::__is_extended_floating_point_v<_Common>)
+    {
+      return maximum<_Common>{}(__lhs, __rhs);
+    }
+    else
+    {
+      return (__lhs < __rhs) ? __rhs : __lhs;
+    }
   }
 };
 
