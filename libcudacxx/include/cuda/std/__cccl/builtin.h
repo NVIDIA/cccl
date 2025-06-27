@@ -114,6 +114,15 @@
 #  undef _CCCL_BUILTIN_ACOSHL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#if _CCCL_CHECK_BUILTIN(builtin_add_overflow) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
+
+// nvcc does not support __builtin_add_overflow
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_ADD_OVERFLOW
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC)
@@ -813,6 +822,15 @@
 #  undef _CCCL_BUILTIN_MEMMOVE
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
+#if _CCCL_CHECK_BUILTIN(builtin_mul_overflow) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_MUL_OVERFLOW(...) __builtin_mul_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_mul_overflow)
+
+// nvcc does not support __builtin_mul_overflow
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_MUL_OVERFLOW
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
@@ -903,6 +921,15 @@
 #  undef _CCCL_BUILTIN_SINH
 #  undef _CCCL_BUILTIN_SINHL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_sub_overflow) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SUB_OVERFLOW(...) __builtin_sub_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sub_overflow)
+
+// nvcc does not support __builtin_sub_overflow
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_SUB_OVERFLOW
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_SQRTF(...) __builtin_sqrtf(__VA_ARGS__)
