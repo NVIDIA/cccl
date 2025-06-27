@@ -1,12 +1,13 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef _CUDA___ITERATOR_STRIDED_ITERATOR_H
 #define _CUDA___ITERATOR_STRIDED_ITERATOR_H
 
@@ -37,11 +38,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is incremented or
-//! decremented.
+//! @brief A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is
+//! incremented or decremented.
 //!
-//! \param _Iter A random access iterator
-//! \param _Stride Either an \ref __integer-like__ or a \ref __integral-constant-like__ specifying the stride
+//! @param _Iter A random access iterator
+//! @param _Stride Either an \ref __integer-like__ or a \ref __integral-constant-like__ specifying the stride
 template <class _Iter, class _Stride = _CUDA_VSTD::iter_difference_t<_Iter>>
 class strided_iterator
 {

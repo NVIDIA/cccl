@@ -76,7 +76,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 
 ```bash
    ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
-
+```
 - **HOST_COMPILER**: The desired host compiler (e.g., `g++`, `clang++`).
 - **CXX_STANDARD**: The C++ standard version (e.g., `17`, `20`).
 - **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., `"70;85;90"`). This uses the same syntax as CMake's [CUDA_ARCHITECTURES](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES):

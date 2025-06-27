@@ -23,24 +23,19 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/expected>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
 
 #include "MoveOnly.h"
 #include "test_macros.h"
 
 // Test Constraints:
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, cuda::std::vector<int>>,
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, cuda::std::inplace_vector<int, 3>>,
                                             cuda::std::unexpect_t,
                                             cuda::std::initializer_list<int>>,
               "");
-#endif
 
 // !is_constructible_v<T, initializer_list<U>&, Args...>
 static_assert(
@@ -56,12 +51,10 @@ _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), 
   (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 static_assert(ImplicitlyConstructible<int, int>, "");
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(!ImplicitlyConstructible<cuda::std::expected<int, cuda::std::vector<int>>,
+static_assert(!ImplicitlyConstructible<cuda::std::expected<int, cuda::std::inplace_vector<int, 3>>,
                                        cuda::std::unexpect_t,
                                        cuda::std::initializer_list<int>>,
               "");
-#endif
 
 template <size_t N, class... Ts>
 struct Data
