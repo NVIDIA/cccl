@@ -195,9 +195,9 @@ struct transform_kernel_source
     return it;
   }
 
-  cub::detail::transform::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_arg_t it, int align) const
+  cdt::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_arg_t it, int align) const
   {
-    return cub::detail::transform::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(&it), align);
+    return cdt::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(&it), align);
   }
 };
 
@@ -275,13 +275,13 @@ struct __align__({3}) output_storage_t {{
                           std::string> {
       switch (algorithm)
       {
-        case cub::detail::transform::Algorithm::prefetch:
+        case transform::cdt::Algorithm::prefetch:
           return transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "algo_policy");
-        case cub::detail::transform::Algorithm::vectorized:
+        case transform::cdt::Algorithm::vectorized:
           return transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "algo_policy");
-        case cub::detail::transform::Algorithm::memcpy_async:
+        case transform::cdt::Algorithm::memcpy_async:
           [[fallthrough]];
-        case cub::detail::transform::Algorithm::ublkcp:
+        case transform::cdt::Algorithm::ublkcp:
           return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
       }
       _CCCL_UNREACHABLE();
@@ -390,8 +390,8 @@ CUresult cccl_device_unary_transform(
     check(cuCtxGetDevice(&cu_device));
     error = static_cast<CUresult>(std::visit(
       [&]<typename Policy>(Policy policy) {
-        return cub::detail::transform::dispatch_t<
-          cub::detail::transform::requires_stable_address::no, // TODO implement yes
+        return transform::cdt::dispatch_t<
+          transform::cdt::requires_stable_address::no, // TODO implement yes
           OffsetT,
           ::cuda::std::tuple<indirect_arg_t>,
           indirect_arg_t,
@@ -513,13 +513,13 @@ struct __align__({5}) output_storage_t {{
                           std::string> {
       switch (algorithm)
       {
-        case cub::detail::transform::Algorithm::prefetch:
+        case transform::cdt::Algorithm::prefetch:
           return transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "algo_policy");
-        case cub::detail::transform::Algorithm::vectorized:
+        case transform::cdt::Algorithm::vectorized:
           return transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "algo_policy");
-        case cub::detail::transform::Algorithm::memcpy_async:
+        case transform::cdt::Algorithm::memcpy_async:
           [[fallthrough]];
-        case cub::detail::transform::Algorithm::ublkcp:
+        case transform::cdt::Algorithm::ublkcp:
           return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
       }
       _CCCL_UNREACHABLE();
@@ -628,8 +628,8 @@ CUresult cccl_device_binary_transform(
 
     error = static_cast<CUresult>(std::visit(
       [&]<typename Policy>(Policy policy) {
-        return cub::detail::transform::dispatch_t<
-          cub::detail::transform::requires_stable_address::no, // TODO implement yes
+        return transform::cdt::dispatch_t<
+          transform::cdt::requires_stable_address::no, // TODO implement yes
           OffsetT,
           ::cuda::std::tuple<indirect_arg_t, indirect_arg_t>,
           indirect_arg_t,

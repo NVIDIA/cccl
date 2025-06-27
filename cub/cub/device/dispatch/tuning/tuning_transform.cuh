@@ -81,6 +81,10 @@ struct prefetch_policy_t
   static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   static constexpr int min_items_per_thread      = 1;
   static constexpr int max_items_per_thread      = 32;
+
+  // TODO: remove with C++20
+  // The value of the below does not matter.
+  static constexpr int not_a_vectorized_policy = 0;
 };
 
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
@@ -89,7 +93,8 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (block_threads, BlockThreads, int),
   (items_per_thread_no_input, ItemsPerThreadNoInput, int),
   (min_items_per_thread, MinItemsPerThread, int),
-  (max_items_per_thread, MaxItemsPerThread, int) )
+  (max_items_per_thread, MaxItemsPerThread, int),
+  (not_a_vectorized_policy, NotAVectorizedPolicy, int) ) // TODO: remove with C++20
 
 template <int BlockThreads, int ItemsPerThread, int LoadStoreWordSize>
 struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
@@ -100,7 +105,7 @@ struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
 
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   TransformAgentVectorizedPolicy,
-  (TransformAgentPrefetchPolicy),
+  (always_true), // TODO: restore with C++20: (TransformAgentPrefetchPolicy),
   (block_threads, BlockThreads, int),
   (items_per_thread_no_input, ItemsPerThreadNoInput, int),
   (min_items_per_thread, MinItemsPerThread, int),
