@@ -116,6 +116,36 @@ struct plus_one
   }
 };
 
+TEST_CASE("transform_output_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::counting_iterator{0},
+                 cuda::counting_iterator{5},
+                 cuda::make_transform_output_iterator(vec.begin(), plus_one{}));
+    thrust::device_vector<int> expected{1, 2, 3, 4, 5};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::counting_iterator{0},
+                 cuda::counting_iterator{5},
+                 cuda::make_transform_output_iterator(vec.begin(), plus_one{}));
+    thrust::host_vector<int> expected{1, 2, 3, 4, 5};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::counting_iterator{0},
+                 cuda::counting_iterator{5},
+                 cuda::make_transform_output_iterator(vec.begin(), plus_one{}));
+    std::vector<int> expected{1, 2, 3, 4, 5};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+}
+
 TEST_CASE("transform_iterator", "[iterators]")
 {
   auto discard = cuda::discard_iterator{};
