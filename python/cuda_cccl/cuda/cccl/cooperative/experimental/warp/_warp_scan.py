@@ -18,7 +18,7 @@ from cuda.cccl.cooperative.experimental._types import (
 
 def exclusive_sum(dtype, threads_in_warp=32):
     """Computes an exclusive warp-wide prefix sum using addition (+) as the scan operator.
-    The value of 0 is applied as the initial value, and is assigned to the output in *lane*\ :sub:`0`.
+    The value of 0 is applied as the initial value, and is assigned to the output in *lane* :sub:`0`.
 
     Example:
         The code snippet below illustrates an exclusive prefix sum of 32 integer items:

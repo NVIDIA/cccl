@@ -18,11 +18,11 @@ from cuda.cccl.cooperative.experimental._types import (
 
 
 def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
-    """Computes a warp-wide reduction for lane\ :sub:`0` using the specified binary reduction functor.
+    """Computes a warp-wide reduction for lane :sub:`0` using the specified binary reduction functor.
     Each thread contributes one input element.
 
     Warning:
-        The return value is undefined in threads other than thread\ :sub:`0`.
+        The return value is undefined in threads other than thread :sub:`0`.
 
     Example:
         The code snippet below illustrates a max reduction of 32 integer items that
@@ -44,7 +44,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
 
         Suppose the set of inputs across the warp of threads is
         ``{ 0, 1, 2, 3, ..., 31 }``.
-        The corresponding output in the threads lane\ :sub:`0` will be ``{ 31 }``.
+        The corresponding output in the threads lane :sub:`0` will be ``{ 31 }``.
 
     Args:
         dtype: Data type being reduced
@@ -90,11 +90,11 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
 
 
 def sum(dtype, threads_in_warp=32):
-    """Computes a warp-wide reduction for lane\ :sub:`0` using addition (+) as the reduction operator.
+    """Computes a warp-wide reduction for lane :sub:`0` using addition (+) as the reduction operator.
     Each thread contributes one input element.
 
     Warning:
-        The return value is undefined in threads other than thread\ :sub:`0`.
+        The return value is undefined in threads other than thread :sub:`0`.
 
     Example:
         The code snippet below illustrates a reduction of 32 integer items that
@@ -116,7 +116,7 @@ def sum(dtype, threads_in_warp=32):
 
         Suppose the set of inputs across the warp of threads is
         ``{ 1, 1, 1, 1, ..., 1 }``.
-        The corresponding output in the threads lane\ :sub:`0` will be ``{ 32 }``.
+        The corresponding output in the threads lane :sub:`0` will be ``{ 32 }``.
 
     Args:
         dtype: Data type being reduced
