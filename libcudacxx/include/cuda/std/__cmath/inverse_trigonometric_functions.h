@@ -40,6 +40,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // acos
 
+#if _CCCL_CHECK_BUILTIN(builtin_acos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSF(...) __builtin_acosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOS(...)  __builtin_acos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSL(...) __builtin_acosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ACOSF
+#  undef _CCCL_BUILTIN_ACOS
+#  undef _CCCL_BUILTIN_ACOSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float acos(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ACOSF)
@@ -108,6 +120,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // asin
+
+#if _CCCL_CHECK_BUILTIN(builtin_asin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINF(...) __builtin_asinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASIN(...)  __builtin_asin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINL(...) __builtin_asinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ASINF
+#  undef _CCCL_BUILTIN_ASIN
+#  undef _CCCL_BUILTIN_ASINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float asin(float __x) noexcept
 {
@@ -178,6 +202,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // atan
 
+#if _CCCL_CHECK_BUILTIN(builtin_atan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANF(...) __builtin_atanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN(...)  __builtin_atan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANL(...) __builtin_atanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATANF
+#  undef _CCCL_BUILTIN_ATAN
+#  undef _CCCL_BUILTIN_ATANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float atan(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ATANF)
@@ -246,6 +282,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // atan2
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATAN2F(...) __builtin_atan2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2(...)  __builtin_atan2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2L(...) __builtin_atan2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan2)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATAN2F
+#  undef _CCCL_BUILTIN_ATAN2
+#  undef _CCCL_BUILTIN_ATAN2L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float atan2(float __x, float __y) noexcept
 {

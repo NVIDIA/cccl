@@ -39,6 +39,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // ceil
 
+#if _CCCL_CHECK_BUILTIN(builtin_ceil) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_CEILF(...) __builtin_ceilf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CEIL(...)  __builtin_ceil(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CEILL(...) __builtin_ceill(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ceil)
+
 [[nodiscard]] _CCCL_API inline float ceil(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_CEILF)
@@ -107,6 +113,12 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // floor
+
+#if _CCCL_CHECK_BUILTIN(builtin_floor) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FLOORF(...) __builtin_floorf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FLOOR(...)  __builtin_floor(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FLOORL(...) __builtin_floorl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_floor)
 
 [[nodiscard]] _CCCL_API inline float floor(float __x) noexcept
 {
@@ -178,6 +190,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // llrint
 
+#if _CCCL_CHECK_BUILTIN(builtin_llrint) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LLRINTF(...) __builtin_llrintf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LLRINT(...)  __builtin_llrint(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LLRINTL(...) __builtin_llrintl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_llrint)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "llrint"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LLRINTF
+#  undef _CCCL_BUILTIN_LLRINT
+#  undef _CCCL_BUILTIN_LLRINTL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 _CCCL_API inline long long llrint(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LLRINTF)
@@ -246,6 +271,19 @@ _CCCL_API inline long long llrint(_Integer __x) noexcept
 }
 
 // llround
+
+#if _CCCL_CHECK_BUILTIN(builtin_llround) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LLROUNDF(...) __builtin_llroundf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LLROUND(...)  __builtin_llround(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LLROUNDL(...) __builtin_llroundl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_llround)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "llround"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LLROUNDF
+#  undef _CCCL_BUILTIN_LLROUND
+#  undef _CCCL_BUILTIN_LLROUNDL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 _CCCL_API inline long long llround(float __x) noexcept
 {
@@ -316,6 +354,19 @@ _CCCL_API inline long long llround(_Integer __x) noexcept
 
 // lrint
 
+#if _CCCL_CHECK_BUILTIN(builtin_lrint) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LRINTF(...) __builtin_lrintf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LRINT(...)  __builtin_lrint(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LRINTL(...) __builtin_lrintl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_lrint)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "lrint"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LRINTF
+#  undef _CCCL_BUILTIN_LRINT
+#  undef _CCCL_BUILTIN_LRINTL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 _CCCL_API inline long lrint(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LRINTF)
@@ -384,6 +435,19 @@ _CCCL_API inline long lrint(_Integer __x) noexcept
 }
 
 // lround
+
+#if _CCCL_CHECK_BUILTIN(builtin_lround) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LROUNDF(...) __builtin_lroundf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LROUND(...)  __builtin_lround(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LROUNDL(...) __builtin_lroundl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_lround)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "lround"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LROUNDF
+#  undef _CCCL_BUILTIN_LROUND
+#  undef _CCCL_BUILTIN_LROUNDL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 _CCCL_API inline long lround(float __x) noexcept
 {
@@ -454,6 +518,12 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 
 // nearbyint
 
+#if _CCCL_CHECK_BUILTIN(builtin_nearbyint) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_NEARBYINTF(...) __builtin_nearbyintf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NEARBYINT(...)  __builtin_nearbyint(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NEARBYINTL(...) __builtin_nearbyintl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nearbyint)
+
 [[nodiscard]] _CCCL_API inline float nearbyint(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_NEARBYINTF)
@@ -522,6 +592,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // nextafter
+
+#if _CCCL_CHECK_BUILTIN(builtin_nextafter) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_NEXTAFTERF(...) __builtin_nextafterf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NEXTAFTER(...)  __builtin_nextafter(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NEXTAFTERL(...) __builtin_nextafterl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nextafter)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "nextafter"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_NEXTAFTERF
+#  undef _CCCL_BUILTIN_NEXTAFTER
+#  undef _CCCL_BUILTIN_NEXTAFTERL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 _CCCL_API inline float nextafter(float __x, float __y) noexcept
 {
@@ -594,6 +677,12 @@ _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 
 // nexttoward
 
+#if _CCCL_CHECK_BUILTIN(builtin_nexttoward) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_NEXTTOWARDF(...) __builtin_nexttowardf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NEXTTOWARD(...)  __builtin_nexttoward(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NEXTTOWARDL(...) __builtin_nexttowardl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nexttoward)
+
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline float nexttoward(float __x, long double __y) noexcept
 {
@@ -662,6 +751,12 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 // rint
+
+#if _CCCL_CHECK_BUILTIN(builtin_rint) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_RINTF(...) __builtin_rintf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_RINT(...)  __builtin_rint(__VA_ARGS__)
+#  define _CCCL_BUILTIN_RINTL(...) __builtin_rintl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_rint)
 
 [[nodiscard]] _CCCL_API inline float rint(float __x) noexcept
 {
@@ -733,6 +828,12 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // round
 
+#if _CCCL_CHECK_BUILTIN(builtin_round) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ROUNDF(...) __builtin_roundf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ROUND(...)  __builtin_round(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ROUNDL(...) __builtin_roundl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_round)
+
 [[nodiscard]] _CCCL_API inline float round(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ROUNDF)
@@ -801,6 +902,12 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // trunc
+
+#if _CCCL_CHECK_BUILTIN(builtin_trunc) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TRUNCF(...) __builtin_truncf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TRUNC(...)  __builtin_trunc(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TRUNCL(...) __builtin_truncl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_trunc)
 
 [[nodiscard]] _CCCL_API inline float trunc(float __x) noexcept
 {
