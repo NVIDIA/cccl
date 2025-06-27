@@ -25,10 +25,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cassert>
 
 #include <nv/target>
@@ -56,15 +58,12 @@ temporary_allocator<T, System>::allocate(typename temporary_allocator<T, System>
     // note that we pass cnt to deallocate, not a value derived from result.second
     deallocate(result.first, cnt);
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    NV_IF_TARGET(NV_IS_HOST,
-                 (throw thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed");),
-                 ( // NV_IS_DEVICE
-                   thrust::system::cuda::detail::terminate_with_message("temporary_buffer::allocate: "
-                                                                        "get_temporary_buffer failed");));
-#else
-    throw thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed");
-#endif
+    NV_IF_TARGET(
+      NV_IS_HOST,
+      (_CCCL_THROW(thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed"));),
+      ( // NV_IS_DEVICE
+        thrust::system::cuda::detail::terminate_with_message("temporary_buffer::allocate: "
+                                                             "get_temporary_buffer failed");));
   } // end if
 
   return result.first;
