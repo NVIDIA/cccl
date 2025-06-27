@@ -24,12 +24,12 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__device/device.cuh>
 
 #include <vector>
 
-#include <cuda/std/span>
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
