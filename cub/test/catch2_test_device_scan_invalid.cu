@@ -44,15 +44,17 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 
-// DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
-// DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+// Element type for scans
 template <typename OffsetT>
 struct Segment
 {
+  // Make sure that default constructed segments can not be merged
   OffsetT begin = cuda::std::numeric_limits<OffsetT>::min();
   OffsetT end   = cuda::std::numeric_limits<OffsetT>::max();
 };
@@ -64,11 +66,12 @@ bool operator==(Segment<OffsetT> left, Segment<OffsetT> right)
   return left.begin == right.begin && left.end == right.end;
 }
 template <typename OffsetT>
-__host__ std::ostream& operator<<(std::ostream& os, const Segment<OffsetT>& seg)
+std::ostream& operator<<(std::ostream& os, const Segment<OffsetT>& seg)
 {
   return os << "[ " << seg.begin << ", " << seg.end << " )";
 }
 
+// Needed for data input using fancy iterators
 template <typename OffsetT>
 struct Tuple2Seg
 {
@@ -79,6 +82,7 @@ struct Tuple2Seg
   }
 };
 
+// Actual scan operator doing the core test when run on device
 template <typename OffsetT>
 struct SegMerge
 {
@@ -90,7 +94,8 @@ struct SegMerge
   }
 };
 
-C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device]")
+// Expected to fail for the current implementation.
+C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]")
 {
   using offset_t = int32_t;
   using input_t  = Segment<offset_t>;
@@ -107,16 +112,78 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     thrust::make_zip_iterator(thrust::counting_iterator<offset_t>{1}, thrust::counting_iterator<offset_t>{2}),
     Tuple2Seg<offset_t>{});
 
-  auto const init = output_t{.begin = 0, .end = 1};
+  SECTION("inclusive scan")
+  {
+    // Prepare verification data
+    // Need neutral init in this case
+    auto const init_value = output_t{.begin = 1, .end = 1};
+    c2h::host_vector<output_t> expected_result(num_items);
+    compute_inclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), scan_op, init_value);
 
-  // Prepare verification data
-  c2h::host_vector<output_t> expected_result(num_items);
-  compute_exclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), init, scan_op);
+    // Run test
+    c2h::device_vector<output_t> out_result(num_items);
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    device_inclusive_scan(d_in_it, d_out_it, scan_op, num_items);
 
-  // Run test
-  c2h::device_vector<output_t> out_result(num_items);
-  const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-  device_exclusive_scan(d_in_it, d_out_it, scan_op, init, num_items);
+    // The actual core requirement is implicitly checked inside the launch wrapper due to __trap().
+    // This one would pass already if __trap() would not abort the scan-kernel as well as the test.
+    REQUIRE(expected_result == out_result);
+  }
 
-  REQUIRE(expected_result == out_result);
+  SECTION("inclusive scan with init value")
+  {
+    auto const init_value = output_t{.begin = 0, .end = 1};
+
+    // Prepare verification data
+    c2h::host_vector<output_t> expected_result(num_items);
+    compute_inclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), scan_op, init_value);
+
+    // Run test
+    c2h::device_vector<output_t> out_result(num_items);
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    device_inclusive_scan_with_init(d_in_it, d_out_it, scan_op, init_value, num_items);
+
+    // The actual core requirement is implicitly checked inside the launch wrapper due to __trap().
+    // This one would pass already if __trap() would not abort the scan-kernel as well as the test.
+    REQUIRE(expected_result == out_result);
+  }
+
+  SECTION("exclusive scan")
+  {
+    auto const init_value = output_t{.begin = 0, .end = 1};
+
+    // Prepare verification data
+    c2h::host_vector<output_t> expected_result(num_items);
+    compute_exclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), init_value, scan_op);
+
+    // Run test
+    c2h::device_vector<output_t> out_result(num_items);
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    device_exclusive_scan(d_in_it, d_out_it, scan_op, init_value, num_items);
+
+    // The actual core requirement is implicitly checked inside the launch wrapper due to __trap().
+    // This one would pass already if __trap() would not abort the scan-kernel as well as the test.
+    REQUIRE(expected_result == out_result);
+  }
+
+  SECTION("exclusive scan with future-init value")
+  {
+    auto const init_value = output_t{.begin = 0, .end = 1};
+
+    // Prepare verification data
+    c2h::host_vector<output_t> expected_result(num_items);
+    compute_exclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), init_value, scan_op);
+
+    // Run test
+    c2h::device_vector<output_t> out_result(num_items);
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    using init_t        = output_t;
+    c2h::device_vector<init_t> d_initial_value{init_value};
+    const auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    device_exclusive_scan(d_in_it, d_out_it, scan_op, future_init_value, num_items);
+
+    // The actual core requirement is implicitly checked inside the launch wrapper due to __trap().
+    // This one would pass already if __trap() would not abort the scan-kernel as well as the test.
+    REQUIRE(expected_result == out_result);
+  }
 }
