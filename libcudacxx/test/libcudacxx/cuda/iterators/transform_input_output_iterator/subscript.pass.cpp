@@ -16,40 +16,43 @@
 #include "test_macros.h"
 #include "types.h"
 
-template <class Fn>
+template <class InputFn, class OutputFn>
 __host__ __device__ constexpr void test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  Fn func{};
+  InputFn input_func{};
+  OutputFn output_func{};
 
   {
-    cuda::transform_output_iterator iter{buffer, func};
+    cuda::transform_input_output_iterator iter{buffer, input_func, output_func};
     for (int i = 0; i < 8; ++i)
     {
-      iter[i] = i;
-      assert(buffer[i] == i + 1);
+      assert(iter[i] == input_func(i));
+      assert(iter[i] = i);
+      assert(buffer[i] == output_func(i));
     }
     static_assert(noexcept(iter[0]));
-    static_assert(noexcept(iter[0] = 2) == !cuda::std::is_same_v<Fn, PlusOneMayThrow>);
+    static_assert(noexcept(iter[0] = 2) == !cuda::std::is_same_v<OutputFn, PlusOneMayThrow>);
     static_assert(!cuda::std::is_same_v<decltype(*iter), int>);
   }
 
   {
-    const cuda::transform_output_iterator iter{buffer, func};
-    iter[0] = 2;
-    assert(buffer[0] == 2 + 1);
+    const cuda::transform_input_output_iterator iter{buffer, input_func, output_func};
+    assert(iter[2] == input_func(buffer[2]));
+    iter[2] = 2;
+    assert(buffer[2] == output_func(2));
     static_assert(noexcept(iter[0]));
-    static_assert(noexcept(iter[0] = 2) == !cuda::std::is_same_v<Fn, PlusOneMayThrow>);
+    static_assert(noexcept(iter[0] = 2) == !cuda::std::is_same_v<OutputFn, PlusOneMayThrow>);
     static_assert(!cuda::std::is_same_v<decltype(*iter), int>);
   }
 }
 
 __host__ __device__ constexpr bool test()
 {
-  test<PlusOne>();
-  test<PlusOneMutable>();
-  test<PlusOneMayThrow>();
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (test<PlusOneHost>();), (test<PlusOneDevice>();))
+  test<TimesTwo, PlusOne>();
+  test<TimesTwo, PlusOneMutable>();
+  test<TimesTwo, PlusOneMayThrow>();
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (test<TimesTwo, PlusOneHost>();), (test<TimesTwo, PlusOneDevice>();))
 
   return true;
 }
