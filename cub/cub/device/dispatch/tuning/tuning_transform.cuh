@@ -101,6 +101,8 @@ struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
 {
   static constexpr int items_per_thread_vectorized = ItemsPerThread;
   static constexpr int load_store_word_size        = LoadStoreWordSize;
+
+  using not_a_vectorized_policy = void; // TODO: remove with C++20, shadows the variable in prefetch_policy_t
 };
 
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
