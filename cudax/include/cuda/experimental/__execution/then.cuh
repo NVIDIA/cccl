@@ -216,7 +216,7 @@ struct __upon_t
   };
 
   template <class _Sndr, class _Fn>
-  struct __sndr_base_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
   template <class _Fn>
   struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an

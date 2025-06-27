@@ -32,6 +32,7 @@
 
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
@@ -68,7 +69,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     constexpr int __block_threads = 256;
     const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape_), __block_threads);
-    return experimental::make_config(block_dims<__block_threads>, grid_dims(__grid_blocks));
+    return experimental::make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
   }
 
   _CCCL_TEMPLATE(class _Query)
@@ -131,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   };
 
   template <class _Shape, class _Fn, class _Rcvr>
-  struct __rcvr_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_base_t
   {
     using receiver_concept = receiver_t;
 
@@ -179,7 +180,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   };
 
   template <class _Policy, class _Shape, class _Fn>
-  struct __closure_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t
   {
     template <class _Sndr>
     [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
@@ -205,7 +206,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
 
   // This is the sender type for the three bulk algorithms.
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  struct __sndr_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t
   {
     using sender_concept = sender_t;
 

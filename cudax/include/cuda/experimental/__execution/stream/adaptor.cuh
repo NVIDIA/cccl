@@ -92,7 +92,7 @@ struct __results_visitor
 // __state_t lives in managed memory. It stores everything the operation state needs,
 // besides the child operation state.
 template <class _Rcvr, class _Variant>
-struct __state_base_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
 {
   _Rcvr __rcvr_;
   _Variant __results_;

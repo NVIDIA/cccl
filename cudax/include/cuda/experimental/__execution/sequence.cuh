@@ -79,7 +79,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
 
-    _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }

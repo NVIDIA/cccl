@@ -93,7 +93,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   };
 
   template <class _Fn>
-  struct __sndr_base_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
 public:
   template <class _Fn>

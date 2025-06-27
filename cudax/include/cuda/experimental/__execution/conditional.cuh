@@ -62,7 +62,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 {
   _CUDAX_SEMI_PRIVATE :
   template <class _Pred, class _Then, class _Else>
-  struct __closure_base_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t;
 
   template <class... _As>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto __mk_complete_fn(_As&&... __as) noexcept

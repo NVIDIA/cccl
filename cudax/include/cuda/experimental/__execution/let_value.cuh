@@ -294,20 +294,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   using __completion_domain_of_t _CCCL_NODEBUG_ALIAS = decltype(__get_completion_domain<_Sndr, _Fn>());
 
   template <class _Sndr, class _Fn>
-  struct __sndr_base_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
   template <class _Fn>
   struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
                                                   // extended (host/device) lambda
   {
     template <class _Sndr>
-    _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
+    [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const
+      -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
     {
       return __let_tag_t{}(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
-    _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_base_t& __self)
+    [[nodiscard]] _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_base_t& __self)
       -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
     {
       return __let_tag_t{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
@@ -322,10 +323,10 @@ public:
   /// @tparam _Fn The function to be called when the predecessor sender
   /// completes.
   template <class _Sndr, class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct let_value_t : __let_t<let_value_t, set_value_t>
@@ -441,7 +442,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__closure_t
 
 template <class _LetTag, class _SetTag>
 template <class _Sndr, class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
   using __sndr_t   = typename _LetTag::template __sndr_t<_Sndr, _Fn>;
   using __domain_t = __early_domain_of_t<_Sndr>;
@@ -456,7 +457,7 @@ _CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Sndr __s
 
 template <class _LetTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Fn __fn) const noexcept
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
   using __closure_t = typename _LetTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};
