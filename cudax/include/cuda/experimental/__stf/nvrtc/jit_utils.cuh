@@ -45,7 +45,7 @@ namespace cuda::experimental::stf
 
 // Replaces all occurrences of 'from' with 'to' in the input string 'str'.
 // This is a simple utility for named placeholder substitution (e.g., replacing %KERNEL_NAME%).
-::std::string replace_all(::std::string str, ::std::string_view from, ::std::string_view to)
+inline ::std::string replace_all(::std::string str, ::std::string_view from, ::std::string_view to)
 {
   size_t pos = 0;
   while ((pos = str.find(from, pos)) != ::std::string::npos)
@@ -558,7 +558,7 @@ template <typename shape_t, typename... Args>
   return oss.str();
 }
 
-static const ::std::vector<::std::string>& get_nvrtc_flags()
+inline static const ::std::vector<::std::string>& get_nvrtc_flags()
 {
   static ::std::vector<::std::string> flags = [] {
     ::std::vector<::std::string> result;
