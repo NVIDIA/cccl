@@ -99,13 +99,15 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 constexpr int ldgsts_size_and_align = 16;
 
 template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) -> int
+_CCCL_HOST_DEVICE constexpr auto
+memcpy_async_smem_for_tile_size(int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
 {
   int smem_size                    = 0;
-  [[maybe_unused]] auto count_smem = [&](int size, int alignment) {
-    smem_size = ::cuda::round_up(smem_size, alignment);
-    // max aligned_base_ptr head_padding + max padding after == 16
-    smem_size += size * tile_size + ldgsts_size_and_align;
+  [[maybe_unused]] auto count_smem = [&](int vt_size, int vt_alignment) {
+    smem_size = ::cuda::round_up(smem_size, ::cuda::std::max(vt_alignment, copy_alignment));
+    // max head/tail padding is copy_alignment - sizeof(T) each
+    const int max_bytes_to_copy = vt_size * tile_size + ::cuda::std::max(copy_alignment - vt_size, 0) * 2;
+    smem_size += max_bytes_to_copy;
   };
   // left to right evaluation!
   (..., count_smem(sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)));
@@ -114,18 +116,21 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) 
 
 constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int ptx_version) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
 {
-  return ptx_version < 1000 ? 128 : 16;
+  return sm_arch < 1000 ? 128 : 16;
 }
 
 template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int copy_alignment) -> int
 {
-  return ::cuda::round_up(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
+  return ::cuda::round_up(int{sizeof(int64_t)}, copy_alignment) /* bar */
        // 128 bytes of padding for each input tile (handles before + after)
        + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
+       // TODO(bgruber): max head padding is copy_alignment - sizeof(T)
+       + sizeof...(RandomAccessIteratorsIn) * copy_alignment
+       // TODO(bgruber): max tail padding is bulk_copy_size_multiple - sizeof(T)
+       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_size_multiple;
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
@@ -225,6 +230,7 @@ _CCCL_HOST_DEVICE constexpr auto first_item(T head, Ts...) -> T
 {
   return head;
 }
+
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn, typename RandomAccessIteratorOut>
 struct policy_hub
 {
@@ -266,15 +272,18 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   // TODO(bgruber): should we add a tuning for 750? They should have items_per_thread_from_occupancy(256, 4, ...)
 
-  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion>
+  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion, auto SMemForTileSize>
   struct async_policy_base
   {
   private:
     using async_policy = async_copy_policy_t<AsyncBlockSize, Alignment>;
+    // TODO(bgruber): I would love to use the architecture specific limit here instead of max_smem_per_block. However,
+    // this is not forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that
+    // architecture, but then runs on the next architecture after that, which may have a smaller available SMEM, we get
+    // a crash.
     static constexpr bool exhaust_smem =
-      bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        AsyncBlockSize * async_policy::min_items_per_thread, Alignment)
-      > int{max_smem_per_block}; // TODO(bgruber): we should use the architecture specific limit for SMEM here
+      SMemForTileSize(AsyncBlockSize * async_policy::min_items_per_thread, Alignment) > int{max_smem_per_block};
+    // FIXME(bgruber): we need to support overaligned types eventually !!!
     static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > Alignment) || ...);
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
@@ -286,17 +295,29 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
   struct policy800
-      : async_policy_base<Algorithm::memcpy_async, 256, ldgsts_size_and_align, 800>
+      : async_policy_base<Algorithm::memcpy_async,
+                          256,
+                          ldgsts_size_and_align,
+                          800,
+                          memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>>
       , ChainedPolicy<800, policy800, policy300>
   {};
 
   struct policy900
-      : async_policy_base<Algorithm::ublkcp, 256, bulk_copy_alignment(900), 900>
+      : async_policy_base<Algorithm::ublkcp,
+                          256,
+                          bulk_copy_alignment(900),
+                          900,
+                          bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>>
       , ChainedPolicy<900, policy900, policy800>
   {};
 
   struct policy1000
-      : async_policy_base<Algorithm::ublkcp, 128, bulk_copy_alignment(1000), 1000>
+      : async_policy_base<Algorithm::ublkcp,
+                          128,
+                          bulk_copy_alignment(1000),
+                          1000,
+                          bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 
