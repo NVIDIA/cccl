@@ -36,37 +36,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-[[nodiscard]] _CCCL_API inline bool signbit(float __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
-  return ::signbit(__x);
-#endif // !_CCCL_BUILTIN_SIGNBIT
-}
-
-[[nodiscard]] _CCCL_API inline bool signbit(double __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
-  return ::signbit(__x);
-#endif // !_CCCL_BUILTIN_SIGNBIT
-}
-
-#if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline bool signbit(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
-  return ::signbit(__x);
-#  endif // !_CCCL_BUILTIN_SIGNBIT
-}
-#endif // _CCCL_HAS_LONG_DOUBLE()
-
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __signbit_impl(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool __signbit_impl(_Tp __x) noexcept
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
@@ -78,57 +49,74 @@ template <class _Tp>
   }
 }
 
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(float __x) noexcept
+{
+  return _CUDA_VSTD::__signbit_impl(__x);
+}
+
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(double __x) noexcept
+{
+  return _CUDA_VSTD::__signbit_impl(__x);
+}
+
+#if _CCCL_HAS_LONG_DOUBLE()
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(long double __x) noexcept
+{
+  return _CUDA_VSTD::__signbit_impl(__x);
+}
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
 #if _CCCL_HAS_NVFP16()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__half __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_fp8_e4m3 __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_fp8_e4m3 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_fp8_e5m2 __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_fp8_e5m2 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_fp8_e8m0) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_fp8_e8m0) noexcept
 {
   return false;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_fp6_e2m3 __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_fp6_e2m3 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_fp6_e3m2 __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_fp6_e3m2 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
-[[nodiscard]] _CCCL_API constexpr bool signbit(__nv_fp4_e2m1 __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(__nv_fp4_e2m1 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
@@ -136,7 +124,7 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-[[nodiscard]] _CCCL_API constexpr bool signbit([[maybe_unused]] _Tp __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool signbit([[maybe_unused]] _Tp __x) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {

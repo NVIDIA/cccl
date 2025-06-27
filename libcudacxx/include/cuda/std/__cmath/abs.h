@@ -45,59 +45,39 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
 
-[[nodiscard]] _CCCL_API inline float fabs(float __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_FABSF)
-  return _CCCL_BUILTIN_FABSF(__x);
-#else // ^^^ _CCCL_BUILTIN_FABSF ^^^ / vvv !_CCCL_BUILTIN_FABSF vvv
-  return ::fabsf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
-}
-
-[[nodiscard]] _CCCL_API inline float fabsf(float __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_FABSF)
-  return _CCCL_BUILTIN_FABSF(__x);
-#else // ^^^ _CCCL_BUILTIN_FABSF ^^^ / vvv !_CCCL_BUILTIN_FABSF vvv
-  return ::fabsf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
-}
-
-[[nodiscard]] _CCCL_API inline double fabs(double __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_FABS)
-  return _CCCL_BUILTIN_FABS(__x);
-#else // ^^^ _CCCL_BUILTIN_FABS ^^^ / vvv !_CCCL_BUILTIN_FABS vvv
-  return ::fabs(__x);
-#endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
-}
-
-#if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double fabs(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_FABSL)
-  return _CCCL_BUILTIN_FABSL(__x);
-#  else // ^^^ _CCCL_BUILTIN_FABSL ^^^ / vvv !_CCCL_BUILTIN_FABSL vvv
-  return ::fabsl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
-}
-
-[[nodiscard]] _CCCL_API inline long double fabsl(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_FABSL)
-  return _CCCL_BUILTIN_FABSL(__x);
-#  else // ^^^ _CCCL_BUILTIN_FABSL ^^^ / vvv !_CCCL_BUILTIN_FABSL vvv
-  return ::fabsl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
-}
-#endif // _CCCL_HAS_LONG_DOUBLE()
-
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __fabs_impl(_Tp __x) noexcept
 {
   const auto __val = _CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>;
   return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
 }
+
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS float fabs(float __x) noexcept
+{
+  return _CUDA_VSTD::__fabs_impl(__x);
+}
+
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS float fabsf(float __x) noexcept
+{
+  return _CUDA_VSTD::__fabs_impl(__x);
+}
+
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS double fabs(double __x) noexcept
+{
+  return _CUDA_VSTD::__fabs_impl(__x);
+}
+
+#if _CCCL_HAS_LONG_DOUBLE()
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS long double fabs(long double __x) noexcept
+{
+  return _CUDA_VSTD::__fabs_impl(__x);
+}
+
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS long double fabsl(long double __x) noexcept
+{
+  return _CUDA_VSTD::__fabs_impl(__x);
+}
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_NVFP16()
 [[nodiscard]] _CCCL_API constexpr __half fabs(__half __x) noexcept
@@ -159,25 +139,25 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-[[nodiscard]] _CCCL_API inline double fabs(_Tp __val) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS double fabs(_Tp __val) noexcept
 {
   return _CUDA_VSTD::fabs(static_cast<double>(__val));
 }
 
 // abs
 
-[[nodiscard]] _CCCL_API inline float abs(float __val) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS float abs(float __val) noexcept
 {
   return _CUDA_VSTD::fabsf(__val);
 }
 
-[[nodiscard]] _CCCL_API inline double abs(double __val) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS double abs(double __val) noexcept
 {
   return _CUDA_VSTD::fabs(__val);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double abs(long double __val) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS long double abs(long double __val) noexcept
 {
   return _CUDA_VSTD::fabsl(__val);
 }

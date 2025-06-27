@@ -41,7 +41,7 @@ __host__ __device__ constexpr void test_eq(const T tested, const T expected)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
+__host__ __device__ constexpr void test_fabs_abs(const T pos)
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::fabs(T{}))>);
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::abs(T{}))>);
@@ -89,7 +89,7 @@ __host__ __device__ void constexpr test_fabs_abs(const T pos)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
+__host__ __device__ constexpr void test_fabs_abs(const T pos)
 {
   static_assert(cuda::std::is_same_v<double, decltype(cuda::std::fabs(T{}))>);
 
@@ -220,6 +220,10 @@ __host__ __device__ constexpr bool test_constexpr()
 int main(int, char**)
 {
   test();
+#if _CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
+  static_assert(test());
+#else // ^^^ _CCCL_HAS_CONSTEXPR_CMATH_TRAITS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
   static_assert(test_constexpr());
+#endif // !_CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
   return 0;
 }

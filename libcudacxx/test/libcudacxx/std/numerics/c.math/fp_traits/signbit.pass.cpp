@@ -184,6 +184,10 @@ __host__ __device__ constexpr bool test_constexpr()
 int main(int, char**)
 {
   test();
+#if _CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
+  static_assert(test());
+#else // ^^^ _CCCL_HAS_CONSTEXPR_CMATH_TRAITS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
   static_assert(test_constexpr());
+#endif // !_CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
   return 0;
 }

@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fmax(T value)
+__host__ __device__ constexpr void test_fmax(T value)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((T) 0, (T) 0)), T>), "");
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((float) 0, (T) 0)), cuda::std::__promote_t<float, T>>),
@@ -26,7 +26,7 @@ __host__ __device__ void test_fmax(T value)
   assert(cuda::std::fmax(value, (T) 0) == value);
 }
 
-__host__ __device__ void test_fmax(float value)
+__host__ __device__ constexpr void test_fmax(float value)
 {
   test_fmax<float>(value);
   test_fmax<double>(value);
@@ -34,10 +34,16 @@ __host__ __device__ void test_fmax(float value)
   test_fmax<long double>(value);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
-  test_fmax<__half>(__float2half(value));
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    test_fmax<__half>(__float2half(value));
+  }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 #if _LIBCUDACXX_HAS_NVBF16()
-  test_fmax<__nv_bfloat16>(__float2bfloat16(value));
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    test_fmax<__nv_bfloat16>(__float2bfloat16(value));
+  }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((int) 0, (int) 0)), double>), "");
@@ -57,7 +63,7 @@ __host__ __device__ void test_fmax(float value)
 }
 
 template <class T>
-__host__ __device__ void test_fmin(T value)
+__host__ __device__ constexpr void test_fmin(T value)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((T) 0, (T) 0)), T>), "");
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((float) 0, (T) 0)), cuda::std::__promote_t<float, T>>),
@@ -67,7 +73,7 @@ __host__ __device__ void test_fmin(T value)
   assert(cuda::std::fmin(value, (T) 0) == T(0));
 }
 
-__host__ __device__ void test_fmin(float value)
+__host__ __device__ constexpr void test_fmin(float value)
 {
   test_fmax<float>(value);
   test_fmax<double>(value);
@@ -75,10 +81,16 @@ __host__ __device__ void test_fmin(float value)
   test_fmax<long double>(value);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
-  test_fmax<__half>(__float2half(value));
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    test_fmax<__half>(__float2half(value));
+  }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 #if _LIBCUDACXX_HAS_NVBF16()
-  test_fmax<__nv_bfloat16>(__float2bfloat16(value));
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    test_fmax<__nv_bfloat16>(__float2bfloat16(value));
+  }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((int) 0, (int) 0)), double>), "");
@@ -97,10 +109,12 @@ __host__ __device__ void test_fmin(float value)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-__host__ __device__ void test(float value)
+__host__ __device__ constexpr bool test(float value)
 {
   test_fmax(value);
   test_fmin(value);
+
+  return true;
 }
 
 __global__ void test_global_kernel(float* value)
@@ -112,5 +126,6 @@ int main(int, char**)
 {
   volatile float value = 1.0f;
   test(value);
+  static_assert(test(1.0f));
   return 0;
 }
