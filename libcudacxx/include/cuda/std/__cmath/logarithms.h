@@ -21,10 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -504,8 +509,43 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  undef _CCCL_BUILTIN_LOGBL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float logb(float __x) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API inline constexpr _Tp __logb_impl(_Tp __x) noexcept
 {
+  if (__x == _Tp(0))
+  {
+    // raise FE_DIVBYZERO
+    return -numeric_limits<_Tp>::infinity();
+  }
+
+  if (_CUDA_VSTD::isinf(__x))
+  {
+    return numeric_limits<_Tp>::infinity();
+  }
+
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return numeric_limits<_Tp>::quiet_NaN();
+  }
+
+  __x                        = _CUDA_VSTD::fabs(__x);
+  _CUDA_VSTD::uint64_t __exp = 0;
+  while (__x >= _Tp(numeric_limits<_Tp>::radix))
+  {
+    __x /= numeric_limits<_Tp>::radix;
+    __exp += 1;
+  }
+  return _Tp(__exp);
+}
+
+[[nodiscard]] _CCCL_API inline constexpr float logb(float __x) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__logb_impl(__x);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_LOGBF)
   return _CCCL_BUILTIN_LOGBF(__x);
 #else // ^^^ _CCCL_BUILTIN_LOGBF ^^^ / vvv !_CCCL_BUILTIN_LOGBF vvv
@@ -513,8 +553,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_LOGBF
 }
 
-[[nodiscard]] _CCCL_API inline float logbf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr float logbf(float __x) noexcept
 {
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__logb_impl(__x);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_LOGBF)
   return _CCCL_BUILTIN_LOGBF(__x);
 #else // ^^^ _CCCL_BUILTIN_LOGBF ^^^ / vvv !_CCCL_BUILTIN_LOGBF vvv
@@ -522,8 +568,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_LOGBF
 }
 
-[[nodiscard]] _CCCL_API inline double logb(double __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr double logb(double __x) noexcept
 {
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__logb_impl(__x);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_LOGB)
   return _CCCL_BUILTIN_LOGB(__x);
 #else // ^^^ _CCCL_BUILTIN_LOGB ^^^ / vvv !_CCCL_BUILTIN_LOGB vvv
@@ -532,8 +584,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double logb(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double logb(long double __x) noexcept
 {
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__logb_impl(__x);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  if defined(_CCCL_BUILTIN_LOGBL)
   return _CCCL_BUILTIN_LOGBL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOGBL ^^^ / vvv !_CCCL_BUILTIN_LOGBL vvv
@@ -541,8 +599,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  endif // !_CCCL_BUILTIN_LOGBL
 }
 
-[[nodiscard]] _CCCL_API inline long double logbl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double logbl(long double __x) noexcept
 {
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__logb_impl(__x);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  if defined(_CCCL_BUILTIN_LOGBL)
   return _CCCL_BUILTIN_LOGBL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOGBL ^^^ / vvv !_CCCL_BUILTIN_LOGBL vvv
@@ -566,13 +630,9 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _CCCL_API inline double logb(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr double logb(_Integer __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOGB)
-  return _CCCL_BUILTIN_LOGB((double) __x);
-#else // ^^^ _CCCL_BUILTIN_LOGB ^^^ / vvv !_CCCL_BUILTIN_LOGB vvv
-  return ::logb((double) __x);
-#endif // !_CCCL_BUILTIN_LOGB
+  return _CUDA_VSTD::logb((double) __x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

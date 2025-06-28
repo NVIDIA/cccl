@@ -36,37 +36,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-[[nodiscard]] _CCCL_API inline bool signbit(float __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
-  return ::signbit(__x);
-#endif // !_CCCL_BUILTIN_SIGNBIT
-}
-
-[[nodiscard]] _CCCL_API inline bool signbit(double __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
-  return ::signbit(__x);
-#endif // !_CCCL_BUILTIN_SIGNBIT
-}
-
-#if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline bool signbit(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
-  return ::signbit(__x);
-#  endif // !_CCCL_BUILTIN_SIGNBIT
-}
-#endif // _CCCL_HAS_LONG_DOUBLE()
-
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __signbit_impl(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr bool __signbit_impl(_Tp __x) noexcept
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
@@ -77,6 +48,53 @@ template <class _Tp>
     return false;
   }
 }
+
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(float __x) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return __signbit_impl(__x);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#if defined(_CCCL_BUILTIN_SIGNBIT)
+  return _CCCL_BUILTIN_SIGNBIT(__x);
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+  return ::signbit(__x);
+#endif // !_CCCL_BUILTIN_SIGNBIT
+}
+
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(double __x) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return __signbit_impl(__x);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#if defined(_CCCL_BUILTIN_SIGNBIT)
+  return _CCCL_BUILTIN_SIGNBIT(__x);
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+  return ::signbit(__x);
+#endif // !_CCCL_BUILTIN_SIGNBIT
+}
+
+#if _CCCL_HAS_LONG_DOUBLE()
+[[nodiscard]] _CCCL_API inline constexpr bool signbit(long double __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return __signbit_impl(__x);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#  if defined(_CCCL_BUILTIN_SIGNBIT)
+  return _CCCL_BUILTIN_SIGNBIT(__x);
+#  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+  return ::signbit(__x);
+#  endif // !_CCCL_BUILTIN_SIGNBIT
+}
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_NVFP16()
 [[nodiscard]] _CCCL_API constexpr bool signbit(__half __x) noexcept

@@ -31,18 +31,18 @@
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
 #endif // !_CCCL_HAS_CUDA_COMPILER() && __cpp_aligned_new >= 201606
 
-// We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
-#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#elif _CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#elif _CCCL_COMPILER(MSVC)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#elif _CCCL_CUDA_COMPILER(CLANG)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
+// gcc has constexpr builtins, but nvcc does not recognize them before 12.3
+#if _CCCL_COMPILER(GCC) && _CCCL_CUDA_COMPILER(NVCC, >=, 12, 3)
+#  define _LIBCUDACXX_HAS_CONSTEXPR_BASIC_MATH() 1
+#  define _CCCL_CONSTEXPR_BASIC_MATH             constexpr
+// We need `is_constant_evaluated` and `bit_cast` for all other compilers
+#elif (defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && defined(_CCCL_BUILTIN_BIT_CAST))
+#  define _LIBCUDACXX_HAS_CONSTEXPR_BASIC_MATH() 1
+#  define _CCCL_CONSTEXPR_BASIC_MATH             constexpr
 #else
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 1
-#endif
+#  define _LIBCUDACXX_HAS_CONSTEXPR_BASIC_MATH() 0
+#  define _CCCL_CONSTEXPR_BASIC_MATH
+#endif // !_LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
 
 #ifndef _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES

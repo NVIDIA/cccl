@@ -46,53 +46,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _CCCL_BUILTIN_COPYSIGNL(...) __builtin_copysignl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_copysign)
 
-[[nodiscard]] _CCCL_API inline float copysign(float __x, float __y) noexcept
-{
-#if defined(_CCCL_BUILTIN_COPYSIGNF)
-  return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_COPYSIGNF ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF vvv
-  return ::copysignf(__x, __y);
-#endif // !_CCCL_BUILTIN_COPYSIGNF
-}
-
-[[nodiscard]] _CCCL_API inline float copysignf(float __x, float __y) noexcept
-{
-#if defined(_CCCL_BUILTIN_COPYSIGNF)
-  return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_COPYSIGNF ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF vvv
-  return ::copysignf(__x, __y);
-#endif // !_CCCL_BUILTIN_COPYSIGNF
-}
-
-[[nodiscard]] _CCCL_API inline double copysign(double __x, double __y) noexcept
-{
-#if defined(_CCCL_BUILTIN_COPYSIGN)
-  return _CCCL_BUILTIN_COPYSIGN(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
-  return ::copysign(__x, __y);
-#endif // !_CCCL_BUILTIN_COPYSIGN
-}
-
-#if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double copysign(long double __x, long double __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_COPYSIGNL)
-  return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_COPYSIGNL ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNL vvv
-  return ::copysignl(__x, __y);
-#  endif // !_CCCL_BUILTIN_COPYSIGNL
-}
-
-[[nodiscard]] _CCCL_API inline long double copysignl(long double __x, long double __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_COPYSIGNL)
-  return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_COPYSIGNL ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNL vvv
-  return ::copysignl(__x, __y);
-#  endif // !_CCCL_BUILTIN_COPYSIGNL
-}
-#endif // _CCCL_HAS_LONG_DOUBLE()
-
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __copysign_impl(_Tp __x, [[maybe_unused]] _Tp __y) noexcept
 {
@@ -107,6 +60,83 @@ template <class _Tp>
     return __x;
   }
 }
+
+[[nodiscard]] _CCCL_API inline constexpr float copysign(float __x, float __y) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__copysign_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#if defined(_CCCL_BUILTIN_COPYSIGNF)
+  return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
+#else // ^^^ _CCCL_BUILTIN_COPYSIGNF ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF vvv
+  return ::copysignf(__x, __y);
+#endif // !_CCCL_BUILTIN_COPYSIGNF
+}
+
+[[nodiscard]] _CCCL_API inline constexpr float copysignf(float __x, float __y) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__copysign_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#if defined(_CCCL_BUILTIN_COPYSIGNF)
+  return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
+#else // ^^^ _CCCL_BUILTIN_COPYSIGNF ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF vvv
+  return ::copysignf(__x, __y);
+#endif // !_CCCL_BUILTIN_COPYSIGNF
+}
+
+[[nodiscard]] _CCCL_API inline constexpr double copysign(double __x, double __y) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__copysign_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#if defined(_CCCL_BUILTIN_COPYSIGN)
+  return _CCCL_BUILTIN_COPYSIGN(__x, __y);
+#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
+  return ::copysign(__x, __y);
+#endif // !_CCCL_BUILTIN_COPYSIGN
+}
+
+#if _CCCL_HAS_LONG_DOUBLE()
+[[nodiscard]] _CCCL_API inline constexpr long double copysign(long double __x, long double __y) noexcept
+{
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__copysign_impl(__x, __y);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#  if defined(_CCCL_BUILTIN_COPYSIGNL)
+  return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
+#  else // ^^^ _CCCL_BUILTIN_COPYSIGNL ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNL vvv
+  return ::copysignl(__x, __y);
+#  endif // !_CCCL_BUILTIN_COPYSIGNL
+}
+
+[[nodiscard]] _CCCL_API inline constexpr long double copysignl(long double __x, long double __y) noexcept
+{
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__copysign_impl(__x, __y);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#  if defined(_CCCL_BUILTIN_COPYSIGNL)
+  return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
+#  else // ^^^ _CCCL_BUILTIN_COPYSIGNL ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNL vvv
+  return ::copysignl(__x, __y);
+#  endif // !_CCCL_BUILTIN_COPYSIGNL
+}
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_NVFP16()
 [[nodiscard]] _CCCL_API constexpr __half copysign(__half __x, __half __y) noexcept

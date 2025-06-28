@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/promote.h>
 
 #include <nv/target>
@@ -45,49 +47,65 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _CCCL_BUILTIN_FMAXL(...) __builtin_fmaxl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
 
-[[nodiscard]] _CCCL_API inline float fmax(float __x, float __y) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __fmax_impl(_Tp __x, _Tp __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxf(__x, __y);
-#endif // !_CCCL_BUILTIN_FMAX
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  // We do not need to check for isnan(__y) because the comparison will always be false and return __x anyway
+  return __x < __y ? __y : __x;
 }
 
-[[nodiscard]] _CCCL_API inline float fmaxf(float __x, float __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr float fmax(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxf(__x, __y);
-#endif // !_CCCL_BUILTIN_FMAX
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  // We do not need to check for isnan(__y) because the comparison will always be false and return __x anyway
+  return __x < __y ? __y : __x;
 }
 
-[[nodiscard]] _CCCL_API inline double fmax(double __x, double __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr float fmaxf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAX(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmax(__x, __y);
-#endif // !_CCCL_BUILTIN_FMAX
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  // We do not need to check for isnan(__y) because the comparison will always be false and return __x anyway
+  return __x < __y ? __y : __x;
+}
+
+[[nodiscard]] _CCCL_API inline constexpr double fmax(double __x, double __y) noexcept
+{
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  // We do not need to check for isnan(__y) because the comparison will always be false and return __x anyway
+  return __x < __y ? __y : __x;
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double fmax(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double fmax(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxl(__x, __y);
-#  endif // !_CCCL_BUILTIN_FMAX
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  // We do not need to check for isnan(__y) because the comparison will always be false and return __x anyway
+  return __x < __y ? __y : __x;
 }
-[[nodiscard]] _CCCL_API inline long double fmaxl(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double fmaxl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxl(__x, __y);
-#  endif // !_CCCL_BUILTIN_FMAX
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  // We do not need to check for isnan(__y) because the comparison will always be false and return __x anyway
+  return __x < __y ? __y : __x;
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
@@ -132,7 +150,7 @@ template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmax(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr __promote_t<_A1, _A2> fmax(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
   static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
@@ -147,8 +165,25 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
 #  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
 
-[[nodiscard]] _CCCL_API inline float fmin(float __x, float __y) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __fmin_impl(_Tp __x, _Tp __y) noexcept
 {
+  if (_CUDA_VSTD::isnan(__y))
+  {
+    return __x;
+  }
+  // We do not need to check for isnan(__x) because the comparison will always be false and return __y anyway
+  return __y < __x ? __y : __x;
+}
+
+[[nodiscard]] _CCCL_API inline constexpr float fmin(float __x, float __y) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__fmin_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_FMIN)
   return _CCCL_BUILTIN_FMINF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
@@ -156,8 +191,14 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
 #endif // !_CCCL_BUILTIN_FMIN
 }
 
-[[nodiscard]] _CCCL_API inline float fminf(float __x, float __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr float fminf(float __x, float __y) noexcept
 {
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__fmin_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_FMIN)
   return _CCCL_BUILTIN_FMINF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
@@ -165,8 +206,14 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
 #endif // !_CCCL_BUILTIN_FMIN
 }
 
-[[nodiscard]] _CCCL_API inline double fmin(double __x, double __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr double fmin(double __x, double __y) noexcept
 {
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__fmin_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_FMIN)
   return _CCCL_BUILTIN_FMIN(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
@@ -175,16 +222,28 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double fmin(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double fmin(long double __x, long double __y) noexcept
 {
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__fmin_impl(__x, __y);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  if defined(_CCCL_BUILTIN_FMIN)
   return _CCCL_BUILTIN_FMINL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
   return ::fminl(__x, __y);
 #  endif // !_CCCL_BUILTIN_FMIN
 }
-[[nodiscard]] _CCCL_API inline long double fminl(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double fminl(long double __x, long double __y) noexcept
 {
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__fmin_impl(__x, __y);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  if defined(_CCCL_BUILTIN_FMIN)
   return _CCCL_BUILTIN_FMINL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
@@ -234,7 +293,7 @@ template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmin(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _CCCL_API inline constexpr __promote_t<_A1, _A2> fmin(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
   static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
