@@ -14,7 +14,8 @@ from functools import cached_property, lru_cache, reduce
 from operator import mul
 from textwrap import dedent
 from types import ModuleType as PyModuleType
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, Optional
 
 from numba.core import ir, ir_utils, types
 from numba.core.rewrites import Rewrite, register_rewrite
@@ -128,6 +129,10 @@ class CoopNode:
     func_ir: Any
     typingctx: Any
 
+    # Non-None for instance of instance types (i.e. when calling an invocable
+    # obtained via two-phase creation of the primitive outside the kernel).
+    type_instance: Optional[types.Type]
+
     # Defaults.
     implicit_temp_storage: bool = True
 
@@ -148,6 +153,10 @@ class CoopNode:
     dst: Any = None
     invocable: Any = None
     instance: Any = None
+
+    @property
+    def is_two_phase(self):
+        return self.type_instance is not None
 
     def get_arg_value_safe(self, arg_name: str, launch_config) -> Any:
         """
@@ -250,11 +259,18 @@ class CoopNode:
         return name
 
     @cached_property
+    def key_name(self):
+        if self.is_two_phase:
+            return self.type_instance.decl.primitive_name
+        else:
+            return self.template.key.__name__
+
+    @cached_property
     def granularity(self):
         """
         Determine the granularity of the cooperative operation.
         """
-        name = self.template.key.__name__
+        name = self.key_name
         if "block" in name:
             return Granularity.BLOCK
         elif "warp" in name:
@@ -271,7 +287,7 @@ class CoopNode:
         """
         Determine the primitive type of the cooperative operation.
         """
-        name = self.template.key.__name__
+        name = self.key_name
         if "array" in name:
             return Primitive.ARRAY
         elif "load" in name:
@@ -361,9 +377,15 @@ class CoopLoadStoreNode(CoopNode):
         assert isinstance(arg_ty, types.Array)
         dtype = arg_ty.dtype
 
-        # Get items_per_thread.
-        items_per_thread = self.get_arg_value("items_per_thread", launch_config)
+        # Get items_per_thread.  If we're two-phase, it's optional, otherwise,
+        # it's mandatory.
+        if self.is_two_phase:
+            getter = self.get_arg_value_safe
+        else:
+            getter = self.get_arg_value
+        items_per_thread = getter("items_per_thread", launch_config)
 
+        # algorithm is always optional.
         algorithm_id = self.get_arg_value_safe("algorithm", launch_config)
 
         if algorithm_id is None:
@@ -379,6 +401,12 @@ class CoopLoadStoreNode(CoopNode):
         self.runtime_arg_names = runtime_arg_names
 
     def rewrite(self, rewriter):
+        if self.is_two_phase:
+            return self.rewrite_two_phase(rewriter)
+        else:
+            return self.rewrite_single_phase(rewriter)
+
+    def rewrite_single_phase(self, rewriter):
         node = self
         expr = node.expr
 
@@ -389,6 +417,8 @@ class CoopLoadStoreNode(CoopNode):
         g_var_name = f"${node.call_var_name}"
         g_var = ir.Var(scope, g_var_name, expr.loc)
 
+        # TODO: do we need any of this if we're two-phase?  We've already
+        # got the "invocable", per se.
         instance = node.instance = impl_class(
             node.dtype,
             node.threads_per_block,
@@ -493,6 +523,9 @@ class CoopLoadStoreNode(CoopNode):
         self.typemap[g_var.name] = func_ty
 
         return (g_assign, new_assign)
+
+    def rewrite_two_phase(self, rewriter):
+        return ()
 
 
 class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
@@ -747,17 +780,21 @@ class CoopLocalArrayNode(CoopArrayNode, CoopNodeMixin):
 
 
 @lru_cache(maxsize=None)
-def get_coop_class_maps():
+def get_coop_class_and_instance_maps():
     from cuda.cccl.cooperative.experimental._decls import (
         get_coop_decl_class_map,
+        get_coop_instance_of_instance_types_map,
     )
 
     decl_classes = get_coop_decl_class_map()
     node_classes = get_coop_node_class_map()
+    instance_map = get_coop_instance_of_instance_types_map()
 
     decl_primitive_names = set(decl.primitive_name for decl in decl_classes.keys())
-
     node_primitive_names = set(node.primitive_name for node in node_classes.values())
+    instance_names = set(
+        instance.decl.primitive_name for instance in instance_map.values()
+    )
 
     # Ensure that the decl classes and node classes have the exact same
     # primitive names.
@@ -767,7 +804,28 @@ def get_coop_class_maps():
             f"{decl_primitive_names} != {node_primitive_names}"
         )
 
-    return (decl_classes, node_classes)
+    # Ensure that the instance names are a subset of the decl names.
+    if not instance_names.issubset(decl_primitive_names):
+        raise RuntimeError(
+            f"Instance names {instance_names} are not a subset of decl names "
+            f"{decl_primitive_names}"
+        )
+
+    # Ensure all instances are unique.
+    instance_values = set(instance_map.values())
+    if len(instance_values) != len(instance_map):
+        raise RuntimeError("Instance classes are not unique.")
+
+    # instance_map is a map from name to instance; we'll return the inverse
+    # of that to the user (i.e. instance to name).
+    instances = {instance: name for (name, instance) in instance_map.items()}
+
+    # Invariant checks complete, return the class maps.
+    return SimpleNamespace(
+        decls=decl_classes,
+        nodes=node_classes,
+        instances=instances,
+    )
 
 
 @register_rewrite("after-inference")
@@ -780,9 +838,10 @@ class BaseCooperativeNodeRewriter(Rewrite):
     def __init__(self, state, *args, **kwargs):
         super().__init__(state, *args, **kwargs)
 
-        (decl_classes, node_classes) = get_coop_class_maps()
-        self._decl_classes = decl_classes
-        self._node_classes = node_classes
+        maps = get_coop_class_and_instance_maps()
+        self._decl_classes = maps.decls
+        self._node_classes = maps.nodes
+        self._instances = maps.instances
 
         # Map of fully-qualified module names to the ir.Assign instruction
         # for loading the module as a global variable.
@@ -857,7 +916,11 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
         decl_classes = self._decl_classes
         node_classes = self._node_classes
+        type_instances = self._instances
+        template_classes = {value: key for (key, value) in decl_classes.items()}
         interesting_modules = self.interesting_modules
+
+        freevars = {}
 
         for i, instr in enumerate(block.body):
             # Temp: do we ever encounter nodes other than Assign, Del, or
@@ -866,6 +929,18 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 raise RuntimeError(f"Unexpected instruction type: {instr!r}")
 
             expr = instr.value
+            if isinstance(expr, ir.FreeVar):
+                value = expr.value
+                if value.__class__ in template_classes:
+                    target_name = instr.target.name
+                    assert target_name not in freevars, (
+                        target_name,
+                        freevars[target_name],
+                        value,
+                    )
+                    freevars[target_name] = value
+                continue
+
             if isinstance(expr, ir.Global):
                 if isinstance(expr.value, PyModuleType):
                     module = expr.value
@@ -877,30 +952,71 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
             if not isinstance(expr, ir.Expr):
                 continue
+
             if expr.op == "getitem":
                 import debugpy
 
                 debugpy.breakpoint()
                 print(expr)
+
             if expr.op != "call":
                 continue
+
             func_name = expr.func.name
             func = typemap[func_name]
-            templates = func.templates
 
+            instance = None
+            template = None
             impl_class = None
+            node_class = None
 
-            # I don't yet understand the implications of multiple templates
-            # matching here, so, for now, just return the first match.
-            for template in templates:
-                impl_class = decl_classes.get(template, None)
+            # Attempt to obtain the implementation class based on whether we're
+            # dealing with an instance or a declaration/template.
+            if hasattr(func, "templates"):
+                templates = func.templates
+                # I don't yet understand the implications of multiple templates
+                # matching here, so, for now, just return the first match.
+                for template in templates:
+                    impl_class = decl_classes.get(template, None)
+                    if impl_class:
+                        break
+
                 if not impl_class:
                     continue
 
-            if not impl_class:
-                continue
+                node_class = node_classes[template.primitive_name]
 
-            node_class = node_classes[template.primitive_name]
+            elif func in type_instances:
+                # Get the instance from the freevars map.
+                instance = func
+                decl = instance.decl
+                template = decl.__class__
+                impl_class = decl_classes.get(template, None)
+                if not impl_class:
+                    raise RuntimeError(
+                        f"Could not find declaration class for {instance.decl!r}"
+                    )
+
+                # Sanity-check names are correct.
+                assert instance.name == decl.primitive_name, (
+                    instance.name,
+                    decl.primitive_name,
+                )
+                assert instance.name.endswith(decl.key.__name__), (
+                    instance.name,
+                    decl.key.__name__,
+                )
+
+                node_class = node_classes[instance.name]
+
+            else:
+                raise RuntimeError(f"Unexpected code path; {func!r}")
+
+            # If we reach here, impl_class, node_class, and template should
+            # all be non-None.
+            assert impl_class is not None
+            assert node_class is not None
+            assert template is not None
 
             # Small performance optimization: only store attributes once,
             # upon first match.
@@ -927,6 +1043,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 typemap=typemap,
                 func_ir=func_ir,
                 typingctx=self._state.typingctx,
+                type_instance=instance,
             )
 
             target_name = node.target.name
