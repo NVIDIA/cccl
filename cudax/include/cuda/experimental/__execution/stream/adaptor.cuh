@@ -399,7 +399,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
 };
 
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr __sndr, [[maybe_unused]] stream_ref __stream) -> decltype(auto)
+_CCCL_API constexpr auto __adapt(_Sndr __sndr, [[maybe_unused]] stream_ref __stream)
 {
   // Ensure that we are not trying to adapt a sender that is already adapted.
   if constexpr (__is_specialization_of_v<_Sndr, __sndr_t>)
@@ -413,9 +413,10 @@ _CCCL_API constexpr auto __adapt(_Sndr __sndr, [[maybe_unused]] stream_ref __str
 }
 
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr __sndr) -> decltype(auto)
+_CCCL_API constexpr auto __adapt(_Sndr __sndr)
 {
-  return __stream::__adapt(static_cast<_Sndr&&>(__sndr), get_stream(execution::get_env(__sndr)));
+  auto __stream = get_stream(execution::get_env(__sndr));
+  return __stream::__adapt(static_cast<_Sndr&&>(__sndr), __stream);
 }
 } // namespace __stream
 
