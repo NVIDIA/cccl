@@ -14,7 +14,7 @@
   ],
   "containerEnv": {
     "CI": "${localEnv:CI}",
-    "CUDAARCHS": "70-real",
+    "CUDAARCHS": "75-real",
     "CUDA_VERSION": "12.8",
     "DEFAULT_CONDA_ENV": "rapids",
     "PYTHONSAFEPATH": "1",
