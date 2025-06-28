@@ -74,6 +74,8 @@ inline int getVersion()
   return version;
 }
 
+// Context management
+
 inline void ctxPush(CUcontext ctx)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPushCurrent);
@@ -96,6 +98,8 @@ inline CUcontext ctxGetCurrent()
   return result;
 }
 
+// Device management
+
 inline CUdevice deviceGet(int ordinal)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDeviceGet);
@@ -112,6 +116,8 @@ inline void getName(char* __name_out, int __len, int __ordinal)
   CUdevice __dev = deviceGet(__ordinal);
   call_driver_fn(driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
+
+// Primary context management
 
 inline CUcontext primaryCtxRetain(CUdevice dev)
 {
@@ -136,6 +142,8 @@ inline bool isPrimaryCtxActive(CUdevice dev)
   call_driver_fn(driver_fn, "Failed to check the primary ctx state", dev, &dummy, &result);
   return result == 1;
 }
+
+// Stream management
 
 inline void streamSynchronize(CUstream stream)
 {
@@ -222,6 +230,8 @@ inline cudaError_t streamDestroy(CUstream stream)
   return static_cast<cudaError_t>(driver_fn(stream));
 }
 
+// Event management
+
 inline cudaError_t eventDestroy(CUevent event)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventDestroy);
@@ -233,6 +243,73 @@ inline void eventElapsedTime(CUevent start, CUevent end, float* ms)
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventElapsedTime);
   call_driver_fn(driver_fn, "Failed to get CUDA event elapsed time", ms, start, end);
 }
+
+// Library management
+
+inline CUfunction kernelGetFunction(CUkernel kernel)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetFunction);
+  CUfunction result;
+  call_driver_fn(driver_fn, "Failed to get kernel function", &result, kernel);
+  return result;
+}
+
+inline int kernelGetAttribute(CUfunction_attribute attr, CUkernel kernel, CUdevice dev)
+{
+  int value;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetAttribute);
+  call_driver_fn(driver_fn, "Failed to get kernel attribute", &value, attr, kernel, dev);
+  return value;
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 3)
+inline const char* kernelGetName(CUkernel kernel)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuKernelGetName, cuKernelGetName, 12030);
+  const char* name;
+  call_driver_fn(driver_fn, "Failed to get kernel name", &name, kernel);
+  return name;
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 3)
+
+// Execution control
+
+inline cudaError_t functionGetAttribute(int& value, CUfunction_attribute attr, CUfunction kernel)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuFuncGetAttribute);
+  return static_cast<cudaError_t>(driver_fn(&value, attr, kernel));
+}
+
+inline cudaError_t functionSetAttribute(CUfunction kernel, CUfunction_attribute attr, int value)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuFuncSetAttribute);
+  return static_cast<cudaError_t>(driver_fn(kernel, attr, value));
+}
+
+inline void launchKernel(CUlaunchConfig& config, CUfunction kernel, void* args[], void* extra[] = nullptr)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLaunchKernelEx);
+  call_driver_fn(driver_fn, "Failed to launch kernel", &config, kernel, args, extra);
+}
+
+// Graph management
+
+inline CUgraphNode graphAddKernelNode(
+  CUgraph graph, const CUgraphNode deps[], _CUDA_VSTD::size_t ndeps, CUDA_KERNEL_NODE_PARAMS& node_params)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuGraphAddKernelNode);
+  CUgraphNode result;
+  call_driver_fn(driver_fn, "Failed to add a node to a graph", &result, graph, deps, ndeps, &node_params);
+  return result;
+}
+
+inline void graphKernelNodeSetAttribute(CUgraphNode node, CUkernelNodeAttrID id, const CUkernelNodeAttrValue& value)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuGraphKernelNodeSetAttribute);
+  call_driver_fn(driver_fn, "Failed to set kernel node parameters", node, id, &value);
+}
+
+// Green contexts
 
 #if CUDART_VERSION >= 12050
 // Add actual resource description input once exposure is ready
