@@ -272,7 +272,7 @@ inline void memcpyAsync(void* dst, const void* src, size_t count, CUstream strea
     stream);
 }
 
-inline void memsetAsync(void* dst, int value, size_t count, CUstream stream)
+inline void memsetAsync(void* dst, uint8_t value, size_t count, CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemsetD8Async);
   call_driver_fn(driver_fn, "Failed to perform a memset", reinterpret_cast<CUdeviceptr>(dst), value, count, stream);
