@@ -259,6 +259,25 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
 }
 
 #endif // CUDART_VERSION >= 12050
+
+inline void memcpyAsync(void* dst, const void* src, size_t count, CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemcpyAsync);
+  call_driver_fn(
+    driver_fn,
+    "Failed to perform a memcpy",
+    reinterpret_cast<CUdeviceptr>(dst),
+    reinterpret_cast<CUdeviceptr>(src),
+    count,
+    stream);
+}
+
+inline void memsetAsync(void* dst, uint8_t value, size_t count, CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+  call_driver_fn(driver_fn, "Failed to perform a memset", reinterpret_cast<CUdeviceptr>(dst), value, count, stream);
+}
+
 } // namespace cuda::experimental::__detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION
