@@ -52,7 +52,7 @@
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 CUB_NAMESPACE_BEGIN
 

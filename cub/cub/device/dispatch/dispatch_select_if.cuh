@@ -56,7 +56,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 #include <nv/target>
 
