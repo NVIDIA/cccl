@@ -40,8 +40,10 @@ register_global = registry.register_global
 class CoopDeclMixin:
     """
     This is a dummy class that must be inherited by all cooperative methods
-    in order for them to be recognized during the stage 5a rewriting pass of
-    Numba.
+    in order for them to be recognized during Numba's rewriting pass.  This
+    applies to the single-phase primitives referenced within a kernel.  For
+    instances of primitives created outside the kernel (i.e. via two-phase),
+    we use `CoopInstanceTypeMixin`.
     """
 
 
@@ -50,6 +52,58 @@ def get_coop_decl_class_map():
         subclass: getattr(subclass, "key")
         for subclass in CoopDeclMixin.__subclasses__()
     }
+
+
+# Unlike the dict returned by get_coop_decl_class_map() on the fly, we use
+# a persistent global set here that each instance of an instance type will
+# register itself to.
+#
+# N.B. "Instance of instance type" is unfortunately wordy, however, it's the
+#      clearest way to describe what's being tracked without any subtle
+#      ambiguity sneaking in.
+__INSTANCE_OF_INSTANCE_TYPES_MAP = {}
+
+
+def get_coop_instance_of_instance_types_map():
+    global __INSTANCE_OF_INSTANCE_TYPES_MAP
+    return __INSTANCE_OF_INSTANCE_TYPES_MAP
+
+
+def _register_coop_instance_of_instance_type(instance: types.Type) -> None:
+    """
+    Register an instance of an instance type.
+    """
+    name = instance.name
+    if not name.startswith("coop"):
+        raise ValueError(f"Instance type {name} must start with 'coop'")
+
+    global __INSTANCE_OF_INSTANCE_TYPES_MAP
+    if name in __INSTANCE_OF_INSTANCE_TYPES_MAP:
+        raise ValueError(f"Instance type {name} is already registered")
+    __INSTANCE_OF_INSTANCE_TYPES_MAP[name] = instance
+
+
+class CoopInstanceTypeMixin:
+    """
+    This is a dummy class that must be inherited by all instance types of
+    two-phase cooperative methods.
+    """
+
+    def __init__(self):
+        name = self.name
+        # Ensure our type.Type's __init__() has already been called.  This
+        # isn't strictly necessary, as there's a "startswith('coop')" check
+        # in the _register_coop_instance_of_instance_type() function, but
+        # we do it here as well as we can raise a more specific error message.
+        if not name.startswith("coop"):
+            msg = (
+                "CoopInstanceTypeMixin.__init__() called before other subclass "
+                " __init__() methods."
+            )
+            raise ValueError(msg)
+
+        # Register this instance type in the global map.
+        _register_coop_instance_of_instance_type(self)
 
 
 # =============================================================================
@@ -229,7 +283,7 @@ class CoopLocalArrayDecl(CoopArrayBaseTemplate, CoopDeclMixin):
 
 
 # =============================================================================
-# Load & Store
+# Load & Store (Single-phase)
 # =============================================================================
 
 
@@ -355,7 +409,13 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
             )
 
     def _validate_args_and_create_signature(
-        self, src, dst, items_per_thread=None, algorithm=None, temp_storage=None
+        self,
+        src,
+        dst,
+        items_per_thread=None,
+        algorithm=None,
+        temp_storage=None,
+        two_phase=False,
     ):
         self._validate_src_dst(src, dst)
 
@@ -363,8 +423,8 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
             dst, ThreadDataType
         )
         if not using_thread_data:
-            # items_per_thread is mandatory if not using thread data.
-            self._validate_items_per_thread(items_per_thread)
+            if not two_phase or items_per_thread is not None:
+                self._validate_items_per_thread(items_per_thread)
 
         self._validate_algorithm(algorithm)
 
@@ -440,12 +500,14 @@ class StoreMixin:
 
 
 # Load
-@register
 class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     key = coop.block.load
     primitive_name = "coop.block.load"
     algorithm_enum = coop.BlockLoadAlgorithm
     default_algorithm = coop.BlockLoadAlgorithm.DIRECT
+
+
+register(CoopBlockLoadDecl)
 
 
 @infer_global(operator.getitem)
@@ -455,7 +517,6 @@ class CoopBlockLoadTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
 
 
 # Store
-@register
 class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     key = coop.block.store
     primitive_name = "coop.block.store"
@@ -463,10 +524,99 @@ class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     default_algorithm = coop.BlockStoreAlgorithm.DIRECT
 
 
+register(CoopBlockStoreDecl)
+
+
 @infer_global(operator.getitem)
 class CoopBlockStoreTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
     target_key = coop.block.store
     target_template = CoopBlockStoreDecl
+
+
+# =============================================================================
+# Instance-related Load & Store Scaffolding
+# =============================================================================
+
+# The following scaffolding allows us to seamlessly handle calling invocables
+# within a CUDA kernel that were created outside the kernel via the two-phase
+# approach, e.g.:
+#   block_load = coop.block.load(dtype, dim, items_per_thread)
+#   @cuda.jit
+#   def kernel(d_in, d_out, items_per_thread):
+#       thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+#       block_load(d_in, thread_data, items_per_thread)
+
+
+class CoopLoadStoreInstanceBaseType(types.Type, CoopInstanceTypeMixin):
+    """
+    Base class for cooperative load/store instance types.  Subclasses must
+    define the following class attributes:
+      - decl_class: the declaration class for the load/store
+        (e.g. CoopBlockLoadDecl)
+      - src_first: a boolean indicating whether the source array comes first
+        or second in the invocation.
+    """
+
+    decl_class = None
+
+    def __init__(self):
+        if self.decl_class is None:
+            msg = "Subclasses must define 'decl_class' attribute"
+            raise ValueError(msg)
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
+        CoopInstanceTypeMixin.__init__(self)
+
+    def _validate_args_and_create_signature(
+        self, src, dst, items_per_thread=None, temp_storage=None
+    ):
+        return self.decl._validate_args_and_create_signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            algorithm=None,
+            temp_storage=temp_storage,
+            two_phase=True,
+        )
+
+
+# Load
+class CoopBlockLoadInstanceType(CoopLoadStoreInstanceBaseType, LoadMixin):
+    decl_class = CoopBlockLoadDecl
+
+
+block_load_instance_type = CoopBlockLoadInstanceType()
+
+
+@typeof_impl.register(coop.block.load)
+def typeof_block_load_instance(*args, **kwargs):
+    return block_load_instance_type
+
+
+@type_callable(block_load_instance_type)
+def type_block_load_instance_call(context):
+    decl = block_load_instance_type.decl
+    return decl.generic()
+
+
+# Store
+class CoopBlockStoreInstanceType(CoopLoadStoreInstanceBaseType, StoreMixin):
+    decl_class = CoopBlockStoreDecl
+
+
+block_store_instance_type = CoopBlockStoreInstanceType()
+
+
+@typeof_impl.register(coop.block.store)
+def typeof_block_store_instance(*args, **kwargs):
+    return block_store_instance_type
+
+
+@type_callable(block_store_instance_type)
+def type_block_store_instance_call(context):
+    decl = block_store_instance_type.decl
+    return decl.generic()
 
 
 # =============================================================================
