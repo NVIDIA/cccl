@@ -1395,25 +1395,24 @@ def _init_rewriter():
         return context.get_dummy_value()
     
     # Register function call lowering for two-phase instances
-    @lower_builtin("call", CoopBlockLoadInstanceType, types.VarArg(types.Any))
-    def lower_block_load_instance_call(context, builder, sig, args):
-        print(f'STATIC LOWERING: Block load call with sig={sig}')
-        [instance_val] = args[:1]
-        call_args = args[1:]
-        
-        # Get the instance from the constant value - this is tricky...
-        # For now let's see if this gets called at all
-        print(f'Instance val: {instance_val}, call args: {len(call_args)}')
-        
-        # We need to get the actual instance object to access its codegen_func
-        # This is a placeholder for now
+    # We need to register for specific signatures, not VarArg
+    
+    @lower_builtin(CoopBlockLoadInstanceType, types.Array, types.Array)
+    def lower_block_load_instance_call_arrays(context, builder, sig, args):
+        print(f'STATIC LOWERING: Block load call with arrays sig={sig}')
         return context.get_dummy_value()
     
-    @lower_builtin("call", CoopBlockStoreInstanceType, types.VarArg(types.Any))  
-    def lower_block_store_instance_call(context, builder, sig, args):
-        print(f'STATIC LOWERING: Block store call with sig={sig}')
-        [instance_val] = args[:1]
-        call_args = args[1:]
+    @lower_builtin(CoopBlockLoadInstanceType, types.VarArg(types.Any))
+    def lower_block_load_instance_call_vararg(context, builder, sig, args):
+        print(f'STATIC LOWERING: Block load call with vararg sig={sig}')
+        return context.get_dummy_value()
+    
+    @lower_builtin(CoopBlockStoreInstanceType, types.Array, types.Array)  
+    def lower_block_store_instance_call_arrays(context, builder, sig, args):
+        print(f'STATIC LOWERING: Block store call with arrays sig={sig}')
+        return context.get_dummy_value()
         
-        print(f'Instance val: {instance_val}, call args: {len(call_args)}')
+    @lower_builtin(CoopBlockStoreInstanceType, types.VarArg(types.Any))
+    def lower_block_store_instance_call_vararg(context, builder, sig, args):
+        print(f'STATIC LOWERING: Block store call with vararg sig={sig}')
         return context.get_dummy_value()
