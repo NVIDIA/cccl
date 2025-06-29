@@ -133,6 +133,10 @@ class CoopNode:
     # obtained via two-phase creation of the primitive outside the kernel).
     type_instance: Optional[types.Type]
 
+    # Non-None for two-phase instances (i.e. when calling an invocable
+    # obtained via two-phase creation of the primitive outside the kernel).
+    two_phase_instance: Optional[Any]
+
     # Defaults.
     implicit_temp_storage: bool = True
 
@@ -525,7 +529,7 @@ class CoopLoadStoreNode(CoopNode):
         return (g_assign, new_assign)
 
     def rewrite_two_phase(self, rewriter):
-        return ()
+        return tuple()
 
 
 class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
@@ -899,8 +903,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
     def get_or_create_global_numba_cuda_module_instr(self, scope, loc, new_nodes):
         import numba.cuda
 
-        return self._get_or_create_global_module(
-            "numba.cuda", numba.cuda, scope, loc, new_nodes
+        return self._get_or_create_global_module( "numba.cuda", numba.cuda, scope, loc, new_nodes
         )
 
     def match(self, func_ir, block, typemap, calltypes, **kw):
@@ -920,7 +923,18 @@ class BaseCooperativeNodeRewriter(Rewrite):
         template_classes = {value: key for (key, value) in decl_classes.items()}
         interesting_modules = self.interesting_modules
 
+        allvars = {}
+        argvars = {}
         freevars = {}
+        globalvars = {}
+        two_phases_by_name = {}
+        two_phases_by_value = {}
+
+        py_func = func_ir.func_id.func
+        code_obj = py_func.__code__
+        cells = py_func.__closure__
+
+        import ipdb
 
         for i, instr in enumerate(block.body):
             # Temp: do we ever encounter nodes other than Assign, Del, or
@@ -928,34 +942,91 @@ class BaseCooperativeNodeRewriter(Rewrite):
             if not isinstance(instr, (ir.Assign, ir.Del, ir.Return)):
                 raise RuntimeError(f"Unexpected instruction type: {instr!r}")
 
-            expr = instr.value
-            if isinstance(expr, ir.FreeVar):
-                value = expr.value
-                if value.__class__ in template_classes:
-                    target_name = instr.target.name
-                    assert target_name not in freevars, (
-                        target_name,
-                        freevars[target_name],
-                        value,
-                    )
-                    freevars[target_name] = value
+            # We're only interested in ir.Assign nodes.  Skip the rest.
+            if not isinstance(instr, ir.Assign):
                 continue
 
-            if isinstance(expr, ir.Global):
-                if isinstance(expr.value, PyModuleType):
-                    module = expr.value
+            # `instr.value` will hold the right-hand side of the assignment.
+            # The left-hand side (i.e. the `foo` in `foo = bar`) is accessed
+            # via `instr.target`.  Initialize aliases.
+            rhs = instr.value
+            target = instr.target
+            target_name = target.name
+
+            is_variable_kind = (
+                isinstance(rhs, (
+                    ir.Arg,
+                    ir.Var,
+                    ir.Global,
+                    ir.FreeVar,
+                ))
+            )
+            if is_variable_kind:
+                value = None
+                if isinstance(rhs, ir.Arg):
+                    arg = rhs
+                    arg_name = arg.name
+                    arg_type = typemap[arg_name]
+                    if arg_type in type_instances:
+                        # We don't support two-phase primitive instances being
+                        # passed as kernel parameters (yet?).
+                        msg = (
+                            f"Cannot pass an instance of {arg_type!r} as a "
+                            "kernel parameter."
+                        )
+                        raise ValueError(msg)
+                elif isinstance(rhs, ir.Var):
+                    print(f'Found ir.Var: {rhs}')
+                    ipdb.set_trace()
+                    print(rhs)
+                else:
+                    print(f'Found {rhs.__class__.__name__}: {rhs}')
+                    value = rhs.value
+
+                if value is None:
+                    continue
+
+                # If the rhs is a module, check to see if it's in our list
+                # of interesting modules, and, if so, make a note of it.
+                if isinstance(value, PyModuleType):
+                    module = value
                     module_name = module.__name__
                     if module_name in interesting_modules:
                         if module_name not in self._modules:
                             self._modules[module_name] = instr
+
+                # If the type of the rhs value is in our type instances map,
+                # the value is an instance of a two-phase primitive created
+                # outside of the kernel.
+                value_type = typemap[target_name]
+                if value_type in type_instances:
+                    # Verify target name is unique.
+                    assert target_name not in two_phases_by_name, (
+                        target_name,
+                        two_phases[target_name],
+                        value,
+                        value_type,
+                    )
+                    # Verify we haven't already seen this instance.
+                    assert value not in two_phases_by_value, (
+                        target_name,
+                        two_phases[target_name],
+                        value,
+                        value_type,
+                    )
+
+                    #ipdb.set_trace()
+                    two_phases_by_name[target_name] = value
+                    two_phases_by_value[value] = instr
+
+            if not isinstance(rhs, ir.Expr):
                 continue
 
-            if not isinstance(expr, ir.Expr):
-                continue
+            expr = rhs
 
             if expr.op == "getitem":
+                ipdb.set_trace()
                 import debugpy
-
                 debugpy.breakpoint()
                 print(expr)
 
@@ -965,10 +1036,11 @@ class BaseCooperativeNodeRewriter(Rewrite):
             func_name = expr.func.name
             func = typemap[func_name]
 
-            instance = None
             template = None
             impl_class = None
             node_class = None
+            type_instance = None
+            two_phase_instance = None
 
             # Attempt to obtain the implementation class based on whether we're
             # dealing with an instance or a declaration/template.
@@ -987,27 +1059,42 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 node_class = node_classes[template.primitive_name]
 
             elif func in type_instances:
-                # Get the instance from the freevars map.
-                instance = func
-                decl = instance.decl
+                # Get the instance from the two phase map.
+                #ipdb.set_trace()
+                value = two_phases_by_name[func_name]
+                value_type = typemap[func_name]
+                primitive_name = repr(value_type)
+                # Sanity check the primitive name via the decl.
+                decl = value_type.decl
+                assert primitive_name == decl.primitive_name, (
+                    primitive_name,
+                    decl.primitive_name,
+                    decl
+                )
+                node_class = node_classes[primitive_name]
+
+                # Sanity check the class of the instance matches our impl
+                # class expectations.
                 template = decl.__class__
                 impl_class = decl_classes.get(template, None)
+
                 if not impl_class:
                     raise RuntimeError(
                         f"Could not find declaration class for {instance.decl!r}"
                     )
 
                 # Sanity-check names are correct.
-                assert instance.name == decl.primitive_name, (
-                    instance.name,
+                type_instance = func
+                assert type_instance.name == decl.primitive_name, (
+                    type_instance.name,
                     decl.primitive_name,
                 )
-                assert instance.name.endswith(decl.key.__name__), (
-                    instance.name,
+                assert type_instance.name.endswith(decl.key.__name__), (
+                    type_instance.name,
                     decl.key.__name__,
                 )
 
-                node_class = node_classes[instance.name]
+                two_phase_instance = value
 
             else:
                 raise RuntimeError(f"Unexpected code path; {func!r}")
@@ -1043,7 +1130,8 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 typemap=typemap,
                 func_ir=func_ir,
                 typingctx=self._state.typingctx,
-                type_instance=instance,
+                type_instance=type_instance,
+                two_phase_instance=two_phase_instance,
             )
 
             target_name = node.target.name
