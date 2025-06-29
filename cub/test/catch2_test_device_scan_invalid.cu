@@ -93,7 +93,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
   {
     // Prepare verification data
     // Need neutral init in this case
-    const auto init_value = output_t{.begin = 1, .end = 1};
+    const auto init_value = output_t{1, 1};
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), scan_op, init_value);
 
@@ -109,7 +109,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("inclusive scan with init value")
   {
-    const auto init_value = output_t{.begin = 0, .end = 1};
+    const auto init_value = output_t{0, 1};
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -127,7 +127,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("exclusive scan")
   {
-    const auto init_value = output_t{.begin = 0, .end = 1};
+    const auto init_value = output_t{0, 1};
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -145,7 +145,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("exclusive scan with future-init value")
   {
-    const auto init_value = output_t{.begin = 0, .end = 1};
+    const auto init_value = output_t{0, 1};
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
