@@ -88,7 +88,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
   // domain argument of stream_domain. It adapts a `bulk_chunked` sender to the stream
   // domain.
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const
+  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
   {
     // Decompose the bulk sender into its components:
     auto& [__tag, __state, __child] = __sndr;
@@ -151,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
   // domain argument of stream_domain. It adapts a `bulk_unchunked` sender to the stream
   // domain.
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const
+  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
   {
     // Decompose the bulk sender into its components:
     auto& [__tag, __state, __child] = __sndr;
@@ -185,10 +185,10 @@ struct __bulk_t : execution::__bulk_t<__bulk_t>
   {};
 
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const -> decltype(auto)
+  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const -> decltype(auto)
   {
     // This converts a bulk sender into a bulk_chunked sender, which will then be
-    // further transformed by the __bulk_chunked_t above.
+    // further transformed by __bulk_chunked_t above.
     return bulk.transform_sender(static_cast<_Sndr&&>(__sndr), env{});
   }
 };

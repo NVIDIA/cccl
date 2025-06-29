@@ -21,10 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__functional/compose.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
+#include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -48,17 +52,53 @@ _CCCL_API auto __tag_of(const _Sndr& __sndr) -> tag_of_t<_Sndr>;
 template <class _Sndr>
 using __tag_of_t = decltype(__stream::__tag_of(declval<_Sndr>()));
 
-template <class _Tag>
 struct __adapted_t
 {};
 
-// Forward declaration of the __adapt function
-template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr, stream_ref);
+template <class _Sndr, class _GetStream>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr);
+_CCCL_GLOBAL_CONSTANT auto __get_stream_from_attrs =
+  __call_first{get_stream, _CUDA_VSTD::__compose(get_stream, get_completion_scheduler<set_value_t>)};
+
+_CCCL_GLOBAL_CONSTANT auto __get_stream_from_env =
+  __call_first{get_stream, _CUDA_VSTD::__compose(get_stream, get_scheduler)};
+
+using __get_stream_from_attrs_t = decltype(__get_stream_from_attrs);
+using __get_stream_from_env_t   = decltype(__get_stream_from_env);
+
+// Get the stream either the sender's attributes or from the receiver's environment.
+struct __get_stream_fn
+{
+  template <class _Sndr, class _Env>
+  _CCCL_API constexpr auto operator()(const _Sndr& __sndr, const _Env& __env) const noexcept -> stream_ref
+  {
+    if constexpr (_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>>)
+    {
+      // If the sender's attributes have a stream, use it.
+      return __get_stream_from_attrs(execution::get_env(__sndr));
+    }
+    else if constexpr (_CUDA_VSTD::__is_callable_v<__get_stream_from_env_t, _Env>)
+    {
+      // Otherwise, try to get the stream from the receiver's environment.
+      return __get_stream_from_env(__env);
+    }
+    else
+    {
+      // If neither the sender nor the receiver has a stream, it's a bug.
+      static_assert(_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>>
+                      || _CUDA_VSTD::__is_callable_v<__get_stream_from_env_t, _Env>,
+                    "Expected the sender's attributes or the receiver's environment to have a stream.");
+    }
+  }
+};
+
+// Forward declaration of the __adapt function
+template <class _Sndr, class _GetStream = __get_stream_fn>
+_CCCL_API constexpr auto __adapt(_Sndr __sndr, _GetStream = {});
 } // namespace __stream
+
+_CCCL_GLOBAL_CONSTANT auto __get_stream = __stream::__get_stream_fn{};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // stream domain
@@ -67,8 +107,13 @@ struct stream_domain
   _CUDAX_SEMI_PRIVATE :
   struct __apply_adapt_t
   {
-    template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const
+    // This is the default apply function that adapts a sender to a stream sender.
+    // The constraint prevents this function from applying an adaptor to a sender
+    // that has already been adapted. The __stream::__adapted_t query is present
+    // only on receivers that come from an adapted sender.
+    _CCCL_TEMPLATE(class _Sndr, class _Env)
+    _CCCL_REQUIRES((!__queryable_with<_Env, __stream::__adapted_t>) )
+    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Env const&) const
     {
       return __stream::__adapt(static_cast<_Sndr&&>(__sndr));
     }
@@ -77,7 +122,7 @@ struct stream_domain
   struct __apply_passthru_t
   {
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t = {}) const -> _Sndr
+    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const -> _Sndr
     {
       return static_cast<_Sndr&&>(__sndr);
     }
@@ -105,6 +150,12 @@ public:
     return __apply_t<tag_of_t<_Sndr>>{}(static_cast<_Sndr&&>(__sndr), __env...);
   }
 };
+
+// If a sender has already been adapted to a stream sender, it will have a tag that is a specialization of
+// __stream::__tag_t. In that case, we don't need to adapt it again, and we can just pass it through.
+template <class _Tag>
+struct stream_domain::__apply_t<__stream::__tag_t<_Tag>> : stream_domain::__apply_passthru_t
+{};
 
 } // namespace cuda::experimental::execution
 

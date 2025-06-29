@@ -41,9 +41,15 @@ struct __sync_wait_t
   template <class _Sndr, class _Env>
   _CCCL_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
+    // _Sndr is a sender that has not yet been transformed to run on the stream domain.
+    // The transformation would happen in due course in the connect cpo, so why transform
+    // it here? This transformation shuffles the sender into one that can provide a
+    // stream_ref, which is needed by __host_apply.
+    auto __new_sndr = execution::transform_sender(stream_domain{}, static_cast<_Sndr&&>(__sndr), __env);
+
     NV_IF_TARGET(NV_IS_HOST,
-                 (return __host_apply(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));),
-                 (return __device_apply(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));))
+                 (return __host_apply(_CUDA_VSTD::move(__new_sndr), static_cast<_Env&&>(__env));),
+                 (return __device_apply(_CUDA_VSTD::move(__new_sndr), static_cast<_Env&&>(__env));))
     _CCCL_UNREACHABLE();
   }
 
@@ -81,7 +87,7 @@ private:
   template <class _Sndr, class _Env>
   _CCCL_HOST_API static auto __host_apply(_Sndr&& __sndr, _Env&& __env)
   {
-    stream_ref __stream = get_stream(get_env(__sndr));
+    stream_ref __stream = __get_stream(__sndr, __env);
 
     // Launch the sender with a continuation that will fill in a variant
     using __box_t = __managed_box<__state_t<_Sndr, _Env>>;
