@@ -41,6 +41,9 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
 namespace cuda::experimental::execution
 {
 namespace __upon
@@ -118,6 +121,7 @@ struct __upon_t
         }
         else
         {
+          // msvc warns that this is unreachable code, but it is reachable.
           execution::set_value(static_cast<_Rcvr&&>(__state_->__rcvr_),
                                static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...));
         }
@@ -396,6 +400,8 @@ _CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
 
 } // namespace cuda::experimental::execution
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

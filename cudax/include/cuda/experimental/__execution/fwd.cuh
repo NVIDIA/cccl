@@ -198,8 +198,15 @@ extern __fn_ptr_t<_Tag> __tag_of_v;
 template <class _Sndr>
 using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
+template <class _Sndr, class... _Tag>
+inline constexpr bool __sender_for_v = _CCCL_REQUIRES_EXPR((_Sndr, variadic _Tag))(tag_of_t<_Sndr>{});
+
 template <class _Sndr, class _Tag>
-_CCCL_CONCEPT sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
+inline constexpr bool __sender_for_v<_Sndr, _Tag> =
+  _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
+
+template <class _Sndr, class... _Tag>
+_CCCL_CONCEPT sender_for = __sender_for_v<_Sndr, _Tag...>;
 
 namespace __detail
 {
