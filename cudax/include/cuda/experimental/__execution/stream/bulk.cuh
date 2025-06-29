@@ -94,10 +94,15 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
     auto& [__tag, __state, __child] = __sndr;
     auto& [__policy, __shape, __fn] = __state;
 
-    using __sndr_t =
-      __bulk_chunked_t::__sndr_t<decltype(__child), decltype(__policy), decltype(__shape), decltype(__fn)>;
-    return __stream::__adapt(__sndr_t{
-      {{}, {__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)}, _CUDA_VSTD::forward_like<_Sndr>(__child)}});
+    using __policy_t  = decltype(__policy);
+    using __shape_t   = decltype(__shape);
+    using __fn_t      = decltype(__fn);
+    using __sndr_t    = __bulk_chunked_t::__sndr_t<decltype(__child), __policy_t, __shape_t, __fn_t>;
+    using __closure_t = __bulk_t::__closure_base_t<__policy_t, __shape_t, __fn_t>;
+
+    auto __closure  = __closure_t{__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)};
+    auto __new_sndr = __sndr_t{{{}, static_cast<__closure_t&&>(__closure), _CUDA_VSTD::forward_like<_Sndr>(__child)}};
+    return __stream::__adapt(static_cast<__sndr_t&&>(__new_sndr));
   }
 
   _CCCL_API static constexpr bool __is_chunked() noexcept
@@ -152,10 +157,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
     auto& [__tag, __state, __child] = __sndr;
     auto& [__policy, __shape, __fn] = __state;
 
-    using __sndr_t =
-      __bulk_unchunked_t::__sndr_t<decltype(__child), decltype(__policy), decltype(__shape), decltype(__fn)>;
-    return __stream::__adapt(__sndr_t{
-      {{}, {__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)}}, _CUDA_VSTD::forward_like<_Sndr>(__child)});
+    using __policy_t  = decltype(__policy);
+    using __shape_t   = decltype(__shape);
+    using __fn_t      = decltype(__fn);
+    using __sndr_t    = __bulk_unchunked_t::__sndr_t<decltype(__child), __policy_t, __shape_t, __fn_t>;
+    using __closure_t = __bulk_t::__closure_base_t<__policy_t, __shape_t, __fn_t>;
+
+    auto __closure  = __closure_t{__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)};
+    auto __new_sndr = __sndr_t{{{}, static_cast<__closure_t&&>(__closure), _CUDA_VSTD::forward_like<_Sndr>(__child)}};
+    return __stream::__adapt(static_cast<__sndr_t&&>(__new_sndr));
   }
 
   _CCCL_API static constexpr bool __is_chunked() noexcept

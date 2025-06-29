@@ -39,10 +39,10 @@ struct __adapted_t
 
 // Forward declaration of the __adapt function
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr, stream_ref) -> decltype(auto);
+_CCCL_API constexpr auto __adapt(_Sndr, stream_ref);
 
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr) -> decltype(auto);
+_CCCL_API constexpr auto __adapt(_Sndr);
 } // namespace __stream
 
 //////////////////////////////////////////////////////////////////////////////////////////
