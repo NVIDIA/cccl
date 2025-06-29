@@ -82,6 +82,27 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+TEST_CASE("Device sum works with default environment", "[reduce][device]")
+{
+  using num_items_t = int;
+  using value_t     = int;
+  using offset_t    = cub::detail::choose_offset_t<num_items_t>;
+
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  int ptx_version{};
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+
+  num_items_t num_items = 1;
+
+  auto d_in  = thrust::make_constant_iterator(value_t{1});
+  auto d_out = thrust::device_vector<value_t>(1);
+
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
+  REQUIRE(d_out[0] == num_items);
+}
+
 template <int BlockThreads>
 struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
 {
@@ -144,6 +165,21 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
+{
+  constexpr int target_block_size = c2h::get<0, TestType>::value;
+
+  auto num_items = 1;
+  auto d_in      = thrust::make_constant_iterator(1);
+  auto d_out     = thrust::device_vector<int>(1);
+
+  // We are expecting that `scan_tuning` is ignored
+  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
+
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, env));
+  REQUIRE(d_out[0] == num_items);
 }
 #endif
 
