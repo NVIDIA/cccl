@@ -45,6 +45,15 @@ struct _say_hello
   int value;
 };
 
+// This is an "un-visitable" sender that does not have a tag type.
+template <class Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT unknown_sender : Sndr
+{
+  _CCCL_API explicit unknown_sender(Sndr sndr) noexcept
+      : Sndr(cuda::std::move(sndr))
+  {}
+};
+
 void stream_context_test1()
 {
   ex::stream_context ctx{cuda::experimental::device_ref{0}};
@@ -152,6 +161,21 @@ void bulk_on_stream_scheduler()
   CHECK(thrust::equal(thrust::device, span.begin(), span.end(), expected.begin()));
 }
 
+void stream_adapt_non_visitable_sender()
+{
+  ex::stream_context ctx{cuda::experimental::device_ref{0}};
+  auto sch         = ctx.get_scheduler();
+  auto with_stream = ex::prop{cuda::get_stream, cuda::get_stream(sch)};
+  auto sndr        = unknown_sender{ex::just(42) | ex::write_attrs(with_stream)};
+
+  // FUTURE: ex::starts_on is currently broken for the stream scheduler.
+  if (false)
+  {
+    auto [i] = ex::sync_wait(ex::starts_on(sch, sndr)).value();
+    CHECK(i == 42);
+  }
+}
+
 // Test code is placed in separate functions to avoid an nvc++ issue with
 // extended lambdas in functions with internal linkage (as is the case
 // with C2H tests).
@@ -174,5 +198,10 @@ C2H_TEST("use stream_ref as a scheduler", "[context][stream]")
 C2H_TEST("launch a bulk kernel", "[context][stream]")
 {
   REQUIRE_NOTHROW(bulk_on_stream_scheduler());
+}
+
+C2H_TEST("run an unknown sender on a stream", "[context][stream]")
+{
+  REQUIRE_NOTHROW(stream_adapt_non_visitable_sender());
 }
 } // namespace

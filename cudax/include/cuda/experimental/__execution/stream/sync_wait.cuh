@@ -55,7 +55,7 @@ struct __sync_wait_t
 
 private:
   template <class _Sndr, class _Env>
-  struct __state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
     using __values_t = typename sync_wait_t::__state_t<_Sndr, _Env>::__values_t;
     using __errors_t = typename sync_wait_t::__state_t<_Sndr, _Env>::__errors_t;
