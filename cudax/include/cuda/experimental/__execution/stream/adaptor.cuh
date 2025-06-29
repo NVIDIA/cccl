@@ -393,7 +393,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     return __attrs_t<_Sndr>{&__sndr_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __adapted_t<tag_of_t<_Sndr>> __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __adapted_t<__stream::__tag_of_t<_Sndr>> __tag_;
   stream_ref __stream_;
   _Sndr __sndr_;
 };
