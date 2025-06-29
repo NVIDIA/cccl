@@ -41,6 +41,7 @@
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__execution/when_all.cuh>
+#include <cuda/experimental/__execution/write_attrs.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>
 // IWYU pragma: end_exports
 

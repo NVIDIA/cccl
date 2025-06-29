@@ -248,7 +248,8 @@ C2H_TEST("starts_on domain forwarding", "[adaptors][starts_on]")
 {
   // Test that the domain is properly forwarded from the scheduler
   cudax_async::prop attrs{cudax_async::get_domain, cudax_async::default_domain{}};
-  auto snd = cudax_async::starts_on(inline_scheduler<test_domain>{}, write_attrs(cudax_async::just(42), attrs));
+  auto snd =
+    cudax_async::starts_on(inline_scheduler<test_domain>{}, cudax_async::write_attrs(cudax_async::just(42), attrs));
 
   // Check that the sender has the expected domain
   STATIC_REQUIRE(
