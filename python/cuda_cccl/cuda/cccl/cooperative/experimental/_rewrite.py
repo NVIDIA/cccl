@@ -23,9 +23,11 @@ from numba.core.typing.templates import (
     AbstractTemplate,
     Signature,
 )
+from numba.extending import lower_builtin
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import current_launch_config
+from numba.core.imputils import lower_constant
 
 if False:
     from numba.core import config
@@ -157,6 +159,7 @@ class CoopNode:
     dst: Any = None
     invocable: Any = None
     instance: Any = None
+    codegens: list = None
 
     @property
     def is_two_phase(self):
@@ -421,8 +424,7 @@ class CoopLoadStoreNode(CoopNode):
         g_var_name = f"${node.call_var_name}"
         g_var = ir.Var(scope, g_var_name, expr.loc)
 
-        # TODO: do we need any of this if we're two-phase?  We've already
-        # got the "invocable", per se.
+        # Create an instance of the invocable.
         instance = node.instance = impl_class(
             node.dtype,
             node.threads_per_block,
@@ -529,7 +531,201 @@ class CoopLoadStoreNode(CoopNode):
         return (g_assign, new_assign)
 
     def rewrite_two_phase(self, rewriter):
+        instance = self.two_phase_instance
+        algo = instance.specialization
+        print(f'Codegen & overload {instance!r}')
+        print(f'Original call expression: {self.expr}')
+        print(f'Original func: {self.expr.func} (type: {type(self.typemap[self.expr.func.name])})')
+        print(f'Call args: {[arg.name for arg in self.expr.args]}')
+        
+        # Create the codegens for the algorithm
+        self.codegens = algo.create_codegens()
+        
+        # Set the instance as the invocable for consistency
+        self.invocable = instance
+        self.instance = instance  # For compatibility with codegen
+        
+        # Define the lowering function
+        def codegen(context, builder, sig, args):
+            print(f'CODEGEN: Function call lowering triggered! sig={sig}')
+            cg = self.codegen
+            (_, codegen_method) = cg.intrinsic_impl()
+            res = codegen_method(context, builder, sig, args)
+
+            # Add all the LTO-IRs to the current code library
+            lib = context.active_code_library
+            for ltoir in algo.lto_irs:
+                lib.add_linking_file(ltoir)
+
+            return res
+
+        # Store the codegen function on the instance for later retrieval
+        instance.node = self
+        instance.codegen_func = codegen
+
+        return ()
+
+        def codegen(context, builder, sig, args):
+            cg = self.codegen
+            (_, codegen_method) = cg.intrinsic_impl()
+            res = codegen_method(context, builder, sig, args)
+
+            # Add all the LTO-IRs to the current code library.
+            lib = context.active_code_library
+            algo = self.instance.specialization
+            # algo.generate_source(node.threads)
+            for ltoir in algo.lto_irs:
+                lib.add_linking_file(ltoir)
+
+            return res
+
+        func = lower_builtin(instance, types.VarArg(types.Any))
+        func(codegen)
+
+        return ()
+
+
+    def rewrite_two_phase_old2(self, rewriter):
+        instance = self.two_phase_instance
+        algo = instance.specialization
+        #invocable = instance.invocable
+        #invocable_name = self.call_var_name
+        # @register_global needs our invocable to have a __name__ attribute.
+        #invocable.__name__ = invocable_name
+        self.codegens = algo.create_codegens()
+
+        def codegen(context, builder, sig, args):
+            cg = self.codegen
+            (_, codegen_method) = cg.intrinsic_impl()
+            res = codegen_method(context, builder, sig, args)
+
+            # Add all the LTO-IRs to the current code library.
+            lib = context.active_code_library
+            algo = self.instance.specialization
+            # algo.generate_source(node.threads)
+            for ltoir in algo.lto_irs:
+                lib.add_linking_file(ltoir)
+
+            return res
+
+        func = lower_builtin(instance, types.VarArg(types.Any))
+        func(codegen)
+
+        return ()
+
+        node = self
+        node.invocable = invocable = instance
+        invocable.node = node
+
+        @register(invocable)
+        class ImplDecl(AbstractTemplate):
+            key = invocable
+
+            def generic(self, outer_args, outer_kws):
+                @lower(invocable, types.VarArg(types.Any))
+                def codegen(context, builder, sig, args):
+                    node = invocable.node
+                    cg = node.codegen
+                    (_, codegen_method) = cg.intrinsic_impl()
+                    res = codegen_method(context, builder, sig, args)
+
+                    # Add all the LTO-IRs to the current code library.
+                    lib = context.active_code_library
+                    algo = node.instance.specialization
+                    # algo.generate_source(node.threads)
+                    for ltoir in algo.lto_irs:
+                        lib.add_linking_file(ltoir)
+
+                    return res
+
+                return sig
+
+        # We didn't create any new nodes, so there's nothing to return.
         return tuple()
+
+        # All we need to do during callback for an existing two-phase primitive
+        # is register the lowering for the invocable's codegen.  We don't need
+        # to construct any new nodes and inject them into the IR block.
+
+        def codegen(context, builder, sig, args):
+            node = invocable.node
+            cg = node.codegen
+            (_, codegen_method) = cg.intrinsic_impl()
+            res = codegen_method(context, builder, sig, args)
+
+            # Add all the LTO-IRs to the current code library.
+            lib = context.active_code_library
+            algo = node.instance.specialization
+            # algo.generate_source(node.threads)
+            for ltoir in algo.lto_irs:
+                lib.add_linking_file(ltoir)
+
+            return res
+
+        func = lower(invocable, types.VarArg(types.Any))
+        func(codegen)
+
+    def rewrite_two_phase_old(self, rewriter):
+        instance = self.two_phase_instance
+        algo = instance.specialization
+        #invocable = instance.invocable
+        #invocable_name = self.call_var_name
+        # @register_global needs our invocable to have a __name__ attribute.
+        #invocable.__name__ = invocable_name
+        self.codegens = algo.create_codegens()
+
+        node = self
+        node.invocable = invocable = instance
+        invocable.node = node
+
+        @register(invocable)
+        class ImplDecl(AbstractTemplate):
+            key = invocable
+
+            def generic(self, outer_args, outer_kws):
+                @lower(invocable, types.VarArg(types.Any))
+                def codegen(context, builder, sig, args):
+                    node = invocable.node
+                    cg = node.codegen
+                    (_, codegen_method) = cg.intrinsic_impl()
+                    res = codegen_method(context, builder, sig, args)
+
+                    # Add all the LTO-IRs to the current code library.
+                    lib = context.active_code_library
+                    algo = node.instance.specialization
+                    # algo.generate_source(node.threads)
+                    for ltoir in algo.lto_irs:
+                        lib.add_linking_file(ltoir)
+
+                    return res
+
+                return sig
+
+        # We didn't create any new nodes, so there's nothing to return.
+        return tuple()
+
+        # All we need to do during callback for an existing two-phase primitive
+        # is register the lowering for the invocable's codegen.  We don't need
+        # to construct any new nodes and inject them into the IR block.
+
+        def codegen(context, builder, sig, args):
+            node = invocable.node
+            cg = node.codegen
+            (_, codegen_method) = cg.intrinsic_impl()
+            res = codegen_method(context, builder, sig, args)
+
+            # Add all the LTO-IRs to the current code library.
+            lib = context.active_code_library
+            algo = node.instance.specialization
+            # algo.generate_source(node.threads)
+            for ltoir in algo.lto_irs:
+                lib.add_linking_file(ltoir)
+
+            return res
+
+        func = lower(invocable, types.VarArg(types.Any))
+        func(codegen)
+
 
 
 class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
@@ -934,7 +1130,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
         code_obj = py_func.__code__
         cells = py_func.__closure__
 
-        import ipdb
+        #import ipdb
 
         for i, instr in enumerate(block.body):
             # Temp: do we ever encounter nodes other than Assign, Del, or
@@ -976,11 +1172,12 @@ class BaseCooperativeNodeRewriter(Rewrite):
                         )
                         raise ValueError(msg)
                 elif isinstance(rhs, ir.Var):
-                    print(f'Found ir.Var: {rhs}')
-                    ipdb.set_trace()
-                    print(rhs)
+                    #print(f'Found ir.Var: {rhs}')
+                    #ipdb.set_trace()
+                    #print(rhs)
+                    pass
                 else:
-                    print(f'Found {rhs.__class__.__name__}: {rhs}')
+                    #print(f'Found {rhs.__class__.__name__}: {rhs}')
                     value = rhs.value
 
                 if value is None:
@@ -1168,4 +1365,55 @@ def _init_rewriter():
     # Dummy function that allows us to do the following in `_init_extension`:
     # from ._rewrite import _init_rewriter
     # _init_rewriter()
-    pass
+    
+    # Register data models for two-phase instance types
+    from ._decls import (
+        CoopBlockLoadInstanceType,
+        CoopBlockStoreInstanceType,
+    )
+    from numba.core.extending import models, register_model
+    from numba.core import types
+    
+    @register_model(CoopBlockLoadInstanceType)
+    class CoopBlockLoadInstanceModel(models.OpaqueModel):
+        pass
+    
+    @register_model(CoopBlockStoreInstanceType)
+    class CoopBlockStoreInstanceModel(models.OpaqueModel):
+        pass
+    
+    @lower_constant(CoopBlockLoadInstanceType)
+    def lower_constant_block_load_instance_type(context, builder, typ, value):
+        # For two-phase instances, return a dummy opaque value since the actual
+        # lowering will be handled by the registered function lowering
+        return context.get_dummy_value()
+    
+    @lower_constant(CoopBlockStoreInstanceType)
+    def lower_constant_block_store_instance_type(context, builder, typ, value):
+        # For two-phase instances, return a dummy opaque value since the actual  
+        # lowering will be handled by the registered function lowering
+        return context.get_dummy_value()
+    
+    # Register function call lowering for two-phase instances
+    @lower_builtin("call", CoopBlockLoadInstanceType, types.VarArg(types.Any))
+    def lower_block_load_instance_call(context, builder, sig, args):
+        print(f'STATIC LOWERING: Block load call with sig={sig}')
+        [instance_val] = args[:1]
+        call_args = args[1:]
+        
+        # Get the instance from the constant value - this is tricky...
+        # For now let's see if this gets called at all
+        print(f'Instance val: {instance_val}, call args: {len(call_args)}')
+        
+        # We need to get the actual instance object to access its codegen_func
+        # This is a placeholder for now
+        return context.get_dummy_value()
+    
+    @lower_builtin("call", CoopBlockStoreInstanceType, types.VarArg(types.Any))  
+    def lower_block_store_instance_call(context, builder, sig, args):
+        print(f'STATIC LOWERING: Block store call with sig={sig}')
+        [instance_val] = args[:1]
+        call_args = args[1:]
+        
+        print(f'Instance val: {instance_val}, call args: {len(call_args)}')
+        return context.get_dummy_value()
