@@ -52,7 +52,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan
 
 // Element type for scans
 template <typename OffsetT>
-struct Segment
+struct segment
 {
   // Make sure that default constructed segments can not be merged
   OffsetT begin = cuda::std::numeric_limits<OffsetT>::min();
