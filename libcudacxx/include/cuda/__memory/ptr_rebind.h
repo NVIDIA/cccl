@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_PTR_CAST_H
-#define _CUDA___MEMORY_PTR_CAST_H
+#ifndef _CUDA___MEMORY_PTR_REBIND_H
+#define _CUDA___MEMORY_PTR_REBIND_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -28,21 +29,21 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API _Up* ptr_cast(_Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API _Up* ptr_rebind(_Tp* __ptr) noexcept
 {
   constexpr auto __max_alignment = alignof(_Tp) > alignof(_Up) ? alignof(_Tp) : alignof(_Up);
   _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-  return reinterpret_cast<_Up*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, __max_alignment));
+  return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), __max_alignment);
 }
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API inline const _Up* ptr_cast(const _Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API inline const _Up* ptr_rebind(const _Tp* __ptr) noexcept
 {
-  return ::cuda::ptr_cast<const _Up>(const_cast<_Tp*>(__ptr));
+  return ::cuda::ptr_rebind<const _Up>(const_cast<_Tp*>(__ptr));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MEMORY_PTR_CAST_H
+#endif // _CUDA___MEMORY_PTR_REBIND_H
