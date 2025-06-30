@@ -178,7 +178,7 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   // We are expecting that `scan_tuning` is ignored
   auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, env));
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
 }
 #endif
