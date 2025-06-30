@@ -142,7 +142,7 @@ __internal_unsafe_exp_with_reduction(double __r, double* __ldexp_factor) noexcep
 
 // exp fp32 specialization
 template <>
-[[nodiscard]] _CCCL_API inline complex<float> exp(const complex<float>& __x)
+_CCCL_API inline complex<float> exp(const complex<float>& __x)
 {
   const float __r = __x.real();
   const float __i = __x.imag();
@@ -235,7 +235,7 @@ template <>
 // exp fp64 specialization
 
 template <>
-[[nodiscard]] _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
+_CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
 {
   const double __r = __x.real();
   const double __i = __x.imag();
@@ -325,7 +325,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
+_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::exp(complex<float>{__x})};
 }
@@ -333,7 +333,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
+_CCCL_API inline complex<__half> exp(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::exp(complex<float>{__x})};
 }
