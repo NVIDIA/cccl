@@ -20,13 +20,13 @@
 
 __host__ __device__ constexpr bool test()
 {
-  int buffer[8]       = {1, 2, 3, 4, 5, 6, 7, 8};
+  using baseIter      = random_access_iterator<int*>;
+  using indexIter     = random_access_iterator<const int*>;
+  int buffer[]        = {1, 2, 3, 4, 5, 6, 7, 8};
   const int offset1[] = {2};
   const int offset2[] = {4};
-  auto iter1 =
-    cuda::permutation_iterator(random_access_iterator<int*>{buffer}, random_access_iterator<const int*>{offset1});
-  auto iter2 =
-    cuda::permutation_iterator(random_access_iterator<int*>{buffer}, random_access_iterator<const int*>{offset2});
+  auto iter1          = cuda::permutation_iterator(baseIter{buffer}, indexIter{offset1});
+  auto iter2          = cuda::permutation_iterator(baseIter{buffer}, indexIter{offset2});
 
   assert(*iter1 == 3);
   assert(*iter2 == 5);

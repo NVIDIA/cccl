@@ -18,15 +18,16 @@
 
 __host__ __device__ constexpr bool test()
 {
-  int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  using baseIter = random_access_iterator<int*>;
+  int buffer[]   = {1, 2, 3, 4, 5, 6, 7, 8};
 
   const int offset[] = {2};
-  cuda::permutation_iterator iter(random_access_iterator<int*>{buffer}, offset);
+  cuda::permutation_iterator iter(baseIter{buffer}, offset);
   assert(base(iter.base()) == buffer);
   assert(base(cuda::std::move(iter).base()) == buffer);
 
-  static_assert(cuda::std::is_same_v<decltype(iter.base()), const random_access_iterator<int*>&>);
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::move(iter).base()), random_access_iterator<int*>>);
+  static_assert(cuda::std::is_same_v<decltype(iter.base()), const baseIter&>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::move(iter).base()), baseIter>);
 
   return true;
 }

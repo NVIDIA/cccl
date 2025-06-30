@@ -19,7 +19,7 @@
 __host__ __device__ constexpr bool test()
 {
   {
-    int buffer[8]      = {1, 2, 3, 4, 5, 6, 7, 8};
+    int buffer[]       = {1, 2, 3, 4, 5, 6, 7, 8};
     const int offset[] = {3, 4, 5};
 
     cuda::permutation_iterator iter1(buffer, offset);
@@ -83,8 +83,8 @@ __host__ __device__ constexpr bool test()
   }
 
   { // With different Offset iterators
-    int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-    int offset[]  = {3, 4, 5};
+    int buffer[] = {1, 2, 3, 4, 5, 6, 7, 8};
+    int offset[] = {3, 4, 5};
 
     cuda::permutation_iterator<int*, int*> iter1(buffer, offset);
     cuda::permutation_iterator<int*, const int*> iter2(buffer, cuda::std::as_const(offset) + 1);

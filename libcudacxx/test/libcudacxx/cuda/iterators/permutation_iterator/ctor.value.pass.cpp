@@ -17,12 +17,14 @@
 
 __host__ __device__ constexpr bool test()
 {
-  int buffer[8]      = {1, 2, 3, 4, 5, 6, 7, 8};
+  using baseIter     = random_access_iterator<int*>;
+  using indexIter    = random_access_iterator<const int*>;
+  int buffer[]       = {1, 2, 3, 4, 5, 6, 7, 8};
   const int offset[] = {2};
 
-  cuda::permutation_iterator iter(random_access_iterator<int*>{buffer}, random_access_iterator<const int*>{offset});
-  assert(iter.base() == random_access_iterator<int*>{buffer});
-  assert(iter.offset() == random_access_iterator<const int*>{offset});
+  cuda::permutation_iterator iter(baseIter{buffer}, indexIter{offset});
+  assert(iter.base() == baseIter{buffer});
+  assert(iter.index() == offset[0]);
 
   return true;
 }

@@ -16,26 +16,26 @@
 __host__ __device__ void test()
 {
   {
-    using Iter       = random_access_iterator<int*>;
-    using OffsetIter = cuda::permutation_iterator<Iter, Iter>;
-    using IterTraits = cuda::std::iterator_traits<OffsetIter>;
+    using baseIter             = random_access_iterator<int*>;
+    using permutation_iterator = cuda::permutation_iterator<baseIter, baseIter>;
+    using baseIterTraits       = cuda::std::iterator_traits<permutation_iterator>;
 
-    static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::same_as<IterTraits::value_type, int>);
-    static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::same_as<IterTraits::pointer, void>);
-    static_assert(cuda::std::same_as<IterTraits::reference, int&>);
+    static_assert(cuda::std::same_as<baseIterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<baseIterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<baseIterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<baseIterTraits::pointer, void>);
+    static_assert(cuda::std::same_as<baseIterTraits::reference, int&>);
   }
   { // still random access
-    using Iter       = contiguous_iterator<int*>;
-    using OffsetIter = cuda::permutation_iterator<Iter, Iter>;
-    using IterTraits = cuda::std::iterator_traits<OffsetIter>;
+    using baseIter             = contiguous_iterator<int*>;
+    using permutation_iterator = cuda::permutation_iterator<baseIter, baseIter>;
+    using baseIterTraits       = cuda::std::iterator_traits<permutation_iterator>;
 
-    static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::same_as<IterTraits::value_type, int>);
-    static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::same_as<IterTraits::pointer, void>);
-    static_assert(cuda::std::same_as<IterTraits::reference, int&>);
+    static_assert(cuda::std::same_as<baseIterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<baseIterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<baseIterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<baseIterTraits::pointer, void>);
+    static_assert(cuda::std::same_as<baseIterTraits::reference, int&>);
   }
 }
 
