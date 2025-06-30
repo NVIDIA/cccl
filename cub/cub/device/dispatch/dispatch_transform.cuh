@@ -415,7 +415,7 @@ struct dispatch_t<StableAddress,
     }
 
     const int ipt = [&] {
-      if CUB_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
+      if (Algorithm::vectorized == wrapped_policy.Algorithm())
       {
         if (can_vectorize)
         {
