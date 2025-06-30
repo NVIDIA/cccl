@@ -37,10 +37,6 @@ namespace cuda::experimental::stf
 class graph_ctx;
 class stream_ctx;
 
-enum class uses_static_sized_mdspan
-{
-};
-
 /**
  * @brief Description of a CUDA kernel
  *
@@ -72,60 +68,6 @@ struct cuda_kernel_desc
     // implementation needs pointers to the argument, so we cannot use
     // directly those passed in the pack of arguments
     auto arg_tuple = ::std::make_shared<TupleType>(std::forward<Args>(args)...);
-
-    // Ensure we are packing arguments of the proper types to call func
-    // FIXME, only valid if runtime API
-    // static_assert(::std::is_invocable_v<Fun, Args...>);
-
-    // Get the address of every tuple entry
-    ::std::apply(
-      [this](auto&... elems) {
-        // Push back the addresses of each tuple element into the args vector
-        ((args_ptr.push_back(static_cast<void*>(&elems))), ...);
-      },
-      *arg_tuple);
-
-    // Save the tuple in a typed erased value
-    arg_tuple_type_erased = mv(arg_tuple);
-  }
-
-  template <typename Fun, typename... Args>
-  cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, uses_static_sized_mdspan, Args... args)
-      : func_variant(store_func(mv(func)))
-      , gridDim(gridDim_)
-      , blockDim(blockDim_)
-      , sharedMem(sharedMem_)
-  {
-    auto adjust_arg = [](auto&& arg) {
-      using A = decltype(arg);
-
-#if 0
-      if constexpr (is_instance_of<A, ::cuda::std::mdspan>)
-      {
-        // Create a statically-sized mdspan with the same dimensionality
-        using static_mdspan = ::cuda::std::mdspan<
-          typename decltype(arg)::element_type,
-          static_extents<arg.rank()>,
-          typename decltype(arg)::layout_type>;
-        // Convert to a statically-sized mdspan
-        return static_mdspan(arg.data_handle());
-      }
-      else
-      {
-        // No processing necessary
-#endif
-      return ::std::forward<A>(arg);
-#if 0
-      }
-#endif
-    };
-
-    using TupleType = ::std::tuple<decltype(adjust_arg(::std::forward<Args>(args)))...>;
-
-    // We first copy all arguments into a tuple because the kernel
-    // implementation needs pointers to the argument, so we cannot use
-    // directly those passed in the pack of arguments
-    auto arg_tuple = ::std::make_shared<TupleType>(adjust_arg(::std::forward<Args>(args))...);
 
     // Ensure we are packing arguments of the proper types to call func
     // FIXME, only valid if runtime API
