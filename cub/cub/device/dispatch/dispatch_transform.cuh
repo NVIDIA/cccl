@@ -183,6 +183,11 @@ struct dispatch_t<StableAddress,
     _CCCL_ASSERT(block_threads % bulk_copy_align == 0, "block_threads needs to be a multiple of bulk_copy_alignment");
     // ^ then tile_size is a multiple of it
 
+    // workaround for MSVC, it gets confused about what can and what cannot be a constant expression if the
+    // static-ish assert inside the lambda calls member functions on wrapped_policy
+    CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = wrapped_policy.AlgorithmPolicy().MinItemsPerThread();
+    CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = wrapped_policy.AlgorithmPolicy().MaxItemsPerThread();
+
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
       int max_smem     = 0;
       const auto error = CubDebug(launcher_factory.MaxSharedMemory(max_smem));
@@ -192,17 +197,13 @@ struct dispatch_t<StableAddress,
       }
 
       // ensures the loop below runs at least once
-      CUB_DETAIL_STATIC_ISH_ASSERT(
-        wrapped_policy.AlgorithmPolicy().MinItemsPerThread() <= wrapped_policy.AlgorithmPolicy().MaxItemsPerThread(),
-        "invalid policy");
+      CUB_DETAIL_STATIC_ISH_ASSERT(min_items_per_thread <= max_items_per_thread, "invalid policy");
 
       elem_counts last_counts{};
       // Increase the number of output elements per thread until we reach the required bytes in flight.
       // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
 
-      for (int elem_per_thread = +wrapped_policy.AlgorithmPolicy().MinItemsPerThread();
-           elem_per_thread <= +wrapped_policy.AlgorithmPolicy().MaxItemsPerThread();
-           ++elem_per_thread)
+      for (int elem_per_thread = +min_items_per_thread; elem_per_thread <= +max_items_per_thread; ++elem_per_thread)
       {
         const int tile_size = block_threads * elem_per_thread;
         const int smem_size = smem_for_tile_size(tile_size);
