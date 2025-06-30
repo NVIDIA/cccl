@@ -105,7 +105,7 @@ template <class _Tp>
 }
 
 // fp64:
-_CCCL_API static inline double __internal_unsafe_exp_with_reduction(double __r, double* __ldexp_factor)
+[[nodiscard]] _CCCL_API static inline double __internal_unsafe_exp_with_reduction(double __r, double* __ldexp_factor) noexcept
 {
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
