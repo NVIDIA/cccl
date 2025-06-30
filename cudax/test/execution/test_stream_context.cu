@@ -49,6 +49,7 @@ void stream_context_test1()
 {
   ex::stream_context ctx{cuda::experimental::device_ref{0}};
   auto sched = ctx.get_scheduler();
+  static_assert(ex::__is_scheduler<decltype(sched)>);
 
   auto sndr = ex::schedule(sched) //
             | ex::then([] __host__ __device__() noexcept -> bool {
@@ -93,6 +94,7 @@ void stream_ref_as_scheduler()
   ex::thread_context tctx;
   cudax::stream sctx{cuda::experimental::device_ref{0}};
   auto sch = sctx.get_scheduler();
+  static_assert(ex::__is_scheduler<decltype(sch)>);
 
   auto start = //
     ex::schedule(sch) // begin work on the GPU
