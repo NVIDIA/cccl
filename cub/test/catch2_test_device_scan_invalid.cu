@@ -32,26 +32,25 @@ struct segment
   // Make sure that default constructed segments can not be merged
   OffsetT begin = cuda::std::numeric_limits<OffsetT>::min();
   OffsetT end   = cuda::std::numeric_limits<OffsetT>::max();
-};
 
 // Needed for final comparison with reference
-template <typename OffsetT>
-bool operator==(segment<OffsetT> left, segment<OffsetT> right)
+friend bool operator==(segment left, segment right)
 {
   return left.begin == right.begin && left.end == right.end;
 }
-template <typename OffsetT>
-std::ostream& operator<<(std::ostream& os, const segment<OffsetT>& seg)
+
+friend std::ostream& operator<<(std::ostream& os, const segment& seg)
 {
   return os << "[ " << seg.begin << ", " << seg.end << " )";
 }
+};
 
 // Needed for data input using fancy iterators
 template <typename OffsetT>
 struct tuple_to_segment_op
 {
   using seg_t = segment<OffsetT>;
-  __host__ __device__ seg_t operator()(thrust::tuple<OffsetT, OffsetT> interval)
+  __host__ __device__ seg_t operator()(cuda::std::tuple<OffsetT, OffsetT> interval)
   {
     const auto [begin, end] = interval;
     return {begin, end};
