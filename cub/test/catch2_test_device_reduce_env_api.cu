@@ -72,7 +72,7 @@ C2H_TEST("cub::DeviceReduce::Sum accepts determinism requirements", "[reduce][en
 
 C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
 {
-  // example-begin sum-env-sum-stream
+  // example-begin sum-env-stream
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 

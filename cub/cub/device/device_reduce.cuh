@@ -601,6 +601,10 @@ public:
 
     using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
 
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    using InitT = OutputT;
+
     // Query the required temporary storage size
     cudaError_t error = reduce_impl<tuning_t>(
       d_temp_storage,
@@ -609,7 +613,7 @@ public:
       d_out,
       num_items,
       ::cuda::std::plus<>{},
-      0,
+      InitT{}, // zero-initialize
       determinism_t{},
       stream.get());
     if (error != cudaSuccess)
@@ -632,7 +636,7 @@ public:
       d_out,
       num_items,
       ::cuda::std::plus<>{},
-      0,
+      InitT{}, // zero-initialize
       determinism_t{},
       stream.get());
 
