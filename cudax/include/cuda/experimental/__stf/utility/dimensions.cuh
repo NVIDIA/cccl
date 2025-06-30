@@ -34,6 +34,7 @@
 #endif // __CUDACC_RTC__
 
 #include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
+#include <cuda/experimental/__stf/utility/to_tuple.cuh>
 
 namespace cuda::experimental::stf
 {
