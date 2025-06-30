@@ -37,10 +37,10 @@ template <class _Tag>
 struct __tag_t
 {};
 
-struct __unknown_sender_t
+struct __no_tag_t
 {};
 
-_CCCL_API auto __tag_of(_CUDA_VSTD::__ignore_t) -> __unknown_sender_t;
+_CCCL_API auto __tag_of(_CUDA_VSTD::__ignore_t) -> __no_tag_t;
 
 template <class _Sndr>
 _CCCL_API auto __tag_of(const _Sndr& __sndr) -> tag_of_t<_Sndr>;
