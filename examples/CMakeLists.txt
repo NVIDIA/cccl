@@ -79,6 +79,18 @@ cccl_add_compile_test(
 cccl_add_compile_test(
   test_name
   cccl.example
+  nvrtc
+  "default"
+  CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
+  ${cmake_opts}
+  ${cmake_cpm_opts}
+)
+
+find_package(CUDAToolkit REQUIRED)
+
+cccl_add_compile_test(
+  test_name
+  cccl.example
   cudax_stf
   "default"
   CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
