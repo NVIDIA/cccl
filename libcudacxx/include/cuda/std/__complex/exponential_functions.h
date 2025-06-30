@@ -75,7 +75,7 @@ template <class _Tp>
 // A real exp that doesn't combine the final polynomial estimate with the ldexp factor.
 // Useful in cases where an extended-range exp is needed for intermediate calculations.
 // fp32
-_CCCL_API static inline float __internal_unsafe_exp_with_reduction(float __r, float* __ldexp_factor)
+[[nodiscard]] _CCCL_API static inline float __internal_unsafe_exp_with_reduction(float __r, float* __ldexp_factor) noexcept
 {
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
