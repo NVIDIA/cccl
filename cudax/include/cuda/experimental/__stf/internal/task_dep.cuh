@@ -292,7 +292,7 @@ public:
    * For example, `typename task_dep_vector<int, double>::type_at<1>` is `double`.
    */
   template <size_t i>
-  using type_at = ::std::tuple_element_t<i, ::std::tuple<Data...>>;
+  using type_at = ::cuda::std::tuple_element_t<i, ::cuda::std::tuple<Data...>>;
 
   /**
    * @brief Get the `task_dep` instantiation at position `i`.
@@ -308,15 +308,15 @@ public:
   }
 
   /**
-   * @brief Extracts physical data from this object to an `::std::tuple<Data...>` object.
+   * @brief Extracts physical data from this object to an `::cuda::std::tuple<Data...>` object.
    *
-   * @return ::std::tuple<Data...>
+   * @return ::cuda::std::tuple<Data...>
    *
    * The physical data extracted is usable only after the dependencies have been satisfied.
    */
-  ::std::tuple<Data...> instance(task& t)
+  ::cuda::std::tuple<Data...> instance(task& t)
   {
-    return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
+    return make_cuda_tuple_indexwise<sizeof...(Data)>([&](auto i) {
       return at<i>().instance(t);
     });
   }
