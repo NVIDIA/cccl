@@ -21,7 +21,6 @@ __host__ __device__ constexpr bool test()
   using permutation_iterator = cuda::permutation_iterator<random_access_iterator<int*>, random_access_iterator<int*>>;
   permutation_iterator iter;
   assert(iter.base() == random_access_iterator<int*>());
-  assert(iter.offset() == random_access_iterator<int*>());
 
   static_assert(cuda::std::is_copy_constructible_v<permutation_iterator>);
   static_assert(cuda::std::is_move_constructible_v<permutation_iterator>);

@@ -69,7 +69,7 @@ TEST_CASE("permutation_iterator", "[iterators]")
     thrust::device_vector<int> off{5, 2, 7, 0};
     thrust::device_vector<int> res{-1, -1, -1, -1, -1};
     thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
-                 cuda::permutation_iterator{vec.end(), off.end()},
+                 cuda::permutation_iterator{vec.begin(), off.end()},
                  res.begin());
     CHECK(res == thrust::device_vector<int>{6, 3, 8, 1, -1});
   }
@@ -79,7 +79,7 @@ TEST_CASE("permutation_iterator", "[iterators]")
     thrust::host_vector<int> off{5, 2, 7, 0};
     thrust::host_vector<int> res{-1, -1, -1, -1, -1};
     thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
-                 cuda::permutation_iterator{vec.end(), off.end()},
+                 cuda::permutation_iterator{vec.begin(), off.end()},
                  res.begin());
     CHECK(res == thrust::host_vector<int>{6, 3, 8, 1, -1});
   }
@@ -89,7 +89,7 @@ TEST_CASE("permutation_iterator", "[iterators]")
     std::vector<int> off{5, 2, 7, 0};
     std::vector<int> res{-1, -1, -1, -1, -1};
     thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
-                 cuda::permutation_iterator{vec.end(), off.end()},
+                 cuda::permutation_iterator{vec.begin(), off.end()},
                  res.begin());
     CHECK(res == std::vector<int>{6, 3, 8, 1, -1});
   }

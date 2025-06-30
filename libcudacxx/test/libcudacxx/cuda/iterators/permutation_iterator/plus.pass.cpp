@@ -19,11 +19,12 @@
 
 __host__ __device__ constexpr bool test()
 {
-  int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  int buffer[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
   { // operator+(iter_difference_t<I> n)
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, const int*>;
+      using indexIter            = const int*;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
       permutation_iterator iter(buffer, offset);
@@ -34,8 +35,9 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(iter + diff));
     }
 
-    {
-      using permutation_iterator = cuda::permutation_iterator<int*, const int*>;
+    { // const iter
+      using indexIter            = const int*;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
       const permutation_iterator iter(buffer, offset);
@@ -47,24 +49,26 @@ __host__ __device__ constexpr bool test()
     }
 
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, random_access_iterator<const int*>>;
+      using indexIter            = random_access_iterator<const int*>;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
-      permutation_iterator iter(buffer, random_access_iterator<const int*>{offset});
-      assert(iter + diff == permutation_iterator(buffer, random_access_iterator<const int*>{offset + diff}));
-      assert(iter + 0 == permutation_iterator(buffer, random_access_iterator<const int*>{offset}));
+      permutation_iterator iter(buffer, indexIter{offset});
+      assert(iter + diff == permutation_iterator(buffer, indexIter{offset + diff}));
+      assert(iter + 0 == permutation_iterator(buffer, indexIter{offset}));
 
       static_assert(cuda::std::is_same_v<decltype(iter + 2), permutation_iterator>);
       static_assert(!noexcept(iter + diff));
     }
 
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, random_access_iterator<const int*>>;
+      using indexIter            = random_access_iterator<const int*>;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
-      const permutation_iterator iter(buffer, random_access_iterator<const int*>{offset});
-      assert(iter + diff == permutation_iterator(buffer, random_access_iterator<const int*>{offset + diff}));
-      assert(iter + 0 == permutation_iterator(buffer, random_access_iterator<const int*>{offset}));
+      const permutation_iterator iter(buffer, indexIter{offset});
+      assert(iter + diff == permutation_iterator(buffer, indexIter{offset + diff}));
+      assert(iter + 0 == permutation_iterator(buffer, indexIter{offset}));
 
       static_assert(cuda::std::is_same_v<decltype(iter + 2), permutation_iterator>);
       static_assert(!noexcept(iter + diff));
@@ -73,7 +77,8 @@ __host__ __device__ constexpr bool test()
 
   { // operator+(iter_difference_t<I> n, const permutation_iterator& x)
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, const int*>;
+      using indexIter            = const int*;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
       permutation_iterator iter(buffer, offset);
@@ -85,7 +90,8 @@ __host__ __device__ constexpr bool test()
     }
 
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, const int*>;
+      using indexIter            = const int*;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
       const permutation_iterator iter(buffer, offset);
@@ -97,24 +103,26 @@ __host__ __device__ constexpr bool test()
     }
 
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, random_access_iterator<const int*>>;
+      using indexIter            = random_access_iterator<const int*>;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
-      permutation_iterator iter(buffer, random_access_iterator<const int*>{offset});
-      assert(diff + iter == permutation_iterator(buffer, random_access_iterator<const int*>{offset + diff}));
-      assert(0 + iter == permutation_iterator(buffer, random_access_iterator<const int*>{offset}));
+      permutation_iterator iter(buffer, indexIter{offset});
+      assert(diff + iter == permutation_iterator(buffer, indexIter{offset + diff}));
+      assert(0 + iter == permutation_iterator(buffer, indexIter{offset}));
 
       static_assert(cuda::std::is_same_v<decltype(iter + 2), permutation_iterator>);
       static_assert(!noexcept(diff + iter));
     }
 
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, random_access_iterator<const int*>>;
+      using indexIter            = random_access_iterator<const int*>;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
-      const permutation_iterator iter(buffer, random_access_iterator<const int*>{offset});
-      assert(diff + iter == permutation_iterator(buffer, random_access_iterator<const int*>{offset + diff}));
-      assert(0 + iter == permutation_iterator(buffer, random_access_iterator<const int*>{offset}));
+      const permutation_iterator iter(buffer, indexIter{offset});
+      assert(diff + iter == permutation_iterator(buffer, indexIter{offset + diff}));
+      assert(0 + iter == permutation_iterator(buffer, indexIter{offset}));
 
       static_assert(cuda::std::is_same_v<decltype(iter + 2), permutation_iterator>);
       static_assert(!noexcept(diff + iter));
@@ -123,7 +131,8 @@ __host__ __device__ constexpr bool test()
 
   { // operator+=(iter_difference_t<I> n)
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, const int*>;
+      using indexIter            = const int*;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
       permutation_iterator iter(buffer, offset);
@@ -135,12 +144,13 @@ __host__ __device__ constexpr bool test()
     }
 
     {
-      using permutation_iterator = cuda::permutation_iterator<int*, random_access_iterator<const int*>>;
+      using indexIter            = random_access_iterator<const int*>;
+      using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
       const int diff             = 3;
-      permutation_iterator iter(buffer, random_access_iterator<const int*>{offset});
-      assert((iter += 0) == permutation_iterator(buffer, random_access_iterator<const int*>{offset}));
-      assert((iter += diff) == permutation_iterator(buffer, random_access_iterator<const int*>{offset + diff}));
+      permutation_iterator iter(buffer, indexIter{offset});
+      assert((iter += 0) == permutation_iterator(buffer, indexIter{offset}));
+      assert((iter += diff) == permutation_iterator(buffer, indexIter{offset + diff}));
 
       static_assert(cuda::std::is_same_v<decltype(iter += 2), permutation_iterator&>);
       static_assert(!noexcept(iter += diff));

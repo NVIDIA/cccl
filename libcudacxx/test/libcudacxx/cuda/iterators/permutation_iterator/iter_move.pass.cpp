@@ -19,10 +19,11 @@
 
 __host__ __device__ constexpr bool test()
 {
-  int buffer[8]      = {1, 2, 3, 4, 5, 6, 7, 8};
+  using baseIter     = random_access_iterator<int*>;
+  using indexIter    = random_access_iterator<const int*>;
+  int buffer[]       = {1, 2, 3, 4, 5, 6, 7, 8};
   const int offset[] = {2};
-  auto iter =
-    cuda::permutation_iterator{random_access_iterator<int*>{buffer}, random_access_iterator<const int*>{offset}};
+  auto iter          = cuda::permutation_iterator{baseIter{buffer}, indexIter{offset}};
   assert(cuda::std::ranges::iter_move(iter) == buffer[*offset]);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::iter_move(iter)), int&&>);
 

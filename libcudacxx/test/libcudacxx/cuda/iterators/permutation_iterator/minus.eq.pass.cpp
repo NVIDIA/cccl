@@ -17,21 +17,20 @@
 
 __host__ __device__ constexpr bool test()
 {
-  int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  int buffer[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
   {
-    using offset_iter  = cuda::permutation_iterator<int*, random_access_iterator<const int*>>;
-    const int offset[] = {4, 3, 2, 5};
-    const int diff     = 2;
+    using indexIter            = random_access_iterator<const int*>;
+    using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
+    const int offset[]         = {4, 3, 2, 5};
+    const int diff             = 2;
 
-    const random_access_iterator<const int*> off{offset};
+    permutation_iterator iter(buffer, indexIter{offset + 3});
+    assert((iter -= diff) == permutation_iterator(buffer, indexIter{offset + 1}));
+    assert((iter -= 0) == permutation_iterator(buffer, indexIter{offset + 1}));
+    assert(iter.index() == offset[1]);
 
-    offset_iter iter(buffer, off + 3);
-    assert((iter -= diff) == offset_iter(buffer, off + 1));
-    assert((iter -= 0) == offset_iter(buffer, off + 1));
-    assert(iter.offset() == off + 1);
-
-    static_assert(cuda::std::is_same_v<decltype(iter -= 2), offset_iter&>);
+    static_assert(cuda::std::is_same_v<decltype(iter -= 2), permutation_iterator&>);
 
     // The test iterators are not noexcept
     static_assert(!noexcept(iter -= diff));

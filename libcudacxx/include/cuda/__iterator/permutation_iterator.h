@@ -45,11 +45,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! This iterator takes two arguments:
 //!
 //!   - an iterator to the range \c V on which the "permutation" will be applied
-//!   - the reindexing scheme that defines how the elements of \c V will be permuted.
+//!   - an iterator to a range of indices defining the reindexing scheme that determines how the elements of \c V will
+//!   be permuted.
 //!
 //! Note that \p permutation_iterator is not limited to strict permutations of the given range \c V. The distance
 //! between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range \c V,
-//! in which case the \p permutation_iterator only provides a "permutation" of a subrange of \c V. The indices do not
+//! in which case the \p permutation_iterator only provides a "permutation" of a subset of \c V. The indices do not
 //! need to be unique. In this same context, it must be noted that the past-the-end \p permutation_iterator is
 //! completely defined by means of the past-the-end iterator to the indices.
 //!
@@ -84,12 +85,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //!
 //! // values is now {10, -1, -1, -1, 50, 60, -1, 80}
 //! @endcode
-template <class _Iter, class _Offset = _Iter>
+template <class _Iter, class _Index = _Iter>
 class permutation_iterator
 {
 private:
-  _Iter __iter_     = {};
-  _Offset __offset_ = {};
+  _Iter __iter_   = {};
+  _Index __index_ = {};
+
+  //! @brief Returns a const reference to the index iterator
+  [[nodiscard]] _CCCL_API constexpr const _Index& __index() const noexcept
+  {
+    return __index_;
+  }
 
   // We need to factor these out because old gcc chokes with using arguments in friend functions
   template <class _Iter1>
@@ -109,159 +116,153 @@ private:
     noexcept(_CUDA_VSTD::declval<_Iter1>() >= _CUDA_VSTD::declval<_Iter2>());
 
 public:
-  using iterator_type         = _Iter;
-  using iterator_concept      = _CUDA_VSTD::random_access_iterator_tag;
-  using iterator_category     = _CUDA_VSTD::random_access_iterator_tag;
-  using value_type            = _CUDA_VSTD::iter_value_t<_Iter>;
-  using difference_type       = _CUDA_VSTD::iter_difference_t<_Iter>;
-  using __offset_value_t      = _CUDA_VSTD::iter_value_t<_Offset>;
-  using __offset_difference_t = _CUDA_VSTD::iter_difference_t<_Offset>;
+  using iterator_type        = _Iter;
+  using iterator_concept     = _CUDA_VSTD::random_access_iterator_tag;
+  using iterator_category    = _CUDA_VSTD::random_access_iterator_tag;
+  using value_type           = _CUDA_VSTD::iter_value_t<_Iter>;
+  using difference_type      = _CUDA_VSTD::iter_difference_t<_Iter>;
+  using __index_value_t      = _CUDA_VSTD::iter_value_t<_Index>;
+  using __index_difference_t = _CUDA_VSTD::iter_difference_t<_Index>;
 
   //! Ensure that the user passes an iterator to something interger_like
-  static_assert(_CUDA_VSTD::__integer_like<__offset_value_t>,
-                "cuda::permutation_iterator: _Offset must be an iterator to integer_like");
+  static_assert(_CUDA_VSTD::__integer_like<__index_value_t>,
+                "cuda::permutation_iterator: _Index must be an iterator to integer_like");
 
-  //! Ensure that the offset value_type is convertible to difference_type
-  static_assert(_CUDA_VSTD::is_convertible_v<__offset_value_t, difference_type>,
-                "cuda::permutation_iterator: _Offsets value type must be convertible to iter_difference<Iter>");
+  //! Ensure that the index value_type is convertible to difference_type
+  static_assert(_CUDA_VSTD::is_convertible_v<__index_value_t, difference_type>,
+                "cuda::permutation_iterator: _Indexs value type must be convertible to iter_difference<Iter>");
 
-  //! To actually use operator+ we need the offset iterator to be random access
-  static_assert(_CUDA_VSTD::random_access_iterator<_Offset>,
-                "cuda::permutation_iterator: _Offset must be a random access iterator!");
+  //! To actually use operator+ we need the index iterator to be random access
+  static_assert(_CUDA_VSTD::random_access_iterator<_Index>,
+                "cuda::permutation_iterator: _Index must be a random access iterator!");
 
   //! To actually use operator+ we need the base iterator to be random access
   static_assert(_CUDA_VSTD::random_access_iterator<_Iter>,
                 "cuda::permutation_iterator: _Iter must be a random access iterator!");
 
-  //! @brief Default constructs an \p permutation_iterator with a value initialized iterator and offset
+  //! @brief Default constructs an \p permutation_iterator with a value initialized iterator and index
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI constexpr permutation_iterator() = default;
 
-  //! @brief Constructs an \p permutation_iterator from an iterator and an optional offset
-  //! @param __iter The iterator to to offset from
-  //! @param __offset The iterator with the permutations
+  //! @brief Constructs an \p permutation_iterator from an iterator and an optional index
+  //! @param __iter The iterator to to index from
+  //! @param __index The iterator with the permutations
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr permutation_iterator(_Iter __iter, _Offset __offset) noexcept(
-    _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+  _CCCL_API constexpr permutation_iterator(_Iter __iter, _Index __index) noexcept(
+    _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
       : __iter_(__iter)
-      , __offset_(__offset)
+      , __index_(__index)
   {}
 
-  //! @brief Returns a const reference to the stored iterator we are offsetting from
+  //! @brief Returns a const reference to the stored iterator we are indexing from
   [[nodiscard]] _CCCL_API constexpr const _Iter& base() const& noexcept
   {
     return __iter_;
   }
 
-  //! @brief Extracts the stored iterator we are offsetting from
+  //! @brief Extracts the stored iterator we are indexing from
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Iter>)
   {
     return _CUDA_VSTD::move(__iter_);
   }
 
-  //! @brief Returns a const reference to the offset iterator
-  [[nodiscard]] _CCCL_API constexpr const _Offset& offset() const& noexcept
-  {
-    return __offset_;
-  }
-
-  //! @brief Extracts the stored iterator we are offsetting from
+  //! @brief Returns a const reference to the index iterator
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Offset offset() && noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Offset>)
+  [[nodiscard]] _CCCL_API constexpr difference_type index() const noexcept
   {
-    return _CUDA_VSTD::move(__offset_);
+    return *__index_;
   }
 
-  //! @brief Dereferences the stored iterator offset by \p *__offset_
-  //! @returns __iter_[*__offset_]
+  //! @brief Dereferences the stored iterator offset by \c index()
+  //! @returns __iter_[index()]
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
-  operator*() noexcept(noexcept(__iter_[static_cast<difference_type>(*__offset_)]))
+  operator*() noexcept(noexcept(__iter_[static_cast<difference_type>(*__index_)]))
   {
-    return __iter_[static_cast<difference_type>(*__offset_)];
+    return __iter_[static_cast<difference_type>(*__index_)];
   }
 
-  //! @brief Dereferences the stored iterator offset by \p *__offset_
-  //! @returns __iter_[*__offset_]
+  //! @brief Dereferences the stored iterator offset by \p index()
+  //! @returns __iter_[index()]
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::__dereferenceable<const _Iter2>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
-    noexcept(noexcept(__iter_[static_cast<difference_type>(*__offset_)]))
+    noexcept(noexcept(__iter_[static_cast<difference_type>(*__index_)]))
   {
-    return __iter_[static_cast<difference_type>(*__offset_)];
+    return __iter_[static_cast<difference_type>(*__index_)];
   }
 
   //! @brief Subscripts the stored iterator by \p __n
   //! @param __n The additional offset
-  //! @returns __iter_[__offset_[__n]]
+  //! @returns __iter_[__index_[__n]]
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
-  operator[](difference_type __n) noexcept(noexcept(__iter_[static_cast<difference_type>(__offset_[__n])]))
+  operator[](difference_type __n) noexcept(noexcept(__iter_[static_cast<difference_type>(__index_[__n])]))
   {
-    return __iter_[static_cast<difference_type>(__offset_[__n])];
+    return __iter_[static_cast<difference_type>(__index_[__n])];
   }
 
   //! @brief Subscripts the stored iterator by \p __n
   //! @param __n The additional offset
-  //! @returns __iter_[__offset_[__n]]
+  //! @returns __iter_[__index_[__n]]
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::__dereferenceable<const _Iter2>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
-    noexcept(noexcept(__iter_[static_cast<difference_type>(__offset_[__n])]))
+    noexcept(noexcept(__iter_[static_cast<difference_type>(__index_[__n])]))
   {
-    return __iter_[static_cast<difference_type>(__offset_[__n])];
+    return __iter_[static_cast<difference_type>(__index_[__n])];
   }
 
-  //! @brief Increments the stored offset iterator
+  //! @brief Increments the stored index iterator
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr permutation_iterator& operator++() noexcept(noexcept(++__offset_))
+  _CCCL_API constexpr permutation_iterator& operator++() noexcept(noexcept(++__index_))
   {
-    ++__offset_;
+    ++__index_;
     return *this;
   }
 
-  //! @brief Increments the stored offset iterator
+  //! @brief Increments the stored index iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator operator++(int) noexcept(
-    noexcept(++__offset_)
-    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+    noexcept(++__index_)
+    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
     permutation_iterator __tmp = *this;
-    ++__offset_;
+    ++__index_;
     return __tmp;
   }
 
-  //! @brief Decrements the stored offset iterator
+  //! @brief Decrements the stored index iterator
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr permutation_iterator& operator--() noexcept(noexcept(--__offset_))
+  _CCCL_API constexpr permutation_iterator& operator--() noexcept(noexcept(--__index_))
   {
-    --__offset_;
+    --__index_;
     return *this;
   }
 
-  //! @brief Decrements the stored offset iterator
+  //! @brief Decrements the stored index iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator operator--(int) noexcept(
-    noexcept(--__offset_)
-    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+    noexcept(--__index_)
+    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
     permutation_iterator __tmp = *this;
-    --__offset_;
+    --__index_;
     return __tmp;
   }
 
-  //! @brief Advances the stored offset iterator by \p __n
+  //! @brief Advances the stored index iterator by \p __n
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr permutation_iterator operator+(difference_type __n) const
-    noexcept(noexcept(__offset_ + static_cast<__offset_difference_t>(__n))
+    noexcept(noexcept(__index_ + static_cast<__index_difference_t>(__n))
              && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
-             && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+             && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
-    return permutation_iterator{__iter_, __offset_ + static_cast<__offset_difference_t>(__n)};
+    return permutation_iterator{__iter_, __index_ + static_cast<__index_difference_t>(__n)};
   }
 
   //! @brief Returns a copy of \p __x advanced by \p __n
@@ -270,8 +271,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(difference_type __n, const permutation_iterator& __x) noexcept(
-    noexcept(__offset_ + static_cast<__offset_difference_t>(__n))
-    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+    noexcept(__index_ + static_cast<__index_difference_t>(__n))
+    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
     return __x + __n;
   }
@@ -280,9 +281,9 @@ public:
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator&
-  operator+=(difference_type __n) noexcept(noexcept(__offset_ += static_cast<__offset_difference_t>(__n)))
+  operator+=(difference_type __n) noexcept(noexcept(__index_ += static_cast<__index_difference_t>(__n)))
   {
-    __offset_ += static_cast<__offset_difference_t>(__n);
+    __index_ += static_cast<__index_difference_t>(__n);
     return *this;
   }
 
@@ -290,29 +291,31 @@ public:
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr permutation_iterator operator-(difference_type __n) const
-    noexcept(noexcept(__offset_ - static_cast<__offset_difference_t>(__n))
+    noexcept(noexcept(__index_ - static_cast<__index_difference_t>(__n))
              && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
-             && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+             && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
-    return permutation_iterator{__iter_, __offset_ - static_cast<__offset_difference_t>(__n)};
+    return permutation_iterator{__iter_, __index_ - static_cast<__index_difference_t>(__n)};
   }
 
   //! @brief Decrements the \c permutation_iterator by \p __n
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator&
-  operator-=(difference_type __n) noexcept(noexcept(__offset_ -= static_cast<__offset_difference_t>(__n)))
+  operator-=(difference_type __n) noexcept(noexcept(__index_ -= static_cast<__index_difference_t>(__n)))
   {
-    __offset_ -= static_cast<__offset_difference_t>(__n);
+    __index_ -= static_cast<__index_difference_t>(__n);
     return *this;
   }
 
-  //! @brief Returns the difference in offset between two \c permutation_iterators. Returns distance between offsets
+  //! @brief Returns the difference in index between two \c permutation_iterators. Returns distance between indices
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr difference_type operator-(
-    const permutation_iterator& __lhs, const permutation_iterator& __rhs) noexcept(__nothrow_difference<_Offset>)
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
+  operator-(const permutation_iterator& __lhs, const permutation_iterator& __rhs) noexcept(__nothrow_difference<_Index>)
   {
-    return __lhs.__offset_ - __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator-(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ - __rhs.__index();
   }
 
   //! @brief Compares two \c permutation_iterator for equality, by comparing the memory location they point at
@@ -321,9 +324,11 @@ public:
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(
     const permutation_iterator& __lhs,
-    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_equality<_Offset, _OtherOffset>)
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_equality<_Index, _OtherOffset>)
   {
-    return __lhs.__offset_ == __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator==(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ == __rhs.__index();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -333,9 +338,11 @@ public:
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool operator!=(
     const permutation_iterator& __lhs,
-    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_equality<_Offset, _OtherOffset>)
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_equality<_Index, _OtherOffset>)
   {
-    return !(__lhs.__offset_ == __rhs.offset());
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator!=(): Both permutation_iterator's must point to the same base array!");
+    return !(__lhs.__index_ == __rhs.__index());
   }
 #endif // _CCCL_STD_VER <= 2017
 
@@ -347,74 +354,84 @@ public:
   //! they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
-  _CCCL_REQUIRES(_CUDA_VSTD::three_way_comparable_with<_Offset, _OtherOffset>)
+  _CCCL_REQUIRES(_CUDA_VSTD::three_way_comparable_with<_Index, _OtherOffset>)
   [[nodiscard]] _CCCL_API friend constexpr strong_ordering operator<=>(
     const permutation_iterator& __lhs,
-    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_three_way<_Offset, _OtherOffset>)
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_three_way<_Index, _OtherOffset>)
   {
-    return __lhs.__offset_ <=> __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator<=>(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ <=> __rhs.__index();
   }
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   //! @brief Compares two \c permutation_iterator for less than, by comparing the memory location they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Offset, _OtherOffset>)
+  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
   [[nodiscard]] _CCCL_API friend constexpr bool operator<(
     const permutation_iterator& __lhs,
-    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_less_than<_Offset, _OtherOffset>)
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_less_than<_Index, _OtherOffset>)
   {
-    return __lhs.__offset_ < __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator<(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ < __rhs.__index();
   }
 
   //! @brief Compares two \c permutation_iterator for less equal, by comparing the memory location they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Offset, _OtherOffset>)
+  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
   [[nodiscard]] _CCCL_API friend constexpr bool operator<=(
     const permutation_iterator& __lhs,
-    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_less_equal<_Offset, _OtherOffset>)
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_less_equal<_Index, _OtherOffset>)
   {
-    return __lhs.__offset_ <= __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator<=(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ <= __rhs.__index();
   }
 
   //! @brief Compares two \c permutation_iterator for greater than, by comparing the memory location they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Offset, _OtherOffset>)
+  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
   [[nodiscard]] _CCCL_API friend constexpr bool operator>(
     const permutation_iterator& __lhs,
-    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_greater_than<_Offset, _OtherOffset>)
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_greater_than<_Index, _OtherOffset>)
   {
-    return __lhs.__offset_ > __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator>(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ > __rhs.__index();
   }
 
   //! @brief Compares two \c permutation_iterator for greater equal, by comparing the memory location they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Offset, _OtherOffset>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator>=(const permutation_iterator& __lhs, const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(
-    __nothrow_greater_equal<_Offset, _OtherOffset>)
+  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(
+    const permutation_iterator& __lhs,
+    const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_greater_equal<_Index, _OtherOffset>)
   {
-    return __lhs.__offset_ >= __rhs.offset();
+    _CCCL_ASSERT(__lhs.__iter_ == __rhs.base(),
+                 "permutation_iterator::operator=>(): Both permutation_iterator's must point to the same base array!");
+    return __lhs.__index_ >= __rhs.__index();
   }
 };
 
-_CCCL_TEMPLATE(class _Iter, class _Offset)
-_CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter> _CCCL_AND _CUDA_VSTD::random_access_iterator<_Offset>)
-_CCCL_HOST_DEVICE permutation_iterator(_Iter, _Offset) -> permutation_iterator<_Iter, _Offset>;
+_CCCL_TEMPLATE(class _Iter, class _Index)
+_CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter> _CCCL_AND _CUDA_VSTD::random_access_iterator<_Index>)
+_CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
 
-//! @brief Creates an \c permutation_iterator from an iterator and an iterator to an integral offset
+//! @brief Creates an \c permutation_iterator from an iterator and an iterator to an integral index
 //! @param __iter The iterator
-//! @param __offset The iterator to an integral offset
-_CCCL_TEMPLATE(class _Iter, class _Offset)
-_CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter> _CCCL_AND _CUDA_VSTD::random_access_iterator<_Offset>)
-[[nodiscard]] _CCCL_API constexpr permutation_iterator<_Iter, _Offset>
-make_permutation_iterator(_Iter __iter, _Offset __offset) noexcept(
-  _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Offset>)
+//! @param __index The iterator to an integral index
+_CCCL_TEMPLATE(class _Iter, class _Index)
+_CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter> _CCCL_AND _CUDA_VSTD::random_access_iterator<_Index>)
+[[nodiscard]] _CCCL_API constexpr permutation_iterator<_Iter, _Index>
+make_permutation_iterator(_Iter __iter, _Index __index) noexcept(
+  _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
 {
-  return permutation_iterator<_Iter, _Offset>{__iter, __offset};
+  return permutation_iterator<_Iter, _Index>{__iter, __index};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
