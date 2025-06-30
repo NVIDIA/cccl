@@ -18,6 +18,7 @@ from types import SimpleNamespace
 from typing import Any, Optional
 
 from numba.core import ir, ir_utils, types
+from numba.core.extending import overload
 from numba.core.rewrites import Rewrite, register_rewrite
 from numba.core.typing.templates import (
     AbstractTemplate,
@@ -531,9 +532,13 @@ class CoopLoadStoreNode(CoopNode):
         return (g_assign, new_assign)
 
     def rewrite_two_phase(self, rewriter):
+        # N.B. I tried valiantly to avoid duplicating the code from
+        # single-phase here; after all, we've already got an instance of the
+        # primitive created, so we should be able to reuse it.  However, try
+        # as I might, I couldn't get the lowering to kick in with all the
+        # other attempted variants.
         instance = self.two_phase_instance
         algo = instance.specialization
-        print(f'Codegen & overload {instance!r}')
 
         # Create the codegens for the algorithm
         self.codegens = algo.create_codegens()
@@ -601,6 +606,8 @@ class CoopLoadStoreNode(CoopNode):
 
         self.calltypes[new_call] = sig
 
+        call_name = self.call_var_name
+
         @register_global(wrapper_func)
         class ImplDecl(AbstractTemplate):
             key = wrapper_func
@@ -639,27 +646,8 @@ class CoopLoadStoreNode(CoopNode):
 
         return (g_assign, new_assign)
 
-        def codegen(context, builder, sig, args):
-            cg = self.codegen
-            (_, codegen_method) = cg.intrinsic_impl()
-            res = codegen_method(context, builder, sig, args)
 
-            # Add all the LTO-IRs to the current code library.
-            lib = context.active_code_library
-            algo = self.instance.specialization
-            # algo.generate_source(node.threads)
-            for ltoir in algo.lto_irs:
-                lib.add_linking_file(ltoir)
-
-            return res
-
-        func = lower_builtin(instance, types.VarArg(types.Any))
-        func(codegen)
-
-        return ()
-
-
-    def rewrite_two_phase_old2(self, rewriter):
+    def rewrite_two_phase_old4(self, rewriter):
         instance = self.two_phase_instance
         algo = instance.specialization
         #invocable = instance.invocable
@@ -667,6 +655,14 @@ class CoopLoadStoreNode(CoopNode):
         # @register_global needs our invocable to have a __name__ attribute.
         #invocable.__name__ = invocable_name
         self.codegens = algo.create_codegens()
+        print(f'Entered rewrite_two_phase for {instance!r}')
+
+        # This will select the correct codegen based on whether or not implicit
+        # temp storage is used.
+        cg = self.codegen
+
+        #overload(instance, target="cuda")(cg.wrapped_algorithm_impl)
+        return ()
 
         def codegen(context, builder, sig, args):
             cg = self.codegen
@@ -1405,6 +1401,11 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 two_phase_instance=two_phase_instance,
             )
 
+            if two_phase_instance is not None:
+                # Register the node with the two-phase instance so we can
+                # access it during lowering.
+                two_phase_instance.node = node
+
             target_name = node.target.name
             assert target_name not in self.nodes, target_name
             self.nodes[target_name] = node
@@ -1435,38 +1436,87 @@ class BaseCooperativeNodeRewriter(Rewrite):
         return new_block
 
 
+# Register data models for two-phase instance types
+from ._decls import (
+    CoopBlockLoadInstanceType,
+    CoopBlockStoreInstanceType,
+)
+from numba.core.extending import models, register_model
+from numba.core import types
+
+@register_model(CoopBlockLoadInstanceType)
+class CoopBlockLoadInstanceModel(models.OpaqueModel):
+    def __init__(self, *args, **kwds):
+        super().__init__(*args, **kwds)
+        msg = (
+            'CoopBlockLoadInstanceModel.__init__('
+            f'{args!r}, {kwds!r}) called'
+        )
+        print(msg)
+
+@register_model(CoopBlockStoreInstanceType)
+class CoopBlockStoreInstanceModel(models.OpaqueModel):
+    def __init__(self, *args, **kwds):
+        super().__init__(*args, **kwds)
+        msg = (
+            'CoopBlockStoreInstanceModel.__init__('
+            f'{args!r}, {kwds!r}) called'
+        )
+        print(msg)
+
+@lower_constant(CoopBlockLoadInstanceType)
+def lower_constant_block_load_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+@lower_builtin(CoopBlockLoadInstanceType,
+               types.VarArg(types.Any))
+def codegen_block_load(context, builder, sig, args):
+    print(f'codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})')
+    inst_val, d_in_val, tmp_val = args          # inst_val == dummy
+
+    # Grab the per-instance data you saved in phase-1
+    inst_typ = sig.args[0]
+    spec     = inst_typ.specialization          # or .layout, .dtype…
+
+    # Dispatch to your existing generator
+    cg = spec.create_codegens()
+    return cg.emit_load(context, builder, sig, (d_in_val, tmp_val))
+
+@lower_builtin('call',
+               CoopBlockLoadInstanceType,
+               types.Array,
+               types.Array)
+def codegen_block_load_2(context, builder, sig, args):
+    print(f'codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})')
+    inst_val, d_in_val, tmp_val = args          # inst_val == dummy
+
+    # Grab the per-instance data you saved in phase-1
+    inst_typ = sig.args[0]
+    spec     = inst_typ.specialization          # or .layout, .dtype…
+
+    # Dispatch to your existing generator
+    cg = spec.create_codegens()
+    return cg.emit_load(context, builder, sig, (d_in_val, tmp_val))
+
+
+
+@lower_constant(CoopBlockStoreInstanceType)
+def lower_constant_block_store_instance_type(context, builder, typ, value):
+    # For two-phase instances, return a dummy opaque value since the actual
+    # lowering will be handled by the registered function lowering
+    msg = (
+        'lower_constant_block_store_instance_type('
+        f'{context!r}, {builder!r}, {typ!r}, {value!r}) called'
+    )
+    print(msg)
+    return context.get_dummy_value()
+
+# Note: Function call lowering for two-phase instances is now handled
+# by creating wrapper functions in the rewrite_two_phase method
+
 def _init_rewriter():
     # Dummy function that allows us to do the following in `_init_extension`:
     # from ._rewrite import _init_rewriter
     # _init_rewriter()
+    pass
 
-    # Register data models for two-phase instance types
-    from ._decls import (
-        CoopBlockLoadInstanceType,
-        CoopBlockStoreInstanceType,
-    )
-    from numba.core.extending import models, register_model
-    from numba.core import types
-
-    @register_model(CoopBlockLoadInstanceType)
-    class CoopBlockLoadInstanceModel(models.OpaqueModel):
-        pass
-
-    @register_model(CoopBlockStoreInstanceType)
-    class CoopBlockStoreInstanceModel(models.OpaqueModel):
-        pass
-
-    @lower_constant(CoopBlockLoadInstanceType)
-    def lower_constant_block_load_instance_type(context, builder, typ, value):
-        # For two-phase instances, return a dummy opaque value since the actual
-        # lowering will be handled by the registered function lowering
-        return context.get_dummy_value()
-
-    @lower_constant(CoopBlockStoreInstanceType)
-    def lower_constant_block_store_instance_type(context, builder, typ, value):
-        # For two-phase instances, return a dummy opaque value since the actual
-        # lowering will be handled by the registered function lowering
-        return context.get_dummy_value()
-
-    # Note: Function call lowering for two-phase instances is now handled
-    # by creating wrapper functions in the rewrite_two_phase method
