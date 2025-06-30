@@ -31,7 +31,7 @@
 
 #if !_CCCL_CUDA_COMPILER(NVRTC)
 #  include <math.h>
-#endif // _CCCL_CUDA_COMPILER(NVRTC)
+#endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 

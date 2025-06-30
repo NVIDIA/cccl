@@ -46,12 +46,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
       {
         return _CUDA_VSTD::fmin(__lhs, __rhs);
       }
-      return __lhs < __rhs || _CUDA_VSTD::isnan(__rhs) ? __lhs : __rhs;
+      if (_CUDA_VSTD::isnan(__rhs))
+      {
+        return __lhs;
+      }
     }
-    else
-    {
-      return (__lhs < __rhs) ? __lhs : __rhs;
-    }
+    return (__lhs < __rhs) ? __lhs : __rhs;
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minimum);

@@ -50,6 +50,9 @@ struct __numeric_type
   _CCCL_API inline static double __test(unsigned long long);
   _CCCL_API inline static double __test(double);
   _CCCL_API inline static long double __test(long double);
+#if _CCCL_HAS_FLOAT128()
+  _CCCL_API inline static __float128 __test(__float128);
+#endif // _CCCL_HAS_FLOAT128()
 
   using type              = decltype(__test(declval<_Tp>()));
   static const bool value = _IsNotSame<type, void>::value;
