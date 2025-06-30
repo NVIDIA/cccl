@@ -133,39 +133,35 @@ private:
     return (reinterpret_cast<size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
   }
 
-  template <class RandomAccessIteratorT, class OffsetT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    RandomAccessIteratorT first,
-    OffsetT num_items,
-    OpT op,
-    cudaStream_t stream,
-    _CUDA_VSTD::false_type /* do_not_vectorize */)
+  template <bool UseVectorization, class RandomAccessOrContiguousIteratorT, class OffsetT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  for_each_n(RandomAccessOrContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream)
   {
-    using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessIteratorT>;
-    return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
-  }
+    if constexpr (UseVectorization)
+    {
+      auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
+      using wrapped_op_t =
+        detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<RandomAccessOrContiguousIteratorT>>;
 
-  template <class ContiguousIteratorT, class OffsetT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    ContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, _CUDA_VSTD::true_type /* vectorize */)
-  {
-    auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-    using wrapped_op_t =
-      detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<ContiguousIteratorT>>;
+      if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
+      { // Vectorize loads
+        const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 
-    if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
-    { // Vectorize loads
-      const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
+        return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
+          num_vec_items,
+          wrapped_op_t{
+            unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
+          stream);
+      }
 
-      return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
-        num_vec_items,
-        wrapped_op_t{
-          unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
-        stream);
+      // Fallback to non-vectorized version
+      return for_each_n<false>(first, num_items, op, stream);
     }
-
-    // Fallback to non-vectorized version
-    return for_each_n(first, num_items, op, stream, _CUDA_VSTD::false_type{});
+    else
+    {
+      using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessOrContiguousIteratorT>;
+      return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
+    }
   }
 
 public:
@@ -591,9 +587,9 @@ private:
     // Disable auto-vectorization for now:
     // constexpr bool use_vectorization =
     //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
-    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
-    using use_vectorization_t = _CUDA_VSTD::bool_constant<false>;
-    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
+    constexpr bool use_vectorization = false;
+    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
   }
 
 public:
@@ -713,9 +709,9 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    using offset_t            = NumItemsT;
-    using use_vectorization_t = THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>;
-    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    using offset_t                   = NumItemsT;
+    constexpr bool use_vectorization = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
+    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
   }
 
 public:

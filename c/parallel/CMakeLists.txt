@@ -45,7 +45,7 @@ target_link_libraries(cccl.c.parallel PRIVATE
   Thrust::Thrust
   nlohmann_json::nlohmann_json
 )
-target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1 _CUB_HAS_TRANSFORM_UBLKCP=0)
+target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1)
 target_compile_definitions(cccl.c.parallel PRIVATE
   NVRTC_GET_TYPE_NAME=1
   CUB_DISABLE_CDP=1

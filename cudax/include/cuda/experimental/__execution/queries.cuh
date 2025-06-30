@@ -195,11 +195,14 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  [[nodiscard]] _CCCL_API auto operator()(const _Sch& __sch) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()([[maybe_unused]] const _Sch& __sch) const noexcept
+    -> forward_progress_guarantee
   {
     if constexpr (__queryable_with<_Sch, get_forward_progress_guarantee_t>)
     {
       static_assert(noexcept(__sch.query(*this)));
+      static_assert(_CUDA_VSTD::is_same_v<decltype(__sch.query(*this)), forward_progress_guarantee>,
+                    "The get_forward_progress_guarantee query must return a forward_progress_guarantee enum value.");
       return __sch.query(*this);
     }
     else
@@ -227,8 +230,13 @@ _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
     }
     else
     {
-      return experimental::make_config(grid_dims<1>, block_dims<1>);
+      return experimental::make_config(grid_dims<1>(), block_dims<1>());
     }
+  }
+
+  static constexpr bool query(forwarding_query_t) noexcept
+  {
+    return true;
   }
 } get_launch_config{};
 

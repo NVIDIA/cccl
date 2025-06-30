@@ -245,6 +245,13 @@ struct iterator_traversal<::cuda::tabulate_output_iterator<Fn, Index>>
 };
 
 template <class Iter, class Fn>
+struct iterator_system<::cuda::transform_output_iterator<Iter, Fn>> : iterator_system<Iter>
+{};
+template <class Iter, class Fn>
+struct iterator_traversal<::cuda::transform_output_iterator<Iter, Fn>> : iterator_traversal<Iter>
+{};
+
+template <class Iter, class Fn>
 struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<Iter>
 {};
 template <class Iter, class Fn>

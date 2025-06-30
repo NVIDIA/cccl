@@ -20,6 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/optional>
+#include <cuda/std/__optional/bad_optional_access.h>
+#include <cuda/std/__optional/hash.h>
+#include <cuda/std/__optional/make_optional.h>
+#include <cuda/std/__optional/nullopt.h>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__optional/optional_base.h>
+#include <cuda/std/__optional/optional_ref.h>
 
 #endif // _CUDA_STD_OPTIONAL

@@ -80,6 +80,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/env.cu
     execution/policies/policies.cu
     execution/policies/get_execution_policy.cu
+    execution/test_bulk.cu
     execution/test_concepts.cu
     execution/test_completion_signatures.cu
     execution/test_conditional.cu
@@ -87,9 +88,11 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_just.cu
     execution/test_let_value.cu
     execution/test_sequence.cu
+    execution/test_starts_on.cu
     execution/test_stream_context.cu
     execution/test_visit.cu
     execution/test_when_all.cu
+    execution/test_write_attrs.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)

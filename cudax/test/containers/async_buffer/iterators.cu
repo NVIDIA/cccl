@@ -69,8 +69,8 @@ C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_type
 
   SECTION("cudax::async_buffer::begin/end thrust properties")
   {
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<iterator>::value);
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<const_iterator>::value);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<iterator>);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<const_iterator>);
 
     STATIC_REQUIRE(cuda::std::is_same_v<thrust::try_unwrap_contiguous_iterator_t<iterator>, int*>);
     STATIC_REQUIRE(

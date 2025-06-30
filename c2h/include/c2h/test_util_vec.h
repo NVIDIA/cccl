@@ -49,7 +49,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector1 overloads
  */
-#  define C2H_VEC_OVERLOAD_1(T, BaseT)                                        \
+#  define C2H_VEC_OVERLOAD_1(T)                                               \
     /* Ostream output */                                                      \
     inline std::ostream& operator<<(std::ostream& os, const T& val)           \
     {                                                                         \
@@ -86,7 +86,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector2 overloads
  */
-#  define C2H_VEC_OVERLOAD_2(T, BaseT)                                        \
+#  define C2H_VEC_OVERLOAD_2(T)                                               \
     /* Ostream output */                                                      \
     inline std::ostream& operator<<(std::ostream& os, const T& val)           \
     {                                                                         \
@@ -131,7 +131,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector3 overloads
  */
-#  define C2H_VEC_OVERLOAD_3(T, BaseT)                                                         \
+#  define C2H_VEC_OVERLOAD_3(T)                                                                \
     /* Ostream output */                                                                       \
     inline std::ostream& operator<<(std::ostream& os, const T& val)                            \
     {                                                                                          \
@@ -184,7 +184,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector4 overloads
  */
-#  define C2H_VEC_OVERLOAD_4(T, BaseT)                                                                           \
+#  define C2H_VEC_OVERLOAD_4(T)                                                                                  \
     /* Ostream output */                                                                                         \
     inline std::ostream& operator<<(std::ostream& os, const T& val)                                              \
     {                                                                                                            \
@@ -239,34 +239,56 @@ inline int CoutCast(signed char val)
     /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                    \
     inline __host__ __device__ T operator+(T a, T b)                                                             \
     {                                                                                                            \
-      T retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);                                           \
+      const auto retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);                                  \
       return retval;                                                                                             \
     }
 
 /**
  * All vector overloads
  */
-#  define C2H_VEC_OVERLOAD(COMPONENT_T, BaseT) \
-    C2H_VEC_OVERLOAD_1(COMPONENT_T##1, BaseT)  \
-    C2H_VEC_OVERLOAD_2(COMPONENT_T##2, BaseT)  \
-    C2H_VEC_OVERLOAD_3(COMPONENT_T##3, BaseT)  \
-    C2H_VEC_OVERLOAD_4(COMPONENT_T##4, BaseT)
+#  define C2H_VEC_OVERLOAD(VecName) \
+    C2H_VEC_OVERLOAD_1(VecName##1)  \
+    C2H_VEC_OVERLOAD_2(VecName##2)  \
+    C2H_VEC_OVERLOAD_3(VecName##3)  \
+    C2H_VEC_OVERLOAD_4(VecName##4)
 
 /**
  * Define for types
  */
-C2H_VEC_OVERLOAD(char, char)
-C2H_VEC_OVERLOAD(short, short)
-C2H_VEC_OVERLOAD(int, int)
-C2H_VEC_OVERLOAD(long, long)
-C2H_VEC_OVERLOAD(longlong, long long)
-C2H_VEC_OVERLOAD(uchar, unsigned char)
-C2H_VEC_OVERLOAD(ushort, unsigned short)
-C2H_VEC_OVERLOAD(uint, unsigned int)
-C2H_VEC_OVERLOAD(ulong, unsigned long)
-C2H_VEC_OVERLOAD(ulonglong, unsigned long long)
-C2H_VEC_OVERLOAD(float, float)
-C2H_VEC_OVERLOAD(double, double)
+C2H_VEC_OVERLOAD(char)
+C2H_VEC_OVERLOAD(short)
+C2H_VEC_OVERLOAD(int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+C2H_VEC_OVERLOAD(long)
+C2H_VEC_OVERLOAD(longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD_4(long4_16a)
+C2H_VEC_OVERLOAD_4(long4_32a)
+C2H_VEC_OVERLOAD_4(longlong4_16a)
+C2H_VEC_OVERLOAD_4(longlong4_32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD(uchar)
+C2H_VEC_OVERLOAD(ushort)
+C2H_VEC_OVERLOAD(uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+C2H_VEC_OVERLOAD(ulong)
+C2H_VEC_OVERLOAD(ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD_4(ulong4_16a)
+C2H_VEC_OVERLOAD_4(ulong4_32a)
+C2H_VEC_OVERLOAD_4(ulonglong4_16a)
+C2H_VEC_OVERLOAD_4(ulonglong4_32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD(float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+C2H_VEC_OVERLOAD(double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD_4(double4_16a)
+C2H_VEC_OVERLOAD_4(double4_32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // Specialize cuda::std::numeric_limits for vector types.
 
@@ -307,15 +329,21 @@ C2H_VEC_OVERLOAD(double, double)
 C2H_VEC_TRAITS_OVERLOAD(char, signed char)
 C2H_VEC_TRAITS_OVERLOAD(short, short)
 C2H_VEC_TRAITS_OVERLOAD(int, int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(long, long)
 C2H_VEC_TRAITS_OVERLOAD(longlong, long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
 C2H_VEC_TRAITS_OVERLOAD(uchar, unsigned char)
 C2H_VEC_TRAITS_OVERLOAD(ushort, unsigned short)
 C2H_VEC_TRAITS_OVERLOAD(uint, unsigned int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
 C2H_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
 C2H_VEC_TRAITS_OVERLOAD(float, float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(double, double)
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #  undef C2H_VEC_TRAITS_OVERLOAD
 #  undef C2H_VEC_TRAITS_OVERLOAD_IMPL

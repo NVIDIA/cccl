@@ -115,7 +115,7 @@ C2H_CCCLRT_TEST("Traits", "[device]")
   // Compare arch traits with attributes
   for (const cudax::device& dev : cudax::devices)
   {
-    auto traits = dev.get_arch_traits();
+    auto traits = dev.arch_traits();
 
     CUDAX_REQUIRE(traits.max_threads_per_block == dev.attribute(cudax::device::attributes::max_threads_per_block));
     CUDAX_REQUIRE(traits.max_block_dim_x == dev.attribute(cudax::device::attributes::max_block_dim_x));

@@ -84,7 +84,7 @@ public:
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
   using value_type        = void;
-  using pointer           = void*;
+  using pointer           = void;
   using reference         = void;
 
   //! @brief Default constructs a \p discard_iterator at index zero

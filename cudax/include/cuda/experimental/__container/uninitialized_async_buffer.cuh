@@ -326,13 +326,13 @@ public:
   //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& memory_resource() const noexcept
   {
     return __mr_;
   }
 
   //! @brief Returns the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
   {
     return __stream_;
   }
