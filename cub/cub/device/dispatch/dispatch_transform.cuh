@@ -180,8 +180,7 @@ struct dispatch_t<StableAddress,
     auto wrapped_policy = MakeTransformPolicyWrapper(policy);
     int block_threads   = wrapped_policy.AlgorithmPolicy().BlockThreads();
 
-    _CCCL_ASSERT_HOST(block_threads % bulk_copy_align == 0,
-                      "block_threads needs to be a multiple of bulk_copy_alignment");
+    _CCCL_ASSERT(block_threads % bulk_copy_align == 0, "block_threads needs to be a multiple of bulk_copy_alignment");
     // ^ then tile_size is a multiple of it
 
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
@@ -193,7 +192,7 @@ struct dispatch_t<StableAddress,
       }
 
       // ensures the loop below runs at least once
-      CUB_STATIC_ISH_ASSERT(
+      CUB_DETAIL_STATIC_ISH_ASSERT(
         wrapped_policy.AlgorithmPolicy().MinItemsPerThread() <= wrapped_policy.AlgorithmPolicy().MaxItemsPerThread(),
         "invalid policy");
 
@@ -295,10 +294,10 @@ struct dispatch_t<StableAddress,
       return ret.error();
     }
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
-    // Normally, this check is handled by the if constexpr(ish) in Invoke. However, when when runtime policies are
+    // Normally, this check is handled by the if constexpr(ish) in Invoke. However, when runtime policies are
     // defined (like by c.parallel), that if constexpr becomes a plain if, so we need to check the actual compile time
     // condition again, this time asserting at runtime if we hit this point during dispatch.
-    if constexpr ((is_valid_aligned_base_ptr_arg<::cuda::std::tuple_element_t<Is, decltype(in)>> && ...))
+    if constexpr ((is_valid_aligned_base_ptr_arg<RandomAccessIteratorsIn> && ...))
     {
 #endif // CUB_DEFINE_RUNTIME_POLICIES
       auto [launcher, kernel, elem_per_thread] = *ret;
@@ -329,7 +328,7 @@ struct dispatch_t<StableAddress,
   template <typename... AgentPolicy>                                                                       \
   static CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy...)                                   \
   {                                                                                                        \
-    CUB_STATIC_ISH_ASSERT(                                                                                 \
+    CUB_DETAIL_STATIC_ISH_ASSERT(                                                                          \
       dependent_false<AgentPolicy...>::value,                                                              \
       _CCCL_TO_STRING(algorithm) " algorithm requires a policy with " _CCCL_TO_STRING(runtime_name));      \
     _CCCL_UNREACHABLE();                                                                                   \
@@ -397,7 +396,7 @@ struct dispatch_t<StableAddress,
 
     auto can_vectorize = false;
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
-    if CUB_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
+    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
       const int alignment     = load_store_word_size(wrapped_policy.AlgorithmPolicy());
       auto is_pointer_aligned = [&](auto it) {
@@ -414,8 +413,11 @@ struct dispatch_t<StableAddress,
       can_vectorize = (is_pointer_aligned(::cuda::std::get<Is>(in)) && ...) && is_pointer_aligned(out);
     }
 
-    const int ipt = [&] {
-      if (Algorithm::vectorized == wrapped_policy.Algorithm())
+    // workaround for MSVC, it gets confused about what can and what cannot be a constant expression if the if
+    // constexpr-ish inside this lambda calls wrapped_policy.Algorithm() directly
+    CUB_DETAIL_CONSTEXPR_ISH auto algorithm = wrapped_policy.Algorithm();
+    const int ipt                           = [&] {
+      if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == algorithm)
       {
         if (can_vectorize)
         {
@@ -428,8 +430,8 @@ struct dispatch_t<StableAddress,
       // choose items per thread to reach minimum bytes in flight
       const int items_per_thread =
         loaded_bytes_per_iter == 0
-          ? items_per_thread_no_input(wrapped_policy.AlgorithmPolicy())
-          : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
+                                    ? items_per_thread_no_input(wrapped_policy.AlgorithmPolicy())
+                                    : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
@@ -460,7 +462,7 @@ struct dispatch_t<StableAddress,
   {
     auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
     const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
-    if CUB_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
+    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
     {
       return invoke_async_algorithm(
         bulk_copy_align,
@@ -470,7 +472,7 @@ struct dispatch_t<StableAddress,
         seq,
         active_policy);
     }
-    else if CUB_CONSTEXPR_ISH (Algorithm::memcpy_async == wrapped_policy.Algorithm())
+    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == wrapped_policy.Algorithm())
     {
       return invoke_async_algorithm(
         ldgsts_size_and_align,
