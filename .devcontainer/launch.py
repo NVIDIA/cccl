@@ -199,12 +199,6 @@ cap_add = flat_list(
     ]
 )
 
-# print(bash_list("CAP_ADD", flat_list([
-#     ["--cap-add", cap] for cap in list(set(flat_list([
-#         x["capAdd"] for x in devcontainer_meta if "capAdd" in x
-#     ])))
-# ])))
-
 secopts = flat_list(
     [
         ["--security-opt", opt]
@@ -217,12 +211,6 @@ secopts = flat_list(
         )
     ]
 )
-
-# print(bash_list("SECOPTS", flat_list([
-#     ["--security-opt", opt] for opt in list(set(flat_list([
-#         x["securityOpt"] for x in devcontainer_meta if "securityOpt" in x
-#     ])))
-# ])))
 
 print(
     bash_list(
