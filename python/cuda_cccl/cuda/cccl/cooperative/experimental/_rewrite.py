@@ -534,36 +534,110 @@ class CoopLoadStoreNode(CoopNode):
         instance = self.two_phase_instance
         algo = instance.specialization
         print(f'Codegen & overload {instance!r}')
-        print(f'Original call expression: {self.expr}')
-        print(f'Original func: {self.expr.func} (type: {type(self.typemap[self.expr.func.name])})')
-        print(f'Call args: {[arg.name for arg in self.expr.args]}')
-        
+
         # Create the codegens for the algorithm
         self.codegens = algo.create_codegens()
-        
+
         # Set the instance as the invocable for consistency
         self.invocable = instance
         self.instance = instance  # For compatibility with codegen
-        
-        # Define the lowering function
-        def codegen(context, builder, sig, args):
-            print(f'CODEGEN: Function call lowering triggered! sig={sig}')
-            cg = self.codegen
-            (_, codegen_method) = cg.intrinsic_impl()
-            res = codegen_method(context, builder, sig, args)
 
-            # Add all the LTO-IRs to the current code library
-            lib = context.active_code_library
-            for ltoir in algo.lto_irs:
-                lib.add_linking_file(ltoir)
+        # Create a wrapper function similar to single-phase approach
+        expr = self.expr
+        scope = self.instr.target.scope
 
-            return res
+        # Create a global variable for the wrapper function
+        g_var_name = f"${self.call_var_name}"
+        g_var = ir.Var(scope, g_var_name, expr.loc)
 
-        # Store the codegen function on the instance for later retrieval
-        instance.node = self
-        instance.codegen_func = codegen
+        # Create a wrapper function that can be properly registered
+        code = dedent(f"""
+            def {self.call_var_name}(*args):
+                return
+        """)
+        exec(code, globals())
+        wrapper_func = globals()[self.call_var_name]
+        mod = sys.modules[wrapper_func.__module__]
+        setattr(mod, self.call_var_name, wrapper_func)
 
-        return ()
+        # Store references for the codegen
+        wrapper_func.node = self
+        wrapper_func.instance = instance
+        self.invocable = wrapper_func
+
+        # Create the global assignment for the wrapper
+        g_assign = ir.Assign(
+            value=ir.Global(g_var_name, wrapper_func, expr.loc),
+            target=g_var,
+            loc=expr.loc,
+        )
+
+        # Create the new call using the wrapper
+        new_call = ir.Expr.call(
+            func=g_var,
+            args=self.expr.args,  # Use original args
+            kws=(),
+            loc=expr.loc,
+        )
+
+        new_assign = ir.Assign(
+            value=new_call,
+            target=self.instr.target,
+            loc=self.instr.loc,
+        )
+
+        # Set up type information
+        from numba.core.typing.templates import AbstractTemplate, Signature
+
+        # Determine argument types
+        arg_types = [self.typemap[arg.name] for arg in self.expr.args]
+
+        sig = Signature(
+            types.none,
+            args=tuple(arg_types),
+            recvr=None,
+            pysig=None,
+        )
+
+        self.calltypes[new_call] = sig
+
+        @register_global(wrapper_func)
+        class ImplDecl(AbstractTemplate):
+            key = wrapper_func
+
+            def generic(self, outer_args, outer_kws):
+                @lower(wrapper_func, types.VarArg(types.Any))
+                def codegen(context, builder, sig, args):
+                    node = wrapper_func.node
+                    cg = node.codegen
+                    (_, codegen_method) = cg.intrinsic_impl()
+                    res = codegen_method(context, builder, sig, args)
+
+                    # Add all the LTO-IRs to the current code library
+                    lib = context.active_code_library
+                    algo = node.instance.specialization
+                    for ltoir in algo.lto_irs:
+                        lib.add_linking_file(ltoir)
+
+                    return res
+
+                return sig
+
+        func_ty = types.Function(ImplDecl)
+
+        # Set up the function type properly
+        typingctx = self.typingctx
+        func_ty.get_call_type(
+            typingctx,
+            args=tuple(arg_types),
+            kws={},
+        )
+        check = func_ty._impl_keys[tuple(arg_types)]
+        assert check is not None, check
+
+        self.typemap[g_var.name] = func_ty
+
+        return (g_assign, new_assign)
 
         def codegen(context, builder, sig, args):
             cg = self.codegen
@@ -1365,7 +1439,7 @@ def _init_rewriter():
     # Dummy function that allows us to do the following in `_init_extension`:
     # from ._rewrite import _init_rewriter
     # _init_rewriter()
-    
+
     # Register data models for two-phase instance types
     from ._decls import (
         CoopBlockLoadInstanceType,
@@ -1373,46 +1447,26 @@ def _init_rewriter():
     )
     from numba.core.extending import models, register_model
     from numba.core import types
-    
+
     @register_model(CoopBlockLoadInstanceType)
     class CoopBlockLoadInstanceModel(models.OpaqueModel):
         pass
-    
+
     @register_model(CoopBlockStoreInstanceType)
     class CoopBlockStoreInstanceModel(models.OpaqueModel):
         pass
-    
+
     @lower_constant(CoopBlockLoadInstanceType)
     def lower_constant_block_load_instance_type(context, builder, typ, value):
         # For two-phase instances, return a dummy opaque value since the actual
         # lowering will be handled by the registered function lowering
         return context.get_dummy_value()
-    
+
     @lower_constant(CoopBlockStoreInstanceType)
     def lower_constant_block_store_instance_type(context, builder, typ, value):
-        # For two-phase instances, return a dummy opaque value since the actual  
+        # For two-phase instances, return a dummy opaque value since the actual
         # lowering will be handled by the registered function lowering
         return context.get_dummy_value()
-    
-    # Register function call lowering for two-phase instances
-    # We need to register for specific signatures, not VarArg
-    
-    @lower_builtin(CoopBlockLoadInstanceType, types.Array, types.Array)
-    def lower_block_load_instance_call_arrays(context, builder, sig, args):
-        print(f'STATIC LOWERING: Block load call with arrays sig={sig}')
-        return context.get_dummy_value()
-    
-    @lower_builtin(CoopBlockLoadInstanceType, types.VarArg(types.Any))
-    def lower_block_load_instance_call_vararg(context, builder, sig, args):
-        print(f'STATIC LOWERING: Block load call with vararg sig={sig}')
-        return context.get_dummy_value()
-    
-    @lower_builtin(CoopBlockStoreInstanceType, types.Array, types.Array)  
-    def lower_block_store_instance_call_arrays(context, builder, sig, args):
-        print(f'STATIC LOWERING: Block store call with arrays sig={sig}')
-        return context.get_dummy_value()
-        
-    @lower_builtin(CoopBlockStoreInstanceType, types.VarArg(types.Any))
-    def lower_block_store_instance_call_vararg(context, builder, sig, args):
-        print(f'STATIC LOWERING: Block store call with vararg sig={sig}')
-        return context.get_dummy_value()
+
+    # Note: Function call lowering for two-phase instances is now handled
+    # by creating wrapper functions in the rewrite_two_phase method
