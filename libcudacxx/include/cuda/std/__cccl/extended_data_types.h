@@ -29,14 +29,15 @@
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
-#define _CCCL_HAS_INT128()      0
-#define _CCCL_HAS_LONG_DOUBLE() 0
-#define _CCCL_HAS_NVFP4()       0
-#define _CCCL_HAS_NVFP6()       0
-#define _CCCL_HAS_NVFP8()       0
-#define _CCCL_HAS_NVFP16()      0
-#define _CCCL_HAS_NVBF16()      0
-#define _CCCL_HAS_FLOAT128()    0
+#define _CCCL_HAS_INT128()                  0
+#define _CCCL_HAS_LONG_DOUBLE()             0
+#define _CCCL_HAS_NVFP4()                   0
+#define _CCCL_HAS_NVFP6()                   0
+#define _CCCL_HAS_NVFP8()                   0
+#define _CCCL_HAS_NVFP16()                  0
+#define _CCCL_HAS_NVBF16()                  0
+#define _CCCL_HAS_FLOAT128()                0
+#define _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS() 0
 
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))
