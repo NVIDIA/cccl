@@ -100,6 +100,25 @@ using __fwd_env_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 
+template <class _Sch>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
+{
+  [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
+  {
+    return __sch_;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
+  {
+    return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
+  }
+
+  _Sch __sch_;
+};
+
+template <class _Sch>
+_CCCL_HOST_DEVICE __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
+
 } // namespace execution
 
 template <class... _Properties>

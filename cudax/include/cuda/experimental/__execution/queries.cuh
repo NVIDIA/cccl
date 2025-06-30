@@ -230,7 +230,7 @@ _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
     }
     else
     {
-      return experimental::make_config(grid_dims<1>, block_dims<1>);
+      return experimental::make_config(grid_dims<1>(), block_dims<1>());
     }
   }
 
