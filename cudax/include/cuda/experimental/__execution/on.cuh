@@ -193,7 +193,8 @@ public:
   _CCCL_REQUIRES(__is_sender<_Sndr>)
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
-    return execution::transform_sender(get_domain(__sch), __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr});
+    using __domain_t = __query_result_or_t<_Sch, get_domain_t, default_domain>;
+    return execution::transform_sender(__domain_t{}, __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr});
   }
 
   _CCCL_TEMPLATE(class _Sch, class _Closure)
