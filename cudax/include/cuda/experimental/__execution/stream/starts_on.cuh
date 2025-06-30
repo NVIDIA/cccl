@@ -72,6 +72,8 @@ struct __starts_on_t
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __sndr_base_t<_Sch, _Sndr>
   {
+    __sndr_t() = delete;
+
     _CCCL_API explicit constexpr __sndr_t(_Sch __sch, _Sndr __sndr)
         : __sndr_base_t<_Sch, _Sndr>{__starts_on_t::__mk_sndr_base(__sch, static_cast<_Sndr&&>(__sndr))}
     {}

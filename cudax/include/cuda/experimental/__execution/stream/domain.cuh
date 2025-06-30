@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__stream/get_stream.h>
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/compose.h>
 #include <cuda/std/__type_traits/is_callable.h>
@@ -90,6 +91,7 @@ struct __get_stream_fn
                       || _CUDA_VSTD::__is_callable_v<__get_stream_from_env_t, _Env>,
                     "Expected the sender's attributes or the receiver's environment to have a stream.");
     }
+    _CCCL_UNREACHABLE();
   }
 };
 
