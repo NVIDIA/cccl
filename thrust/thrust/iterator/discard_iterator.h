@@ -150,10 +150,9 @@ private: // Core iterator interface
 //! \return A new \p discard_iterator with index as given by \p i.
 //! \see constant_iterator
 template <typename System = use_default>
-inline _CCCL_HOST_DEVICE discard_iterator<>
-make_discard_iterator(typename discard_iterator<System>::difference_type i = {})
+inline _CCCL_HOST_DEVICE discard_iterator<System> make_discard_iterator(::cuda::std::ptrdiff_t i = 0)
 {
-  return discard_iterator<System>(i);
+  return discard_iterator<System>{i};
 }
 
 //! \} // end fancyiterators
