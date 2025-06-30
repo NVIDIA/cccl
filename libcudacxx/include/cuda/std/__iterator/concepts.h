@@ -150,24 +150,52 @@ concept forward_iterator = input_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip
                         && incrementable<_Ip> && sentinel_for<_Ip, _Ip>;
 
 // [iterator.concept.bidir]
-template <class _Ip>
-concept bidirectional_iterator =
-  forward_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip>, bidirectional_iterator_tag> && requires(_Ip __i) {
-    { --__i } -> same_as<_Ip&>;
-    { __i-- } -> same_as<_Ip>;
-  };
+template <class _Iter>
+concept __iter_can_decrement = requires(_Iter __iter) {
+  { --__iter } -> same_as<_Iter&>;
+  { __iter-- } -> same_as<_Iter>;
+};
 
-template <class _Ip>
+template <class _Iter>
+concept bidirectional_iterator =
+  forward_iterator<_Iter> && derived_from<_ITER_CONCEPT<_Iter>, bidirectional_iterator_tag>
+  && __iter_can_decrement<_Iter>;
+
+template <class _Iter>
+concept __iter_can_plus_equal = requires(_Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter += __n } -> same_as<_Iter&>;
+};
+
+template <class _Iter>
+concept __iter_can_plus = requires(const _Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter + __n } -> same_as<_Iter>;
+  { __n + __iter } -> same_as<_Iter>;
+};
+
+template <class _Iter>
+concept __iter_can_minus_equal = requires(_Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter -= __n } -> same_as<_Iter&>;
+};
+
+template <class _Iter>
+concept __iter_can_minus = requires(const _Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter - __n } -> same_as<_Iter>;
+};
+
+template <class _Iter>
+concept __iter_can_subscript = requires(const _Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter[__n] } -> same_as<iter_reference_t<_Iter>>;
+};
+
+template <class _Iter>
+concept __random_access_operations =
+  __iter_can_plus_equal<_Iter> && __iter_can_plus<_Iter> && __iter_can_minus_equal<_Iter> && __iter_can_minus<_Iter>
+  && __iter_can_subscript<_Iter>;
+
+template <class _Iter>
 concept random_access_iterator =
-  bidirectional_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip>, random_access_iterator_tag> && totally_ordered<_Ip>
-  && sized_sentinel_for<_Ip, _Ip> && requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n) {
-       { __i += __n } -> same_as<_Ip&>;
-       { __j + __n } -> same_as<_Ip>;
-       { __n + __j } -> same_as<_Ip>;
-       { __i -= __n } -> same_as<_Ip&>;
-       { __j - __n } -> same_as<_Ip>;
-       { __j[__n] } -> same_as<iter_reference_t<_Ip>>;
-     };
+  bidirectional_iterator<_Iter> && derived_from<_ITER_CONCEPT<_Iter>, random_access_iterator_tag>
+  && totally_ordered<_Iter> && sized_sentinel_for<_Iter, _Iter> && __random_access_operations<_Iter>;
 
 template <class _Ip>
 concept contiguous_iterator =
@@ -387,44 +415,52 @@ template <class _Ip>
 _CCCL_CONCEPT forward_iterator = _CCCL_FRAGMENT(__forward_iterator_, _Ip);
 
 // [iterator.concept.bidir]
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __bidirectional_iterator_,
-  requires(_Ip __i)(requires(forward_iterator<_Ip>),
-                    requires(derived_from<_ITER_CONCEPT<_Ip>, bidirectional_iterator_tag>),
-                    requires(same_as<_Ip&, decltype(--__i)>),
-                    requires(same_as<_Ip, decltype(__i--)>)));
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_decrement =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter)(_Same_as(_Iter&)(--__iter), _Same_as(_Iter) __iter--);
 
-template <class _Ip>
-_CCCL_CONCEPT bidirectional_iterator = _CCCL_FRAGMENT(__bidirectional_iterator_, _Ip);
+template <class _Iter>
+_CCCL_CONCEPT bidirectional_iterator = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(forward_iterator<_Iter>),
+  requires(derived_from<_ITER_CONCEPT<_Iter>, bidirectional_iterator_tag>),
+  requires(__iter_can_decrement<_Iter>));
 
 // [iterator.concept.random.access]
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_plus_equal =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(_Iter&) __iter += __n);
 
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __random_access_iterator_operations_,
-  requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
-    requires(same_as<_Ip&, decltype(__i += __n)>),
-    requires(same_as<_Ip, decltype(__j + __n)>),
-    requires(same_as<_Ip, decltype(__n + __j)>),
-    requires(same_as<_Ip&, decltype(__i -= __n)>),
-    requires(same_as<_Ip, decltype(__j - __n)>),
-    requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_plus = _CCCL_REQUIRES_EXPR((_Iter), const _Iter __iter, const iter_difference_t<_Iter> __n)(
+  _Same_as(_Iter) __iter + __n, _Same_as(_Iter) __n + __iter);
 
-template <class _Ip>
-_CCCL_CONCEPT __random_access_iterator_operations = _CCCL_FRAGMENT(__random_access_iterator_operations_, _Ip);
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_minus_equal =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(_Iter&) __iter -= __n);
 
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __random_access_iterator_,
-  requires()(requires(bidirectional_iterator<_Ip>),
-             requires(derived_from<_ITER_CONCEPT<_Ip>, random_access_iterator_tag>),
-             requires(totally_ordered<_Ip>),
-             requires(sized_sentinel_for<_Ip, _Ip>),
-             requires(__random_access_iterator_operations<_Ip>)));
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_minus =
+  _CCCL_REQUIRES_EXPR((_Iter), const _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(_Iter) __iter - __n);
 
-template <class _Ip>
-_CCCL_CONCEPT random_access_iterator = _CCCL_FRAGMENT(__random_access_iterator_, _Ip);
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_subscript = _CCCL_REQUIRES_EXPR(
+  (_Iter), const _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(iter_reference_t<_Iter>) __iter[__n]);
+
+template <class _Iter>
+_CCCL_CONCEPT __random_access_iterator_operations = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(__iter_can_plus_equal<_Iter>),
+  requires(__iter_can_plus<_Iter>),
+  requires(__iter_can_minus_equal<_Iter>),
+  requires(__iter_can_minus<_Iter>),
+  requires(__iter_can_subscript<_Iter>));
+
+template <class _Iter>
+_CCCL_CONCEPT random_access_iterator = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(bidirectional_iterator<_Iter>),
+  requires(derived_from<_ITER_CONCEPT<_Iter>, random_access_iterator_tag>),
+  requires(totally_ordered<_Iter>),
+  requires(sized_sentinel_for<_Iter, _Iter>),
+  requires(__random_access_iterator_operations<_Iter>));
 
 // [iterator.concept.contiguous]
 template <class _Ip>

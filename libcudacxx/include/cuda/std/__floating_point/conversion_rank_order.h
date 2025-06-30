@@ -40,7 +40,7 @@ enum class __fp_conv_rank_order
 };
 
 template <class _Lhs, class _Rhs>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_conv_rank_order_v_impl() noexcept
+[[nodiscard]] _CCCL_API constexpr __fp_conv_rank_order __fp_conv_rank_order_v_impl() noexcept
 {
   if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs> && __fp_is_subset_of_v<_Rhs, _Lhs>)
   {

@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_BidirectionalIterator, bool>
+_CCCL_API constexpr pair<_BidirectionalIterator, bool>
 __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& __comp)
 {
   using _Result = pair<_BidirectionalIterator, bool>;
@@ -68,8 +68,7 @@ __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
+_CCCL_API constexpr bool prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__prev_permutation<_ClassicAlgPolicy>(
            _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), static_cast<__comp_ref_type<_Compare>>(__comp))
@@ -77,7 +76,7 @@ prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, 
 }
 
 template <class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
+_CCCL_API constexpr bool prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   return _CUDA_VSTD::prev_permutation(__first, __last, __less{});
 }

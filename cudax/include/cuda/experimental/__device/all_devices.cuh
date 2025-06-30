@@ -198,12 +198,12 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! * device_ref
 inline constexpr __detail::all_devices devices{};
 
-inline const arch_traits_t& device_ref::get_arch_traits() const
+inline const arch_traits_t& device_ref::arch_traits() const
 {
-  return devices[get()].get_arch_traits();
+  return devices[get()].arch_traits();
 }
 
-[[nodiscard]] inline ::std::vector<device_ref> device_ref::get_peers() const
+[[nodiscard]] inline ::std::vector<device_ref> device_ref::peer_devices() const
 {
   ::std::vector<device_ref> __result;
   __result.reserve(devices.size());

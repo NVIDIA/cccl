@@ -97,6 +97,7 @@ public:
       : _err(static_cast<Error&&>(err))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE sndr_t schedule() const noexcept
   {
     return {_err};

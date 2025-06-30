@@ -24,11 +24,13 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
@@ -44,6 +46,13 @@ namespace cuda::experimental
 {
 namespace execution
 {
+template <class _Env, class _Query>
+_CCCL_CONCEPT __statically_queryable_with = //
+  _CCCL_REQUIRES_EXPR((_Env, _Query)) //
+  ( //
+    (_CUDA_VSTD::remove_cvref_t<_Env>::query(_Query{})) //
+  );
+
 // For senders that adapt other senders, the attribute queries are forwarded. __fwd_env_
 // is a utility that forwards queries to a given environment.
 template <class _Env>
@@ -64,6 +73,11 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  {
+    return {};
+  }
+
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
     -> decltype(auto)
@@ -85,6 +99,25 @@ template <class _Env>
 using __fwd_env_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__fwd_env_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
+
+template <class _Sch>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
+{
+  [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
+  {
+    return __sch_;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
+  {
+    return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
+  }
+
+  _Sch __sch_;
+};
+
+template <class _Sch>
+_CCCL_HOST_DEVICE __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
 
 } // namespace execution
 

@@ -31,8 +31,32 @@ namespace cuda::experimental::execution
 {
 /////////////////////////////////////////////////////////////////////////////////
 // let_value, let_error, let_stopped: customization for the stream scheduler
-template <__disposition_t _Disposition>
-struct stream_domain::__apply_t<__let_t<_Disposition>>
+template <>
+struct stream_domain::__apply_t<let_value_t>
+{
+  template <class _Sndr, class _Env>
+  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
+  {
+    static_assert(_CUDA_VSTD::__always_false_v<_Sndr>,
+                  "The CUDA stream scheduler does not yet support the `let_value`, `let_error`, and `let_stopped` "
+                  "algorithms.");
+  }
+};
+
+template <>
+struct stream_domain::__apply_t<let_error_t>
+{
+  template <class _Sndr, class _Env>
+  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
+  {
+    static_assert(_CUDA_VSTD::__always_false_v<_Sndr>,
+                  "The CUDA stream scheduler does not yet support the `let_value`, `let_error`, and `let_stopped` "
+                  "algorithms.");
+  }
+};
+
+template <>
+struct stream_domain::__apply_t<let_stopped_t>
 {
   template <class _Sndr, class _Env>
   _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const

@@ -83,7 +83,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
 _CCCL_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __test_convert(_Tp);
+_CCCL_API inline void __test_convert(_Tp);
 
 _CCCL_NV_DIAG_DEFAULT(volatile_func_param_deprecated)
 _CCCL_DIAG_POP

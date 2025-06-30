@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/move.h>
+
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -29,27 +31,11 @@
 
 namespace cuda::experimental::execution
 {
-template <class _Sndr, class _Rcvr>
-struct __connect_emplace
+namespace __stream
 {
-  using type = connect_result_t<_Sndr, _Rcvr>;
-
-  _CCCL_API operator type() && noexcept(__nothrow_connectable<_Sndr, _Rcvr>)
-  {
-    return execution::connect(static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr_));
-  }
-
-  _Sndr&& __sndr_;
-  _Rcvr&& __rcvr_;
-};
-
-template <class _Sndr, class _Rcvr>
-_CCCL_HOST_DEVICE __connect_emplace(_Sndr&& __sndr, _Rcvr&& __rcvr) -> __connect_emplace<_Sndr, _Rcvr>;
-
 /////////////////////////////////////////////////////////////////////////////////
 // sync_wait: customization for the stream scheduler
-template <>
-struct stream_domain::__apply_t<sync_wait_t>
+struct __sync_wait_t
 {
   // TODO: calling sync_wait from device code is not supported yet.
   template <class _Sndr, class _Env>
@@ -118,6 +104,11 @@ private:
     return _CUDA_VSTD::move(__box->__value.__result_);
   }
 };
+} // namespace __stream
+
+template <>
+struct stream_domain::__apply_t<sync_wait_t> : __stream::__sync_wait_t
+{};
 
 } // namespace cuda::experimental::execution
 

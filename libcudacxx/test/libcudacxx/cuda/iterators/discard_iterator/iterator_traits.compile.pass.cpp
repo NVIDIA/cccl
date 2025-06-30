@@ -23,7 +23,7 @@ __host__ __device__ void test()
   static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::same_as<IterTraits::value_type, void>);
   static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
-  static_assert(cuda::std::same_as<IterTraits::pointer, void*>);
+  static_assert(cuda::std::same_as<IterTraits::pointer, void>);
   static_assert(cuda::std::same_as<IterTraits::reference, void>);
   static_assert(cuda::std::input_or_output_iterator<cuda::discard_iterator>);
   static_assert(cuda::std::output_iterator<cuda::discard_iterator, float>);

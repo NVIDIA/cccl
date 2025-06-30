@@ -33,20 +33,24 @@ namespace cuda::experimental::execution
 {
 namespace __stream
 {
+template <class _Tag>
+struct __adapted_t
+{};
+
 // Forward declaration of the __adapt function
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr, stream_ref) -> decltype(auto);
+_CCCL_API constexpr auto __adapt(_Sndr, stream_ref);
 
 template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr) -> decltype(auto);
+_CCCL_API constexpr auto __adapt(_Sndr);
 } // namespace __stream
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // stream domain
-struct stream_domain : default_domain
+struct stream_domain
 {
   _CUDAX_SEMI_PRIVATE :
-  struct __default_apply_t
+  struct __apply_adapt_t
   {
     template <class _Sndr>
     _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const
@@ -55,8 +59,17 @@ struct stream_domain : default_domain
     }
   };
 
+  struct __apply_passthru_t
+  {
+    template <class _Sndr>
+    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t = {}) const -> _Sndr
+    {
+      return static_cast<_Sndr&&>(__sndr);
+    }
+  };
+
   template <class _Tag>
-  struct __apply_t : __default_apply_t
+  struct __apply_t : __apply_adapt_t
   {};
 
 public:

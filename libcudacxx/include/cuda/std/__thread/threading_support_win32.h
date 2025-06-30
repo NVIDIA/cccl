@@ -65,12 +65,12 @@ using __cccl_tls_key = long;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC __stdcall
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield()
+_CCCL_API inline void __cccl_thread_yield()
 {
   SwitchToThread();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
+_CCCL_API inline void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
 {
   using namespace chrono;
   // round-up to the nearest millisecond

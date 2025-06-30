@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-warp-warp-match-all:
 
-Warp Match All
-==============
+``cuda::device::warp_match_all``
+================================
 
 Defined in ``<cuda/warp>`` header.
 

@@ -394,7 +394,7 @@ C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_valu
 C2H_TEST("let_value can be customized", "[adaptors][let_value]")
 {
   // The customization will return a different value
-  auto sndr = ex::just(std::string{"hello"}) | write_attrs(ex::prop{ex::get_domain, let_value_test_domain{}})
+  auto sndr = ex::just(std::string{"hello"}) | ex::write_attrs(ex::prop{ex::get_domain, let_value_test_domain{}})
             | ex::let_value([](std::string& x) {
                 return ex::just(x + ", world");
               });
@@ -452,7 +452,7 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
 {
   auto attrs = ex::prop{ex::get_domain, let_value_test_domain{}};
   auto sndr  = ex::just() | ex::let_value([=] {
-                return write_attrs(ex::just(), attrs);
+                return ex::write_attrs(ex::just(), attrs);
               });
   auto dom   = ex::get_domain(ex::get_env(sndr));
   static_assert(_CUDA_VSTD::is_same_v<decltype(dom), let_value_test_domain>);

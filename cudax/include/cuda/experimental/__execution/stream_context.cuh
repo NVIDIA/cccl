@@ -23,6 +23,7 @@
 
 // IWYU pragma: begin_exports
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
+#include <cuda/experimental/__execution/stream/bulk.cuh>
 #include <cuda/experimental/__execution/stream/context.cuh>
 #include <cuda/experimental/__execution/stream/continues_on.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
