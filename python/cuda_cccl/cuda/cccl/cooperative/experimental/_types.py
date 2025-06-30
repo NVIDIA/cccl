@@ -1052,6 +1052,10 @@ class Invocable:
 
 
 class BasePrimitive:
+    # Runtime reference to the corresponding CoopNode created for this
+    # primitive as part of rewriting.
+    node = None
+
     @property
     def temp_storage_bytes(self):
         return self.specialization.temp_storage_bytes
