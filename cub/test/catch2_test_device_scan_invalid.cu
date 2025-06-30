@@ -32,16 +32,16 @@ struct segment
   OffsetT begin = cuda::std::numeric_limits<OffsetT>::min();
   OffsetT end   = cuda::std::numeric_limits<OffsetT>::max();
 
-// Needed for final comparison with reference
-friend bool operator==(segment left, segment right)
-{
-  return left.begin == right.begin && left.end == right.end;
-}
+  // Needed for final comparison with reference
+  friend bool operator==(segment left, segment right)
+  {
+    return left.begin == right.begin && left.end == right.end;
+  }
 
-friend std::ostream& operator<<(std::ostream& os, const segment& seg)
-{
-  return os << "[ " << seg.begin << ", " << seg.end << " )";
-}
+  friend std::ostream& operator<<(std::ostream& os, const segment& seg)
+  {
+    return os << "[ " << seg.begin << ", " << seg.end << " )";
+  }
 };
 
 // Needed for data input using fancy iterators
