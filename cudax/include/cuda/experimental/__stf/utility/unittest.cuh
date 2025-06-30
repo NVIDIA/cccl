@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/traits.cuh>
@@ -134,11 +135,7 @@ struct expecter
   [[noreturn]] static _CCCL_API inline void
   __throw_stf_failure([[maybe_unused]] _CUDA_VSTD::source_location loc, [[maybe_unused]] const Msgs&... msgs)
   {
-#  if _CCCL_HAS_EXCEPTIONS()
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_CCCL_HAS_EXCEPTIONS()
+    _CCCL_THROW(failure(loc, msgs...));
   }
 
   /*

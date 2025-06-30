@@ -171,7 +171,7 @@ template<class T>
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
@@ -251,12 +251,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[noreturn]] _CCCL_API inline void __throw_bad_optional_access()
 {
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_HAS_EXCEPTIONS()
+  _CCCL_THROW(_CUDA_VSTD_NOVERSION::bad_optional_access());
 }
 
 struct nullopt_t

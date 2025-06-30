@@ -24,6 +24,7 @@
 #  include <stdexcept>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -57,11 +58,7 @@ struct narrowing_error : ::std::runtime_error
 
 [[noreturn]] _CCCL_API inline void __throw_narrowing_error()
 {
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw narrowing_error{};), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
+  _CCCL_THROW(narrowing_error{});
 }
 
 //! Uses static_cast to cast a value \p __from to type \p _To and checks whether the value has changed. \p _To needs
