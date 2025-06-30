@@ -23,6 +23,9 @@ __host__ __device__ bool test()
   uintptr_t ptr_int2 = 12;
   auto ptr2          = reinterpret_cast<int*>(ptr_int2);
   assert(cuda::align_up(ptr2, 8) == ptr2 + 1);
+
+  auto ptr3 = reinterpret_cast<void*>(ptr_int);
+  assert(cuda::align_up(ptr3, 4) == (void*) (ptr + 2));
   return true;
 }
 

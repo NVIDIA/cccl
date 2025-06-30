@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__memory/runtime_assume_aligned.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -29,11 +30,26 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API _Up* ptr_rebind(_Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API inline _Up* ptr_rebind(_Tp* __ptr) noexcept
 {
-  constexpr auto __max_alignment = alignof(_Tp) > alignof(_Up) ? alignof(_Tp) : alignof(_Up);
-  _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-  return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), __max_alignment);
+  if constexpr (_CUDA_VSTD::is_same_v<_Up, _Tp>) // also handle _Tp == _Up == void
+  {
+    return __ptr;
+  }
+  else if constexpr (_CUDA_VSTD::is_same_v<_Up, void>) // _Tp: non-void, _Up: void
+  {
+    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
+    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<void*>(__ptr), alignof(_Tp));
+  }
+  else
+  {
+    if constexpr (!_CUDA_VSTD::is_same_v<_Tp, void>) // _Tp: non-void, _Up: non-void
+    {
+      static_assert(alignof(_Up) >= alignof(_Tp), "alignment of _Up must be greater than or equal to _Tp");
+    }
+    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Up) == 0, "ptr is not aligned");
+    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), alignof(_Up));
+  }
 }
 
 template <typename _Up, typename _Tp>

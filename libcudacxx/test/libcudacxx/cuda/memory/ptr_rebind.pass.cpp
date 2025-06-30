@@ -25,6 +25,9 @@ __host__ __device__ bool test()
   auto const_ptr = reinterpret_cast<const char*>(ptr_int);
   assert(cuda::ptr_rebind<uint16_t>(const_ptr) == (const uint16_t*) ptr);
   static_assert(cuda::std::is_same_v<const int*, decltype(cuda::ptr_rebind<int>(const_ptr))>);
+
+  auto ptr2 = reinterpret_cast<void*>(ptr_int);
+  assert(cuda::ptr_rebind<uint16_t>(ptr2) == (uint16_t*) ptr);
   return true;
 }
 

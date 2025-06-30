@@ -25,6 +25,9 @@ __host__ __device__ bool test()
   assert(cuda::align_down(ptr2, 8) == ptr2 - 1);
   size_t align = 8;
   assert(cuda::align_down(ptr2, align) == ptr2 - 1); // run-time alignment
+
+  auto ptr3 = reinterpret_cast<void*>(ptr_int);
+  assert(cuda::align_down(ptr3, 4) == (void*) (ptr - 2));
   return true;
 }
 
