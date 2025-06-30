@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -159,6 +158,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 #if _CCCL_HAS_FLOAT128()
+
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
 #  if _CCCL_HAS_CTK()
@@ -170,6 +170,7 @@ template <class _Tp>
   return ::cuda::std::__isnan_impl(__x);
 #  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
+
 #endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
