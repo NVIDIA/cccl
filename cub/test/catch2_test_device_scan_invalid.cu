@@ -14,10 +14,10 @@
 
 #include <cstdint>
 
-#include "c2h/vector.h"
+#include <c2h/vector.h>
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include "thrust/detail/raw_pointer_cast.h"
+#include <thrust/detail/raw_pointer_cast.h>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 
