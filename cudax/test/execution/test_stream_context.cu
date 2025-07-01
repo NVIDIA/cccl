@@ -164,16 +164,46 @@ void bulk_on_stream_scheduler()
 void stream_adapt_non_visitable_sender()
 {
   ex::stream_context ctx{cuda::experimental::device_ref{0}};
-  auto sch         = ctx.get_scheduler();
-  auto with_stream = ex::prop{cuda::get_stream, cuda::get_stream(sch)};
-  auto sndr        = unknown_sender{ex::just(42) | ex::write_attrs(with_stream)};
+  auto with_sched = ex::prop{ex::get_scheduler, ctx.get_scheduler()};
 
-  // FUTURE: ex::starts_on is currently broken for the stream scheduler.
-  if (false)
-  {
-    auto [i] = ex::sync_wait(ex::starts_on(sch, sndr)).value();
-    CHECK(i == 42);
-  }
+  auto sndr = unknown_sender{ex::just(42)};
+  auto [i]  = ex::sync_wait(sndr, with_sched).value();
+  CHECK(i == 42);
+}
+
+void starts_on_with_stream_scheduler1()
+{
+  cudax::device_ref _dev{0};
+  cudax::stream sctx{_dev};
+  ex::thread_context tctx;
+  auto sch = sctx.get_scheduler();
+
+  auto start = ex::starts_on(sch, ex::just() | ex::then([] __device__() noexcept -> int {
+                                    return 42;
+                                  }));
+
+  auto [i] = ex::sync_wait(std::move(start)).value();
+  CHECK(i == 42);
+}
+
+void starts_on_with_stream_scheduler2()
+{
+  cudax::device_ref _dev{0};
+  cudax::stream sctx{_dev};
+  ex::thread_context tctx;
+  auto sch = sctx.get_scheduler();
+
+  auto start =
+    ex::starts_on(sch, ex::just() | ex::then([] __device__() noexcept -> int {
+                         return 42;
+                       }))
+    | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
+    | ex::then([] __host__ __device__(int i) noexcept -> int {
+        return i + 1;
+      });
+
+  auto [i] = ex::sync_wait(std::move(start)).value();
+  CHECK(i == 43);
 }
 
 // Test code is placed in separate functions to avoid an nvc++ issue with
@@ -185,7 +215,7 @@ C2H_TEST("a simple use of the stream context", "[context][stream]")
   REQUIRE_NOTHROW(stream_context_test1());
 }
 
-C2H_TEST("a simple use of the stream context", "[context][stream]")
+C2H_TEST("another simple use of the stream context", "[context][stream]")
 {
   REQUIRE_NOTHROW(stream_context_test2());
 }
@@ -203,5 +233,18 @@ C2H_TEST("launch a bulk kernel", "[context][stream]")
 C2H_TEST("run an unknown sender on a stream", "[context][stream]")
 {
   REQUIRE_NOTHROW(stream_adapt_non_visitable_sender());
+}
+
+C2H_TEST("use starts_on with a stream scheduler", "[context][stream]")
+{
+  SECTION("starts_on that completes on the stream scheduler")
+  {
+    REQUIRE_NOTHROW(starts_on_with_stream_scheduler1());
+  }
+
+  SECTION("starts_on that completes on the thread scheduler")
+  {
+    REQUIRE_NOTHROW(starts_on_with_stream_scheduler2());
+  }
 }
 } // namespace

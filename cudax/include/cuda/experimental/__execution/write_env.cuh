@@ -37,7 +37,7 @@
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __write_env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
 {
   _CUDAX_SEMI_PRIVATE :
   template <class _Rcvr, class _Sndr, class _Env>
@@ -72,7 +72,7 @@ public:
 };
 
 template <class _Sndr, class _Env>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __write_env_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
@@ -101,13 +101,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __write_env_t::__sndr_t
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __write_env_t __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
   _Env __env_;
   _Sndr __sndr_;
 };
 
 template <class _Sndr, class _Env>
-_CCCL_TRIVIAL_API constexpr auto __write_env_t::operator()(_Sndr __sndr, _Env __env) const
+_CCCL_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const
 {
   // The write_env algorithm is not customizable by design; hence, we don't dispatch to
   // transform_sender like we do for other algorithms.
@@ -115,9 +115,9 @@ _CCCL_TRIVIAL_API constexpr auto __write_env_t::operator()(_Sndr __sndr, _Env __
 }
 
 template <class _Sndr, class _Env>
-inline constexpr size_t structured_binding_size<__write_env_t::__sndr_t<_Sndr, _Env>> = 3;
+inline constexpr size_t structured_binding_size<write_env_t::__sndr_t<_Sndr, _Env>> = 3;
 
-_CCCL_GLOBAL_CONSTANT __write_env_t write_env{};
+_CCCL_GLOBAL_CONSTANT write_env_t write_env{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
