@@ -187,7 +187,8 @@ struct type;
 template <>
 struct type<id::sm_60>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_60;
     __traits.compute_capability_major             = 6;
@@ -206,14 +207,15 @@ struct type<id::sm_60>
     __traits.cp_async_supported = false;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_60 = type<id::sm_60>;
 
 template <>
 struct type<id::sm_61>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_61;
     __traits.compute_capability_major             = 6;
@@ -232,14 +234,15 @@ struct type<id::sm_61>
     __traits.cp_async_supported = false;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_61 = type<id::sm_61>;
 
 template <>
 struct type<id::sm_70>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_70;
     __traits.compute_capability_major             = 7;
@@ -259,14 +262,15 @@ struct type<id::sm_70>
     __traits.cp_async_supported = false;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_70 = type<id::sm_70>;
 
 template <>
 struct type<id::sm_75>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_75;
     __traits.compute_capability_major             = 7;
@@ -286,14 +290,15 @@ struct type<id::sm_75>
     __traits.cp_async_supported = false;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_75 = type<id::sm_75>;
 
 template <>
 struct type<id::sm_80>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_80;
     __traits.compute_capability_major             = 8;
@@ -313,14 +318,15 @@ struct type<id::sm_80>
     __traits.cp_async_supported = true;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_80 = type<id::sm_80>;
 
 template <>
 struct type<id::sm_86>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_86;
     __traits.compute_capability_major             = 8;
@@ -340,14 +346,15 @@ struct type<id::sm_86>
     __traits.cp_async_supported = true;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_86 = type<id::sm_86>;
 
 template <>
 struct type<id::sm_89>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_89;
     __traits.compute_capability_major             = 8;
@@ -367,14 +374,15 @@ struct type<id::sm_89>
     __traits.cp_async_supported = true;
     __traits.tma_supported      = false;
     return __traits;
-  }();
+  }
 };
 using sm_89 = type<id::sm_89>;
 
 template <>
 struct type<id::sm_90>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_90;
     __traits.compute_capability_major             = 9;
@@ -394,7 +402,7 @@ struct type<id::sm_90>
     __traits.cp_async_supported = true;
     __traits.tma_supported      = true;
     return __traits;
-  }();
+  }
 };
 using sm_90 = type<id::sm_90>;
 
@@ -407,7 +415,8 @@ using sm_90a = type<id::sm_90a>;
 template <>
 struct type<id::sm_100>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_100;
     __traits.compute_capability_major             = 10;
@@ -427,7 +436,7 @@ struct type<id::sm_100>
     __traits.cp_async_supported = true;
     __traits.tma_supported      = true;
     return __traits;
-  }();
+  }
 };
 using sm_100 = type<id::sm_100>;
 
@@ -439,15 +448,16 @@ using sm_100a = type<id::sm_100a>;
 template <>
 struct type<id::sm_103>
 {
-  static constexpr traits_t traits = []() constexpr {
-    traits_t __traits                 = sm_100::traits;
+  _CCCL_API static constexpr traits_t traits()
+  {
+    traits_t __traits                 = sm_100::traits();
     __traits.id                       = id::sm_103;
     __traits.compute_capability_major = 10;
     __traits.compute_capability_minor = 3;
     __traits.compute_capability       = 103;
 
     return __traits;
-  }();
+  }
 };
 using sm_103 = type<id::sm_103>;
 
@@ -459,7 +469,8 @@ using sm_103a = type<id::sm_103a>;
 template <>
 struct type<id::sm_120>
 {
-  static constexpr traits_t traits = []() constexpr {
+  _CCCL_API static constexpr traits_t traits()
+  {
     traits_t __traits{};
     __traits.id                                   = id::sm_120;
     __traits.compute_capability_major             = 12;
@@ -479,7 +490,7 @@ struct type<id::sm_120>
     __traits.cp_async_supported = true;
     __traits.tma_supported      = true;
     return __traits;
-  }();
+  }
 };
 using sm_120 = type<id::sm_120>;
 
@@ -490,47 +501,47 @@ using sm_120a = type<id::sm_120a>;
 
 inline constexpr int __highest_known_arch = 120;
 
-_CCCL_HOST_DEVICE constexpr inline traits_t traits_for_id(id __id)
+_CCCL_API constexpr inline traits_t traits_for_id(id __id)
 {
   switch (__id)
   {
     case id::sm_60:
-      return arch::sm_60::traits;
+      return arch::sm_60::traits();
     case id::sm_61:
-      return arch::sm_61::traits;
+      return arch::sm_61::traits();
     case id::sm_70:
-      return arch::sm_70::traits;
+      return arch::sm_70::traits();
     case id::sm_75:
-      return arch::sm_75::traits;
+      return arch::sm_75::traits();
     case id::sm_80:
-      return arch::sm_80::traits;
+      return arch::sm_80::traits();
     case id::sm_86:
-      return arch::sm_86::traits;
+      return arch::sm_86::traits();
     case id::sm_89:
-      return arch::sm_89::traits;
+      return arch::sm_89::traits();
     case id::sm_90:
-      return arch::sm_90::traits;
+      return arch::sm_90::traits();
     case id::sm_90a:
-      return arch::sm_90a::traits;
+      return arch::sm_90a::traits();
     case id::sm_100:
-      return arch::sm_100::traits;
+      return arch::sm_100::traits();
     case id::sm_100a:
-      return arch::sm_100a::traits;
+      return arch::sm_100a::traits();
     case id::sm_103:
-      return arch::sm_103::traits;
+      return arch::sm_103::traits();
     case id::sm_103a:
-      return arch::sm_103a::traits;
+      return arch::sm_103a::traits();
     case id::sm_120:
-      return arch::sm_120::traits;
+      return arch::sm_120::traits();
     case id::sm_120a:
-      return arch::sm_120a::traits;
+      return arch::sm_120a::traits();
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
   }
 }
 
-_CCCL_HOST_DEVICE constexpr inline id id_for_compute_capability(int compute_capability)
+_CCCL_API constexpr inline id id_for_compute_capability(int compute_capability)
 {
   if (compute_capability < 60 || compute_capability > __highest_known_arch)
   {
@@ -539,12 +550,12 @@ _CCCL_HOST_DEVICE constexpr inline id id_for_compute_capability(int compute_capa
   return static_cast<id>(compute_capability);
 }
 
-_CCCL_HOST_DEVICE constexpr inline traits_t traits_for_compute_capability(int compute_capability)
+_CCCL_API constexpr inline traits_t traits_for_compute_capability(int compute_capability)
 {
   return traits_for_id(id_for_compute_capability(compute_capability));
 }
 
-_CCCL_HOST_DEVICE constexpr inline id __special_id_for_compute_capability(int value)
+_CCCL_API constexpr inline id __special_id_for_compute_capability(int value)
 {
   switch (value)
   {
