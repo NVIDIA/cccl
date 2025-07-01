@@ -40,7 +40,7 @@ template <typename _Up, typename _Tp>
   else if constexpr (_CUDA_VSTD::is_void_v<_Up>) // _Tp: non-void, _Up: void
   {
     _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
-    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<void*>(__ptr), alignof(_Tp));
+    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), alignof(_Tp));
   }
   else
   {
@@ -57,6 +57,18 @@ template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_API inline const _Up* ptr_rebind(const _Tp* __ptr) noexcept
 {
   return ::cuda::ptr_rebind<const _Up>(const_cast<_Tp*>(__ptr));
+}
+
+template <typename _Up, typename _Tp>
+[[nodiscard]] _CCCL_API inline volatile _Up* ptr_rebind(volatile _Tp* __ptr) noexcept
+{
+  return ::cuda::ptr_rebind<volatile _Up>(const_cast<_Tp*>(__ptr));
+}
+
+template <typename _Up, typename _Tp>
+[[nodiscard]] _CCCL_API inline const volatile _Up* ptr_rebind(const volatile _Tp* __ptr) noexcept
+{
+  return ::cuda::ptr_rebind<const volatile _Up>(const_cast<_Tp*>(__ptr));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

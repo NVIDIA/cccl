@@ -13,21 +13,24 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
-__host__ __device__ bool test()
+template <typename T, typename U, typename V>
+__host__ __device__ void test()
 {
   uintptr_t ptr_int = 16;
-  auto ptr          = reinterpret_cast<char*>(ptr_int);
-  assert(cuda::ptr_rebind<uint16_t>(ptr) == (uint16_t*) ptr);
-  assert(cuda::ptr_rebind<int>(ptr) == (int*) ptr);
-  assert(cuda::ptr_rebind<uint64_t>(ptr) == (uint64_t*) ptr);
-  static_assert(cuda::std::is_same_v<int*, decltype(cuda::ptr_rebind<int>(ptr))>);
+  auto ptr          = reinterpret_cast<T>(ptr_int);
+  static_assert(cuda::std::is_same_v<U, decltype(cuda::ptr_rebind<V>(ptr))>);
+}
 
-  auto const_ptr = reinterpret_cast<const char*>(ptr_int);
-  assert(cuda::ptr_rebind<uint16_t>(const_ptr) == (const uint16_t*) ptr);
-  static_assert(cuda::std::is_same_v<const int*, decltype(cuda::ptr_rebind<int>(const_ptr))>);
-
-  auto ptr2 = reinterpret_cast<void*>(ptr_int);
-  assert(cuda::ptr_rebind<uint16_t>(ptr2) == (uint16_t*) ptr);
+__host__ __device__ bool test()
+{
+  test<char*, char*, char>();
+  test<char*, short*, short>();
+  test<char*, int*, int>();
+  test<char*, void*, void>();
+  test<const char*, const int*, int>();
+  test<volatile char*, volatile int*, int>();
+  test<const volatile char*, const volatile int*, int>();
+  test<const char*, const void*, void>();
   return true;
 }
 

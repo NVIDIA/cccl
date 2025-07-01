@@ -12,18 +12,27 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-__host__ __device__ bool test()
+template <typename T, typename U>
+__host__ __device__ void test()
 {
   uintptr_t ptr_int = 10;
-  auto ptr          = reinterpret_cast<char*>(ptr_int);
+  auto ptr          = reinterpret_cast<T>(ptr_int);
   assert(cuda::is_aligned(ptr, 1));
   assert(cuda::is_aligned(ptr, 2));
   assert(!cuda::is_aligned(ptr, 4));
   assert(!cuda::is_aligned(ptr, 8));
   uintptr_t ptr_int2 = 12;
-  auto ptr2          = reinterpret_cast<int*>(ptr_int2);
+  auto ptr2          = reinterpret_cast<U>(ptr_int2);
   assert(cuda::is_aligned(ptr2, 4));
   assert(!cuda::is_aligned(ptr2, 8));
+}
+
+__host__ __device__ bool test()
+{
+  test<char*, int*>();
+  test<const char*, const int*>();
+  test<volatile char*, volatile int*>();
+  test<const volatile char*, const volatile int*>();
   return true;
 }
 

@@ -12,22 +12,29 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-__host__ __device__ bool test()
+template <typename T, typename U>
+__host__ __device__ void test()
 {
   uintptr_t ptr_int = 10;
-  auto ptr          = reinterpret_cast<char*>(ptr_int);
+  auto ptr          = reinterpret_cast<T>(ptr_int);
   assert(cuda::align_down(ptr, 1) == ptr);
   assert(cuda::align_down(ptr, 2) == ptr);
-  assert(cuda::align_down(ptr, 4) == ptr - 2);
-  assert(cuda::align_down(ptr, 8) == ptr - 2);
+  assert(cuda::align_down(ptr, 4) == reinterpret_cast<T>(8));
+  assert(cuda::align_down(ptr, 8) == reinterpret_cast<T>(8));
   uintptr_t ptr_int2 = 12;
-  auto ptr2          = reinterpret_cast<int*>(ptr_int2);
-  assert(cuda::align_down(ptr2, 8) == ptr2 - 1);
+  auto ptr2          = reinterpret_cast<U>(ptr_int2);
+  assert(cuda::align_down(ptr2, 8) == reinterpret_cast<U>(8));
   size_t align = 8;
-  assert(cuda::align_down(ptr2, align) == ptr2 - 1); // run-time alignment
+  assert(cuda::align_down(ptr2, align) == reinterpret_cast<U>(8)); // run-time alignment
+}
 
-  auto ptr3 = reinterpret_cast<void*>(ptr_int);
-  assert(cuda::align_down(ptr3, 4) == (void*) (ptr - 2));
+__host__ __device__ bool test()
+{
+  test<char*, int*>();
+  test<const char*, const int*>();
+  test<volatile char*, volatile int*>();
+  test<const volatile char*, const volatile int*>();
+  test<void*, void*>();
   return true;
 }
 

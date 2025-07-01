@@ -35,6 +35,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
   return (reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) & (__alignment - 1)) == 0;
 }
 
+[[nodiscard]] _CCCL_API inline bool is_aligned(const volatile void* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
+{
+  return ::cuda::is_aligned(const_cast<const void*>(__ptr), __alignment);
+}
+
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
