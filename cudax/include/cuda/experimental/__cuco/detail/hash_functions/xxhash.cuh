@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/bit>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/rotate.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -80,6 +81,61 @@ private:
   static constexpr _CUDA_VSTD::uint32_t __prime4 = 0x27d4eb2fu;
   static constexpr _CUDA_VSTD::uint32_t __prime5 = 0x165667b1u;
 
+  static constexpr _CUDA_VSTD::size_t __block_size = 4;
+  static constexpr _CUDA_VSTD::size_t __chunk_size = 16;
+
+  //! @brief Type erased holder of all the bytes
+  template <size_t _KeySize,
+            size_t _Alignment,
+            bool _HasChunks = (_KeySize >= __block_size),
+            bool _HasTail   = (_KeySize % __block_size)>
+  struct alignas(_Alignment) _Byte_holder
+  {
+    //! The number of trailing bytes that do not fit into a uint32_t
+    static constexpr size_t __tail_size = _KeySize % __block_size;
+
+    //! The number of uint32_t blocks
+    static constexpr size_t __num_blocks = _KeySize / __block_size;
+
+    //! The number of 16-byte chunks
+    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
+
+    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
+    unsigned char __bytes[__tail_size];
+  };
+
+  //! @brief Type erased holder of small types < __block_size
+  template <size_t _KeySize, size_t _Alignment>
+  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, false, true>
+  {
+    //! The number of trailing bytes that do not fit into a uint32_t
+    static constexpr size_t __tail_size = _KeySize % __block_size;
+
+    //! The number of uint32_t blocks
+    static constexpr size_t __num_blocks = _KeySize / __block_size;
+
+    //! The number of 16-byte chunks
+    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
+
+    alignas(_Alignment) unsigned char __bytes[__tail_size];
+  };
+
+  //! @brief Type erased holder of types without trailing bytes
+  template <size_t _KeySize, size_t _Alignment>
+  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, true, false>
+  {
+    //! The number of trailing bytes that do not fit into a uint32_t
+    static constexpr size_t __tail_size = _KeySize % __block_size;
+
+    //! The number of uint32_t blocks
+    static constexpr size_t __num_blocks = _KeySize / __block_size;
+
+    //! The number of 16-byte chunks
+    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
+
+    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
+  };
+
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
@@ -88,66 +144,51 @@ public:
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
-
   //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
   [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE operator()(_Key const& __key) const noexcept
   {
-    if constexpr (sizeof(_Key) <= 16)
-    {
-      _Key const __key_copy = __key;
-      return __compute_hash(reinterpret_cast<::cuda::std::byte const*>(&__key_copy),
-                            cuco::extent<_CUDA_VSTD::uint32_t, sizeof(_Key)>{});
-    }
-    else
-    {
-      return __compute_hash(reinterpret_cast<::cuda::std::byte const*>(&__key),
-                            cuco::extent<_CUDA_VSTD::uint32_t, sizeof(_Key)>{});
-    }
+    using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
+    // explicit copy to avoid emiting a bunch of LDG.8 instructions
+    const _Key __copy{__key};
+    return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__copy));
   }
 
+private:
   //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
   //!
   //! @tparam _Extent The extent type
   //!
-  //! @param __bytes The input argument to hash
-  //! @param __size The extent of the data in bytes
   //! @return The resulting hash value
-  template <typename _Extent>
-  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
-  __compute_hash(::cuda::std::byte const* __bytes, _Extent __size) const noexcept
+  template <class _Holder>
+  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE __compute_hash(_Holder __holder) const noexcept
   {
     _CUDA_VSTD::size_t __offset = 0;
     _CUDA_VSTD::uint32_t __h32  = {};
 
-    // data can be processed in 16-byte chunks
-    if (__size >= 16)
+    // process data in 16-byte chunks
+    if constexpr (_Holder::__num_chunks > 0)
     {
-      auto const __limit        = __size - 16;
       _CUDA_VSTD::uint32_t __v1 = __seed_ + __prime1 + __prime2;
       _CUDA_VSTD::uint32_t __v2 = __seed_ + __prime2;
       _CUDA_VSTD::uint32_t __v3 = __seed_;
       _CUDA_VSTD::uint32_t __v4 = __seed_ - __prime1;
 
-      do
+      for (size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
       {
-        // pipeline 4*4byte computations
-        auto const __pipeline_offset = __offset / 4;
-        __v1 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 0) * __prime2;
+        __v1 += __holder.__blocks[__offset++] * __prime2;
         __v1 = ::cuda::std::rotl(__v1, 13);
         __v1 *= __prime1;
-        __v2 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 1) * __prime2;
+        __v2 += __holder.__blocks[__offset++] * __prime2;
         __v2 = ::cuda::std::rotl(__v2, 13);
         __v2 *= __prime1;
-        __v3 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 2) * __prime2;
+        __v3 += __holder.__blocks[__offset++] * __prime2;
         __v3 = ::cuda::std::rotl(__v3, 13);
         __v3 *= __prime1;
-        __v4 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 3) * __prime2;
+        __v4 += __holder.__blocks[__offset++] * __prime2;
         __v4 = ::cuda::std::rotl(__v4, 13);
         __v4 *= __prime1;
-        __offset += 16;
-      } while (__offset <= __limit);
-
+      }
       __h32 = ::cuda::std::rotl(__v1, 1) + ::cuda::std::rotl(__v2, 7) + ::cuda::std::rotl(__v3, 12)
             + ::cuda::std::rotl(__v4, 18);
     }
@@ -156,60 +197,34 @@ public:
       __h32 = __seed_ + __prime5;
     }
 
-    __h32 += __size;
+    __h32 += sizeof(_Holder);
 
     // remaining data can be processed in 4-byte chunks
-    if ((__size % 16) >= 4)
+    if constexpr (_Holder::__num_blocks % __chunk_size > 0)
     {
-      for (; __offset <= __size - 4; __offset += 4)
+      for (; __offset < _Holder::__num_blocks; ++__offset)
       {
-        __h32 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __offset / 4) * __prime3;
+        __h32 += __holder.__blocks[__offset] * __prime3;
         __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
 
     // the following loop is only needed if the size of the key is not a multiple of the block size
-    if (__size % 4)
+    if constexpr (_Holder::__tail_size > 0)
     {
-      while (__offset < __size)
+      for (size_t __i = 0; __i < _Holder::__tail_size; ++__i)
       {
-        __h32 += (::cuda::std::to_integer<_CUDA_VSTD::uint32_t>(__bytes[__offset]) & 255) * __prime5;
+        __h32 += (static_cast<_CUDA_VSTD::uint32_t>(__holder.__bytes[__i]) & 255) * __prime5;
         __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
-        ++__offset;
       }
     }
 
-    return __finalize(__h32);
-  }
-
-  //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
-  //!
-  //! @note This API is to ensure backward compatibility with existing use cases using `std::byte`.
-  //! Users are encouraged to use the appropriate `cuda::std::byte` overload whenever possible for
-  //! better support and performance on the device.
-  //!
-  //! @tparam _Extent The extent type
-  //!
-  //! @param __bytes The input argument to hash
-  //! @param __size The extent of the data in bytes
-  //! @return The resulting hash value
-  template <typename _Extent>
-  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
-  __compute_hash(::std::byte const* __bytes, _Extent __size) const noexcept
-  {
-    return this->__compute_hash(reinterpret_cast<::cuda::std::byte const*>(__bytes), __size);
-  }
-
-private:
-  // avalanche helper
-  [[nodiscard]] constexpr _CCCL_HOST_DEVICE _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
-  {
-    __h ^= __h >> 15;
-    __h *= __prime2;
-    __h ^= __h >> 13;
-    __h *= __prime3;
-    __h ^= __h >> 16;
-    return __h;
+    __h32 ^= __h32 >> 15;
+    __h32 *= __prime2;
+    __h32 ^= __h32 >> 13;
+    __h32 *= __prime3;
+    __h32 ^= __h32 >> 16;
+    return __h32;
   }
 
   _CUDA_VSTD::uint32_t __seed_;
