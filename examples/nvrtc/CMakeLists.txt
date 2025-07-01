@@ -63,7 +63,9 @@ set(includes "${includes}\"-I${thrust_include}\",") # TODO: Make Thrust NVRTC sa
 
 
 # Tell NVRTC which architectures and include locations are required
-target_compile_definitions(nvrtc_example PRIVATE "EXTERNAL_NVRTC_ARCH=sm_80")
+# Uncomment to compile for SASS
+# target_compile_definitions(nvrtc_example PRIVATE "EXTERNAL_NVRTC_ARCH=sm_80")
+target_compile_definitions(nvrtc_example PRIVATE "EXTERNAL_NVRTC_ARCH=compute_80")
 target_compile_definitions(nvrtc_example PRIVATE "EXTERNAL_NVRTC_ARGS=${includes}")
 
 # This is only relevant for internal testing and not needed by end users.

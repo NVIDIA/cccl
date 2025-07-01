@@ -122,13 +122,15 @@ gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> op
   bool sass        = nvrtcGetCUBINSize(prog, &cubinSize) == NVRTC_SUCCESS;
   bool ptx         = nvrtcGetPTXSize(prog, &ptxSize) == NVRTC_SUCCESS;
 
-  if (sass)
+  if (sass && cubinSize > 0)
   {
+    printf("Found SASS (code size %zu bytes).\n", cubinSize);
     code.reset(new char[cubinSize]);
     NVRTC_SAFE_CALL(nvrtcGetCUBIN(prog, code.get()));
   }
-  else if (ptx)
+  else if (ptx && ptxSize > 0)
   {
+    printf("Found PTX (code size %zu bytes).\n", ptxSize);
     code.reset(new char[ptxSize]);
     NVRTC_SAFE_CALL(nvrtcGetPTX(prog, code.get()));
   }
