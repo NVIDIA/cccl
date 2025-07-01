@@ -604,7 +604,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     if (elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
-      ptx::fence_proxy_async(ptx::space_shared);
+      // an update to the CUDA memory model blesses skipping the following fence
+      // ptx::fence_proxy_async(ptx::space_shared);
 
       int smem_offset                    = 0;
       ::cuda::std::uint32_t total_copied = 0;
@@ -643,7 +644,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     if (elected)
     {
       ptx::mbarrier_init(&bar, 1);
-      ptx::fence_proxy_async(ptx::space_shared);
+      // an update to the CUDA memory model blesses skipping the following fence
+      // ptx::fence_proxy_async(ptx::space_shared);
     }
 
     // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
@@ -677,7 +679,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
 
   // all threads wait for bulk copy
-  __syncthreads();
+  __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
     ;
 
