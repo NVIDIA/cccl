@@ -34,7 +34,7 @@ namespace cuda::experimental
 namespace arch
 {
 
-inline constexpr int __special_id_multiplier = 100000;
+inline constexpr int __arch_specific_id_multiplier = 100000;
 
 // @brief Architecture identifier
 // This type identifies an architecture. It has more possible entries than just numeric values of the compute
@@ -52,10 +52,10 @@ enum class id : int
   sm_100  = 100,
   sm_103  = 103,
   sm_120  = 120,
-  sm_90a  = 90 * __special_id_multiplier,
-  sm_100a = 100 * __special_id_multiplier,
-  sm_103a = 103 * __special_id_multiplier,
-  sm_120a = 120 * __special_id_multiplier,
+  sm_90a  = 90 * __arch_specific_id_multiplier,
+  sm_100a = 100 * __arch_specific_id_multiplier,
+  sm_103a = 103 * __arch_specific_id_multiplier,
+  sm_120a = 120 * __arch_specific_id_multiplier,
 };
 
 // @brief Architecture traits
@@ -75,7 +75,7 @@ struct traits_t
   const int max_block_dim_z = 64;
 
   // Maximum x-dimension of a grid
-  const int max_grid_dim_x = cuda::std::numeric_limits<int>::max();
+  const int max_grid_dim_x = cuda::std::numeric_limits<int32_t>::max();
 
   // Maximum y-dimension of a grid
   const int max_grid_dim_y = 64 * 1024 - 1;
