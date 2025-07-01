@@ -18,7 +18,7 @@ The function returns the original pointer or closest pointer smaller than ``ptr`
 
 **Return value**
 
-- The original pointer or smallest pointer after ``ptr`` that is aligned to the specified alignment.
+- The original pointer or closest pointer smaller than ``ptr`` that is aligned to the specified alignment.
 
 **Constraints**
 

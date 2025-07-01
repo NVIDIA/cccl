@@ -22,21 +22,21 @@ Memory
      - **CUDA Toolkit Availability**
 
    * - :ref:`is_aligned <libcudacxx-extended-api-memory-is_aligned>`
-     - Generate a bitmask
+     - Check if a pointer is aligned
      - CCCL 3.1.0
      - CUDA 13.1
 
    * - :ref:`align_up <libcudacxx-extended-api-memory-align_up>`
-     - Reverse the order of bits
+     - Align up a pointer to the specified alignment
      - CCCL 3.1.0
      - CUDA 13.1
 
    * - :ref:`align_down <libcudacxx-extended-api-memory-align_down>`
-     - Insert a bitfield
+     - Align down a pointer to the specified alignment
      - CCCL 3.1.0
      - CUDA 13.1
 
    * - :ref:`ptr_rebind <libcudacxx-extended-api-memory-ptr_rebind>`
-     - Extract a bitfield
+     - Rebind a pointer to a different type
      - CCCL 3.1.0
      - CUDA 13.1
