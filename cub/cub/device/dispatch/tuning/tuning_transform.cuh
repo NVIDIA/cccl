@@ -267,54 +267,58 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
   };
 
-  // TODO(bgruber): should we add a tuning for 750? They should have items_per_thread_from_occupancy(256, 4, ...)
-
-  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion, auto SMemForTileSize>
-  struct async_policy_base
+  struct policy800 : ChainedPolicy<800, policy800, policy300>
   {
   private:
-    using async_policy = async_copy_policy_t<AsyncBlockSize, Alignment>;
-    // TODO(bgruber): I would love to use the architecture specific limit here instead of max_smem_per_block. However,
-    // this is not forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that
-    // architecture, but then runs on the next architecture after that, which may have a smaller available SMEM, we get
-    // a crash.
+    static constexpr int block_threads = 256;
+    using async_policy                 = async_copy_policy_t<block_threads, ldgsts_size_and_align>;
+    // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
+    // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
+    // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      SMemForTileSize(AsyncBlockSize * async_policy::min_items_per_thread, Alignment) > int{max_smem_per_block};
+      memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(
+        block_threads * async_policy::min_items_per_thread, ldgsts_size_and_align)
+      > int{max_smem_per_block};
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+
+  public:
+    static constexpr int min_bif    = arch_to_min_bytes_in_flight(800);
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<block_threads>, async_policy>;
+  };
+
+  template <int AsyncBlockSize, int PtxVersion>
+  struct bulk_copy_policy_base
+  {
+  private:
+    static constexpr int alignment = bulk_copy_alignment(PtxVersion);
+    using async_policy             = async_copy_policy_t<AsyncBlockSize, alignment>;
+    // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
+    // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
+    // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
+    static constexpr bool exhaust_smem =
+      bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
+        AsyncBlockSize * async_policy::min_items_per_thread, alignment)
+      > int{max_smem_per_block};
     // FIXME(bgruber): we need to support overaligned types eventually !!!
-    static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > Alignment) || ...);
+    static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > alignment) || ...);
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Alg;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
     using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
 
-  struct policy800
-      : async_policy_base<Algorithm::memcpy_async,
-                          256,
-                          ldgsts_size_and_align,
-                          800,
-                          memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>>
-      , ChainedPolicy<800, policy800, policy300>
-  {};
-
   struct policy900
-      : async_policy_base<Algorithm::ublkcp,
-                          256,
-                          bulk_copy_alignment(900),
-                          900,
-                          bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>>
+      : bulk_copy_policy_base<256, 900>
       , ChainedPolicy<900, policy900, policy800>
   {};
 
   struct policy1000
-      : async_policy_base<Algorithm::ublkcp,
-                          128,
-                          bulk_copy_alignment(1000),
-                          1000,
-                          bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>>
+      : bulk_copy_policy_base<128, 1000>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 
