@@ -312,7 +312,6 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   auto d_in             = thrust::make_constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  init_t init = 0;
   size_t expected_bytes_allocated{};
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
@@ -359,8 +358,8 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       using dispatch_t = cub::detail::
         DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
 
-      REQUIRE(
-        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE(cudaSuccess
+              == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init_t{}));
 
       return cuda::std::array<void*, 3>{
         reinterpret_cast<void*>(
