@@ -94,6 +94,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
+    execution/test_write_env.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
