@@ -168,6 +168,11 @@ struct get_domain_override_t
   {
     return {};
   }
+
+  [[nodiscard]] static _CCCL_API constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return false;
+  }
 };
 
 _CCCL_GLOBAL_CONSTANT get_domain_override_t get_domain_override{};
