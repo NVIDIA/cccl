@@ -63,13 +63,13 @@ public:
   // ::std::function<pos4(size_t)> delinearize : translate the index in a buffer into a position in the data
   // TODO pass mv(place)
   template <typename F>
-  localized_array(exec_place_grid grid,
+  localized_array(exec_place_grid _grid,
                   get_executor_func_t mapper,
                   F&& delinearize,
                   size_t total_size,
                   size_t elemsize,
                   dim4 data_dims)
-      : grid(mv(grid))
+      : grid(mv(_grid))
       , mapper(mv(mapper))
       , total_size_bytes(total_size * elemsize)
       , data_dims(data_dims)
@@ -129,6 +129,7 @@ public:
     meta.reserve(nblocks);
 
     // Try to merge blocks with the same position
+    fprintf(stderr, "BEGIN BLOCK MAPPING:\n");
     for (size_t i = 0; i < nblocks;)
     {
       pos4 p   = owner[i];
@@ -139,10 +140,17 @@ public:
         j++;
       }
 
+      fprintf(stderr,
+              "[%ld] place %s => size %ld offset %ld\n",
+              i,
+              grid.get_place(p).affine_data_place().to_string().c_str(),
+              j * alloc_granularity_bytes,
+              i * block_size_bytes);
       meta.emplace_back(grid_pos_to_dev(p), j * alloc_granularity_bytes, i * block_size_bytes);
 
       i += j;
     }
+    fprintf(stderr, "END BLOCK MAPPING:\n");
 
     // fprintf(stderr, "GOT %ld effective blocks (%ld blocks)\n", nblocks_effective, nblocks);
 
