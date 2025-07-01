@@ -30,7 +30,7 @@ namespace cuda::experimental::cuco::__detail
 {
 
 template <typename _Tp, typename _Up, typename _Extent>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr _Tp __load_chunk(_Up const* const __data, _Extent __index) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __load_chunk(_Up const* const __data, _Extent __index) noexcept
 {
   auto const __bytes = reinterpret_cast<::cuda::std::byte const*>(__data);
   _Tp __chunk;

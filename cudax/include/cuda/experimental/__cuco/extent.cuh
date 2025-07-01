@@ -42,12 +42,12 @@ struct extent
   constexpr extent() = default;
 
   /// Constructs from `_SizeType`
-  _CCCL_HOST_DEVICE constexpr extent(_SizeType) noexcept {}
+  _CCCL_API constexpr extent(_SizeType) noexcept {}
 
   //! @brief Conversion to value_type.
   //!
   //! @return Extent size
-  _CCCL_HOST_DEVICE constexpr operator value_type() const noexcept
+  _CCCL_API constexpr operator value_type() const noexcept
   {
     return _N;
   }
@@ -64,14 +64,14 @@ struct extent<_SizeType, dynamic_extent>
   //! @brief Constructs extent from a given `size`.
   //!
   //! @param __size The extent size
-  _CCCL_HOST_DEVICE constexpr extent(_SizeType __size) noexcept
+  _CCCL_API constexpr extent(_SizeType __size) noexcept
       : __value{__size}
   {}
 
   //! @brief Conversion to value_type.
   //!
   //! @return Extent size
-  _CCCL_HOST_DEVICE constexpr operator value_type() const noexcept
+  _CCCL_API constexpr operator value_type() const noexcept
   {
     return __value;
   }

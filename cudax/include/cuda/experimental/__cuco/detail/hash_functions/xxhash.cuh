@@ -139,14 +139,14 @@ private:
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE constexpr _XXHash_32(_CUDA_VSTD::uint32_t __seed = 0)
+  _CCCL_API constexpr _XXHash_32(_CUDA_VSTD::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
   //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
-  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE operator()(_Key const& __key) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t operator()(_Key const& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
     // explicit copy to avoid emitting a bunch of LDG.8 instructions
@@ -161,7 +161,7 @@ private:
   //!
   //! @return The resulting hash value
   template <class _Holder>
-  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
     _CUDA_VSTD::size_t __offset = 0;
     _CUDA_VSTD::uint32_t __h32  = {};
