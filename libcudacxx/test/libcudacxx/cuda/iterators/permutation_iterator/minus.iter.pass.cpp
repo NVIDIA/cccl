@@ -24,8 +24,8 @@ __host__ __device__ constexpr bool test()
     const int offset[] = {2, 4};
     cuda::permutation_iterator iter1(buffer, indexIter{offset});
     cuda::permutation_iterator iter2(buffer, indexIter{offset + 1});
-    assert(iter1 - iter2 == -2);
-    assert(iter2 - iter1 == 2);
+    assert(iter1 - iter2 == -1);
+    assert(iter2 - iter1 == 1);
     assert(iter1.index() == offset[0]);
     assert(iter2.index() == offset[1]);
 
@@ -36,8 +36,8 @@ __host__ __device__ constexpr bool test()
     const int offset[] = {2, 4};
     const cuda::permutation_iterator iter1(buffer, indexIter{offset});
     const cuda::permutation_iterator iter2(buffer, indexIter{offset + 1});
-    assert(iter1 - iter2 == -2);
-    assert(iter2 - iter1 == 2);
+    assert(iter1 - iter2 == -1);
+    assert(iter2 - iter1 == 1);
     assert(iter1.index() == offset[0]);
     assert(iter2.index() == offset[1]);
 

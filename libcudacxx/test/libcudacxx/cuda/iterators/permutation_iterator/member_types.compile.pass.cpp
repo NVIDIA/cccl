@@ -26,10 +26,28 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
   }
   {
-    using Iter = cuda::permutation_iterator<random_access_iterator<int*>>;
-    static_assert(cuda::std::same_as<Iter::iterator_type, random_access_iterator<int*>>);
+    using Iter = cuda::permutation_iterator<int*, random_access_iterator<int*>>;
+    static_assert(cuda::std::same_as<Iter::iterator_type, int*>);
     static_assert(cuda::std::same_as<Iter::value_type, int>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+  }
+
+  { // We take the value_type and iterator_type but difference type comes from the index iterator
+    using Iter = cuda::permutation_iterator<cuda::counting_iterator<short>, int*>;
+    static_assert(cuda::std::same_as<Iter::iterator_type, cuda::counting_iterator<short>>);
+    static_assert(cuda::std::same_as<Iter::value_type, short>);
+    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+  }
+
+  { // We take the value_type and iterator_type but difference type comes from the index iterator
+    using Iter = cuda::permutation_iterator<int*, cuda::counting_iterator<short>>;
+    static_assert(cuda::std::same_as<Iter::iterator_type, int*>);
+    static_assert(cuda::std::same_as<Iter::value_type, int>);
+    static_assert(cuda::std::same_as<Iter::difference_type, int>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
   }
