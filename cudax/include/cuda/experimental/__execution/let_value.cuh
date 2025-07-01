@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -94,7 +95,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   /// the predecessor sender.
   template <class _Completions, class _Env>
   using __results_t _CCCL_NODEBUG_ALIAS =
-    __gather_completion_signatures<_Completions, _SetTag, _CUDA_VSTD::__decayed_tuple, __variant>;
+    __gather_completion_signatures<_Completions, __set_tag_t, _CUDA_VSTD::__decayed_tuple, __variant>;
+
+  template <class _Fn>
+  struct __sender2_fn
+  {
+    template <class... _As>
+    using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_As>&...>;
+  };
 
   template <class _Fn, class _Rcvr>
   struct __opstate_fn
@@ -108,7 +116,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   /// the second operation state.
   template <class _Completions, class _Fn, class _Rcvr>
   using __opstate2_t _CCCL_NODEBUG_ALIAS =
-    __gather_completion_signatures<_Completions, _SetTag, __opstate_fn<_Fn, _Rcvr>::template __call, __variant>;
+    __gather_completion_signatures<_Completions, __set_tag_t, __opstate_fn<_Fn, _Rcvr>::template __call, __variant>;
 
   template <class _Rcvr, class _Fn, class _Completions>
   struct __state_t
@@ -127,7 +135,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     template <class _Tag, class... _As>
     _CCCL_API void __complete(_Tag, _As&&... __as) noexcept
     {
-      if constexpr (_Tag{} == _SetTag{})
+      if constexpr (_Tag{} == __set_tag_t{})
       {
         _CCCL_TRY
         {
@@ -251,7 +259,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct __domain_transform_fn
   {
     template <class... _Ts>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_SetTag (*)(_Ts...)) const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(__set_tag_t (*)(_Ts...)) const
     {
       using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_Ts>&...>;
       // ask the result sender if it knows where it will complete:
@@ -264,14 +272,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     template <class... _Domains>
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Domains...) const
     {
-      if constexpr (_CUDA_VSTD::_IsValidExpansion<_CUDA_VSTD::common_type_t, _Domains...>::value)
-      {
-        return _CUDA_VSTD::common_type_t<_Domains...>{};
-      }
-      else
-      {
-        return __nil{};
-      }
+      using __fn_t = _CUDA_VSTD::__type_try_catch<_CUDA_VSTD::__type_quote<_CUDA_VSTD::common_type_t>,
+                                                  _CUDA_VSTD::__type_always<__nil>>;
+      return _CUDA_VSTD::__type_call<__fn_t, _Domains...>{};
     }
   };
 
@@ -282,7 +285,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     using __completions = completion_signatures_of_t<_Sndr>;
     if constexpr (__valid_completion_signatures<__completions>)
     {
-      return __completions{}.select(_SetTag{}).transform_reduce(__domain_transform_fn<_Fn>{}, __domain_reduce_fn{});
+      return __completions{}.select(__set_tag_t{}).transform_reduce(__domain_transform_fn<_Fn>{}, __domain_reduce_fn{});
     }
     else
     {
@@ -370,15 +373,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     {
       if constexpr (__set_tag_t{} == execution::set_value)
       {
-        return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn>{});
+        return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn, _Env...>{});
       }
       else if constexpr (__set_tag_t{} == execution::set_error)
       {
-        return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn>{});
+        return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn, _Env...>{});
       }
       else
       {
-        return transform_completion_signatures(__child_completions, {}, {}, __transform_args_fn<_Fn>{});
+        return transform_completion_signatures(__child_completions, {}, {}, __transform_args_fn<_Fn, _Env...>{});
       }
     }
 
@@ -440,6 +443,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__closure_t
     : __let_t<let_stopped_t, set_stopped_t>::__closure_base_t<_Fn>
 {};
 
+template <class... _Sndr>
+using __all_non_dependent_t = _CUDA_VSTD::__fold_and<(!dependent_sender<_Sndr>) ...>;
+
 template <class _LetTag, class _SetTag>
 template <class _Sndr, class _Fn>
 [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
@@ -450,7 +456,19 @@ template <class _Sndr, class _Fn>
   // the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
   {
-    __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
+    // Although the input sender is not dependent, the sender(s) returned from the
+    // function might be. Only do eager type-checking if all the possible senders returned
+    // by the function are non-dependent. If any of them is dependent, we will defer the
+    // type-checking to the point where the sender is connected.
+    using __completions_t = completion_signatures_of_t<_Sndr>;
+    constexpr bool __all_non_dependent =
+      __gather_completion_signatures<__completions_t, _SetTag, __sender2_fn<_Fn>::template __call, __all_non_dependent_t>::
+        value;
+
+    if constexpr (__all_non_dependent)
+    {
+      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
+    }
   }
   return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
 }
