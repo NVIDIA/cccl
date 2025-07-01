@@ -149,7 +149,7 @@ public:
   [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE operator()(_Key const& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
-    // explicit copy to avoid emiting a bunch of LDG.8 instructions
+    // explicit copy to avoid emitting a bunch of LDG.8 instructions
     const _Key __copy{__key};
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__copy));
   }
