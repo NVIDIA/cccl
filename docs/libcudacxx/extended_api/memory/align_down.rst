@@ -9,7 +9,7 @@
    [[nodiscard]] __host__ __device__ inline
    T* align_down(T* ptr, size_t alignment) noexcept
 
-The function returns the original pointer or largest pointer before ``ptr`` that is aligned to the specified alignment  :math:`floor\left(\frac{ptr}{alignment}\right) * alignment`.
+The function returns the original pointer or closest pointer smaller than ``ptr`` that is aligned to the specified alignment  :math:`floor\left(\frac{ptr}{alignment}\right) * alignment`.
 
 **Parameters**
 
