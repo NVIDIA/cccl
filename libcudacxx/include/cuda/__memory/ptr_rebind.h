@@ -44,12 +44,9 @@ template <typename _Up, typename _Tp>
   }
   else
   {
-    if constexpr (!_CUDA_VSTD::is_void_v<_Tp>) // _Tp: non-void, _Up: non-void
-    {
-      static_assert(alignof(_Up) >= alignof(_Tp), "alignment of _Up must be greater than or equal to _Tp");
-    }
-    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Up) == 0, "ptr is not aligned");
-    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), alignof(_Up));
+    constexpr auto __max_alignment = alignof(_Up) > alignof(_Tp) ? alignof(_Up) : alignof(_Tp);
+    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
+    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), __max_alignment);
   }
 }
 

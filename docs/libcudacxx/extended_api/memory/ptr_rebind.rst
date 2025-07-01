@@ -13,6 +13,14 @@
     [[nodiscard]] __host__ __device__ inline
     const U* ptr_rebind(const T* ptr) noexcept
 
+    template <typename U, typename T>
+    [[nodiscard]] __host__ __device__ inline
+    volatile U* ptr_rebind(volatile T* ptr) noexcept
+
+    template <typename U, typename T>
+    [[nodiscard]] __host__ __device__ inline
+    const volatile U* ptr_rebind(const volatile T* ptr) noexcept
+
 The functions return the pointer ``ptr`` cast to type ``U*`` or ``const U*``. They are shorter and safer alternative to ``reinterpret_cast``.
 
 **Parameters**
@@ -23,13 +31,9 @@ The functions return the pointer ``ptr`` cast to type ``U*`` or ``const U*``. Th
 
 - The pointer cast to type ``U*`` or ``const U*``.
 
-**Preconditions**
-
-- ``alignof(U) >= alignof(T)``.
-
 **Constraints**
 
-- ``ptr`` must be aligned to ``alignof(U)``.
+- ``ptr`` must be aligned to ``alignof(U)`` and ``alignof(T)``.
 
 **Performance considerations**
 
@@ -41,10 +45,11 @@ Example
 .. code:: cuda
 
     #include <cuda/memory>
+    #include <cuda/std/cstdint>
 
-    __global__ void kernel(const int* ptr) {
-        const uint64_t* ptr2 = cuda::ptr_rebind<uint64_t>(ptr);
-        // cuda::ptr_rebind<uint16_t>(ptr);  error
+    __global__ void kernel(const int* ptr, volatile int* ptr2) {
+        const uint64_t*    ptr_res1 = cuda::ptr_rebind<uint64_t>(ptr);
+        volatile uint64_t* ptr_res2 = cuda::ptr_rebind<uint64_t>(ptr2);
     }
 
     int main() {
@@ -55,4 +60,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/K3oMTqbxa>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/6dYPvG3q9>`_
