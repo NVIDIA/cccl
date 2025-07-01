@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__memory/runtime_assume_aligned.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -34,7 +35,7 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API inline _Tp* align_down(_Tp* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
-  if constexpr (!_CUDA_VSTD::is_same_v<_Tp, void>)
+  if constexpr (!_CUDA_VSTD::is_void_v<_Tp>)
   {
     _CCCL_ASSERT(__alignment >= alignof(_Tp), "wrong alignment");
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");

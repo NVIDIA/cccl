@@ -23,6 +23,7 @@
 
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -36,14 +37,14 @@ template <typename _Up, typename _Tp>
   {
     return __ptr;
   }
-  else if constexpr (_CUDA_VSTD::is_same_v<_Up, void>) // _Tp: non-void, _Up: void
+  else if constexpr (_CUDA_VSTD::is_void_v<_Up>) // _Tp: non-void, _Up: void
   {
     _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
     return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<void*>(__ptr), alignof(_Tp));
   }
   else
   {
-    if constexpr (!_CUDA_VSTD::is_same_v<_Tp, void>) // _Tp: non-void, _Up: non-void
+    if constexpr (!_CUDA_VSTD::is_void_v<_Tp>) // _Tp: non-void, _Up: non-void
     {
       static_assert(alignof(_Up) >= alignof(_Tp), "alignment of _Up must be greater than or equal to _Tp");
     }
