@@ -25,9 +25,6 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
-#  include <crt/device_fp128_functions.h>
-#endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
 
 #if !_CCCL_CUDA_COMPILER(NVRTC)
 #  include <math.h>
