@@ -7,6 +7,7 @@
 
 #include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/atomic>
 #include <cuda/cmath>
 #include <cuda/iterator>
 #include <cuda/std/limits>
