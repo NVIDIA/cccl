@@ -48,6 +48,7 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
 
   // Confirm trait value is defined device code and usable as a reference
   foo(Arch::traits().compute_capability);
+  foo(cudax::arch::current_traits().compute_capability);
 }
 
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::sm_70>();
