@@ -122,15 +122,12 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
 }
 
 template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int copy_alignment) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
 {
-  return ::cuda::round_up(int{sizeof(int64_t)}, copy_alignment) /* bar */
+  return ::cuda::round_up(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
        // 128 bytes of padding for each input tile (handles before + after)
        + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       // TODO(bgruber): max head padding is copy_alignment - sizeof(T)
-       + sizeof...(RandomAccessIteratorsIn) * copy_alignment
-       // TODO(bgruber): max tail padding is bulk_copy_size_multiple - sizeof(T)
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_size_multiple;
+       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
