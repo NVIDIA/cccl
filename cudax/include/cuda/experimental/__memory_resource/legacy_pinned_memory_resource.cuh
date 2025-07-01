@@ -33,6 +33,7 @@
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
+#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,7 +48,16 @@ namespace cuda::experimental
 class legacy_pinned_memory_resource
 {
 public:
-  constexpr legacy_pinned_memory_resource() noexcept {}
+  //! @brief Construct a new legacy_pinned_memory_resource object.
+  //! @note Memory allocated through this resource resides in host memory, but is internally tracked under a device.
+  //! Because of this, the resource constructor takes an optional device argument to select the device to track the
+  //! memory under. If no device is provided, the resource will default to device 0, which will be initialized as a side
+  //! effect. If initialization of device 0 this way in not desired, the user should explicitly provide a different
+  //! device. The device setting does not affect comparison results for this type.
+  //! @param __device The device to track the memory under.
+  constexpr legacy_pinned_memory_resource(device_ref __device = device_ref{0}) noexcept
+      : __device_(__device)
+  {}
 
   //! @brief Allocate host memory of size at least \p __bytes.
   //! @param __bytes The size in bytes of the allocation.
@@ -63,9 +73,8 @@ public:
       _CUDA_VSTD::__throw_invalid_argument("Invalid alignment passed to legacy_pinned_memory_resource::allocate.");
     }
 
-    void* __ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "Failed to allocate memory with cudaMallocHost.", &__ptr, __bytes);
-    return __ptr;
+    __ensure_current_device __set_ctx(__device_);
+    return __detail::driver::memAllocHost(__bytes);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -78,7 +87,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_pinned_memory_resource::deallocate.");
-    _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "legacy_pinned_memory_resource::deallocate failed", __ptr);
+    _CCCL_ASSERT_CUDA_API(__detail::driver::memFreeHost, "legacy_pinned_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
 
@@ -114,6 +123,10 @@ public:
   }
 
   using default_queries = properties_list<device_accessible, host_accessible>;
+
+private:
+  // device to set when allocating memory
+  device_ref __device_;
 };
 
 static_assert(_CUDA_VMR::resource_with<legacy_pinned_memory_resource, device_accessible>, "");

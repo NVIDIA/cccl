@@ -257,8 +257,23 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
   return result;
 }
-
 #endif // CUDART_VERSION >= 12050
+
+inline void* memAllocHost(size_t __bytes)
+{
+  void* __ptr;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemAllocHost);
+  call_driver_fn(driver_fn, "Failed to allocate memory with cuMemAllocHost", &__ptr, __bytes);
+  return __ptr;
+}
+
+inline cudaError_t memFreeHost(void* __ptr)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemFreeHost);
+  CUresult status       = driver_fn(__ptr);
+  return static_cast<cudaError_t>(status);
+}
+
 } // namespace cuda::experimental::__detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION
