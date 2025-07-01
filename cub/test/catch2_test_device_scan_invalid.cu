@@ -5,8 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/atomic>
 #include <cuda/cmath>
@@ -15,12 +15,11 @@
 
 #include <cstdint>
 
+#include "catch2_test_device_scan.cuh"
+#include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
-
-#include "catch2_test_device_scan.cuh"
-#include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
