@@ -432,6 +432,9 @@ private:
   const caller_side_t caller_side_arg;
 };
 
+template <typename T, typename... P>
+jit_adapter(mdspan<T, P...>) -> jit_adapter<mdspan<T, P...>>;
+
 template <size_t dimensions>
 struct jit_adapter<box<dimensions>>
 {
@@ -465,7 +468,7 @@ struct jit_adapter<shape_of<mdspan<T, P...>>>
 {
   using caller_side_t = shape_of<mdspan<T, P...>>;
 
-  jit_adapter(const caller_side_t& rhs)
+  jit_adapter(caller_side_t rhs)
       : caller_side_arg(rhs)
   {}
 

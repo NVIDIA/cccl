@@ -73,8 +73,8 @@ int main()
 
   /* Compute Y = Y + alpha X */
   ctx.cuda_kernel(lX.read(), lY.rw())->*[alpha](auto dX, auto dY) {
-    jit_adapter<decltype(dX)> jdX{dX};
-    jit_adapter<decltype(dY)> jdY{dY};
+    jit_adapter jdX{dX};
+    jit_adapter jdY{dY};
 
     CUfunction axpy_kernel = lazy_jit(
       axpy_kernel_template,
