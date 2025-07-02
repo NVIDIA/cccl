@@ -16,8 +16,8 @@
 template <typename T, typename U, typename V>
 __host__ __device__ void test()
 {
-  uintptr_t ptr_int = 16;
-  auto ptr          = reinterpret_cast<T>(ptr_int);
+  uintptr_t ptr_int         = 16;
+  [[maybe_unused]] auto ptr = reinterpret_cast<T>(ptr_int);
   static_assert(cuda::std::is_same_v<U, decltype(cuda::ptr_rebind<V>(ptr))>);
 }
 
