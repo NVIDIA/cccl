@@ -92,7 +92,7 @@ gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> op
   NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog, kernel.data(), "example.cu", 0, nullptr, nullptr));
 
   printf("Compiling with options: \n");
-  for (auto& opt : optList)
+  for (auto opt : optList)
   {
     printf(" %s\n", opt);
   }
