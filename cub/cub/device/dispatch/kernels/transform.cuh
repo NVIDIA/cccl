@@ -120,10 +120,12 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   }
 }
 
+#if _CCCL_CTK_BELOW(13, 0)
 struct alignas(32) aligned32_t
 {
   longlong4 data;
 };
+#endif // _CCCL_CTK_BELOW(13, 0)
 
 template <int Bytes>
 _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
@@ -152,8 +154,12 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
   else if constexpr (Bytes == 32)
   {
+#if _CCCL_CTK_BELOW(13, 0)
     static_assert(alignof(aligned32_t) == 32);
     return aligned32_t{};
+#else // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^ / vvv _CCCL_CTK_AT_LEAST(13, 0) vvv
+    return longlong4_32a{};
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
   }
   else
   {
