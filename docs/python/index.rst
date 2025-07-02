@@ -1,5 +1,3 @@
-.. _cccl-python-libraries:
-
 CCCL Python Libraries
 ======================
 
