@@ -59,7 +59,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __probe_fn
   {
     template <class... _Ts>
-    auto operator()(_Ts&&... __ts) const noexcept
+    _CCCL_API auto operator()(_Ts&&... __ts) const noexcept
       -> _CUDA_VSTD::_If<__detail::__signature_disposition<_SetTag(_Ts...)> != __disposition::__invalid,
                          completion_signatures<_SetTag(_Ts...)>,
                          __error_t<_Ts...>>;

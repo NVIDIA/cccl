@@ -23,6 +23,7 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/optional>
@@ -100,11 +101,14 @@ struct sync_wait_t
     __state_base_t<_Env>* __state_;
   };
 
+  template <class... _Ts>
+  using __decayed_tuple = _CUDA_VSTD::tuple<_CUDA_VSTD::decay_t<_Ts>...>;
+
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
     using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
-    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
     using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
 
     _CUDA_VSTD::optional<__values_t>* __values_;
