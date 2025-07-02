@@ -167,7 +167,7 @@ public:
     return __index_;
   }
 
-  //! @brief Returns a const reference to the index iterator
+  //! @brief Returns the current index
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr difference_type index() const noexcept
   {
@@ -258,11 +258,10 @@ public:
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr permutation_iterator operator+(difference_type __n) const
-    noexcept(noexcept(__index_ + static_cast<difference_type>(__n))
-             && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
+    noexcept(noexcept(__index_ + __n) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
              && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
-    return permutation_iterator{__iter_, __index_ + static_cast<difference_type>(__n)};
+    return permutation_iterator{__iter_, __index_ + __n};
   }
 
   //! @brief Returns a copy of \p __x advanced by \p __n
@@ -271,7 +270,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(difference_type __n, const permutation_iterator& __x) noexcept(
-    noexcept(__index_ + static_cast<difference_type>(__n))
+    noexcept(__index_ + __n)
     && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
     return __x + __n;
@@ -280,10 +279,9 @@ public:
   //! @brief Advances the \c permutation_iterator by \p __n
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr permutation_iterator&
-  operator+=(difference_type __n) noexcept(noexcept(__index_ += static_cast<difference_type>(__n)))
+  _CCCL_API constexpr permutation_iterator& operator+=(difference_type __n) noexcept(noexcept(__index_ += __n))
   {
-    __index_ += static_cast<difference_type>(__n);
+    __index_ += __n;
     return *this;
   }
 
@@ -291,20 +289,18 @@ public:
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr permutation_iterator operator-(difference_type __n) const
-    noexcept(noexcept(__index_ - static_cast<difference_type>(__n))
-             && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
+    noexcept(noexcept(__index_ - __n) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
              && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
   {
-    return permutation_iterator{__iter_, __index_ - static_cast<difference_type>(__n)};
+    return permutation_iterator{__iter_, __index_ - __n};
   }
 
   //! @brief Decrements the \c permutation_iterator by \p __n
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr permutation_iterator&
-  operator-=(difference_type __n) noexcept(noexcept(__index_ -= static_cast<difference_type>(__n)))
+  _CCCL_API constexpr permutation_iterator& operator-=(difference_type __n) noexcept(noexcept(__index_ -= __n))
   {
-    __index_ -= static_cast<difference_type>(__n);
+    __index_ -= __n;
     return *this;
   }
 

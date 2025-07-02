@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(iter + diff));
     }
 
-    {
+    { // custom index iterator
       using indexIter            = random_access_iterator<const int*>;
       using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
@@ -61,7 +61,7 @@ __host__ __device__ constexpr bool test()
       static_assert(!noexcept(iter + diff));
     }
 
-    {
+    { // const iter and custom index iterator
       using indexIter            = random_access_iterator<const int*>;
       using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
@@ -89,7 +89,7 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(diff + iter));
     }
 
-    {
+    { // const iter
       using indexIter            = const int*;
       using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
@@ -102,7 +102,7 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(diff + iter));
     }
 
-    {
+    { // custom index iterator
       using indexIter            = random_access_iterator<const int*>;
       using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
@@ -115,7 +115,7 @@ __host__ __device__ constexpr bool test()
       static_assert(!noexcept(diff + iter));
     }
 
-    {
+    { // const iter and custom index iterator
       using indexIter            = random_access_iterator<const int*>;
       using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
@@ -143,7 +143,7 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(iter += diff));
     }
 
-    {
+    { // custom index iterator
       using indexIter            = random_access_iterator<const int*>;
       using permutation_iterator = cuda::permutation_iterator<int*, indexIter>;
       const int offset[]         = {2, 3, 4, 5};
