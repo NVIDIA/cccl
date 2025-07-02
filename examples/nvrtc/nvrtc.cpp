@@ -103,7 +103,7 @@ gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> op
 
   // ALWAYS GATHER LOGS, there could be warnings or non-fatal issues that should be reported.
   {
-    gpu_code_ptr log{new char[logSize]};
+    auto log = std::make_unique<char[]>(logSize};
     NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log.get()));
     printf("%s\r\n", log.get());
   }
