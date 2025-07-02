@@ -1085,7 +1085,7 @@ struct DispatchRadixSort
       return InvokeSingleTile(kernel_source.RadixSortSingleTileKernel(), wrapped_policy);
     }
 
-    _CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C (wrapped_policy.IsOnesweep())
+    if CUB_DETAIL_CONSTEXPR_ISH (wrapped_policy.IsOnesweep())
     {
       return InvokeOnesweep(wrapped_policy);
     }

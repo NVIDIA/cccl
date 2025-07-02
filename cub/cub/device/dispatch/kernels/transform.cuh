@@ -28,8 +28,6 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
 
-#include <cuda_pipeline_primitives.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -339,10 +337,19 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
   for (unsigned int offset = threadIdx.x * ldgsts_size_and_align; offset < bytes_to_copy;
        offset += BlockThreads * ldgsts_size_and_align)
   {
-    __pipeline_memcpy_async(
-      static_cast<char*>(dst) + offset, static_cast<const char*>(src) + offset, ldgsts_size_and_align);
+    asm volatile(
+      "cp.async.cg.shared.global [%0], [%1], %2, %3;"
+      :
+      : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(static_cast<char*>(dst) + offset))),
+        "l"(static_cast<const char*>(src) + offset),
+        "n"(ldgsts_size_and_align),
+        "n"(ldgsts_size_and_align)
+      : "memory");
+    // same as: __pipeline_memcpy_async(static_cast<char*>(dst) + offset, static_cast<const char*>(src) + offset,
+    //                                  ldgsts_size_and_align);
   }
-  __pipeline_commit();
+
+  asm volatile("cp.async.commit_group;"); // same as: __pipeline_commit();
 }
 
 template <int BlockThreads>
@@ -472,7 +479,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
     (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
                   : copy_and_return_smem_dst_fallback<block_threads>(
                       aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
-  __pipeline_wait_prior(0);
+
+  asm volatile("cp.async.wait_group %0;" : : "n"(0)); // same as: __pipeline_wait_prior(0);
   __syncthreads();
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
