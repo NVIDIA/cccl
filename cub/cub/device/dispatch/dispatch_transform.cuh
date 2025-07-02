@@ -195,8 +195,10 @@ struct dispatch_t<StableAddress,
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(max_smem.error());
       }
 
+      // Increase the number of output elements per thread until we reach the required bytes in flight. This computation
+      // MUST NOT depend on any runtime state of the current API invocation (like num_items), since the result will be
+      // cached.
       elem_counts last_counts{};
-      // Increase the number of output elements per thread until we reach the required bytes in flight.
       for (int elem_per_thread = +policy_t::min_items_per_thread; elem_per_thread <= +policy_t::max_items_per_thread;
            ++elem_per_thread)
       {
@@ -210,11 +212,6 @@ struct dispatch_t<StableAddress,
           // assert should be prevented by smem check in policy
           _CCCL_ASSERT(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_counts;
-        }
-
-        if (tile_size >= num_items)
-        {
-          return elem_counts{elem_per_thread, tile_size, smem_size};
         }
 
         int max_occupancy = 0;
