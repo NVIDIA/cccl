@@ -8,7 +8,6 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
 
-#include <cuda/atomic>
 #include <cuda/cmath>
 #include <cuda/iterator>
 #include <cuda/std/limits>
@@ -27,7 +26,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using error_count_t = int64_t;
+// atomicAdd does not support uint64_t or int64_t or long long
+using error_count_t = unsigned long long;
 
 // Element type for scans
 template <typename OffsetT>
@@ -67,16 +67,15 @@ struct merge_segments_op
 {
   using seg_t = segment<OffsetT>;
   __host__ merge_segments_op(error_count_t* error_count)
-      : error_count_{*error_count}
+      : error_count_{error_count}
   {}
   __host__ __device__ seg_t operator()(seg_t left, seg_t right)
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (if (left.end != right.begin) { error_count_.fetch_add(1, cuda::std::memory_order_relaxed); }));
+    NV_IF_TARGET(NV_IS_DEVICE, (if (left.end != right.begin) { atomicAdd(error_count_, error_count_t{1}); }));
     return {left.begin, right.end};
   }
 
-  cuda::atomic_ref<error_count_t, cuda::thread_scope::thread_scope_device> error_count_;
+  error_count_t* error_count_;
 };
 
 // Expected to fail for the current implementation.
