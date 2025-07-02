@@ -154,7 +154,7 @@ inline CUfunction lazy_jit(
     }
     else
     {
-      static_assert(::std::is_arithmetic_v<T>, "Unsupported type for JIT kernel argument");
+      static_assert(::std::is_arithmetic_v<T> || ::std::is_pointer_v<T>, "Unsupported type for JIT kernel argument");
       return arg;
     }
   };
@@ -284,109 +284,111 @@ inline ::std::string run_command(const char* cmd)
   return result;
 }
 
-template <size_t Dimensions>
-::std::string stringize_box(const box<Dimensions>& b)
-{
-  ::std::ostringstream oss;
-  oss << "::cuda::experimental::stf::static_box<";
-  for (size_t ind : each(0, Dimensions))
-  {
-    if (ind > 0)
-    {
-      oss << ", ";
-    }
-    oss << b.get_begin(ind) << ", " << b.get_end(ind);
-  }
-  oss << ">";
-  return oss.str();
-}
+/**
+ * @brief JIT adapter for kernel parameters (see specializations below).
+ */
+template <typename T>
+struct jit_adapter;
 
-template <typename MDS>
-bool is_layout_right(const MDS& mds)
+/**
+ * @brief JIT adapter specialization for `mdspan` types.
+ *
+ * This struct defines how to bridge between a statically known `mdspan` type on the caller side,
+ * a simplified pointer-based parameter type passed to a JIT-compiled kernel, and a reconstructed
+ * `mdspan` type on the kernel side with as many static properties as possible.
+ *
+ * There are three types involved. First, `caller_side_t` is the type of the data as seen from
+ * the code that launches the kernel. Second, `kernel_param_t` is the type of the kernel parameter,
+ * which is part of the kernel signature. That type must be trivially copyable because the runtime
+ * passes it to the kernel by bitwise copying. Finally, the kernel parameter is converted inside
+ * the kernel code to `kernel_side_t_name()` which has extensive static type information. That type
+ * is not known during compilation of the caller, and therefore it is accessible only as a string
+ * from the caller side. That string will become part of the JITted kernel code. The kernel-side
+ * type must be constructible from an object of type `kernel_param_t`.
+ *
+ * @tparam T Element type of the `mdspan`
+ * @tparam P Pack of extents, layout, and accessor types comprising the full `mdspan` signature
+ */
+template <typename T, typename... P>
+struct jit_adapter<mdspan<T, P...>>
 {
-  const size_t rank = mds.rank();
-  if (rank == 0)
-  {
-    return true;
-  }
-  if (mds.mapping().stride(rank - 1) != 1)
-  {
-    return false;
-  }
-  for (size_t i = 1; i < rank; ++i)
-  {
-    if (mds.mapping().stride(i - 1) != mds.mapping().stride(i) * mds.extent(i))
-    {
-      return false;
-    }
-  }
-  return true;
-}
+  /// @brief Type of the argument as seen by the caller (typically with dynamic extents and strides)
+  using caller_side_t = mdspan<T, P...>;
 
-template <typename MDS>
-bool is_layout_left(const MDS& mds)
-{
-  const size_t rank = mds.rank();
-  if (rank == 0)
-  {
-    return true;
-  }
-  if (mds.mapping().stride(0) != 1)
-  {
-    return false;
-  }
-  for (size_t i = 1; i < rank; ++i)
-  {
-    if (mds.mapping().stride(i) != mds.mapping().stride(i - 1) * mds.extent(i - 1))
-    {
-      return false;
-    }
-  }
-  return true;
-}
+  /// @brief Type of the kernel parameter (raw pointer to the element type)
+  using kernel_param_t = T*;
 
-template <typename Mdspan, ::std::size_t... Is>
-::std::string stringize_mdspan(const Mdspan& md, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
-{
-  constexpr ::std::size_t R = Mdspan::rank();
-  if constexpr (R != sizeof...(Is))
+  /**
+   * @brief Constructs a JIT adapter from the caller-side `mdspan` object.
+   *
+   * @param md The `mdspan` object representing the argument passed to the kernel.
+   */
+  jit_adapter(const caller_side_t& md)
+      : caller_side_arg(md)
+  {}
+
+  /**
+   * @brief Returns the string representation of the caller-side `mdspan` type.
+   *
+   * This is useful for diagnostics or logging, and simply emits the static type as known at the call site.
+   *
+   * @return A `std::string` with the fully qualified name of the caller-side `mdspan` type.
+   */
+  static ::std::string caller_side_t_name()
   {
-    return stringize_mdspan(md, ::std::make_index_sequence<R>{});
+    return ::std::string(type_name<caller_side_t>);
   }
-  else
+
+  /**
+   * @brief Returns the kernel-side `mdspan` type name with all known compile-time information.
+   *
+   * The returned string describes a new `mdspan` instantiation with:
+   * - the same element type
+   * - extents statically specified if they are known at runtime
+   * - a static layout (right or left) if the runtime mapping is compatible
+   * - the accessor if it differs from the default
+   *
+   * @throws std::runtime_error if the layout is neither `layout_right` nor `layout_left`
+   *
+   * @return A `std::string` representing a kernel-side `mdspan` type suitable for code generation
+   */
+  ::std::string kernel_side_t_name()
   {
-    using ET       = typename Mdspan::element_type;
-    using Layout   = typename Mdspan::layout_type;
-    using Accessor = typename Mdspan::accessor_type;
-    using XT       = typename Mdspan::extents_type;
+    auto constexpr R = caller_side_arg.rank();
+    using ET         = typename caller_side_t::element_type;
+    using Layout     = typename caller_side_t::layout_type;
+    using Accessor   = typename caller_side_t::accessor_type;
+    using XT         = typename caller_side_t::extents_type;
 
     ::std::ostringstream oss;
 
-    // mdspan<element_type,
+    // Emit element type
     oss << "cuda::std::mdspan<" << type_name<ET>;
 
-    // extents<size_t, e0, e1, ...>,
+    // Emit extents with as many static values as possible
     oss << ", cuda::std::extents<size_t";
     if constexpr (R > 0)
     {
       oss << ", ";
     }
 
-    ((oss << (Is ? ", " : "")
-          << (XT::static_extent(Is) != cuda::std::dynamic_extent ? ::std::to_string(XT::static_extent(Is))
-                                                                 : ::std::to_string(md.extent(Is)))),
-     ...);
+    unroll<R>([&](auto i) {
+      oss << (i ? ", " : "")
+          << (XT::static_extent(i) != cuda::std::dynamic_extent
+                ? ::std::to_string(XT::static_extent(i))
+                : ::std::to_string(caller_side_arg.extent(i)));
+    });
 
     oss << ">";
 
-    // layout   (omit default)
+    // Emit layout only if not default
     if constexpr (!std::is_same_v<Layout, cuda::std::layout_right>)
     {
-      if (is_layout_right(md))
+      if (is_layout_right(caller_side_arg))
       {
         oss << ", cuda::std::layout_right";
       }
-      else if (is_layout_left(md))
+      else if (is_layout_left(caller_side_arg))
       {
         oss << ", cuda::std::layout_left";
       }
@@ -400,7 +402,7 @@ template <typename Mdspan, ::std::size_t... Is>
       oss << ", " << type_name<Layout>;
     }
 
-    // accessor (omit default)
+    // Emit accessor only if not default
     if constexpr (!std::is_same_v<Accessor, cuda::std::default_accessor<ET>>)
     {
       oss << ", " << type_name<Accessor>;
@@ -411,80 +413,90 @@ template <typename Mdspan, ::std::size_t... Is>
 
     return out;
   }
-}
 
-template <typename Mdspan, ::std::size_t... Is>
-::std::string
-stringize_mdspan_shape(const shape_of<Mdspan>& md_sh, ::std::index_sequence<Is...> = ::std::index_sequence<>{})
-{
-  constexpr ::std::size_t R = Mdspan::rank();
-  if constexpr (R != sizeof...(Is))
+  /**
+   * @brief Converts the caller-side object to the kernel parameter form (raw pointer).
+   *
+   * This extracts the underlying data pointer from the `mdspan` so that it can be passed
+   * as a kernel argument via the CUDA driver API.
+   *
+   * @return The raw pointer to the first element in the `mdspan`.
+   */
+  kernel_param_t to_kernel_arg()
   {
-    return stringize_mdspan_shape(md_sh, ::std::make_index_sequence<R>{});
+    return caller_side_arg.data_handle();
   }
-  else
+
+private:
+  /// The `mdspan` object passed from the host side and stored for introspection
+  const caller_side_t caller_side_arg;
+};
+
+template <size_t dimensions>
+struct jit_adapter<box<dimensions>>
+{
+  using caller_side_t = box<dimensions>;
+
+  jit_adapter(const caller_side_t& rhs)
+      : caller_side_arg(rhs)
+  {}
+
+  ::std::string kernel_side_t_name()
   {
-    using ET       = typename Mdspan::element_type;
-    using Layout   = typename Mdspan::layout_type;
-    using Accessor = typename Mdspan::accessor_type;
-    using XT       = typename Mdspan::extents_type;
+    ::std::ostringstream oss;
+    oss << "::cuda::experimental::stf::static_box<";
+    unroll<dimensions>([&](auto i) {
+      if (i > 0)
+      {
+        oss << ", ";
+      }
+      oss << caller_side_arg.get_begin(i) << ", " << caller_side_arg.get_end(i);
+    });
+    oss << ">";
+    return oss.str();
+  }
+
+private:
+  const caller_side_t caller_side_arg;
+};
+
+template <typename T, typename... P>
+struct jit_adapter<shape_of<mdspan<T, P...>>>
+{
+  using caller_side_t = shape_of<mdspan<T, P...>>;
+
+  jit_adapter(const caller_side_t& rhs)
+      : caller_side_arg(rhs)
+  {}
+
+  ::std::string kernel_side_t_name()
+  {
+    constexpr auto R = mdspan<T, P...>::rank();
+    using ET         = typename mdspan<T, P...>::element_type;
+    using Layout     = typename mdspan<T, P...>::layout_type;
+    using Accessor   = typename mdspan<T, P...>::accessor_type;
+    using XT         = typename mdspan<T, P...>::extents_type;
 
     ::std::ostringstream oss;
 
     // mdspan<element_type,
     oss << "::cuda::experimental::stf::static_box<";
 
-    ((oss << (Is ? ", " : "") << "0, "
-          << (XT::static_extent(Is) != ::cuda::std::dynamic_extent ? ::std::to_string(XT::static_extent(Is))
-                                                                   : ::std::to_string(md_sh.extent(Is)))),
-     ...);
+    unroll<R>([&](auto i) {
+      oss << (i ? ", " : "") << "0, "
+          << (XT::static_extent(i) != ::cuda::std::dynamic_extent
+                ? ::std::to_string(XT::static_extent(i))
+                : ::std::to_string(caller_side_arg.extent(i)));
+    });
 
     oss << ">";
 
     return oss.str();
   }
-}
 
-namespace reserved
-{
-template <typename T>
-struct jit_helper;
-
-template <typename T, typename... P>
-struct jit_helper<mdspan<T, P...>>
-{
-  using reduced_type = T*;
-
-  static ::std::string stringize(const mdspan<T, P...>& m)
-  {
-    return stringize_mdspan(m);
-  }
-
-  static reduced_type reduce(const mdspan<T, P...>& m)
-  {
-    return m.data_handle();
-  }
+private:
+  const caller_side_t caller_side_arg;
 };
-
-} // end namespace reserved
-
-template <typename Mdspan>
-::std::string shape_stringize(const shape_of<Mdspan>& md_sh)
-{
-  return stringize_mdspan_shape(md_sh);
-}
-
-//// TODO better type detection !
-// template <typename Mdspan>
-//::std::string stringize(const Mdspan& md) {
-//     return stringize_mdspan(md);
-//}
-//
-template <size_t Dimensions>
-::std::string shape_stringize(const box<Dimensions>& b)
-{
-  return stringize_box(b);
-}
 
 template <typename shape_t, typename... Args>
 ::std::string parallel_for_template_generator(
@@ -502,29 +514,30 @@ template <typename shape_t, typename... Args>
   ::std::ostringstream args_tuple_oss;
   args_tuple_oss << "const auto targs = ::cuda::std::make_tuple(";
 
-  each_in_tuple(targs, [&](auto arg_index, const auto& arg) {
-    using raw_arg     = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(arg)>>;
-    using reduced_arg = typename reserved::jit_helper<raw_arg>::reduced_type;
+  each_in_tuple(targs, [&](auto i, const auto& arg) {
+    using raw_arg        = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(arg)>>;
+    using kernel_param_t = typename jit_adapter<raw_arg>::kernel_param_t;
 
-    if (arg_index > 0)
+    if (i > 0)
     {
       args_tuple_oss << ", ";
       args_prototype_oss << ", ";
     }
 
-    // Pass the reduced version of the dynamic argument as an argument of the kernel
-    args_prototype_oss << ::std::string(type_name<reduced_arg>) << " dyn_arg" << arg_index;
+    // Pass the to_kernel_argd version of the dynamic argument as an argument of the kernel
+    args_prototype_oss << ::std::string(type_name<kernel_param_t>) << " dyn_arg" << i;
 
     // Convert the dynamic argument into its statically sized counterpart.
-    args_conversion_oss << stringize_mdspan(arg) << " static_arg" << arg_index << "{dyn_arg" << arg_index << "};\n";
+    args_conversion_oss
+      << jit_adapter<raw_arg>(arg).kernel_side_t_name() << " static_arg" << i << "{dyn_arg" << i << "};\n";
 
-    args_tuple_oss << "static_arg" << arg_index;
+    args_tuple_oss << "static_arg" << i;
   });
 
   args_tuple_oss << ");\n";
 
   // Note that we do not need the dynamic version of the shape at all
-  args_conversion_oss << "const " << shape_stringize(shape) << " static_shape;\n";
+  args_conversion_oss << "const " << jit_adapter<shape_t>(shape).kernel_side_t_name() << " static_shape;\n";
 
   oss << "extern \"C\"\n";
   oss << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n";
@@ -625,23 +638,23 @@ struct parallel_for_scope_jit
       // ::std::cout << "->* GEN TEMPLATE END\n";
 
       CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, f_res.first.c_str());
-      // We do not pass the arguments directly, but only a "reduced" form
+      // We do not pass the arguments directly, but only a "to_kernel_argd" form
       // which contains all necessary information to build their static
       // counterpart
-      return cuda_kernel_desc{kernel, 1280, 128, 0, reduce_for_jit(::std::forward<decltype(args)>(args))...};
+      return cuda_kernel_desc{kernel, 1280, 128, 0, to_kernel_arg_for_jit(::std::forward<decltype(args)>(args))...};
     };
   }
 
 private:
-  // Get the "reduced" version of an argument so that we don't waste registers
+  // Get the "to_kernel_argd" version of an argument so that we don't waste registers
   // passing arguments for which we only need a subset. For example, we only
   // need the data_handle() of an mdspan, not its extents because these are
   // already encoded in the static version of the mdspan.
   template <typename Arg>
-  auto reduce_for_jit(Arg&& arg)
+  auto to_kernel_arg_for_jit(Arg&& arg)
   {
     using raw_t = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
-    return reserved::jit_helper<raw_t>::reduce(::std::forward<Arg>(arg));
+    return jit_adapter<raw_t>(::std::forward<Arg>(arg)).to_kernel_arg();
   }
 
   ::std::tuple<deps_ops_t...> deps;
@@ -651,27 +664,5 @@ private:
   shape_t shape;
   ::std::vector<::std::string> nvrtc_flags;
 };
-
-template <typename Arg>
-::std::string jit_reduced_type_name(const Arg&)
-{
-  using raw_arg     = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
-  using reduced_arg = typename reserved::jit_helper<raw_arg>::reduced_type;
-  return ::std::string(type_name<reduced_arg>);
-}
-
-template <typename Arg>
-auto jit_reduce(Arg&& arg)
-{
-  using raw_arg = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
-  return reserved::jit_helper<raw_arg>::reduce(::std::forward<Arg>(arg));
-}
-
-template <typename Arg>
-::std::string jit_typename(const Arg& arg)
-{
-  using raw_arg = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Arg>>;
-  return reserved::jit_helper<raw_arg>::stringize(arg);
-}
 
 } // end namespace cuda::experimental::stf

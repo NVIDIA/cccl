@@ -31,6 +31,8 @@
 #ifndef __CUDACC_RTC__
 #  include <cuda/experimental/__stf/utility/hash.cuh>
 #  include <cuda/experimental/__stf/utility/unittest.cuh>
+#else
+#  include <cuda/experimental/__stf/utility/to_tuple.cuh>
 #endif // __CUDACC_RTC__
 
 #include <cuda/experimental/__stf/utility/core_nvrtc.cuh>

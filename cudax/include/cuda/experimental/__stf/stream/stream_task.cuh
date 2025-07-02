@@ -583,13 +583,13 @@ public:
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
       // Invoke passing this task's stream as the first argument, followed by the slices
-      auto t = cuda_tuple_prepend(get_stream(), typed_deps());
+      auto t = tuple_prepend(get_stream(), typed_deps());
       return ::cuda::std::apply(::std::forward<Fun>(fun), t);
     }
     else if constexpr (reserved::is_invocable_with_filtered<Fun, cudaStream_t, Data...>::value)
     {
       // Use the filtered tuple
-      auto t = cuda_tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
+      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
       return ::cuda::std::apply(::std::forward<Fun>(fun), t);
     }
     else
@@ -604,12 +604,12 @@ public:
 
       if constexpr (fun_invocable_task_deps)
       {
-        return ::cuda::std::apply(::std::forward<Fun>(fun), cuda_tuple_prepend(*this, typed_deps()));
+        return ::cuda::std::apply(::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
       }
       else if constexpr (fun_invocable_task_non_void_deps)
       {
         return ::cuda::std::apply(::std::forward<Fun>(fun),
-                                  cuda_tuple_prepend(*this, reserved::remove_void_interface_types(typed_deps())));
+                                  tuple_prepend(*this, reserved::remove_void_interface_types(typed_deps())));
       }
     }
   }

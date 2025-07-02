@@ -589,13 +589,13 @@ public:
       // Launch the user provided function
       if constexpr (fun_invocable_stream_deps)
       {
-        ::cuda::std::apply(f, cuda_tuple_prepend(mv(capture_stream), typed_deps()));
+        ::cuda::std::apply(f, tuple_prepend(mv(capture_stream), typed_deps()));
       }
       else if constexpr (fun_invocable_stream_non_void_deps)
       {
         // Remove void arguments
         ::cuda::std::apply(::std::forward<Fun>(f),
-                           cuda_tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
+                           tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
       }
 
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
@@ -622,7 +622,7 @@ public:
       cudaGraph_t childGraph = get_graph();
 
       // Launch the user provided function
-      ::cuda::std::apply(f, cuda_tuple_prepend(mv(childGraph), typed_deps()));
+      ::cuda::std::apply(f, tuple_prepend(mv(childGraph), typed_deps()));
     }
   }
 #if _CCCL_COMPILER(MSVC)

@@ -35,12 +35,12 @@
 namespace cuda::experimental::stf
 {
 
-template <typename T, typename... P>
-constexpr auto cuda_tuple_prepend(T&& prefix, ::cuda::std::tuple<P...> tuple)
+template <typename T, template <typename...> class Tuple, typename... P>
+constexpr auto tuple_prepend(T&& prefix, Tuple<P...> tuple)
 {
   return ::cuda::std::apply(
     [&](auto&&... p) {
-      return ::cuda::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
+      return Tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
     },
     mv(tuple));
 }
@@ -64,7 +64,7 @@ constexpr auto make_cuda_tuple([[maybe_unused]] T t, P... p)
   else
   {
     // Keep first parameter, concatenate with recursive call
-    return cuda_tuple_prepend(mv(t), make_cuda_tuple(mv(p)...));
+    return tuple_prepend(mv(t), make_cuda_tuple(mv(p)...));
   }
 }
 

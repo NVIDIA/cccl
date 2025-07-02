@@ -811,6 +811,78 @@ struct hash<mdspan<P...>>
   }
 };
 
+/**
+ * @brief Checks whether the given mdspan object has layout-compatible strides with layout_right.
+ *
+ * A layout_right-compatible mapping requires that:
+ * - The innermost dimension (last rank) has stride 1
+ * - Each preceding dimension has a stride equal to the stride of the next dimension
+ *   multiplied by the extent of the next dimension
+ *
+ * This function iterates in increasing order and returns `true` if all conditions hold.
+ *
+ * @tparam MDS The type of the mdspan object (must support `mapping()`, `stride(i)`, and `extent(i)`)
+ * @param mds The mdspan instance to inspect
+ * @return true if `mds` is layout_right-compatible; false otherwise
+ */
+template <typename MDS>
+bool is_layout_right(const MDS& mds)
+{
+  const size_t rank = mds.rank();
+  if (rank == 0)
+  {
+    return true;
+  }
+  if (mds.mapping().stride(rank - 1) != 1)
+  {
+    return false;
+  }
+  for (size_t i = 1; i < rank; ++i)
+  {
+    if (mds.mapping().stride(i - 1) != mds.mapping().stride(i) * mds.extent(i))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * @brief Checks whether the given mdspan object has layout-compatible strides with layout_left.
+ *
+ * A layout_left-compatible mapping requires that:
+ * - The outermost dimension (first rank) has stride 1
+ * - Each subsequent dimension has a stride equal to the stride of the previous dimension
+ *   multiplied by the extent of the previous dimension
+ *
+ * This function returns `true` if all conditions hold.
+ *
+ * @tparam MDS The type of the mdspan object (must support `mapping()`, `stride(i)`, and `extent(i)`)
+ * @param mds The mdspan instance to inspect
+ * @return true if `mds` is layout_left-compatible; false otherwise
+ */
+template <typename MDS>
+bool is_layout_left(const MDS& mds)
+{
+  const size_t rank = mds.rank();
+  if (rank == 0)
+  {
+    return true;
+  }
+  if (mds.mapping().stride(0) != 1)
+  {
+    return false;
+  }
+  for (size_t i = 1; i < rank; ++i)
+  {
+    if (mds.mapping().stride(i) != mds.mapping().stride(i - 1) * mds.extent(i - 1))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 #ifdef UNITTESTED_FILE
 
 UNITTEST("slice hash")

@@ -147,7 +147,7 @@ public:
     auto payload = [&]() {
       if constexpr (called_from_launch)
       {
-        return cuda_tuple_prepend(thread_hierarchy<>(), deps.instance(t));
+        return tuple_prepend(thread_hierarchy<>(), deps.instance(t));
       }
       else
       {

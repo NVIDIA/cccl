@@ -73,17 +73,21 @@ int main()
 
   /* Compute Y = Y + alpha X */
   ctx.cuda_kernel(lX.read(), lY.rw())->*[alpha](auto dX, auto dY) {
+    jit_adapter<decltype(dX)> jdX{dX};
+    jit_adapter<decltype(dY)> jdY{dY};
+
     CUfunction axpy_kernel = lazy_jit(
       axpy_kernel_template,
       get_nvrtc_flags(),
       header_template,
-      jit_reduced_type_name(dX),
-      jit_reduced_type_name(dY),
-      jit_typename(dX),
-      jit_typename(dY),
+      jdX.caller_side_t_name(),
+      jdY.caller_side_t_name(),
+      jdX.kernel_side_t_name(),
+      jdY.kernel_side_t_name(),
       alpha);
     auto [grid_size, block_size] = reserved::compute_occupancy(axpy_kernel);
-    return cuda_kernel_desc{axpy_kernel, (unsigned) grid_size, (unsigned) block_size, 0, jit_reduce(dX), jit_reduce(dY)};
+    return cuda_kernel_desc{
+      axpy_kernel, (unsigned) grid_size, (unsigned) block_size, 0, jdX.to_kernel_arg(), jdY.to_kernel_arg()};
   };
 
   ctx.finalize();

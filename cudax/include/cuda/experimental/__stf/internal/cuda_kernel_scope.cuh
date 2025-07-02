@@ -45,16 +45,6 @@ class stream_ctx;
  */
 struct cuda_kernel_desc
 {
-  // Helper to generate std::extents<size_t, 1, 1, ..., 1> with N dimensions
-  template <std::size_t N, std::size_t... Is>
-  static constexpr auto make_static_extents(std::index_sequence<Is...>)
-  {
-    return ::cuda::std::extents<std::size_t, (Is + 1)...>{};
-  }
-
-  template <std::size_t N>
-  using static_extents = decltype(make_static_extents<N>(std::make_index_sequence<N>{}));
-
   template <typename Fun, typename... Args>
   cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
       : func_variant(store_func(mv(func)))
@@ -67,7 +57,7 @@ struct cuda_kernel_desc
     // We first copy all arguments into a tuple because the kernel
     // implementation needs pointers to the argument, so we cannot use
     // directly those passed in the pack of arguments
-    auto arg_tuple = ::std::make_shared<TupleType>(std::forward<Args>(args)...);
+    auto arg_tuple = ::std::make_shared<TupleType>(mv(args)...);
 
     // Ensure we are packing arguments of the proper types to call func
     // FIXME, only valid if runtime API
@@ -77,7 +67,7 @@ struct cuda_kernel_desc
     ::std::apply(
       [this](auto&... elems) {
         // Push back the addresses of each tuple element into the args vector
-        ((args_ptr.push_back(static_cast<void*>(&elems))), ...);
+        ((args_ptr.push_back(&elems)), ...);
       },
       *arg_tuple);
 
@@ -90,7 +80,7 @@ struct cuda_kernel_desc
   func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
-  size_t sharedMem;
+  size_t sharedMem = 0;
 
   // Vector of pointers to the arg_tuple which saves arguments in a typed-erased way
   // Mutable so that launch can be const
@@ -106,8 +96,9 @@ struct cuda_kernel_desc
         {
           cuda_safe_call(cudaLaunchKernel(kernel_func, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
         }
-        else if constexpr (::std::is_same_v<T, CUfunction>)
+        else
         {
+          static_assert(::std::is_same_v<T, CUfunction>, "Unsupported function type in func_variant");
           cuda_safe_call(cuLaunchKernel(
             kernel_func,
             gridDim.x,
@@ -121,10 +112,6 @@ struct cuda_kernel_desc
             args_ptr.data(),
             nullptr));
         }
-        else
-        {
-          static_assert(sizeof(T) == 0, "Unsupported function type in func_variant");
-        }
       },
       func_variant);
   }
@@ -137,36 +124,32 @@ struct cuda_kernel_desc
 
         if constexpr (::std::is_same_v<T, CUfunction>)
         {
-          CUDA_KERNEL_NODE_PARAMS params{};
-          params.func           = kernel_func;
-          params.gridDimX       = gridDim.x;
-          params.gridDimY       = gridDim.y;
-          params.gridDimZ       = gridDim.z;
-          params.blockDimX      = blockDim.x;
-          params.blockDimY      = blockDim.y;
-          params.blockDimZ      = blockDim.z;
-          params.sharedMemBytes = sharedMem;
-          params.kernelParams   = const_cast<void**>(args_ptr.data());
-          params.extra          = nullptr;
-
-          cuda_safe_call(cuGraphAddKernelNode(
-            reinterpret_cast<CUgraphNode*>(&node), reinterpret_cast<CUgraph>(graph), nullptr, 0, &params));
-        }
-        else if constexpr (::std::is_same_v<T, const void*>)
-        {
-          cudaKernelNodeParams params{};
-          params.func           = const_cast<void*>(kernel_func);
-          params.gridDim        = gridDim;
-          params.blockDim       = blockDim;
-          params.sharedMemBytes = sharedMem;
-          params.kernelParams   = args_ptr.data();
-          params.extra          = nullptr;
-
-          cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+          CUDA_KERNEL_NODE_PARAMS params{
+            .func           = kernel_func,
+            .gridDimX       = gridDim.x,
+            .gridDimY       = gridDim.y,
+            .gridDimZ       = gridDim.z,
+            .blockDimX      = blockDim.x,
+            .blockDimY      = blockDim.y,
+            .blockDimZ      = blockDim.z,
+            .sharedMemBytes = static_cast<unsigned>(sharedMem),
+            .kernelParams   = const_cast<void**>(args_ptr.data()),
+            .extra          = nullptr,
+            .kern           = nullptr,
+            .ctx            = nullptr};
+          cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
         }
         else
         {
-          static_assert(sizeof(T) == 0, "Unsupported kernel function type");
+          static_assert(::std::is_same_v<T, const void*>, "Unsupported kernel function type");
+          cudaKernelNodeParams params{
+            .func           = const_cast<void*>(kernel_func),
+            .gridDim        = gridDim,
+            .blockDim       = blockDim,
+            .sharedMemBytes = static_cast<unsigned>(sharedMem),
+            .kernelParams   = args_ptr.data(),
+            .extra          = nullptr};
+          cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
         }
       },
       func_variant);
@@ -183,7 +166,7 @@ private:
   template <typename T>
   static func_variant_t store_func(T* f)
   {
-    return (const void*) (f);
+    return reinterpret_cast<const void*>(f);
   }
 };
 
