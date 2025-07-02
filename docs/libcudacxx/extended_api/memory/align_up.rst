@@ -9,7 +9,7 @@
    [[nodiscard]] __host__ __device__ inline
    T* align_up(T* ptr, size_t alignment) noexcept
 
-The function returns the original pointer or closest pointer larger than ``ptr`` that is aligned to the specified alignment  :math:`ceil\left(\frac{ptr}{alignment}\right) * alignment`.
+The function returns the original pointer or closest pointer larger than ``ptr`` that is aligned to the specified alignment :math:`ceil\left(\frac{ptr}{alignment}\right) * alignment`.
 
 **Parameters**
 
