@@ -130,7 +130,8 @@ template <class _InputIterator, class _OutputIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::__copy<_ClassicAlgPolicy>(__unwrap_iter(__first), __unwrap_iter(__last), __unwrap_iter(__result))
+  return _CUDA_VSTD::__copy<_ClassicAlgPolicy>(
+           _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result))
     .second;
 }
 
