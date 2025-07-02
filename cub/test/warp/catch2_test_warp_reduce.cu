@@ -206,7 +206,11 @@ using arithmetic_type_list = c2h::type_list<
   float2
 #endif
   ,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
   ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
   custom_t
 #if TEST_INT128()
   ,
