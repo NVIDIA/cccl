@@ -52,7 +52,7 @@ private:
 
     _Rcvr __rcvr_;
 
-    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr) noexcept
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
@@ -119,22 +119,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (__nothrow_callable<_Query, _Env>)
-    {
-      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{};
-    }
     else
     {
-      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>),
-                                   set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{}
+           + __eptr_completion_if<!__nothrow_callable<_Query, _Env>>();
     }
 
     _CCCL_UNREACHABLE();
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>)
-    -> __opstate_t<_Rcvr, _Query>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }

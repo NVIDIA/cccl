@@ -413,6 +413,25 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
   wait_for_value(std::move(work), 2);
 }
 
+constexpr struct test_query_t
+{
+  template <class Env>
+  _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
+  {
+    return env.query(*this);
+  }
+} test_query{};
+
+C2H_TEST("let_value works when the function returns a dependent sender", "[adaptors][let_value]")
+{
+  auto sndr     = ex::write_env(ex::just() | ex::let_value([] {
+                              return ex::read_env(test_query);
+                            }),
+                            ex::prop{test_query, 42});
+  auto [result] = ex::sync_wait(std::move(sndr)).value();
+  CUDAX_CHECK(result == 42);
+}
+
 // NOT YET SUPPORTED
 // struct bad_receiver
 // {
