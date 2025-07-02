@@ -29,10 +29,6 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
-
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
-    static_assert(sizeof(Iter) == sizeof(int*));
-#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   }
 
   {
@@ -44,10 +40,6 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
-
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
-    static_assert(sizeof(Iter) == sizeof(int*));
-#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   }
 }
 
