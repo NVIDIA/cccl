@@ -509,13 +509,13 @@ inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::va
 // is_nothrow_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_invocable : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
+    : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_invocable_r : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
+    : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>
