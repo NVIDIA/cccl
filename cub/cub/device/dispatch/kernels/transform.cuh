@@ -23,6 +23,7 @@
 
 #include <cuda/__barrier/aligned_size.h> // cannot include <cuda/barrier> directly on CUDA_ARCH < 700
 #include <cuda/cmath>
+#include <cuda/memory>
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
@@ -616,7 +617,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
-  extern __shared__ char __align__(bulk_copy_alignment) smem[];
+
+  // SMEM is 16-byte aligned by default
+  extern __shared__ char smem_base[];
+  char* smem = smem_base;
+  if constexpr (bulk_copy_alignment > 16)
+  {
+    smem = ::cuda::align_up(smem, bulk_copy_alignment);
+  }
 
   namespace ptx = ::cuda::ptx;
 
