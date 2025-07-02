@@ -157,9 +157,9 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
 #if _CCCL_CTK_BELOW(13, 0)
     static_assert(alignof(aligned32_t) == 32);
     return aligned32_t{};
-#else
+#else // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^ / vvv _CCCL_CTK_AT_LEAST(13, 0) vvv
     return longlong4_32a{};
-#endif
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
   }
   else
   {
