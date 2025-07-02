@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/undefined.h>
 
 //! \file type_list.h
 //! This file defines a type-list type and some fundamental algorithms on type
@@ -56,9 +57,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class... _Ts>
 struct __type_list;
-
-template <class...>
-struct __undefined; // leave this undefined
 
 template <class _Ty>
 using __type = typename _Ty::type;
@@ -450,7 +448,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if !defined(_CCCL_NO_PACK_INDEXING)
+#  if _CCCL_HAS_PACK_INDEXING()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
