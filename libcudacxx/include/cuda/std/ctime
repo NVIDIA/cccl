@@ -124,21 +124,25 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-#if defined(timespec_get)
-#  pragma push_macro("timespec_get")
-#  undef timespec_get
-#  define _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
-#endif // timespec_get
+#if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
+
+#  if defined(timespec_get)
+#    pragma push_macro("timespec_get")
+#    undef timespec_get
+#    define _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#  endif // timespec_get
 [[nodiscard]] _CCCL_API inline int timespec_get(timespec* __ts, int __base) noexcept
-#ifdef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
-#  pragma pop_macro("timespec_get")
-#  undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
-#endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#  ifdef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#    pragma pop_macro("timespec_get")
+#    undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#  endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return _CUDA_VSTD::__cccl_timespec_get_impl_device(__ts, __base);))
 }
+
+#endif // !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
