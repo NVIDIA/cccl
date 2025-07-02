@@ -617,15 +617,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
-
-  // SMEM is 16-byte aligned by default
-  extern __shared__ char smem[];
-  // TODO(bgruber): we should align smem to bulk_copy_alignment, but the performance regression is huge (up to 22%)
-  // if constexpr (bulk_copy_alignment > 16)
-  // {
-  //   smem = ::cuda::align_up(smem, bulk_copy_alignment);
-  //   // also just `smem += 48;` (since smem is 16 bytes aligned after the 8-byte bar) incurs 7% regression
-  // }
+  extern __shared__ char smem[] __attribute__((aligned(bulk_copy_alignment)));
+  _CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "Compiler ignored alignment attribute");
 
   namespace ptx = ::cuda::ptx;
 
