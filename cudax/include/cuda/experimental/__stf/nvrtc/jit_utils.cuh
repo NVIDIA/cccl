@@ -290,6 +290,9 @@ inline ::std::string run_command(const char* cmd)
 template <typename T>
 struct jit_adapter;
 
+template <typename T>
+jit_adapter(T) -> jit_adapter<T>;
+
 /**
  * @brief JIT adapter specialization for `mdspan` types.
  *
@@ -431,9 +434,6 @@ private:
   /// The `mdspan` object passed from the host side and stored for introspection
   const caller_side_t caller_side_arg;
 };
-
-template <typename T, typename... P>
-jit_adapter(mdspan<T, P...>) -> jit_adapter<mdspan<T, P...>>;
 
 template <size_t dimensions>
 struct jit_adapter<box<dimensions>>
