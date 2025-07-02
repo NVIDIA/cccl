@@ -16,6 +16,7 @@
 
 // template<class _URng> result_type operator()(_URng& g);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -25,6 +26,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/numeric>
+#include <cuda/std/span>
 
 #include "test_macros.h"
 
@@ -34,8 +36,10 @@ __host__ __device__ T sqr(T x)
   return x * x;
 }
 
+constexpr int N = 10000;
+
 template <class ResultType, class EngineType>
-__host__ __device__ void test_statistics(ResultType a, ResultType b)
+__host__ __device__ void test_statistics(cuda::std::span<ResultType, N> arr, ResultType a, ResultType b)
 {
   static_assert(
     cuda::std::is_same_v<typename cuda::std::uniform_int_distribution<ResultType>::result_type, ResultType>);
@@ -44,44 +48,42 @@ __host__ __device__ void test_statistics(ResultType a, ResultType b)
   cuda::std::uniform_int_distribution<ResultType> dist(a, b);
   assert(dist.a() == a);
   assert(dist.b() == b);
-  constexpr int N = 10000;
-  cuda::std::array<ResultType, N> u;
-  for (int i = 0; i < 10000; ++i)
+  for (int i = 0; i < N; ++i)
   {
     ResultType v = dist(g);
     assert(a <= v && v <= b);
-    u[i] = v;
+    arr[i] = v;
   }
 
   // Quick check: The chance of getting *no* hits in any given tenth of the range
   // is (0.9)^10000, or "ultra-astronomically low."
   bool bottom_tenth = false;
   bool top_tenth    = false;
-  for (cuda::std::size_t i = 0; i < u.size(); ++i)
+  for (cuda::std::size_t i = 0; i < arr.size(); ++i)
   {
-    bottom_tenth = bottom_tenth || (u[i] <= (a + (b / 10) - (a / 10)));
-    top_tenth    = top_tenth || (u[i] >= (b - (b / 10) + (a / 10)));
+    bottom_tenth = bottom_tenth || (arr[i] <= (a + (b / 10) - (a / 10)));
+    top_tenth    = top_tenth || (arr[i] >= (b - (b / 10) + (a / 10)));
   }
   assert(bottom_tenth); // ...is populated
   assert(top_tenth); // ...is populated
 
   // Now do some more involved statistical math.
-  double mean     = cuda::std::accumulate(u.begin(), u.end(), 0.0) / u.size();
+  double mean     = cuda::std::accumulate(arr.begin(), arr.end(), 0.0) / arr.size();
   double var      = 0;
   double skew     = 0;
   double kurtosis = 0;
-  for (cuda::std::size_t i = 0; i < u.size(); ++i)
+  for (cuda::std::size_t i = 0; i < arr.size(); ++i)
   {
-    double dbl = (u[i] - mean);
+    double dbl = (arr[i] - mean);
     double d2  = dbl * dbl;
     var += d2;
     skew += dbl * d2;
     kurtosis += d2 * d2;
   }
-  var /= u.size();
+  var /= arr.size();
   double dev = cuda::std::sqrt(var);
-  skew /= u.size() * dev * var;
-  kurtosis /= u.size() * var * var;
+  skew /= arr.size() * dev * var;
+  kurtosis /= arr.size() * var * var;
 
   double expected_mean = double(a) + double(b) / 2 - double(a) / 2;
   double expected_var  = (sqr(double(b) - double(a) + 1) - 1) / 12;
@@ -96,60 +98,76 @@ __host__ __device__ void test_statistics(ResultType a, ResultType b)
 }
 
 template <class ResultType, class EngineType>
-__host__ __device__ void test_statistics()
+__host__ __device__ void test_statistics(cuda::std::span<ResultType, N> arr)
 {
-  test_statistics<ResultType, EngineType>(0, cuda::std::numeric_limits<ResultType>::max());
+  test_statistics<ResultType, EngineType>(arr, 0, cuda::std::numeric_limits<ResultType>::max());
+}
+
+template <typename ResultType>
+__host__ __device__ auto convert_to(cuda::std::span<unsigned char, N * 16> arr)
+{
+  ResultType* data = reinterpret_cast<ResultType*>(arr.data());
+  return cuda::std::span<ResultType, N>{data, data + N};
 }
 
 template <class EngineType>
-__host__ __device__ void test_statistics()
+__host__ __device__ void test_statistics(cuda::std::span<unsigned char, N * 16> arr)
 {
-  test_statistics<int, EngineType>();
-  test_statistics<short, EngineType>();
-  test_statistics<long, EngineType>();
-  test_statistics<long long, EngineType>();
+  test_statistics<int, EngineType>(convert_to<int>(arr));
+  test_statistics<short, EngineType>(convert_to<short>(arr));
+  test_statistics<long, EngineType>(convert_to<long>(arr));
+  test_statistics<long long, EngineType>(convert_to<long long>(arr));
 
-  test_statistics<unsigned short, EngineType>();
-  test_statistics<unsigned int, EngineType>();
-  test_statistics<unsigned long, EngineType>();
-  test_statistics<unsigned long long, EngineType>();
+  test_statistics<unsigned short, EngineType>(convert_to<unsigned short>(arr));
+  test_statistics<unsigned int, EngineType>(convert_to<unsigned int>(arr));
+  test_statistics<unsigned long, EngineType>(convert_to<unsigned long>(arr));
+  test_statistics<unsigned long long, EngineType>(convert_to<unsigned long long>(arr));
 
-  test_statistics<cuda::std::int8_t, EngineType>();
-  test_statistics<cuda::std::uint8_t, EngineType>();
+  test_statistics<cuda::std::int8_t, EngineType>(convert_to<cuda::std::int8_t>(arr));
+  test_statistics<cuda::std::uint8_t, EngineType>(convert_to<cuda::std::uint8_t>(arr));
 
   // clang-cuda segfaults with 128 bit
   // fatal error: error in backend: Undefined external symbol ""
 #if _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
-  test_statistics<__int128_t, EngineType>();
-  test_statistics<__uint128_t, EngineType>();
+  test_statistics<__int128_t, EngineType>(convert_to<__int128_t>(arr));
+  test_statistics<__uint128_t, EngineType>(convert_to<__uint128_t>(arr));
+#endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
+}
+
+__host__ __device__ void test()
+{
+  cuda::std::unique_ptr<unsigned char[]> array = cuda::std::make_unique<unsigned char[]>(N * 16);
+  cuda::std::span<unsigned char, N * 16> span{array.get(), array.get() + N * 16};
+
+  test_statistics<cuda::std::minstd_rand0>(span);
+
+#if 0 // not implemented
+  test_statistics<int, cuda::std::minstd_rand>(span);
+  test_statistics<int, cuda::std::mt19937>(span);
+  test_statistics<int, cuda::std::mt19937_64>(span);
+  test_statistics<int, cuda::std::ranlux24_base>(span);
+  test_statistics<int, cuda::std::ranlux48_base>(span);
+  test_statistics<int, cuda::std::ranlux24>(span);
+  test_statistics<int, cuda::std::ranlux48>(span);
+  test_statistics<int, cuda::std::knuth_b>(span);
+  test_statistics<int, cuda::std::minstd_rand>(span, 5, 100);
+#endif // not implemented
+  test_statistics<int, cuda::std::minstd_rand0>(convert_to<int>(span), -6, 106);
+  test_statistics<short, cuda::std::minstd_rand0>(convert_to<short>(span), SHRT_MIN, SHRT_MAX);
+
+#if _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
+  test_statistics<__int128_t, cuda::std::minstd_rand0>(convert_to<__int128_t>(span), -100, 900);
+  test_statistics<__int128_t, cuda::std::minstd_rand0>(convert_to<__int128_t>(span), 0, UINT64_MAX);
+  test_statistics<__int128_t, cuda::std::minstd_rand0>(
+    convert_to<__int128_t>(span),
+    cuda::std::numeric_limits<__int128_t>::min(),
+    cuda::std::numeric_limits<__int128_t>::max());
+  test_statistics<__uint128_t, cuda::std::minstd_rand0>(convert_to<__uint128_t>(span), 0, UINT64_MAX);
 #endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
 }
 
 int main(int, char**)
 {
-  test_statistics<cuda::std::minstd_rand0>();
-
-#if 0 // not implemented
-  test_statistics<int, cuda::std::minstd_rand>();
-  test_statistics<int, cuda::std::mt19937>();
-  test_statistics<int, cuda::std::mt19937_64>();
-  test_statistics<int, cuda::std::ranlux24_base>();
-  test_statistics<int, cuda::std::ranlux48_base>();
-  test_statistics<int, cuda::std::ranlux24>();
-  test_statistics<int, cuda::std::ranlux48>();
-  test_statistics<int, cuda::std::knuth_b>();
-  test_statistics<int, cuda::std::minstd_rand>(5, 100);
-#endif // not implemented
-  test_statistics<int, cuda::std::minstd_rand0>(-6, 106);
-  test_statistics<short, cuda::std::minstd_rand0>(SHRT_MIN, SHRT_MAX);
-
-#if _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
-  test_statistics<__int128_t, cuda::std::minstd_rand0>(-100, 900);
-  test_statistics<__int128_t, cuda::std::minstd_rand0>(0, UINT64_MAX);
-  test_statistics<__int128_t, cuda::std::minstd_rand0>(
-    cuda::std::numeric_limits<__int128_t>::min(), cuda::std::numeric_limits<__int128_t>::max());
-  test_statistics<__uint128_t, cuda::std::minstd_rand0>(0, UINT64_MAX);
-#endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
-
+  test();
   return 0;
 }

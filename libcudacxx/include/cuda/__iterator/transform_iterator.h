@@ -1,12 +1,13 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef _CUDA___ITERATOR_TRANSFORM_ITERATOR_H
 #define _CUDA___ITERATOR_TRANSFORM_ITERATOR_H
 
@@ -44,10 +45,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class, class, class = void>
@@ -73,13 +70,6 @@ inline constexpr bool __transform_iterator_nothrow_subscript = false;
 template <class _Fn, class _Iter>
 inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
   noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::declval<_Fn&>(), _CUDA_VSTD::declval<_Iter&>()[0]));
-
-//! \addtogroup iterators
-//! \{
-
-//!! \addtogroup fancyiterator Fancy Iterators
-//!  \ingroup iterators
-//!  \{
 
 //! @brief \p transform_iterator is an iterator which represents a pointer into a range of values after transformation
 //! by a function. This iterator is useful for creating a range filled with the result of applying an operation to
@@ -165,8 +155,8 @@ class transform_iterator : public __transform_iterator_category_base<_Iter, _Fn>
                 "cuda::transform_iterator requires that the return type of _Fn is referenceable");
 
 public:
-  _CCCL_NO_UNIQUE_ADDRESS _Iter __current_;
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VRANGES::__movable_box<_Fn> __func_;
+  _Iter __current_;
+  _CUDA_VRANGES::__movable_box<_Fn> __func_;
 
   using iterator_concept = _CUDA_VSTD::conditional_t<
     _CUDA_VSTD::random_access_iterator<_Iter>,

@@ -110,7 +110,7 @@ template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
 private:
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VRANGES::__movable_box<_Fn> __func_;
+  _CUDA_VRANGES::__movable_box<_Fn> __func_;
   _Index __index_ = 0;
 
 public:

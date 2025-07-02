@@ -89,9 +89,9 @@ enum CacheLoadModifier
  * short *d_in;
  * short val = cub::ThreadLoad<cub::LOAD_DEFAULT>(d_in + threadIdx.x);
  *
- * // 256-bit load using cache-volatile modifier
- * double4 *d_in;
- * double4 val = cub::ThreadLoad<cub::LOAD_CV>(d_in + threadIdx.x);
+ * // 128-bit load using cache-volatile modifier
+ * float4 *d_in;
+ * float4 val = cub::ThreadLoad<cub::LOAD_CV>(d_in + threadIdx.x);
  *
  * // 96-bit load using cache-streaming modifier
  * struct TestFoo { bool a; short b; };

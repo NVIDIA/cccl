@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/optional>
@@ -99,11 +101,14 @@ struct sync_wait_t
     __state_base_t<_Env>* __state_;
   };
 
+  template <class... _Ts>
+  using __decayed_tuple = _CUDA_VSTD::tuple<_CUDA_VSTD::decay_t<_Ts>...>;
+
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
     using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
-    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
     using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
 
     _CUDA_VSTD::optional<__values_t>* __values_;
@@ -158,15 +163,19 @@ struct sync_wait_t
   struct __throw_error_fn
   {
     template <class _Error>
-    _CCCL_HOST_API void operator()(_Error&& __err) const
+    _CCCL_HOST_API void operator()(_Error __err) const
     {
-      if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::exception_ptr>)
+      if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::exception_ptr>)
       {
         ::std::rethrow_exception(static_cast<_Error&&>(__err));
       }
-      else if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::error_code>)
+      else if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::error_code>)
       {
-        throw ::std::system_error(static_cast<_Error&&>(__err));
+        throw ::std::system_error(__err);
+      }
+      else if constexpr (_CUDA_VSTD::is_same_v<_Error, cudaError_t>)
+      {
+        ::cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
       }
       else
       {

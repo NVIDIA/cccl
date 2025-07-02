@@ -14,6 +14,6 @@ int main()
   cuda::std::complex<float>* ptr{};
   auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
 
-  // expected-error {{"gpu-to-gpu deterministic reduction supports only float and double sum."}}
-  cub::DeviceReduce::Reduce(ptr, ptr, 0, cuda::std::plus<>{}, 0, env);
+  // expected-error {{"gpu_to_gpu determinism is unsupported"}}
+  cub::DeviceReduce::Reduce(ptr, ptr, 0, cuda::std::plus<>{}, cuda::std::complex<float>{}, env);
 }

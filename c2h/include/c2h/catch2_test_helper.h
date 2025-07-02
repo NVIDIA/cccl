@@ -140,10 +140,12 @@ template <typename T>
   return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 [[nodiscard]] constexpr bool isnan(double4 val) noexcept
 {
   return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 // TODO: move to libcu++
 #if TEST_HALF_T()

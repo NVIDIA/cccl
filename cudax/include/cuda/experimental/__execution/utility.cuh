@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -193,6 +194,42 @@ private:
   friend struct _CUDA_VSTD::default_delete<__managed_box<_Ty>>;
   ~__managed_box() = default;
 };
+
+// Given a list of functions and a set of arguments, apply the first function that is
+// callable with those arguments.
+template <class... _Fns>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __call_first
+{
+  template <class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(const __call_first& __self) noexcept -> decltype(auto)
+  {
+    // NOLINTNEXTLINE (modernize-avoid-c-arrays)
+    constexpr bool __flags[] = {_CUDA_VSTD::__is_callable_v<const _Fns&, _Args...>..., false};
+    constexpr size_t __idx   = __find_pos(__flags, __flags + sizeof...(_Fns));
+    if constexpr (__idx != __npos)
+    {
+      return _CUDA_VSTD::__get<__idx>(__self.__fns_);
+    }
+  }
+
+  template <class... _Args>
+  using __1st_fn_t _CCCL_NODEBUG_ALIAS = decltype(__call_first::__get_1st<_Args...>(declval<const __call_first&>()));
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class... _Args)
+  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__1st_fn_t<_Args...>, _Args...>)
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const
+    noexcept(_CUDA_VSTD::__is_nothrow_callable_v<__1st_fn_t<_Args...>, _Args...>)
+      -> _CUDA_VSTD::__call_result_t<__1st_fn_t<_Args...>, _Args...>
+  {
+    return __call_first::__get_1st<_Args...>(*this)(static_cast<_Args&&>(__args)...);
+  }
+
+  _CUDA_VSTD::__tuple<_Fns...> __fns_;
+};
+
+template <class... _Fns>
+_CCCL_HOST_DEVICE __call_first(_Fns...) -> __call_first<_Fns...>;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
