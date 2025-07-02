@@ -12,7 +12,7 @@ from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
@@ -31,7 +31,7 @@ def test_block_merge_sort(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block)
     )
 
-    block_merge_sort = cudax.block.merge_sort_keys(
+    block_merge_sort = coop.block.merge_sort_keys(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -83,7 +83,7 @@ def test_block_merge_sort_descending(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block)
     )
 
-    block_merge_sort = cudax.block.merge_sort_keys(
+    block_merge_sort = coop.block.merge_sort_keys(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -130,7 +130,7 @@ def test_block_merge_sort_user_defined_type():
     def op(a, b):
         return a[0].real > b[0].real
 
-    block_merge_sort = cudax.block.merge_sort_keys(
+    block_merge_sort = coop.block.merge_sort_keys(
         dtype=numba.complex128,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,

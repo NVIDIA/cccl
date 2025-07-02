@@ -1,7 +1,7 @@
 .. _cuda_cooperative-module:
 
-CUDA Cooperative
-==================================================
+``cuda.cccl.cooperative`` API Reference
+=======================================
 
 .. warning::
   Python exposure of cooperative algorithms is in public beta.

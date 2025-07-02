@@ -248,6 +248,7 @@ jobs:
   test_cuda_cccl_headers: { name: "Test cuda.cccl.headers", gpu: true, needs: 'build_cuda_cccl' }
   test_cuda_cccl_cooperative:  { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_cuda_cccl' }
   test_cuda_cccl_parallel:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cccl_examples:     { name: "Test cuda.cccl.examples",     gpu: true, needs: 'build_cuda_cccl' }
 
 # Projects have the following properties:
 #
