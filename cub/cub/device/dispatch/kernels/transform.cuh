@@ -619,12 +619,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   __shared__ uint64_t bar;
 
   // SMEM is 16-byte aligned by default
-  extern __shared__ char smem_base[];
-  char* smem = smem_base;
-  if constexpr (bulk_copy_alignment > 16)
-  {
-    smem = ::cuda::align_up(smem, bulk_copy_alignment);
-  }
+  extern __shared__ char smem[];
+  // TODO(bgruber): we should align smem to bulk_copy_alignment, but the performance regression is huge (up to 22%)
+  // if constexpr (bulk_copy_alignment > 16)
+  // {
+  //   smem = ::cuda::align_up(smem, bulk_copy_alignment);
+  //   // also just `smem += 48;` (since smem is 16 bytes aligned after the 8-byte bar) incurs 7% regression
+  // }
 
   namespace ptx = ::cuda::ptx;
 
