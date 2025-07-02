@@ -188,14 +188,12 @@ using uncommon_types = c2h::type_list<
   short3,
   int3,
   longlong3,
-  // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
-  overaligned_t<32>
+  overaligned_t<32>, // exceeds the memcpy_async (Hopper/Blackwell) and bulk copy alignments (only Blackwell)
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
-  ,
-  overaligned_t<256>
+  overaligned_t<256>, // exceeds copy alignment on Hopper
+                      // and exhausts guaranteed shared memory on Hopper (block_threads = 256, req. smem = 64KiB)
+  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (block_threads = 128, req. smem = 64KiB)
 #endif // !_CCCL_COMPILER(MSVC)
-  // exhaust shared memory or registers
-  ,
   huge_t>;
 
 struct uncommon_plus
@@ -220,6 +218,11 @@ struct uncommon_plus
   }
 
   _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<256>& b) const -> overaligned_t<256>
+  {
+    return a + b;
+  }
+
+  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<512>& b) const -> overaligned_t<512>
   {
     return a + b;
   }
