@@ -23,6 +23,7 @@
 
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/type_list.h>
 
@@ -137,7 +138,8 @@ struct get_domain_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept -> __query_result_t<_Env, get_domain_t>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
+    -> _CUDA_VSTD::decay_t<__query_result_t<_Env, get_domain_t>>
   {
     return {};
   }
@@ -162,9 +164,14 @@ struct get_domain_override_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
-    -> __query_result_t<_Env, get_domain_override_t>
+    -> _CUDA_VSTD::decay_t<__query_result_t<_Env, get_domain_override_t>>
   {
     return {};
+  }
+
+  [[nodiscard]] static _CCCL_API constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return false;
   }
 };
 
