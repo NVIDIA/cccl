@@ -174,6 +174,7 @@ jobs:
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
+            --env "CI=$CI" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \
@@ -182,6 +183,7 @@ jobs:
             --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
             --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" \
             --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
