@@ -123,22 +123,22 @@ _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add.f32)
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
 
 #if __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
-_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, float2, add.f32x2)
+_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, ::float2, add.f32x2)
 #endif // __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
 
 #if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, short2, add.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, ushort2, add.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, ::short2, add.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, ::ushort2, add.u16x2)
 #endif // __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 530
-_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __half, add.f16)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __half2, add.f16x2)
+_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, ::__half, add.f16)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, ::__half2, add.f16x2)
 #endif // _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 530
 
 #if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 900
-_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __nv_bfloat16, add.bf16)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __nv_bfloat162, add.bf16x2)
+_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, ::__nv_bfloat16, add.bf16)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, ::__nv_bfloat162, add.bf16x2)
 #endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 900
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -156,27 +156,27 @@ _CUB_SHFL_DOWN_OP_64BIT(::cuda::maximum<>, double, max.f64)
 _CUB_SHFL_DOWN_OP_64BIT(::cuda::minimum<>, double, min.f64)
 
 #if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, short2, max.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, ushort2, max.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, ::short2, max.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, ::ushort2, max.u16x2)
 
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, short2, min.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, ushort2, min.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, ::short2, min.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, ::ushort2, min.u16x2)
 #endif // __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 800
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __half, min.f16)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __half2, min.f16x2)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, ::__half, min.f16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, ::__half2, min.f16x2)
 
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __half, max.f16)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __half2, max.f16x2)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, ::__half, max.f16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, ::__half2, max.f16x2)
 #endif // _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 800
 
 #if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __nv_bfloat16, min.bf16)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __nv_bfloat162, min.bf16x2)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, ::__nv_bfloat16, min.bf16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, ::__nv_bfloat162, min.bf16x2)
 
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __nv_bfloat16, max.bf16)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __nv_bfloat162, max.bf16x2)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, ::__nv_bfloat16, max.bf16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, ::__nv_bfloat162, max.bf16x2)
 #endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -195,21 +195,14 @@ _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, uint32_t, xor.b32)
 
 template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_bound_mask(
-  [[maybe_unused]] int step,
   [[maybe_unused]] logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items,
-  is_segmented_t<IsSegmented> is_segmented = {})
+  is_segmented_t<IsSegmented> is_segmented)
 {
   if constexpr (is_segmented)
   {
     return valid_items.extent(0); // segmented limit
   }
-  // else if constexpr (valid_items.rank_dynamic() == 0 && ::cuda::is_power_of_two(ValidItems))
-  //{
-  //   const auto clamp   = 1u << step;
-  //   const auto segmask = 0b11110u << (step + 8);
-  //   return clamp | segmask;
-  // }
   else // valid_items is dynamic
   {
     return cub::detail::logical_warp_base_id(logical_size) + valid_items.extent(0) - 1;

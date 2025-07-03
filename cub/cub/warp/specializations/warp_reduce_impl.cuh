@@ -53,27 +53,27 @@ template <typename T, typename ReductionOp, typename Config>
   const auto mask = cub::detail::redux_lane_mask(config);
   if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_and_sync(mask, input1));
+    return static_cast<T>(::__reduce_and_sync(mask, input1));
   }
   else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_or_sync(mask, input1));
+    return static_cast<T>(::__reduce_or_sync(mask, input1));
   }
   else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_xor_sync(mask, input1));
+    return static_cast<T>(::__reduce_xor_sync(mask, input1));
   }
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_add_sync(mask, input1));
+    return static_cast<T>(::__reduce_add_sync(mask, input1));
   }
   else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_min_sync(mask, input1));
+    return static_cast<T>(::__reduce_min_sync(mask, input1));
   }
   else if constexpr (is_cuda_maximum_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_max_sync(mask, input1));
+    return static_cast<T>(::__reduce_max_sync(mask, input1));
   }
   else
   {
@@ -104,7 +104,7 @@ template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
     }
     else if constexpr (UsePtx)
     {
-      auto shuffle_mask = cub::detail::reduce_shuffle_bound_mask(K, logical_size, valid_items, is_segmented);
+      auto shuffle_mask = cub::detail::reduce_shuffle_bound_mask(logical_size, valid_items, is_segmented);
       input1            = cub::detail::shfl_down_op_pred(reduction_op, input1, 1u << K, shuffle_mask, mask);
     }
     else // fallback, general case but slower
@@ -194,9 +194,11 @@ template <typename T, typename Config>
   auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
   auto high_reduction      = warp_reduce_dispatch(high, _CUDA_VSTD::plus<>{}, warp_config);
   auto low_reduction       = warp_reduce_dispatch(low, _CUDA_VSTD::plus<>{}, warp_config);
-  auto low_top_digits      = low >> 5; // low 27-bit, carry out
-  auto carry_out           = warp_reduce_dispatch(low_top_digits, _CUDA_VSTD::plus<>{}, warp_config);
-  auto result_high         = high_reduction + (carry_out >> (half_bits - 5));
+  // handle overflow in the top 5 bits of 'low'
+  auto low_top_digits = low >> 5; // 27-bit, carry out (top 5 bits)
+  auto carry_out_low  = warp_reduce_dispatch(low & 0b11111, _CUDA_VSTD::plus<>{}, warp_config) >> 5;
+  auto carry_out_top  = warp_reduce_dispatch(low_top_digits, _CUDA_VSTD::plus<>{}, warp_config);
+  auto result_high    = high_reduction + ((carry_out_top + carry_out_low) >> (half_bits - 5));
   return merge_integers(result_high, low_reduction);
 }
 
@@ -290,14 +292,12 @@ template <typename T, typename ReductionOp, typename Config>
   // [Logical And/Or]
   else if constexpr (is_cuda_std_logical_and_v<ReductionOp, T>)
   {
-    return __all_sync(cub::detail::redux_lane_mask(config), input);
+    return ::__all_sync(cub::detail::redux_lane_mask(config), input);
   }
   else if constexpr (is_cuda_std_logical_or_v<ReductionOp, T>)
   {
-    return __any_sync(cub::detail::redux_lane_mask(config), input);
+    return ::__any_sync(cub::detail::redux_lane_mask(config), input);
   }
-  // TODO: [Comparison]: equal_to
-  // else if constexpr (is_cuda_std_equal_to_v<ReductionOp, T>)
   //--------------------------------------------------------------------------------------------------------------------
   // [Plus/Min/Max/Bitwise]: small integers (int8, uint8, int16, uint16, int32, uint32)
   if constexpr (is_specialized_operator && is_small_integer)
@@ -308,6 +308,7 @@ template <typename T, typename ReductionOp, typename Config>
   }
   else if constexpr (is_specialized_operator && is_integral_v<T>) // large integers (int64, uint64, int128, uint128)
   {
+    // NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op1, config);));
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op1, config);));
   }
   //--------------------------------------------------------------------------------------------------------------------
@@ -330,7 +331,7 @@ template <bool IsHeadSegment,
 {
   auto logical_base_warp_id = cub::detail::logical_warp_base_id(logical_size);
   auto member_mask          = cub::detail::reduce_lane_mask(logical_mode, logical_size);
-  auto warp_flags           = __ballot_sync(member_mask, flag);
+  auto warp_flags           = ::__ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   warp_flags |= (1u << (logical_base_warp_id + LogicalWarpSize - 1)); // Mask in the last lane of each logical warp
   auto warp_flags_last  = warp_flags & _CUDA_VPTX::get_sreg_lanemask_ge(); // Clean the bits below the current thread

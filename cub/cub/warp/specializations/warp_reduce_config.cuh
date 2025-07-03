@@ -127,24 +127,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
   [[maybe_unused]] auto last_pos_limit =
     (is_segmented && logical_mode == multiple_reductions) ? warp_threads : logical_size;
   _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) <= last_pos_limit, "invalid last position");
-  // the following section should be always enabled but the compiler wrongly generates code that can hang
-#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS) && defined(_CUB_ENABLE_MASK_ASSERTIONS)
-  // Check which lanes are active
-  uint32_t logical_mask = 0;
-  if constexpr (!is_segmented)
-  {
-    constexpr int num_logical_warps = (logical_mode == single_reduction) ? 1 : warp_threads / logical_size;
-    for (int i = 0; i < num_logical_warps; i++)
-    {
-      logical_mask |= ::cuda::bitmask(i * logical_size, valid_items.extent(0));
-    }
-  }
-  else
-  {
-    logical_mask = (logical_mode == single_reduction) ? ::cuda::bitmask(0, logical_size) : 0xFFFFFFFF;
-  }
-  _CCCL_ASSERT((::__activemask() & logical_mask) == logical_mask, "Invalid lane mask");
-#endif
 }
 
 } // namespace detail

@@ -54,15 +54,15 @@ template <typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(Config config)
 {
   auto [logical_mode, _, logical_size, valid_items, is_segmented, first_pos] = config;
-  constexpr bool is_single_reduction                                         = logical_mode == single_reduction;
-  [[maybe_unused]] auto shift = is_single_reduction ? 0 : cub::detail::logical_warp_base_id(logical_size);
   if constexpr (is_segmented)
   {
     return ::cuda::bitmask(first_pos, valid_items.extent(0) - first_pos + 1);
   }
   else
   {
-    constexpr auto base_mask = ::cuda::bitmask(0, logical_size); // must be constexpr
+    constexpr auto base_mask           = ::cuda::bitmask(0, logical_size); // must be constexpr
+    constexpr bool is_single_reduction = logical_mode == single_reduction;
+    auto shift                         = is_single_reduction ? 0 : cub::detail::logical_warp_base_id(logical_size);
     return base_mask << shift;
   }
 }
@@ -80,7 +80,7 @@ template <typename T, typename ReductionOp, typename Config>
   static_assert(is_same_v<T, float> && is_cuda_minimum_maximum_v<ReductionOp, T>);
   const auto mask = cub::detail::redux_lane_mask(config);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
-               (return cub::detail::redux_sm100a_ptx(ReductionOp1{}, value, mask);),
+               (return cub::detail::redux_sm100a_ptx(ReductionOp{}, value, mask);),
                (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))
 #else
   static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
