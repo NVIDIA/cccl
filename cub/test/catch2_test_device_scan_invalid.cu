@@ -25,9 +25,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_PRIMITIVE primitive 0:1
 
+using offset_t    = int32_t;
+using primitive_t = uint64_t;
 // atomicAdd does not support uint64_t or int64_t or long long
 using error_count_t = unsigned long long;
+
+static_assert(cub::detail::is_primitive_v<primitive_t>);
+static_assert(sizeof(primitive_t) == 2 * sizeof(offset_t));
 
 // Element type for scans
 template <typename OffsetT>
@@ -49,20 +55,30 @@ struct segment
   }
 };
 
+template <typename OffsetT, typename PrimitiveT>
+__host__ __device__ auto to_element(segment<OffsetT> seg)
+{
+#if TEST_PRIMITIVE == 0
+  return seg;
+#else
+  return cuda::std::bit_cast<PrimitiveT>(seg);
+#endif
+}
+
 // Needed for data input using fancy iterators
-template <typename OffsetT>
-struct tuple_to_segment_op
+template <typename OffsetT, typename PrimitiveT>
+struct tuple_to_element_op
 {
   using seg_t = segment<OffsetT>;
-  __host__ __device__ seg_t operator()(cuda::std::tuple<OffsetT, OffsetT> interval)
+  __host__ __device__ auto operator()(cuda::std::tuple<OffsetT, OffsetT> interval)
   {
     const auto [begin, end] = interval;
-    return {begin, end};
+    return to_element<OffsetT, PrimitiveT>(seg_t{begin, end});
   }
 };
 
 // Actual scan operator doing the core test when run on device
-template <typename OffsetT>
+template <typename OffsetT, typename PrimitiveT>
 struct merge_segments_op
 {
   using seg_t = segment<OffsetT>;
@@ -74,6 +90,14 @@ struct merge_segments_op
     NV_IF_TARGET(NV_IS_DEVICE, (if (left.end != right.begin) { atomicAdd(error_count_, error_count_t{1}); }));
     return {left.begin, right.end};
   }
+#if TEST_PRIMITIVE == 1
+  __host__ __device__ PrimitiveT operator()(PrimitiveT p_left, PrimitiveT p_right)
+  {
+    const auto left  = cuda::std::bit_cast<seg_t>(p_left);
+    const auto right = cuda::std::bit_cast<seg_t>(p_right);
+    return cuda::std::bit_cast<PrimitiveT>(this->operator()(left, right));
+  }
+#endif
 
   error_count_t* error_count_;
 };
@@ -81,10 +105,15 @@ struct merge_segments_op
 // Expected to fail for the current implementation.
 C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]")
 {
-  using offset_t = int32_t;
-  using input_t  = segment<offset_t>;
+  using segment_t = segment<offset_t>;
+  static_assert(!cub::detail::is_primitive_v<segment_t>);
+#if TEST_PRIMITIVE == 0
+  using input_t = segment_t;
+#else
+  using input_t = primitive_t;
+#endif
   using output_t = input_t;
-  using op_t     = merge_segments_op<offset_t>;
+  using op_t     = merge_segments_op<offset_t, primitive_t>;
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
@@ -92,7 +121,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   const auto d_in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<offset_t>{1}, cuda::counting_iterator<offset_t>{2}),
-    tuple_to_segment_op<offset_t>{});
+    tuple_to_element_op<offset_t, primitive_t>{});
 
   SECTION("inclusive scan")
   {
@@ -102,7 +131,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
     // Prepare verification data
     // Need neutral init in this case
-    const auto init_value = output_t{1, 1};
+    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{1, 1});
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), scan_op, init_value);
 
@@ -111,7 +140,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_inclusive_scan(d_in_it, d_out_it, scan_op, num_items);
     // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == 0);
+    REQUIRE(error_count.front() == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
@@ -123,7 +152,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const auto init_value = output_t{0, 1};
+    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -134,7 +163,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_inclusive_scan_with_init(d_in_it, d_out_it, scan_op, init_value, num_items);
     // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == 0);
+    REQUIRE(error_count.front() == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
@@ -146,7 +175,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const auto init_value = output_t{0, 1};
+    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -157,7 +186,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_exclusive_scan(d_in_it, d_out_it, scan_op, init_value, num_items);
     // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == 0);
+    REQUIRE(error_count.front() == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
@@ -169,7 +198,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const auto init_value = output_t{0, 1};
+    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -183,7 +212,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     const auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(d_in_it, d_out_it, scan_op, future_init_value, num_items);
     // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == 0);
+    REQUIRE(error_count.front() == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
