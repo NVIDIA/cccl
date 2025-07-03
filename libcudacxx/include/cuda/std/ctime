@@ -108,9 +108,11 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return _CUDA_VSTD::__cccl_time_impl_device(__v);))
 }
 
+#if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
+
 // timespec_get
 
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_timespec_get_impl_device(timespec* __ts, int __base) noexcept
 {
   if (__base != TIME_UTC)
@@ -122,9 +124,7 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
   __ts->tv_nsec  = static_cast<long>(__t % 1'000'000'000);
   return __base;
 }
-#endif // _CCCL_CUDA_COMPILATION()
-
-#if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
+#  endif // _CCCL_CUDA_COMPILATION()
 
 #  if defined(timespec_get)
 #    pragma push_macro("timespec_get")
