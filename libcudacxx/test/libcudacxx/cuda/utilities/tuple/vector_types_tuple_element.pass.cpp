@@ -13,7 +13,9 @@
 
 #include "test_macros.h"
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+#if _CCCL_CTK_AT_LEAST(13, 0)
+__NV_SILENCE_DEPRECATION_BEGIN
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <class VType, class BaseType, size_t Index>
 using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index, VType>::type, BaseType>;
