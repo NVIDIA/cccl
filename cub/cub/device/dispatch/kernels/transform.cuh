@@ -617,7 +617,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   __shared__ uint64_t bar;
+#if _CCCL_CUDA_COMPILER(CLANG)
   extern __shared__ char smem[] __attribute__((aligned(bulk_copy_alignment)));
+#else // _CCCL_COMPILER(MSVC)
+  extern __shared__ char smem[] alignas(bulk_copy_alignment);
+#endif // _CCCL_COMPILER(MSVC)
   _CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "Compiler ignored alignment attribute");
 
   namespace ptx = ::cuda::ptx;
