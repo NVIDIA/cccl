@@ -46,10 +46,15 @@ __host__ __device__ constexpr bool test()
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
   test<long4_16a, 4>();
+  test<long4_32a, 4>();
   test<ulong4_16a, 4>();
+  test<ulong4_32a, 4>();
   test<longlong4_16a, 4>();
+  test<longlong4_32a, 4>();
   test<ulonglong4_16a, 4>();
+  test<ulonglong4_32a, 4>();
   test<double4_16a, 4>();
+  test<double4_32a, 4>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   return true;
