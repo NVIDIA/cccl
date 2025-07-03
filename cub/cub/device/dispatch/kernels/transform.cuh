@@ -481,10 +481,10 @@ template <typename LdgstsPolicy, typename Offset, typename F, typename RandomAcc
 _CCCL_DEVICE void transform_kernel_ldgsts(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  extern __shared__ char smem[]; // this should be __attribute((aligned(ldgsts_size_and_align))), but then it clashes
-                                 // with the ublkcp kernel, which sets a higher alignment, since they are both called
-                                 // from the same kernel entry point (albeit one is always discarded). However, SMEM is
-                                 // 16-byte aligned by default.
+  // SMEM is 16-byte aligned by default
+  extern __shared__ char smem[];
+  static_assert(ldgsts_size_and_align <= 16);
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(smem) % ldgsts_size_and_align == 0, "");
 
   constexpr int block_threads = LdgstsPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;

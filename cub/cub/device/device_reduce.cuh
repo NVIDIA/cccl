@@ -525,7 +525,139 @@ public:
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
   //! - Uses ``0`` as the initial value of the reduction.
-  //! - Does not support ``+`` operators that are non-commutative..
+  //! - Does not support ``+`` operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined min-reduction of a
+  //! device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sum-env-determinism
+  //!     :end-before: example-end sum-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
+
+    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t =
+      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using determinism_t =
+      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
+                                          _CUDA_EXEC::determinism::__get_determinism_t,
+                                          _CUDA_EXEC::determinism::run_to_run_t>;
+
+    // Query relevant properties from the environment
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    using InitT = OutputT;
+
+    // Query the required temporary storage size
+    cudaError_t error = reduce_impl<tuning_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      ::cuda::std::plus<>{},
+      InitT{}, // zero-initialize
+      determinism_t{},
+      stream.get());
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    error = reduce_impl<tuning_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      ::cuda::std::plus<>{},
+      InitT{}, // zero-initialize
+      determinism_t{},
+      stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+
+    if (error != cudaSuccess)
+    {
+      // Reduction error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
+  }
+
+  //! @rst
+  //! Computes a device-wide sum using the addition (``+``) operator.
+  //!
+  //! - Uses ``0`` as the initial value of the reduction.
+  //! - Does not support ``+`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
