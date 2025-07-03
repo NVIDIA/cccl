@@ -700,13 +700,13 @@ struct __device_attrs
 
 #endif // CUDART_VERSION >= 12020
 
-  // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
-  // capability in a single query
+  // Combines major and minor compute capability in a 10 * major + minor format, allows to query full compute capability
+  // in a single query
   struct compute_capability_t
   {
     [[nodiscard]] int operator()(device_ref __dev_id) const
     {
-      return 100 * compute_capability_major(__dev_id) + 10 * compute_capability_minor(__dev_id);
+      return 10 * compute_capability_major(__dev_id) + compute_capability_minor(__dev_id);
     }
   };
   static constexpr compute_capability_t compute_capability{};

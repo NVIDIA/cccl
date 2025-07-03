@@ -314,7 +314,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       int compute_cap       = device_ref(0).attribute(device::attributes::compute_capability);
       int compute_cap_major = device_ref(0).attribute(device::attributes::compute_capability_major);
       int compute_cap_minor = device_ref(0).attribute(device::attributes::compute_capability_minor);
-      CUDAX_REQUIRE(compute_cap == 100 * compute_cap_major + 10 * compute_cap_minor);
+      CUDAX_REQUIRE(compute_cap == 10 * compute_cap_major + compute_cap_minor);
     }
   }
   SECTION("Name")
