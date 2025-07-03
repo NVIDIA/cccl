@@ -38,18 +38,18 @@ The functions return the pointer ``ptr`` cast to type ``U*`` or ``const U*``. Th
 **Performance considerations**
 
 - The returned pointer is decorated with ``__builtin_assume_aligned`` with the ``alignof(U)`` value to help the compiler generate better code.
+- The returned pointer maintains the same memory space, for example shared memory, as the input pointer.
 
 Example
 -------
 
 .. code:: cuda
-
     #include <cuda/memory>
     #include <cuda/std/cstdint>
 
     __global__ void kernel(const int* ptr, volatile int* ptr2) {
-        const uint64_t*    ptr_res1 = cuda::ptr_rebind<uint64_t>(ptr);
-        volatile uint64_t* ptr_res2 = cuda::ptr_rebind<uint64_t>(ptr2);
+        auto ptr_res1 = cuda::ptr_rebind<uint64_t>(ptr);  // ptr_res1: const uint64_t*
+        auto ptr_res2 = cuda::ptr_rebind<uint64_t>(ptr2); // ptr_res2: volatile uint64_t*
     }
 
     int main() {
@@ -60,4 +60,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/6dYPvG3q9>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/oY7vTnWe4>`_
