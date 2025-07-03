@@ -98,7 +98,7 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
 
@@ -132,7 +132,7 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
 

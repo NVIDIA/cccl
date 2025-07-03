@@ -466,8 +466,10 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
-    script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
-    script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
+    #    script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
+    #    script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
+    script_path = "./ci"
+    script_ext = ".sh"
 
     job_info = get_job_type_info(job_type)
     job_prefix = job_info["invoke"]["prefix"]
