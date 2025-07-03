@@ -63,9 +63,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '12.8', libs: 'rmm kvikio cudf cudf_kafka' }
-          - { cuda: '12.8', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
-          - { cuda: '12.8', libs: 'rmm ucxx raft cugraph'                }
+          - { cuda: '12.9', libs: 'rmm kvikio cudf cudf_kafka' }
+          - { cuda: '12.9', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
+          - { cuda: '12.9', libs: 'rmm ucxx raft cugraph'                }
     permissions:
       id-token: write
       contents: read
