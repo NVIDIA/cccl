@@ -131,6 +131,7 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
 #    undef timespec_get
 #    define _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #  endif // timespec_get
+template <int = 0>
 [[nodiscard]] _CCCL_API inline int timespec_get(timespec* __ts, int __base) noexcept
 #  ifdef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #    pragma pop_macro("timespec_get")
