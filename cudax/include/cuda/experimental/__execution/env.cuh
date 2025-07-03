@@ -180,7 +180,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 
   [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
   {
-    return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
+    return __query_result_or_t<_Sch, get_domain_t, default_domain>{};
   }
 
   _Sch __sch_;
