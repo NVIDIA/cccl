@@ -123,7 +123,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     thrust::make_zip_iterator(cuda::counting_iterator<offset_t>{1}, cuda::counting_iterator<offset_t>{2}),
     tuple_to_element_op<offset_t, primitive_t>{});
 
-  SECTION("inclusive scan")
+  DYNAMIC_SECTION("inclusive scan '(num_items = " << num_items << ')')
   {
     c2h::device_vector<error_count_t> error_count(1);
     // Scan operator
@@ -146,7 +146,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     REQUIRE(expected_result == out_result);
   }
 
-  SECTION("inclusive scan with init value")
+  DYNAMIC_SECTION("inclusive scan with init value (num_items = " << num_items << ')')
   {
     c2h::device_vector<error_count_t> error_count(1);
     // Scan operator
@@ -169,7 +169,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     REQUIRE(expected_result == out_result);
   }
 
-  SECTION("exclusive scan")
+  DYNAMIC_SECTION("exclusive scan (num_items = " << num_items << ')')
   {
     c2h::device_vector<error_count_t> error_count(1);
     // Scan operator
@@ -192,7 +192,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     REQUIRE(expected_result == out_result);
   }
 
-  SECTION("exclusive scan with future-init value")
+  DYNAMIC_SECTION("exclusive scan with future-init value (num_items = " << num_items << ')')
   {
     c2h::device_vector<error_count_t> error_count(1);
     // Scan operator
