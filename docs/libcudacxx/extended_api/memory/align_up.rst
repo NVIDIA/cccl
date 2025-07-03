@@ -30,6 +30,7 @@ The function returns the original pointer or closest pointer larger than ``ptr``
 
 - The function is optimized for compile-time values of ``alignment``.
 - The returned pointer is decorated with ``__builtin_assume_aligned`` to help the compiler generate better code.
+- The returned pointer maintains the same memory space, for example shared memory, as the input pointer.
 
 Example
 -------
