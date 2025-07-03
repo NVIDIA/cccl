@@ -511,11 +511,12 @@ template <typename shape_t, typename... Args>
   ::std::ostringstream args_prototype_oss;
 
   // Convert dynamic args to static args
-  ::std::ostringstream args_conversion_oss;
+  ::std::ostringstream using_oss;
+  using_oss << "  using static_tuple = ::cuda::std::tuple<";
 
-  // this will contain "auto targs = make_tuple(...);"
+  // this will contain "auto targs = static_tuple(...);"
   ::std::ostringstream args_tuple_oss;
-  args_tuple_oss << "const auto targs = ::cuda::std::make_tuple(";
+  args_tuple_oss << "static_tuple(";
 
   each_in_tuple(targs, [&](auto i, const auto& arg) {
     using raw_arg        = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(arg)>>;
@@ -525,51 +526,32 @@ template <typename shape_t, typename... Args>
     {
       args_tuple_oss << ", ";
       args_prototype_oss << ", ";
+      using_oss << ", ";
     }
 
     // Pass the to_kernel_argd version of the dynamic argument as an argument of the kernel
     args_prototype_oss << ::std::string(type_name<kernel_param_t>) << " dyn_arg" << i;
-
     // Convert the dynamic argument into its statically sized counterpart.
-    args_conversion_oss
-      << jit_adapter<raw_arg>(arg).kernel_side_t_name() << " static_arg" << i << "{dyn_arg" << i << "};\n";
-
-    args_tuple_oss << "static_arg" << i;
+    using_oss << jit_adapter<raw_arg>(arg).kernel_side_t_name();
+    args_tuple_oss << "dyn_arg" << i;
   });
 
-  args_tuple_oss << ");\n";
+  args_tuple_oss << ")";
+  using_oss << ">;\n";
 
   // Note that we do not need the dynamic version of the shape at all
-  args_conversion_oss << "const " << jit_adapter<shape_t>(shape).kernel_side_t_name() << " static_shape;\n";
 
-  oss << "extern \"C\"\n";
-  oss << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n";
-  oss << "{\n";
+  oss
+    << "#include <cuda/experimental/__stf/nvrtc/jit_loop.cuh>\n"
+    << "extern \"C\"\n"
+    << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n"
+    << "{\n"
+    << "  using static_shape_t = " << jit_adapter<shape_t>(shape).kernel_side_t_name() << ";\n"
+    << using_oss.str() << '\n'
+    << "  jit_loop<static_shape_t>([]" << body_template << ",\n    " << args_tuple_oss.str() << ");\n"
+    << "}\n";
 
-  oss << args_conversion_oss.str() << ::std::endl;
-  oss << args_tuple_oss.str() << ::std::endl;
-
-  oss << "auto _body_impl = []" << body_template << ";\n";
-
-  oss << R"(
-           size_t _i          = blockIdx.x * blockDim.x + threadIdx.x;
-           const size_t _step = blockDim.x * gridDim.x;
-           const size_t n = static_shape.size();
-
-           auto explode_args = [&](auto&&... data) {
-             auto const explode_coords = [&](auto&&... coords) {
-               _body_impl(coords..., data...);
-             };
-             // For every linearized index in the shape
-             for (; _i < n; _i += _step)
-             {
-               ::cuda::std::apply(explode_coords, static_shape.index_to_coords(_i));
-             }
-           };
-           ::cuda::std::apply(explode_args, ::std::move(targs));
-)";
-
-  oss << "}\n";
+  ::std::cerr << oss.str();
 
   return oss.str();
 }
