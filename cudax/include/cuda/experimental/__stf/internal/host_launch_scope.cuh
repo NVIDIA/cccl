@@ -172,11 +172,11 @@ public:
 
       if constexpr (fun_invocable_task_deps)
       {
-        ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+        ::cuda::std::apply(::std::forward<Fun>(w->first), mv(w->second));
       }
       else if constexpr (fun_invocable_task_non_void_deps)
       {
-        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
+        ::cuda::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
       }
     };
 

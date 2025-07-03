@@ -30,6 +30,7 @@
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <filesystem>
+#include <tuple>
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // One level of macro indirection is required in order to resolve __COUNTER__,
@@ -629,12 +630,12 @@ UNITTEST("tuple2tuple")
 {
   using namespace cuda::experimental::stf;
   //! [tuple2tuple]
-  auto t  = ::std::make_tuple(1, 2, 3);
+  auto t  = ::cuda::std::make_tuple(1, 2, 3);
   auto t1 = tuple2tuple(t, [](auto x) {
     return x + 1.0;
   });
-  static_assert(::std::is_same_v<decltype(t1), ::std::tuple<double, double, double>>);
-  EXPECT(t1 == ::std::make_tuple(2.0, 3.0, 4.0));
+  static_assert(::cuda::std::is_same_v<decltype(t1), ::cuda::std::tuple<double, double, double>>);
+  EXPECT(t1 == ::cuda::std::make_tuple(2.0, 3.0, 4.0));
   //! [tuple2tuple]
 };
 
