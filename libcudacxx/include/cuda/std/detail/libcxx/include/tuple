@@ -1343,13 +1343,13 @@ _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, _
         _CUDA_VSTD::forward<_Tuple>(__t),
         __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
-        template <class _Tp, class _Tuple, size_t... _Idx>
-        _CCCL_API constexpr _Tp
-  __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
-    _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::forward<_Tuple>(__t))...))
+        _CCCL_EXEC_CHECK_DISABLE
+template <class _Tp, class _Tuple, size_t... _Idx>
+_CCCL_API constexpr _Tp __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
+  _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::forward<_Tuple>(__t))...))
 
-      template <class _Tp, class _Tuple>
-      _CCCL_API constexpr _Tp
+    template <class _Tp, class _Tuple>
+    _CCCL_API constexpr _Tp
   make_from_tuple(_Tuple&& __t) _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__make_from_tuple_impl<_Tp>(
     _CUDA_VSTD::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
