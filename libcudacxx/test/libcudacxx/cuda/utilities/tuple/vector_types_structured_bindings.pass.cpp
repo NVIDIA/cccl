@@ -14,6 +14,10 @@
 
 #include "test_macros.h"
 
+#if _CCCL_CTK_AT_LEAST(13, 0)
+__NV_SILENCE_DEPRECATION_BEGIN
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
 template <class VType, class BaseType, size_t VSize>
 struct get_val;
 
@@ -86,6 +90,64 @@ struct get_expected<BaseType, 3>
     return BaseType{static_cast<BaseType>(0)};
   }
 };
+
+template <class VType4, class BaseType>
+__host__ __device__ constexpr void test_4d()
+{
+  { // & overload
+    VType4 val                      = get_val<VType4, BaseType, 4>::create();
+    auto&& [ret1, ret2, ret3, ret4] = val;
+    static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret2), BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret3), BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret4), BaseType>::value, "");
+
+    assert(ret1 == (get_expected<BaseType, 0>::create()));
+    assert(ret2 == (get_expected<BaseType, 1>::create()));
+    assert(ret3 == (get_expected<BaseType, 2>::create()));
+    assert(ret4 == (get_expected<BaseType, 3>::create()));
+  }
+
+  { // const & overload
+    const VType4 val                = get_val<VType4, BaseType, 4>::create();
+    auto&& [ret1, ret2, ret3, ret4] = val;
+    static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret4), const BaseType>::value, "");
+
+    assert(ret1 == (get_expected<BaseType, 0>::create()));
+    assert(ret2 == (get_expected<BaseType, 1>::create()));
+    assert(ret3 == (get_expected<BaseType, 2>::create()));
+    assert(ret4 == (get_expected<BaseType, 3>::create()));
+  }
+
+  { // && overload
+    auto&& [ret1, ret2, ret3, ret4] = get_val<VType4, BaseType, 4>::create();
+    static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret2), BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret3), BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret4), BaseType>::value, "");
+
+    assert(ret1 == (get_expected<BaseType, 0>::create()));
+    assert(ret2 == (get_expected<BaseType, 1>::create()));
+    assert(ret3 == (get_expected<BaseType, 2>::create()));
+    assert(ret4 == (get_expected<BaseType, 3>::create()));
+  }
+
+  { // const&& overload
+    auto&& [ret1, ret2, ret3, ret4] = const_cast<const VType4&&>(get_val<VType4, BaseType, 4>::create());
+    static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret4), const BaseType>::value, "");
+
+    assert(ret1 == (get_expected<BaseType, 0>::create()));
+    assert(ret2 == (get_expected<BaseType, 1>::create()));
+    assert(ret3 == (get_expected<BaseType, 2>::create()));
+    assert(ret4 == (get_expected<BaseType, 3>::create()));
+  }
+}
 
 template <class BaseType, class VType1, class VType2, class VType3, class VType4>
 __host__ __device__ constexpr void test()
@@ -283,6 +345,19 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(ulonglong, unsigned long long);
   EXPAND_VECTOR_TYPE(float, float);
   EXPAND_VECTOR_TYPE(double, double);
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_4d<long4_16a, long>();
+  test_4d<long4_32a, long>();
+  test_4d<ulong4_16a, unsigned long>();
+  test_4d<ulong4_32a, unsigned long>();
+  test_4d<longlong4_16a, long long>();
+  test_4d<longlong4_32a, long long>();
+  test_4d<ulonglong4_16a, unsigned long long>();
+  test_4d<ulonglong4_32a, unsigned long long>();
+  test_4d<double4_16a, double>();
+  test_4d<double4_32a, double>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   return true;
 }
