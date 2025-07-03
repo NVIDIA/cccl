@@ -435,7 +435,8 @@
       "name": "base",
       "hidden": true,
       "output": {
-        "outputOnFailure": true
+        "verbosity": "extra",
+        "outputOnFailure": false
       },
       "execution": {
         "noTestsAction": "error",

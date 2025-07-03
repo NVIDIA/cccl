@@ -39,7 +39,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   set(config_meta_target ${config_prefix}.tests)
   add_dependencies(${config_meta_target} ${test_target})
 
-  add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+  add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>" --durations yes)
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
