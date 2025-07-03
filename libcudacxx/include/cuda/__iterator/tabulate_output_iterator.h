@@ -118,7 +118,7 @@ public:
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using difference_type   = _Index;
   using value_type        = void;
-  using pointer           = void*;
+  using pointer           = void;
   using reference         = void;
 
 #if _CCCL_HAS_CONCEPTS()
