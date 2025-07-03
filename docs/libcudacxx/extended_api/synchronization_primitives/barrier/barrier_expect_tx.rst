@@ -17,7 +17,7 @@ Increments the expected transaction count of a barrier in shared memory.
 Preconditions
 -------------
 
--  ``__isShared(&bar) == true``
+-  ``is_address_from(address_space::shared, &bar) == true``
 -  ``0 <= transaction_count_update && transaction_count_update <= (1 << 20) - 1``
 
 Effects

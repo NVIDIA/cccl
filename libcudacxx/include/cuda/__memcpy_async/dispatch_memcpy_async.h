@@ -26,6 +26,7 @@
 #include <cuda/__memcpy_async/cp_async_bulk_shared_global.h>
 #include <cuda/__memcpy_async/cp_async_fallback.h>
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
@@ -78,7 +79,7 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
      _CCCL_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
                   "Pass non-null bar_handle if and only if can_use_complete_tx.");
      if constexpr (_Align >= 16) {
-       if (__can_use_complete_tx && ::__isShared(__bar_handle))
+       if (__can_use_complete_tx && _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __bar_handle))
        {
          ::cuda::__cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
          return __completion_mechanism::__mbarrier_complete_tx;
@@ -127,7 +128,8 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
       // 2) make sure none of the code paths can reach each other by "falling through".
       //
       // See nvbug 4074679 and also PR #478.
-      if (::__isGlobal(__src_char) && ::__isShared(__dest_char)) {
+      if (_CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __src_char)
+          && _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __dest_char)) {
         return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
       } else {
