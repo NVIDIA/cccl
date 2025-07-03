@@ -506,17 +506,12 @@ template <typename shape_t, typename... Args>
   [[maybe_unused]] shape_t shape, const char* body_template, ::cuda::std::tuple<Args...> targs)
 {
   ::std::ostringstream oss;
-
   // kernel arguments
-  ::std::ostringstream args_prototype_oss;
-
+  ::std::ostringstream types_and_params_list;
   // Convert dynamic args to static args
-  ::std::ostringstream using_oss;
-  using_oss << "  using static_tuple = ::cuda::std::tuple<";
-
+  ::std::ostringstream types_list;
   // this will contain "auto targs = static_tuple(...);"
-  ::std::ostringstream args_tuple_oss;
-  args_tuple_oss << "static_tuple(";
+  ::std::ostringstream param_list;
 
   each_in_tuple(targs, [&](auto i, const auto& arg) {
     using raw_arg        = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(arg)>>;
@@ -524,31 +519,29 @@ template <typename shape_t, typename... Args>
 
     if (i > 0)
     {
-      args_tuple_oss << ", ";
-      args_prototype_oss << ", ";
-      using_oss << ", ";
+      param_list << ", ";
+      types_and_params_list << ", ";
+      types_list << ", ";
     }
 
     // Pass the to_kernel_argd version of the dynamic argument as an argument of the kernel
-    args_prototype_oss << ::std::string(type_name<kernel_param_t>) << " dyn_arg" << i;
+    types_and_params_list << ::std::string(type_name<kernel_param_t>) << " dyn_arg" << i;
     // Convert the dynamic argument into its statically sized counterpart.
-    using_oss << jit_adapter<raw_arg>(arg).kernel_side_t_name();
-    args_tuple_oss << "dyn_arg" << i;
+    types_list << jit_adapter<raw_arg>(arg).kernel_side_t_name();
+    param_list << "dyn_arg" << i;
   });
-
-  args_tuple_oss << ")";
-  using_oss << ">;\n";
 
   // Note that we do not need the dynamic version of the shape at all
 
   oss
     << "#include <cuda/experimental/__stf/nvrtc/jit_loop.cuh>\n"
     << "extern \"C\"\n"
-    << "__global__ void %KERNEL_NAME%(" << args_prototype_oss.str() << ")\n"
+    << "__global__ void %KERNEL_NAME%(" << types_and_params_list.str() << ")\n"
     << "{\n"
     << "  using static_shape_t = " << jit_adapter<shape_t>(shape).kernel_side_t_name() << ";\n"
-    << using_oss.str() << '\n'
-    << "  jit_loop<static_shape_t>([]" << body_template << ",\n    " << args_tuple_oss.str() << ");\n"
+    << "  using static_tuple = ::cuda::std::tuple<" << types_list.str() << ">;\n"
+    << "  jit_loop<static_shape_t>([]" << body_template
+    << ",\n    static_tuple(" << param_list.str() << "));\n"
     << "}\n";
 
   ::std::cerr << oss.str();

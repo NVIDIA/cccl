@@ -640,7 +640,7 @@ public:
   //--------------------------------------------------------------------------
   // index -> coordinate explosion (unchanged algorithm, but everything static)
   //--------------------------------------------------------------------------
-  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE static coords_t index_to_coords(size_t index)
   {
     CUDASTF_NO_DEVICE_STACK
     return make_cuda_tuple_indexwise<dimensions>([&](auto dim_cst) {
@@ -653,7 +653,7 @@ public:
     CUDASTF_NO_DEVICE_STACK
   }
 
-  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t size() const
+  _CCCL_HOST_DEVICE static ::cuda::std::ptrdiff_t size()
   {
     if constexpr (dimensions == 1)
     {
