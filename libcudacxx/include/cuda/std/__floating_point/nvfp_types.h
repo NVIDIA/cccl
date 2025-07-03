@@ -55,4 +55,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4100) // unreferenced formal parameter
 _CCCL_DIAG_POP
 #endif // _CCCL_HAS_NVFP4()
 
+#if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+#  include <crt/device_fp128_functions.h>
+#endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+
 #endif // _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H
