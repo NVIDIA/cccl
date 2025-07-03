@@ -22,7 +22,7 @@
 
 namespace cudax = cuda::experimental;
 
-using managed_resource = cudax::managed_memory_resource;
+using managed_resource = cudax::legacy_managed_memory_resource;
 static_assert(!cuda::std::is_trivial<managed_resource>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<managed_resource>::value, "");
 static_assert(cuda::std::is_trivially_copy_constructible<managed_resource>::value, "");
@@ -77,26 +77,6 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
     res.deallocate(ptr, 42, 4);
   }
 
-  { // allocate_async / deallocate_async
-    auto* ptr = res.allocate_async(42, stream);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-
-    stream.sync();
-    ensure_managed_ptr(ptr);
-
-    res.deallocate_async(ptr, 42, stream);
-  }
-
-  { // allocate_async / deallocate_async with alignment
-    auto* ptr = res.allocate_async(42, 4, stream);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-
-    stream.sync();
-    ensure_managed_ptr(ptr);
-
-    res.deallocate_async(ptr, 42, 4, stream);
-  }
-
 #if _CCCL_HAS_EXCEPTIONS()
   { // allocate with too small alignment
     while (true)
@@ -119,35 +99,6 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
       try
       {
         [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
-  }
-  { // allocate_async with too small alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, stream);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
-  }
-
-  { // allocate_async with non matching alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_async(5, 1337, stream);
       }
       catch (std::invalid_argument&)
       {
@@ -199,9 +150,9 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cudax::managed_memory_resource
+struct derived_managed_resource : cudax::legacy_managed_memory_resource
 {
-  using cudax::managed_memory_resource::managed_memory_resource;
+  using cudax::legacy_managed_memory_resource::legacy_managed_memory_resource;
 };
 static_assert(cuda::mr::resource<derived_managed_resource>, "");
 
@@ -223,16 +174,6 @@ C2H_TEST("managed_memory_resource comparison", "[memory_resource]")
   { // comparison against a managed_memory_resource wrapped inside a resource_ref<device_accessible>
     managed_resource second{};
     cudax::resource_ref<cudax::device_accessible> second_ref{second};
-    CHECK((first == second_ref));
-    CHECK(!(first != second_ref));
-    CHECK((second_ref == first));
-    CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a managed_memory_resource wrapped inside a async_resource_ref
-    managed_resource second{};
-    cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
-
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
