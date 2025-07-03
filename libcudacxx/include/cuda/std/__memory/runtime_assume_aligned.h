@@ -33,7 +33,7 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API _Tp* __runtime_assume_aligned(_Tp* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
 {
 #if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
-  using _Up = remove_volatile_t<_Tp>;
+  using _Up = _CUDA_VSTD::remove_volatile_t<_Tp>;
   switch (__alignment)
   {
     case 1:
