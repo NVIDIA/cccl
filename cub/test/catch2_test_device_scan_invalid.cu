@@ -118,6 +118,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
     take(3, random(1, 10'000'000)), values({1, 31, cuda::ipow(31, 2), cuda::ipow(31, 4), cuda::ipow(31, 5)}));
+  CAPTURE(num_items);
 
   const auto d_in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<offset_t>{1}, cuda::counting_iterator<offset_t>{2}),
