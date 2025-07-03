@@ -84,7 +84,7 @@ struct __continues_on_t
 
     _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
-        , __stream_(__get_stream(__sndr, execution::get_env(__rcvr)))
+        , __stream_(__get_stream(__sndr, execution::get_env(__rcvr_)))
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr>{__rcvr_}))
     {}
 
