@@ -73,7 +73,7 @@ namespace cuda::experimental
 {
 
 // Need a type that goes through all launch_transform steps, but is not a contiguous_range
-template <typename AsKernelArg = cuda::std::span<int>>
+template <typename RelocatableValue = cuda::std::span<int>>
 struct weird_buffer
 {
   legacy_pinned_memory_resource& resource;
@@ -101,7 +101,7 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    AsKernelArg kernel_transform()
+    RelocatableValue relocatable_value()
     {
       return *this;
     };
@@ -118,7 +118,7 @@ struct weird_buffer
     }
   };
 
-  [[nodiscard]] friend transform_result __cudax_launch_transform(cuda::stream_ref, const weird_buffer& self) noexcept
+  [[nodiscard]] friend transform_result cccl_device_transform(cuda::stream_ref, const weird_buffer& self) noexcept
   {
     return {self.data, self.size};
   }

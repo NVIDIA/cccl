@@ -121,7 +121,7 @@ struct launch_transform_to_int_convertible
       // CUDAX_CHECK_FALSE(kernel_run_proof);
     }
 
-    // Immovable to ensure that __launch_transform doesn't copy the returned
+    // Immovable to ensure that device_transform doesn't copy the returned
     // object
     int_convertible(int_convertible&&) = delete;
 
@@ -134,14 +134,14 @@ struct launch_transform_to_int_convertible
     }
 
     // This is the value that will be passed to the kernel
-    int kernel_transform() const
+    int relocatable_value() const
     {
       return value_;
     }
   };
 
   [[nodiscard]] friend int_convertible
-  __cudax_launch_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
+  cccl_device_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);
   }

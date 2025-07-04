@@ -34,7 +34,7 @@
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/path_builder.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
-#include <cuda/experimental/__launch/launch_transform.cuh>
+#include <cuda/experimental/__stream/device_transform.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -140,14 +140,14 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
 
 _CCCL_TEMPLATE(typename _GraphInserter)
 _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
-_CCCL_HOST_API cudaStream_t __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
+_CCCL_HOST_API ::cuda::stream_ref __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
 {
   return __detail::__invalid_stream;
 }
 
-_CCCL_HOST_API cudaStream_t inline __stream_or_invalid(cuda::stream_ref __stream)
+_CCCL_HOST_API ::cuda::stream_ref inline __stream_or_invalid(cuda::stream_ref __stream)
 {
-  return __stream.get();
+  return __stream;
 }
 
 _CCCL_TEMPLATE(typename _GraphInserter)
@@ -216,27 +216,30 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_device __dev_setter{__submitter};
   auto __combined = __conf.combine_with_default(__kernel);
-  if constexpr (::cuda::std::is_invocable_v<_Kernel, kernel_config<_Dimensions, _Config...>, kernel_arg_t<_Args>...>)
+  if constexpr (::cuda::std::is_invocable_v<_Kernel,
+                                            kernel_config<_Dimensions, _Config...>,
+                                            _CUDA_VSTD::decay_t<device_transform_result_t<_Args>>...>)
   {
-    auto __launcher = __kernel_launcher<decltype(__combined), _Kernel, kernel_arg_t<_Args>...>;
+    auto __launcher =
+      __kernel_launcher<decltype(__combined), _Kernel, _CUDA_VSTD::decay_t<device_transform_result_t<_Args>>...>;
     return __launch_impl(
       __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __combined,
       __kernel,
-      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args)))...);
+      device_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args))...);
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<_Kernel, kernel_arg_t<_Args>...>);
-    auto __launcher = __kernel_launcher_no_config<_Kernel, kernel_arg_t<_Args>...>;
+    static_assert(::cuda::std::is_invocable_v<_Kernel, _CUDA_VSTD::decay_t<device_transform_result_t<_Args>>...>);
+    auto __launcher = __kernel_launcher_no_config<_Kernel, _CUDA_VSTD::decay_t<device_transform_result_t<_Args>>...>;
     return __launch_impl(
       __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __kernel,
-      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args)))...);
+      device_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args))...);
   }
 }
 
@@ -292,7 +295,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
     __conf,
     reinterpret_cast<void*>(__kernel),
     __conf,
-    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
+    device_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -345,7 +348,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
     __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)), //
     __conf,
     reinterpret_cast<void*>(__kernel),
-    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
+    device_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args))...);
 }
 
 //
