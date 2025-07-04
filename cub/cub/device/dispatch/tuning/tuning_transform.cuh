@@ -124,9 +124,13 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
 {
+  // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments
+  _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
+  _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
+
   return ::cuda::round_up(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
-       // 128 bytes of padding for each input tile (handles before + after)
        + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
+       // padding for each input tile (handles before + after as long as tile_size is a multiple of bulk_copy_align)
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
 }
 
