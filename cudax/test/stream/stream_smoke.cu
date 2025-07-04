@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -137,6 +140,9 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
 
 C2H_CCCLRT_TEST("Stream ID", "[stream]")
 {
+  STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cudax::stream_id>>);
+  STATIC_REQUIRE(cuda::std::is_same_v<cudax::stream_id, decltype(cuda::std::declval<cudax::stream_ref>().id())>);
+
   cudax::stream stream1{cudax::device_ref{0}};
   cudax::stream stream2{cudax::device_ref{0}};
 

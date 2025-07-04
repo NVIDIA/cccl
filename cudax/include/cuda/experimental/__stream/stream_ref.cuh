@@ -43,6 +43,11 @@ namespace __detail
 static const ::cudaStream_t __invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
 } // namespace __detail
 
+//! @brief A type representing a stream ID.
+enum class stream_id : unsigned long long
+{
+};
+
 //! @brief A non-owning wrapper for cudaStream_t.
 //!
 //! @note It is undefined behavior to use a `stream_ref` object beyond the lifetime of the stream it was created from,
@@ -115,9 +120,9 @@ struct stream_ref : ::cuda::stream_ref
   //! @return The unique ID of the stream
   //!
   //! @throws cuda_error if the ID query fails
-  [[nodiscard]] _CCCL_HOST_API unsigned long long id() const
+  [[nodiscard]] _CCCL_HOST_API stream_id id() const
   {
-    return __detail::driver::streamGetId(__stream);
+    return stream_id{__detail::driver::streamGetId(__stream)};
   }
 
   //! @brief Create a new event and record it into this stream
