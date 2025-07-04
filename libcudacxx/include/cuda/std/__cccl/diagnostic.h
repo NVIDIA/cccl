@@ -24,79 +24,64 @@
 
 // Enable us to selectively silence host compiler warnings
 #if _CCCL_COMPILER(CLANG)
-#  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(clang diagnostic push)
-#  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(clang diagnostic pop)
-#  define _CCCL_DIAG_SUPPRESS_CLANG(str) _CCCL_PRAGMA(clang diagnostic ignored str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str)
-#  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_PUSH                     _CCCL_PRAGMA(clang diagnostic push)
+#  define _CCCL_DIAG_POP                      _CCCL_PRAGMA(clang diagnostic pop)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_PRAGMA(clang diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(GCC)
 #  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
 #  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
-#  define _CCCL_DIAG_SUPPRESS_CLANG(str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str) _CCCL_PRAGMA(GCC diagnostic ignored str)
-#  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_PRAGMA(GCC diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(diagnostic push)
 #  define _CCCL_DIAG_POP  _CCCL_PRAGMA(diagnostic pop)
-#  define _CCCL_DIAG_SUPPRESS_CLANG(str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str)
-#  define _CCCL_DIAG_SUPPRESS_NVHPC(str) _CCCL_PRAGMA(diag_suppress str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
+#  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(warning(push))
 #  define _CCCL_DIAG_POP  _CCCL_PRAGMA(warning(pop))
-#  define _CCCL_DIAG_SUPPRESS_CLANG(str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str)
-#  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str) _CCCL_PRAGMA(warning(disable : str))
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING) _CCCL_PRAGMA(warning(disable : _WARNING))
 #else
 #  define _CCCL_DIAG_PUSH
 #  define _CCCL_DIAG_POP
-#  define _CCCL_DIAG_SUPPRESS_CLANG(str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str)
-#  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
+#  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #endif
 
 // Enable us to selectively silence cuda compiler warnings
-#if _CCCL_HAS_CUDA_COMPILER()
-#  if _CCCL_CUDA_COMPILER(CLANG)
-#    define _CCCL_NV_DIAG_PUSH()
-#    define _CCCL_NV_DIAG_POP()
-#    define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
-#    define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#  elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#    define _CCCL_NV_DIAG_PUSH() _CCCL_PRAGMA(nv_diagnostic push)
-#    define _CCCL_NV_DIAG_POP()  _CCCL_PRAGMA(nv_diagnostic push)
-#    if _CCCL_COMPILER(MSVC)
-#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_NV_DIAG_PUSH() _CCCL_PRAGMA(nv_diag_suppress _WARNING)
-#      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_NV_DIAG_POP()
-#    else // ^^^ _CCCL_COMPILER_{MSVC}^^^ / vvv !_CCCL_COMPILER_{MSVC} vvv
-#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_NV_DIAG_PUSH() _CCCL_PRAGMA(nv_diag_suppress _WARNING)
-#      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_NV_DIAG_POP()
-#    endif // !_CCCL_COMPILER(MSVC)
-#  elif _CCCL_COMPILER(NVHPC)
-#    define _CCCL_NV_DIAG_PUSH()             _CCCL_PRAGMA(diagnostic push)
-#    define _CCCL_NV_DIAG_POP()              _CCCL_PRAGMA(diagnostic push)
-#    define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_NV_DIAG_PUSH() _CCCL_PRAGMA(diag_suppress _WARNING)
-#    define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_NV_DIAG_POP()
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(nv_diagnostic push)
+#    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(nv_diagnostic push)
+#    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
+#    define _CCCL_NV_DIAG_SUPPRESS(...)        _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
+#    define _CCCL_NV_DIAG_DEFAULT(...)         _CCCL_NV_DIAG_POP()
 #  else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#    define _CCCL_NV_DIAG_PUSH() _CCCL_PRAGMA(diagnostic push)
-#    define _CCCL_NV_DIAG_POP()  _CCCL_PRAGMA(diagnostic push)
-#    if _CCCL_COMPILER(GCC) // these compilers have issues with restoring the warning
-#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_NV_DIAG_PUSH()(diag_suppress _WARNING)
-#      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_NV_DIAG_POP()
-#    else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
-#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_NV_DIAG_PUSH() _CCCL_PRAGMA(diag_suppress _WARNING)
-#      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_NV_DIAG_POP()
-#    endif // !_CCCL_COMPILER(GCC)
+#    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(diagnostic push)
+#    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(diagnostic push)
+#    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
+#    define _CCCL_NV_DIAG_SUPPRESS(...)        _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
+#    define _CCCL_NV_DIAG_DEFAULT(...)         _CCCL_NV_DIAG_POP()
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
-#  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
-#  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#endif // ^^^ !_CCCL_HAS_CUDA_COMPILER() ^^^
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
+#  define _CCCL_NV_DIAG_PUSH()
+#  define _CCCL_NV_DIAG_POP()
+#  define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING)
+#  define _CCCL_NV_DIAG_SUPPRESS(...)
+#  define _CCCL_NV_DIAG_DEFAULT(...)
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
 
 // Convenient shortcuts to silence common warnings
 #if _CCCL_COMPILER(CLANG)
@@ -104,25 +89,22 @@
     _CCCL_DIAG_PUSH                                        \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations") \
-    _CCCL_NV_DIAG_SUPPRESS(1444)                           \
-    _CCCL_NV_DIAG_SUPPRESS(20199)
-#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
+    _CCCL_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(GCC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                 \
     _CCCL_DIAG_PUSH                                      \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-declarations") \
-    _CCCL_NV_DIAG_SUPPRESS(1444)                         \
-    _CCCL_NV_DIAG_SUPPRESS(20199)
-#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
+    _CCCL_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                             \
     _CCCL_DIAG_PUSH                                                  \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)                     \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message) \
-    _CCCL_NV_DIAG_SUPPRESS(1444)                                     \
-    _CCCL_NV_DIAG_SUPPRESS(20199)
-#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
+    _CCCL_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
