@@ -66,21 +66,23 @@
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(nv_diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(nv_diagnostic pop)
 #    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
-#    define _CCCL_NV_DIAG_SUPPRESS(...)        _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
-#    define _CCCL_NV_DIAG_DEFAULT(...)         _CCCL_NV_DIAG_POP()
+#    define _CCCL_BEGIN_NV_DIAG_SUPPRESS(...) \
+      _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
+#    define _CCCL_END_NV_DIAG_SUPPRESS()
 #  else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(diagnostic pop)
 #    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
-#    define _CCCL_NV_DIAG_SUPPRESS(...)        _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
-#    define _CCCL_NV_DIAG_DEFAULT(...)         _CCCL_NV_DIAG_POP()
+#    define _CCCL_BEGIN_NV_DIAG_SUPPRESS(...) \
+      _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
+#    define _CCCL_END_NV_DIAG_SUPPRESS()
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
 #  define _CCCL_NV_DIAG_PUSH()
 #  define _CCCL_NV_DIAG_POP()
 #  define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING)
-#  define _CCCL_NV_DIAG_SUPPRESS(...)
-#  define _CCCL_NV_DIAG_DEFAULT(...)
+#  define _CCCL_BEGIN_NV_DIAG_SUPPRESS(...)
+#  define _CCCL_END_NV_DIAG_SUPPRESS()
 #endif // !_CCCL_CUDA_COMPILER(NVCC)
 
 // Convenient shortcuts to silence common warnings
@@ -89,27 +91,27 @@
     _CCCL_DIAG_PUSH                                        \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations") \
-    _CCCL_NV_DIAG_SUPPRESS(1444, 20199)
+    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(GCC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                 \
     _CCCL_DIAG_PUSH                                      \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-declarations") \
-    _CCCL_NV_DIAG_SUPPRESS(1444, 20199)
+    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                             \
     _CCCL_DIAG_PUSH                                                  \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)                     \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message) \
-    _CCCL_NV_DIAG_SUPPRESS(1444, 20199)
+    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)       \
-    _CCCL_NV_DIAG_SUPPRESS(1444)
+    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #else // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) && !_CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH

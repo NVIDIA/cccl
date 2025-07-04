@@ -41,7 +41,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_NV_DIAG_SUPPRESS(1215)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1215)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -548,7 +548,7 @@ struct __rebind_alloc_helper
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_NV_DIAG_DEFAULT(1215)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/std/__cccl/epilogue.h>
 
