@@ -31,6 +31,8 @@
 
 #include <memory>
 
+#include <catch2/catch_tostring.hpp>
+
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  include <c2h/checked_allocator.cuh>
 #else
@@ -51,3 +53,38 @@ using THRUST_NS_QUALIFIER::device_vector;
 using THRUST_NS_QUALIFIER::host_vector;
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h
+
+// We specialize how Catch2 prints ([signed|unsigned]) char vectors for better readability. Let's print them as numbers
+// instead of characters. We need a full specialization here to avoid an ambiguity, since Catch2 already provides a
+// partial specialization for range-like types.
+#define _SPECIALIZE_VEC(V, T)                                              \
+  template <>                                                              \
+  struct ::Catch::StringMaker<c2h::V<T>>                                   \
+  {                                                                        \
+    /* Copied from `rangeToString` in catch_tostring.hpp */                \
+    static auto convert(const c2h::V<T>& v) -> std::string                 \
+    {                                                                      \
+      auto first = v.begin();                                              \
+      auto last  = v.end();                                                \
+                                                                           \
+      ReusableStringStream rss;                                            \
+      rss << "{ ";                                                         \
+      if (first != last)                                                   \
+      {                                                                    \
+        rss << Detail::stringify(static_cast<unsigned>(*first));           \
+        for (++first; first != last; ++first)                              \
+        {                                                                  \
+          rss << ", " << Detail::stringify(static_cast<unsigned>(*first)); \
+        }                                                                  \
+      }                                                                    \
+      rss << " }";                                                         \
+      return rss.str();                                                    \
+    }                                                                      \
+  };
+_SPECIALIZE_VEC(host_vector, char)
+_SPECIALIZE_VEC(host_vector, signed char)
+_SPECIALIZE_VEC(host_vector, unsigned char)
+_SPECIALIZE_VEC(device_vector, char)
+_SPECIALIZE_VEC(device_vector, signed char)
+_SPECIALIZE_VEC(device_vector, unsigned char)
+#undef _SPECIALIZE_VEC
