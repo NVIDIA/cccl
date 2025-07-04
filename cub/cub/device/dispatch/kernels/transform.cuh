@@ -687,20 +687,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
     // turning this lambda into a function does not change SASS
     auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
-      using T      = typename decltype(aligned_ptr)::value_type;
-      const T* src = aligned_ptr.ptr_to_elements() + offset;
-      T* dst       = reinterpret_cast<T*>(smem + smem_offset);
-      if constexpr (alignof(T) < bulk_copy_alignment)
-      {
-        dst += aligned_ptr.head_padding;
-      }
-      else
-      {
-        _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
-      }
+      using T = typename decltype(aligned_ptr)::value_type;
+
+      _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
+      const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+
+      const char* src = aligned_ptr.ptr + offset * Offset{sizeof(T)} + head_padding;
+      char* dst       = smem + smem_offset + head_padding;
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-
       const int bytes_to_copy = int{sizeof(T)} * valid_items;
       bulk_copy_maybe_unaligned<bulk_copy_alignment>(
         dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
@@ -738,18 +733,18 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       {
         int smem_offset    = 0;
         auto fetch_operand = [&](auto aligned_ptr) {
-          using T                         = typename decltype(aligned_ptr)::value_type;
-          const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset);
+          using T         = typename decltype(aligned_ptr)::value_type;
+          const char* src = smem + smem_offset;
           if constexpr (alignof(T) < bulk_copy_alignment)
           {
-            smem_operand_tile_base += aligned_ptr.head_padding;
+            src += aligned_ptr.head_padding;
           }
           else
           {
             _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
           }
           smem_offset += int{sizeof(T)} * tile_size + bulk_copy_alignment;
-          return smem_operand_tile_base[idx];
+          return reinterpret_cast<const T*>(src)[idx];
         };
 
         // need to expand into a tuple for guaranteed order of evaluation
