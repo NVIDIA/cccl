@@ -68,7 +68,7 @@
 #    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
 #    define _CCCL_BEGIN_NV_DIAG_SUPPRESS(...) \
       _CCCL_NV_DIAG_PUSH() _CCCL_PP_FOR_EACH(_CCCL_DIAG_SUPPRESS_NVCC, __VA_ARGS__)
-#    define _CCCL_END_NV_DIAG_SUPPRESS()
+#    define _CCCL_END_NV_DIAG_SUPPRESS() _CCCL_NV_DIAG_POP()
 #  else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(diagnostic pop)
