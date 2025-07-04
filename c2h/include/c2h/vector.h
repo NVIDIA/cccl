@@ -57,12 +57,14 @@ using THRUST_NS_QUALIFIER::host_vector;
 // We specialize how Catch2 prints ([signed|unsigned]) char vectors for better readability. Let's print them as numbers
 // instead of characters. We need a full specialization here to avoid an ambiguity, since Catch2 already provides a
 // partial specialization for range-like types.
+namespace Catch
+{
 #define _SPECIALIZE_VEC(V, T)                                              \
   template <>                                                              \
-  struct ::Catch::StringMaker<c2h::V<T>>                                   \
+  struct StringMaker<::c2h::V<T>>                                          \
   {                                                                        \
     /* Copied from `rangeToString` in catch_tostring.hpp */                \
-    static auto convert(const c2h::V<T>& v) -> std::string                 \
+    static auto convert(const ::c2h::V<T>& v) -> std::string               \
     {                                                                      \
       auto first = v.begin();                                              \
       auto last  = v.end();                                                \
@@ -88,3 +90,4 @@ _SPECIALIZE_VEC(device_vector, char)
 _SPECIALIZE_VEC(device_vector, signed char)
 _SPECIALIZE_VEC(device_vector, unsigned char)
 #undef _SPECIALIZE_VEC
+} // namespace Catch
