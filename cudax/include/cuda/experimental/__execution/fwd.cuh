@@ -34,8 +34,8 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
-                             // will always produce an error when instantiated.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
+                                   // will always produce an error when instantiated.
 
 namespace cuda::experimental
 {
@@ -229,7 +229,7 @@ struct stream_scheduler;
 
 } // namespace cuda::experimental
 
-_CCCL_NV_DIAG_DEFAULT(2642)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

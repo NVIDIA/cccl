@@ -31,7 +31,7 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
 
 namespace cuda::experimental::execution
 {
@@ -130,7 +130,7 @@ using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::experimental::executio
 
 } // namespace cuda::experimental::execution
 
-_CCCL_NV_DIAG_DEFAULT(114) // function "foo" was references but not defined
+_CCCL_END_NV_DIAG_SUPPRESS() // function "foo" was references but not defined
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

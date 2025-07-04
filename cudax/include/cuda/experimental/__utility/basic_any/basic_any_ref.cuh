@@ -85,7 +85,7 @@ _CCCL_DIAG_PUSH
 // "operator basic_any<...> will not be called for implicit or explicit conversions"
 _CCCL_DIAG_SUPPRESS_NVHPC(conversion_function_not_usable)
 // "operator basic_any<...> will not be called for implicit or explicit conversions"
-_CCCL_NV_DIAG_SUPPRESS(554)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(554)
 
 //!
 //! \c basic_any<__ireference<_Interface>>
@@ -249,7 +249,7 @@ private:
   _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __optr_{};
 };
 
-_CCCL_NV_DIAG_DEFAULT(554)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 //!
