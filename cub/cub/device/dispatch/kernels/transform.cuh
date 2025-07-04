@@ -629,17 +629,19 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // carefully using a fake read on the address to prevent NVVM to pull the aligning deeper into the kernel.
   //   extern __shared__ char smem_base[];
   //   uint32_t smem32 = __cvta_generic_to_shared(smem_base);
-  //   smem32 = cuda::round_up(smem32, 64);
-  //   char* smem = reinterpret_cast<T*>(__cvta_shared_to_generic(smem32));
+  //   smem32 = cuda::round_up(smem32, bulk_copy_alignment);
+  //   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
+  //                                                                bulk_copy_alignment));
 
   // What gets closest to a working attribute is to rely on the following observations:
   // * static shared memory is aligned to 1KiB
   // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
   // In this case we could:
   //   extern __shared__ char smem_base[];
-  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base) + 112;
+  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base) + bulk_copy_alignment - 16;
   //   asm("" : "+r"(smem32));
-  //   char* smem = static_cast<char*>(__cvta_shared_to_generic(smem32));
+  //   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
+  //                                                                bulk_copy_alignment));
   // However, CUDA currently does not provide this guarantee.
 
   // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems (e.g. with driver
