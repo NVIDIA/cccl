@@ -26,22 +26,24 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using element_types = c2h::type_list<uint64_t, segment<int32_t>>;
-using offset_t    = int32_t;
-using primitive_t = uint64_t;
-// atomicAdd does not support uint64_t or int64_t or long long
-using error_count_t = unsigned long long;
-
-static_assert(cub::detail::is_primitive_v<primitive_t>);
-static_assert(sizeof(primitive_t) == 2 * sizeof(offset_t));
-
 // Element type for scans
-template <typename OffsetT>
+struct segment;
+
+// atomicAdd does not support uint64_t or int64_t or long long
+using error_count_t    = unsigned long long;
+using segment_offset_t = int32_t;
+using primitive_t      = uint64_t;
+using element_types    = c2h::type_list<primitive_t, segment>;
+
+static_assert(!cub::detail::is_primitive_v<segment>);
+static_assert(cub::detail::is_primitive_v<primitive_t>);
+static_assert(sizeof(primitive_t) == 2 * sizeof(segment_offset_t));
+
 struct segment
 {
   // Make sure that default constructed segments can not be merged
-  OffsetT begin = cuda::std::numeric_limits<OffsetT>::min();
-  OffsetT end   = cuda::std::numeric_limits<OffsetT>::max();
+  segment_offset_t begin = cuda::std::numeric_limits<segment_offset_t>::min();
+  segment_offset_t end   = cuda::std::numeric_limits<segment_offset_t>::max();
 
   // Needed for final comparison with reference
   friend bool operator==(segment left, segment right)
@@ -55,43 +57,33 @@ struct segment
   }
 };
 
-template <typename OffsetT, typename WrapperT>
-__host__ __device__ WrapperT to_element(segment<OffsetT> seg)
-{
-  return cuda::std::bit_cast<WrapperT>(seg);
-}
-
 // Needed for data input using fancy iterators
-template <typename OffsetT, typename PrimitiveT>
-struct tuple_to_element_op
+template <typename WrapperT>
+struct tuple_to_wrapper_op
 {
-  using seg_t = segment<OffsetT>;
-  __host__ __device__ auto operator()(cuda::std::tuple<OffsetT, OffsetT> interval)
+  __host__ __device__ auto operator()(cuda::std::tuple<segment_offset_t, segment_offset_t> interval)
   {
     const auto [begin, end] = interval;
-    return to_element<OffsetT, PrimitiveT>(seg_t{begin, end});
+    return cuda::std::bit_cast<WrapperT>(segment{begin, end});
   }
 };
 
 // Actual scan operator doing the core test when run on device
-template <typename OffsetT, typename PrimitiveT>
 struct merge_segments_op
 {
-  using seg_t = segment<OffsetT>;
   __host__ merge_segments_op(error_count_t* error_count)
       : error_count_{error_count}
   {}
-  __host__ __device__ seg_t operator()(seg_t left, seg_t right)
+  __host__ __device__ segment operator()(segment left, segment right)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (if (left.end != right.begin) { atomicAdd(error_count_, error_count_t{1}); }));
     return {left.begin, right.end};
   }
-  template <typename PrimitiveT>
-  __host__ __device__ PrimitiveT operator()(PrimitiveT p_left, PrimitiveT p_right)
+  __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right)
   {
-    const auto left  = cuda::std::bit_cast<seg_t>(p_left);
-    const auto right = cuda::std::bit_cast<seg_t>(p_right);
-    return cuda::std::bit_cast<PrimitiveT>(this->operator()(left, right));
+    const auto left  = cuda::std::bit_cast<segment>(p_left);
+    const auto right = cuda::std::bit_cast<segment>(p_right);
+    return cuda::std::bit_cast<primitive_t>(this->operator()(left, right));
   }
 
   error_count_t* error_count_;
@@ -100,20 +92,19 @@ struct merge_segments_op
 // Expected to fail for the current implementation.
 C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", element_types)
 {
-  using segment_t = segment<offset_t>;
-  static_assert(!cub::detail::is_primitive_v<segment_t>);
-using input_t  = c2h::get<0, TestType>;
+  using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
-  using op_t     = merge_segments_op<offset_t, input_t>;
+  using op_t     = merge_segments_op;
 
   // Generate the input sizes to test for
-  const offset_t num_items = GENERATE_COPY(
+  const segment_offset_t num_items = GENERATE_COPY(
     take(3, random(1, 10'000'000)), values({1, 31, cuda::ipow(31, 2), cuda::ipow(31, 4), cuda::ipow(31, 5)}));
   CAPTURE(num_items);
 
   const auto d_in_it = cuda::make_transform_iterator(
-    thrust::make_zip_iterator(cuda::counting_iterator<offset_t>{1}, cuda::counting_iterator<offset_t>{2}),
-    tuple_to_element_op<offset_t, primitive_t>{});
+    thrust::make_zip_iterator(cuda::counting_iterator<segment_offset_t>{1},
+                              cuda::counting_iterator<segment_offset_t>{2}),
+    tuple_to_wrapper_op<input_t>{});
 
   SECTION("inclusive scan")
   {
@@ -123,7 +114,7 @@ using input_t  = c2h::get<0, TestType>;
 
     // Prepare verification data
     // Need neutral init in this case
-    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{1, 1});
+    const auto init_value = cuda::std::bit_cast<output_t>(segment{1, 1});
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), scan_op, init_value);
 
@@ -144,7 +135,7 @@ using input_t  = c2h::get<0, TestType>;
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{0, 1});
+    const auto init_value = cuda::std::bit_cast<output_t>(segment{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -167,7 +158,7 @@ using input_t  = c2h::get<0, TestType>;
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{0, 1});
+    const auto init_value = cuda::std::bit_cast<output_t>(segment{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -190,7 +181,7 @@ using input_t  = c2h::get<0, TestType>;
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const output_t init_value = to_element<offset_t, primitive_t>(segment_t{0, 1});
+    const auto init_value = cuda::std::bit_cast<output_t>(segment{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
