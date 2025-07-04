@@ -610,20 +610,6 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 }
 
-template <int Alignment>
-_CCCL_DEVICE auto align_shared_ptr_now(char* p) -> char*
-{
-  // shared memory addresses are 32-bit, so convert and align it
-  uint32_t smem32 = __cvta_generic_to_shared(p);
-  smem32          = ::cuda::round_up(smem32, Alignment);
-  // pretend to NVVM that the 32-bit pointer is modified. this is required to avoid constant propagation from pulling
-  // the smem32 definition into loops and branches in subsequent code. thus, the pointer alignment code remains at the
-  // start of the kernel.
-  asm("" : "+r"(smem32));
-  // convert back to a generic pointer for C++ code
-  return static_cast<char*>(__cvta_shared_to_generic(smem32));
-}
-
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -632,22 +618,35 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   __shared__ uint64_t bar;
 
-  // We would ideally use an attribute to align the shared memory like (all versions are equivalent):
-  // * extern __shared__ char __align__(bulk_copy_alignment) smem[];
-  // * extern __shared__ char smem[] alignas(bulk_copy_alignment);
-  // * extern __shared__ char smem[] __attribute__((aligned(bulk_copy_alignment)))
-  // The compiler correctly takes the alignment into account and even emits an alignment specifier into ptx. However,
-  // this somewhat randomly fails at runtime because the shared memory start pointer is not correctly provided by the
-  // runtime. See also NVBug 5093902.
-  extern __shared__ char smem_base[];
+  // We use an attribute to align the shared memory. This is not respected on all drivers though. The compiler correctly
+  // takes the alignment into account and even emits an alignment specifier into ptx. However, this sometimes randomly
+  // fails at runtime because the shared memory start pointer is not correctly provided by the driver/runtime. See also
+  // NVBug 5093902 and discussion in PR #5122.
+  extern __shared__ char __align__(bulk_copy_alignment) smem[];
 
-  // SMEM is 16-byte aligned by default
-  char* smem = smem_base;
-  if constexpr (bulk_copy_alignment > 16)
-  {
-    smem = align_shared_ptr_now<bulk_copy_alignment>(smem);
-  }
-  _CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "");
+  // However, any manual alignment of the shared memory start address outweighs the performance benefits of a faster
+  // bulk copy by introducing about 7 additional SASS instructions at the start of the kernel. This also has to be done
+  // carefully using a fake read on the address to prevent NVVM to pull the aligning deeper into the kernel.
+  //   extern __shared__ char smem_base[];
+  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base);
+  //   smem32 = cuda::round_up(smem32, 64);
+  //   char* smem = reinterpret_cast<T*>(__cvta_shared_to_generic(smem32));
+
+  // What gets closest to a working attribute is to rely on the following observations:
+  // * static shared memory is aligned to 1KiB
+  // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
+  // In this case we could:
+  //   extern __shared__ char smem_base[];
+  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base) + 112;
+  //   asm("" : "+r"(smem32));
+  //   char* smem = static_cast<char*>(__cvta_shared_to_generic(smem32));
+  // However, CUDA currently does not provide this guarantee.
+
+  // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems (e.g. with driver
+  // 565.57.01 on RTX 2080 when cub::DeviceTransform is called from another kernel via CDP. See
+  // thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1). This will lead to slightly reduced performance of bulk copy, but
+  // correctness is maintained.
+  //_CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "");
 
   namespace ptx = ::cuda::ptx;
 
