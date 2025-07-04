@@ -436,7 +436,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
 
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
   memcpy_async_aligned<BlockThreads>(dst, src, bytes_to_copy);
-  const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
+  const char* const dst_start_of_data = dst + (alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
   return reinterpret_cast<const T*>(dst_start_of_data);
 }
@@ -694,7 +694,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
       using T      = typename decltype(aligned_ptr)::value_type;
       const T* src = aligned_ptr.ptr_to_elements() + offset;
-      T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
+      T* dst       = reinterpret_cast<T*>(smem + smem_offset);
+      if constexpr (alignof(T) < bulk_copy_alignment)
+      {
+        dst += aligned_ptr.head_padding;
+      }
+      else
+      {
+        _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
+      }
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
@@ -736,7 +744,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         int smem_offset    = 0;
         auto fetch_operand = [&](auto aligned_ptr) {
           using T                         = typename decltype(aligned_ptr)::value_type;
-          const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
+          const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset);
+          if constexpr (alignof(T) < bulk_copy_alignment)
+          {
+            smem_operand_tile_base += aligned_ptr.head_padding;
+          }
+          else
+          {
+            _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
+          }
           smem_offset += int{sizeof(T)} * tile_size + bulk_copy_alignment;
           return smem_operand_tile_base[idx];
         };
