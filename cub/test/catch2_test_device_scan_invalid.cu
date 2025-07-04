@@ -25,8 +25,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_PRIMITIVE primitive 0:1
 
+using element_types = c2h::type_list<uint64_t, segment<int32_t>>;
 using offset_t    = int32_t;
 using primitive_t = uint64_t;
 // atomicAdd does not support uint64_t or int64_t or long long
@@ -55,14 +55,10 @@ struct segment
   }
 };
 
-template <typename OffsetT, typename PrimitiveT>
-__host__ __device__ auto to_element(segment<OffsetT> seg)
+template <typename OffsetT, typename WrapperT>
+__host__ __device__ WrapperT to_element(segment<OffsetT> seg)
 {
-#if TEST_PRIMITIVE == 0
-  return seg;
-#else
-  return cuda::std::bit_cast<PrimitiveT>(seg);
-#endif
+  return cuda::std::bit_cast<WrapperT>(seg);
 }
 
 // Needed for data input using fancy iterators
@@ -90,30 +86,25 @@ struct merge_segments_op
     NV_IF_TARGET(NV_IS_DEVICE, (if (left.end != right.begin) { atomicAdd(error_count_, error_count_t{1}); }));
     return {left.begin, right.end};
   }
-#if TEST_PRIMITIVE == 1
+  template <typename PrimitiveT>
   __host__ __device__ PrimitiveT operator()(PrimitiveT p_left, PrimitiveT p_right)
   {
     const auto left  = cuda::std::bit_cast<seg_t>(p_left);
     const auto right = cuda::std::bit_cast<seg_t>(p_right);
     return cuda::std::bit_cast<PrimitiveT>(this->operator()(left, right));
   }
-#endif
 
   error_count_t* error_count_;
 };
 
 // Expected to fail for the current implementation.
-C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]")
+C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", element_types)
 {
   using segment_t = segment<offset_t>;
   static_assert(!cub::detail::is_primitive_v<segment_t>);
-#if TEST_PRIMITIVE == 0
-  using input_t = segment_t;
-#else
-  using input_t = primitive_t;
-#endif
+using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
-  using op_t     = merge_segments_op<offset_t, primitive_t>;
+  using op_t     = merge_segments_op<offset_t, input_t>;
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
