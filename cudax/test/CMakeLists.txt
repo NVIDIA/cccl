@@ -63,6 +63,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/launch_smoke.cu
     launch/configuration.cu
   )
+  target_compile_definitions(${test_target} PRIVATE _CCCL_LAUNCH_CONFIG_TEST)
 
   cudax_add_catch2_test(test_target device ${cn_target}
     device/device_smoke.cu
