@@ -448,8 +448,9 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   // TODO(bgruber): drop handling of head bytes and just read OOB, since gmem buffers are always sufficiently aligned
 
   using T = typename decltype(aligned_ptr)::value_type;
-  // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
+  // because SMEM base pointer and tile_size are always multiples of 16-byte, we only need to align the SMEM start
   // for types with larger alignment
+  _CCCL_ASSERT(tile_size % ldgsts_size_and_align == 0, "");
   _CCCL_ASSERT(smem_offset % ldgsts_size_and_align == 0, "");
   if constexpr (alignof(T) > ldgsts_size_and_align)
   {
