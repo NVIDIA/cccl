@@ -21,9 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
@@ -566,8 +570,62 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  undef _CCCL_BUILTIN_SCALBNL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float scalbn(float __x, int __y) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API inline constexpr _Tp __scalbn_impl(_Tp __x, int __exp) noexcept
 {
+  static_assert(is_floating_point_v<_Tp>,
+                "__scalbn_impl: should always cast to float for extended floating point types!");
+  if (__x == _Tp(0) || __exp == 0)
+  {
+    return __x;
+  }
+
+  if (_CUDA_VSTD::isinf(__x))
+  {
+    return __x;
+  }
+  else if (_CUDA_VSTD::isnan(__x))
+  {
+    return numeric_limits<_Tp>::quiet_NaN();
+  }
+
+  _Tp __mult(1);
+  if (__exp > 0)
+  {
+    __mult = numeric_limits<_Tp>::radix;
+    --__exp;
+  }
+  else
+  {
+    ++__exp;
+    __exp = -__exp;
+    __mult /= numeric_limits<_Tp>::radix;
+  }
+
+  while (__exp > 0)
+  {
+    if (!(__exp & 1))
+    {
+      __mult *= __mult;
+      __exp >>= 1;
+    }
+    else
+    {
+      __x *= __mult;
+      --__exp;
+    }
+  }
+  return __x;
+}
+
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS float scalbn(float __x, int __y) noexcept
+{
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__scalbn_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_SCALBNF)
   return _CCCL_BUILTIN_SCALBNF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBNF ^^^ // vvv !_CCCL_BUILTIN_SCALBNF vvv
@@ -575,8 +633,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_SCALBNF
 }
 
-[[nodiscard]] _CCCL_API inline float scalbnf(float __x, int __y) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS float scalbnf(float __x, int __y) noexcept
 {
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__scalbn_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_SCALBNF)
   return _CCCL_BUILTIN_SCALBNF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBNF ^^^ // vvv !_CCCL_BUILTIN_SCALBNF vvv
@@ -584,8 +648,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_SCALBNF
 }
 
-[[nodiscard]] _CCCL_API inline double scalbn(double __x, int __y) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS double scalbn(double __x, int __y) noexcept
 {
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__scalbn_impl(__x, __y);
+  }
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #if defined(_CCCL_BUILTIN_SCALBN)
   return _CCCL_BUILTIN_SCALBN(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBN ^^^ // vvv !_CCCL_BUILTIN_SCALBN vvv
@@ -594,8 +664,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double scalbn(long double __x, int __y) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS long double scalbn(long double __x, int __y) noexcept
 {
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__scalbn_impl(__x, __y);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  if defined(_CCCL_BUILTIN_SCALBNL)
   return _CCCL_BUILTIN_SCALBNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_SCALBNL ^^^ // vvv !_CCCL_BUILTIN_SCALBNL vvv
@@ -603,8 +679,14 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  endif // !_CCCL_BUILTIN_SCALBNL
 }
 
-[[nodiscard]] _CCCL_API inline long double scalbnl(long double __x, int __y) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS long double scalbnl(long double __x, int __y) noexcept
 {
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return _CUDA_VSTD::__scalbn_impl(__x, __y);
+  }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  if defined(_CCCL_BUILTIN_SCALBNL)
   return _CCCL_BUILTIN_SCALBNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_SCALBNL ^^^ // vvv !_CCCL_BUILTIN_SCALBNL vvv
@@ -628,7 +710,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _CCCL_API inline double scalbn(_Integer __x, int __y) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CMATH_TRAITS double scalbn(_Integer __x, int __y) noexcept
 {
   return _CUDA_VSTD::scalbn((double) __x, __y);
 }
