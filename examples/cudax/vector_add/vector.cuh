@@ -83,7 +83,7 @@ private:
     if (__p != __detail::__param_kind::_in)
     {
       // TODO: use a memcpy async here
-      __str.wait(); // wait for the kernel to finish executing
+      __str.sync(); // wait for the kernel to finish executing
       __h_ = __d_;
     }
   }
@@ -108,7 +108,7 @@ private:
       __v_.sync_device_to_host(__str_, _Kind);
     }
 
-    ::cuda::std::span<_Ty> kernel_transform()
+    ::cuda::std::span<_Ty> relocatable_value()
     {
       return {__v_.__d_.data().get(), __v_.__d_.size()};
     }
@@ -119,20 +119,20 @@ private:
   };
 
   [[nodiscard]] friend __action<__detail::__param_kind::_inout>
-  __cudax_launch_transform(::cuda::stream_ref __str, vector& __v) noexcept
+  cccl_device_transform(::cuda::stream_ref __str, vector& __v) noexcept
   {
     return __action<__detail::__param_kind::_inout>{__str, __v};
   }
 
   [[nodiscard]] friend __action<__detail::__param_kind::_in>
-  __cudax_launch_transform(::cuda::stream_ref __str, const vector& __v) noexcept
+  cccl_device_transform(::cuda::stream_ref __str, const vector& __v) noexcept
   {
     return __action<__detail::__param_kind::_in>{__str, __v};
   }
 
   template <__detail::__param_kind _Kind>
   [[nodiscard]] friend __action<_Kind>
-  __cudax_launch_transform(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
+  cccl_device_transform(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
   {
     return __action<_Kind>{__str, __b.__val};
   }
