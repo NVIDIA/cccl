@@ -5,7 +5,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-25 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -84,6 +84,15 @@ _CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
   _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
+
+struct __return_temporary_buffer
+{
+  template <class _Tp>
+  _CCCL_API void operator()(_Tp* __p) const noexcept
+  {
+    _CUDA_VSTD::return_temporary_buffer(__p);
+  }
+};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

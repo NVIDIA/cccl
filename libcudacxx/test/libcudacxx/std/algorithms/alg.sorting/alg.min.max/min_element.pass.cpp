@@ -15,7 +15,7 @@
 //   Iter
 //   min_element(Iter first, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "cases.h"

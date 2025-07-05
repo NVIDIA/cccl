@@ -13,7 +13,7 @@
 //            typename basic_string_view<charT,traits>::size_type n = basic_string_view<charT,traits>::npos,
 //            charT zero = charT('0'), charT one = charT('1'));
 
-#include <cuda/std/__algorithm_> // for 'min' and 'max'
+#include <cuda/std/algorithm> // for 'min' and 'max'
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
 #include <cuda/std/string_view>

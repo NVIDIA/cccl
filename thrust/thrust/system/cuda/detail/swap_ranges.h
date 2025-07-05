@@ -41,7 +41,7 @@
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 
-#  include <cuda/std/__algorithm_>
+#  include <cuda/std/algorithm>
 #  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
