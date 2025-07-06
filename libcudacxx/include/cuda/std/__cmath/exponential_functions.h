@@ -146,84 +146,50 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // frexp
 
-#if _CCCL_CHECK_BUILTIN(builtin_frexp) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_FREXPF(...) __builtin_frexpf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FREXP(...)  __builtin_frexp(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FREXPL(...) __builtin_frexpl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_frexp)
-
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "frexp"
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_FREXPF
-#  undef _CCCL_BUILTIN_FREXP
-#  undef _CCCL_BUILTIN_FREXPL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-[[nodiscard]] _CCCL_API inline float frexp(float __x, int* __e) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __frexp_impl(_Tp __x, int* __exp) noexcept
 {
-#if defined(_CCCL_BUILTIN_FREXPF)
-  return _CCCL_BUILTIN_FREXPF(__x, __e);
-#else // ^^^ _CCCL_BUILTIN_FREXPF ^^^ // vvv !_CCCL_BUILTIN_FREXPF vvv
-  return ::frexpf(__x, __e);
-#endif // !_CCCL_BUILTIN_FREXPF
+  // If __x is ±0, it is returned, unmodified, and ​0​ is stored in *__exp.
+  const auto __classify = _CUDA_VSTD::fpclassify(__x);
+  if (__classify == FP_ZERO)
+  {
+    *__exp = 0;
+    return __x;
+  }
+  // If __x is ±∞, it is returned, and an unspecified value is stored in *__exp.
+  else if (__classify == FP_NAN || __classify == FP_INFINITE)
+  {
+    return __x;
+  }
+
+  const auto __new_exp = _CUDA_VSTD::__fp_get_exp(__x);
+  *__exp               = __new_exp + 1;
+  return _CUDA_VSTD::__fp_set_exp(__x, __new_exp - 1);
 }
 
-[[nodiscard]] _CCCL_API inline float frexpf(float __x, int* __e) noexcept
+[[nodiscard]] _CCCL_API constexpr float frexpf(float __x, int* __exp) noexcept
 {
-#if defined(_CCCL_BUILTIN_FREXPF)
-  return _CCCL_BUILTIN_FREXPF(__x, __e);
-#else // ^^^ _CCCL_BUILTIN_FREXPF ^^^ // vvv !_CCCL_BUILTIN_FREXPF vvv
-  return ::frexpf(__x, __e);
-#endif // !_CCCL_BUILTIN_FREXPF
-}
-
-[[nodiscard]] _CCCL_API inline double frexp(double __x, int* __e) noexcept
-{
-#if defined(_CCCL_BUILTIN_FREXP)
-  return _CCCL_BUILTIN_FREXP(__x, __e);
-#else // ^^^ _CCCL_BUILTIN_FREXP ^^^ // vvv !_CCCL_BUILTIN_FREXP vvv
-  return ::frexp(__x, __e);
-#endif // !_CCCL_BUILTIN_FREXP
+  return _CUDA_VSTD::__frexp_impl(__x, __exp);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double frexp(long double __x, int* __e) noexcept
+[[nodiscard]] _CCCL_API constexpr long double frexpl(long double __x, int* __exp) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FREXPL)
-  return _CCCL_BUILTIN_FREXPL(__x, __e);
-#  else // ^^^ _CCCL_BUILTIN_FREXPL ^^^ // vvv !_CCCL_BUILTIN_FREXPL vvv
-  return ::frexpl(__x, __e);
-#  endif // !_CCCL_BUILTIN_FREXPL
-}
-
-[[nodiscard]] _CCCL_API inline long double frexpl(long double __x, int* __e) noexcept
-{
-#  if defined(_CCCL_BUILTIN_FREXPL)
-  return _CCCL_BUILTIN_FREXPL(__x, __e);
-#  else // ^^^ _CCCL_BUILTIN_FREXPL ^^^ // vvv !_CCCL_BUILTIN_FREXPL vvv
-  return ::frexpl(__x, __e);
-#  endif // !_CCCL_BUILTIN_FREXPL
+  return _CUDA_VSTD::__frexp_impl(__x, __exp);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half frexp(__half __x, int* __e) noexcept
+template <class _Tp, enable_if_t<__is_extended_arithmetic_v<_Tp>, int> = 0>
+[[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> frexp(_Tp __x, int* __exp) noexcept
 {
-  return __float2half(_CUDA_VSTD::frexpf(__half2float(__x), __e));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 frexp(__nv_bfloat16 __x, int* __e) noexcept
-{
-  return __float2bfloat16(_CUDA_VSTD::frexpf(__bfloat162float(__x), __e));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _CCCL_API inline double frexp(_Integer __x, int* __e) noexcept
-{
-  return _CUDA_VSTD::frexp((double) __x, __e);
+  if constexpr (is_integral_v<_Tp>)
+  {
+    return _CUDA_VSTD::__frexp_impl(static_cast<double>(__x), __exp);
+  }
+  else
+  {
+    return _CUDA_VSTD::__frexp_impl(__x, __exp);
+  }
 }
 
 // ldexp
