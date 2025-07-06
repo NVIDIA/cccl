@@ -12,9 +12,7 @@
 
 #include "test_macros.h"
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
-__NV_SILENCE_DEPRECATION_BEGIN
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class VType, size_t Size>
 __host__ __device__ constexpr void test()
