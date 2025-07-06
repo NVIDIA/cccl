@@ -57,6 +57,16 @@ struct segment
   }
 };
 
+// cuda::std::bitcast on platforms w/o __builtin_bit_cast needs To to have a trivial default constructor which segment
+// does not have by design.
+template <typename To, typename From>
+__host__ __device__ To dangerous_bit_cast(const From& from)
+{
+  static_assert(sizeof(From) == sizeof(To));
+  To to;
+  memcpy(static_cast<void*>(&to), &from, sizeof(To));
+  return to;
+}
 // Needed for data input using fancy iterators
 template <typename WrapperT>
 struct tuple_to_wrapper_op
@@ -64,7 +74,7 @@ struct tuple_to_wrapper_op
   __host__ __device__ auto operator()(cuda::std::tuple<segment_offset_t, segment_offset_t> interval)
   {
     const auto [begin, end] = interval;
-    return cuda::std::bit_cast<WrapperT>(segment{begin, end});
+    return dangerous_bit_cast<WrapperT>(segment{begin, end});
   }
 };
 
@@ -81,9 +91,9 @@ struct merge_segments_op
   }
   __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right)
   {
-    const auto left  = cuda::std::bit_cast<segment>(p_left);
-    const auto right = cuda::std::bit_cast<segment>(p_right);
-    return cuda::std::bit_cast<primitive_t>(this->operator()(left, right));
+    const auto left  = dangerous_bit_cast<segment>(p_left);
+    const auto right = dangerous_bit_cast<segment>(p_right);
+    return dangerous_bit_cast<primitive_t>(this->operator()(left, right));
   }
 
   error_count_t* error_count_;
@@ -95,6 +105,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
   using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
   using op_t     = merge_segments_op;
+  INFO("input_t is " << (cub::detail::is_primitive_v<input_t> ? "primitive" : "not primitive"));
 
   // Generate the input sizes to test for
   const segment_offset_t num_items = GENERATE_COPY(
@@ -114,7 +125,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
     // Prepare verification data
     // Need neutral init in this case
-    const auto init_value = cuda::std::bit_cast<output_t>(segment{1, 1});
+    const auto init_value = dangerous_bit_cast<output_t>(segment{1, 1});
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(d_in_it, d_in_it + num_items, expected_result.begin(), scan_op, init_value);
 
@@ -135,7 +146,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const auto init_value = cuda::std::bit_cast<output_t>(segment{0, 1});
+    const auto init_value = dangerous_bit_cast<output_t>(segment{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -158,7 +169,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const auto init_value = cuda::std::bit_cast<output_t>(segment{0, 1});
+    const auto init_value = dangerous_bit_cast<output_t>(segment{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -181,7 +192,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Scan operator
     auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
 
-    const auto init_value = cuda::std::bit_cast<output_t>(segment{0, 1});
+    const auto init_value = dangerous_bit_cast<output_t>(segment{0, 1});
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
