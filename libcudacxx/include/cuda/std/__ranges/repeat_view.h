@@ -161,60 +161,61 @@ public:
       return *(*this + __n);
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ == __y.__current_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ != __y.__current_;
     }
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-    [[nodiscard]] _CCCL_API friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto operator<=>(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ <=> __y.__current_;
     }
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator<(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ < __y.__current_;
     }
-    [[nodiscard]] _CCCL_API friend constexpr bool operator<=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ <= __y.__current_;
     }
-    [[nodiscard]] _CCCL_API friend constexpr bool operator>(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ > __y.__current_;
     }
-    [[nodiscard]] _CCCL_API friend constexpr bool operator>=(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__current_ >= __y.__current_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr __iterator operator+(__iterator __i, difference_type __n)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND __iterator operator+(__iterator __i, difference_type __n)
     {
       __i += __n;
       return __i;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr __iterator operator+(difference_type __n, __iterator __i)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND __iterator operator+(difference_type __n, __iterator __i)
     {
       __i += __n;
       return __i;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr __iterator operator-(__iterator __i, difference_type __n)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND __iterator operator-(__iterator __i, difference_type __n)
     {
       __i -= __n;
       return __i;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr difference_type operator-(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
+    operator-(const __iterator& __x, const __iterator& __y)
     {
       return static_cast<difference_type>(__x.__current_) - static_cast<difference_type>(__y.__current_);
     }

@@ -329,7 +329,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() == _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -339,7 +339,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 #if _CCCL_STD_VER <= 2017
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() != _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -349,7 +349,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -358,7 +358,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -367,7 +367,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -376,7 +376,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
@@ -384,7 +384,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator<=>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() <=> _CUDA_VSTD::declval<const _Start2&>()))
     requires _CUDA_VSTD::totally_ordered<_Start> && _CUDA_VSTD::three_way_comparable<_Start>
@@ -395,7 +395,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr counting_iterator
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND counting_iterator
   operator+(counting_iterator __i, difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     __i += __n;
@@ -404,7 +404,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr counting_iterator
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND counting_iterator
   operator+(difference_type __n, counting_iterator __i) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     return __i + __n;
@@ -412,7 +412,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr counting_iterator
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND counting_iterator
   operator-(counting_iterator __i, difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     __i -= __n;
@@ -421,7 +421,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _CCCL_API friend constexpr difference_type
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
   operator-(const counting_iterator& __x, const counting_iterator& __y) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
   {
     if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)

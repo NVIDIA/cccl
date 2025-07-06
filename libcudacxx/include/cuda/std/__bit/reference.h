@@ -111,7 +111,7 @@ public:
     return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
   }
 
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -119,21 +119,21 @@ public:
   }
 
   template <class _Dp>
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _CCCL_API constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -1149,12 +1149,12 @@ public:
     return __t;
   }
 
-  _CCCL_API constexpr friend __bit_iterator operator+(difference_type __n, const __bit_iterator& __it)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND __bit_iterator operator+(difference_type __n, const __bit_iterator& __it)
   {
     return __it + __n;
   }
 
-  _CCCL_API constexpr friend difference_type operator-(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type operator-(const __bit_iterator& __x, const __bit_iterator& __y)
   {
 #if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 9)
     if (__y.__seg_ && __y.__seg_ != __x.__seg_)
@@ -1170,32 +1170,32 @@ public:
     return *(*this + __n);
   }
 
-  _CCCL_API constexpr friend bool operator==(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return __x.__seg_ == __y.__seg_ && __x.__ctz_ == __y.__ctz_;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return !(__x == __y);
   }
 
-  _CCCL_API constexpr friend bool operator<(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return __x.__seg_ < __y.__seg_ || (__x.__seg_ == __y.__seg_ && __x.__ctz_ < __y.__ctz_);
   }
 
-  _CCCL_API constexpr friend bool operator>(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return __y < __x;
   }
 
-  _CCCL_API constexpr friend bool operator<=(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<=(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return !(__y < __x);
   }
 
-  _CCCL_API constexpr friend bool operator>=(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>=(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return !(__x < __y);
   }
@@ -1214,25 +1214,26 @@ private:
   template <class _Dp>
   friend struct __bit_array;
   template <bool _FillVal, class _Dp>
-  constexpr _CCCL_API inline friend void __fill_n_impl(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND void
+  __fill_n_impl(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
 
   template <class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_aligned(
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false> __copy_aligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_unaligned(
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false> __copy_unaligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false>
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false>
   copy(__bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_backward_aligned(
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false> __copy_backward_aligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_backward_unaligned(
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false> __copy_backward_unaligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false>
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false>
   copy_backward(__bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Cl, class _Cr>
   _CCCL_API inline friend __bit_iterator<_Cr, false>
@@ -1244,22 +1245,22 @@ private:
   _CCCL_API inline friend __bit_iterator<_Cr, false>
     swap_ranges(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Dp>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false>
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, false>
     rotate(__bit_iterator<_Dp, false>, __bit_iterator<_Dp, false>, __bit_iterator<_Dp, false>);
   template <class _Dp, bool _IC1, bool _IC2>
-  constexpr _CCCL_API inline friend bool
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND bool
     __equal_aligned(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <class _Dp, bool _IC1, bool _IC2>
-  constexpr _CCCL_API inline friend bool
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND bool
     __equal_unaligned(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <class _Dp, bool _IC1, bool _IC2>
   constexpr
     _CCCL_API inline friend bool equal(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <bool _ToFind, class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend __bit_iterator<_Dp, _IC>
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND __bit_iterator<_Dp, _IC>
     __find_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
   template <bool _ToCount, class _Dp, bool _IC>
-  constexpr _CCCL_API inline friend
+  _CCCL_API inline _CCCL_CONSTEXPR_FRIEND
     typename __bit_iterator<_Dp, _IC>::difference_type __count_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
 };
 

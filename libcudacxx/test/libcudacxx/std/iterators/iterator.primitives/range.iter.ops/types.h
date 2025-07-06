@@ -26,7 +26,7 @@ public:
   {}
 
   template <class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
-  __host__ __device__ friend constexpr bool operator==(distance_apriori_sentinel const, It const&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(distance_apriori_sentinel const, It const&)
   {
     assert(false && "difference op should take precedence");
     return false;
@@ -34,21 +34,21 @@ public:
 
 #if TEST_STD_VER < 2020
   template <class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
-  __host__ __device__ friend constexpr bool operator==(It const&, distance_apriori_sentinel const)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(It const&, distance_apriori_sentinel const)
   {
     assert(false && "difference op should take precedence");
     return false;
   }
 
   template <class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
-  __host__ __device__ friend constexpr bool operator!=(distance_apriori_sentinel const, It const&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(distance_apriori_sentinel const, It const&)
   {
     assert(false && "difference op should take precedence");
     return true;
   }
 
   template <class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
-  __host__ __device__ friend constexpr bool operator!=(It const&, distance_apriori_sentinel const)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(It const&, distance_apriori_sentinel const)
   {
     assert(false && "difference op should take precedence");
     return true;
@@ -56,13 +56,13 @@ public:
 #endif
 
   template <class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
-  __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(It const&, distance_apriori_sentinel const y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t operator-(It const&, distance_apriori_sentinel const y)
   {
     return -y.count_;
   }
 
   template <class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
-  __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(distance_apriori_sentinel const x, It const&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t operator-(distance_apriori_sentinel const x, It const&)
   {
     return x.count_;
   }
@@ -85,25 +85,25 @@ public:
   {
     return It(base_);
   }
-  __host__ __device__ friend constexpr bool operator==(const assignable_sentinel& s, const It& other)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const assignable_sentinel& s, const It& other)
   {
     return s.base_ == base(other);
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const It& other, const assignable_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const It& other, const assignable_sentinel& s)
   {
     return s.base_ == base(other);
   }
-  __host__ __device__ friend constexpr bool operator!=(const assignable_sentinel& s, const It& other)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const assignable_sentinel& s, const It& other)
   {
     return s.base_ != base(other);
   }
-  __host__ __device__ friend constexpr bool operator!=(const It& other, const assignable_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const It& other, const assignable_sentinel& s)
   {
     return s.base_ != base(other);
   }
 #endif
-  __host__ __device__ friend constexpr It base(const assignable_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const assignable_sentinel& s)
   {
     return It(s.base_);
   }

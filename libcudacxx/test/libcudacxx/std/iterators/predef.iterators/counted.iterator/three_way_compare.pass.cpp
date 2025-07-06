@@ -11,7 +11,7 @@
 // XFAIL: c++20
 
 // template<common_with<I> I2>
-//   friend constexpr strong_ordering operator<=>(
+//   _CCCL_CONSTEXPR_FRIEND strong_ordering operator<=>(
 //     const counted_iterator& x, const counted_iterator<I2>& y);
 
 #include <cuda/std/iterator>

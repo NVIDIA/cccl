@@ -25,34 +25,34 @@ struct SomeIntComparable
       : value_(SomeInt(10))
   {}
 
-  __host__ __device__ friend constexpr bool operator==(SomeIntComparable lhs, SomeIntComparable rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(SomeIntComparable lhs, SomeIntComparable rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator==(SomeIntComparable lhs, SomeInt rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(SomeIntComparable lhs, SomeInt rhs)
   {
     return lhs.value_ == rhs;
   }
-  __host__ __device__ friend constexpr bool operator==(SomeInt lhs, SomeIntComparable rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(SomeInt lhs, SomeIntComparable rhs)
   {
     return lhs == rhs.value_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(SomeIntComparable lhs, SomeIntComparable rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(SomeIntComparable lhs, SomeIntComparable rhs)
   {
     return lhs.value_ != rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator!=(SomeIntComparable lhs, SomeInt rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(SomeIntComparable lhs, SomeInt rhs)
   {
     return lhs.value_ != rhs;
   }
-  __host__ __device__ friend constexpr bool operator!=(SomeInt lhs, SomeIntComparable rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(SomeInt lhs, SomeIntComparable rhs)
   {
     return lhs != rhs.value_;
   }
 #endif // TEST_STD_VER < 2020
 
-  __host__ __device__ friend constexpr difference_type operator-(SomeIntComparable lhs, SomeIntComparable rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type operator-(SomeIntComparable lhs, SomeIntComparable rhs)
   {
     return lhs.value_ - rhs.value_;
   }

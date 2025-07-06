@@ -9,9 +9,9 @@
 //===----------------------------------------------------------------------===//
 
 // template<common_with<I> I2>
-//   friend constexpr bool operator==(
+//   _CCCL_CONSTEXPR_FRIEND bool operator==(
 //     const counted_iterator& x, const counted_iterator<I2>& y);
-// friend constexpr bool operator==(
+// _CCCL_CONSTEXPR_FRIEND bool operator==(
 //   const counted_iterator& x, default_sentinel_t);
 
 #include <cuda/std/iterator>

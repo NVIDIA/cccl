@@ -134,7 +134,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
-  friend _CCCL_API constexpr void
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void
   swap(unexpected& __lhs, unexpected& __rhs) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err2))
   {
     __lhs.swap(__rhs);
@@ -144,7 +144,7 @@ public:
   // [expected.un.eq]
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() == __rhs.error())))
   {
@@ -153,7 +153,7 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() != __rhs.error())))
   {

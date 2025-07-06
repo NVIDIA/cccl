@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // template<indirectly_swappable<I> I2>
-//   friend constexpr void
+//   _CCCL_CONSTEXPR_FRIEND void
 //     iter_swap(const counted_iterator& x, const counted_iterator<I2>& y)
 //       noexcept(noexcept(ranges::iter_swap(x.current, y.current)));
 

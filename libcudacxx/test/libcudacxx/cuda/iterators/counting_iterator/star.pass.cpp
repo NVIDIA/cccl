@@ -35,32 +35,34 @@ struct NotNoexceptCopy
 #if TEST_STD_VER >= 2020
   bool operator==(const NotNoexceptCopy&) const = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool operator==(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ friend constexpr NotNoexceptCopy& operator+=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND NotNoexceptCopy&
+  operator+=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  __host__ __device__ friend constexpr NotNoexceptCopy& operator-=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND NotNoexceptCopy&
+  operator-=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  __host__ __device__ friend constexpr NotNoexceptCopy operator+(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND NotNoexceptCopy operator+(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
   {
     return NotNoexceptCopy{lhs.value_ + rhs.value_};
   }
-  __host__ __device__ friend constexpr int operator-(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int operator-(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
   {
     return lhs.value_ - rhs.value_;
   }

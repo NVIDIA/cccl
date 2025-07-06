@@ -235,7 +235,7 @@ public:
     return *(*this + __n);
   }
 
-  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_rvalue_reference_t<_Iter>
   iter_move(const reverse_iterator& __i) noexcept(__noexcept_rev_iter_iter_move<_Iter>)
   {
     auto __tmp = __i.base();
@@ -243,8 +243,10 @@ public:
   }
 
   template <class _Iter2>
-  _CCCL_API friend constexpr auto iter_swap(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
-    __noexcept_rev_iter_iter_swap<_Iter, _Iter2>) _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  iter_swap(const reverse_iterator& __x,
+            const reverse_iterator<_Iter2>& __y) noexcept(__noexcept_rev_iter_iter_swap<_Iter, _Iter2>)
+    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
@@ -434,7 +436,7 @@ public:
     }
   }
 
-  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_rvalue_reference_t<_Iter>
   iter_move(const __unconstrained_reverse_iterator& __i) noexcept(
     is_nothrow_copy_constructible_v<_Iter> && noexcept(_CUDA_VRANGES::iter_move(--declval<_Iter&>())))
   {
@@ -502,37 +504,37 @@ public:
 
   // Deliberately unconstrained unlike the comparison functions in `reverse_iterator` -- see the class comment for the
   // rationale.
-  _CCCL_API friend constexpr bool
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const __unconstrained_reverse_iterator& __lhs, const __unconstrained_reverse_iterator& __rhs)
   {
     return __lhs.base() == __rhs.base();
   }
 
-  _CCCL_API friend constexpr bool
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const __unconstrained_reverse_iterator& __lhs, const __unconstrained_reverse_iterator& __rhs)
   {
     return __lhs.base() != __rhs.base();
   }
 
-  _CCCL_API friend constexpr bool
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<(const __unconstrained_reverse_iterator& __lhs, const __unconstrained_reverse_iterator& __rhs)
   {
     return __lhs.base() > __rhs.base();
   }
 
-  _CCCL_API friend constexpr bool
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>(const __unconstrained_reverse_iterator& __lhs, const __unconstrained_reverse_iterator& __rhs)
   {
     return __lhs.base() < __rhs.base();
   }
 
-  _CCCL_API friend constexpr bool
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<=(const __unconstrained_reverse_iterator& __lhs, const __unconstrained_reverse_iterator& __rhs)
   {
     return __lhs.base() >= __rhs.base();
   }
 
-  _CCCL_API friend constexpr bool
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>=(const __unconstrained_reverse_iterator& __lhs, const __unconstrained_reverse_iterator& __rhs)
   {
     return __lhs.base() <= __rhs.base();

@@ -555,7 +555,8 @@ public:
 
   // operator ==
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(basic_string_view __lhs, basic_string_view __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator==(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     if (__lhs.__size_ != __rhs.__size_)
     {
@@ -565,7 +566,7 @@ public:
   }
 
   template <int = 1>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     if (__lhs.__size_ != __rhs.__size_)
@@ -576,7 +577,7 @@ public:
   }
 
   template <unsigned = 2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs == __rhs;
@@ -584,20 +585,21 @@ public:
 
   // operator !=
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(basic_string_view __lhs, basic_string_view __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator!=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
   template <int = 1>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
   template <unsigned = 2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -605,20 +607,21 @@ public:
 
   // operator <
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator<(basic_string_view __lhs, basic_string_view __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator<(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
   template <int = 1>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
   template <unsigned = 2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
@@ -626,20 +629,21 @@ public:
 
   // operator >
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator>(basic_string_view __lhs, basic_string_view __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator>(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
   template <int = 1>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
   template <unsigned = 2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
@@ -647,20 +651,21 @@ public:
 
   // operator <=
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator<=(basic_string_view __lhs, basic_string_view __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator<=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
   template <int = 1>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
   template <unsigned = 2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
@@ -668,20 +673,21 @@ public:
 
   // operator >=
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(basic_string_view __lhs, basic_string_view __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator>=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
   }
 
   template <int = 1>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
   }
 
   template <unsigned = 2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;

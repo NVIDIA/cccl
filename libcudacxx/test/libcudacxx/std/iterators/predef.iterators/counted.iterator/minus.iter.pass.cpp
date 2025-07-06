@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // template<common_with<I> I2>
-//   friend constexpr iter_difference_t<I2> operator-(
+//   _CCCL_CONSTEXPR_FRIEND iter_difference_t<I2> operator-(
 //     const counted_iterator& x, const counted_iterator<I2>& y);
 
 #include <cuda/std/iterator>

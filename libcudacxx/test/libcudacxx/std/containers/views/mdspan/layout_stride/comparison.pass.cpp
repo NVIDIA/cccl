@@ -10,7 +10,7 @@
 // <mdspan>
 
 // template<class OtherMapping>
-//   friend constexpr bool operator==(const mapping& x, const OtherMapping& y) noexcept;
+//   _CCCL_CONSTEXPR_FRIEND bool operator==(const mapping& x, const OtherMapping& y) noexcept;
 //
 // Constraints:
 //   - layout-mapping-alike<OtherMapping> is satisfied.

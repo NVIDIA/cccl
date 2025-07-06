@@ -114,14 +114,14 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
-  _CCCL_API friend constexpr void get_property(const _Derived&, _Property) noexcept {}
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
   _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
                    __has_upstream_resource<_Derived2, _Upstream>)
-  _CCCL_API friend constexpr __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
   {
     return get_property(__res.upstream_resource(), __prop);
   }

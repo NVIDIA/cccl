@@ -173,7 +173,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__closure_t
   }
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+  [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEXPR_FRIEND auto operator|(_Sndr __sndr, __closure_t __self)
     -> __sndr_t<_Sndr, _Env>
   {
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__self.__env_), static_cast<_Sndr&&>(__sndr)};

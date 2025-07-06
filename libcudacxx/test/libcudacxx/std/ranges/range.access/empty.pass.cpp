@@ -129,7 +129,7 @@ struct SizeMember
 struct SizeFunction
 {
   size_t size_;
-  __host__ __device__ friend constexpr size_t size(SizeFunction sf)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(SizeFunction sf)
   {
     return sf.size_;
   }

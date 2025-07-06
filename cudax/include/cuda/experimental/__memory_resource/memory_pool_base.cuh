@@ -384,26 +384,26 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  [[nodiscard]] friend constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] _CCCL_CONSTEXPR_FRIEND bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] friend constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] _CCCL_CONSTEXPR_FRIEND bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] friend constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] _CCCL_CONSTEXPR_FRIEND bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] friend constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] _CCCL_CONSTEXPR_FRIEND bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
   }

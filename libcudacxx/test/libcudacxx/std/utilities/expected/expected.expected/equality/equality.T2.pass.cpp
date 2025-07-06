@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// template<class T2> friend constexpr bool operator==(const expected& x, const T2& v);
+// template<class T2> _CCCL_CONSTEXPR_FRIEND bool operator==(const expected& x, const T2& v);
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
@@ -24,12 +24,12 @@ struct Data
       : i(ii)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Data& data, int ii)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Data& data, int ii)
   {
     return data.i == ii;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const Data& data, int ii)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Data& data, int ii)
   {
     return data.i != ii;
   }

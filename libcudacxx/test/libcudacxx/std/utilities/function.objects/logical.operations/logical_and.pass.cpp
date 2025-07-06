@@ -21,7 +21,7 @@
 // ensure that we allow `__device__` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator&&(const with_device_op&, const with_device_op&)
+  __device__ _CCCL_CONSTEXPR_FRIEND with_device_op operator&&(const with_device_op&, const with_device_op&)
   {
     return {};
   }

@@ -568,7 +568,8 @@ public:
     && _OtherMapping::is_always_strided();
 
   template <class _OtherMapping>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator==(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  operator==(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__can_compare<_OtherMapping>)
   {
     return __op_eq(__lhs, __rhs);
@@ -576,20 +577,23 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherMapping>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator==(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  operator==(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((!__mdspan_detail::__is_mapping_of<layout_stride, _OtherMapping>)
                                   && __can_compare<_OtherMapping>)
   {
     return __op_eq(__rhs, __lhs);
   }
   template <class _OtherMapping, class _Extents2 = _Extents>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  operator!=(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__can_compare<_OtherMapping>)
   {
     return !__op_eq(__lhs, __rhs);
   }
   template <class _OtherMapping, class _Extents2 = _Extents>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  operator!=(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((!__mdspan_detail::__is_mapping_of<layout_stride, _OtherMapping>)
                                   && __can_compare<_OtherMapping>)
   {

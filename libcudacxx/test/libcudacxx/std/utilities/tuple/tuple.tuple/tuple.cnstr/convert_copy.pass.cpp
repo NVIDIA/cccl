@@ -69,7 +69,7 @@ struct A
   __host__ __device__ constexpr A(int i)
       : id_(i)
   {}
-  __host__ __device__ friend constexpr bool operator==(const A& x, const A& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const A& x, const A& y)
   {
     return x.id_ == y.id_;
   }
@@ -82,7 +82,7 @@ struct C
   __host__ __device__ constexpr explicit C(int i)
       : id_(i)
   {}
-  __host__ __device__ friend constexpr bool operator==(const C& x, const C& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const C& x, const C& y)
   {
     return x.id_ == y.id_;
   }

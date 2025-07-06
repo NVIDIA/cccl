@@ -123,4 +123,12 @@
 #  define _CCCL_CONSTINIT _CCCL_REQUIRE_CONSTANT_INITIALIZATION
 #endif // ^^^ no constinit ^^^
 
+// work around breathe "friend friend" bug.
+// See: https://github.com/breathe-doc/breathe/issues/916
+#if defined(_CCCL_DOXYGEN_INVOKED)
+#  define _CCCL_CONSTEXPR_FRIEND friend
+#else
+#  define _CCCL_CONSTEXPR_FRIEND constexpr friend
+#endif
+
 #endif // __CCCL_DIALECT_H

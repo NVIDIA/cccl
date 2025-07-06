@@ -217,9 +217,9 @@ public:
   //! @brief Returns a copy of a \c tabulate_output_iterator \p __iter advanced by \p __n
   //! @param __n The number of elements to advance
   //! @param __iter The original \c tabulate_output_iterator
-  [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
-  operator+(difference_type __n,
-            const tabulate_output_iterator& __iter) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND tabulate_output_iterator operator+(
+    difference_type __n,
+    const tabulate_output_iterator& __iter) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
   {
     return __iter + __n;
   }
@@ -241,7 +241,7 @@ public:
   }
 
   //! @brief Returns the distance between two \c tabulate_output_iterator 's
-  [[nodiscard]] _CCCL_API friend constexpr difference_type
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
   operator-(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __rhs.__index_ - __lhs.__index_;
@@ -256,7 +256,7 @@ public:
   }
 
   //! @brief Compares two \c tabulate_output_iterator for equality by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ == __rhs.__index_;
@@ -264,7 +264,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two \c tabulate_output_iterator for inequality by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ != __rhs.__index_;
@@ -273,7 +273,7 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   //! @brief Three-way-compares two \c tabulate_output_iterator by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr strong_ordering
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND strong_ordering
   operator<=>(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <=> __rhs.__index_;
@@ -281,28 +281,28 @@ public:
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   //! @brief Compares two \c tabulate_output_iterator for less than by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
 
   //! @brief Compares two \c tabulate_output_iterator for less equal by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<=(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
 
   //! @brief Compares two \c tabulate_output_iterator for greater than by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
 
   //! @brief Compares two \c tabulate_output_iterator for greater equal by comparing their indices
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>=(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
     return __lhs.__index_ >= __rhs.__index_;

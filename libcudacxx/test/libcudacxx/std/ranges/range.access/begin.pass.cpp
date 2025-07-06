@@ -241,7 +241,7 @@ __host__ __device__ constexpr bool testBeginMember()
 struct BeginFunction
 {
   int x;
-  __host__ __device__ friend constexpr const int* begin(BeginFunction const& bf)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(BeginFunction const& bf)
   {
     return &bf.x;
   }
@@ -276,7 +276,7 @@ static_assert(!cuda::std::is_invocable_v<RangeBeginT, BeginFunctionReturnsPtrCon
 
 struct BeginFunctionByValue
 {
-  __host__ __device__ friend constexpr const int* begin(BeginFunctionByValue)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(BeginFunctionByValue)
   {
     return &globalBuff[1];
   }
@@ -285,7 +285,7 @@ static_assert(!cuda::std::is_invocable_v<RangeCBeginT, BeginFunctionByValue>, ""
 
 struct BeginFunctionEnabledBorrowing
 {
-  __host__ __device__ friend constexpr const int* begin(BeginFunctionEnabledBorrowing)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(BeginFunctionEnabledBorrowing)
   {
     return &globalBuff[2];
   }
@@ -308,7 +308,7 @@ struct BeginFunctionReturnsEmptyPtr
   struct Empty
   {};
   Empty x;
-  __host__ __device__ friend constexpr const Empty* begin(BeginFunctionReturnsEmptyPtr const& bf)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const Empty* begin(BeginFunctionReturnsEmptyPtr const& bf)
   {
     return &bf.x;
   }
@@ -318,7 +318,7 @@ struct BeginFunctionWithDataMember
 {
   int x;
   int begin;
-  __host__ __device__ friend constexpr const int* begin(BeginFunctionWithDataMember const& bf)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(BeginFunctionWithDataMember const& bf)
   {
     return &bf.x;
   }
@@ -327,7 +327,7 @@ struct BeginFunctionWithDataMember
 struct BeginFunctionWithPrivateBeginMember
 {
   int y;
-  __host__ __device__ friend constexpr const int* begin(BeginFunctionWithPrivateBeginMember const& bf)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(BeginFunctionWithPrivateBeginMember const& bf)
   {
     return &bf.y;
   }

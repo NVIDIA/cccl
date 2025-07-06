@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // template<class T2, class E2> requires (!is_void_v<T2>)
-//   friend constexpr bool operator==(const expected& x, const expected<T2, E2>& y);
+//   _CCCL_CONSTEXPR_FRIEND bool operator==(const expected& x, const expected<T2, E2>& y);
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>

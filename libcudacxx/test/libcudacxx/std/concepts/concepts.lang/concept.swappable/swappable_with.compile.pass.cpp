@@ -600,7 +600,7 @@ struct Proxy
   __host__ __device__ constexpr Proxy(A& a_)
       : a{&a_}
   {}
-  __host__ __device__ friend constexpr void swap(Proxy x, Proxy y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(Proxy x, Proxy y)
   {
     cuda::std::ranges::swap(*x.a, *y.a);
   }

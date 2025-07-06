@@ -71,7 +71,7 @@ public:
     return cpp17_output_iterator(it_++);
   }
 
-  __host__ __device__ friend constexpr It base(const cpp17_output_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const cpp17_output_iterator& i)
   {
     return i.it_;
   }
@@ -130,16 +130,18 @@ public:
     return cpp17_input_iterator(it_++);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const cpp17_input_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const cpp17_input_iterator& i)
   {
     return i.it_;
   }
@@ -200,16 +202,16 @@ public:
     return forward_iterator(it_++);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const forward_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const forward_iterator& i)
   {
     return i.it_;
   }
@@ -277,16 +279,18 @@ public:
     return bidirectional_iterator(it_--);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const bidirectional_iterator& x, const bidirectional_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator==(const bidirectional_iterator& x, const bidirectional_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const bidirectional_iterator& x, const bidirectional_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator!=(const bidirectional_iterator& x, const bidirectional_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const bidirectional_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const bidirectional_iterator& i)
   {
     return i.it_;
   }
@@ -368,52 +372,62 @@ public:
     it_ -= n;
     return *this;
   }
-  __host__ __device__ friend constexpr random_access_iterator operator+(random_access_iterator x, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND random_access_iterator
+  operator+(random_access_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr random_access_iterator operator+(difference_type n, random_access_iterator x)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND random_access_iterator
+  operator+(difference_type n, random_access_iterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr random_access_iterator operator-(random_access_iterator x, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND random_access_iterator
+  operator-(random_access_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ friend constexpr difference_type operator-(random_access_iterator x, random_access_iterator y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type
+  operator-(random_access_iterator x, random_access_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator==(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator!=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  __host__ __device__ friend constexpr bool operator<(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator<(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  __host__ __device__ friend constexpr bool operator<=(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator<=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  __host__ __device__ friend constexpr bool operator>(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator>(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  __host__ __device__ friend constexpr bool operator>=(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  operator>=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const random_access_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const random_access_iterator& i)
   {
     return i.it_;
   }
@@ -494,62 +508,62 @@ public:
     it_ -= n;
     return *this;
   }
-  __host__ __device__ friend constexpr cpp20_random_access_iterator
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cpp20_random_access_iterator
   operator+(cpp20_random_access_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr cpp20_random_access_iterator
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cpp20_random_access_iterator
   operator+(difference_type n, cpp20_random_access_iterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr cpp20_random_access_iterator
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cpp20_random_access_iterator
   operator-(cpp20_random_access_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ friend constexpr difference_type
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type
   operator-(cpp20_random_access_iterator x, cpp20_random_access_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator==(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator<(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator<=(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator>(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator>=(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const cpp20_random_access_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const cpp20_random_access_iterator& i)
   {
     return i.it_;
   }
@@ -646,52 +660,52 @@ public:
     it_ -= n;
     return *this;
   }
-  __host__ __device__ friend constexpr contiguous_iterator operator+(contiguous_iterator x, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND contiguous_iterator operator+(contiguous_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr contiguous_iterator operator+(difference_type n, contiguous_iterator x)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND contiguous_iterator operator+(difference_type n, contiguous_iterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr contiguous_iterator operator-(contiguous_iterator x, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND contiguous_iterator operator-(contiguous_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ friend constexpr difference_type operator-(contiguous_iterator x, contiguous_iterator y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type operator-(contiguous_iterator x, contiguous_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  __host__ __device__ friend constexpr bool operator<(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  __host__ __device__ friend constexpr bool operator<=(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  __host__ __device__ friend constexpr bool operator>(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  __host__ __device__ friend constexpr bool operator>=(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const contiguous_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const contiguous_iterator& i)
   {
     return i.it_;
   }
@@ -787,36 +801,36 @@ public:
     it_ -= n;
     return *this;
   }
-  __host__ __device__ friend constexpr three_way_contiguous_iterator
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND three_way_contiguous_iterator
   operator+(three_way_contiguous_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr three_way_contiguous_iterator
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND three_way_contiguous_iterator
   operator+(difference_type n, three_way_contiguous_iterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend constexpr three_way_contiguous_iterator
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND three_way_contiguous_iterator
   operator-(three_way_contiguous_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ friend constexpr difference_type
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type
   operator-(three_way_contiguous_iterator x, three_way_contiguous_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ friend constexpr auto
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto
   operator<=>(const three_way_contiguous_iterator& x, const three_way_contiguous_iterator& y)
   {
     return x.it_ <=> y.it_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator==(const three_way_contiguous_iterator& x, const three_way_contiguous_iterator& y)
   {
     return x.it_ == y.it_;
@@ -931,7 +945,7 @@ struct ThrowingIterator
     return temp;
   }
 
-  __host__ __device__ constexpr friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
   {
     if (a.action_ == TAComparison && --a.index_ < 0)
     {
@@ -950,7 +964,7 @@ struct ThrowingIterator
     return a.current_ == b.current_;
   }
 
-  __host__ __device__ constexpr friend bool operator!=(const ThrowingIterator& a, const ThrowingIterator& b)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const ThrowingIterator& a, const ThrowingIterator& b)
   {
     return !(a == b);
   }
@@ -1090,7 +1104,7 @@ public:
     ++it_;
   }
 
-  __host__ __device__ friend constexpr It base(const cpp20_input_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const cpp20_input_iterator& i)
   {
     return i.it_;
   }
@@ -1146,7 +1160,7 @@ public:
     return cpp20_output_iterator(it_++);
   }
 
-  __host__ __device__ friend constexpr It base(const cpp20_output_iterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const cpp20_output_iterator& i)
   {
     return i.it_;
   }
@@ -1197,7 +1211,7 @@ public:
       : base_(base(it))
   {}
 
-  __host__ __device__ friend constexpr It base(stride_counting_iterator const& it)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(stride_counting_iterator const& it)
   {
     return It(it.base_);
   }
@@ -1285,25 +1299,28 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr stride_counting_iterator operator+(stride_counting_iterator it, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND stride_counting_iterator
+  operator+(stride_counting_iterator it, difference_type n)
   {
     return it += n;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr stride_counting_iterator operator+(difference_type n, stride_counting_iterator it)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND stride_counting_iterator
+  operator+(difference_type n, stride_counting_iterator it)
   {
     return it += n;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr stride_counting_iterator operator-(stride_counting_iterator it, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND stride_counting_iterator
+  operator-(stride_counting_iterator it, difference_type n)
   {
     return it -= n;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::sized_sentinel_for<It2, It2>, int> = 0>
-  __host__ __device__ friend constexpr difference_type
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type
   operator-(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return base(x) - base(y);
@@ -1324,28 +1341,28 @@ public:
 #endif
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator<(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) < It(y.base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator>(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) > It(y.base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator<=(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) <= It(y.base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator>=(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) >= It(y.base_);
@@ -1368,25 +1385,25 @@ public:
   __host__ __device__ constexpr explicit sentinel_wrapper(const It& it)
       : base_(base(it))
   {}
-  __host__ __device__ friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
   }
-  __host__ __device__ friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  __host__ __device__ friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  __host__ __device__ friend constexpr It base(const sentinel_wrapper& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const sentinel_wrapper& s)
   {
     return It(s.base_);
   }
@@ -1403,33 +1420,33 @@ public:
   __host__ __device__ constexpr explicit sized_sentinel(const It& it)
       : base_(base(it))
   {}
-  __host__ __device__ friend constexpr bool operator==(const sized_sentinel& s, const It& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const sized_sentinel& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const It& i, const sized_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const It& i, const sized_sentinel& s)
   {
     return s.base_ == base(i);
   }
-  __host__ __device__ friend constexpr bool operator!=(const sized_sentinel& s, const It& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const sized_sentinel& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  __host__ __device__ friend constexpr bool operator!=(const It& i, const sized_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const It& i, const sized_sentinel& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  __host__ __device__ friend constexpr auto operator-(const sized_sentinel& s, const It& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator-(const sized_sentinel& s, const It& i)
   {
     return s.base_ - base(i);
   }
-  __host__ __device__ friend constexpr auto operator-(const It& i, const sized_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator-(const It& i, const sized_sentinel& s)
   {
     return base(i) - s.base_;
   }
-  __host__ __device__ friend constexpr It base(const sized_sentinel& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const sized_sentinel& s)
   {
     return It(s.base_);
   }
@@ -1494,11 +1511,11 @@ public:
     return ptr_[n];
   }
 
-  __host__ __device__ friend constexpr Iterator operator+(Iterator i, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Iterator operator+(Iterator i, difference_type n)
   {
     return Iterator(i.ptr_ + n, i.iter_moves_, i.iter_swaps_);
   }
-  __host__ __device__ friend constexpr Iterator operator+(difference_type n, Iterator i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Iterator operator+(difference_type n, Iterator i)
   {
     return i + n;
   }
@@ -1554,7 +1571,7 @@ public:
     }
   }
 
-  __host__ __device__ constexpr friend value_type&& iter_move(Iterator iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND value_type&& iter_move(Iterator iter)
   {
     if (iter.iter_moves_)
     {
@@ -1563,33 +1580,33 @@ public:
     return cuda::std::move(*iter);
   }
 
-  __host__ __device__ constexpr friend bool operator==(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ == rhs.ptr_;
   }
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  __host__ __device__ constexpr friend auto operator<=>(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator<=>(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ <=> rhs.ptr_;
   }
 #else
-  __host__ __device__ constexpr friend bool operator!=(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ != rhs.ptr_;
   }
-  __host__ __device__ constexpr friend bool operator<(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ < rhs.ptr_;
   }
-  __host__ __device__ constexpr friend bool operator<=(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ <= rhs.ptr_;
   }
-  __host__ __device__ constexpr friend bool operator>(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ > rhs.ptr_;
   }
-  __host__ __device__ constexpr friend bool operator>=(const Iterator& lhs, const Iterator& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ >= rhs.ptr_;
   }
@@ -1697,13 +1714,13 @@ struct Proxy
 
   // Compare operators are defined for the convenience of the tests
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const Proxy&, const Proxy&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Proxy&, const Proxy&)
     requires(cuda::std::equality_comparable<T> && !cuda::std::is_reference_v<T>)
   = default;
 #else
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((cuda::std::equality_comparable<T2> && !cuda::std::is_reference_v<T2>) )
-  __host__ __device__ friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Proxy& lhs, const Proxy& rhs)
   {
     return lhs.data == rhs.data;
   }
@@ -1713,20 +1730,20 @@ struct Proxy
   // when `T` is a reference type.
   _CCCL_TEMPLATE(class U)
   _CCCL_REQUIRES((cuda::std::equality_comparable_with<cuda::std::decay_t<T>, cuda::std::decay_t<U>>) )
-  __host__ __device__ friend constexpr bool operator==(const Proxy& lhs, const Proxy<U>& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Proxy& lhs, const Proxy<U>& rhs)
   {
     return lhs.data == rhs.data;
   }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  __host__ __device__ friend constexpr auto operator<=>(const Proxy&, const Proxy&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator<=>(const Proxy&, const Proxy&)
     requires(cuda::std::three_way_comparable<T> && !cuda::std::is_reference_v<T>)
   = default;
 
   // Helps compare e.g. `Proxy<int>` and `Proxy<int&>`. Note that the default 3-way comparison operator is deleted when
   // `T` is a reference type.
   template <class U>
-  __host__ __device__ friend constexpr auto operator<=>(const Proxy& lhs, const Proxy<U>& rhs)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator<=>(const Proxy& lhs, const Proxy<U>& rhs)
     requires cuda::std::three_way_comparable_with<cuda::std::decay_t<T>, cuda::std::decay_t<U>>
   {
     return lhs.data <=> rhs.data;
@@ -1822,7 +1839,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
       : base_{cuda::std::forward<T>(t)}
   {}
 
-  __host__ __device__ friend constexpr decltype(auto) base(const ProxyIterator& p)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND decltype(auto) base(const ProxyIterator& p)
   {
     return base(p.base_);
   }
@@ -1831,7 +1848,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // If operator* returns Proxy<Foo&>, iter_move will return Proxy<Foo&&>
   // Note cuda::std::move(*it) returns Proxy<Foo&>&&, which is not what we want as
   // it will likely result in a copy rather than a move
-  __host__ __device__ friend constexpr Proxy<cuda::std::iter_rvalue_reference_t<Base>>
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Proxy<cuda::std::iter_rvalue_reference_t<Base>>
   iter_move(const ProxyIterator& p) noexcept
   {
     return {cuda::std::ranges::iter_move(p.base_)};
@@ -1840,7 +1857,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // Specialization of iter_swap
   // Note cuda::std::swap(*x, *y) would fail to compile as operator* returns prvalues
   // and cuda::std::swap takes non-const lvalue references
-  __host__ __device__ friend constexpr void iter_swap(const ProxyIterator& x, const ProxyIterator& y) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void iter_swap(const ProxyIterator& x, const ProxyIterator& y) noexcept
   {
     cuda::std::ranges::iter_swap(x.base_, y.base_);
   }
@@ -1864,7 +1881,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::equality_comparable<B2>)
-  __host__ __device__ friend constexpr bool operator==(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ == y.base_;
   }
@@ -1923,28 +1940,28 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr bool operator<(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ < y.base_;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr bool operator>(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ > y.base_;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr bool operator<=(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<=(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ <= y.base_;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr bool operator>=(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ >= y.base_;
   }
@@ -1952,7 +1969,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>&& cuda::std::three_way_comparable<B2>)
-  __host__ __device__ friend constexpr auto operator<=>(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator<=>(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ <=> y.base_;
   }
@@ -1960,28 +1977,28 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr ProxyIterator operator+(const ProxyIterator& x, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND ProxyIterator operator+(const ProxyIterator& x, difference_type n)
   {
     return ProxyIterator{x.base_ + n};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr ProxyIterator operator+(difference_type n, const ProxyIterator& x)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND ProxyIterator operator+(difference_type n, const ProxyIterator& x)
   {
     return ProxyIterator{n + x.base_};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr ProxyIterator operator-(const ProxyIterator& x, difference_type n)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND ProxyIterator operator-(const ProxyIterator& x, difference_type n)
   {
     return ProxyIterator{x.base_ - n};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  __host__ __device__ friend constexpr difference_type operator-(const ProxyIterator& x, const ProxyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type operator-(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ - y.base_;
   }
@@ -2003,7 +2020,7 @@ struct ProxySentinel
 
   _CCCL_TEMPLATE(class Base)
   _CCCL_REQUIRES(cuda::std::equality_comparable_with<Base, BaseSent>)
-  __host__ __device__ friend constexpr bool operator==(const ProxyIterator<Base>& p, const ProxySentinel& sent)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const ProxyIterator<Base>& p, const ProxySentinel& sent)
   {
     return p.base_ == sent.base_;
   }

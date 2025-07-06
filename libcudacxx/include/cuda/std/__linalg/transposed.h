@@ -184,13 +184,13 @@ public:
     }
 
     template <class _OtherExtents>
-    _CCCL_API friend constexpr bool operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+    _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     {
       return __lhs.__nested_mapping_ == __rhs.__nested_mapping_;
     }
 
     template <class _OtherExtents>
-    _CCCL_API friend constexpr bool operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+    _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     {
       return __lhs.__nested_mapping_ != __rhs.__nested_mapping_;
     }

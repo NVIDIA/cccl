@@ -26,12 +26,12 @@ struct prop
 
 struct upstream_with_valueless_property
 {
-  __host__ __device__ friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void get_property(const upstream_with_valueless_property&, prop) {}
 };
 
 struct upstream_with_stateful_property
 {
-  __host__ __device__ friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int get_property(const upstream_with_stateful_property&, prop_with_value)
   {
     return 42;
   }
@@ -39,8 +39,8 @@ struct upstream_with_stateful_property
 
 struct upstream_with_both_properties
 {
-  __host__ __device__ friend constexpr void get_property(const upstream_with_both_properties&, prop) {}
-  __host__ __device__ friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void get_property(const upstream_with_both_properties&, prop) {}
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int get_property(const upstream_with_both_properties&, prop_with_value)
   {
     return 42;
   }

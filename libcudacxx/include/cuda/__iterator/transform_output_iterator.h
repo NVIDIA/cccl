@@ -302,7 +302,7 @@ public:
   //! @brief Compares two \c transform_output_iterator for equality, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator==(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() == _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::equality_comparable<_Iter2>)
@@ -314,7 +314,7 @@ public:
   //! @brief Compares two \c transform_output_iterator for inequality, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator!=(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() != _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::equality_comparable<_Iter2>)
@@ -326,7 +326,7 @@ public:
   //! @brief Compares two \c transform_output_iterator for less than, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator<(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() < _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
@@ -337,7 +337,7 @@ public:
   //! @brief Compares two \c transform_output_iterator for greater than, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator>(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() < _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
@@ -348,7 +348,7 @@ public:
   //! @brief Compares two \c transform_output_iterator for less equal, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator<=(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() < _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
@@ -359,7 +359,7 @@ public:
   //! @brief Compares two \c transform_output_iterator for greater equal, directly comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator>=(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() < _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>)
@@ -371,7 +371,7 @@ public:
   //! @brief Three-way-compares two \c transform_output_iterator, directly three-way-comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator<=>(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() <=> _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VSTD::random_access_iterator<_Iter2>&& _CUDA_VSTD::three_way_comparable<_Iter2>)
@@ -385,7 +385,7 @@ public:
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator+(const transform_output_iterator& __i,
             difference_type __n) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter2>
                                           && noexcept(_CUDA_VSTD::declval<const _Iter2&>() + difference_type{}))
@@ -399,7 +399,7 @@ public:
   //! @param __i The \c transform_output_iterator to advance
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator+(difference_type __n, const transform_output_iterator& __i) noexcept(
     _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter2>
     && noexcept(_CUDA_VSTD::declval<const _Iter2&>() + difference_type{}))
@@ -413,7 +413,7 @@ public:
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator-(const transform_output_iterator& __i,
             difference_type __n) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter2>
                                           && noexcept(_CUDA_VSTD::declval<const _Iter2&>() - difference_type{}))
@@ -428,7 +428,7 @@ public:
   //! @return The distance between the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator-(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter2&>() - _CUDA_VSTD::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(difference_type)(_CUDA_VSTD::sized_sentinel_for<_Iter2, _Iter2>)

@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// friend constexpr iterator operator+(iterator i, difference_type n)
+// _CCCL_CONSTEXPR_FRIEND iterator operator+(iterator i, difference_type n)
 //   requires advanceable<W>;
-// friend constexpr iterator operator+(difference_type n, iterator i)
+// _CCCL_CONSTEXPR_FRIEND iterator operator+(difference_type n, iterator i)
 //   requires advanceable<W>;
 
 #include <cuda/iterator>

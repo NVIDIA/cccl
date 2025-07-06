@@ -202,12 +202,12 @@ public:
       return forward_progress_guarantee::parallel;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const scheduler& __a, const scheduler& __b) noexcept
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const scheduler& __a, const scheduler& __b) noexcept
     {
       return __a.__loop_ == __b.__loop_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
     {
       return __a.__loop_ != __b.__loop_;
     }

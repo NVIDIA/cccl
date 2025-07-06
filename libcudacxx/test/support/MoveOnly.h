@@ -44,33 +44,33 @@ public:
     return data_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ == y.data_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ != y.data_;
   }
-  __host__ __device__ friend constexpr bool operator<(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ < y.data_;
   }
-  __host__ __device__ friend constexpr bool operator<=(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ <= y.data_;
   }
-  __host__ __device__ friend constexpr bool operator>(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ > y.data_;
   }
-  __host__ __device__ friend constexpr bool operator>=(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ >= y.data_;
   }
 
 #if TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  __host__ __device__ friend constexpr auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
 #endif // TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   __host__ __device__ constexpr MoveOnly operator+(const MoveOnly& x) const

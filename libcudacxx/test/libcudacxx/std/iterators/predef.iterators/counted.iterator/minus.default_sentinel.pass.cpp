@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// friend constexpr iter_difference_t<I> operator-(
+// _CCCL_CONSTEXPR_FRIEND iter_difference_t<I> operator-(
 //   const counted_iterator& x, default_sentinel_t);
-// friend constexpr iter_difference_t<I> operator-(
+// _CCCL_CONSTEXPR_FRIEND iter_difference_t<I> operator-(
 //   default_sentinel_t, const counted_iterator& y);
 
 #include <cuda/std/iterator>

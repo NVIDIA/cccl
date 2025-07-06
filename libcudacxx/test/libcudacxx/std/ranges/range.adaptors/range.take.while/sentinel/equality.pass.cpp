@@ -7,11 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-//  friend constexpr bool operator==(const iterator_t<Base>& x, const sentinel& y);
+//  _CCCL_CONSTEXPR_FRIEND bool operator==(const iterator_t<Base>& x, const sentinel& y);
 //
 //  template<bool OtherConst = !Const>
 //    requires sentinel_for<sentinel_t<Base>, iterator_t<maybe-const<OtherConst, V>>>
-//  friend constexpr bool operator==(const iterator_t<maybe-const<OtherConst, V>>& x,
+//  _CCCL_CONSTEXPR_FRIEND bool operator==(const iterator_t<maybe-const<OtherConst, V>>& x,
 //                                   const sentinel& y);
 
 #include <cuda/std/array>
@@ -50,20 +50,20 @@ struct Sent
 {
   int* end_;
 
-  __host__ __device__ friend constexpr bool operator==(const Iter<Const>& i, const Sent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Iter<Const>& i, const Sent& s)
   {
     return i.it_ == s.end_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const Sent& s, const Iter<Const>& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Sent& s, const Iter<Const>& i)
   {
     return i.it_ == s.end_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Iter<Const>& i, const Sent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Iter<Const>& i, const Sent& s)
   {
     return i.it_ != s.end_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Sent& s, const Iter<Const>& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Sent& s, const Iter<Const>& i)
   {
     return i.it_ != s.end_;
   }
@@ -76,23 +76,23 @@ struct CrossComparableSent
   int* end_;
 
   template <bool C>
-  __host__ __device__ friend constexpr bool operator==(const Iter<C>& i, const CrossComparableSent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Iter<C>& i, const CrossComparableSent& s)
   {
     return i.it_ == s.end_;
   }
 #if TEST_STD_VER < 2020
   template <bool C>
-  __host__ __device__ friend constexpr bool operator==(const CrossComparableSent& s, const Iter<C>& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const CrossComparableSent& s, const Iter<C>& i)
   {
     return i.it_ == s.end_;
   }
   template <bool C>
-  __host__ __device__ friend constexpr bool operator!=(const Iter<C>& i, const CrossComparableSent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Iter<C>& i, const CrossComparableSent& s)
   {
     return i.it_ != s.end_;
   }
   template <bool C>
-  __host__ __device__ friend constexpr bool operator!=(const CrossComparableSent& s, const Iter<C>& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const CrossComparableSent& s, const Iter<C>& i)
   {
     return i.it_ != s.end_;
   }

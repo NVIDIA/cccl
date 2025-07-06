@@ -70,15 +70,15 @@ struct __avoid_promotions
   }
 
   // helper for fill_n
-  _CCCL_HOST_DEVICE constexpr friend _Int __convert_to_integral(__avoid_promotions __self)
+  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND _Int __convert_to_integral(__avoid_promotions __self)
   {
     return __self.__data;
   }
 
-#define _DEFINE_UNARY(__op)                                                                         \
-  _CCCL_HOST_DEVICE constexpr friend __avoid_promotions operator __op(__avoid_promotions __operand) \
-  {                                                                                                 \
-    return __avoid_promotions(static_cast<_Int>(__op static_cast<__base>(__operand.__data)));       \
+#define _DEFINE_UNARY(__op)                                                                               \
+  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND __avoid_promotions operator __op(__avoid_promotions __operand) \
+  {                                                                                                       \
+    return __avoid_promotions(static_cast<_Int>(__op static_cast<__base>(__operand.__data)));             \
   }
 
   _DEFINE_UNARY(~)
@@ -87,12 +87,12 @@ struct __avoid_promotions
 
 #define _DEFINE_SHIFT(__op)                                                                                            \
   template <class _Tp>                                                                                                 \
-  _CCCL_HOST_DEVICE constexpr friend __avoid_promotions operator __op(__avoid_promotions __operand, _Tp __n)           \
+  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND __avoid_promotions operator __op(__avoid_promotions __operand, _Tp __n)     \
   {                                                                                                                    \
     return __avoid_promotions(static_cast<_Int>(static_cast<__base>(__operand.__data) __op static_cast<__base>(__n))); \
   }                                                                                                                    \
   template <class _Tp>                                                                                                 \
-  _CCCL_HOST_DEVICE constexpr friend __avoid_promotions operator __op(                                                 \
+  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND __avoid_promotions operator __op(                                           \
     __avoid_promotions __operand, __avoid_promotions<_Tp> __n)                                                         \
   {                                                                                                                    \
     return __avoid_promotions(                                                                                         \
@@ -123,7 +123,7 @@ struct __avoid_promotions
 #undef _DEFINE_SHIFT_ASSIGNMENT
 
 #define _DEFINE_BINARY(__op)                                                                        \
-  _CCCL_HOST_DEVICE constexpr friend __avoid_promotions operator __op(                              \
+  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND __avoid_promotions operator __op(                        \
     __avoid_promotions __lhs, __avoid_promotions __rhs)                                             \
   {                                                                                                 \
     return __avoid_promotions(                                                                      \
@@ -157,10 +157,10 @@ struct __avoid_promotions
   _DEFINE_ASSIGNMENT(^)
 #undef _DEFINE_ASSIGNMENT
 
-#define _DEFINE_COMPARISON(__op)                                                                            \
-  _CCCL_HOST_DEVICE constexpr friend bool operator __op(__avoid_promotions __lhs, __avoid_promotions __rhs) \
-  {                                                                                                         \
-    return static_cast<_Int>(static_cast<__base>(__lhs.__data) __op static_cast<__base>(__rhs.__data));     \
+#define _DEFINE_COMPARISON(__op)                                                                                  \
+  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND bool operator __op(__avoid_promotions __lhs, __avoid_promotions __rhs) \
+  {                                                                                                               \
+    return static_cast<_Int>(static_cast<__base>(__lhs.__data) __op static_cast<__base>(__rhs.__data));           \
   }
 
   _DEFINE_COMPARISON(<)

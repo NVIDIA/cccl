@@ -35,7 +35,7 @@ static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::ssize), con
 
 struct SizeFunction
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunction)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(SizeFunction)
   {
     return 42;
   }
@@ -43,7 +43,7 @@ struct SizeFunction
 
 struct SizeFunctionSigned
 {
-  __host__ __device__ friend constexpr cuda::std::ptrdiff_t size(SizeFunctionSigned)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t size(SizeFunctionSigned)
   {
     return 42;
   }

@@ -39,7 +39,7 @@ struct empty
     assert(val == Expected);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const empty&, int val)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const empty&, int val)
   {
     return val == Expected;
   }

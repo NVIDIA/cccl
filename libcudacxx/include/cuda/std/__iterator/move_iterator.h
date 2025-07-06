@@ -245,7 +245,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() == __y.base();
   }
@@ -253,21 +253,21 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() == __x.base();
   }
 
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() != __y.base();
   }
 
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() != __x.base();
   }
@@ -275,7 +275,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
-  friend _CCCL_API constexpr iter_difference_t<_Iter>
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_Iter>
   operator-(const move_sentinel<_Sent>& __x, const move_iterator& __y)
   {
     return __x.base() - __y.base();
@@ -283,20 +283,20 @@ public:
 
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
-  friend _CCCL_API constexpr iter_difference_t<_Iter>
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_Iter>
   operator-(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() - __y.base();
   }
 
-  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_rvalue_reference_t<_Iter>
   iter_move(const move_iterator& __i) noexcept(__noexcept_move_iter_iter_move<_Iter>)
   {
     return _CUDA_VRANGES::iter_move(__i.__current_);
   }
 
   template <class _Iter2>
-  _CCCL_API friend constexpr auto
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {

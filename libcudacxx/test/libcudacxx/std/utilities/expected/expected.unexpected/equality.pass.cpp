@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // template<class E2>
-// friend constexpr bool operator==(const unexpected& x, const unexpected<E2>& y);
+// _CCCL_CONSTEXPR_FRIEND bool operator==(const unexpected& x, const unexpected<E2>& y);
 //
 // Mandates: The expression x.error() == y.error() is well-formed and its result is convertible to bool.
 //
@@ -25,13 +25,13 @@ struct Error
 {
   int i;
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const Error&, const Error&) = default;
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Error&, const Error&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const Error& lhs, const Error& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Error& lhs, const Error& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Error& lhs, const Error& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Error& lhs, const Error& rhs) noexcept
   {
     return lhs.i != rhs.i;
   }

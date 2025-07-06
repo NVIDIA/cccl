@@ -290,7 +290,7 @@ public:
   }
 
   template <class _OtherExtents, class _Extents2 = _Extents>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
@@ -299,7 +299,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherExtents, class _Extents2 = _Extents>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {

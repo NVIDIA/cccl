@@ -404,7 +404,7 @@ public:
     return __op_empty(make_index_sequence<rank()>());
   }
 
-  _CCCL_API friend constexpr void swap(mdspan& __x, mdspan& __y) noexcept
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND void swap(mdspan& __x, mdspan& __y) noexcept
   {
     swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
   }

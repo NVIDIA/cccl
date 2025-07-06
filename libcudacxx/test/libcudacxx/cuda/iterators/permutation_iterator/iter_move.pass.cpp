@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// friend constexpr iter_rvalue_reference_t<I>
+// _CCCL_CONSTEXPR_FRIEND iter_rvalue_reference_t<I>
 //   iter_move(const permutation_iterator& i)
 //     noexcept(noexcept(ranges::iter_move(i.current)));
 

@@ -22,20 +22,20 @@ struct Sent
   __host__ __device__ constexpr Sent(int ii)
       : i(ii)
   {}
-  __host__ __device__ friend constexpr bool operator==(int* iter, const Sent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int* iter, const Sent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const Sent& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Sent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const Sent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int* iter, const Sent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Sent& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Sent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -52,20 +52,20 @@ struct ConstSent
   __host__ __device__ constexpr ConstSent(const Sent& s)
       : i(s.i)
   {}
-  __host__ __device__ friend constexpr bool operator==(int* iter, const ConstSent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int* iter, const ConstSent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const ConstSent& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const ConstSent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const ConstSent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int* iter, const ConstSent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const ConstSent& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const ConstSent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -100,20 +100,20 @@ struct NonConvertConstSent
   __host__ __device__ constexpr NonConvertConstSent(int ii)
       : i(ii)
   {}
-  __host__ __device__ friend constexpr bool operator==(int* iter, const NonConvertConstSent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int* iter, const NonConvertConstSent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const NonConvertConstSent& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const NonConvertConstSent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const NonConvertConstSent& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int* iter, const NonConvertConstSent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const NonConvertConstSent& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const NonConvertConstSent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -160,20 +160,20 @@ struct MoveOnlyConvert
   {
     s.i = 0;
   }
-  __host__ __device__ constexpr friend bool operator==(const MoveOnlyConvert& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const MoveOnlyConvert& s, int* iter)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ constexpr friend bool operator==(int* iter, const MoveOnlyConvert& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int* iter, const MoveOnlyConvert& s)
   {
     return s.i > *iter;
   }
-  __host__ __device__ constexpr friend bool operator!=(const MoveOnlyConvert& s, int* iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const MoveOnlyConvert& s, int* iter)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ constexpr friend bool operator!=(int* iter, const MoveOnlyConvert& s)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int* iter, const MoveOnlyConvert& s)
   {
     return s.i <= *iter;
   }

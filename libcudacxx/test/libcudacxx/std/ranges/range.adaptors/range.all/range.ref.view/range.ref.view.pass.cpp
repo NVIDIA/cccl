@@ -33,19 +33,19 @@ constexpr bool ValidRefView<T, cuda::std::void_t<cuda::std::ranges::ref_view<T>>
 struct Range
 {
   int start = 0;
-  __host__ __device__ friend constexpr int* begin(Range const& range)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* begin(Range const& range)
   {
     return globalBuff + range.start;
   }
-  __host__ __device__ friend constexpr int* end(Range const&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* end(Range const&)
   {
     return globalBuff + 8;
   }
-  __host__ __device__ friend constexpr int* begin(Range& range)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* begin(Range& range)
   {
     return globalBuff + range.start;
   }
-  __host__ __device__ friend constexpr int* end(Range&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* end(Range&)
   {
     return globalBuff + 8;
   }
@@ -104,29 +104,29 @@ struct Cpp17InputRange
 {
   struct sentinel
   {
-    __host__ __device__ friend constexpr bool operator==(sentinel, cpp17_input_iterator<int*> iter)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(sentinel, cpp17_input_iterator<int*> iter)
     {
       return base(iter) == globalBuff + 8;
     }
 #if TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr bool operator==(cpp17_input_iterator<int*> iter, sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(cpp17_input_iterator<int*> iter, sentinel)
     {
       return base(iter) == globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(sentinel, cpp17_input_iterator<int*> iter)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(sentinel, cpp17_input_iterator<int*> iter)
     {
       return base(iter) != globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(cpp17_input_iterator<int*> iter, sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(cpp17_input_iterator<int*> iter, sentinel)
     {
       return base(iter) != globalBuff + 8;
     }
 #endif // TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(sentinel, cpp17_input_iterator<int*>)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t operator-(sentinel, cpp17_input_iterator<int*>)
     {
       return -8;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(cpp17_input_iterator<int*>, sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t operator-(cpp17_input_iterator<int*>, sentinel)
     {
       return 8;
     }
@@ -146,25 +146,26 @@ struct Cpp20InputRange
 {
   struct sentinel
   {
-    __host__ __device__ friend constexpr bool operator==(sentinel, const cpp20_input_iterator<int*>& iter)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(sentinel, const cpp20_input_iterator<int*>& iter)
     {
       return base(iter) == globalBuff + 8;
     }
 #if TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr bool operator==(const cpp20_input_iterator<int*>& iter, sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const cpp20_input_iterator<int*>& iter, sentinel)
     {
       return base(iter) == globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(sentinel, const cpp20_input_iterator<int*>& iter)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(sentinel, const cpp20_input_iterator<int*>& iter)
     {
       return base(iter) != globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(const cpp20_input_iterator<int*>& iter, sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const cpp20_input_iterator<int*>& iter, sentinel)
     {
       return base(iter) != globalBuff + 8;
     }
 #endif // TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(sentinel, const cpp20_input_iterator<int*>&)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
+    operator-(sentinel, const cpp20_input_iterator<int*>&)
     {
       return -8;
     }

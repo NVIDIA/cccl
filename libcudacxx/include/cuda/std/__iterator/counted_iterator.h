@@ -238,7 +238,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(random_access_iterator<_I2>)
-  [[nodiscard]] _CCCL_API friend constexpr counted_iterator
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND counted_iterator
   operator+(iter_difference_t<_I2> __n, const counted_iterator& __x)
   {
     return __x + __n;
@@ -263,7 +263,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_I2>
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_I2>
   operator-(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs)
   {
     return __rhs.__count_ - __lhs.__count_;
@@ -271,19 +271,19 @@ public:
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(random_access_iterator<_I2>)
-  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_I2>
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_I2>
   operator-(const counted_iterator& __lhs, const counted_iterator& __rhs)
   {
     return __rhs.__count_ - __lhs.__count_;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Iter>
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_Iter>
   operator-(const counted_iterator& __lhs, default_sentinel_t)
   {
     return -__lhs.__count_;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Iter>
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_Iter>
   operator-(default_sentinel_t, const counted_iterator& __rhs)
   {
     return __rhs.__count_;
@@ -312,20 +312,20 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ != __rhs.__count_;
@@ -333,30 +333,34 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ != __rhs.__count_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const counted_iterator& __lhs, default_sentinel_t) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator==(const counted_iterator& __lhs, default_sentinel_t) noexcept
   {
     return __lhs.__count_ == 0;
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(default_sentinel_t, const counted_iterator& __lhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator==(default_sentinel_t, const counted_iterator& __lhs) noexcept
   {
     return __lhs.__count_ == 0;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const counted_iterator& __lhs, default_sentinel_t) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator!=(const counted_iterator& __lhs, default_sentinel_t) noexcept
   {
     return __lhs.__count_ != 0;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(default_sentinel_t, const counted_iterator& __lhs) noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  operator!=(default_sentinel_t, const counted_iterator& __lhs) noexcept
   {
     return __lhs.__count_ != 0;
   }
@@ -365,7 +369,7 @@ public:
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr strong_ordering
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND strong_ordering
   operator<=>(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __rhs.__count_ <=> __lhs.__count_;
@@ -374,7 +378,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ < __rhs.__count_;
@@ -382,7 +386,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator<=(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ <= __rhs.__count_;
@@ -390,7 +394,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ > __rhs.__count_;
@@ -398,15 +402,16 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator>=(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ >= __rhs.__count_;
   }
 
   template <class _I2>
-  _CCCL_API friend constexpr auto iter_swap(const counted_iterator& __x, const counted_iterator<_I2>& __y) noexcept(
-    noexcept(_CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_)))
+  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto iter_swap(
+    const counted_iterator& __x,
+    const counted_iterator<_I2>& __y) noexcept(noexcept(_CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_)))
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     _CCCL_ASSERT(__x.__count_ > 0 && __y.__count_ > 0, "Iterators must not be past end of range.");

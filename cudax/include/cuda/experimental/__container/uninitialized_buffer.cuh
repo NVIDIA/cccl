@@ -274,7 +274,7 @@ public:
   //! @brief Forwards the passed Properties
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
-  _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const uninitialized_buffer&, _Property) noexcept {}
+  _CCCL_HIDE_FROM_ABI _CCCL_CONSTEXPR_FRIEND void get_property(const uninitialized_buffer&, _Property) noexcept {}
 #  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Internal method to grow the allocation to a new size \p __count.

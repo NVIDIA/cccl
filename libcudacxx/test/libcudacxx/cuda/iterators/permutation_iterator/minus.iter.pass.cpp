@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// friend constexpr iter_difference_t operator-(const permutation_iterator& x, const permutation_iterator& y);
+// _CCCL_CONSTEXPR_FRIEND iter_difference_t operator-(const permutation_iterator& x, const permutation_iterator& y);
 
 #include <cuda/iterator>
 

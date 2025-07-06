@@ -233,7 +233,7 @@ struct __upon_t
     }
 
     template <class _Sndr>
-    _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
+    _CCCL_TRIVIAL_API _CCCL_CONSTEXPR_FRIEND auto operator|(_Sndr __sndr, __closure_base_t __self) //
       -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));

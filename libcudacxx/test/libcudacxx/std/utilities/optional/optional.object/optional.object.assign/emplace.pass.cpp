@@ -36,7 +36,7 @@ struct ConvertibleToReference
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -57,7 +57,7 @@ struct ExplicitlyConvertibleToReference
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;

@@ -53,16 +53,16 @@ struct MoveOnlyIterator
     return MoveOnlyIterator(it_++);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const MoveOnlyIterator& i)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const MoveOnlyIterator& i)
   {
     return i.it_;
   }

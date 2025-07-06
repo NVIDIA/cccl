@@ -25,11 +25,11 @@ struct Trivial
       : val_(val)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Trivial& lhs, const Trivial& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Trivial& lhs, const Trivial& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __host__ __device__ friend constexpr bool operator<(const Trivial& lhs, const Trivial& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const Trivial& lhs, const Trivial& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
@@ -45,11 +45,11 @@ struct NonTrivial
   __host__ __device__ constexpr NonTrivial(const int val) noexcept
       : val_(val)
   {}
-  __host__ __device__ friend constexpr bool operator==(const NonTrivial& lhs, const NonTrivial& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const NonTrivial& lhs, const NonTrivial& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __host__ __device__ friend constexpr bool operator<(const NonTrivial& lhs, const NonTrivial& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const NonTrivial& lhs, const NonTrivial& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
@@ -94,12 +94,12 @@ struct ThrowingDefaultConstruct
   __host__ __device__ constexpr ThrowingDefaultConstruct(const int val) noexcept
       : val_(val)
   {}
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator==(const ThrowingDefaultConstruct& lhs, const ThrowingDefaultConstruct& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __host__ __device__ friend constexpr bool
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
   operator<(const ThrowingDefaultConstruct& lhs, const ThrowingDefaultConstruct& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;

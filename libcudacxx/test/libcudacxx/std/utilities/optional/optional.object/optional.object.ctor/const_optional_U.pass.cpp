@@ -35,7 +35,7 @@ public:
   {
     i_ = 0;
   }
-  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }
@@ -50,7 +50,7 @@ public:
       : i_(i)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
   }
@@ -90,7 +90,7 @@ struct ConvertibleToValue
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
   {
     return lhs == rhs.val_;
   }

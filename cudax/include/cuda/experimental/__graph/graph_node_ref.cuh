@@ -36,14 +36,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
-// See: https://github.com/breathe-doc/breathe/issues/916
-#if defined(_CCCL_DOXYGEN_INVOKED)
-#  define _CUDAX_CONSTEXPR_FRIEND friend
-#else
-#  define _CUDAX_CONSTEXPR_FRIEND constexpr friend
-#endif
-
 namespace cuda::experimental
 {
 //! \brief A reference wrapper for a CUDA graph node.
@@ -83,7 +75,7 @@ struct graph_node_ref
   //! \param __lhs The left-hand side `graph_node_ref` object to compare.
   //! \param __rhs The right-hand side `graph_node_ref` object to compare.
   //! \return `true` if both `graph_node_ref` objects are equal, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const graph_node_ref& __lhs, const graph_node_ref& __rhs) noexcept
   {
     return __lhs.__node_ == __rhs.__node_ && __lhs.__graph_ == __rhs.__graph_;
@@ -94,7 +86,7 @@ struct graph_node_ref
   //! \param __lhs The left-hand side `graph_node_ref` object to compare.
   //! \param __rhs The right-hand side `graph_node_ref` object to compare.
   //! \return `true` if both `graph_node_ref` objects are not equal, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const graph_node_ref& __lhs, const graph_node_ref& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -102,7 +94,7 @@ struct graph_node_ref
 
   //! \brief Test whether a `graph_node_ref` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(_CUDA_VSTD::nullptr_t, const graph_node_ref& __rhs) noexcept
   {
     return !static_cast<bool>(__rhs);
@@ -110,7 +102,7 @@ struct graph_node_ref
 
   //! \brief Test whether a `graph_node_ref` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const graph_node_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
   {
     return !static_cast<bool>(__lhs);
@@ -118,7 +110,7 @@ struct graph_node_ref
 
   //! \brief Test whether a `graph_node_ref` object is not null.
   //! \return `true` if `__rhs` is not null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(_CUDA_VSTD::nullptr_t, const graph_node_ref& __rhs) noexcept
   {
     return static_cast<bool>(__rhs);
@@ -126,7 +118,7 @@ struct graph_node_ref
 
   //! \brief Test whether a `graph_node_ref` object is not null.
   //! \return `true` if `__lhs` is not null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const graph_node_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
   {
     return static_cast<bool>(__lhs);
@@ -162,7 +154,7 @@ struct graph_node_ref
   //! \brief Swaps the contents of two graph_node_ref objects.
   //! \param __left The first graph_node_ref.
   //! \param __right The second graph_node_ref.
-  _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND void swap(graph_node_ref& __left, graph_node_ref& __right) noexcept
+  _CCCL_HOST_API _CCCL_CONSTEXPR_FRIEND void swap(graph_node_ref& __left, graph_node_ref& __right) noexcept
   {
     __left.swap(__right);
   }
@@ -258,7 +250,7 @@ private:
   friend struct graph_builder_ref;
 
   template <class... _Nodes>
-  friend _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
+  _CCCL_TRIVIAL_HOST_API _CCCL_CONSTEXPR_FRIEND auto depends_on(const _Nodes&...) noexcept
     -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
 
   _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node) noexcept
@@ -275,8 +267,6 @@ private:
   cudaGraph_t __graph_    = nullptr; ///< The CUDA graph containing the node.
 };
 } // namespace cuda::experimental
-
-#undef _CUDAX_CONSTEXPR_FRIEND
 
 #include <cuda/std/__cccl/epilogue.h>
 

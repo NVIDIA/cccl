@@ -609,7 +609,7 @@ public:
 
   // Comparison operator
   template <class _OtherIndexType, size_t... _OtherExtents>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
   operator==(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
   {
     if constexpr (rank() != sizeof...(_OtherExtents))
@@ -638,7 +638,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherIndexType, size_t... _OtherExtents>
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
   {
     return !(__lhs == __rhs);

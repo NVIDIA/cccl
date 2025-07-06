@@ -36,13 +36,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT to_chars_result
     return ec == errc{};
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator==(const to_chars_result& __lhs, const to_chars_result& __rhs) noexcept
   {
     return __lhs.ptr == __rhs.ptr && __lhs.ec == __rhs.ec;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
   operator!=(const to_chars_result& __lhs, const to_chars_result& __rhs) noexcept
   {
     return !(__lhs == __rhs);

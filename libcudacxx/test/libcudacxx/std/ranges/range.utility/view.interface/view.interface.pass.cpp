@@ -224,22 +224,22 @@ struct BoolConvertibleComparison : cuda::std::ranges::view_interface<BoolConvert
     __host__ __device__ constexpr explicit SentinelType(int* base)
         : base_(base)
     {}
-    __host__ __device__ friend constexpr ResultType
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND ResultType
     operator==(ForwardIter const& iter, SentinelType const& sent) noexcept
     {
       return {base(iter) == sent.base_};
     }
-    __host__ __device__ friend constexpr ResultType
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND ResultType
     operator==(SentinelType const& sent, ForwardIter const& iter) noexcept
     {
       return {base(iter) == sent.base_};
     }
-    __host__ __device__ friend constexpr ResultType
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND ResultType
     operator!=(ForwardIter const& iter, SentinelType const& sent) noexcept
     {
       return {base(iter) != sent.base_};
     }
-    __host__ __device__ friend constexpr ResultType
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND ResultType
     operator!=(SentinelType const& sent, ForwardIter const& iter) noexcept
     {
       return {base(iter) != sent.base_};

@@ -95,14 +95,14 @@ struct derived_plain : public cuda::forward_property<derived_plain<Upstream>, Up
 
 struct upstream_with_valueless_property
 {
-  friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
+  _CCCL_CONSTEXPR_FRIEND void get_property(const upstream_with_valueless_property&, prop) {}
 };
 static_assert(cuda::has_property<derived_plain<upstream_with_valueless_property>, prop>, "");
 static_assert(!cuda::has_property<derived_plain<upstream_with_valueless_property>, prop_with_value>, "");
 
 struct upstream_with_stateful_property
 {
-  friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value)
+  _CCCL_CONSTEXPR_FRIEND int get_property(const upstream_with_stateful_property&, prop_with_value)
   {
     return 42;
   }
@@ -112,8 +112,8 @@ static_assert(cuda::has_property<derived_plain<upstream_with_stateful_property>,
 
 struct upstream_with_both_properties
 {
-  friend constexpr void get_property(const upstream_with_both_properties&, prop) {}
-  friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value)
+  _CCCL_CONSTEXPR_FRIEND void get_property(const upstream_with_both_properties&, prop) {}
+  _CCCL_CONSTEXPR_FRIEND int get_property(const upstream_with_both_properties&, prop_with_value)
   {
     return 42;
   }
@@ -128,7 +128,7 @@ struct derived_override : public cuda::forward_property<derived_override, upstre
     return upstream_with_both_properties{};
   }
   // Get called directly so needs to be annotated
-  __host__ __device__ friend constexpr int get_property(const derived_override&, prop_with_value)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int get_property(const derived_override&, prop_with_value)
   {
     return 1337;
   }

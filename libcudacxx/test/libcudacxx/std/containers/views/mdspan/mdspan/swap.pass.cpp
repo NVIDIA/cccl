@@ -9,7 +9,7 @@
 
 // <mdspan>
 //
-// friend constexpr void swap(mdspan& x, mdspan& y) noexcept;
+// _CCCL_CONSTEXPR_FRIEND void swap(mdspan& x, mdspan& y) noexcept;
 //
 // Effects: Equivalent to:
 //   swap(x.ptr_, y.ptr_);

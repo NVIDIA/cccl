@@ -56,7 +56,7 @@ public:
 
   // Delegates `cuda::std::ranges::iter_move` for the underlying iterator. `noexcept(false)` will be used
   // to ensure that the unqualified-lookup overload is chosen.
-  __host__ __device__ friend constexpr decltype(auto) iter_move(unqualified_lookup_wrapper& i) noexcept(false)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND decltype(auto) iter_move(unqualified_lookup_wrapper& i) noexcept(false)
   {
     return cuda::std::ranges::iter_move(i.base_);
   }

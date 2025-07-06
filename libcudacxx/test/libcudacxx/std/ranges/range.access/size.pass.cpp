@@ -57,7 +57,7 @@ static_assert(!cuda::std::is_invocable_v<RangeSizeT, const SizeMember>, "");
 
 struct SizeFunction
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunction)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(SizeFunction)
   {
     return 42;
   }
@@ -70,7 +70,7 @@ struct SizeMemberAndFunction
   {
     return 42;
   }
-  __host__ __device__ friend constexpr size_t size(SizeMemberAndFunction)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(SizeMemberAndFunction)
   {
     return 0;
   }
@@ -136,7 +136,7 @@ struct MoveOnlySizeFunction
   MoveOnlySizeFunction(MoveOnlySizeFunction&&)      = default;
   MoveOnlySizeFunction(MoveOnlySizeFunction const&) = delete;
 
-  __host__ __device__ friend constexpr size_t size(MoveOnlySizeFunction)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(MoveOnlySizeFunction)
   {
     return 42;
   }
@@ -155,7 +155,7 @@ __host__ __device__ constexpr size_t size(EnumSizeFunction)
 
 struct SizeFunctionConst
 {
-  __host__ __device__ friend constexpr size_t size(const SizeFunctionConst)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(const SizeFunctionConst)
   {
     return 42;
   }
@@ -163,7 +163,7 @@ struct SizeFunctionConst
 
 struct SizeFunctionRef
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunctionRef&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(SizeFunctionRef&)
   {
     return 42;
   }
@@ -171,7 +171,7 @@ struct SizeFunctionRef
 
 struct SizeFunctionConstRef
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunctionConstRef const&)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t size(SizeFunctionConstRef const&)
   {
     return 42;
   }
@@ -179,7 +179,7 @@ struct SizeFunctionConstRef
 
 struct SizeFunctionSigned
 {
-  __host__ __device__ friend constexpr long size(SizeFunctionSigned)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND long size(SizeFunctionSigned)
   {
     return 42;
   }
@@ -343,7 +343,7 @@ static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunc
 // No begin end.
 struct HasMinusOperator
 {
-  __host__ __device__ friend constexpr size_t operator-(HasMinusOperator, HasMinusOperator)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND size_t operator-(HasMinusOperator, HasMinusOperator)
   {
     return 2;
   }
@@ -360,21 +360,23 @@ struct HasMinusBeginEnd
     __host__ __device__ friend bool operator!=(sentinel, forward_iterator<int*>);
     __host__ __device__ friend bool operator!=(forward_iterator<int*>, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const forward_iterator<int*>)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
+    operator-(const sentinel, const forward_iterator<int*>)
     {
       return 2;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const forward_iterator<int*>, const sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
+    operator-(const forward_iterator<int*>, const sentinel)
     {
       return 2;
     }
   };
 
-  __host__ __device__ friend constexpr forward_iterator<int*> begin(HasMinusBeginEnd)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND forward_iterator<int*> begin(HasMinusBeginEnd)
   {
     return {};
   }
-  __host__ __device__ friend constexpr sentinel end(HasMinusBeginEnd)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND sentinel end(HasMinusBeginEnd)
   {
     return {};
   }
@@ -393,21 +395,23 @@ struct InvalidMinusBeginEnd
     __host__ __device__ friend bool operator!=(sentinel, other_forward_iterator);
     __host__ __device__ friend bool operator!=(other_forward_iterator, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const other_forward_iterator)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
+    operator-(const sentinel, const other_forward_iterator)
     {
       return 2;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const other_forward_iterator, const sentinel)
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
+    operator-(const other_forward_iterator, const sentinel)
     {
       return 2;
     }
   };
 
-  __host__ __device__ friend constexpr other_forward_iterator begin(InvalidMinusBeginEnd)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND other_forward_iterator begin(InvalidMinusBeginEnd)
   {
     return {};
   }
-  __host__ __device__ friend constexpr sentinel end(InvalidMinusBeginEnd)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND sentinel end(InvalidMinusBeginEnd)
   {
     return {};
   }
@@ -427,12 +431,12 @@ struct RandomAccessRange
     __host__ __device__ friend bool operator!=(sentinel, random_access_iterator<int*>);
     __host__ __device__ friend bool operator!=(random_access_iterator<int*>, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
     operator-(const sentinel, const random_access_iterator<int*>)
     {
       return 2;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
+    __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::ptrdiff_t
     operator-(const random_access_iterator<int*>, const sentinel)
     {
       return 2;

@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// friend constexpr iter_difference_t<W> operator-(const iterator& x, const sentinel& y)
+// _CCCL_CONSTEXPR_FRIEND iter_difference_t<W> operator-(const iterator& x, const sentinel& y)
 //   requires sized_sentinel_for<Bound, W>;
-// friend constexpr iter_difference_t<W> operator-(const sentinel& x, const iterator& y)
+// _CCCL_CONSTEXPR_FRIEND iter_difference_t<W> operator-(const sentinel& x, const iterator& y)
 //   requires sized_sentinel_for<Bound, W>;
 
 #include <cuda/std/cassert>

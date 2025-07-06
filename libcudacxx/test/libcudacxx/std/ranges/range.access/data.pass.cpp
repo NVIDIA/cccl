@@ -235,7 +235,7 @@ struct BeginFriendContiguousIterator
 {
   int buff[8];
 
-  __host__ __device__ friend constexpr ContiguousIter begin(const BeginFriendContiguousIterator& iter)
+  __host__ __device__ _CCCL_CONSTEXPR_FRIEND ContiguousIter begin(const BeginFriendContiguousIterator& iter)
   {
     return ContiguousIter(iter.buff);
   }
