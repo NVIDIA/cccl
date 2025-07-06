@@ -66,13 +66,13 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
 #  if _CCCL_HAS_LONG_DOUBLE()
   static_assert(test<long double>(), "");
 #  endif // _CCCL_HAS_LONG_DOUBLE()
-#endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
 #endif // _LIBCUDACXX_HAS_NVFP16()

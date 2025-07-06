@@ -119,7 +119,7 @@ __host__ __device__ void test_expm1(T val)
 }
 
 template <typename T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_frexp(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_frexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::frexp(T{}, nullptr)), ret>, "");
@@ -187,7 +187,7 @@ __host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_frexp(T val)
 }
 
 template <typename T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_ldexp(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_ldexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ldexp(T{}, int{})), ret>, "");
@@ -279,7 +279,7 @@ __host__ __device__ void test_scalbln(T val)
 }
 
 template <typename T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_scalbn(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_scalbn(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::scalbn(T{}, int{})), ret>, "");
@@ -427,14 +427,14 @@ __global__ void test_global_kernel(float* val)
 }
 
 template <class T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_constexpr(T value)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_constexpr(T value)
 {
   test_frexp<T>(value);
   test_scalbn<T>(value);
   test_ldexp<T>(value);
 }
 
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST bool test_constexpr(float value)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float value)
 {
   test_constexpr<float>(value);
   test_constexpr<double>(value);
@@ -458,8 +458,8 @@ int main(int, char**)
   volatile float val = 1.0f;
   test(val);
 
-#if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test_constexpr(1.0f));
-#endif // _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return 0;
 }

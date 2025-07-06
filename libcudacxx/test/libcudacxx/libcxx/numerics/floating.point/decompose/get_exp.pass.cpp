@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val, int expected)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val, int expected)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::__fp_get_exp(cuda::std::declval<T>())), int>);
   static_assert(noexcept(cuda::std::__fp_get_exp(cuda::std::declval<T>())));
@@ -25,7 +25,7 @@ __host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val, i
 }
 
 template <class T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
 
@@ -87,7 +87,7 @@ __host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
 }
 
 template <class T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test(T val = T{1.0f})
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test(T val = T{1.0f})
 {
   test_fp_get_exp<T>(val);
 }
@@ -129,7 +129,7 @@ __host__ __device__ bool test(float val)
   return true;
 }
 
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST bool test_constexpr(float val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float val)
 {
   test<float>(val);
   test<double>(val);
@@ -145,9 +145,9 @@ int main(int, char**)
   volatile float value = 1.0f;
   test(value);
 
-#if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test_constexpr(1.0f));
-#endif // _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
 
   return 0;
 }

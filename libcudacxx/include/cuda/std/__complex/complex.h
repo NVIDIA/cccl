@@ -213,13 +213,13 @@ template <class _Tp>
 inline constexpr bool __is_complex_v<complex<_Tp>> = true;
 
 template <class _Tp, class _Up>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs * complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
 }
 template <class _Tp, class _Up>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -274,7 +274,7 @@ template <class _Tp>
   return __t;
 }
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST complex<_Tp>
 operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   _Tp __a = __z.real();
@@ -404,7 +404,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST complex<_Tp>
 operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   _Tp __a = __z.real();
