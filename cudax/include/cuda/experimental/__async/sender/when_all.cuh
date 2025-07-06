@@ -242,13 +242,13 @@ extern __completion_metadata<_CUDA_VSTD::true_type, // There will be no value co
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
-_CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(expr_has_no_effect)
 _CCCL_DIAG_SUPPRESS_NVHPC(expr_has_no_effect)
 
 template <size_t... _Offsets>
 inline constexpr size_t __last_offset = (0, ..., _Offsets);
 
-_CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 template <size_t _Count, size_t... _Offsets>

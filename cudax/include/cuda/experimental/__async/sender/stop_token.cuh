@@ -38,7 +38,7 @@
 // warning #20012-D: __device__ annotation is ignored on a
 // function("inplace_stop_source") that is explicitly defaulted on its first
 // declaration
-_CCCL_NV_DIAG_SUPPRESS(20012)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(20012)
 
 namespace cuda::experimental::__async
 {
@@ -481,7 +481,7 @@ template <class _Token, class _Callback>
 using stop_callback_for_t = typename _Token::template callback_type<_Callback>;
 } // namespace cuda::experimental::__async
 
-_CCCL_NV_DIAG_DEFAULT(20012)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
 

@@ -1617,6 +1617,10 @@ _CCCL_INLINE_VAR constexpr bool IsProxy = false;
 template <class T>
 _CCCL_INLINE_VAR constexpr bool IsProxy<Proxy<T>> = true;
 
+#if TEST_COMPILER(MSVC)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
+#endif // TEST_COMPILER(MSVC)
+
 template <class T>
 struct Proxy
 {
@@ -1668,10 +1672,6 @@ struct Proxy
     data = cuda::std::forward<Other>(other).getData();
     return *this;
   }
-
-#if TEST_COMPILER(MSVC)
-  TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER(MSVC)
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _CCCL_TEMPLATE(class Other)
@@ -1733,6 +1733,10 @@ struct Proxy
   }
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
+
+#if TEST_COMPILER(MSVC)
+_CCCL_END_NV_DIAG_SUPPRESS()
+#endif // TEST_COMPILER(MSVC)
 
 namespace cuda
 {

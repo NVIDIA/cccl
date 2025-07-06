@@ -40,7 +40,7 @@
 
 _CCCL_PUSH_MACROS
 
-_CCCL_NV_DIAG_SUPPRESS(1215)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1215)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -210,12 +210,9 @@ struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
 {
   using type _CCCL_NODEBUG_ALIAS = _Alloc<_Up, _Args...>;
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Alloc, class _Tp>
 using __allocator_traits_rebind_t = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // __has_allocate_hint
 template <class _Alloc, class _SizeType, class _ConstVoidPtr, class = void>
@@ -304,8 +301,6 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __to_raw_pointer(const _Pointer& __p, _None...) n
 }
 #endif // _CCCL_STD_VER >= 2020
 
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 // __is_default_allocator
 template <class _Tp>
 struct __is_default_allocator : false_type
@@ -379,9 +374,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return __a.allocate(__n, __hint);
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
   template <class _Ap                                                                         = _Alloc,
             class                                                                             = void,
@@ -401,9 +394,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Tp, class... _Args, enable_if_t<__has_construct<allocator_type, _Tp*, _Args...>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     __a.construct(__p, _CUDA_VSTD::forward<_Args>(__args)...);
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
   template <class _Tp,
             class... _Args,
@@ -421,9 +412,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Tp, enable_if_t<__has_destroy<allocator_type, _Tp*>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type& __a, _Tp* __p) noexcept
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     __a.destroy(__p);
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
   template <class _Tp, class = void, enable_if_t<!__has_destroy<allocator_type, _Tp*>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type&, _Tp* __p) noexcept
@@ -435,13 +424,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 #endif
   }
 
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <class _Ap = _Alloc, enable_if_t<__has_max_size<const _Ap>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type& __a) noexcept
   {
     return __a.max_size();
   }
-  _CCCL_SUPPRESS_DEPRECATED_POP
   template <class _Ap = _Alloc, class = void, enable_if_t<!__has_max_size<const _Ap>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type&) noexcept
   {
@@ -560,6 +547,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Traits, class _Tp>
 using __rebind_alloc _CCCL_NODEBUG_ALIAS = typename _Traits::template rebind_alloc<_Tp>;
@@ -574,7 +562,7 @@ struct __rebind_alloc_helper
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_NV_DIAG_DEFAULT(1215)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_POP_MACROS
 
