@@ -45,12 +45,12 @@ struct segment
   segment_offset_t begin = cuda::std::numeric_limits<segment_offset_t>::min();
   segment_offset_t end   = cuda::std::numeric_limits<segment_offset_t>::max();
 
-  // Needed for final comparison with reference
-  friend bool operator==(segment left, segment right)
+  __host__ __device__ friend bool operator==(segment left, segment right)
   {
     return left.begin == right.begin && left.end == right.end;
   }
 
+  // Needed for final comparison with reference
   friend std::ostream& operator<<(std::ostream& os, const segment& seg)
   {
     return os << "[ " << seg.begin << ", " << seg.end << " )";
@@ -86,7 +86,8 @@ struct merge_segments_op
   {}
   __host__ __device__ segment operator()(segment left, segment right)
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (if (left.end != right.begin) { atomicAdd(error_count_, error_count_t{1}); }));
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (if (left.end != right.begin || left == right) { atomicAdd(error_count_, error_count_t{1}); }));
     return {left.begin, right.end};
   }
   __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right)
