@@ -20,22 +20,23 @@ def sum_reduction_example():
 
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
-    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_input = cp.ones(100_000_000, dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    # Instantiate reduction
-    reduce_into = parallel.reduce_into(d_output, d_output, add_op, h_init)
-
     # Determine temporary device storage requirements
-    temp_storage_size = reduce_into(None, d_input, d_output, len(d_input), h_init)
+    temp_storage_size = parallel.reduce_into(
+        None, d_input, d_output, len(d_input), add_op, h_init
+    )
 
     # Allocate temporary storage
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
     # Run reduction
-    reduce_into(d_temp_storage, d_input, d_output, len(d_input), h_init)
+    parallel.reduce_into(
+        d_temp_storage, d_input, d_output, len(d_input), add_op, h_init
+    )
 
-    expected_output = 15  # 1+2+3+4+5
+    expected_output = 100_000_000
     assert (d_output == expected_output).all()
     print(f"Sum: {d_output[0]}")
     return d_output[0]
@@ -43,5 +44,7 @@ def sum_reduction_example():
 
 if __name__ == "__main__":
     print("Running basic reduction examples...")
-    sum_reduction_example()
+
+    for i in range(10):
+        sum_reduction_example()
     print("All examples completed successfully!")

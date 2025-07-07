@@ -30,11 +30,14 @@ def pixel_reduction_example():
 
     h_init = Pixel(0, 0, 0)
 
-    reduce_into = parallel.reduce_into(d_rgb, d_out, max_g_value, h_init)
-    temp_storage_bytes = reduce_into(None, d_rgb, d_out, d_rgb.size, h_init)
+    temp_storage_bytes = parallel.reduce_into(
+        None, d_rgb, d_out, d_rgb.size, max_g_value, h_init
+    )
 
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = reduce_into(d_temp_storage, d_rgb, d_out, d_rgb.size, h_init)
+    _ = parallel.reduce_into(
+        d_temp_storage, d_rgb, d_out, d_rgb.size, max_g_value, h_init
+    )
 
     # Verify result
     h_rgb = d_rgb.get()
@@ -77,15 +80,12 @@ def minmax_reduction_example():
     # minimum and maximum operators
     h_init = MinMax(np.inf, -np.inf)
 
-    # get algorithm object
-    cccl_sum = parallel.reduce_into(tr_it, d_out, minmax_op, h_init)
-
     # allocated needed temporary
-    tmp_sz = cccl_sum(None, tr_it, d_out, nelems, h_init)
+    tmp_sz = parallel.reduce_into(None, tr_it, d_out, nelems, minmax_op, h_init)
     tmp_storage = cp.empty(tmp_sz, dtype=cp.uint8)
 
     # invoke the reduction algorithm
-    cccl_sum(tmp_storage, tr_it, d_out, nelems, h_init)
+    parallel.reduce_into(tmp_storage, tr_it, d_out, nelems, minmax_op, h_init)
 
     # display values computed on the device
     actual = d_out.get()

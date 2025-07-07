@@ -14,12 +14,12 @@ def reduce_pointer(input_array, build_only):
     def my_add(a, b):
         return a + b
 
-    alg = algorithms.reduce_into(input_array, res, my_add, h_init)
-
     if not build_only:
-        temp_bytes = alg(None, input_array, res, size, h_init)
+        temp_bytes = algorithms.reduce_into(
+            None, input_array, res, size, my_add, h_init
+        )
         scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, input_array, res, size, h_init)
+        algorithms.reduce_into(scratch, input_array, res, size, my_add, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -32,12 +32,12 @@ def reduce_struct(input_array, build_only):
     def my_add(a, b):
         return MyStruct(a.x + b.x, a.y + b.y)
 
-    alg = algorithms.reduce_into(input_array, res, my_add, h_init)
-
     if not build_only:
-        temp_bytes = alg(None, input_array, res, size, h_init)
+        temp_bytes = algorithms.reduce_into(
+            None, input_array, res, size, my_add, h_init
+        )
         scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, input_array, res, size, h_init)
+        algorithms.reduce_into(scratch, input_array, res, size, my_add, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -50,12 +50,10 @@ def reduce_iterator(inp, size, build_only):
     def my_add(a, b):
         return a + b
 
-    alg = algorithms.reduce_into(inp, res, my_add, h_init)
-
     if not build_only:
-        temp_bytes = alg(None, inp, res, size, h_init)
+        temp_bytes = algorithms.reduce_into(None, inp, res, size, my_add, h_init)
         scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, inp, res, size, h_init)
+        algorithms.reduce_into(scratch, inp, res, size, my_add, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 

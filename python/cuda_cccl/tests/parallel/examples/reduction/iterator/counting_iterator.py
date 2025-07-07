@@ -29,12 +29,15 @@ def counting_iterator_example():
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
     # Instantiate reduction, determine storage requirements, and allocate storage
-    reduce_into = algorithms.reduce_into(first_it, d_output, add_op, h_init)
-    temp_storage_size = reduce_into(None, first_it, d_output, num_items, h_init)
+    temp_storage_size = algorithms.reduce_into(
+        None, first_it, d_output, num_items, add_op, h_init
+    )
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
     # Run reduction
-    reduce_into(d_temp_storage, first_it, d_output, num_items, h_init)
+    algorithms.reduce_into(
+        d_temp_storage, first_it, d_output, num_items, add_op, h_init
+    )
 
     expected_output = functools.reduce(
         lambda a, b: a + b, range(first_item, first_item + num_items)

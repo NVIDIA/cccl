@@ -52,13 +52,13 @@ def test_device_reduce(dtype, num_items):
     init_value = 42
     h_init = np.array([init_value], dtype=dtype)
     d_output = numba.cuda.device_array(1, dtype=dtype)
-    reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
-
     h_input = random_int(num_items, dtype)
     d_input = numba.cuda.to_device(h_input)
-    temp_storage_size = reduce_into(None, d_input, d_output, d_input.size, h_init)
+    temp_storage_size = algorithms.reduce_into(
+        None, d_input, d_output, num_items, op, h_init
+    )
     d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
-    reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
+    algorithms.reduce_into(d_temp_storage, d_input, d_output, num_items, op, h_init)
     h_output = d_output.copy_to_host()
     assert h_output[0] == sum(h_input) + init_value
 
@@ -69,16 +69,17 @@ def test_complex_device_reduce():
 
     h_init = np.array([40.0 + 2.0j], dtype=complex)
     d_output = numba.cuda.device_array(1, dtype=complex)
-    reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
     for num_items in [42, 420000]:
         real_imag = np.random.random((2, num_items))
         h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
         assert d_input.size == num_items
-        temp_storage_bytes = reduce_into(None, d_input, d_output, num_items, h_init)
+        temp_storage_bytes = algorithms.reduce_into(
+            None, d_input, d_output, num_items, op, h_init
+        )
         d_temp_storage = numba.cuda.device_array(temp_storage_bytes, np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, num_items, h_init)
+        algorithms.reduce_into(d_temp_storage, d_input, d_output, num_items, op, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
@@ -105,16 +106,14 @@ def _test_device_sum_with_iterator(
 
     h_init = np.array([start_sum_with], dtype_out)
 
-    reduce_into = algorithms.reduce_into(
-        d_in=d_input, d_out=d_output, op=add_op, h_init=h_init
-    )
-
-    temp_storage_size = reduce_into(
-        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), h_init=h_init
+    temp_storage_size = algorithms.reduce_into(
+        None, d_input, d_output, len(l_varr), add_op, h_init
     )
     d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
 
-    reduce_into(d_temp_storage, d_input, d_output, len(l_varr), h_init)
+    algorithms.reduce_into(
+        d_temp_storage, d_input, d_output, len(l_varr), add_op, h_init
+    )
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
@@ -275,17 +274,19 @@ def test_device_sum_map_mul2_cp_array_it(
 
 
 def test_reducer_caching():
+    from cuda.cccl.parallel.experimental.algorithms._reduce import _make_reduce
+
     def sum_op(x, y):
         return x + y
 
     # inputs are device arrays
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -294,13 +295,13 @@ def test_reducer_caching():
     assert reducer_1 is reducer_2
 
     # inputs are device arrays of different dtype:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         cp.zeros(3, dtype="int32"),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -309,13 +310,13 @@ def test_reducer_caching():
     assert reducer_1 is not reducer_2
 
     # outputs are of different dtype:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int32"),
         sum_op,
@@ -325,13 +326,13 @@ def test_reducer_caching():
 
     # inputs are of same dtype but different size
     # (should still use cached reducer):
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         cp.zeros(5, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -341,13 +342,13 @@ def test_reducer_caching():
 
     # inputs are counting iterators of the
     # same value type:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -356,13 +357,13 @@ def test_reducer_caching():
     assert reducer_1 is reducer_2
 
     # inputs are counting iterators of different value type:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.CountingIterator(np.int64(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -380,13 +381,13 @@ def test_reducer_caching():
         return x
 
     # inputs are TransformIterators
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -396,13 +397,13 @@ def test_reducer_caching():
 
     # inputs are TransformIterators with different
     # op:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op2),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -412,13 +413,13 @@ def test_reducer_caching():
 
     # inputs are TransformIterators with same op
     # but different name:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op3),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -427,13 +428,13 @@ def test_reducer_caching():
 
     # inputs are CountingIterators of same kind
     # but different state:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.CountingIterator(np.int32(1)),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -446,13 +447,13 @@ def test_reducer_caching():
     # but different state:
     ary1 = cp.asarray([0, 1, 2], dtype="int64")
     ary2 = cp.asarray([0, 1], dtype="int64")
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.TransformIterator(ary1, op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.TransformIterator(ary2, op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -462,13 +463,13 @@ def test_reducer_caching():
 
     # inputs are TransformIterators of same kind
     # but different state:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(1)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -477,13 +478,13 @@ def test_reducer_caching():
     assert reducer_1 is reducer_2
 
     # inputs are TransformIterators with different kind:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = _make_reduce(
         iterators.TransformIterator(iterators.CountingIterator(np.int64(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -512,14 +513,11 @@ def test_reduce_2d_array(array_2d):
     d_out = cp.empty(1, dtype=array_2d.dtype)
     h_init = np.asarray([0], dtype=array_2d.dtype)
     d_in = array_2d
-    reduce_into = algorithms.reduce_into(
-        d_in=d_in, d_out=d_out, op=binary_op, h_init=h_init
-    )
-    temp_storage_size = reduce_into(
-        None, d_in=d_in, d_out=d_out, num_items=d_in.size, h_init=h_init
+    temp_storage_size = algorithms.reduce_into(
+        None, d_in, d_out, d_in.size, binary_op, h_init
     )
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init)
+    algorithms.reduce_into(d_temp_storage, d_in, d_out, d_in.size, binary_op, h_init)
     np.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
 
@@ -533,11 +531,11 @@ def test_reduce_non_contiguous():
 
     d_in = cp.zeros((size, 2))[:, 0]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
-        _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+        _ = algorithms.reduce_into(None, d_in, d_out, d_in.size, binary_op, h_init)
 
     d_in = cp.zeros(size)[::2]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
-        _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+        _ = algorithms.reduce_into(None, d_in, d_out, d_in.size, binary_op, h_init)
 
 
 def test_reduce_with_stream(cuda_stream):
@@ -552,21 +550,15 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    reduce_into = algorithms.reduce_into(
-        d_in=d_in, d_out=d_out, op=add_op, h_init=h_init
-    )
-    temp_storage_size = reduce_into(
-        None,
-        d_in=d_in,
-        d_out=d_out,
-        num_items=d_in.size,
-        h_init=h_init,
-        stream=cuda_stream,
+    temp_storage_size = algorithms.reduce_into(
+        None, d_in, d_out, d_in.size, add_op, h_init, stream=cuda_stream
     )
     with cp_stream:
         d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
-    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=cuda_stream)
+    algorithms.reduce_into(
+        d_temp_storage, d_in, d_out, d_in.size, add_op, h_init, stream=cuda_stream
+    )
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -599,38 +591,22 @@ def test_reduce_invalid_stream():
     d_out = cp.empty(1)
     h_init = np.empty(1)
     d_in = cp.empty(1)
-    reduce_into = algorithms.reduce_into(d_in, d_out, add_op, h_init)
 
     with pytest.raises(
         TypeError, match="does not implement the '__cuda_stream__' protocol"
     ):
-        _ = reduce_into(
-            None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=d_in.size,
-            h_init=h_init,
-            stream=Stream1(),
+        _ = algorithms.reduce_into(
+            None, d_in, d_out, d_in.size, add_op, h_init, stream=Stream1()
         )
 
     with pytest.raises(
         TypeError, match="could not obtain __cuda_stream__ protocol version and handle"
     ):
-        _ = reduce_into(
-            None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=d_in.size,
-            h_init=h_init,
-            stream=Stream2(),
+        _ = algorithms.reduce_into(
+            None, d_in, d_out, d_in.size, add_op, h_init, stream=Stream2()
         )
 
     with pytest.raises(TypeError, match="invalid stream handle"):
-        _ = reduce_into(
-            None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=d_in.size,
-            h_init=h_init,
-            stream=Stream3(),
+        _ = algorithms.reduce_into(
+            None, d_in, d_out, d_in.size, add_op, h_init, stream=Stream3()
         )
