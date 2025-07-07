@@ -25,6 +25,7 @@
 #include <cuda/std/__bit/rotate.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
 #include <cuda/experimental/__cuco/extent.cuh>
