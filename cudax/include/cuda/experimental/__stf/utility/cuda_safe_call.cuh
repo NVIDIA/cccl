@@ -30,6 +30,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
@@ -323,11 +324,7 @@ void cuda_try(Status status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD:
 {
   if (status)
   {
-#if _CCCL_HAS_EXCEPTIONS()
-    throw cuda_exception(status, loc);
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
+    _CCCL_THROW(cuda_exception(status, loc));
   }
 }
 
@@ -426,7 +423,7 @@ UNITTEST("cuda_try2")
       ::std::remove_pointer_t<reserved::first_param<f>> result;                  \
       if (auto status = f(&result, ::std::forward<decltype(a)>(a)...))           \
       {                                                                          \
-        throw ::cuda::experimental::stf::cuda_exception(status);                 \
+        _CCCL_THROW(::cuda::experimental::stf::cuda_exception(status));          \
       }                                                                          \
       return result;                                                             \
     }                                                                            \

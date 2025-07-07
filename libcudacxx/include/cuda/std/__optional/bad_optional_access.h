@@ -29,7 +29,7 @@
 #  endif // !__cpp_lib_optional
 #endif // _CCCL_HAS_EXCEPTIONS()
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <nv/target>
 
@@ -60,12 +60,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[noreturn]] _CCCL_API inline void __throw_bad_optional_access()
 {
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_HAS_EXCEPTIONS()
+  _CCCL_THROW(bad_optional_access{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

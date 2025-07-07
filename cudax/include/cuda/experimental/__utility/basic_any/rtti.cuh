@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
@@ -61,11 +62,7 @@ struct bad_any_cast : ::std::bad_cast
 
 [[noreturn]] _CCCL_HOST_API inline void __throw_bad_any_cast()
 {
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
+  _CCCL_THROW(bad_any_cast());
 }
 
 struct __rtti_base : __immovable
