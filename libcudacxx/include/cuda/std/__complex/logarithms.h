@@ -312,7 +312,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log10(const complex<_Tp>& __x)
 {
   // return _CUDA_VSTD::log(__x) / _CUDA_VSTD::log(_Tp(10));
-  return _CUDA_VSTD::log(__x) *  _Tp(0.434294481903251827651128918916605);
+  return _CUDA_VSTD::log(__x) * _Tp(0.434294481903251827651128918916605);
 }
 
 #if _LIBCUDACXX_HAS_NVBF16()
