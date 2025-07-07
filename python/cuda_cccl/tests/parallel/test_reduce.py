@@ -610,3 +610,19 @@ def test_reduce_invalid_stream():
         _ = algorithms.reduce_into(
             None, d_in, d_out, d_in.size, add_op, h_init, stream=Stream3()
         )
+
+
+def test_reduce_class_interface():
+    # test that construct a Reduce object by hand works
+    def add_op(x, y):
+        return x + y
+
+    h_init = np.asarray([0], dtype=np.int32)
+    d_in = cp.asarray([1, 2, 3, 4, 5], dtype=np.int32)
+    d_out = cp.empty(1, dtype=np.int32)
+
+    reduce = algorithms.Reduce(d_in, d_out, add_op, h_init)
+    temp_storage_size = reduce(None, d_in, d_out, d_in.size, h_init)
+    temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+    reduce(temp_storage, d_in, d_out, d_in.size, h_init)
+    cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
