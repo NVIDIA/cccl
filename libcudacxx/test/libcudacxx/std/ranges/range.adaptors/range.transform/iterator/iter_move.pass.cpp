@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND decltype(auto) iter_move(const iterator& i)
+// friend constexpr decltype(auto) iter_move(const iterator& i)
 //    noexcept(noexcept(invoke(i.parent_->fun_, *i.current_)))
 
 #include <cuda/std/ranges>

@@ -117,7 +117,7 @@ public:
     return 'b';
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const A& x, const A& y)
+  __host__ __device__ constexpr friend bool operator==(const A& x, const A& y)
   {
     return x.a_ == y.a_;
   }

@@ -63,8 +63,7 @@ struct NonTrivialMove
     return *this;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator==(const NonTrivialMove& lhs, const NonTrivialMove& rhs) noexcept
+  __host__ __device__ constexpr friend bool operator==(const NonTrivialMove& lhs, const NonTrivialMove& rhs) noexcept
   {
     // NOTE: This uses implicit knowledge that the right hand side has been moved from
     return lhs.data == rhs.data && !lhs.move_assigned_from && rhs.move_assigned_from;

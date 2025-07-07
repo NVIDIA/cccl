@@ -283,7 +283,7 @@ namespace
 template <size_t _Ny>
 struct __slot
 {
-  _CCCL_CONSTEXPR_FRIEND auto __slot_allocated(__slot<_Ny>);
+  friend constexpr auto __slot_allocated(__slot<_Ny>);
 };
 
 template <class _Type, size_t _Ny>
@@ -291,7 +291,7 @@ struct __allocate_slot
 {
   static constexpr size_t __value = _Ny;
 
-  _CCCL_CONSTEXPR_FRIEND auto __slot_allocated(__slot<_Ny>)
+  friend constexpr auto __slot_allocated(__slot<_Ny>)
   {
     return static_cast<_Type (*)()>(nullptr);
   }

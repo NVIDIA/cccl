@@ -26,78 +26,78 @@ struct SomeInt
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const SomeInt&) const = default;
 #else
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr bool operator==(const SomeInt& lhs, const SomeInt& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const SomeInt& lhs, const SomeInt& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr bool operator<(const SomeInt& lhs, const SomeInt& rhs)
   {
     return lhs.value_ < rhs.value_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<=(const SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr bool operator<=(const SomeInt& lhs, const SomeInt& rhs)
   {
     return lhs.value_ <= rhs.value_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>(const SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr bool operator>(const SomeInt& lhs, const SomeInt& rhs)
   {
     return lhs.value_ > rhs.value_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr bool operator>=(const SomeInt& lhs, const SomeInt& rhs)
   {
     return lhs.value_ >= rhs.value_;
   }
 #endif
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt& operator+=(SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr SomeInt& operator+=(SomeInt& lhs, const SomeInt& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt& operator-=(SomeInt& lhs, const SomeInt& rhs)
+  __host__ __device__ friend constexpr SomeInt& operator-=(SomeInt& lhs, const SomeInt& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt& operator+=(SomeInt& lhs, difference_type rhs)
+  __host__ __device__ friend constexpr SomeInt& operator+=(SomeInt& lhs, difference_type rhs)
   {
     lhs.value_ += rhs;
     return lhs;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt& operator-=(SomeInt& lhs, difference_type rhs)
+  __host__ __device__ friend constexpr SomeInt& operator-=(SomeInt& lhs, difference_type rhs)
   {
     lhs.value_ -= rhs;
     return lhs;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt operator+(SomeInt lhs, SomeInt rhs)
+  __host__ __device__ friend constexpr SomeInt operator+(SomeInt lhs, SomeInt rhs)
   {
     return SomeInt{lhs.value_ + rhs.value_};
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int operator-(SomeInt lhs, SomeInt rhs)
+  __host__ __device__ friend constexpr int operator-(SomeInt lhs, SomeInt rhs)
   {
     return lhs.value_ - rhs.value_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt operator+(SomeInt lhs, difference_type rhs)
+  __host__ __device__ friend constexpr SomeInt operator+(SomeInt lhs, difference_type rhs)
   {
     return SomeInt{lhs.value_ + rhs};
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int operator-(SomeInt lhs, difference_type rhs)
+  __host__ __device__ friend constexpr int operator-(SomeInt lhs, difference_type rhs)
   {
     return lhs.value_ - rhs;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND SomeInt operator+(difference_type lhs, SomeInt rhs)
+  __host__ __device__ friend constexpr SomeInt operator+(difference_type lhs, SomeInt rhs)
   {
     return SomeInt{lhs + rhs.value_};
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int operator-(difference_type lhs, SomeInt rhs)
+  __host__ __device__ friend constexpr int operator-(difference_type lhs, SomeInt rhs)
   {
     return lhs - rhs.value_;
   }
@@ -138,34 +138,32 @@ struct NotIncrementable
 #if TEST_STD_VER >= 2020
   bool operator==(const NotIncrementable&) const = default;
 #else
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const NotIncrementable& lhs, const NotIncrementable& rhs)
+  __host__ __device__ friend constexpr bool operator==(const NotIncrementable& lhs, const NotIncrementable& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const NotIncrementable& lhs, const NotIncrementable& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const NotIncrementable& lhs, const NotIncrementable& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 #endif // TEST_STD_VER < 2020
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND NotIncrementable&
-  operator+=(NotIncrementable& lhs, const NotIncrementable& rhs)
+  __host__ __device__ friend constexpr NotIncrementable& operator+=(NotIncrementable& lhs, const NotIncrementable& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND NotIncrementable&
-  operator-=(NotIncrementable& lhs, const NotIncrementable& rhs)
+  __host__ __device__ friend constexpr NotIncrementable& operator-=(NotIncrementable& lhs, const NotIncrementable& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND NotIncrementable operator+(NotIncrementable lhs, NotIncrementable rhs)
+  __host__ __device__ friend constexpr NotIncrementable operator+(NotIncrementable lhs, NotIncrementable rhs)
   {
     return NotIncrementable{lhs.value_ + rhs.value_};
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int operator-(NotIncrementable lhs, NotIncrementable rhs)
+  __host__ __device__ friend constexpr int operator-(NotIncrementable lhs, NotIncrementable rhs)
   {
     return lhs.value_ - rhs.value_;
   }
@@ -210,32 +208,32 @@ struct Int42
 #if TEST_STD_VER >= 2020
   bool operator==(const Int42&) const = default;
 #else
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Int42& lhs, const Int42& rhs)
+  __host__ __device__ friend constexpr bool operator==(const Int42& lhs, const Int42& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Int42& lhs, const Int42& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const Int42& lhs, const Int42& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 #endif // TEST_STD_VER < 2020
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Int42& operator+=(Int42& lhs, const Int42& rhs)
+  __host__ __device__ friend constexpr Int42& operator+=(Int42& lhs, const Int42& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Int42& operator-=(Int42& lhs, const Int42& rhs)
+  __host__ __device__ friend constexpr Int42& operator-=(Int42& lhs, const Int42& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Int42 operator+(Int42 lhs, Int42 rhs)
+  __host__ __device__ friend constexpr Int42 operator+(Int42 lhs, Int42 rhs)
   {
     return Int42{lhs.value_ + rhs.value_};
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int operator-(Int42 lhs, Int42 rhs)
+  __host__ __device__ friend constexpr int operator-(Int42 lhs, Int42 rhs)
   {
     return lhs.value_ - rhs.value_;
   }

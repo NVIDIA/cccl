@@ -11,7 +11,7 @@
 
 // Older Clangs do not support the C++20 feature to constrain destructors
 
-// _CCCL_CONSTEXPR_FRIEND void swap(expected& x, expected& y) noexcept(noexcept(swap(x,y)));
+// friend constexpr void swap(expected& x, expected& y) noexcept(noexcept(swap(x,y)));
 
 #include <cuda/std/cassert>
 #include <cuda/std/expected>

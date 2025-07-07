@@ -9,10 +9,10 @@
 //===----------------------------------------------------------------------===//
 
 // constexpr discard_iterator operator-(iter_difference_t<I> n) const;
-// _CCCL_CONSTEXPR_FRIEND iter_difference_t operator-(const discard_iterator& x, const discard_iterator& y)
+// friend constexpr iter_difference_t operator-(const discard_iterator& x, const discard_iterator& y)
 // constexpr discard_iterator& operator-=(iter_difference_t<I> n);
-// _CCCL_CONSTEXPR_FRIEND iter_difference_t<I> operator-(const discard_iterator& x, default_sentinel_t);
-// _CCCL_CONSTEXPR_FRIEND iter_difference_t<I> operator-(default_sentinel_t, const discard_iterator& y);
+// friend constexpr iter_difference_t<I> operator-(const discard_iterator& x, default_sentinel_t);
+// friend constexpr iter_difference_t<I> operator-(default_sentinel_t, const discard_iterator& y);
 
 #include <cuda/iterator>
 

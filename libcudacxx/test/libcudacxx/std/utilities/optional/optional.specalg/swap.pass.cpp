@@ -60,7 +60,7 @@ public:
     ++dtor_called();
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Y& x, const Y& y)
+  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
   }
@@ -99,7 +99,7 @@ public:
     TEST_THROW(7);
   }
 
-  _CCCL_CONSTEXPR_FRIEND bool operator==(const Z& x, const Z& y)
+  friend constexpr bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_;
   }

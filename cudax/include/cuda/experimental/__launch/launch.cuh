@@ -23,7 +23,6 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/stream_ref>
@@ -96,15 +95,15 @@ __do_launch(_GraphInserter&& __inserter, cudaLaunchConfig_t& __config, void* __k
   return graph_node_ref{__node, __inserter.get_graph().get()};
 }
 
-_CCCL_HOST_API inline void
-__do_launch(cuda::stream_ref __stream, cudaLaunchConfig_t& __config, const void* __kernel_fn, void** __args_ptrs)
+_CCCL_HOST_API void inline __do_launch(
+  cuda::stream_ref __stream, cudaLaunchConfig_t& __config, const void* __kernel_fn, void** __args_ptrs)
 {
   __config.stream = __stream.get();
   _CCCL_TRY_CUDA_API(cudaLaunchKernelExC, "Failed to launch a kernel", &__config, __kernel_fn, __args_ptrs);
 }
 
 template <typename... _ExpTypes, typename _Dst, typename _Config>
-_CCCL_HOST_API void __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_fn, _ExpTypes... __args)
+_CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_fn, _ExpTypes... __args)
 {
   static_assert(!::cuda::std::is_same_v<decltype(__conf.dims), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
@@ -136,7 +135,7 @@ _CCCL_HOST_API void __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
   }
 
   const void* __pArgs[] = {_CUDA_VSTD::addressof(__args)...};
-  __do_launch(_CUDA_VSTD::forward<_Dst>(__dst), __config, __kernel_fn, const_cast<void**>(__pArgs));
+  return __do_launch(_CUDA_VSTD::forward<_Dst>(__dst), __config, __kernel_fn, const_cast<void**>(__pArgs));
 }
 
 _CCCL_TEMPLATE(typename _GraphInserter)
@@ -208,9 +207,9 @@ _CCCL_CONCEPT work_submitter = graph_inserter<_Submitter> || _CUDA_VSTD::is_conv
 //! @param args
 //! arguments to be passed into the kernel functor
 _CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
-_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(!::cuda::std::is_pointer_v<_Kernel>)
-                 _CCCL_AND(!::cuda::std::is_function_v<_Kernel>))
-_CCCL_HOST_API void launch(_Submitter&& __submitter,
+_CCCL_REQUIRES(work_submitter<_Submitter> && (!::cuda::std::is_pointer_v<_Kernel>)
+               && (!::cuda::std::is_function_v<_Kernel>) )
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const kernel_config<_Dimensions, _Config...>& __conf,
                            const _Kernel& __kernel,
                            _Args&&... __args)
@@ -220,24 +219,24 @@ _CCCL_HOST_API void launch(_Submitter&& __submitter,
   if constexpr (::cuda::std::is_invocable_v<_Kernel, kernel_config<_Dimensions, _Config...>, kernel_arg_t<_Args>...>)
   {
     auto __launcher = __kernel_launcher<decltype(__combined), _Kernel, kernel_arg_t<_Args>...>;
-    __launch_impl(
+    return __launch_impl(
       __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __combined,
       __kernel,
-      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), _CUDA_VSTD::forward<_Args>(__args)))...);
+      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args)))...);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<_Kernel, kernel_arg_t<_Args>...>);
     auto __launcher = __kernel_launcher_no_config<_Kernel, kernel_arg_t<_Args>...>;
-    __launch_impl(
+    return __launch_impl(
       __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __kernel,
-      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), _CUDA_VSTD::forward<_Args>(__args)))...);
+      __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_Args>(__args)))...);
   }
 }
 
@@ -281,20 +280,19 @@ _CCCL_HOST_API void launch(_Submitter&& __submitter,
 //!
 _CCCL_TEMPLATE(
   typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
-_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
-_CCCL_HOST_API void
-launch(_Submitter&& __submitter,
-       const kernel_config<_Dimensions, _Config...>& __conf,
-       _CUDA_VSTD::__type_self_t<void(kernel_config<_Dimensions, _Config...>, _ExpArgs...)>* __kernel,
-       _ActArgs&&... __args)
+_CCCL_REQUIRES(work_submitter<_Submitter> && (sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
+                           _ActArgs&&... __args)
 {
   __ensure_current_device __dev_setter{__submitter};
-  __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
+  return __launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
     __forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
     reinterpret_cast<void*>(__kernel),
     __conf,
-    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), _CUDA_VSTD::forward<_ActArgs>(__args)))...);
+    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -336,18 +334,18 @@ launch(_Submitter&& __submitter,
 //! arguments to be passed into the kernel function
 _CCCL_TEMPLATE(
   typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
-_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
-_CCCL_HOST_API void launch(_Submitter&& __submitter,
+_CCCL_REQUIRES(work_submitter<_Submitter> && (sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const kernel_config<_Dimensions, _Config...>& __conf,
-                           _CUDA_VSTD::__type_self_t<void(_ExpArgs...)>* __kernel,
+                           void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
   __ensure_current_device __dev_setter{__submitter};
-  __launch_impl<_ExpArgs...>(
+  return __launch_impl<_ExpArgs...>(
     __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)), //
     __conf,
     reinterpret_cast<void*>(__kernel),
-    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), _CUDA_VSTD::forward<_ActArgs>(__args)))...);
+    __kernel_transform(__launch_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args)))...);
 }
 
 //

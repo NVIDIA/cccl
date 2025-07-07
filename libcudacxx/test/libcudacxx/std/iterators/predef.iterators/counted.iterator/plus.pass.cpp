@@ -10,7 +10,7 @@
 
 // constexpr counted_iterator operator+(iter_difference_t<I> n) const
 //     requires random_access_iterator<I>;
-// _CCCL_CONSTEXPR_FRIEND counted_iterator operator+(
+// friend constexpr counted_iterator operator+(
 //   iter_difference_t<I> n, const counted_iterator& x)
 //     requires random_access_iterator<I>;
 // constexpr counted_iterator& operator+=(iter_difference_t<I> n)

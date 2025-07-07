@@ -35,11 +35,11 @@ public:
   {
     i_ = 0;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const X& x, const X& y)
+  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const X& x, const int& y)
+  __host__ __device__ friend constexpr bool operator==(const X& x, const int& y)
   {
     return x.i_ == y;
   }
@@ -54,12 +54,12 @@ public:
       : i_(i)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Y& x, const Y& y)
+  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Y& x, const int& y)
+  __host__ __device__ friend constexpr bool operator==(const Y& x, const int& y)
   {
     return x.i_ == y;
   }
@@ -76,7 +76,7 @@ struct ConvertibleToReference
     return val_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -92,7 +92,7 @@ struct ExplicitlyConvertibleToReference
     return val_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  __host__ __device__ friend constexpr bool
   operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
@@ -109,7 +109,7 @@ struct ConvertibleToValue
     return val_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -125,8 +125,7 @@ struct ExplicitlyConvertibleToValue
     return val_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator==(const int& lhs, const ExplicitlyConvertibleToValue& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ExplicitlyConvertibleToValue& rhs) noexcept
   {
     return lhs == rhs.val_;
   }

@@ -41,13 +41,13 @@ struct CustomIt
   __host__ __device__ CustomIt& operator++();
   __host__ __device__ CustomIt operator++(int);
 #if TEST_STD_VER > 2017
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const CustomIt& a, const CustomIt& b)
+  __host__ __device__ friend constexpr bool operator==(const CustomIt& a, const CustomIt& b)
   {
     return a.p_ == b.p_;
   }
   __host__ __device__ friend bool operator!=(const CustomIt& a, const CustomIt& b) = delete;
 #else
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const CustomIt& a, const CustomIt& b)
+  __host__ __device__ friend constexpr bool operator!=(const CustomIt& a, const CustomIt& b)
   {
     return a.p_ != b.p_;
   }

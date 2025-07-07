@@ -185,7 +185,7 @@ struct REndMemberFunction
   {
     return &x;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* rend(REndMemberFunction const&);
+  __host__ __device__ friend constexpr int* rend(REndMemberFunction const&);
 };
 
 struct Empty
@@ -238,11 +238,11 @@ __host__ __device__ constexpr bool testREndMember()
 struct REndFunction
 {
   int x;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rbegin(REndFunction const&)
+  __host__ __device__ friend constexpr const int* rbegin(REndFunction const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rend(REndFunction const& bf)
+  __host__ __device__ friend constexpr const int* rend(REndFunction const& bf)
   {
     return &bf.x;
   }
@@ -259,45 +259,45 @@ static_assert(cuda::std::is_invocable_v<RangeCREndT, REndFunction&>);
 
 struct REndFunctionReturnsInt
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int rbegin(REndFunctionReturnsInt const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int rend(REndFunctionReturnsInt const&);
+  __host__ __device__ friend constexpr int rbegin(REndFunctionReturnsInt const&);
+  __host__ __device__ friend constexpr int rend(REndFunctionReturnsInt const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunctionReturnsInt const&>);
 
 struct REndFunctionReturnsVoidPtr
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void* rbegin(REndFunctionReturnsVoidPtr const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void* rend(REndFunctionReturnsVoidPtr const&);
+  __host__ __device__ friend constexpr void* rbegin(REndFunctionReturnsVoidPtr const&);
+  __host__ __device__ friend constexpr void* rend(REndFunctionReturnsVoidPtr const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunctionReturnsVoidPtr const&>);
 
 struct REndFunctionReturnsEmpty
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Empty rbegin(REndFunctionReturnsEmpty const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Empty rend(REndFunctionReturnsEmpty const&);
+  __host__ __device__ friend constexpr Empty rbegin(REndFunctionReturnsEmpty const&);
+  __host__ __device__ friend constexpr Empty rend(REndFunctionReturnsEmpty const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunctionReturnsEmpty const&>);
 
 struct REndFunctionReturnsPtrConvertible
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND PtrConvertible rbegin(REndFunctionReturnsPtrConvertible const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND PtrConvertible rend(REndFunctionReturnsPtrConvertible const&);
+  __host__ __device__ friend constexpr PtrConvertible rbegin(REndFunctionReturnsPtrConvertible const&);
+  __host__ __device__ friend constexpr PtrConvertible rend(REndFunctionReturnsPtrConvertible const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunctionReturnsPtrConvertible const&>);
 
 struct NoRBeginFunction
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rend(NoRBeginFunction const&);
+  __host__ __device__ friend constexpr const int* rend(NoRBeginFunction const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeREndT, NoRBeginFunction const&>);
 
 struct REndFunctionByValue
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* rbegin(REndFunctionByValue)
+  __host__ __device__ friend constexpr int* rbegin(REndFunctionByValue)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* rend(REndFunctionByValue)
+  __host__ __device__ friend constexpr int* rend(REndFunctionByValue)
   {
     return &globalBuff[1];
   }
@@ -306,11 +306,11 @@ static_assert(!cuda::std::is_invocable_v<RangeCREndT, REndFunctionByValue>);
 
 struct REndFunctionEnabledBorrowing
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* rbegin(REndFunctionEnabledBorrowing)
+  __host__ __device__ friend constexpr int* rbegin(REndFunctionEnabledBorrowing)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* rend(REndFunctionEnabledBorrowing)
+  __host__ __device__ friend constexpr int* rend(REndFunctionEnabledBorrowing)
   {
     return &globalBuff[2];
   }
@@ -321,11 +321,11 @@ inline constexpr bool cuda::std::ranges::enable_borrowed_range<REndFunctionEnabl
 struct REndFunctionReturnsEmptyPtr
 {
   Empty x;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const Empty* rbegin(REndFunctionReturnsEmptyPtr const&)
+  __host__ __device__ friend constexpr const Empty* rbegin(REndFunctionReturnsEmptyPtr const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const Empty* rend(REndFunctionReturnsEmptyPtr const& bf)
+  __host__ __device__ friend constexpr const Empty* rend(REndFunctionReturnsEmptyPtr const& bf)
   {
     return &bf.x;
   }
@@ -335,11 +335,11 @@ struct REndFunctionWithDataMember
 {
   int x;
   int rend;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rbegin(REndFunctionWithDataMember const&)
+  __host__ __device__ friend constexpr const int* rbegin(REndFunctionWithDataMember const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rend(REndFunctionWithDataMember const& bf)
+  __host__ __device__ friend constexpr const int* rend(REndFunctionWithDataMember const& bf)
   {
     return &bf.x;
   }
@@ -348,11 +348,11 @@ struct REndFunctionWithDataMember
 struct REndFunctionWithPrivateEndMember : private REndMember
 {
   int y;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rbegin(REndFunctionWithPrivateEndMember const&)
+  __host__ __device__ friend constexpr const int* rbegin(REndFunctionWithPrivateEndMember const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rend(REndFunctionWithPrivateEndMember const& bf)
+  __host__ __device__ friend constexpr const int* rend(REndFunctionWithPrivateEndMember const& bf)
   {
     return &bf.y;
   }
@@ -365,7 +365,7 @@ struct RBeginMemberEndFunction
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* rend(RBeginMemberEndFunction const& bf)
+  __host__ __device__ friend constexpr const int* rend(RBeginMemberEndFunction const& bf)
   {
     return &bf.x;
   }
@@ -448,19 +448,19 @@ struct FunctionBeginEnd
 {
   int b, e;
   char cb, ce;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<int*> begin(FunctionBeginEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<int*> begin(FunctionBeginEnd& v)
   {
     return bidirectional_iterator<int*>(&v.b);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<int*> end(FunctionBeginEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<int*> end(FunctionBeginEnd& v)
   {
     return bidirectional_iterator<int*>(&v.e);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<const char*> begin(const FunctionBeginEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<const char*> begin(const FunctionBeginEnd& v)
   {
     return bidirectional_iterator<const char*>(&v.cb);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<const char*> end(const FunctionBeginEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<const char*> end(const FunctionBeginEnd& v)
   {
     return bidirectional_iterator<const char*>(&v.ce);
   }
@@ -477,7 +477,7 @@ struct MemberBeginFunctionEnd
   {
     return bidirectional_iterator<int*>(&b);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<int*> end(MemberBeginFunctionEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<int*> end(MemberBeginFunctionEnd& v)
   {
     return bidirectional_iterator<int*>(&v.e);
   }
@@ -485,7 +485,7 @@ struct MemberBeginFunctionEnd
   {
     return bidirectional_iterator<const char*>(&cb);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<const char*> end(const MemberBeginFunctionEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<const char*> end(const MemberBeginFunctionEnd& v)
   {
     return bidirectional_iterator<const char*>(&v.ce);
   }
@@ -498,7 +498,7 @@ struct FunctionBeginMemberEnd
 {
   int b, e;
   char cb, ce;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<int*> begin(FunctionBeginMemberEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<int*> begin(FunctionBeginMemberEnd& v)
   {
     return bidirectional_iterator<int*>(&v.b);
   }
@@ -506,7 +506,7 @@ struct FunctionBeginMemberEnd
   {
     return bidirectional_iterator<int*>(&e);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bidirectional_iterator<const char*> begin(const FunctionBeginMemberEnd& v)
+  __host__ __device__ friend constexpr bidirectional_iterator<const char*> begin(const FunctionBeginMemberEnd& v)
   {
     return bidirectional_iterator<const char*>(&v.cb);
   }

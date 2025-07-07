@@ -268,7 +268,7 @@ public:
   //! @param __n The number of elements to advance
   //! @param __x The original \c permutation_iterator
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND permutation_iterator
+  [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(difference_type __n, const permutation_iterator& __x) noexcept(
     noexcept(__index_ + __n)
     && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Index>)
@@ -306,7 +306,7 @@ public:
 
   //! @brief Returns the difference in index between two \c permutation_iterators. Returns distance between indices
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const permutation_iterator& __lhs, const permutation_iterator& __rhs) noexcept(__nothrow_difference<_Index>)
   {
     return __lhs.__index_ - __rhs.__index();
@@ -316,7 +316,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_equality<_Index, _OtherOffset>)
   {
@@ -328,7 +328,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_equality<_Index, _OtherOffset>)
   {
@@ -345,7 +345,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::three_way_comparable_with<_Index, _OtherOffset>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND strong_ordering operator<=>(
+  [[nodiscard]] _CCCL_API friend constexpr strong_ordering operator<=>(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_three_way<_Index, _OtherOffset>)
   {
@@ -357,7 +357,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<(
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_less_than<_Index, _OtherOffset>)
   {
@@ -368,7 +368,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<=(
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<=(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_less_equal<_Index, _OtherOffset>)
   {
@@ -379,7 +379,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>(
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_greater_than<_Index, _OtherOffset>)
   {
@@ -390,7 +390,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Index, _OtherOffset>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>=(
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(
     const permutation_iterator& __lhs,
     const permutation_iterator<_OtherIter, _OtherOffset>& __rhs) noexcept(__nothrow_greater_equal<_Index, _OtherOffset>)
   {

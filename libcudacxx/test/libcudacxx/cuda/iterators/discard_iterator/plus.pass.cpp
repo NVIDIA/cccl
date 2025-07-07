@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // constexpr discard_iterator operator+(iter_difference_t<I> n) const;
-// _CCCL_CONSTEXPR_FRIEND discard_iterator operator+(iter_difference_t<I> n, const discard_iterator& x);
+// friend constexpr discard_iterator operator+(iter_difference_t<I> n, const discard_iterator& x);
 // constexpr discard_iterator& operator+=(iter_difference_t<I> n);
 
 #include <cuda/iterator>

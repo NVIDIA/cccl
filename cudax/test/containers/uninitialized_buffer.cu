@@ -41,7 +41,7 @@ struct non_trivial
       : val_(val)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const non_trivial& lhs, const non_trivial& rhs)
+  __host__ __device__ constexpr friend bool operator==(const non_trivial& lhs, const non_trivial& rhs)
   {
     return lhs.val_ == rhs.val_;
   }

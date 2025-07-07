@@ -91,13 +91,13 @@ struct non_default_constructible
       : value_(value)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND bool
+  _CCCL_HOST_DEVICE friend constexpr bool
   operator==(const non_default_constructible& a, const non_default_constructible& b) noexcept
   {
     return a.value_ == b.value_;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_CONSTEXPR_FRIEND bool
+  _CCCL_HOST_DEVICE friend constexpr bool
   operator!=(const non_default_constructible& a, const non_default_constructible& b) noexcept
   {
     return a.value_ != b.value_;

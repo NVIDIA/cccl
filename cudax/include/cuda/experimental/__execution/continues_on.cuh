@@ -61,7 +61,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEXPR_FRIEND auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return continues_on_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
     }

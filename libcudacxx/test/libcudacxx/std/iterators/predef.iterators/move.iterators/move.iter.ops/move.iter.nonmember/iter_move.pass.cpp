@@ -9,7 +9,7 @@
 
 // <cuda/std/iterator>
 //
-// _CCCL_CONSTEXPR_FRIEND iter_rvalue_reference_t<Iterator>
+// friend constexpr iter_rvalue_reference_t<Iterator>
 //   iter_move(const move_iterator& i)
 //     noexcept(noexcept(ranges::iter_move(i.current))); // Since C++20
 
@@ -30,7 +30,7 @@ struct MaybeNoexceptMove
   using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept)
+  __host__ __device__ constexpr friend value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept)
   {
     return cuda::std::move(global);
   }

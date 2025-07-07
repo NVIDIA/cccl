@@ -37,7 +37,7 @@ struct CustomIt
   __host__ __device__ int& operator*() const;
   __host__ __device__ CustomIt& operator++();
   __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const CustomIt& a, const CustomIt& b)
+  __host__ __device__ constexpr friend bool operator>=(const CustomIt& a, const CustomIt& b)
   {
     return a.p_ >= b.p_;
   }

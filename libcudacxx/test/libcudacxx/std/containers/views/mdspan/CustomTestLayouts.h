@@ -281,22 +281,20 @@ public:
   }
 
   template <class OtherExtents, cuda::std::enable_if_t<OtherExtents::rank() == extents_type::rank(), int> = 0>
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
   {
     return lhs.extents() == rhs.extents();
   }
 
 #if TEST_STD_VER <= 2017
   template <class OtherExtents, cuda::std::enable_if_t<OtherExtents::rank() == extents_type::rank(), int> = 0>
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
   {
     return lhs.extents() != rhs.extents();
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(mapping& x, mapping& y) noexcept
+  __host__ __device__ friend constexpr void swap(mapping& x, mapping& y) noexcept
   {
     swap(x.extents_, y.extents_);
     if (!cuda::std::__cccl_default_is_constant_evaluated())
@@ -536,8 +534,7 @@ public:
   }
 
   template <class OtherExtents>
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto
-  operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  __host__ __device__ friend constexpr auto operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
     -> cuda::std::enable_if_t<OtherExtents::rank() == extents_type::rank(), bool>
   {
     return lhs.extents() == rhs.extents() && lhs.offset_ == rhs.offset && lhs.scaling_ == rhs.scaling_;
@@ -545,15 +542,14 @@ public:
 
 #if TEST_STD_VER < 2020
   template <class OtherExtents>
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto
-  operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  __host__ __device__ friend constexpr auto operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
     -> cuda::std::enable_if_t<OtherExtents::rank() != extents_type::rank(), bool>
   {
     return !(lhs == rhs);
   }
 #endif // TEST_STD_VER < 2020
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(mapping& x, mapping& y) noexcept
+  __host__ __device__ friend constexpr void swap(mapping& x, mapping& y) noexcept
   {
     swap(x.extents_, y.extents_);
     if (!cuda::std::__cccl_default_is_constant_evaluated())

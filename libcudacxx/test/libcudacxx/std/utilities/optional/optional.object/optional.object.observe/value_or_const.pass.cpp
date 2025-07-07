@@ -41,7 +41,7 @@ struct X
   __host__ __device__ constexpr X(Y&& y)
       : i_(y.i_ + 1)
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const X& x, const X& y)
+  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }

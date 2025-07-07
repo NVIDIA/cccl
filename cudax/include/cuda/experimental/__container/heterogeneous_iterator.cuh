@@ -300,7 +300,7 @@ public:
   //! @param __count The number of elements to advance.
   //! @param __other A heterogeneous_iterator.
   //! @return \p __other advanced by \p __count
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND heterogeneous_iterator
+  [[nodiscard]] _CCCL_API friend constexpr heterogeneous_iterator
   operator+(const difference_type __count, heterogeneous_iterator __other) noexcept
   {
     __other += __count;
@@ -340,7 +340,7 @@ public:
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if both heterogeneous_iterator point to the same element
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ == __rhs.__ptr_;
@@ -350,7 +350,7 @@ public:
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return false, if both heterogeneous_iterator point to the same element
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ != __rhs.__ptr_;
@@ -358,7 +358,7 @@ public:
 #    endif // _CCCL_STD_VER <= 2017
 
 #    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND _CUDA_VSTD::strong_ordering
+  [[nodiscard]] _CCCL_API friend constexpr _CUDA_VSTD::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
@@ -369,7 +369,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then the address of the one pointed to
   //! by \p __rhs
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ < __rhs.__ptr_;
@@ -379,7 +379,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then or equal to the address of the one
   //! pointed to by \p __rhs
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <= __rhs.__ptr_;
@@ -389,7 +389,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then the address of the one
   //! pointed to by \p __rhs
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ > __rhs.__ptr_;
@@ -399,7 +399,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then or equal to the address of the
   //! one pointed to by \p __rhs
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;

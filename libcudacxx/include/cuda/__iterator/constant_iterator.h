@@ -148,14 +148,14 @@ public:
   }
 
   //! @brief Compares two \c constant_iterator for equality. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ == __rhs.__index_;
   }
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two \c constant_iterator for inequality. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ != __rhs.__index_;
@@ -164,7 +164,7 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   //! @brief Three-way-compares two \c constant_iterator. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <=> __rhs.__index_;
@@ -172,25 +172,25 @@ public:
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
 
   //! @brief Compares two \c constant_iterator for less than. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
   //! @brief Compares two \c constant_iterator for less equal. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
   //! @brief Compares two \c constant_iterator for greater than. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
   //! @brief Compares two \c constant_iterator for greater equal. Only compares the index in the sequence
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ >= __rhs.__index_;
@@ -199,7 +199,7 @@ public:
   //! @brief Advances a \c constant_iterator \p __iter  by \p __n
   //! @param __iter The \c constant_iterator to advance
   //! @param __n The amount of elements to advance
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND constant_iterator
+  [[nodiscard]] _CCCL_API friend constexpr constant_iterator
   operator+(constant_iterator __iter, difference_type __n) noexcept
   {
     __iter += __n;
@@ -209,7 +209,7 @@ public:
   //! @brief Advances a \c constant_iterator \p __iter  by \p __n
   //! @param __n The amount of elements to advance
   //! @param __iter The \c constant_iterator to advance
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND constant_iterator
+  [[nodiscard]] _CCCL_API friend constexpr constant_iterator
   operator+(difference_type __n, constant_iterator __iter) noexcept
   {
     __iter += __n;
@@ -219,7 +219,7 @@ public:
   //! @brief Decrements a \c constant_iterator \p __iter  by \p __n
   //! @param __iter The \c constant_iterator to decrement
   //! @param __n The amount of elements to decrement
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND constant_iterator
+  [[nodiscard]] _CCCL_API friend constexpr constant_iterator
   operator-(constant_iterator __iter, difference_type __n) noexcept
   {
     __iter -= __n;
@@ -227,7 +227,7 @@ public:
   }
 
   //! @brief Returns the distance between two \c constant_iterator
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return static_cast<difference_type>(__lhs.__index_) - static_cast<difference_type>(__rhs.__index_);

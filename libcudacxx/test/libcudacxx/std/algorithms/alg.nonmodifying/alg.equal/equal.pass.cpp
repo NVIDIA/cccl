@@ -98,12 +98,12 @@ struct AddressCompare
     return static_cast<char>(i);
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
+  __host__ __device__ friend constexpr bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs == &rhs;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs != &rhs;
   }

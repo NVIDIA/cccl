@@ -436,12 +436,12 @@ struct LessAndEqComp
       : value(v)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
+  __host__ __device__ friend constexpr bool operator<(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
   {
     return lhs.value < rhs.value;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
+  __host__ __device__ friend constexpr bool operator==(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
   {
     return lhs.value == rhs.value;
   }
@@ -472,7 +472,7 @@ struct PartialOrder
   __host__ __device__ constexpr PartialOrder(int v)
       : value(v)
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::partial_ordering operator<=>(PartialOrder lhs, PartialOrder rhs)
+  __host__ __device__ friend constexpr cuda::std::partial_ordering operator<=>(PartialOrder lhs, PartialOrder rhs)
   {
     if (lhs.value == cuda::std::numeric_limits<int>::min() || rhs.value == cuda::std::numeric_limits<int>::min())
     {
@@ -480,7 +480,7 @@ struct PartialOrder
     }
     return lhs.value <=> rhs.value;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(PartialOrder lhs, PartialOrder rhs)
+  __host__ __device__ friend constexpr bool operator==(PartialOrder lhs, PartialOrder rhs)
   {
     return (lhs <=> rhs) == cuda::std::partial_ordering::equivalent;
   }

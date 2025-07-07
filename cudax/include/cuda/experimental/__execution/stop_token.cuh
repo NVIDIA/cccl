@@ -126,12 +126,12 @@ public:
     return false;
   }
 
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto operator==(const never_stop_token&, const never_stop_token&) noexcept -> bool
+  _CCCL_API friend constexpr auto operator==(const never_stop_token&, const never_stop_token&) noexcept -> bool
   {
     return true;
   }
 
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto operator!=(const never_stop_token&, const never_stop_token&) noexcept -> bool
+  _CCCL_API friend constexpr auto operator!=(const never_stop_token&, const never_stop_token&) noexcept -> bool
   {
     return false;
   }
@@ -219,14 +219,14 @@ public:
     execution::__swap(__source_, __other.__source_);
   }
 
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
-  operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
+  _CCCL_API friend constexpr auto operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+    -> bool
   {
     return __a.__source_ == __b.__source_;
   }
 
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
-  operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
+  _CCCL_API friend constexpr auto operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+    -> bool
   {
     return __a.__source_ != __b.__source_;
   }

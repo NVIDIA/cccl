@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND iterator operator-(iterator i, difference_type n);
-// _CCCL_CONSTEXPR_FRIEND difference_type operator-(const iterator& x, const iterator& y);
+// friend constexpr iterator operator-(iterator i, difference_type n);
+// friend constexpr difference_type operator-(const iterator& x, const iterator& y);
 
 #include <cuda/iterator>
 #include <cuda/std/cassert>

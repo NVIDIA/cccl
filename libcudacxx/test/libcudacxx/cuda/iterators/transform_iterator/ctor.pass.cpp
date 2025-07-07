@@ -43,12 +43,12 @@ struct NoDefaultInitIter
   __host__ __device__ constexpr bool operator>=(const self&) const;
 #endif // !TEST_HAS_SPACESHIP()
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const self& lhs, const self& rhs)
+  __host__ __device__ constexpr friend bool operator==(const self& lhs, const self& rhs)
   {
     return lhs.ptr_ == rhs.ptr_;
   }
 #if TEST_STD_VER <= 2017
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const self& lhs, const self& rhs)
+  __host__ __device__ constexpr friend bool operator!=(const self& lhs, const self& rhs)
   {
     return lhs.ptr_ != rhs.ptr_;
   }
@@ -62,7 +62,7 @@ struct NoDefaultInitIter
 
   __host__ __device__ constexpr self& operator+=(difference_type n);
   __host__ __device__ constexpr self operator+(difference_type n) const;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND self operator+(difference_type n, self x);
+  __host__ __device__ constexpr friend self operator+(difference_type n, self x);
 
   __host__ __device__ constexpr self& operator-=(difference_type n);
   __host__ __device__ constexpr self operator-(difference_type n) const;

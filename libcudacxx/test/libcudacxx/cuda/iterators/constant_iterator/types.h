@@ -22,12 +22,12 @@ struct DefaultConstructibleTo42
       : val_(val)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  __host__ __device__ friend constexpr bool
   operator==(DefaultConstructibleTo42 lhs, DefaultConstructibleTo42 rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  __host__ __device__ friend constexpr bool
   operator!=(DefaultConstructibleTo42 lhs, DefaultConstructibleTo42 rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
@@ -41,13 +41,11 @@ struct NotDefaultConstructible
   __host__ __device__ constexpr NotDefaultConstructible(const int val) noexcept
       : val_(val)
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator==(NotDefaultConstructible lhs, NotDefaultConstructible rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(NotDefaultConstructible lhs, NotDefaultConstructible rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator!=(NotDefaultConstructible lhs, NotDefaultConstructible rhs) noexcept
+  __host__ __device__ friend constexpr bool operator!=(NotDefaultConstructible lhs, NotDefaultConstructible rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }

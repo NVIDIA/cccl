@@ -49,7 +49,7 @@ struct ADLSwap
   {}
   ADLSwap& operator=(const ADLSwap&) = delete;
   int i;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(ADLSwap& x, ADLSwap& y)
+  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y)
   {
     cuda::std::swap(x.i, y.i);
   }

@@ -59,7 +59,7 @@ public:
     ++dtor_called();
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Y& x, const Y& y)
+  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
   }
@@ -78,11 +78,11 @@ public:
       : i_(i)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const W& x, const W& y)
+  __host__ __device__ friend constexpr bool operator==(const W& x, const W& y)
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(W& x, W& y) noexcept
+  __host__ __device__ friend constexpr void swap(W& x, W& y) noexcept
   {
     cuda::std::swap(x.i_, y.i_);
   }
@@ -171,7 +171,7 @@ public:
     TEST_THROW(7);
   }
 
-  _CCCL_CONSTEXPR_FRIEND bool operator==(const Z& x, const Z& y)
+  friend constexpr bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_;
   }

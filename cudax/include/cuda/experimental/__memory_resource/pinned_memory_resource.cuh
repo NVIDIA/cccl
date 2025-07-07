@@ -94,9 +94,9 @@ public:
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
-  _CCCL_CONSTEXPR_FRIEND void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
+  friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_CONSTEXPR_FRIEND void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
+  friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
 
   using default_queries = properties_list<device_accessible, host_accessible>;
 #  endif // _CCCL_DOXYGEN_INVOKED

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND bool operator==(const permutation_iterator& x, const permutation_iterator& y);
-// _CCCL_CONSTEXPR_FRIEND bool operator==(const permutation_iterator& x, default_sentinel_t);
+// friend constexpr bool operator==(const permutation_iterator& x, const permutation_iterator& y);
+// friend constexpr bool operator==(const permutation_iterator& x, default_sentinel_t);
 
 #include <cuda/iterator>
 

@@ -49,7 +49,7 @@ struct PtrAndNotEqOperator
     return nullptr;
   }
   // We *don't* want operator!= to be picked here.
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(PtrAndNotEqOperator, PtrAndNotEqOperator)
+  __host__ __device__ friend constexpr bool operator!=(PtrAndNotEqOperator, PtrAndNotEqOperator)
   {
     return true;
   }

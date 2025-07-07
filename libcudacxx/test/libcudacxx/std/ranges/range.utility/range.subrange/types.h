@@ -55,20 +55,20 @@ struct MoveOnlyForwardIter
   __host__ __device__ friend bool operator!=(const self&, const self&);
 #endif
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const self& lhs, int* rhs)
+  __host__ __device__ friend constexpr bool operator==(const self& lhs, int* rhs)
   {
     return lhs.base == rhs;
   }
 #if TEST_STD_VER < 2020 || TEST_COMPILER(CLANG) || TEST_COMPILER(NVRTC) || TEST_COMPILER(MSVC)
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int* rhs, const self& lhs)
+  __host__ __device__ friend constexpr bool operator==(int* rhs, const self& lhs)
   {
     return lhs.base == rhs;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const self& lhs, int* rhs)
+  __host__ __device__ friend constexpr bool operator!=(const self& lhs, int* rhs)
   {
     return lhs.base != rhs;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int* rhs, const self& lhs)
+  __host__ __device__ friend constexpr bool operator!=(int* rhs, const self& lhs)
   {
     return lhs.base != rhs;
   }
@@ -103,12 +103,12 @@ struct SizedSentinelForwardIter
       , minusWasCalled_(minusWasCalled)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const self& lhs, const self& rhs)
+  __host__ __device__ friend constexpr bool operator==(const self& lhs, const self& rhs)
   {
     return lhs.base_ == rhs.base_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const self& lhs, const self& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const self& lhs, const self& rhs)
   {
     return lhs.base_ != rhs.base_;
   }
@@ -121,7 +121,7 @@ struct SizedSentinelForwardIter
   __host__ __device__ self& operator--();
   __host__ __device__ self operator--(int);
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type
+  __host__ __device__ friend constexpr difference_type
   operator-(SizedSentinelForwardIter const& a, SizedSentinelForwardIter const& b)
   {
     if (a.minusWasCalled_)
@@ -175,8 +175,8 @@ struct ConvertibleForwardIter
   }
 
   // Explicitly deleted so this doesn't model sized_sentinel_for.
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type operator-(int*, self const&) = delete;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type operator-(self const&, int*) = delete;
+  __host__ __device__ friend constexpr difference_type operator-(int*, self const&) = delete;
+  __host__ __device__ friend constexpr difference_type operator-(self const&, int*) = delete;
 };
 using ConvertibleForwardSubrange =
   cuda::std::ranges::subrange<ConvertibleForwardIter, int*, cuda::std::ranges::subrange_kind::unsized>;

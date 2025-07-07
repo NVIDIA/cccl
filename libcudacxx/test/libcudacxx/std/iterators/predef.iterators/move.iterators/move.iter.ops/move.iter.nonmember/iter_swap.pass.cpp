@@ -10,7 +10,7 @@
 // <cuda/std/iterator>
 //
 // template<indirectly_swappable<Iterator> Iterator2>
-//   _CCCL_CONSTEXPR_FRIEND void
+//   friend constexpr void
 //     iter_swap(const move_iterator& x, const move_iterator<Iterator2>& y)
 //       noexcept(noexcept(ranges::iter_swap(x.current, y.current))); // Since C++20
 
@@ -28,8 +28,7 @@ struct MaybeNoexceptSwap
   using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void iter_swap(MaybeNoexceptSwap, MaybeNoexceptSwap) noexcept(IsNoexcept)
-  {}
+  __host__ __device__ constexpr friend void iter_swap(MaybeNoexceptSwap, MaybeNoexceptSwap) noexcept(IsNoexcept) {}
 
   __host__ __device__ int& operator*() const
   {

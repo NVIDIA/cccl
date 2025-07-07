@@ -100,9 +100,9 @@ public:
   }
 
   template <class _Tp>
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept;
+  friend _CCCL_API constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept;
   template <class _Tp>
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
+  friend _CCCL_API constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
 };
 
 template <__fp_format _Fmt>

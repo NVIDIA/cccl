@@ -193,7 +193,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -204,7 +204,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -215,7 +215,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -225,7 +225,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -235,7 +235,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -245,7 +245,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -257,7 +257,7 @@ public:
   _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
   _CCCL_REQUIRES(
     _CUDA_VSTD::totally_ordered<_Iter, _OtherIter> _CCCL_AND _CUDA_VSTD::three_way_comparable_with<_Iter, _OtherIter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Iter&>() <=> _CUDA_VSTD::declval<const _OtherIter&>()))
   {
@@ -266,7 +266,7 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND strided_iterator
+  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
   operator+(strided_iterator __i, difference_type __n) noexcept(noexcept(__iter_ += __n))
   {
     __i += __n;
@@ -274,14 +274,14 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND strided_iterator
+  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
   operator+(difference_type __n, strided_iterator __i) noexcept(noexcept(__iter_ + __n))
   {
     return __i + __n;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND strided_iterator
+  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
   operator-(strided_iterator __i, difference_type __n) noexcept(noexcept(__iter_ -= __n))
   {
     __i -= __n;
@@ -291,7 +291,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::sized_sentinel_for<_OtherIter, _Iter>)
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<_Iter>() - _CUDA_VSTD::declval<_OtherIter>()))
   {

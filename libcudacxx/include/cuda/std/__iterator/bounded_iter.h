@@ -90,7 +90,7 @@ private:
   }
 
   template <class _It>
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND __bounded_iter<_It> __make_bounded_iter(_It, _It, _It);
+  friend _CCCL_API constexpr __bounded_iter<_It> __make_bounded_iter(_It, _It, _It);
 
 public:
   // Dereference and indexing operations.
@@ -149,13 +149,13 @@ public:
     __current_ += __n;
     return *this;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND __bounded_iter operator+(__bounded_iter const& __self, difference_type __n) noexcept
+  _CCCL_API constexpr friend __bounded_iter operator+(__bounded_iter const& __self, difference_type __n) noexcept
   {
     __bounded_iter __tmp(__self);
     __tmp += __n;
     return __tmp;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND __bounded_iter operator+(difference_type __n, __bounded_iter const& __self) noexcept
+  _CCCL_API constexpr friend __bounded_iter operator+(difference_type __n, __bounded_iter const& __self) noexcept
   {
     __bounded_iter __tmp(__self);
     __tmp += __n;
@@ -167,14 +167,13 @@ public:
     __current_ -= __n;
     return *this;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND __bounded_iter operator-(__bounded_iter const& __self, difference_type __n) noexcept
+  _CCCL_API constexpr friend __bounded_iter operator-(__bounded_iter const& __self, difference_type __n) noexcept
   {
     __bounded_iter __tmp(__self);
     __tmp -= __n;
     return __tmp;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND difference_type
-  operator-(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend difference_type operator-(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ - __y.__current_;
   }
@@ -185,27 +184,27 @@ public:
   // The valid range for each iterator is also not considered as part of the comparison,
   // i.e. two iterators pointing to the same location will be considered equal even
   // if they have different validity ranges.
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend bool operator==(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ == __y.__current_;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend bool operator!=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ != __y.__current_;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend bool operator<(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ < __y.__current_;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend bool operator>(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ > __y.__current_;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator<=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend bool operator<=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ <= __y.__current_;
   }
-  _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator>=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
+  _CCCL_API constexpr friend bool operator>=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ >= __y.__current_;
   }

@@ -11,7 +11,7 @@
 //
 // reverse_iterator
 //
-// _CCCL_CONSTEXPR_FRIEND iter_rvalue_reference_t<Iterator>
+// friend constexpr iter_rvalue_reference_t<Iterator>
 //   iter_move(const reverse_iterator& i) noexcept(see below);
 
 #include <cuda/std/cassert>

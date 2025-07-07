@@ -78,22 +78,22 @@ public:
         : __bound_sentinel_(_CUDA_VSTD::move(__bound_sentinel))
     {}
 
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const __iterator& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ == __y.__bound_sentinel_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const __sentinel& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __sentinel& __x, const __iterator& __y)
     {
       return __x.__bound_sentinel_ == __y.__value_;
     }
 
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const __iterator& __x, const __sentinel& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ != __y.__bound_sentinel_;
     }
 
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const __sentinel& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __sentinel& __x, const __iterator& __y)
     {
       return __x.__bound_sentinel_ != __y.__value_;
     }
@@ -101,7 +101,7 @@ public:
 
     _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
     _CCCL_REQUIRES(sized_sentinel_for<_BoundSentinel2, _Start>)
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_Start>
+    [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Start>
     operator-(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ - __y.__bound_sentinel_;
@@ -109,7 +109,7 @@ public:
 
     _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
     _CCCL_REQUIRES(sized_sentinel_for<_BoundSentinel2, _Start>)
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND iter_difference_t<_Start>
+    [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Start>
     operator-(const __sentinel& __x, const __iterator& __y)
     {
       return -(__y - __x);

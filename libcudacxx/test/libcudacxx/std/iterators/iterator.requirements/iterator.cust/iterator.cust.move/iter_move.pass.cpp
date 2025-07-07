@@ -133,7 +133,7 @@ struct WithADL
   __host__ __device__ constexpr WithADL& operator++();
   __host__ __device__ constexpr void operator++(int);
   __host__ __device__ constexpr bool operator==(WithADL const&) const;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int iter_move(WithADL&&) noexcept(NoExcept)
+  __host__ __device__ friend constexpr int iter_move(WithADL&&) noexcept(NoExcept)
   {
     return 0;
   }

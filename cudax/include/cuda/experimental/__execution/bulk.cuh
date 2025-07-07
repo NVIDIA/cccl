@@ -183,7 +183,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEXPR_FRIEND auto operator|(_Sndr&& __sndr, __closure_base_t __self)
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
     {
       static_assert(__is_sender<_Sndr>);
 

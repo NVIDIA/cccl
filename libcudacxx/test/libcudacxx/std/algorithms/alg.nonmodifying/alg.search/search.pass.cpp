@@ -59,7 +59,7 @@ struct S
   __host__ __device__ constexpr S(int x)
       : x_(x)
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(S lhs, S rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(S lhs, S rhs) noexcept
   {
     return lhs.x_ == rhs.x_;
   }

@@ -401,13 +401,13 @@ struct hierarchy_dimensions
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const hierarchy_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const hierarchy_dimensions& left, const hierarchy_dimensions& right) noexcept
   {
     return left.levels == right.levels;
   }
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const hierarchy_dimensions& left, const hierarchy_dimensions& right) noexcept
   {
     return left.levels != right.levels;

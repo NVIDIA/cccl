@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND bool operator==(const discard_iterator& x, const discard_iterator& y);
-// _CCCL_CONSTEXPR_FRIEND bool operator==(const discard_iterator& x, default_sentinel_t);
+// friend constexpr bool operator==(const discard_iterator& x, const discard_iterator& y);
+// friend constexpr bool operator==(const discard_iterator& x, default_sentinel_t);
 
 #include <cuda/iterator>
 #include <cuda/std/utility>

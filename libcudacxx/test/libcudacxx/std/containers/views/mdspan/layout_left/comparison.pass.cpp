@@ -10,7 +10,7 @@
 // <mdspan>
 
 // template<class OtherExtents>
-//   _CCCL_CONSTEXPR_FRIEND bool operator==(const mapping& x, const mapping<OtherExtents>& y) noexcept;
+//   friend constexpr bool operator==(const mapping& x, const mapping<OtherExtents>& y) noexcept;
 //                                      `
 // Constraints: extents_type::rank() == OtherExtents::rank() is true.
 

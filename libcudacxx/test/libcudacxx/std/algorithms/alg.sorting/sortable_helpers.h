@@ -32,7 +32,7 @@ struct TrivialSortable
   __host__ __device__ constexpr TrivialSortable(int v)
       : value(v)
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const TrivialSortable& a, const TrivialSortable& b)
+  __host__ __device__ friend constexpr bool operator<(const TrivialSortable& a, const TrivialSortable& b)
   {
     return a.value / 10 < b.value / 10;
   }
@@ -59,7 +59,7 @@ struct NonTrivialSortable
     value = rhs.value;
     return *this;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator<(const NonTrivialSortable& a, const NonTrivialSortable& b)
+  __host__ __device__ friend constexpr bool operator<(const NonTrivialSortable& a, const NonTrivialSortable& b)
   {
     return a.value / 10 < b.value / 10;
   }

@@ -54,13 +54,13 @@ struct MyInt
       : i(ii)
   {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const MyInt&, const MyInt&) = default;
+  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i != rhs.i;
   }

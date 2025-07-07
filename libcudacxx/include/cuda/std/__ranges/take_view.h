@@ -101,50 +101,46 @@ public:
       return __end_;
     }
 
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const _Iter<_Const>& __lhs, const __sentinel& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const _Iter<_Const>& __lhs, const __sentinel& __rhs)
     {
       return __lhs.count() == 0 || __lhs.base() == __rhs.__end_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator==(const __sentinel& __lhs, const _Iter<_Const>& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __sentinel& __lhs, const _Iter<_Const>& __rhs)
     {
       return __rhs.count() == 0 || __rhs.base() == __lhs.__end_;
     }
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const _Iter<_Const>& __lhs, const __sentinel& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const _Iter<_Const>& __lhs, const __sentinel& __rhs)
     {
       return !(__lhs == __rhs);
     }
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool operator!=(const __sentinel& __lhs, const _Iter<_Const>& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __sentinel& __lhs, const _Iter<_Const>& __rhs)
     {
       return !(__lhs == __rhs);
     }
 #endif // _CCCL_STD_VER <= 2017
 
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
-    operator==(const _Iter<_OtherConst>& __lhs, const __sentinel& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator==(const _Iter<_OtherConst>& __lhs, const __sentinel& __rhs)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __lhs.count() == 0 || __lhs.base() == __rhs.__end_;
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
-    operator==(const __sentinel& __lhs, const _Iter<_OtherConst>& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator==(const __sentinel& __lhs, const _Iter<_OtherConst>& __rhs)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return __rhs.count() == 0 || __rhs.base() == __lhs.__end_;
     }
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
-    operator!=(const _Iter<_OtherConst>& __lhs, const __sentinel& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const _Iter<_OtherConst>& __lhs, const __sentinel& __rhs)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return !(__lhs == __rhs);
     }
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
-    operator!=(const __sentinel& __lhs, const _Iter<_OtherConst>& __rhs)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const __sentinel& __lhs, const _Iter<_OtherConst>& __rhs)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
       return !(__lhs == __rhs);

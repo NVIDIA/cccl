@@ -51,9 +51,8 @@ struct Iter
   __host__ __device__ reference operator*() const;
 
 private:
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Iter& l, const Iter& r) = default;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::partial_ordering
-  operator<=>(const Iter& l, const Iter& r) = default;
+  __host__ __device__ friend constexpr bool operator==(const Iter& l, const Iter& r)                         = default;
+  __host__ __device__ friend constexpr cuda::std::partial_ordering operator<=>(const Iter& l, const Iter& r) = default;
 };
 
 struct ConstIter
@@ -75,8 +74,8 @@ struct ConstIter
   __host__ __device__ reference operator*() const;
 
 private:
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const ConstIter& l, const ConstIter& r) = default;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND cuda::std::partial_ordering
+  __host__ __device__ friend constexpr bool operator==(const ConstIter& l, const ConstIter& r) = default;
+  __host__ __device__ friend constexpr cuda::std::partial_ordering
   operator<=>(const ConstIter& l, const ConstIter& r) = default;
 };
 

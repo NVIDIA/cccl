@@ -71,12 +71,12 @@ struct CopyOnly
   {}
   CopyOnly(const CopyOnly&)                = default;
   __host__ __device__ CopyOnly(CopyOnly&&) = delete;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const CopyOnly& mi, int ii)
+  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii)
   {
     return mi.i == ii;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const CopyOnly& mi, int ii)
+  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii)
   {
     return mi.i != ii;
   }

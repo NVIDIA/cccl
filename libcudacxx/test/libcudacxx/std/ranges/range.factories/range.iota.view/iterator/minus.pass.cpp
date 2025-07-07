@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND iterator operator-(iterator i, difference_type n)
+// friend constexpr iterator operator-(iterator i, difference_type n)
 //   requires advanceable<W>;
-// _CCCL_CONSTEXPR_FRIEND difference_type operator-(const iterator& x, const iterator& y)
+// friend constexpr difference_type operator-(const iterator& x, const iterator& y)
 //   requires advanceable<W>;
 
 #include <cuda/std/cassert>

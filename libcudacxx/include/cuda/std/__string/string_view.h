@@ -162,7 +162,7 @@ public:
     return __compare(__other, bool_constant<__cccl_default_is_constant_evaluated()>());
   }
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.__len_ == __rhs.__len_ && __lhs.compare(__rhs) == 0;
@@ -170,7 +170,7 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND auto
+  [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <=> 0;
@@ -178,31 +178,31 @@ public:
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_FRIEND bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;

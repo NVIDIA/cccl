@@ -12,7 +12,7 @@
 // reverse_iterator
 //
 // template<indirectly_swappable<Iterator> Iterator2>
-//   _CCCL_CONSTEXPR_FRIEND void
+//   friend constexpr void
 //     iter_swap(const reverse_iterator& x,
 //               const reverse_iterator<Iterator2>& y) noexcept(see below);
 

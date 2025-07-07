@@ -12,10 +12,10 @@
 // move_iterator
 
 // template<sized_sentinel_for<Iterator> S>
-//   _CCCL_CONSTEXPR_FRIEND iter_difference_t<Iterator>
+//   friend constexpr iter_difference_t<Iterator>
 //     operator-(const move_sentinel<S>& x, const move_iterator& y); // Since C++20
 // template<sized_sentinel_for<Iterator> S>
-//   _CCCL_CONSTEXPR_FRIEND iter_difference_t<Iterator>
+//   friend constexpr iter_difference_t<Iterator>
 //     operator-(const move_iterator& x, const move_sentinel<S>& y); // Since C++20
 
 #include <cuda/std/cassert>
@@ -42,7 +42,7 @@ struct CustomIt
   __host__ __device__ int& operator*() const;
   __host__ __device__ CustomIt& operator++();
   __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND difference_type operator-(const CustomIt& a, const CustomIt& b)
+  __host__ __device__ constexpr friend difference_type operator-(const CustomIt& a, const CustomIt& b)
   {
     return static_cast<difference_type>(a.p_ - b.p_);
   }

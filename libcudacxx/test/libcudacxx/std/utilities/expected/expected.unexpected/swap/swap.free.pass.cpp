@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND void swap(unexpected& x, unexpected& y) noexcept(noexcept(x.swap(y)));
+// friend constexpr void swap(unexpected& x, unexpected& y) noexcept(noexcept(x.swap(y)));
 //
 // Constraints: is_swappable_v<E> is true.
 //
@@ -59,7 +59,7 @@ struct ADLSwap
   {}
   ADLSwap& operator=(const ADLSwap&) = delete;
   int i;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(ADLSwap& x, ADLSwap& y)
+  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y)
   {
     cuda::std::swap(x.i, y.i);
   }

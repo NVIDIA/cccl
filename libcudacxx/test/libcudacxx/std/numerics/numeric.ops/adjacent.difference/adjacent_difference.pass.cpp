@@ -62,7 +62,7 @@ public:
     return *this;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND X operator-(const X& x, const X& y)
+  __host__ __device__ constexpr friend X operator-(const X& x, const X& y)
   {
     return X(x.i_ - y.i_);
   }

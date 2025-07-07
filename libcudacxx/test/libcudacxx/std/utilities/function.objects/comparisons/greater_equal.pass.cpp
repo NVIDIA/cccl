@@ -24,7 +24,7 @@
 // ensure that we allow `__device__` functions too
 struct with_device_op
 {
-  __device__ _CCCL_CONSTEXPR_FRIEND bool operator>=(const with_device_op&, const with_device_op&)
+  __device__ friend constexpr bool operator>=(const with_device_op&, const with_device_op&)
   {
     return true;
   }

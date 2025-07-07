@@ -51,15 +51,14 @@ struct MovableNonTrivial
     o.i = 0;
   }
 #if TEST_STD_VER > 2017
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
-  operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
+  __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
 #else
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  __host__ __device__ friend constexpr bool
   operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
   {
     return lhs.i == rhs.i;
   };
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool
+  __host__ __device__ friend constexpr bool
   operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
   {
     return lhs.i != rhs.i;

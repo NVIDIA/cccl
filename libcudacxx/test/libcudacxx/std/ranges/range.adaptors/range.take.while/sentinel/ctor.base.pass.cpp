@@ -19,20 +19,20 @@ struct Sent
 {
   int i;
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int* iter, const Sent& s)
+  __host__ __device__ friend constexpr bool operator==(int* iter, const Sent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Sent& s, int* iter)
+  __host__ __device__ friend constexpr bool operator==(const Sent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int* iter, const Sent& s)
+  __host__ __device__ friend constexpr bool operator!=(int* iter, const Sent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Sent& s, int* iter)
+  __host__ __device__ friend constexpr bool operator!=(const Sent& s, int* iter)
   {
     return s.i <= *iter;
   }

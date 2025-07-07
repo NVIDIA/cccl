@@ -189,7 +189,7 @@ struct EndMemberFunction
   {
     return &x;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* end(EndMemberFunction const&);
+  __host__ __device__ friend constexpr int* end(EndMemberFunction const&);
 };
 
 struct Empty
@@ -242,11 +242,11 @@ __host__ __device__ constexpr bool testEndMember()
 struct EndFunction
 {
   int x;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(EndFunction const&)
+  __host__ __device__ friend constexpr const int* begin(EndFunction const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* end(EndFunction const& bf)
+  __host__ __device__ friend constexpr const int* end(EndFunction const& bf)
   {
     return &bf.x;
   }
@@ -263,45 +263,45 @@ static_assert(cuda::std::is_invocable_v<RangeCEndT, EndFunction&>, "");
 
 struct EndFunctionReturnsInt
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int begin(EndFunctionReturnsInt const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int end(EndFunctionReturnsInt const&);
+  __host__ __device__ friend constexpr int begin(EndFunctionReturnsInt const&);
+  __host__ __device__ friend constexpr int end(EndFunctionReturnsInt const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsInt const&>, "");
 
 struct EndFunctionReturnsVoidPtr
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void* begin(EndFunctionReturnsVoidPtr const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void* end(EndFunctionReturnsVoidPtr const&);
+  __host__ __device__ friend constexpr void* begin(EndFunctionReturnsVoidPtr const&);
+  __host__ __device__ friend constexpr void* end(EndFunctionReturnsVoidPtr const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsVoidPtr const&>, "");
 
 struct EndFunctionReturnsEmpty
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Empty begin(EndFunctionReturnsEmpty const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND Empty end(EndFunctionReturnsEmpty const&);
+  __host__ __device__ friend constexpr Empty begin(EndFunctionReturnsEmpty const&);
+  __host__ __device__ friend constexpr Empty end(EndFunctionReturnsEmpty const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsEmpty const&>, "");
 
 struct EndFunctionReturnsPtrConvertible
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND PtrConvertible begin(EndFunctionReturnsPtrConvertible const&);
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND PtrConvertible end(EndFunctionReturnsPtrConvertible const&);
+  __host__ __device__ friend constexpr PtrConvertible begin(EndFunctionReturnsPtrConvertible const&);
+  __host__ __device__ friend constexpr PtrConvertible end(EndFunctionReturnsPtrConvertible const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsPtrConvertible const&>, "");
 
 struct NoBeginFunction
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* end(NoBeginFunction const&);
+  __host__ __device__ friend constexpr const int* end(NoBeginFunction const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, NoBeginFunction const&>, "");
 
 struct EndFunctionByValue
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* begin(EndFunctionByValue)
+  __host__ __device__ friend constexpr int* begin(EndFunctionByValue)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* end(EndFunctionByValue)
+  __host__ __device__ friend constexpr int* end(EndFunctionByValue)
   {
     return &globalBuff[1];
   }
@@ -310,11 +310,11 @@ static_assert(!cuda::std::is_invocable_v<RangeCEndT, EndFunctionByValue>, "");
 
 struct EndFunctionEnabledBorrowing
 {
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* begin(EndFunctionEnabledBorrowing)
+  __host__ __device__ friend constexpr int* begin(EndFunctionEnabledBorrowing)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* end(EndFunctionEnabledBorrowing)
+  __host__ __device__ friend constexpr int* end(EndFunctionEnabledBorrowing)
   {
     return &globalBuff[2];
   }
@@ -334,11 +334,11 @@ inline constexpr bool enable_borrowed_range<EndFunctionEnabledBorrowing> = true;
 struct EndFunctionReturnsEmptyPtr
 {
   Empty x;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const Empty* begin(EndFunctionReturnsEmptyPtr const&)
+  __host__ __device__ friend constexpr const Empty* begin(EndFunctionReturnsEmptyPtr const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const Empty* end(EndFunctionReturnsEmptyPtr const& bf)
+  __host__ __device__ friend constexpr const Empty* end(EndFunctionReturnsEmptyPtr const& bf)
   {
     return &bf.x;
   }
@@ -348,11 +348,11 @@ struct EndFunctionWithDataMember
 {
   int x;
   int end;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(EndFunctionWithDataMember const&)
+  __host__ __device__ friend constexpr const int* begin(EndFunctionWithDataMember const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* end(EndFunctionWithDataMember const& bf)
+  __host__ __device__ friend constexpr const int* end(EndFunctionWithDataMember const& bf)
   {
     return &bf.x;
   }
@@ -361,11 +361,11 @@ struct EndFunctionWithDataMember
 struct EndFunctionWithPrivateEndMember
 {
   int y;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* begin(EndFunctionWithPrivateEndMember const&)
+  __host__ __device__ friend constexpr const int* begin(EndFunctionWithPrivateEndMember const&)
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* end(EndFunctionWithPrivateEndMember const& bf)
+  __host__ __device__ friend constexpr const int* end(EndFunctionWithPrivateEndMember const& bf)
   {
     return &bf.y;
   }
@@ -381,7 +381,7 @@ struct BeginMemberEndFunction
   {
     return nullptr;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND const int* end(BeginMemberEndFunction const& bf)
+  __host__ __device__ friend constexpr const int* end(BeginMemberEndFunction const& bf)
   {
     return &bf.x;
   }

@@ -67,16 +67,16 @@ public:
     return forward_iterator(it_++);
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const forward_iterator& x, const forward_iterator& y)
+  __host__ __device__ friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const forward_iterator& x, const forward_iterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const forward_iterator& i)
+  __host__ __device__ friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;
   }
@@ -95,25 +95,25 @@ public:
   __host__ __device__ constexpr explicit sentinel_wrapper(const It& it)
       : base_(base(it))
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const sentinel_wrapper& s, const It& i)
+  __host__ __device__ friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const It& i, const sentinel_wrapper& s)
+  __host__ __device__ friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const sentinel_wrapper& s, const It& i)
+  __host__ __device__ friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const It& i, const sentinel_wrapper& s)
+  __host__ __device__ friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const sentinel_wrapper& s)
+  __host__ __device__ friend constexpr It base(const sentinel_wrapper& s)
   {
     return It(s.base_);
   }
@@ -130,33 +130,33 @@ public:
   __host__ __device__ constexpr explicit sized_sentinel(const It& it)
       : base_(base(it))
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const sized_sentinel& s, const It& i)
+  __host__ __device__ friend constexpr bool operator==(const sized_sentinel& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const It& i, const sized_sentinel& s)
+  __host__ __device__ friend constexpr bool operator==(const It& i, const sized_sentinel& s)
   {
     return s.base_ == base(i);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const sized_sentinel& s, const It& i)
+  __host__ __device__ friend constexpr bool operator!=(const sized_sentinel& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const It& i, const sized_sentinel& s)
+  __host__ __device__ friend constexpr bool operator!=(const It& i, const sized_sentinel& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator-(const sized_sentinel& s, const It& i)
+  __host__ __device__ friend constexpr auto operator-(const sized_sentinel& s, const It& i)
   {
     return s.base_ - base(i);
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto operator-(const It& i, const sized_sentinel& s)
+  __host__ __device__ friend constexpr auto operator-(const It& i, const sized_sentinel& s)
   {
     return base(i) - s.base_;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND It base(const sized_sentinel& s)
+  __host__ __device__ friend constexpr It base(const sized_sentinel& s)
   {
     return It(s.base_);
   }

@@ -16,20 +16,20 @@ struct Sent
 {
   bool b; // deliberately uninitialised
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(int*, const Sent& s)
+  __host__ __device__ friend constexpr bool operator==(int*, const Sent& s)
   {
     return s.b;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const Sent& s, int*)
+  __host__ __device__ friend constexpr bool operator==(const Sent& s, int*)
   {
     return s.b;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(int*, const Sent& s)
+  __host__ __device__ friend constexpr bool operator!=(int*, const Sent& s)
   {
     return !s.b;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const Sent& s, int*)
+  __host__ __device__ friend constexpr bool operator!=(const Sent& s, int*)
   {
     return !s.b;
   }

@@ -71,7 +71,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  [[nodiscard]] _CCCL_CONSTEXPR_FRIEND bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
@@ -85,7 +85,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  [[nodiscard]] _CCCL_CONSTEXPR_FRIEND bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] constexpr friend bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }

@@ -29,12 +29,12 @@ struct HasIterSwap
     assert(value == 0);
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void iter_swap(HasIterSwap& a, HasIterSwap& b)
+  __host__ __device__ friend constexpr void iter_swap(HasIterSwap& a, HasIterSwap& b)
   {
     a.value_ = 1;
     b.value_ = 1;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void iter_swap(HasIterSwap& a, int& b)
+  __host__ __device__ friend constexpr void iter_swap(HasIterSwap& a, int& b)
   {
     a.value_ = 2;
     b        = 2;
@@ -75,12 +75,12 @@ struct HasRangesSwap
     assert(value == 0);
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(HasRangesSwap& a, HasRangesSwap& b)
+  __host__ __device__ friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b)
   {
     a.value_ = 1;
     b.value_ = 1;
   }
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(HasRangesSwap& a, int& b)
+  __host__ __device__ friend constexpr void swap(HasRangesSwap& a, int& b)
   {
     a.value_ = 2;
     b        = 2;

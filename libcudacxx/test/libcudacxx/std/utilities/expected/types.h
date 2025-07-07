@@ -109,7 +109,7 @@ struct ADLSwap
   __host__ __device__ constexpr ADLSwap(int ii)
       : i(ii)
   {}
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(ADLSwap& x, ADLSwap& y)
+  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y)
   {
     cuda::std::swap(x.i, y.i);
     x.adlSwapCalled = true;
@@ -135,7 +135,7 @@ struct TrackedMove
     ++numberOfMoves;
   }
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND void swap(TrackedMove& x, TrackedMove& y)
+  __host__ __device__ constexpr friend void swap(TrackedMove& x, TrackedMove& y)
   {
     cuda::std::swap(x.i, y.i);
     cuda::std::swap(x.numberOfMoves, y.numberOfMoves);
@@ -214,12 +214,12 @@ struct TestError
       : err_(err)
   {}
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator==(const TestError& lhs, const TestError& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator==(const TestError& lhs, const TestError& rhs) noexcept
   {
     return lhs.err_ == rhs.err_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND bool operator!=(const TestError& lhs, const TestError& rhs) noexcept
+  __host__ __device__ friend constexpr bool operator!=(const TestError& lhs, const TestError& rhs) noexcept
   {
     return lhs.err_ != rhs.err_;
   }

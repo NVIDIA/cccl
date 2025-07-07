@@ -28,7 +28,7 @@ public:
   typedef int* pointer;
   typedef int& reference;
 
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND int* base(const AssignableFromIter& i)
+  __host__ __device__ friend constexpr int* base(const AssignableFromIter& i)
   {
     return i.it_;
   }

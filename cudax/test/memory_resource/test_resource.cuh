@@ -212,8 +212,8 @@ struct test_resource
     return ::operator delete(pv);
   }
 
-  _CCCL_CONSTEXPR_FRIEND void get_property(const test_resource&, cudax::host_accessible) noexcept {}
-  _CCCL_CONSTEXPR_FRIEND int get_property(const test_resource& self, get_data) noexcept
+  friend constexpr void get_property(const test_resource&, cudax::host_accessible) noexcept {}
+  friend constexpr int get_property(const test_resource& self, get_data) noexcept
   {
     return self.data;
   }

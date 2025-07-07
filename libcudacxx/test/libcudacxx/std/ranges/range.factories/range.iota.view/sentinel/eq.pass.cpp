@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// _CCCL_CONSTEXPR_FRIEND bool operator==(const iterator& x, const sentinel& y);
+// friend constexpr bool operator==(const iterator& x, const sentinel& y);
 
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>

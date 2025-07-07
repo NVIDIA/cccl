@@ -10,7 +10,7 @@
 // <mdspan>
 //
 // template<class OtherIndexType, size_t... OtherExtents>
-//   _CCCL_CONSTEXPR_FRIEND bool operator==(const extents& lhs,
+//   friend constexpr bool operator==(const extents& lhs,
 //                                    const extents<OtherIndexType, OtherExtents...>& rhs) noexcept;
 //
 // Returns: true if lhs.rank() equals rhs.rank() and

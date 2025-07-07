@@ -23,7 +23,7 @@ struct WithADL
   __host__ __device__ constexpr WithADL& operator++() noexcept;
   __host__ __device__ constexpr void operator++(int) noexcept;
   __host__ __device__ constexpr bool operator==(WithADL const&) const noexcept;
-  __host__ __device__ _CCCL_CONSTEXPR_FRIEND auto iter_move(WithADL&)
+  __host__ __device__ friend constexpr auto iter_move(WithADL&)
   {
     return 0;
   }

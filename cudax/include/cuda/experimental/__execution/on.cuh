@@ -180,7 +180,7 @@ public:
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEXPR_FRIEND auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __self.__sch_, static_cast<_Closure&&>(__self.__closure_));
     }

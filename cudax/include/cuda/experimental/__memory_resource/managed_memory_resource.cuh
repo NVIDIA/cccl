@@ -162,9 +162,9 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
-  _CCCL_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&, device_accessible) noexcept {}
+  friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&, host_accessible) noexcept {}
+  friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Checks whether the passed in alignment is valid
