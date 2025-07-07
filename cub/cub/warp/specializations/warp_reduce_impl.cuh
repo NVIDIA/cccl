@@ -161,11 +161,7 @@ warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
   using half_size_unsigned_t = __make_nbit_uint_t<half_bits>;
   auto [high, low]           = split_integers(input);
   auto high_result           = warp_reduce_dispatch(high, reduction_op, warp_config);
-  if (high_result == 0) // shortcut: input is in range [0, 2^N/2) -> perform the computation as unsigned
-  {
-    return warp_reduce_dispatch(static_cast<half_size_unsigned_t>(low), reduction_op, warp_config);
-  }
-  if (is_unsigned_v<T> || high_result > 0) // -> perform the computation as unsigned
+  if (is_unsigned_v<T> || high_result >= 0) // -> perform the computation as unsigned
   {
     constexpr auto identity = identity_v<ReductionOp, half_size_unsigned_t>;
     auto low_unsigned       = static_cast<half_size_unsigned_t>(low);
@@ -308,7 +304,6 @@ template <typename T, typename ReductionOp, typename Config>
   }
   else if constexpr (is_specialized_operator && is_integral_v<T>) // large integers (int64, uint64, int128, uint128)
   {
-    // NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op1, config);));
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op1, config);));
   }
   //--------------------------------------------------------------------------------------------------------------------
