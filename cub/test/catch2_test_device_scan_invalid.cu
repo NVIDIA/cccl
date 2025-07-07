@@ -78,16 +78,56 @@ struct tuple_to_wrapper_op
   }
 };
 
+struct counts
+{
+  error_count_t default_init;
+  error_count_t zero_init;
+  error_count_t other; // Duplicating elements or otherwise combining valid elements in an invalid way/order.
+  error_count_t cascade; // Counting down-the-line errors to avoid muddying the other counters
+};
+
 // Actual scan operator doing the core test when run on device
 struct merge_segments_op
 {
-  __host__ merge_segments_op(error_count_t* error_count)
-      : error_count_{error_count}
+  static constexpr auto cascaded = segment{-1, -1};
+
+  __host__ merge_segments_op(counts* error_counts)
+      : error_counts_{error_counts}
   {}
+
+  __device__ bool check_inputs(segment left, segment right)
+  {
+    // Can't avoid left == right check due to potential zero-initialized segments.
+    if (left.end != right.begin || left == right)
+    {
+      error_count_t* error_count_ptr = &error_counts_->other;
+      if (left == cascaded || right == cascaded)
+      {
+        error_count_ptr = &error_counts_->cascade;
+      }
+      else if (left == segment{} || right == segment{})
+      {
+        error_count_ptr = &error_counts_->default_init;
+      }
+      else if (left == segment{0, 0} || right == segment{0, 0})
+      {
+        error_count_ptr = &error_counts_->zero_init;
+      }
+      atomicAdd(error_count_ptr, error_count_t{1});
+
+      return true;
+    }
+    return false;
+  }
+
   __host__ __device__ segment operator()(segment left, segment right)
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (if (left.end != right.begin || left == right) { atomicAdd(error_count_, error_count_t{1}); }));
+    bool error_found = false;
+    NV_IF_TARGET(NV_IS_DEVICE, (error_found = check_inputs(left, right);));
+    if (error_found)
+    {
+      return cascaded;
+    }
     return {left.begin, right.end};
   }
   __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right)
@@ -97,7 +137,7 @@ struct merge_segments_op
     return dangerous_bit_cast<primitive_t>(this->operator()(left, right));
   }
 
-  error_count_t* error_count_;
+  counts* error_counts_;
 };
 
 // Expected to fail for the current implementation.
@@ -120,9 +160,9 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("inclusive scan")
   {
-    c2h::device_vector<error_count_t> error_count(1);
+    c2h::device_vector<counts> error_counts(1);
     // Scan operator
-    auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
+    auto scan_op = op_t{thrust::raw_pointer_cast(error_counts.data())};
 
     // Prepare verification data
     // Need neutral init in this case
@@ -134,8 +174,13 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_inclusive_scan(d_in_it, d_out_it, scan_op, num_items);
-    // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == error_count_t{});
+
+    const counts h_counts = error_counts.front();
+    // The actual core requirements currently expected to fail
+    CHECK(h_counts.default_init == error_count_t{});
+    CHECK(h_counts.zero_init == error_count_t{});
+    CHECK(h_counts.other == error_count_t{});
+    REQUIRE(h_counts.cascade == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
@@ -143,9 +188,9 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("inclusive scan with init value")
   {
-    c2h::device_vector<error_count_t> error_count(1);
+    c2h::device_vector<counts> error_counts(1);
     // Scan operator
-    auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
+    auto scan_op = op_t{thrust::raw_pointer_cast(error_counts.data())};
 
     const auto init_value = dangerous_bit_cast<output_t>(segment{0, 1});
 
@@ -157,8 +202,13 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_inclusive_scan_with_init(d_in_it, d_out_it, scan_op, init_value, num_items);
-    // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == error_count_t{});
+
+    const counts h_counts = error_counts.front();
+    // The actual core requirements currently expected to fail
+    CHECK(h_counts.default_init == error_count_t{});
+    CHECK(h_counts.zero_init == error_count_t{});
+    CHECK(h_counts.other == error_count_t{});
+    REQUIRE(h_counts.cascade == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
@@ -166,9 +216,9 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("exclusive scan")
   {
-    c2h::device_vector<error_count_t> error_count(1);
+    c2h::device_vector<counts> error_counts(1);
     // Scan operator
-    auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
+    auto scan_op = op_t{thrust::raw_pointer_cast(error_counts.data())};
 
     const auto init_value = dangerous_bit_cast<output_t>(segment{0, 1});
 
@@ -180,8 +230,13 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_exclusive_scan(d_in_it, d_out_it, scan_op, init_value, num_items);
-    // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == error_count_t{});
+
+    const counts h_counts = error_counts.front();
+    // The actual core requirements currently expected to fail
+    CHECK(h_counts.default_init == error_count_t{});
+    CHECK(h_counts.zero_init == error_count_t{});
+    CHECK(h_counts.other == error_count_t{});
+    REQUIRE(h_counts.cascade == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
@@ -189,9 +244,9 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
 
   SECTION("exclusive scan with future-init value")
   {
-    c2h::device_vector<error_count_t> error_count(1);
+    c2h::device_vector<counts> error_counts(1);
     // Scan operator
-    auto scan_op = op_t{thrust::raw_pointer_cast(error_count.data())};
+    auto scan_op = op_t{thrust::raw_pointer_cast(error_counts.data())};
 
     const auto init_value = dangerous_bit_cast<output_t>(segment{0, 1});
 
@@ -206,8 +261,13 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     c2h::device_vector<init_t> d_initial_value{init_value};
     const auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(d_in_it, d_out_it, scan_op, future_init_value, num_items);
-    // The actual core requirement currently expected to fail
-    REQUIRE(error_count.front() == error_count_t{});
+
+    const counts h_counts = error_counts.front();
+    // The actual core requirements currently expected to fail
+    CHECK(h_counts.default_init == error_count_t{});
+    CHECK(h_counts.zero_init == error_count_t{});
+    CHECK(h_counts.other == error_count_t{});
+    REQUIRE(h_counts.cascade == error_count_t{});
 
     // This one should pass
     REQUIRE(expected_result == out_result);
