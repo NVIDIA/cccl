@@ -23,11 +23,10 @@
 
 #include <cuda/std/__complex/arg.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/logarithms.h>
-#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__complex/math.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,17 +38,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // 0.5 * log1p on [-0.25, 0.5]:
 [[nodiscard]] _CCCL_API inline float __internal_unsafe_log1p_poly(float __x) noexcept
 {
-  //P = fpminimax(log1p(x), [|3,4,5,6,7,8,9,10|], [|single ...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
-  float __log1p_poly = 0.5f * -4.50736097991466522216796875e-2f;
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.104645304381847381591796875f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.1316298544406890869140625f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.144788205623626708984375f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.16647164523601531982421875f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.19990806281566619873046875f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.2500009834766387939453125f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.333334505558013916015625);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.5f);
-  __log1p_poly=  _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 1.0f);
+  // P = fpminimax(log1p(x), [|3,4,5,6,7,8,9,10|], [|single ...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
+  float __log1p_poly = 0.5f * -4.50736098e-2f;
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.10464530f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.13162985f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.14478821f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.16647165f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.19990806f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.25000098f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.33333451f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.5f);
+  __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 1.0f);
   __log1p_poly *= __x;
 
   return __log1p_poly;
@@ -58,29 +57,30 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // 0.5 * log1p on [-0.25, 0.5]:
 [[nodiscard]] _CCCL_API inline double __internal_unsafe_log1p_poly(double __x) noexcept
 {
-  // fpminimax(log1p(x), [|3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21|], [|D...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
-  double __log1p_poly = 0.5 * -7.0911163073315332250334819264026009477674961090088e-3;
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 2.6602230803402567710369552855809160973876714706421e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -4.7222450601136278791614131478127092123031616210937e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 5.6597222129139437840628090725658694282174110412598e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -5.7782400501809896842253522208920912817120552062988e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 5.8918170723403356925373941521684173494577407836914e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -6.2247035665701382078918157958469237200915813446045e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 6.6607114464846448043111593051435193046927452087402e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -7.1439299437086684063658026389020960777997970581055e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 7.692821470788910320770526141131995245814323425293e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -8.3333294918203598689032673973997589200735092163086e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 9.0908879181783558420804070010490249842405319213867e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -9.9999988370645248592083476069092284888029098510742e-2);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.111111115835399135165495465571439126506447792053223);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.12500000038299266535979370473796734586358070373535);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.14285714280067426940057373485615244135260581970215);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.16666666666197160751039518800098448991775512695312);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.20000000000032358560275724812527187168598175048828);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.25000000000001904032487232143466826528310775756836);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.33333333333333270420695271241129375994205474853516);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.5);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 1.0);
+  // fpminimax(log1p(x), [|3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21|], [|D...|] ,[-0.25, 0.5], floating,
+  // relative, x + -0.5*x^2);
+  double __log1p_poly = 0.5 * -7.09111630733153322503e-3;
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 2.66022308034025677103e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -4.72224506011362787916e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 5.65972221291394378406e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -5.77824005018098968423e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 5.89181707234033569254e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -6.22470356657013820789e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 6.66071144648464480431e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -7.143929943708668406366e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 7.692821470788910320771e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -8.33332949182035986890e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 9.09088791817835584208e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -9.99999883706452485921e-2);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.11111111583539913517);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.12500000038299266536);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.14285714280067426940);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.16666666666197160751);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.20000000000032358560);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.25000000000001904032);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 0.33333333333333270421);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -0.5);
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 1.0);
   __log1p_poly *= __x;
 
   return __log1p_poly;
@@ -89,12 +89,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half __internal_unsafe_log1p_poly(__half __x) noexcept
 {
-//P = fpminimax(log1p(x), [|2,3,4,5|], [|halfprecision ...|] ,[-0.25, 0.5], floating, relative, x);
+  // P = fpminimax(log1p(x), [|2,3,4,5|], [|halfprecision ...|] ,[-0.25, 0.5], floating, relative, x);
   __half __log1p_poly = __half(0.5 * 0.140380859375);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * -0.257080078125));
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * 0.33740234375));
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * -0.5));
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * 1.0));
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * -0.257080078125));
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * 0.33740234375));
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * -0.5));
+  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * 1.0));
   __log1p_poly *= __x;
 
   return __log1p_poly;
@@ -104,12 +104,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 __internal_unsafe_log1p_poly(__nv_bfloat16 __x) noexcept
 {
-  //P = fpminimax(log1p(x), [|3,4,5|], [|8 ...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
+  // P = fpminimax(log1p(x), [|3,4,5|], [|8 ...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
   __nv_bfloat16 __log1p_poly = __nv_bfloat16(0.5 * 0.1396484375);
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * -0.2578125));
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * 0.337890625));
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * -0.5));
-  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * 1.0));
+  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * -0.2578125));
+  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * 0.337890625));
+  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * -0.5));
+  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * 1.0));
   __log1p_poly *= __x;
 
   return __log1p_poly;
@@ -122,23 +122,23 @@ template <class _Tp>
   // return __x;
   // uint/ints of the same size as our fp type.
   // Shouldn't need make_unsigned here, just in case:
-  using _UINT_T = make_unsigned_t<__fp_storage_of_t<_Tp>>;
-  using _INT_T = make_signed<_UINT_T>;
+  using _UINT_T   = make_unsigned_t<__fp_storage_of_t<_Tp>>;
+  using _INT_T    = make_signed<_UINT_T>;
   using _CONST_TP = const _Tp;
 
   // Constants needed:
   constexpr _UINT_T __mant_mask = __fp_mant_mask_of_v<_Tp>;
-  constexpr _UINT_T __exp_mask = __fp_exp_mask_of_v<_Tp>;
+  constexpr _UINT_T __exp_mask  = __fp_exp_mask_of_v<_Tp>;
 
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
-  constexpr int32_t __exp_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
-  constexpr int32_t __exp_bias = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
+  constexpr int32_t __exp_nbits  = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
+  constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
 
   // Exponent mask of 0.5. Cut off the hi and low bit of __exp_mask.
   // 0x3F000000 for fp32,
   // 0x3FE0000000000000 for fp64 etc
   constexpr _UINT_T __exp_mask_of_half = ((__exp_mask >> (__mant_nbits + 2)) << (__mant_nbits + 1));
-  
+
   // Make sure __r^2 + __i^2 doesn't underflow or overflow
   _CONST_TP __real_abs = _CUDA_VSTD::fabs(__x.real());
   _CONST_TP __imag_abs = _CUDA_VSTD::fabs(__x.imag());
@@ -156,46 +156,54 @@ template <class _Tp>
 
   // Quick frexp:
   _UINT_T __max_reduced_as_uint = (reinterpret_cast<_UINT_T&>(__max) & __mant_mask) | __exp_mask_of_half;
-  _Tp __max_reduced = reinterpret_cast<_Tp&>(__max_reduced_as_uint);
+  _Tp __max_reduced             = reinterpret_cast<_Tp&>(__max_reduced_as_uint);
 
   // Create an exponent for an inline ldexp(__min, -__exp)
   _UINT_T __exp_neg_as_uint = (static_cast<_UINT_T>(__exp_bias - __exp) << __mant_nbits);
-  _Tp __exp_neg = reinterpret_cast<_Tp&>(__exp_neg_as_uint);
+  _Tp __exp_neg             = reinterpret_cast<_Tp&>(__exp_neg_as_uint);
 
   _Tp __min_reduced = __min * __exp_neg;
 
   // Slowpath, denormal/nan/zero/rare-underflow:
-  if((__exp == (1 - __exp_bias)) || (__exp >= __exp_bias)){
+  if ((__exp == (1 - __exp_bias)) || (__exp >= __exp_bias))
+  {
     // Here __exp can also be (eg for double) 3073, as fabs(NaN) can still return a "negative" NaN,
     // And our exponent extraction does not strip the sign. We can still check for this with
     // "__exp >= 1025" as opposed to "__exp == 1025", which only catches "positive" NaNs.
-    if(__max == _Tp(0.0) || __exp >= (__exp_bias + 2)){
+    if (__max == _Tp(0.0) || __exp >= (__exp_bias + 2))
+    {
       // NaN/inf/0.0 (inf doesn't matter, gets fixed later by hypot)
       __max_reduced = __max;
-    }else{
-      if(__exp >= __exp_bias){ //Only 1023 or 1024
+    }
+    else
+    {
+      if (__exp >= __exp_bias)
+      { // Only 1023 or 1024
         // Create a fast ldexp power of 2 as above underflows.
         // Split it into two separate mul's.
         // Inlined version of this code:
         //   __min_reduced = _CUDA_VSTD::ldexp(__min, -__exp);
         _UINT_T __ldexp_factor_2_uint = (static_cast<_UINT_T>(__exp_bias + __mant_nbits - __exp) << __mant_nbits);
-        _UINT_T __two_m_mant_bits = static_cast<_UINT_T>(-__mant_nbits + __exp_bias) << __mant_nbits;
+        _UINT_T __two_m_mant_bits     = static_cast<_UINT_T>(-__mant_nbits + __exp_bias) << __mant_nbits;
 
         _Tp __ldexp_factor_1 = reinterpret_cast<_Tp&>(__two_m_mant_bits); // 2^(-__mant_nbits)
         _Tp __ldexp_factor_2 = reinterpret_cast<_Tp&>(__ldexp_factor_2_uint);
-        __min_reduced = (__min * __ldexp_factor_1) * __ldexp_factor_2;
-      }else{
+        __min_reduced        = (__min * __ldexp_factor_1) * __ldexp_factor_2;
+      }
+      else
+      {
         // __max is denormal (so __min is also denormal or 0.0)
         // Scale things up by 2^23 then do the fast ldexp.
 
         _UINT_T __two_mant_bits = static_cast<_UINT_T>(__mant_nbits + __exp_bias) << __mant_nbits;
-        _Tp __ldexp_factor = reinterpret_cast<_Tp&>(__two_mant_bits);
+        _Tp __ldexp_factor      = reinterpret_cast<_Tp&>(__two_mant_bits);
         // __max_reduced = __max * 8388608.0f; // 2^23
         // __min_reduced = __min * 8388608.0f; // 2^23;
         __max_reduced = __max * __ldexp_factor; // 2^23
         __min_reduced = __min * __ldexp_factor; // 2^23;
 
-        int32_t __exp_no_denorm_bias = static_cast<int32_t>(reinterpret_cast<_UINT_T&>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
+        int32_t __exp_no_denorm_bias =
+          static_cast<int32_t>(reinterpret_cast<_UINT_T&>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
         _UINT_T ldexp_factor_no_denorm_bias = static_cast<_UINT_T>(__exp_bias - __exp_no_denorm_bias) << __mant_nbits;
 
         __max_reduced *= reinterpret_cast<_Tp&>(ldexp_factor_no_denorm_bias);
@@ -212,9 +220,10 @@ template <class _Tp>
   //   0.5 <= hypot(__min_reduced, __max_reduced) <= sqrt(2)
   // We will take the logarithm of this, for the most accuracy (and to reduce log1p polynomial length),
   // we would like to make sure that __hypot_sq_scaled is close to 1.
-  _Tp __hypot_sq_scaled = _CUDA_VSTD::fma(__max_reduced, __max_reduced, __min_reduced*__min_reduced);
+  _Tp __hypot_sq_scaled = _CUDA_VSTD::fma(__max_reduced, __max_reduced, __min_reduced * __min_reduced);
 
-  if(__hypot_sq_scaled < _Tp(0.5)){
+  if (__hypot_sq_scaled < _Tp(0.5))
+  {
     __max_reduced *= _Tp(2.0);
     __min_reduced *= _Tp(2.0);
     __exp -= 1;
@@ -225,11 +234,11 @@ template <class _Tp>
   // To prevent this we should instead calculate:
   //        ((real^2 +  imag^2) - 1)
   // accurately, then use log1p. This keeps it accurate around log(hypot()) = 0.
-  _Tp max_2_hi = __max_reduced*__max_reduced;
-  _Tp max_2_lo =  _CUDA_VSTD::fma(__max_reduced, __max_reduced, -max_2_hi);
+  _Tp max_2_hi = __max_reduced * __max_reduced;
+  _Tp max_2_lo = _CUDA_VSTD::fma(__max_reduced, __max_reduced, -max_2_hi);
 
-  _Tp min_2_hi = __min_reduced*__min_reduced;
-  _Tp min_2_lo =  _CUDA_VSTD::fma(__min_reduced, __min_reduced, -min_2_hi);
+  _Tp min_2_hi = __min_reduced * __min_reduced;
+  _Tp min_2_lo = _CUDA_VSTD::fma(__min_reduced, __min_reduced, -min_2_hi);
 
   _Tp sum_hi = max_2_hi + min_2_hi;
   _Tp sum_lo = min_2_hi + (max_2_hi - sum_hi);
@@ -247,14 +256,16 @@ template <class _Tp>
   _Tp __exp_d = static_cast<_Tp>(__exp);
 
   // C = 2: log1p = ln(1/2) + log1p(1 + 2*x)
-  if(__hypot_sq_scaled < _Tp(-0.25)){
-    __hypot_sq_scaled =  _CUDA_VSTD::fma(_Tp(2.0), __hypot_sq_scaled, _Tp(1.0));
+  if (__hypot_sq_scaled < _Tp(-0.25))
+  {
+    __hypot_sq_scaled = _CUDA_VSTD::fma(_Tp(2.0), __hypot_sq_scaled, _Tp(1.0));
     __exp_d -= _Tp(0.5);
   }
 
   // C = 0.5: log1p = ln(2) + log1p(0.5 + 0.5*x)
-  if(__hypot_sq_scaled >= _Tp(0.5)){
-    __hypot_sq_scaled =  _CUDA_VSTD::fma(_Tp(0.5), __hypot_sq_scaled, _Tp(-0.5));
+  if (__hypot_sq_scaled >= _Tp(0.5))
+  {
+    __hypot_sq_scaled = _CUDA_VSTD::fma(_Tp(0.5), __hypot_sq_scaled, _Tp(-0.5));
     __exp_d += _Tp(0.5);
   }
 
@@ -264,12 +275,14 @@ template <class _Tp>
   _Tp __abs_rescaled = _CUDA_VSTD::fma(_CUDA_VSTD::numbers::ln2_v<_Tp>, __exp_d, __log1p_poly); // ln(2)
 
   // Fix x == 0.0
-  if(__x.real() == _Tp(0.0) && __x.imag() == _Tp(0.0)){
+  if (__x.real() == _Tp(0.0) && __x.imag() == _Tp(0.0))
+  {
     __abs_rescaled = _Tp(-INFINITY);
   }
 
   // Fix hypot inf/nan case:
-  if((__max == _Tp(INFINITY)) || (__min == _Tp(INFINITY))){
+  if ((__max == _Tp(INFINITY)) || (__min == _Tp(INFINITY)))
+  {
     __abs_rescaled = _Tp(INFINITY);
   }
 
