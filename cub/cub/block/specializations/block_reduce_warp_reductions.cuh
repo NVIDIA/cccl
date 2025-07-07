@@ -204,22 +204,7 @@ struct BlockReduceWarpReductions
   template <bool FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
-    using namespace cub::detail;
-    ::cuda::std::plus<> reduction_op;
-    int warp_offset    = (warp_id * LogicalWarpSize);
-    int warp_num_valid = ((FULL_TILE && EvenWarpSize) || (warp_offset + LogicalWarpSize <= num_valid))
-                         ? LogicalWarpSize
-                         : num_valid - warp_offset;
-
-    // Warp reduction in every warp
-    constexpr auto logical_mode =
-      (EvenWarpSize && FULL_TILE && IsPowerOfTwo)
-        ? ReduceLogicalMode::MultipleReductions
-        : ReduceLogicalMode::SingleReduction;
-    auto warp_aggregate = WarpReduce{warp_tmp}.Sum(input, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
-
-    // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
+    return Reduce<FULL_TILE>(input, num_valid, ::cuda::std::plus<>{});
   }
 
   /**
@@ -238,20 +223,10 @@ struct BlockReduceWarpReductions
   template <bool FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
-    int warp_offset    = warp_id * LogicalWarpSize;
-    int warp_num_valid = ((FULL_TILE && EvenWarpSize) || (warp_offset + LogicalWarpSize <= num_valid))
-                         ? LogicalWarpSize
-                         : num_valid - warp_offset;
-    using namespace cub::detail;
-    // Warp reduction in every warp
-    constexpr auto logical_mode =
-      (EvenWarpSize && FULL_TILE && IsPowerOfTwo)
-        ? ReduceLogicalMode::MultipleReductions
-        : ReduceLogicalMode::SingleReduction;
-
-    auto warp_aggregate =
-      WarpReduce{warp_tmp}.Reduce(input, reduction_op, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
-
+    int warp_offset     = warp_id * LogicalWarpSize;
+    bool is_full_warp   = (FULL_TILE && EvenWarpSize) || warp_offset + LogicalWarpSize <= num_valid;
+    auto warp_aggregate = is_full_warp ? WarpReduce{warp_tmp}.Reduce(input, reduction_op)
+                                       : WarpReduce{warp_tmp}.Reduce(input, reduction_op, num_valid - warp_offset);
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
   }
