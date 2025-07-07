@@ -178,7 +178,8 @@ template <class _Tp>
     else
     {
       if (__exp >= __exp_bias)
-      { // Only 1023 or 1024
+      { // EG for double:
+        // Only 1023 or 1024
         // Create a fast ldexp power of 2 as above underflows.
         // Split it into two separate mul's.
         // Inlined version of this code:
@@ -310,8 +311,25 @@ _CCCL_API inline complex<__half> log(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log10(const complex<_Tp>& __x)
 {
-  return _CUDA_VSTD::log(__x) / _CUDA_VSTD::log(_Tp(10));
+  // return _CUDA_VSTD::log(__x) / _CUDA_VSTD::log(_Tp(10));
+  return _CUDA_VSTD::log(__x) *  _Tp(0.434294481903251827651128918916605);
 }
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> log10(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{_CUDA_VSTD::log10(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _LIBCUDACXX_HAS_NVFP16()
+template <>
+_CCCL_API inline complex<__half> log10(const complex<__half>& __x)
+{
+  return complex<__half>{_CUDA_VSTD::log10(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
