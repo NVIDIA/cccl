@@ -13,9 +13,11 @@
 #include <thrust/host_vector.h>
 #include <thrust/logical.h>
 
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
@@ -40,11 +42,15 @@ private:
 };
 
 template <typename Hash, typename Key, typename... HashConstructorArgs>
-static _CCCL_HOST_DEVICE bool
+static __host__ __device__ bool
 check_hash_result(Key const& key, std::uint32_t expected, HashConstructorArgs&&... hash_constructor_args) noexcept
 {
   Hash h(::cuda::std::forward<HashConstructorArgs>(hash_constructor_args)...);
-  return (h(key) == expected);
+
+  cuda::std::array<Key, 1> arr_keys = {key};
+
+  return (h(key) == expected)
+      && (h(cuda::std::span<Key>(thrust::raw_pointer_cast(arr_keys.data()), arr_keys.size())) == expected);
 }
 
 template <typename TestFn, typename... Args>

@@ -154,6 +154,15 @@ public:
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__copy));
   }
 
+  template <size_t _Extent>
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t
+  operator()(_CUDA_VSTD::span<_Key, _Extent> __keys) const noexcept
+  {
+    // TODO: optimize when _Extent is known at compile time i.e
+    // _Extent != _CUDA_VSTD::dynamic_extent, dispatch to bit_cast based implementation
+    return __compute_hash_span(__keys);
+  }
+
 private:
   //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
   //!
@@ -219,12 +228,88 @@ private:
       }
     }
 
-    __h32 ^= __h32 >> 15;
-    __h32 *= __prime2;
-    __h32 ^= __h32 >> 13;
-    __h32 *= __prime3;
-    __h32 ^= __h32 >> 16;
-    return __h32;
+    return __finalize(__h32);
+  }
+
+  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
+  __compute_hash_span(_CUDA_VSTD::span<_Key> __keys) const noexcept
+  {
+    auto __bytes      = _CUDA_VSTD::as_bytes(__keys).data();
+    auto const __size = __keys.size_bytes();
+
+    _CUDA_VSTD::size_t __offset = 0;
+    _CUDA_VSTD::uint32_t __h32;
+
+    // data can be processed in 16-byte chunks
+    if (__size >= 16)
+    {
+      auto const __limit        = __size - 16;
+      _CUDA_VSTD::uint32_t __v1 = __seed_ + __prime1 + __prime2;
+      _CUDA_VSTD::uint32_t __v2 = __seed_ + __prime2;
+      _CUDA_VSTD::uint32_t __v3 = __seed_;
+      _CUDA_VSTD::uint32_t __v4 = __seed_ - __prime1;
+
+      do
+      {
+        // pipeline 4*4byte computations
+        auto const __pipeline_offset = __offset / 4;
+        __v1 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 0) * __prime2;
+        __v1 = ::cuda::std::rotl(__v1, 13);
+        __v1 *= __prime1;
+        __v2 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 1) * __prime2;
+        __v2 = ::cuda::std::rotl(__v2, 13);
+        __v2 *= __prime1;
+        __v3 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 2) * __prime2;
+        __v3 = ::cuda::std::rotl(__v3, 13);
+        __v3 *= __prime1;
+        __v4 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 3) * __prime2;
+        __v4 = ::cuda::std::rotl(__v4, 13);
+        __v4 *= __prime1;
+        __offset += 16;
+      } while (__offset <= __limit);
+
+      __h32 = ::cuda::std::rotl(__v1, 1) + ::cuda::std::rotl(__v2, 7) + ::cuda::std::rotl(__v3, 12)
+            + ::cuda::std::rotl(__v4, 18);
+    }
+    else
+    {
+      __h32 = __seed_ + __prime5;
+    }
+
+    __h32 += __size;
+
+    // remaining data can be processed in 4-byte chunks
+    if ((__size % 16) >= 4)
+    {
+      for (; __offset <= __size - 4; __offset += 4)
+      {
+        __h32 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __offset / 4) * __prime3;
+        __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
+      }
+    }
+
+    // the following loop is only needed if the size of the key is not a multiple of the block size
+    if (__size % 4)
+    {
+      while (__offset < __size)
+      {
+        __h32 += (::cuda::std::to_integer<_CUDA_VSTD::uint32_t>(__bytes[__offset]) & 255) * __prime5;
+        __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
+        ++__offset;
+      }
+    }
+
+    return __finalize(__h32);
+  }
+
+  [[nodiscard]] constexpr _CCCL_HOST_DEVICE _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
+  {
+    __h ^= __h >> 15;
+    __h *= __prime2;
+    __h ^= __h >> 13;
+    __h *= __prime3;
+    __h ^= __h >> 16;
+    return __h;
   }
 
   _CUDA_VSTD::uint32_t __seed_;
