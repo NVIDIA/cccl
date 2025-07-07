@@ -80,12 +80,12 @@ namespace __is_convertible_imp
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
-_CCCL_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
 
 template <class _Tp>
 _CCCL_API inline void __test_convert(_Tp);
 
-_CCCL_NV_DIAG_DEFAULT(volatile_func_param_deprecated)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 template <class _From, class _To, class = void>

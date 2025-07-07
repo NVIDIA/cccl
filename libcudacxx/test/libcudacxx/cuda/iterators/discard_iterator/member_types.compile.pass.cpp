@@ -19,7 +19,7 @@ __host__ __device__ void test()
 {
   using Iter = cuda::discard_iterator;
   static_assert(cuda::std::same_as<Iter::value_type, void>);
-  static_assert(cuda::std::same_as<Iter::pointer, void*>);
+  static_assert(cuda::std::same_as<Iter::pointer, void>);
   static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
   static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);

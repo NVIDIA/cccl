@@ -60,25 +60,9 @@
 #include <vector>
 
 #include "mersenne.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
-
-/******************************************************************************
- * Type conversion macros
- ******************************************************************************/
-
-/**
- * Return a value of type `T` with the same bitwise representation of `in`.
- * Types `T` and `U` must be the same size.
- */
-template <typename T, typename U>
-__host__ __device__ T SafeBitCast(const U& in)
-{
-  static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
-  T out;
-  memcpy(&out, &in, sizeof(T));
-  return out;
-}
 
 /******************************************************************************
  * Assertion macros
@@ -384,94 +368,6 @@ inline std::size_t TotalGlobalMem()
  * Random bits generator
  ******************************************************************************/
 
-template <typename T>
-bool IsNaN(T /* val */)
-{
-  return false;
-}
-
-template <>
-inline bool IsNaN<float>(float val)
-{
-  return std::isnan(val);
-}
-
-template <>
-inline bool IsNaN<float1>(float1 val)
-{
-  return (IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<float2>(float2 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<float3>(float3 val)
-{
-  return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<float4>(float4 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
-}
-
-template <>
-inline bool IsNaN<double>(double val)
-{
-  return std::isnan(val);
-}
-
-template <>
-inline bool IsNaN<double1>(double1 val)
-{
-  return (IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<double2>(double2 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<double3>(double3 val)
-{
-  return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<double4>(double4 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
-}
-
-#if TEST_HALF_T()
-template <>
-inline bool IsNaN<half_t>(half_t val)
-{
-  const auto bits = SafeBitCast<unsigned short>(val);
-
-  // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
-}
-#endif // TEST_HALF_T()
-
-#if TEST_BF_T()
-template <>
-inline bool IsNaN<bfloat16_t>(bfloat16_t val)
-{
-  const auto bits = SafeBitCast<unsigned short>(val);
-
-  // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
-}
-#endif // TEST_BF_T()
-
 /**
  * Generates random keys.
  *
@@ -537,7 +433,7 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
     memcpy(&key, word_buff, sizeof(K));
 
     K copy = key;
-    if (!IsNaN(copy))
+    if (!c2h::isnan(copy))
     {
       break; // avoids NaNs when generating random floating point numbers
     }
@@ -603,12 +499,12 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
         if (c == 0)
         {
           // Replace 1/256 of values with +0.0 bit pattern
-          value = SafeBitCast<T>(UnsignedBits(0));
+          value = c2h::SafeBitCast<T>(UnsignedBits(0));
         }
         else if (c == 1)
         {
           // Replace 1/256 of values with -0.0 bit pattern
-          value = SafeBitCast<T>(UnsignedBits(UnsignedBits(1) << (sizeof(UnsignedBits) * 8) - 1));
+          value = c2h::SafeBitCast<T>(UnsignedBits(UnsignedBits(1) << (sizeof(UnsignedBits) * 8) - 1));
         }
         else
         {
@@ -733,7 +629,27 @@ std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<
   return os;
 }
 
-#if _CCCL_HAS_INT128()
+#if _CCCL_HAS_NVFP16()
+
+inline std::ostream& operator<<(std::ostream& stream, const __half2& value)
+{
+  stream << "(" << value.x << "," << value.y << ")";
+  return stream;
+}
+
+#endif // _CCCL_HAS_HALF
+
+#if _CCCL_HAS_NVBF16()
+
+inline std::ostream& operator<<(std::ostream& stream, const __nv_bfloat162& value)
+{
+  stream << "(" << value.x << "," << value.y << ")";
+  return stream;
+}
+
+#endif // _CCCL_HAS_NVBF16
+
+#if TEST_INT128()
 inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {
   constexpr int max_digits      = 40;
@@ -780,7 +696,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_OVERLOAD_1_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_1_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -790,7 +706,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_OVERLOAD_2_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_2_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -801,7 +717,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_OVERLOAD_3_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_3_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -813,7 +729,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_OVERLOAD_4_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_4_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -826,27 +742,49 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * All vector overloads
  */
-#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T, BaseT) \
-  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1, BaseT)  \
-  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2, BaseT)  \
-  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3, BaseT)  \
-  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4, BaseT)
+#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T) \
+  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1)  \
+  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2)  \
+  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3)  \
+  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4)
 
 /**
  * Define for types
  */
-CUB_VEC_OVERLOAD_OLD(char, signed char)
-CUB_VEC_OVERLOAD_OLD(short, short)
-CUB_VEC_OVERLOAD_OLD(int, int)
-CUB_VEC_OVERLOAD_OLD(long, long)
-CUB_VEC_OVERLOAD_OLD(longlong, long long)
-CUB_VEC_OVERLOAD_OLD(uchar, unsigned char)
-CUB_VEC_OVERLOAD_OLD(ushort, unsigned short)
-CUB_VEC_OVERLOAD_OLD(uint, unsigned int)
-CUB_VEC_OVERLOAD_OLD(ulong, unsigned long)
-CUB_VEC_OVERLOAD_OLD(ulonglong, unsigned long long)
-CUB_VEC_OVERLOAD_OLD(float, float)
-CUB_VEC_OVERLOAD_OLD(double, double)
+CUB_VEC_OVERLOAD_OLD(char)
+CUB_VEC_OVERLOAD_OLD(short)
+CUB_VEC_OVERLOAD_OLD(int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(long)
+CUB_VEC_OVERLOAD_OLD(longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(long4_16a)
+CUB_VEC_OVERLOAD_4_OLD(long4_32a)
+CUB_VEC_OVERLOAD_4_OLD(longlong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(longlong4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_OLD(uchar)
+CUB_VEC_OVERLOAD_OLD(ushort)
+CUB_VEC_OVERLOAD_OLD(uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(ulong)
+CUB_VEC_OVERLOAD_OLD(ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(ulong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(ulong4_32a)
+CUB_VEC_OVERLOAD_4_OLD(ulonglong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(ulonglong4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_OLD(float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(double4_16a)
+CUB_VEC_OVERLOAD_4_OLD(double4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 //---------------------------------------------------------------------
 // Complex data type TestFoo

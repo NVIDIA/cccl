@@ -144,7 +144,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       {
         // accounting for new storage
         bytes(1337 * sizeof(int));
-        cudax::uninitialized_buffer<int, cudax::host_accessible> other_buffer{buffer.get_memory_resource(), 1337};
+        cudax::uninitialized_buffer<int, cudax::host_accessible> other_buffer{buffer.memory_resource(), 1337};
         ++expected.allocate_count;
         CHECK(this->counts == expected);
       }

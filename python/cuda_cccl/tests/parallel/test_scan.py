@@ -46,9 +46,12 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     [True, False],
 )
 def test_scan_array_input(force_inclusive, input_array, monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
     # Skip sass verification if input is complex
     # as LDL/STL instructions are emitted for complex types.
-    if np.issubdtype(input_array.dtype, np.complexfloating):
+    # Also skip for CC 9.0+, due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if np.issubdtype(input_array.dtype, np.complexfloating) or cc_major >= 9:
         import cuda.cccl.parallel.experimental._cccl_interop
 
         monkeypatch.setattr(

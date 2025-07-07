@@ -13,7 +13,7 @@ namespace
 
 // The managed_memory_pointer class should be identified as a
 // contiguous_iterator
-static_assert(thrust::is_contiguous_iterator<thrust::universal_allocator<int>::pointer>::value);
+static_assert(thrust::is_contiguous_iterator_v<thrust::universal_allocator<int>::pointer>);
 
 template <typename T>
 struct some_object
@@ -139,8 +139,8 @@ void TestUniversalHostPinnedThrustVector(std::size_t const n)
   thrust::host_vector<T> host(n);
   thrust::universal_host_pinned_vector<T> universal(n);
 
-  static_assert(std::is_same_v<typename std::decay_t<decltype(universal)>::pointer, thrust::universal_ptr<T>>,
-                "Unexpected thrust::universal_vector pointer type.");
+  static_assert(
+    std::is_same_v<typename std::decay_t<decltype(universal)>::pointer, thrust::universal_host_pinned_ptr<T>>);
 
   thrust::sequence(host.begin(), host.end(), 0);
   thrust::sequence(universal.begin(), universal.end(), 0);

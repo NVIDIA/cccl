@@ -89,7 +89,7 @@ using device_memory_resource = detail::cuda_memory_resource<cudaMalloc, cudaFree
 using managed_memory_resource =
   detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
 using pinned_memory_resource =
-  detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_pointer<void>>;
+  detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_host_pinned_pointer<void>>;
 
 } // namespace detail
 //! \endcond

@@ -113,24 +113,52 @@ C2H_CCCLRT_TEST("Stream priority", "[stream]")
 C2H_CCCLRT_TEST("Stream get device", "[stream]")
 {
   cudax::stream dev0_stream(cudax::device_ref{0});
-  CUDAX_REQUIRE(dev0_stream.get_device() == 0);
+  CUDAX_REQUIRE(dev0_stream.device() == 0);
 
   cudax::__ensure_current_device guard(cudax::device_ref{*std::prev(cudax::devices.end())});
   cudaStream_t stream_handle;
   CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
-  CUDAX_REQUIRE(stream_cudart.get_device() == *std::prev(cudax::devices.end()));
+  CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cudax::devices.end()));
   auto stream_ref_cudart = cudax::stream_ref(stream_handle);
-  CUDAX_REQUIRE(stream_ref_cudart.get_device() == *std::prev(cudax::devices.end()));
+  CUDAX_REQUIRE(stream_ref_cudart.device() == *std::prev(cudax::devices.end()));
 
   INFO("Can create a side stream using logical device");
   {
     if (test::cuda_driver_version() >= 12050)
     {
-      auto ldev = dev0_stream.get_logical_device();
-      CUDAX_REQUIRE(ldev.get_kind() == cudax::logical_device::kinds::device);
+      auto ldev = dev0_stream.logical_device();
+      CUDAX_REQUIRE(ldev.kind() == cudax::logical_device::kinds::device);
       cudax::stream side_stream(ldev);
-      CUDAX_REQUIRE(side_stream.get_device() == dev0_stream.get_device());
+      CUDAX_REQUIRE(side_stream.device() == dev0_stream.device());
     }
+  }
+}
+
+C2H_CCCLRT_TEST("Stream ID", "[stream]")
+{
+  cudax::stream stream1{cudax::device_ref{0}};
+  cudax::stream stream2{cudax::device_ref{0}};
+
+  // Test that id() returns a valid ID
+  auto id1 = stream1.id();
+  auto id2 = stream2.id();
+
+  // Test that different streams have different IDs
+  CUDAX_REQUIRE(id1 != id2);
+
+  // Test that the same stream returns the same ID when called multiple times
+  CUDAX_REQUIRE(stream1.id() == id1);
+  CUDAX_REQUIRE(stream2.id() == id2);
+
+  {
+    // Test that stream_ref also supports id()
+    // NULL stream needs a device to be set
+    cudax::__ensure_current_device guard(cudax::device_ref{0});
+    cudax::stream_ref ref1(static_cast<cudaStream_t>(NULL));
+    cudax::stream_ref ref2(stream1);
+
+    CUDAX_REQUIRE(ref1.id() != ref2.id());
+    CUDAX_REQUIRE(ref2.id() == id1);
   }
 }

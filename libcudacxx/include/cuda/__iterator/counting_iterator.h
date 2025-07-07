@@ -1,12 +1,13 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef _CUDA___ITERATOR_COUNTING_ITERATOR_H
 #define _CUDA___ITERATOR_COUNTING_ITERATOR_H
 
@@ -116,6 +117,64 @@ struct __counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::inc
   using iterator_category = _CUDA_VSTD::input_iterator_tag;
 };
 
+//! @brief \p counting_iterator is an iterator which represents a pointer into a range of sequentially changing values.
+//! This iterator is useful for creating a range filled with a sequence without explicitly storing it in memory. Using
+//! \p counting_iterator saves memory capacity and bandwidth.
+//!
+//! The following code snippet demonstrates how to create a \p counting_iterator whose \c value_type is \c int and which
+//! sequentially increments by \c 1.
+//!
+//! @code
+//! #include <cuda/iterator>
+//! ...
+//! // create iterators
+//! cuda::counting_iterator first(10);
+//! cuda::counting_iterator last = first + 3;
+//!
+//! first[0]   // returns 10
+//! first[1]   // returns 11
+//! first[100] // returns 110
+//!
+//! // sum of [first, last)
+//! thrust::reduce(first, last);   // returns 33 (i.e. 10 + 11 + 12)
+//!
+//! // initialize vector to [0,1,2,..]
+//! cuda::counting_iterator iter(0);
+//! thrust::device_vector<int> vec(500);
+//! thrust::copy(iter, iter + vec.size(), vec.begin());
+//! @endcode
+//!
+//! This next example demonstrates how to use a \p counting_iterator with the \p thrust::copy_if function to compute the
+//! indices of the non-zero elements of a \p device_vector. In this example, we use the \p make_counting_iterator
+//! function to avoid specifying the type of the \p counting_iterator.
+//!
+//! @code
+//! #include <cuda/iterator>
+//! #include <thrust/copy.h>
+//! #include <thrust/functional.h>
+//! #include <thrust/device_vector.h>
+//!
+//! int main()
+//! {
+//!  // this example computes indices for all the nonzero values in a sequence
+//!
+//!  // sequence of zero and nonzero values
+//!  thrust::device_vector<int> stencil{0, 1, 1, 0, 0, 1, 0, 1};
+//!
+//!  // storage for the nonzero indices
+//!  thrust::device_vector<int> indices(8);
+//!
+//!  // use make_counting_iterator to define the sequence [0, 8)
+//!  auto indices_end = thrust::copy_if(cuda::counting_iterator{0},
+//!                                     cuda::counting_iterator{8},
+//!                                     stencil.begin(),
+//!                                     indices.begin(),
+//!                                     ::cuda::std::identity{});
+//!  // indices now contains [1,2,5,7]
+//!
+//!  return 0;
+//! }
+//! @endcode
 #if _CCCL_HAS_CONCEPTS()
 template <_CUDA_VSTD::weakly_incrementable _Start>
   requires _CUDA_VSTD::copyable<_Start>

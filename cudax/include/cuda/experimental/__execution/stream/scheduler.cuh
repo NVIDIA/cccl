@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__stream/get_stream.h>
+#include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -36,12 +37,16 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+
 namespace cuda::experimental
 {
 namespace execution
 {
-template <class _Tag, class _Rcvr, class... _Args>
-__launch_bounds__(1) __global__ static void __stream_complete(_Tag, _Rcvr* __rcvr, _Args... __args)
+template <int _BlockThreads, class _Tag, class _Rcvr, class... _Args>
+_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
+  void __stream_complete(_Tag, _Rcvr* __rcvr, _Args... __args)
 {
   _Tag{}(static_cast<_Rcvr&&>(*__rcvr), static_cast<_Args&&>(__args)...);
 }
@@ -73,7 +78,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       return {};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_late_t) noexcept -> stream_domain
+    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
     {
       return {};
     }
@@ -107,18 +112,37 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
   private:
     _CCCL_HOST_API void __host_start() noexcept
     {
-      __stream_complete<<<1, 1, 0, __stream_.get()>>>(set_value, &__rcvr_);
+      // Read the launch configuration passed to us by the parent operation. When we launch
+      // the completion kernel, we will be completing the parent's receiver, so we must let
+      // the receiver tell us how to launch the kernel.
+      auto const __launch_dims      = get_launch_config(execution::get_env(__rcvr_)).dims;
+      constexpr int __block_threads = decltype(__launch_dims)::static_count(experimental::thread, experimental::block);
+      int const __grid_blocks       = __launch_dims.count(experimental::block, experimental::grid);
+      static_assert(__block_threads != ::cuda::std::dynamic_extent);
+
+      // printf("Launching completion kernel for stream_scheduler with %d block threads and %d grid blocks\n",
+      //        __block_threads,
+      //        __grid_blocks);
+
+      // Launch the kernel that completes the receiver with the launch configuration from
+      // the receiver.
+      __stream_complete<__block_threads><<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(set_value, &__rcvr_);
+
       if (auto __status = cudaGetLastError(); __status != cudaSuccess)
       {
         execution::set_error(static_cast<_Rcvr&&>(__rcvr_), cudaError_t(__status));
       }
     }
 
+    // TODO: untested
     _CCCL_DEVICE_API void __device_start() noexcept
     {
+      using __launch_dims_t         = decltype(get_launch_config(execution::get_env(__rcvr_)).dims);
+      constexpr int __block_threads = __launch_dims_t::static_count(experimental::thread, experimental::block);
+
       // without the following, the kernel in __host_start will fail to launch with
       // cudaErrorInvalidDeviceFunction.
-      [[maybe_unused]] auto __ignore = &__stream_complete<set_value_t, _Rcvr>;
+      ::__cccl_unused(&__stream_complete<__block_threads, set_value_t, _Rcvr>);
       execution::set_value(static_cast<_Rcvr&&>(__rcvr_));
     }
 
@@ -200,6 +224,13 @@ private:
   stream_ref __stream_;
 };
 
+// The stream_scheduler's sender does not need to be wrapped in a __stream::__sndr_t
+// because it is already a stream sender. The following specialization ensures that
+// no transform is applied to the stream_scheduler's sender.
+template <>
+struct stream_domain::__apply_t<stream_scheduler::__tag_t> : stream_domain::__apply_passthru_t
+{};
+
 } // namespace execution
 
 _CCCL_HOST_API inline auto stream_ref::schedule() const noexcept
@@ -214,6 +245,8 @@ _CCCL_HOST_API inline auto stream_ref::schedule() const noexcept
 }
 
 } // namespace cuda::experimental
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

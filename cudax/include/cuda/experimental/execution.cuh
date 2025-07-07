@@ -13,6 +13,7 @@
 
 // IWYU pragma: begin_exports
 #include <cuda/experimental/__execution/apply_sender.cuh>
+#include <cuda/experimental/__execution/bulk.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/conditional.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
@@ -23,6 +24,7 @@
 #include <cuda/experimental/__execution/just.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/let_value.cuh>
+#include <cuda/experimental/__execution/on.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/read_env.cuh>
@@ -40,6 +42,7 @@
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__execution/when_all.cuh>
+#include <cuda/experimental/__execution/write_attrs.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>
 // IWYU pragma: end_exports
 

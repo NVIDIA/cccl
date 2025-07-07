@@ -179,10 +179,10 @@ public:
   //!
   //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
-  //! Device on which this resource allocates memory can be included in the vector.
+  //! Device on which this resource allocates memory can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to enable access for
+  void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -203,10 +203,10 @@ public:
   //!
   //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
-  //! Device on which this resource allocates memory can be included in the vector.
+  //! Device on which this resource allocates memory can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to disable access for
+  void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);

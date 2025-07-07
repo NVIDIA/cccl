@@ -251,8 +251,6 @@ struct UniqueAgent
     template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
     Size THRUST_DEVICE_FUNCTION consume_tile_impl(int num_tile_items, int tile_idx, Size tile_base)
     {
-      using core::detail::uninitialized_array;
-
       item_type items_loc[ITEMS_PER_THREAD];
       Size selection_flags[ITEMS_PER_THREAD];
       Size selection_idx[ITEMS_PER_THREAD];

@@ -26,8 +26,8 @@ void test(Iterator first, Iterator last)
 
   using TrivialIterator = typename thrust::detail::trivial_sequence<Iterator, System>::iterator_type;
 
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<Iterator>::value, false);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TrivialIterator>::value, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<Iterator>, false);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<TrivialIterator>, true);
 }
 
 template <class Vector>

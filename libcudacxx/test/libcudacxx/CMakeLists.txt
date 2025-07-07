@@ -147,3 +147,38 @@ set_tests_properties(libcudacxx.test.lit PROPERTIES
   TIMEOUT 10800 # 3hr, some CI machines are slow
   RUN_SERIAL TRUE
 )
+
+# Add c2h tests:
+cccl_get_c2h()
+
+file(GLOB_RECURSE test_srcs
+  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+  CONFIGURE_DEPENDS
+  *.cu
+)
+
+set(c2h_all_target "libcudacxx.test.c2h_all")
+add_custom_target(${c2h_all_target})
+
+function(libcudacxx_add_test target_name_var source)
+  string(REPLACE "/" "." target_name "${source}")
+  string(PREPEND target_name "libcudacxx.test.")
+  string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
+  set(${target_name_var} ${target_name} PARENT_SCOPE)
+
+  add_executable(${target_name} "${source}")
+  cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+  target_link_libraries(${target_name} PRIVATE
+    libcudacxx::libcudacxx
+    cccl.c2h.main
+    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+  )
+
+  add_dependencies(${c2h_all_target} ${target_name})
+
+  add_test(NAME ${target_name} COMMAND ${target_name})
+endfunction()
+
+foreach (test_src IN LISTS test_srcs)
+  libcudacxx_add_test(test_target "${test_src}")
+endforeach()

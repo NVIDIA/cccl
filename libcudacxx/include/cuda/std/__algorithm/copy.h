@@ -130,7 +130,8 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::__copy<_ClassicAlgPolicy>(__unwrap_iter(__first), __unwrap_iter(__last), __unwrap_iter(__result))
+  return _CUDA_VSTD::__copy<_ClassicAlgPolicy>(
+           _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result))
     .second;
 }
 

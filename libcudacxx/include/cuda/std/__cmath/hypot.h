@@ -45,6 +45,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // hypot
 
+#if _CCCL_CHECK_BUILTIN(builtin_hypot) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_HYPOTF(...) __builtin_hypotf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_HYPOT(...)  __builtin_hypot(__VA_ARGS__)
+#  define _CCCL_BUILTIN_HYPOTL(...) __builtin_hypotl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_hypot)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_HYPOTF
+#  undef _CCCL_BUILTIN_HYPOT
+#  undef _CCCL_BUILTIN_HYPOTL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float hypot(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_HYPOTF)

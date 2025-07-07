@@ -1,12 +1,13 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef _CUDA___ITERATOR_CONSTANT_ITERATOR_H
 #define _CUDA___ITERATOR_CONSTANT_ITERATOR_H
 
@@ -38,7 +39,7 @@ class constant_iterator
 private:
   static_assert(_CUDA_VSTD::__integer_like<_Index>, "The index type of cuda::constant_iterator must be integer-like!");
 
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VRANGES::__movable_box<_Tp> __value_{_CUDA_VSTD::in_place};
+  _CUDA_VRANGES::__movable_box<_Tp> __value_{_CUDA_VSTD::in_place};
   _Index __index_ = 0;
 
 public:

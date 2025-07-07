@@ -261,6 +261,7 @@ def to_cccl_op(op: Callable, sig: Signature) -> Op:
     order to link correctly without violating ODR.
     """
     wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
+
     ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,

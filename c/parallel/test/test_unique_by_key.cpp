@@ -75,6 +75,12 @@ struct unique_by_key_build
       libcudacxx_path,
       ctk_path);
   }
+
+  static bool should_check_sass(int cc_major)
+  {
+    // TODO: add a check for NVRTC version; ref nvbug 5243118
+    return cc_major < 9;
+  }
 };
 
 struct unique_by_key_run

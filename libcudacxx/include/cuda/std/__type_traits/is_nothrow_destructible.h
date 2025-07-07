@@ -40,6 +40,9 @@ template <class _Tp>
 struct is_nothrow_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(_Tp)>
 {};
 
+template <class _Tp>
+inline constexpr bool is_nothrow_destructible_v = _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(_Tp);
+
 #else // ^^^ _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE vvv
 
 template <class _Tp, bool = is_destructible<_Tp>::value>
@@ -67,10 +70,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&&> : public true_type
 {};
 
-#endif // !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE
-
 template <class _Tp>
 inline constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_Tp>::value;
+
+#endif // !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

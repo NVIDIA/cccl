@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "test_util.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
 
 /**
@@ -128,14 +129,6 @@ print_tuple(std::ostream& os, const thrust::tuple<T...>& tup)
   }
   os << thrust::get<n>(tup);
   print_tuple<n + 1>(os, tup);
-}
-
-template <typename... T>
-std::ostream& operator<<(std::ostream& os, const thrust::tuple<T...>& tup)
-{
-  os << "[";
-  print_tuple<0>(os, tup);
-  return os << "]";
 }
 
 struct Identity

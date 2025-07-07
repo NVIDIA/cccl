@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
+#include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -49,7 +50,7 @@ struct [[maybe_unused]] __ensure_current_device
   //! @throws cuda_error if the device switch fails
   explicit __ensure_current_device(device_ref __new_device)
   {
-    auto __ctx = devices[__new_device.get()].get_primary_context();
+    auto __ctx = devices[__new_device.get()].primary_context();
     __detail::driver::ctxPush(__ctx);
   }
 
@@ -64,7 +65,7 @@ struct [[maybe_unused]] __ensure_current_device
   //! @throws cuda_error if the device switch fails
   explicit __ensure_current_device(logical_device __new_device)
   {
-    __detail::driver::ctxPush(__new_device.get_context());
+    __detail::driver::ctxPush(__new_device.context());
   }
 
   // Doesn't really fit into the type description, we might consider changing it once
@@ -85,6 +86,12 @@ struct [[maybe_unused]] __ensure_current_device
     auto __ctx = __detail::driver::streamGetCtx(__stream.get());
     __detail::driver::ctxPush(__ctx);
   }
+
+  _CCCL_TEMPLATE(typename _GraphInserter)
+  _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
+  explicit __ensure_current_device(const _GraphInserter& __inserter)
+      : __ensure_current_device(__inserter.get_device())
+  {}
 
   __ensure_current_device(__ensure_current_device&&)                 = delete;
   __ensure_current_device(__ensure_current_device const&)            = delete;

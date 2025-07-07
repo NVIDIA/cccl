@@ -12,6 +12,8 @@
 
 #include "test_macros.h"
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <class VType, size_t Size>
 __host__ __device__ constexpr void test()
 {
@@ -41,6 +43,19 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(ulonglong);
   EXPAND_VECTOR_TYPE(float);
   EXPAND_VECTOR_TYPE(double);
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test<long4_16a, 4>();
+  test<long4_32a, 4>();
+  test<ulong4_16a, 4>();
+  test<ulong4_32a, 4>();
+  test<longlong4_16a, 4>();
+  test<longlong4_32a, 4>();
+  test<ulonglong4_16a, 4>();
+  test<ulonglong4_32a, 4>();
+  test<double4_16a, 4>();
+  test<double4_32a, 4>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   return true;
 }

@@ -126,7 +126,7 @@ void gen(seed_t seed,
          c2h::custom_type_t<Ps...> max = ::cuda::std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
 {
   detail::gen(seed,
-              reinterpret_cast<char*>(thrust::raw_pointer_cast(data.data())),
+              reinterpret_cast<char*>(THRUST_NS_QUALIFIER::raw_pointer_cast(data.data())),
               min,
               max,
               data.size(),
@@ -159,16 +159,17 @@ c2h::device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_s
 template <typename OffsetT, typename KeyT>
 void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, c2h::device_vector<KeyT>& keys_out)
 {
-  detail::init_key_segments(segment_offsets, thrust::raw_pointer_cast(keys_out.data()), sizeof(KeyT));
+  detail::init_key_segments(segment_offsets, THRUST_NS_QUALIFIER::raw_pointer_cast(keys_out.data()), sizeof(KeyT));
 }
 
 template <typename OffsetT, template <typename> class... Ps>
 void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets,
                        c2h::device_vector<custom_type_t<Ps...>>& keys_out)
 {
-  detail::init_key_segments(segment_offsets,
-                            reinterpret_cast<custom_type_state_t*>(thrust::raw_pointer_cast(keys_out.data())),
-                            sizeof(custom_type_t<Ps...>));
+  detail::init_key_segments(
+    segment_offsets,
+    reinterpret_cast<custom_type_state_t*>(THRUST_NS_QUALIFIER::raw_pointer_cast(keys_out.data())),
+    sizeof(custom_type_t<Ps...>));
 }
 
 } // namespace c2h

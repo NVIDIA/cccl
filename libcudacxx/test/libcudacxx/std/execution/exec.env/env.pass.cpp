@@ -96,6 +96,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   assert(cuda::std::execution::__query_or(e2, query1, 0) == 42);
   assert(cuda::std::execution::__query_or(e2, query2, &e2) == &e2);
 
+  // Test that env works with const references:
+  cuda::std::execution::env<decltype(e2) const&> e5{e2};
+  assert(e5.query(query1) == 42);
+
   return true;
 }
 

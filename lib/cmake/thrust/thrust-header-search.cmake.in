@@ -10,5 +10,6 @@ find_path(_THRUST_VERSION_INCLUDE_DIR thrust/version.h
   NO_DEFAULT_PATH # Only search explicit paths below:
   PATHS
     "${CMAKE_CURRENT_LIST_DIR}/${from_install_prefix}/@CMAKE_INSTALL_INCLUDEDIR@"
+    "${CMAKE_CURRENT_LIST_DIR}/${from_install_prefix}/@CMAKE_INSTALL_INCLUDEDIR@/cccl"
 )
 set_property(CACHE _THRUST_VERSION_INCLUDE_DIR PROPERTY TYPE INTERNAL)

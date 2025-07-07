@@ -192,15 +192,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
         }
         else
         {
-          _CUDAX_TRY( //
-            ({ //
-              (__values_.template __emplace<_Jdx + _Offset>(static_cast<_Ts&&>(__ts)), ...);
-            }),
-            _CUDAX_CATCH(...) //
-            ({ //
-              __set_error(::std::current_exception());
-            }) //
-          )
+          _CCCL_TRY
+          {
+            (__values_.template __emplace<_Jdx + _Offset>(static_cast<_Ts&&>(__ts)), ...);
+          }
+          _CCCL_CATCH_ALL
+          {
+            __set_error(::std::current_exception());
+          }
         }
       }
     }
@@ -220,15 +219,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
         }
         else
         {
-          _CUDAX_TRY( //
-            ({ //
-              __errors_.template __emplace<_CUDA_VSTD::decay_t<_Error>>(static_cast<_Error&&>(__err));
-            }),
-            _CUDAX_CATCH(...) //
-            ({ //
-              __errors_.template __emplace<::std::exception_ptr>(::std::current_exception());
-            }) //
-          )
+          _CCCL_TRY
+          {
+            __errors_.template __emplace<_CUDA_VSTD::decay_t<_Error>>(static_cast<_Error&&>(__err));
+          }
+          _CCCL_CATCH_ALL
+          {
+            __errors_.template __emplace<::std::exception_ptr>(::std::current_exception());
+          }
         }
       }
     }

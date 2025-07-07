@@ -86,12 +86,12 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& get_arch_traits() const noexcept
+  const arch_traits_t& arch_traits() const noexcept
   {
     return __traits;
   }
 
-  CUcontext get_primary_context() const
+  CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
       __device      = __detail::driver::deviceGet(__id_);

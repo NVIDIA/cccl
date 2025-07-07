@@ -628,7 +628,7 @@ template <class _Key, class _Hash>
 using __check_hash_requirements _CCCL_NODEBUG_ALIAS =
   integral_constant<bool,
                     is_copy_constructible<_Hash>::value && is_move_constructible<_Hash>::value
-                      && __invokable_r<size_t, _Hash, _Key const&>::value>;
+                      && __invocable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
 using __has_enabled_hash _CCCL_NODEBUG_ALIAS =

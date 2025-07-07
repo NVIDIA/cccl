@@ -36,23 +36,16 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub::core::detail
 {
 template <class PtxPlan, class It>
-typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-make_load_iterator_impl(It it, thrust::detail::true_type /* is_trivial */)
-{
-  return raw_pointer_cast(&*it);
-}
-
-template <class PtxPlan, class It>
-typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-make_load_iterator_impl(It it, thrust::detail::false_type /* is_trivial */)
-{
-  return it;
-}
-
-template <class PtxPlan, class It>
 typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it)
 {
-  return make_load_iterator_impl<PtxPlan>(it, typename is_contiguous_iterator<It>::type());
+  if constexpr (is_contiguous_iterator_v<It>)
+  {
+    return raw_pointer_cast(&*it);
+  }
+  else
+  {
+    return it;
+  }
 }
 
 } // namespace cuda_cub::core::detail

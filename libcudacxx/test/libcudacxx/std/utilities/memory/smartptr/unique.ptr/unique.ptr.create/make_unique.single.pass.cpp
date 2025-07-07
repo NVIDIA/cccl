@@ -11,7 +11,7 @@
 #include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
@@ -34,7 +34,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     p2 = cuda::std::make_unique<cuda::std::string>(6, 'z');
     assert(*p2 == "zzzzzz");
   }
-#endif // _LIBCUDACXX_HAS_STRING_VIEW
+#endif // _LIBCUDACXX_HAS_STRING
 
   return true;
 }

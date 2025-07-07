@@ -45,20 +45,20 @@ public:
 
   // We might want to make this private depending on how this type ends up looking like long term,
   // not documenting it for now
-  [[nodiscard]] constexpr CUcontext get_context() const noexcept
+  [[nodiscard]] constexpr CUcontext context() const noexcept
   {
     return __ctx;
   }
 
   //! @brief Retrieve the device on which this logical device resides
-  [[nodiscard]] constexpr device_ref get_underlying_device() const noexcept
+  [[nodiscard]] constexpr device_ref underlying_device() const noexcept
   {
     return __dev_id;
   }
 
   //! @brief Retrieve the kind of logical device stored in this object
   //! The kind indicates if this logical_device holds a device or green_context
-  [[nodiscard]] constexpr kinds get_kind() const noexcept
+  [[nodiscard]] constexpr kinds kind() const noexcept
   {
     return __kind;
   }
@@ -69,7 +69,7 @@ public:
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __kind(kinds::device)
-      , __ctx(devices[__id].get_primary_context())
+      , __ctx(devices[__id].primary_context())
   {}
 
   //! @brief Construct logical_device from a device_ref
@@ -85,7 +85,7 @@ public:
   logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
       , __kind(kinds::device)
-      , __ctx(__dev.get_primary_context())
+      , __ctx(__dev.primary_context())
   {}
 
 #if CUDART_VERSION >= 12050

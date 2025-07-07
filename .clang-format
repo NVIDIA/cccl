@@ -27,6 +27,7 @@ AttributeMacros: [
                   '_CCCL_ALIGNAS',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
+                  '_CCCL_DECLSPEC_EMPTY_BASES',
                   '_CCCL_DEVICE',
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HIDE_FROM_ABI',
@@ -77,7 +78,8 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IfMacros: [
-  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C'
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C',
+  '_CCCL_CATCH'
 ]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup

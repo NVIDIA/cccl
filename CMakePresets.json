@@ -363,7 +363,8 @@
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
-        "libcudacxx.test.atomics.ptx"
+        "libcudacxx.test.atomics.ptx",
+        "libcudacxx.test.c2h_all"
       ]
     },
     {
@@ -452,6 +453,15 @@
       "inherits": "all-dev"
     },
     {
+      "name": "libcudacxx-codegen",
+      "configurePreset": "libcudacxx-codegen",
+      "filter": {
+        "include": {
+          "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
+        }
+      }
+    },
+    {
       "name": "libcudacxx-ctest-base",
       "hidden": true,
       "inherits": [
@@ -464,13 +474,18 @@
       }
     },
     {
-      "name": "libcudacxx-codegen",
-      "configurePreset": "libcudacxx-codegen",
-      "filter": {
-        "include": {
-          "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
-        }
-      }
+      "name": "libcudacxx-ctest-cpp17",
+      "configurePreset": "libcudacxx-cpp17",
+      "inherits": [
+        "libcudacxx-ctest-base"
+      ]
+    },
+    {
+      "name": "libcudacxx-ctest-cpp20",
+      "configurePreset": "libcudacxx-cpp20",
+      "inherits": [
+        "libcudacxx-ctest-base"
+      ]
     },
     {
       "name": "libcudacxx-lit-base",

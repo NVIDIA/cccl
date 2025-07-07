@@ -34,11 +34,11 @@
 namespace c2h
 {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-static const auto device_policy        = thrust::cuda::par(checked_cuda_allocator<char>{});
-static const auto nosync_device_policy = thrust::cuda::par_nosync(checked_cuda_allocator<char>{});
+static const auto device_policy        = THRUST_NS_QUALIFIER::cuda::par(checked_cuda_allocator<char>{});
+static const auto nosync_device_policy = THRUST_NS_QUALIFIER::cuda::par_nosync(checked_cuda_allocator<char>{});
 #else // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-static const auto device_policy        = thrust::device;
-static const auto nosync_device_policy = thrust::device;
+static const auto device_policy        = THRUST_NS_QUALIFIER::device;
+static const auto nosync_device_policy = THRUST_NS_QUALIFIER::device;
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 } // namespace c2h

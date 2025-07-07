@@ -84,6 +84,9 @@ using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_al
 template <typename T>
 using universal_ptr = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_pointer<T>;
 
+template <typename T>
+using universal_host_pinned_ptr = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_pointer<T>;
+
 /*! \}
  */
 

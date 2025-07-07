@@ -52,7 +52,15 @@ using full_type_list = c2h::type_list<type_triple<std::uint8_t>, type_triple<std
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_triple<std::int32_t>, type_triple<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_triple<uchar3, uchar3, custom_t>, type_triple<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_triple<uchar3, uchar3, custom_t>,
+                 type_triple<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<

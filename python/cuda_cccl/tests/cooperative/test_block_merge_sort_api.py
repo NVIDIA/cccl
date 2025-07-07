@@ -7,7 +7,7 @@ import numpy as np
 from numba import cuda
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -25,7 +25,7 @@ def test_block_merge_sort():
     # Specialize merge sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_merge_sort = cudax.block.merge_sort_keys(
+    block_merge_sort = coop.block.merge_sort_keys(
         numba.int32, threads_per_block, items_per_thread, compare_op
     )
 

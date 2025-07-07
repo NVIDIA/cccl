@@ -18,14 +18,20 @@ namespace
 {
 //! Scheduler that returns a sender that always completes inline
 //! (successfully).
+template <class Domain = cudax_async::default_domain>
 struct inline_scheduler
 {
 private:
-  struct _env_t
+  struct _attrs_t
   {
     _CCCL_HOST_DEVICE auto query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) const noexcept
     {
       return inline_scheduler{};
+    }
+
+    _CCCL_HOST_DEVICE static constexpr auto query(cudax_async::get_domain_t) noexcept -> Domain
+    {
+      return {};
     }
   };
 
@@ -61,7 +67,7 @@ public:
       return {{}, static_cast<Rcvr&&>(rcvr)};
     }
 
-    _CCCL_HOST_DEVICE _env_t get_env() const noexcept
+    _CCCL_HOST_DEVICE _attrs_t get_env() const noexcept
     {
       return {};
     }
@@ -70,6 +76,11 @@ public:
   inline_scheduler() = default;
 
   _CCCL_HOST_DEVICE _sndr_t schedule() const noexcept
+  {
+    return {};
+  }
+
+  _CCCL_HOST_DEVICE static auto query(cudax_async::get_domain_t) noexcept -> Domain
   {
     return {};
   }

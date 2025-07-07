@@ -163,7 +163,19 @@ def test_unique_by_key(dtype, num_items):
     "dtype, num_items",
     DTYPE_SIZE_PAIRS,
 )
-def test_unique_by_key_iterators(dtype, num_items):
+def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.cccl.parallel.experimental._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.cccl.parallel.experimental._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_items = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)

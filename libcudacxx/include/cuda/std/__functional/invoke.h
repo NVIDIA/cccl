@@ -392,9 +392,9 @@ __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)
   return static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...);
 }
 
-// __invokable
+// __invocable
 template <class _Ret, class _Fp, class... _Args>
-struct __invokable_r
+struct __invocable_r
 {
   template <class _XFp, class... _XArgs>
   _CCCL_API inline static decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_XFp>(), _CUDA_VSTD::declval<_XArgs>()...))
@@ -413,18 +413,18 @@ struct __invokable_r
   static const bool value = type::value;
 };
 template <class _Fp, class... _Args>
-using __invokable = __invokable_r<void, _Fp, _Args...>;
+using __invocable = __invocable_r<void, _Fp, _Args...>;
 
-template <bool _IsInvokable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
-struct __nothrow_invokable_r_imp
+template <bool _IsInvocable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
+struct __nothrow_invocable_r_imp
 {
   static const bool value = false;
 };
 
 template <class _Ret, class _Fp, class... _Args>
-struct __nothrow_invokable_r_imp<true, false, _Ret, _Fp, _Args...>
+struct __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...>
 {
-  using _ThisT = __nothrow_invokable_r_imp;
+  using _ThisT = __nothrow_invocable_r_imp;
 
   template <class _Tp>
   _CCCL_API inline static void __test_noexcept(_Tp) noexcept;
@@ -434,21 +434,21 @@ struct __nothrow_invokable_r_imp<true, false, _Ret, _Fp, _Args...>
 };
 
 template <class _Ret, class _Fp, class... _Args>
-struct __nothrow_invokable_r_imp<true, true, _Ret, _Fp, _Args...>
+struct __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
 {
   static const bool value = noexcept(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Fp>(), _CUDA_VSTD::declval<_Args>()...));
 };
 
 template <class _Ret, class _Fp, class... _Args>
-using __nothrow_invokable_r =
-  __nothrow_invokable_r_imp<__invokable_r<_Ret, _Fp, _Args...>::value, is_void<_Ret>::value, _Ret, _Fp, _Args...>;
+using __nothrow_invocable_r =
+  __nothrow_invocable_r_imp<__invocable_r<_Ret, _Fp, _Args...>::value, is_void<_Ret>::value, _Ret, _Fp, _Args...>;
 
 template <class _Fp, class... _Args>
-using __nothrow_invokable = __nothrow_invokable_r_imp<__invokable<_Fp, _Args...>::value, true, void, _Fp, _Args...>;
+using __nothrow_invocable = __nothrow_invocable_r_imp<__invocable<_Fp, _Args...>::value, true, void, _Fp, _Args...>;
 
 template <class _Fp, class... _Args>
-struct __invoke_of
-    : public enable_if<__invokable<_Fp, _Args...>::value, typename __invokable_r<void, _Fp, _Args...>::_Result>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __invoke_of //
+    : public enable_if<__invocable<_Fp, _Args...>::value, typename __invocable_r<void, _Fp, _Args...>::_Result>
 {
 #if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
 #  if _CCCL_CUDACC_BELOW(12, 3)
@@ -493,11 +493,11 @@ struct __invoke_void_return_wrapper<_Ret, true>
 // is_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __invokable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __invocable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invocable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>
@@ -510,12 +510,12 @@ inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::va
 
 template <class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
-    : integral_constant<bool, __nothrow_invokable<_Fn, _Args...>::value>
+    : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
-    : integral_constant<bool, __nothrow_invokable_r<_Ret, _Fn, _Args...>::value>
+    : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>
@@ -548,8 +548,8 @@ _CCCL_API constexpr _Ret invoke_r(_Fn&& __f,
 }
 
 /// The type of intermediate accumulator (according to P2322R6)
-template <typename Invokable, typename InputT, typename InitT = InputT>
-using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invokable, InitT, InputT>::type>::type;
+template <typename Invocable, typename InputT, typename InitT = InputT>
+using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invocable, InitT, InputT>::type>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
