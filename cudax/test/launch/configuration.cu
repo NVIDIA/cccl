@@ -8,9 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, const void* kernel, void** args);
+
 // Test translation of launch function arguments to cudaLaunchConfig_t sent to cudaLaunchKernelEx internally
 // We replace cudaLaunchKernelEx with a test function here through a macro to intercept the cudaLaunchConfig_t
+#define cudaLaunchKernelExC cudaLaunchKernelExTestReplacement
 #include <cuda/experimental/launch.cuh>
+#undef cudaLaunchKernelExC
 
 #include <host_device.cuh>
 
@@ -124,7 +128,6 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
-    _cudaLaunchKernelExC = cudaLaunchKernelExTestReplacement; // Ensure the replacement is called
     cudax::launch(stream, config, empty_kernel, 0);
   }
 
@@ -144,7 +147,6 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
-    _cudaLaunchKernelExC = cudaLaunchKernelExTestReplacement; // Ensure the replacement is called
     cudax::launch(stream, config, empty_kernel, 0);
   }
 
@@ -165,7 +167,6 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[0]);
     }
-    _cudaLaunchKernelExC = cudaLaunchKernelExTestReplacement; // Ensure the replacement is called
     cudax::launch(stream, config, empty_kernel, 0);
   }
   stream.sync();

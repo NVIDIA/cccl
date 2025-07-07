@@ -39,14 +39,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#ifdef _CCCL_LAUNCH_CONFIG_TEST
-using _cudaLaunchKernelExC_t                       = cudaError_t (*)(const cudaLaunchConfig_t*, const void*, void**);
-inline _cudaLaunchKernelExC_t _cudaLaunchKernelExC = &cudaLaunchKernelExC;
-#  define _CUDAX_LAUNCH_KERNEL_EX_C _cudaLaunchKernelExC
-#else // ^^^ defined(_CCCL_LAUNCH_CONFIG_TEST) / !defined(_CCCL_LAUNCH_CONFIG_TEST) vvv
-#  define _CUDAX_LAUNCH_KERNEL_EX_C cudaLaunchKernelExC
-#endif // !defined(_CCCL_LAUNCH_CONFIG_TEST)
-
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -107,7 +99,7 @@ _CCCL_HOST_API void inline __do_launch(
   cuda::stream_ref __stream, cudaLaunchConfig_t& __config, const void* __kernel_fn, void** __args_ptrs)
 {
   __config.stream = __stream.get();
-  _CCCL_TRY_CUDA_API(_CUDAX_LAUNCH_KERNEL_EX_C, "Failed to launch a kernel", &__config, __kernel_fn, __args_ptrs);
+  _CCCL_TRY_CUDA_API(cudaLaunchKernelExC, "Failed to launch a kernel", &__config, __kernel_fn, __args_ptrs);
 }
 
 template <typename... _ExpTypes, typename _Dst, typename _Config>
