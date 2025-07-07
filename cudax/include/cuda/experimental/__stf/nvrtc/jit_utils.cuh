@@ -241,7 +241,7 @@ inline CUfunction lazy_jit(
     ::std::cerr
       << "kernel_name " << kernel_name << " using " << ::std::to_string(num_registers) << " registers" << ::std::endl;
     ::std::cerr << "SOURCE BEGIN:\n";
-    ::std::cout << template_with_name << ::std::endl;
+    ::std::cerr << template_with_name << ::std::endl;
     ::std::cerr << "SOURCE END:\n";
   }
 
@@ -540,8 +540,8 @@ template <typename shape_t, typename... Args>
     << "{\n"
     << "  using static_shape_t = " << jit_adapter<shape_t>(shape).kernel_side_t_name() << ";\n"
     << "  using static_tuple = ::cuda::std::tuple<" << types_list.str() << ">;\n"
-    << "  jit_loop<static_shape_t>([]" << body_template
-    << ",\n    static_tuple(" << param_list.str() << "));\n"
+    << "  ::cuda::experimental::stf::reserved::jit_loop<static_shape_t>([]" << body_template << ",\n    static_tuple("
+    << param_list.str() << "));\n"
     << "}\n";
 
   ::std::cerr << oss.str();

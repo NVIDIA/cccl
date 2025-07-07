@@ -877,8 +877,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
-        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
-          sub_shape, mv(f), arg_instances);
+        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
