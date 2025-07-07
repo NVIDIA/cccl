@@ -139,7 +139,7 @@ runs:
         # Download new sccache binary
         mkdir -p "${{runner.temp}}/bin"
         curl -fsSL \
-          "https://github.com/trxcllnt/sccache/releases/download/v0.10.0-rapids.22/sccache-v0.10.0-rapids.22-$(uname -m)-unknown-linux-musl.tar.gz" \
+          "https://github.com/rapidsai/sccache/releases/download/0.10.0-rapids.33/sccache-0.10.0-rapids.33-$(uname -m)-unknown-linux-musl.tar.gz" \
         | tar -C "${{runner.temp}}/bin" -zf - --wildcards --strip-components=1 -x '*/sccache'
 
         declare -a extra_launch_args=(
@@ -177,7 +177,7 @@ runs:
         # Build cluster network config
         [dist.net]
         connect_timeout = 30
-        request_timeout = 7200
+        request_timeout = 4000
 
         [dist.net.keepalive]
         enabled = true
