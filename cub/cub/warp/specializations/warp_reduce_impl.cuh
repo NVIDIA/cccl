@@ -53,27 +53,27 @@ template <typename T, typename ReductionOp, typename Config>
   const auto mask = cub::detail::redux_lane_mask(config);
   if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_and_sync(mask, input1));
+    return static_cast<T>(__reduce_and_sync(mask, input1));
   }
   else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_or_sync(mask, input1));
+    return static_cast<T>(__reduce_or_sync(mask, input1));
   }
   else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_xor_sync(mask, input1));
+    return static_cast<T>(__reduce_xor_sync(mask, input1));
   }
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_add_sync(mask, input1));
+    return static_cast<T>(__reduce_add_sync(mask, input1));
   }
   else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_min_sync(mask, input1));
+    return static_cast<T>(__reduce_min_sync(mask, input1));
   }
   else if constexpr (is_cuda_maximum_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_max_sync(mask, input1));
+    return static_cast<T>(__reduce_max_sync(mask, input1));
   }
   else
   {
