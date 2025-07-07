@@ -414,36 +414,36 @@ struct dispatch_t<StableAddress,
       can_vectorize = (is_pointer_aligned(::cuda::std::get<Is>(in)) && ...) && is_pointer_aligned(out);
     }
 
-    // workaround for MSVC, it gets confused about what can and what cannot be a constant expression if the if
-    // constexpr-ish inside this lambda calls wrapped_policy.Algorithm() directly
-    CUB_DETAIL_CONSTEXPR_ISH auto algorithm = wrapped_policy.Algorithm();
-    const int ipt                           = [&] {
-      if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == algorithm)
+    int ipt        = 0;
+    bool ipt_found = false;
+    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
+    {
+      if (can_vectorize)
       {
-        if (can_vectorize)
-        {
-          return items_per_thread_vectorized(wrapped_policy.AlgorithmPolicy());
-        }
+        ipt       = items_per_thread_vectorized(wrapped_policy.AlgorithmPolicy());
+        ipt_found = true;
       }
+    }
+    if (!ipt_found)
+    {
       // otherwise, setup the prefetch kernel
 
       auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
       // choose items per thread to reach minimum bytes in flight
       const int items_per_thread =
         loaded_bytes_per_iter == 0
-                                    ? items_per_thread_no_input(wrapped_policy.AlgorithmPolicy())
-                                    : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
+          ? items_per_thread_no_input(wrapped_policy.AlgorithmPolicy())
+          : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
       const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
         Offset{items_per_thread}, num_items / (config->sm_count * block_threads * config->max_occupancy)));
-      const int items_per_thread_clamped       = ::cuda::std::clamp(
-        items_per_thread_evenly_spread,
-        +wrapped_policy.AlgorithmPolicy().MinItemsPerThread(),
-        +wrapped_policy.AlgorithmPolicy().MaxItemsPerThread());
-      return items_per_thread_clamped;
-    }();
+      ipt                                      = ::cuda::std::clamp(items_per_thread_evenly_spread,
+                               +wrapped_policy.AlgorithmPolicy().MinItemsPerThread(),
+                               +wrapped_policy.AlgorithmPolicy().MaxItemsPerThread());
+    }
+
     const int tile_size = block_threads * ipt;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(

@@ -208,7 +208,7 @@ memcpy_async_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments
   int smem_size = 0;
   for (auto&& [size, alignment] : it_value_sizes_alignments)
   {
-    smem_size = ::cuda::round_up(smem_size, alignment);
+    smem_size = static_cast<int>(::cuda::round_up(smem_size, alignment));
     // max aligned_base_ptr head_padding + max padding after == 16
     smem_size += size * tile_size + ldgsts_size_and_align;
   };
