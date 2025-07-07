@@ -6,7 +6,7 @@
 from ._merge_sort import merge_sort as merge_sort
 from ._radix_sort import DoubleBuffer, SortOrder
 from ._radix_sort import radix_sort as radix_sort
-from ._reduce import reduce_into as reduce_into
+from ._reduce import Reduce, reduce_into
 from ._scan import exclusive_scan as exclusive_scan
 from ._scan import inclusive_scan as inclusive_scan
 from ._segmented_reduce import segmented_reduce
@@ -15,6 +15,7 @@ from ._unique_by_key import unique_by_key as unique_by_key
 
 __all__ = [
     "merge_sort",
+    "Reduce",
     "reduce_into",
     "exclusive_scan",
     "inclusive_scan",

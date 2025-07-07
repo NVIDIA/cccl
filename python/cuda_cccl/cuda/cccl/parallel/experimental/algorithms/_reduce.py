@@ -20,7 +20,7 @@ from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
-class _Reduce:
+class Reduce:
     __slots__ = [
         "d_in_cccl",
         "d_out_cccl",
@@ -104,14 +104,21 @@ def make_cache_key(
     return (d_in_key, d_out_key, op_key, h_init_key)
 
 
+@cache_with_key(make_cache_key)
+def _make_reduce(d_in, d_out, op, h_init):
+    return Reduce(d_in, d_out, op, h_init)
+
+
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-@cache_with_key(make_cache_key)
 def reduce_into(
+    temp_storage: DeviceArrayLike | None,
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
+    num_items: int,
     op: Callable,
     h_init: np.ndarray,
+    stream=None,
 ):
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -133,4 +140,8 @@ def reduce_into(
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _Reduce(d_in, d_out, op, h_init)
+    reducer = _make_reduce(d_in, d_out, op, h_init)
+    return reducer(temp_storage, d_in, d_out, num_items, h_init, stream)
+
+
+reduce_into.cache_clear = _make_reduce.cache_clear  # type: ignore
