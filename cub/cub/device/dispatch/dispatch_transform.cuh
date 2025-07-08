@@ -183,10 +183,12 @@ struct dispatch_t<StableAddress,
     _CCCL_ASSERT(block_threads % bulk_copy_align == 0, "block_threads needs to be a multiple of bulk_copy_alignment");
     // ^ then tile_size is a multiple of it
 
-    // workaround for MSVC, it gets confused about what can and what cannot be a constant expression if the
-    // static-ish assert inside the lambda calls member functions on wrapped_policy
     CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = wrapped_policy.AlgorithmPolicy().MinItemsPerThread();
     CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = wrapped_policy.AlgorithmPolicy().MaxItemsPerThread();
+
+    // ensures the loop below runs at least once
+    // pulled outside of the lambda below to make MSVC happy
+    CUB_DETAIL_STATIC_ISH_ASSERT(min_items_per_thread <= max_items_per_thread, "invalid policy");
 
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
       int max_smem = 0;
@@ -195,9 +197,6 @@ struct dispatch_t<StableAddress,
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
       }
-
-      // ensures the loop below runs at least once
-      CUB_DETAIL_STATIC_ISH_ASSERT(min_items_per_thread <= max_items_per_thread, "invalid policy");
 
       elem_counts last_counts{};
       // Increase the number of output elements per thread until we reach the required bytes in flight.
