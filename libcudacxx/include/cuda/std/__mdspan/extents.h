@@ -176,7 +176,7 @@ constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Val
 // We manually implement EBCO because MSVC and some odler compiler fail hard with [[no_unique_address]]
 template <class _TDynamic, class _TStatic, _TStatic _DynTag, _TStatic... _Values>
 struct __maybe_static_array
-    : private __possibly_empty_array<_TDynamic, __count_dynamic_v<_TStatic, _DynTag, _Values...>()>
+    : private __possibly_empty_array<_TDynamic, __count_dynamic_v<_TStatic, _DynTag, _Values...>>
 {
   static_assert(_CCCL_TRAIT(is_convertible, _TStatic, _TDynamic),
                 "__maybe_static_array: _TStatic must be convertible to _TDynamic");
@@ -186,7 +186,7 @@ struct __maybe_static_array
 private:
   // Static values member
   static constexpr size_t __size_         = sizeof...(_Values);
-  static constexpr size_t __size_dynamic_ = __count_dynamic_v<_TStatic, _DynTag, _Values...>();
+  static constexpr size_t __size_dynamic_ = __count_dynamic_v<_TStatic, _DynTag, _Values...>;
   using _StaticValues                     = __static_array<_TStatic, _Values...>;
   using _DynamicValues                    = __possibly_empty_array<_TDynamic, __size_dynamic_>;
 
