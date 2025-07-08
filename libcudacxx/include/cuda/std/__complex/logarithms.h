@@ -38,7 +38,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // 0.5 * log1p on [-0.25, 0.5]:
 [[nodiscard]] _CCCL_API inline float __internal_unsafe_log1p_poly(float __x) noexcept
 {
-  // P = fpminimax(log1p(x), [|3,4,5,6,7,8,9,10|], [|single ...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
   float __log1p_poly = 0.5f * -4.50736098e-2f;
   __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * 0.10464530f);
   __log1p_poly       = _CUDA_VSTD::fmaf(__log1p_poly, __x, 0.5f * -0.13162985f);
@@ -57,8 +56,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // 0.5 * log1p on [-0.25, 0.5]:
 [[nodiscard]] _CCCL_API inline double __internal_unsafe_log1p_poly(double __x) noexcept
 {
-  // fpminimax(log1p(x), [|3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21|], [|D...|] ,[-0.25, 0.5], floating,
-  // relative, x + -0.5*x^2);
   double __log1p_poly = 0.5 * -7.09111630733153322503e-3;
   __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * 2.66022308034025677103e-2);
   __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, 0.5 * -4.72224506011362787916e-2);
@@ -85,36 +82,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
   return __log1p_poly;
 }
-
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half __internal_unsafe_log1p_poly(__half __x) noexcept
-{
-  // P = fpminimax(log1p(x), [|2,3,4,5|], [|halfprecision ...|] ,[-0.25, 0.5], floating, relative, x);
-  __half __log1p_poly = __half(0.5 * 0.140380859375);
-  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * -0.257080078125));
-  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * 0.33740234375));
-  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * -0.5));
-  __log1p_poly        = _CUDA_VSTD::fma(__log1p_poly, __x, __half(0.5 * 1.0));
-  __log1p_poly *= __x;
-
-  return __log1p_poly;
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 __internal_unsafe_log1p_poly(__nv_bfloat16 __x) noexcept
-{
-  // P = fpminimax(log1p(x), [|3,4,5|], [|8 ...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
-  __nv_bfloat16 __log1p_poly = __nv_bfloat16(0.5 * 0.1396484375);
-  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * -0.2578125));
-  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * 0.337890625));
-  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * -0.5));
-  __log1p_poly               = _CUDA_VSTD::fma(__log1p_poly, __x, __nv_bfloat16(0.5 * 1.0));
-  __log1p_poly *= __x;
-
-  return __log1p_poly;
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log(const complex<_Tp>& __x)
@@ -196,8 +163,8 @@ template <class _Tp>
         // Scale things up by 2^__mant_nbits then do the fast ldexp.
         _UINT_T __two_mant_bits = static_cast<_UINT_T>(__mant_nbits + __exp_bias) << __mant_nbits;
         _Tp __ldexp_factor      = reinterpret_cast<_Tp&>(__two_mant_bits);
-        __max_reduced = __max * __ldexp_factor; // 2^__mant_nbits
-        __min_reduced = __min * __ldexp_factor; // 2^__mant_nbits;
+        __max_reduced           = __max * __ldexp_factor; // 2^__mant_nbits
+        __min_reduced           = __min * __ldexp_factor; // 2^__mant_nbits;
 
         int32_t __exp_no_denorm_bias =
           static_cast<int32_t>(reinterpret_cast<_UINT_T&>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
