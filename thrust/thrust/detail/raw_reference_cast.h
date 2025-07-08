@@ -87,6 +87,9 @@ template <typename T>
 struct raw_reference : raw_reference_detail::raw_reference_impl<T>
 {};
 
+template <typename T>
+using raw_reference_t = typename raw_reference<T>::type;
+
 namespace raw_reference_detail
 {
 
