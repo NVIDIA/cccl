@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/tuple>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/cuda_error.h>
 
 #include <cuda/experimental/__utility/driver_api.cuh>
 
@@ -77,7 +78,7 @@ public:
   //! @throws cuda_error if the library could not be queried for the kernel
   [[nodiscard]] bool has_kernel(const char* __name) const
   {
-    CUkernel __kernel{};
+    ::CUkernel __kernel{};
     switch (const auto __res = __detail::driver::libraryGetKernel(__kernel, __library_, __name))
     {
       case ::cudaSuccess:
@@ -101,7 +102,7 @@ public:
   template <class _Signature>
   [[nodiscard]] kernel_ref<_Signature> kernel(const char* __name) const
   {
-    CUkernel __kernel{};
+    ::CUkernel __kernel{};
     if (const auto __res = __detail::driver::libraryGetKernel(__kernel, __library_, __name); __res != ::cudaSuccess)
     {
       ::cuda::__throw_cuda_error(__res, "Failed to get the kernel from the library");
@@ -118,7 +119,7 @@ public:
   //! @throws cuda_error if the library could not be queried for the global symbol
   [[nodiscard]] bool has_global(const char* __name) const
   {
-    CUdeviceptr __dptr{};
+    ::CUdeviceptr __dptr{};
     _CUDA_VSTD::size_t __size{};
     switch (const auto __res = __detail::driver::libraryGetGlobal(__dptr, __size, __library_, __name))
     {
@@ -140,7 +141,7 @@ public:
   //! @throws cuda_error if the global symbol could not be found in the library
   [[nodiscard]] library_global_symbol_info global(const char* __name) const
   {
-    CUdeviceptr __dptr{};
+    ::CUdeviceptr __dptr{};
     _CUDA_VSTD::size_t __size{};
     if (const auto __res = __detail::driver::libraryGetGlobal(__dptr, __size, __library_, __name);
         __res != ::cudaSuccess)
@@ -159,7 +160,7 @@ public:
   //! @throws cuda_error if the library could not be queried for the managed symbol
   [[nodiscard]] bool has_managed(const char* __name) const
   {
-    CUdeviceptr __dptr{};
+    ::CUdeviceptr __dptr{};
     _CUDA_VSTD::size_t __size{};
     switch (const auto __res = __detail::driver::libraryGetManaged(__dptr, __size, __library_, __name))
     {
@@ -181,7 +182,7 @@ public:
   //! @throws cuda_error if the managed symbol could not be found in the library
   [[nodiscard]] library_managed_symbol_info managed(const char* __name) const
   {
-    CUdeviceptr __dptr{};
+    ::CUdeviceptr __dptr{};
     _CUDA_VSTD::size_t __size{};
     if (const auto __res = __detail::driver::libraryGetManaged(__dptr, __size, __library_, __name);
         __res != ::cudaSuccess)
