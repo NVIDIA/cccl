@@ -210,7 +210,7 @@ memcpy_async_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments
   {
     smem_size = static_cast<int>(::cuda::round_up(smem_size, alignment));
     // max aligned_base_ptr head_padding + max padding after == 16
-    smem_size += size * tile_size + ldgsts_size_and_align;
+    smem_size += static_cast<int>(size) * tile_size + ldgsts_size_and_align;
   };
   return smem_size;
 }
@@ -238,7 +238,7 @@ bulk_copy_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, i
              [](auto&& vsa) {
                return static_cast<int>(vsa.first);
              })
-       + it_value_sizes_alignments.size() * bulk_copy_align;
+       + static_cast<int>(it_value_sizes_alignments.size()) * bulk_copy_align;
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
