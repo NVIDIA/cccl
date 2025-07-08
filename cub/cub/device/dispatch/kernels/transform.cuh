@@ -86,7 +86,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   constexpr int block_threads = PrefetchPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
+  const int valid_items       = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -187,7 +187,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_dim * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items   = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
+  const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
@@ -649,7 +649,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_threads = BulkCopyPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = (::cuda::std::min)(num_items - offset, Offset{tile_size});
+  const int valid_items       = (::cuda::std::min) (num_items - offset, Offset{tile_size});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)

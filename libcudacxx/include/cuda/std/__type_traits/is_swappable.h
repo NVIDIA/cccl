@@ -159,8 +159,8 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
-    : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_swappable_with : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
@@ -171,8 +171,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
-    : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_swappable_with : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
