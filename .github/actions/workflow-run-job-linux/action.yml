@@ -139,7 +139,7 @@ runs:
         # Download new sccache binary
         mkdir -p "${{runner.temp}}/bin"
         curl -fsSL \
-          "https://github.com/rapidsai/sccache/releases/download/0.10.0-rapids.33/sccache-0.10.0-rapids.33-$(uname -m)-unknown-linux-musl.tar.gz" \
+          "https://github.com/rapidsai/sccache/releases/download/v0.10.0-rapids.33/sccache-v0.10.0-rapids.33-$(uname -m)-unknown-linux-musl.tar.gz" \
         | tar -C "${{runner.temp}}/bin" -zf - --wildcards --strip-components=1 -x '*/sccache'
 
         declare -a extra_launch_args=(
@@ -188,7 +188,7 @@ runs:
           if grep -q '"./ci/build_' <<< "$COMMAND"; then
             extra_launch_args+=(
               # Repopulate the cache
-              # --env "SCCACHE_RECACHE=1"
+              --env "SCCACHE_RECACHE=1"
               # Do not cache build products
               # --env "SCCACHE_NO_CACHE=1"
             )
