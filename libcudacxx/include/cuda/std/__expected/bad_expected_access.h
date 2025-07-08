@@ -19,7 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
@@ -111,13 +111,7 @@ private:
 template <class _Err, class _Arg>
 [[noreturn]] _CCCL_API inline void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
 {
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
-                    ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
+  _CCCL_THROW(_CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg)));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

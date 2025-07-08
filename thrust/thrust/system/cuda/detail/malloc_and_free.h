@@ -36,6 +36,8 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #ifdef THRUST_CACHING_DEVICE_MALLOC
 #  include <cub/util_allocator.cuh>
 #endif
@@ -74,7 +76,7 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 
      if (status != cudaSuccess) {
        cudaGetLastError(); // Clear global CUDA error state.
-       throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
+       _CCCL_THROW(thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str()));
      }),
     ( // NV_IS_DEVICE
       result = thrust::raw_pointer_cast(thrust::malloc(thrust::seq, n));));
@@ -85,7 +87,7 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 
      if (status != cudaSuccess) {
        cudaGetLastError(); // Clear global CUDA error state.
-       throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
+       _CCCL_THROW(thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str()));
      }),
     ( // NV_IS_DEVICE
       result = thrust::raw_pointer_cast(thrust::malloc(thrust::seq, n));));

@@ -33,7 +33,7 @@
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
-#include <cuda/std/__new_>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
@@ -111,7 +111,7 @@ public:
                        "r"(static_cast<_CUDA_VSTD::uint32_t>(__expected))
                        : "memory");
         } else if (::__isClusterShared(&__b->__barrier)) { ::__trap(); } else {
-          new (&__b->__barrier) __barrier_base(__expected);
+          _CUDA_VSTD::__construct_at(&__b->__barrier, __expected);
         }),
       NV_PROVIDES_SM_80,
       (
@@ -120,9 +120,9 @@ public:
                          static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
                        "r"(static_cast<_CUDA_VSTD::uint32_t>(__expected))
                        : "memory");
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
+        } else { _CUDA_VSTD::__construct_at(&__b->__barrier, __expected); }),
       NV_ANY_TARGET,
-      (new (&__b->__barrier) __barrier_base(__expected);))
+      (_CUDA_VSTD::__construct_at(&__b->__barrier, __expected);))
   }
 
   [[nodiscard]] _CCCL_API inline arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1)
