@@ -66,13 +66,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+  const auto num_items = detail::make_large_offset<offset_t>();
 
   auto in_it              = thrust::make_counting_iterator(offset_t{0});
   auto expected_result_it = in_it;
@@ -92,13 +86,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+  const offset_t num_items = detail::make_large_offset<offset_t>();
 
   auto a_it               = thrust::make_counting_iterator(offset_t{0});
   auto b_it               = thrust::make_constant_iterator(offset_t{42});
