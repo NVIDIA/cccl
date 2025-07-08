@@ -430,6 +430,11 @@ struct jit_adapter<mdspan<T, P...>>
     return caller_side_arg.data_handle();
   }
 
+  ::std::string kernel_param_t_name()
+  {
+       return ::std::string(type_name<kernel_param_t>);
+  }
+
 private:
   /// The `mdspan` object passed from the host side and stored for introspection
   const caller_side_t caller_side_arg;
