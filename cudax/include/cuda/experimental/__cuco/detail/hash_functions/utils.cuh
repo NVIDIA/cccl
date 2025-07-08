@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstring>
 
