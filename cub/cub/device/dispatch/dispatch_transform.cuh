@@ -189,8 +189,8 @@ struct dispatch_t<StableAddress,
     CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = wrapped_policy.AlgorithmPolicy().MaxItemsPerThread();
 
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
-      int max_smem     = 0;
-      const auto error = CubDebug(launcher_factory.MaxSharedMemory(max_smem));
+      int max_smem = 0;
+      auto error   = CubDebug(launcher_factory.MaxSharedMemory(max_smem));
       if (error != cudaSuccess)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
@@ -220,7 +220,7 @@ struct dispatch_t<StableAddress,
         }
 
         int max_occupancy = 0;
-        const auto error  = CubDebug(
+        error             = CubDebug(
           launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_threads, smem_size));
         if (error != cudaSuccess)
         {
