@@ -1,7 +1,7 @@
 .. _cuda_parallel-module:
 
-CUDA Parallel
-==================================================
+``cuda.cccl.parallel`` API Reference
+====================================
 
 .. warning::
   Python exposure of parallel algorithms is in public beta.

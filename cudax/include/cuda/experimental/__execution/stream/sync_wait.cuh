@@ -31,35 +31,25 @@
 
 namespace cuda::experimental::execution
 {
-template <class _Sndr, class _Rcvr>
-struct __connect_emplace
+namespace __stream
 {
-  using type = connect_result_t<_Sndr, _Rcvr>;
-
-  _CCCL_API operator type() && noexcept(__nothrow_connectable<_Sndr, _Rcvr>)
-  {
-    return execution::connect(static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr_));
-  }
-
-  _Sndr&& __sndr_;
-  _Rcvr&& __rcvr_;
-};
-
-template <class _Sndr, class _Rcvr>
-_CCCL_HOST_DEVICE __connect_emplace(_Sndr&& __sndr, _Rcvr&& __rcvr) -> __connect_emplace<_Sndr, _Rcvr>;
-
 /////////////////////////////////////////////////////////////////////////////////
 // sync_wait: customization for the stream scheduler
-template <>
-struct stream_domain::__apply_t<sync_wait_t>
+struct __sync_wait_t
 {
   // TODO: calling sync_wait from device code is not supported yet.
   template <class _Sndr, class _Env>
   _CCCL_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
+    // _Sndr is a sender that has not yet been transformed to run on the stream domain.
+    // The transformation would happen in due course in the connect cpo, so why transform
+    // it here? This transformation shuffles the sender into one that can provide a
+    // stream_ref, which is needed by __host_apply.
+    auto __new_sndr = execution::transform_sender(stream_domain{}, static_cast<_Sndr&&>(__sndr), __env);
+
     NV_IF_TARGET(NV_IS_HOST,
-                 (return __host_apply(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));),
-                 (return __device_apply(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));))
+                 (return __host_apply(_CUDA_VSTD::move(__new_sndr), static_cast<_Env&&>(__env));),
+                 (return __device_apply(_CUDA_VSTD::move(__new_sndr), static_cast<_Env&&>(__env));))
     _CCCL_UNREACHABLE();
   }
 
@@ -71,7 +61,7 @@ struct stream_domain::__apply_t<sync_wait_t>
 
 private:
   template <class _Sndr, class _Env>
-  struct __state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
     using __values_t = typename sync_wait_t::__state_t<_Sndr, _Env>::__values_t;
     using __errors_t = typename sync_wait_t::__state_t<_Sndr, _Env>::__errors_t;
@@ -97,7 +87,7 @@ private:
   template <class _Sndr, class _Env>
   _CCCL_HOST_API static auto __host_apply(_Sndr&& __sndr, _Env&& __env)
   {
-    stream_ref __stream = get_stream(get_env(__sndr));
+    stream_ref __stream = __get_stream(__sndr, __env);
 
     // Launch the sender with a continuation that will fill in a variant
     using __box_t = __managed_box<__state_t<_Sndr, _Env>>;
@@ -120,6 +110,11 @@ private:
     return _CUDA_VSTD::move(__box->__value.__result_);
   }
 };
+} // namespace __stream
+
+template <>
+struct stream_domain::__apply_t<sync_wait_t> : __stream::__sync_wait_t
+{};
 
 } // namespace cuda::experimental::execution
 

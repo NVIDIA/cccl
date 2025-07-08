@@ -179,7 +179,7 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel([[maybe_unused]] int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
+  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
     ::cuda::std::
       tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
   {
@@ -204,7 +204,7 @@ struct dispatch_t<StableAddress,
         static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread);
 
         const int tile_size = block_threads * elem_per_thread;
-        const int smem_size = smem_for_tile_size(tile_size);
+        const int smem_size = smem_for_tile_size(tile_size, alignment);
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -393,11 +393,7 @@ struct dispatch_t<StableAddress,
     if constexpr (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
     {
       return invoke_async_algorithm<ActivePolicyT>(
-        bulk_copy_align,
-        [this](int tile_size) {
-          return bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size, bulk_copy_align);
-        },
-        seq);
+        bulk_copy_align, &bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>, seq);
     }
     else if constexpr (Algorithm::memcpy_async == wrapped_policy.GetAlgorithm())
     {

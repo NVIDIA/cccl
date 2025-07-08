@@ -10,7 +10,7 @@ import numba
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
+import cuda.cccl.parallel.experimental as parallel
 
 
 def get_mark(dt, log_size):
@@ -64,7 +64,7 @@ def radix_sort_device(
     end_bit=None,
     stream=None,
 ):
-    radix_sort = algorithms.radix_sort(
+    radix_sort = parallel.radix_sort(
         d_in_keys, d_out_keys, d_in_values, d_out_values, order
     )
 
@@ -141,7 +141,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     else:
         h_in_keys_copy = h_in_keys
 
-    if order is algorithms.SortOrder.DESCENDING:
+    if order is parallel.SortOrder.DESCENDING:
         # We do this for stability. We need to cast to a signed integer to properly negate the keys.
         signed_dtype = np.dtype(h_in_keys_copy.dtype.name.replace("uint", "int"))
         argsort = np.argsort(-h_in_keys_copy.astype(signed_dtype), stable=True)
@@ -160,7 +160,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     DTYPE_SIZE,
 )
 def test_radix_sort_keys(dtype, num_items):
-    order = algorithms.SortOrder.ASCENDING
+    order = parallel.SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
@@ -181,7 +181,7 @@ def test_radix_sort_keys(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs(dtype, num_items):
-    order = algorithms.SortOrder.DESCENDING
+    order = parallel.SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -210,14 +210,14 @@ def test_radix_sort_pairs(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_keys_double_buffer(dtype, num_items):
-    order = algorithms.SortOrder.DESCENDING
+    order = parallel.SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(h_out_keys)
 
-    keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
+    keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
 
     radix_sort_device(keys_double_buffer, None, None, None, order, num_items)
 
@@ -233,7 +233,7 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items):
-    order = algorithms.SortOrder.ASCENDING
+    order = parallel.SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -244,8 +244,8 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items):
     d_out_keys = numba.cuda.to_device(h_out_keys)
     d_out_values = numba.cuda.to_device(h_out_values)
 
-    keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
-    values_double_buffer = algorithms.DoubleBuffer(d_in_values, d_out_values)
+    keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
+    values_double_buffer = parallel.DoubleBuffer(d_in_values, d_out_values)
 
     radix_sort_device(
         keys_double_buffer, None, values_double_buffer, None, order, num_items
@@ -273,7 +273,7 @@ DTYPE_SIZE_BIT_WINDOW = [
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items):
-    order = algorithms.SortOrder.ASCENDING
+    order = parallel.SortOrder.ASCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
     end_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
@@ -319,7 +319,7 @@ def test_radix_sort_pairs_bit_window(dtype, num_items):
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
-    order = algorithms.SortOrder.DESCENDING
+    order = parallel.SortOrder.DESCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
     end_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
@@ -338,8 +338,8 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
         d_out_keys = numba.cuda.to_device(h_out_keys)
         d_out_values = numba.cuda.to_device(h_out_values)
 
-        keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
-        values_double_buffer = algorithms.DoubleBuffer(d_in_values, d_out_values)
+        keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
+        values_double_buffer = parallel.DoubleBuffer(d_in_values, d_out_values)
 
         radix_sort_device(
             keys_double_buffer,
@@ -373,7 +373,7 @@ def test_radix_sort_with_stream(cuda_stream):
         d_out_keys = cp.empty_like(d_in_keys)
 
     radix_sort_device(
-        d_in_keys, d_out_keys, None, None, algorithms.SortOrder.ASCENDING, num_items
+        d_in_keys, d_out_keys, None, None, parallel.SortOrder.ASCENDING, num_items
     )
 
     got = d_out_keys.get()

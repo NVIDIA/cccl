@@ -46,6 +46,8 @@ static const ::cudaStream_t __invalid_stream = reinterpret_cast<cudaStream_t>(~0
 //! @brief A non-owning wrapper for cudaStream_t.
 struct stream_ref : ::cuda::stream_ref
 {
+  using scheduler_concept = execution::scheduler_t;
+
   stream_ref() = delete;
 
   //! @brief Wrap a native \c ::cudaStream_t in a \c stream_ref

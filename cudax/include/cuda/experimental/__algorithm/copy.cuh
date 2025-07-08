@@ -44,14 +44,7 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
     _CUDA_VSTD::__throw_invalid_argument("Copy destination is too small to fit the source data");
   }
 
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemcpyAsync,
-    "Failed to perform a copy",
-    __dst.data(),
-    __src.data(),
-    __src.size_bytes(),
-    cudaMemcpyDefault,
-    __stream.get());
+  __detail::driver::memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
 }
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided stream.

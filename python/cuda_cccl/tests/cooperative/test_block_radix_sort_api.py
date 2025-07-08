@@ -7,7 +7,7 @@ import numpy as np
 from numba import cuda
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -21,7 +21,7 @@ def test_block_radix_sort():
     # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_radix_sort = cudax.block.radix_sort_keys(
+    block_radix_sort = coop.block.radix_sort_keys(
         numba.int32, threads_per_block, items_per_thread
     )
 
@@ -58,7 +58,7 @@ def test_block_radix_sort_descending():
     # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_radix_sort = cudax.block.radix_sort_keys_descending(
+    block_radix_sort = coop.block.radix_sort_keys_descending(
         numba.int32, threads_per_block, items_per_thread
     )
 

@@ -63,6 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
 
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> _Env
   {
+    static_assert(sizeof(_Rcvr) > 0, "Receiver type is incomplete.");
     static_assert(_CUDA_VSTD::is_same_v<_Env, env_of_t<_Rcvr>>,
                   "get_env() must return the same type as env_of_t<_Rcvr>");
     return execution::get_env(*__rcvr_);

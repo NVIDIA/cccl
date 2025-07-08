@@ -5,9 +5,7 @@
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
-from cuda.cccl.parallel.experimental.struct import gpu_struct
+import cuda.cccl.parallel.experimental as parallel
 
 
 def unary_transform_host(h_input: np.ndarray, op):
@@ -15,7 +13,7 @@ def unary_transform_host(h_input: np.ndarray, op):
 
 
 def unary_transform_device(d_input, d_output, num_items, op, stream=None):
-    transform = algorithms.unary_transform(d_input, d_output, op)
+    transform = parallel.unary_transform(d_input, d_output, op)
     transform(d_input, d_output, num_items, stream=stream)
 
 
@@ -24,7 +22,7 @@ def binary_transform_host(h_input1: np.ndarray, h_input2: np.ndarray, op):
 
 
 def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=None):
-    transform = algorithms.binary_transform(d_input1, d_input2, d_output, op)
+    transform = parallel.binary_transform(d_input1, d_input2, d_output, op)
     transform(d_input1, d_input2, d_output, num_items, stream=stream)
 
 
@@ -70,7 +68,7 @@ def test_binary_transform(input_array):
 def test_unary_transform_struct_type():
     import numpy as np
 
-    @gpu_struct
+    @parallel.gpu_struct
     class MyStruct:
         x: np.int16
         y: np.uint64
@@ -80,7 +78,7 @@ def test_unary_transform_struct_type():
 
     num_values = 10_000
 
-    h_in = np.empty(num_values, dtype=MyStruct)
+    h_in = np.empty(num_values, dtype=MyStruct.dtype)
     h_in["x"] = np.arange(num_values)
     h_in["y"] = 1
     d_in = cp.empty_like(h_in)
@@ -94,7 +92,7 @@ def test_unary_transform_struct_type():
 
     d_out = cp.empty_like(d_in)
 
-    transform = algorithms.unary_transform(d_in, d_out, op)
+    transform = parallel.unary_transform(d_in, d_out, op)
     transform(d_in, d_out, len(d_in))
 
     got = d_out.get()
@@ -106,7 +104,7 @@ def test_unary_transform_struct_type():
 def test_binary_transform_struct_type():
     import numpy as np
 
-    @gpu_struct
+    @parallel.gpu_struct
     class MyStruct:
         x: np.int16
         y: np.uint64
@@ -116,11 +114,11 @@ def test_binary_transform_struct_type():
 
     num_values = 10_000
 
-    h_in1 = np.empty(num_values, dtype=MyStruct)
+    h_in1 = np.empty(num_values, dtype=MyStruct.dtype)
     h_in1["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
     h_in1["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
 
-    h_in2 = np.empty(num_values, dtype=MyStruct)
+    h_in2 = np.empty(num_values, dtype=MyStruct.dtype)
     h_in2["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
     h_in2["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
 
@@ -142,7 +140,7 @@ def test_binary_transform_struct_type():
 
     d_out = cp.empty_like(d_in1)
 
-    transform = algorithms.binary_transform(d_in1, d_in2, d_out, op)
+    transform = parallel.binary_transform(d_in1, d_in2, d_out, op)
     transform(d_in1, d_in2, d_out, len(d_in1))
 
     got = d_out.get()
@@ -155,7 +153,7 @@ def test_unary_transform_iterator_input():
     def op(a):
         return a + 1
 
-    d_in = iterators.CountingIterator(np.int32(0))
+    d_in = parallel.CountingIterator(np.int32(0))
 
     num_items = 1024
     d_out = cp.empty(num_items, dtype=np.int32)
@@ -172,8 +170,8 @@ def test_binary_transform_iterator_input():
     def op(a, b):
         return a + b
 
-    d_in1 = iterators.CountingIterator(np.int32(0))
-    d_in2 = iterators.CountingIterator(np.int32(1))
+    d_in1 = parallel.CountingIterator(np.int32(0))
+    d_in2 = parallel.CountingIterator(np.int32(1))
 
     num_items = 1024
     d_out = cp.empty(num_items, dtype=np.int32)
@@ -231,8 +229,8 @@ def test_transform_reuse_input_iterator():
     def op(a, b):
         return a + b
 
-    d_in1 = iterators.CountingIterator(np.int32(0))
-    d_in2 = iterators.CountingIterator(np.int32(1))
+    d_in1 = parallel.CountingIterator(np.int32(0))
+    d_in2 = parallel.CountingIterator(np.int32(1))
 
     num_items = 1024
     d_out = cp.empty(num_items, dtype=np.int32)
