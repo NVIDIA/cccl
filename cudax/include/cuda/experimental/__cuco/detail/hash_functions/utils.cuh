@@ -33,7 +33,28 @@ template <typename _Tp, typename _Extent>
 [[nodiscard]] _CCCL_API constexpr _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
 {
   _Tp __chunk;
-  _CUDA_VSTD::memcpy(&__chunk, __bytes + __index * sizeof(_Tp), sizeof(_Tp));
+
+  auto __ptr     = __bytes + __index * sizeof(_Tp);
+  auto __uintptr = reinterpret_cast<std::uintptr_t>(__ptr);
+
+  static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
+
+  if (sizeof(_Tp) == 8 && ((__uintptr & 7) == 0))
+  {
+    _CUDA_VSTD::memcpy(&__chunk, _CUDA_VSTD::assume_aligned<8>(__ptr), sizeof(_Tp));
+  }
+  else if ((__uintptr & 3) == 0)
+  {
+    _CUDA_VSTD::memcpy(&__chunk, _CUDA_VSTD::assume_aligned<4>(__ptr), sizeof(_Tp));
+  }
+  else if ((__uintptr & 1) == 0)
+  {
+    _CUDA_VSTD::memcpy(&__chunk, _CUDA_VSTD::assume_aligned<2>(__ptr), sizeof(_Tp));
+  }
+  else
+  {
+    _CUDA_VSTD::memcpy(&__chunk, __bytes, sizeof(_Tp));
+  }
   return __chunk;
 }
 
