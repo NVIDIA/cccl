@@ -100,6 +100,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
 {
   constexpr char kernel_name[]         = "kernel";
   constexpr char global_symbol_name[]  = "global_data";
+  constexpr char const_symbol_name[]   = "const_data";
   constexpr char managed_symbol_name[] = "managed_data";
 
   CUlibrary lib1{};
@@ -174,6 +175,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
 
     cudax::library_ref lib_ref{lib1};
     CUDAX_REQUIRE(lib_ref.has_global(global_symbol_name));
+    CUDAX_REQUIRE(lib_ref.has_global(const_symbol_name));
     CUDAX_REQUIRE(!lib_ref.has_global("non_existent_global"));
   }
 
@@ -187,16 +189,33 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     cudax::__ensure_current_device device_guard{device};
 
     cudax::library_ref lib_ref{lib1};
-    auto global_sym = lib_ref.global(global_symbol_name);
 
-    CUdeviceptr global_symbol_ptr;
-    cuda::std::size_t global_symbol_size;
-    CUDAX_REQUIRE(
-      cuLibraryGetGlobal(&global_symbol_ptr, &global_symbol_size, lib1, global_symbol_name) == CUDA_SUCCESS);
+    // Test global_symbol_name
+    {
+      auto global_sym = lib_ref.global(global_symbol_name);
 
-    CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(global_sym.ptr) == global_symbol_ptr);
-    CUDAX_REQUIRE(global_sym.size == global_symbol_size);
-    CUDAX_REQUIRE(global_sym.size == sizeof(int));
+      CUdeviceptr global_symbol_ptr;
+      cuda::std::size_t global_symbol_size;
+      CUDAX_REQUIRE(
+        cuLibraryGetGlobal(&global_symbol_ptr, &global_symbol_size, lib1, global_symbol_name) == CUDA_SUCCESS);
+
+      CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(global_sym.ptr) == global_symbol_ptr);
+      CUDAX_REQUIRE(global_sym.size == global_symbol_size);
+      CUDAX_REQUIRE(global_sym.size == sizeof(int));
+    }
+
+    // Test const_symbol_name
+    {
+      auto const_sym = lib_ref.global(const_symbol_name);
+
+      CUdeviceptr const_symbol_ptr;
+      cuda::std::size_t const_symbol_size;
+      CUDAX_REQUIRE(cuLibraryGetGlobal(&const_symbol_ptr, &const_symbol_size, lib1, const_symbol_name) == CUDA_SUCCESS);
+
+      CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(const_sym.ptr) == const_symbol_ptr);
+      CUDAX_REQUIRE(const_sym.size == const_symbol_size);
+      CUDAX_REQUIRE(const_sym.size == sizeof(int));
+    }
   }
 
   // Has managed symbol
