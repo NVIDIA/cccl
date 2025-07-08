@@ -278,24 +278,22 @@ inline CUlibrary kernelGetLibrary(CUkernel kernel)
   return lib;
 }
 
-inline CUkernel libraryGetKernel(CUlibrary lib, const char* name)
+inline cudaError_t libraryGetKernel(CUkernel& kernel, CUlibrary lib, const char* name)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryGetKernel);
-  CUkernel kernel;
-  call_driver_fn(driver_fn, "Failed to get the kernel from library", &kernel, lib, name);
-  return kernel;
+  return static_cast<cudaError_t>(driver_fn(&kernel, lib, name));
 }
 
-inline void libraryGetGlobal(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbytes, CUlibrary lib, const char* name)
+inline cudaError_t libraryGetGlobal(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbytes, CUlibrary lib, const char* name)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryGetGlobal);
-  call_driver_fn(driver_fn, "Failed to get the global symbol from library", &dptr, &nbytes, lib, name);
+  return static_cast<cudaError_t>(driver_fn(&dptr, &nbytes, lib, name));
 }
 
-inline void libraryGetManaged(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbytes, CUlibrary lib, const char* name)
+inline cudaError_t libraryGetManaged(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbytes, CUlibrary lib, const char* name)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryGetManaged);
-  call_driver_fn(driver_fn, "Failed to get the managed symbol from library", &dptr, &nbytes, lib, name);
+  return static_cast<cudaError_t>(driver_fn(&dptr, &nbytes, lib, name));
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 3)

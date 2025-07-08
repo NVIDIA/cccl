@@ -98,6 +98,10 @@ $L__BB0_2:
 
 C2H_CCCLRT_TEST("Library reference", "[library_ref]")
 {
+  constexpr char kernel_name[]         = "kernel";
+  constexpr char global_symbol_name[]  = "global_data";
+  constexpr char managed_symbol_name[] = "managed_data";
+
   CUlibrary lib1{};
   CUDAX_REQUIRE(cuLibraryLoadData(&lib1, library_src, nullptr, nullptr, 0, nullptr, nullptr, 0) == CUDA_SUCCESS);
 
@@ -135,10 +139,18 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     CUDAX_REQUIRE(lib_ref1.get() == lib_ref2.get());
   }
 
+  // Has kernel
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_kernel(kernel_name)), bool>);
+
+    cudax::library_ref lib_ref{lib1};
+    CUDAX_REQUIRE(lib_ref.has_kernel(kernel_name));
+    CUDAX_REQUIRE(!lib_ref.has_kernel("non_existent_kernel"));
+  }
+
   // Get kernel
   {
-    constexpr char kernel_name[] = "kernel";
-
     STATIC_REQUIRE(
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().kernel<void(int*, int)>(kernel_name)),
                            cudax::kernel_ref<void(int*, int)>>);
@@ -151,10 +163,22 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     CUDAX_REQUIRE(kernel.get() == kernel_handle);
   }
 
+  // Has global symbol
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_global(global_symbol_name)), bool>);
+
+    // Getting a global symbol requires the current device to be set
+    cudax::device_ref device{0};
+    cudax::__ensure_current_device device_guard{device};
+
+    cudax::library_ref lib_ref{lib1};
+    CUDAX_REQUIRE(lib_ref.has_global(global_symbol_name));
+    CUDAX_REQUIRE(!lib_ref.has_global("non_existent_global"));
+  }
+
   // Get global symbol
   {
-    constexpr char global_symbol_name[] = "global_data";
-
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().global(global_symbol_name)),
                                         cudax::library_global_symbol_info>);
 
@@ -175,10 +199,18 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     CUDAX_REQUIRE(global_sym.size == sizeof(int));
   }
 
+  // Has managed symbol
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_managed(managed_symbol_name)), bool>);
+
+    cudax::library_ref lib_ref{lib1};
+    CUDAX_REQUIRE(lib_ref.has_managed(managed_symbol_name));
+    CUDAX_REQUIRE(!lib_ref.has_managed("non_existent_managed"));
+  }
+
   // Get managed symbol
   {
-    constexpr char managed_symbol_name[] = "managed_data";
-
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().managed(managed_symbol_name)),
                                         cudax::library_managed_symbol_info>);
 
