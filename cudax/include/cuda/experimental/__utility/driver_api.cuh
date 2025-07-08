@@ -270,13 +270,15 @@ inline int kernelGetAttribute(CUfunction_attribute attr, CUkernel kernel, CUdevi
   return value;
 }
 
+#if _CCCL_CTK_AT_LEAST(12, 5)
 inline CUlibrary kernelGetLibrary(CUkernel kernel)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetLibrary);
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuKernelGetLibrary, cuKernelGetLibrary, 12050);
   CUlibrary lib;
   call_driver_fn(driver_fn, "Failed to get the library from kernel", &lib, kernel);
   return lib;
 }
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 inline cudaError_t libraryGetKernel(CUkernel& kernel, CUlibrary lib, const char* name)
 {

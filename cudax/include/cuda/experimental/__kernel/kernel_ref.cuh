@@ -112,6 +112,7 @@ public:
     return __attr(*this, __dev);
   }
 
+#if _CCCL_CTK_AT_LEAST(12, 5)
   //! @brief Get the library associated with the kernel
   //!
   //! @return The library associated with the kernel
@@ -121,6 +122,7 @@ public:
   {
     return library_ref{__detail::driver::kernelGetLibrary(__kernel_)};
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
   //! @brief Retrieve the native kernel handle
   //!

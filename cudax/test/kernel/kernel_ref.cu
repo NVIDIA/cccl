@@ -298,6 +298,17 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
     CUDAX_REQUIRE(kernel_ptx1_handle == kernel_ref.get());
   }
 
+  // Get library
+#if _CCCL_CTK_AT_LEAST(12, 5)
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().library()), cudax::library_ref>);
+    cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
+    auto lib_ref = kernel_ref.library();
+    CUDAX_REQUIRE(lib_ref.get() == lib);
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
+
   // Equality/Inequality comparison
   {
     cudax::kernel_ref<void(int*, int)> kernel_ref1{kernel_ptx1_handle};
