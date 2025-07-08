@@ -119,7 +119,6 @@ namespace detail
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, uint32_t, add.u32)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, add.s32)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add.f32)
-
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
 
 #if __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
@@ -213,7 +212,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 // Generation of Shuffle/Reduce Member Mask
 
 template <ReduceLogicalMode LogicalMode, int LogicalWarpSize>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr uint32_t
 reduce_lane_mask([[maybe_unused]] reduce_logical_mode_t<LogicalMode> logical_mode, logical_warp_size_t<LogicalWarpSize>)
 {
   return (logical_mode == multiple_reductions) ? 0xFFFFFFFF : (0xFFFFFFFF >> (warp_threads - LogicalWarpSize));
