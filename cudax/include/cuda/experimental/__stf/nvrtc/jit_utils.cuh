@@ -218,19 +218,17 @@ inline CUfunction lazy_jit(
   nvrtcResult res = nvrtcCompileProgram(prog, raw_opts.size(), raw_opts.data());
   if (res != NVRTC_SUCCESS)
   {
-    size_t log_size = 0;
-    cuda_safe_call(nvrtcGetProgramLogSize(prog, &log_size));
+    size_t log_size = cuda_try<nvrtcGetProgramLogSize>(prog);
     ::std::string log(log_size, '\0');
-    cuda_safe_call(nvrtcGetProgramLog(prog, log.data()));
+    cuda_try(nvrtcGetProgramLog(prog, log.data()));
     ::std::cerr << "NVRTC compile error:\n" << log << ::std::endl;
     ::std::exit(1);
   }
 
-  size_t ptx_size = 0;
-  cuda_safe_call(nvrtcGetPTXSize(prog, &ptx_size));
+  size_t ptx_size = cuda_try<nvrtcGetPTXSize>(prog);
   ::std::string ptx(ptx_size, '\0');
-  cuda_safe_call(nvrtcGetPTX(prog, ptx.data()));
-  cuda_safe_call(nvrtcDestroyProgram(&prog));
+  cuda_try(nvrtcGetPTX(prog, ptx.data()));
+  cuda_try(nvrtcDestroyProgram(&prog));
 
   CUmodule cuda_module = cuda_try<cuModuleLoadData>(ptx.data());
   CUfunction kernel    = cuda_try<cuModuleGetFunction>(cuda_module, kernel_name.c_str());

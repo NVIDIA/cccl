@@ -261,6 +261,29 @@ struct first_param_impl<R (*)(P, Ps...)>
 */
 template <auto f>
 using first_param = typename first_param_impl<decltype(f)>::type;
+
+template <typename>
+struct last_param_impl;
+
+template <typename R, typename P>
+struct last_param_impl<R (*)(P)>
+{
+  using type = P;
+};
+
+// Specialization for function pointers
+template <typename R, typename P, typename... Ps>
+struct last_param_impl<R (*)(P, Ps...)>
+{
+    using type = typename last_param_impl<R (*)(Ps...)>::type;
+};
+
+/*
+`reserved::last_param<fun>` is an alias for the type of `fun`'s last parameter.
+*/
+template <auto f>
+using last_param = typename last_param_impl<decltype(f)>::type;
+
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
@@ -391,10 +414,16 @@ auto cuda_try(Ps&&... ps)
   {
     cuda_try(fun(::std::forward<Ps>(ps)...));
   }
-  else
+  else if constexpr (::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>)
   {
     ::std::remove_pointer_t<reserved::first_param<fun>> result{};
     cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
+    return result;
+  }
+  else
+  {
+    ::std::remove_pointer_t<reserved::last_param<fun>> result{};
+    cuda_try(fun(::std::forward<Ps>(ps)..., &result));
     return result;
   }
 }
