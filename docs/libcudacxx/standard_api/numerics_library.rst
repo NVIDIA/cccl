@@ -26,7 +26,7 @@ Any Standard C++ header not listed below is omitted.
      - **C++ Reference**
 
    * - ``<cuda/std/ratio>``
-     - Compile-time rational arthimetic
+     - Compile-time rational arithmetic
      - CCCL 2.0.0
      - CUDA 11.0
      - `\<ratio\> <https://en.cppreference.com/w/cpp/header/ratio>`_
