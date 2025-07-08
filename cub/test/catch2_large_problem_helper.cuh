@@ -126,7 +126,7 @@ auto make_large_offset() -> Offset
   const auto num_items_max_ull = ::cuda::std::clamp(
     static_cast<::cuda::std::size_t>(::cuda::std::numeric_limits<Offset>::max()),
     ::cuda::std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<::cuda::std::size_t>(2000000ULL));
+    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + static_cast<::cuda::std::size_t>(2000000ULL));
   return static_cast<Offset>(num_items_max_ull);
 }
 
