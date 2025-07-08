@@ -86,14 +86,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log(const complex<_Tp>& __x)
 {
-  // return __x;
   // uint/ints of the same size as our fp type.
-  // Shouldn't need make_unsigned here, just in case:
+  // Shouldn't need make_unsigned, but just in case:
   using _UINT_T   = make_unsigned_t<__fp_storage_of_t<_Tp>>;
   using _INT_T    = make_signed<_UINT_T>;
   using _CONST_TP = const _Tp;
 
-  // Constants needed:
+  // Some needed constants:
   constexpr _UINT_T __mant_mask = __fp_mant_mask_of_v<_Tp>;
   constexpr _UINT_T __exp_mask  = __fp_exp_mask_of_v<_Tp>;
 
@@ -106,14 +105,13 @@ template <class _Tp>
   // 0x3FE0000000000000 for fp64 etc
   constexpr _UINT_T __exp_mask_of_half = ((__exp_mask >> (__mant_nbits + 2)) << (__mant_nbits + 1));
 
-  // Make sure __r^2 + __i^2 doesn't underflow or overflow
   _CONST_TP __real_abs = _CUDA_VSTD::fabs(__x.real());
   _CONST_TP __imag_abs = _CUDA_VSTD::fabs(__x.imag());
 
   _Tp __max = (__real_abs > __imag_abs) ? __real_abs : __imag_abs;
   _Tp __min = (__real_abs > __imag_abs) ? __imag_abs : __real_abs;
 
-  // We would like to range reduce these values so abs(x) ~ 1, as we'll take the log of this.
+  // We would like to range reduce these values so that abs(x) ~ 1, as we'll take the log of this.
   // The below code inlines and removes these two calls:
   //    _Tp __max_reduced = _CUDA_VSTD::frexpf(__max, &__exp);
   //    _Tp __min_reduced = _CUDA_VSTD::ldexpf(__min, -__exp);
@@ -146,8 +144,8 @@ template <class _Tp>
     {
       if (__exp >= __exp_bias)
       { // Here __exp is (eg for double) only 1023 or 1024.
-        // Create a fast ldexp power of 2 as above underflows.
-        // Split it into two separate mul's.
+        // Create a fast ldexp power of 2 as above underflows,
+        // and split it into two separate multiplications.
         // Inlined version of this code:
         //   __min_reduced = _CUDA_VSTD::ldexp(__min, -__exp);
         _UINT_T __ldexp_factor_2_uint = (static_cast<_UINT_T>(__exp_bias + __mant_nbits - __exp) << __mant_nbits);
@@ -178,8 +176,8 @@ template <class _Tp>
     }
   }
 
-  // We now have __max and __min reduced according to the exponent of __max.
-  // However, we need to have it actually reduced according to hypot(__max, __min).
+  // We now have __max and __min reduced so that 0.5 <= __max <= 1.0.
+  // However, we need to have it so hypot(__max, __min)^2 is reduced.
   // At the moment we have:
   //   0.5 <= hypot(__min_reduced, __max_reduced) <= sqrt(2)
   // We will take the logarithm of this, for the most accuracy (and to reduce log1p polynomial length),
@@ -193,11 +191,11 @@ template <class _Tp>
     __exp -= 1;
   }
 
-  // hypot(__max_reduced, __min_reduced) is now close to 1.0, we now need log(hypot())).
+  // hypot(__max_reduced, __min_reduced) is now ~1.0, and we now want log(hypot())).
   // We can end up with large ulp errors due to catastrophic cancellation with hypot, however.
   // To prevent this can instead calculate:
   //        ((real^2 +  imag^2) - 1)
-  // accurately, then use log1p. This keeps it accurate around log(hypot()) = 0.
+  // accurately and use log1p.
   _Tp max_2_hi = __max_reduced * __max_reduced;
   _Tp max_2_lo = _CUDA_VSTD::fma(__max_reduced, __max_reduced, -max_2_hi);
 
@@ -207,7 +205,8 @@ template <class _Tp>
   _Tp sum_hi = max_2_hi + min_2_hi;
   _Tp sum_lo = min_2_hi + (max_2_hi - sum_hi);
 
-  sum_hi -= _Tp(1.0); // exact where it matters, with the previous range reduction.
+  // exact where it matters, with the previous range reduction.
+  sum_hi -= _Tp(1.0);
 
   // Compiler can rearrange the sum in brackets, same max error. Need all terms.
   __hypot_sq_scaled = sum_hi + (sum_lo + max_2_lo + min_2_lo);
