@@ -236,7 +236,7 @@ bulk_copy_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, i
              0,
              ::cuda::std::plus<>(),
              [](auto&& vsa) {
-               return vsa.first;
+               return static_cast<int>(vsa.first);
              })
        + it_value_sizes_alignments.size() * bulk_copy_align;
 }
