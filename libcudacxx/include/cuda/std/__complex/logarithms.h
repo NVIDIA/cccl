@@ -134,7 +134,7 @@ template <class _Tp>
   constexpr int32_t __exp_nbits  = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
 
-  // Exponent mask of 0.5. Cut off the hi and low bit of __exp_mask.
+  // Cut off the hi and low bit of __exp_mask.
   // 0x3F000000 for fp32,
   // 0x3FE0000000000000 for fp64 etc
   constexpr _UINT_T __exp_mask_of_half = ((__exp_mask >> (__mant_nbits + 2)) << (__mant_nbits + 1));
@@ -178,8 +178,7 @@ template <class _Tp>
     else
     {
       if (__exp >= __exp_bias)
-      { // EG for double:
-        // Only 1023 or 1024
+      { // Here __exp is (eg for double) only 1023 or 1024.
         // Create a fast ldexp power of 2 as above underflows.
         // Split it into two separate mul's.
         // Inlined version of this code:
@@ -194,14 +193,11 @@ template <class _Tp>
       else
       {
         // __max is denormal (so __min is also denormal or 0.0)
-        // Scale things up by 2^23 then do the fast ldexp.
-
+        // Scale things up by 2^__mant_nbits then do the fast ldexp.
         _UINT_T __two_mant_bits = static_cast<_UINT_T>(__mant_nbits + __exp_bias) << __mant_nbits;
         _Tp __ldexp_factor      = reinterpret_cast<_Tp&>(__two_mant_bits);
-        // __max_reduced = __max * 8388608.0f; // 2^23
-        // __min_reduced = __min * 8388608.0f; // 2^23;
-        __max_reduced = __max * __ldexp_factor; // 2^23
-        __min_reduced = __min * __ldexp_factor; // 2^23;
+        __max_reduced = __max * __ldexp_factor; // 2^__mant_nbits
+        __min_reduced = __min * __ldexp_factor; // 2^__mant_nbits;
 
         int32_t __exp_no_denorm_bias =
           static_cast<int32_t>(reinterpret_cast<_UINT_T&>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
@@ -230,9 +226,9 @@ template <class _Tp>
     __exp -= 1;
   }
 
-  // hypot(__max_reduced, __min_reduced) is close to 1.0, after we need log(hypot())).
-  // We can end up with large ulp errors due to catastrophic cancellation with hypot.
-  // To prevent this we should instead calculate:
+  // hypot(__max_reduced, __min_reduced) is now close to 1.0, we now need log(hypot())).
+  // We can end up with large ulp errors due to catastrophic cancellation with hypot, however.
+  // To prevent this can instead calculate:
   //        ((real^2 +  imag^2) - 1)
   // accurately, then use log1p. This keeps it accurate around log(hypot()) = 0.
   _Tp max_2_hi = __max_reduced * __max_reduced;
@@ -246,12 +242,12 @@ template <class _Tp>
 
   sum_hi -= _Tp(1.0); // exact where it matters, with the previous range reduction.
 
-  // Let compiler rearrange the sum in brackets, same max error. Need all terms.
+  // Compiler can rearrange the sum in brackets, same max error. Need all terms.
   __hypot_sq_scaled = sum_hi + (sum_lo + max_2_lo + min_2_lo);
 
-  // We now need to get log1p(__hypot_sq_scaled).
+  // We now need log1p(__hypot_sq_scaled).
   // The range of __hypot_sq_scaled is too large for a simple polynomial at the moment,
-  // and the log1p function inself is quite heavy. We do some more reduction using:
+  // and the log1p function inself is quite heavy. We do yet more reduction using:
   //    log1p(x) = -ln(C) + log1p(C-1 + C*x)
 
   _Tp __exp_d = static_cast<_Tp>(__exp);
@@ -273,6 +269,7 @@ template <class _Tp>
   // __hypot_sq_scaled is now in [-0.25, 0.5], we can use a log1p polynomial estimate.
   _Tp __log1p_poly = __internal_unsafe_log1p_poly(__hypot_sq_scaled);
 
+  // Scale our answer back up.
   _Tp __abs_rescaled = _CUDA_VSTD::fma(_CUDA_VSTD::numbers::ln2_v<_Tp>, __exp_d, __log1p_poly); // ln(2)
 
   // Fix x == 0.0
@@ -292,6 +289,8 @@ template <class _Tp>
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
+// The general template for log when generated for __nv_bfloat16 is both worse for
+// accuracy and slower than the fp32 version.
 _CCCL_API inline complex<__nv_bfloat16> log(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::log(complex<float>{__x})};
@@ -300,6 +299,8 @@ _CCCL_API inline complex<__nv_bfloat16> log(const complex<__nv_bfloat16>& __x)
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
+// The general template for log when generated for __half is both worse for
+// accuracy and slower than the fp32 version.
 _CCCL_API inline complex<__half> log(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::log(complex<float>{__x})};
@@ -311,8 +312,7 @@ _CCCL_API inline complex<__half> log(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log10(const complex<_Tp>& __x)
 {
-  // return _CUDA_VSTD::log(__x) / _CUDA_VSTD::log(_Tp(10));
-  return _CUDA_VSTD::log(__x) * _Tp(0.434294481903251827651128918916605);
+  return _CUDA_VSTD::log(__x) * _Tp(_CUDA_VSTD::numbers::log10e_v<_Tp>);
 }
 
 #if _LIBCUDACXX_HAS_NVBF16()
