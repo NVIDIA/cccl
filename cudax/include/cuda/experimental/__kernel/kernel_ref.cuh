@@ -27,6 +27,7 @@
 #include <cuda/std/string_view>
 
 #include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__library/library_ref.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <string>
@@ -109,6 +110,16 @@ public:
   [[nodiscard]] auto attribute(_Attr __attr, device_ref __dev) const
   {
     return __attr(*this, __dev);
+  }
+
+  //! @brief Get the library associated with the kernel
+  //!
+  //! @return The library associated with the kernel
+  //!
+  //! @throws cuda_error if the library cannot be obtained
+  [[nodiscard]] library_ref library() const
+  {
+    return library_ref{__detail::driver::kernelGetLibrary(__kernel_)};
   }
 
   //! @brief Retrieve the native kernel handle

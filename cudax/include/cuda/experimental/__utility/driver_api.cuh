@@ -270,6 +270,34 @@ inline int kernelGetAttribute(CUfunction_attribute attr, CUkernel kernel, CUdevi
   return value;
 }
 
+inline CUlibrary kernelGetLibrary(CUkernel kernel)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuKernelGetLibrary);
+  CUlibrary lib;
+  call_driver_fn(driver_fn, "Failed to get the library from kernel", &lib, kernel);
+  return lib;
+}
+
+inline CUkernel libraryGetKernel(CUlibrary lib, const char* name)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryGetKernel);
+  CUkernel kernel;
+  call_driver_fn(driver_fn, "Failed to get the kernel from library", &kernel, lib, name);
+  return kernel;
+}
+
+inline void libraryGetGlobal(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbytes, CUlibrary lib, const char* name)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryGetGlobal);
+  call_driver_fn(driver_fn, "Failed to get the global symbol from library", &dptr, &nbytes, lib, name);
+}
+
+inline void libraryGetManaged(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbytes, CUlibrary lib, const char* name)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryGetManaged);
+  call_driver_fn(driver_fn, "Failed to get the managed symbol from library", &dptr, &nbytes, lib, name);
+}
+
 #if _CCCL_CTK_AT_LEAST(12, 3)
 inline const char* kernelGetName(CUkernel kernel)
 {

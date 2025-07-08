@@ -156,6 +156,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     kernel/kernel_ref.cu
   )
 
+  cudax_add_catch2_test(test_target library ${cn_target}
+    library/library_ref.cu
+  )
+
   cudax_add_catch2_test(test_target algorithm ${cn_target}
     algorithm/fill.cu
     algorithm/copy.cu
