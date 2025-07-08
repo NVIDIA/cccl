@@ -168,10 +168,7 @@ struct __static_partial_sums
 // ------------------------------------------------------------------
 
 template <class _TStatic, _TStatic _DynTag, _TStatic... _Values>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __count_dynamic()
-{
-  return (size_t(0) + ... + static_cast<size_t>(_Values == _DynTag));
-}
+constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Values == _DynTag));
 
 // array like class which has a mix of static and runtime values but
 // only stores the runtime values.
@@ -180,8 +177,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __count_dynamic()
 // We manually implement EBCO because MSVC and some odler compiler fail hard with [[no_unique_address]]
 template <class _TDynamic, class _TStatic, _TStatic _DynTag, _TStatic... _Values>
 struct __maybe_static_array
-    : private __possibly_empty_array<_TDynamic,
-                                     _CUDA_VSTD::__mdspan_detail::__count_dynamic<_TStatic, _DynTag, _Values...>()>
+    : private __possibly_empty_array<_TDynamic, __count_dynamic_v<_TStatic, _DynTag, _Values...>>
 {
   static_assert(_CCCL_TRAIT(is_convertible, _TStatic, _TDynamic),
                 "__maybe_static_array: _TStatic must be convertible to _TDynamic");
@@ -190,11 +186,10 @@ struct __maybe_static_array
 
 private:
   // Static values member
-  static constexpr size_t __size_ = sizeof...(_Values);
-  static constexpr size_t __size_dynamic_ =
-    _CUDA_VSTD::__mdspan_detail::__count_dynamic<_TStatic, _DynTag, _Values...>();
-  using _StaticValues  = __static_array<_TStatic, _Values...>;
-  using _DynamicValues = __possibly_empty_array<_TDynamic, __size_dynamic_>;
+  static constexpr size_t __size_         = sizeof...(_Values);
+  static constexpr size_t __size_dynamic_ = __count_dynamic_v<_TStatic, _DynTag, _Values...>;
+  using _StaticValues                     = __static_array<_TStatic, _Values...>;
+  using _DynamicValues                    = __possibly_empty_array<_TDynamic, __size_dynamic_>;
 
   // static mapping of indices to the position in the dynamic values array
   using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
