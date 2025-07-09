@@ -20,32 +20,22 @@ __device__ void update(cuda::std::array<T, N>& array)
   }
 }
 
-template <typename T, typename L1Reuse, typename L2Reuse, typename AccessProperty>
-__device__ void store_call(T& value, T* output, L1Reuse l1_reuse, L2Reuse l2_policy, AccessProperty l2_hint)
+template <typename T, typename L1Reuse, typename AccessProperty>
+__device__ void store_call(T& value, T* output, L1Reuse l1_reuse, AccessProperty l2_hint)
 {
   update(value);
-  cuda::device::store(output, value, l1_reuse, l2_policy, l2_hint);
+  cuda::device::store(output, value, l1_reuse, l2_hint);
   __threadfence();
   assert(*output == value);
   __threadfence();
 }
 
-template <typename T, typename L1Reuse, typename L2Reuse>
-__device__ void store_call(T& value, T* output, L1Reuse l1_reuse, L2Reuse l2_policy)
-{
-  store_call(value, output, l1_reuse, l2_policy, cuda::access_property::global{});
-  store_call(value, output, l1_reuse, l2_policy, cuda::access_property::streaming{});
-  store_call(value, output, l1_reuse, l2_policy, cuda::access_property::persisting{});
-}
-
 template <typename T, typename L1Reuse>
 __device__ void store_call(T& value, T* output, L1Reuse l1_reuse)
 {
-  store_call(value, output, l1_reuse, cuda::device::cache_reuse_unchanged);
-  store_call(value, output, l1_reuse, cuda::device::cache_reuse_normal);
-  store_call(value, output, l1_reuse, cuda::device::cache_reuse_unchanged);
-  store_call(value, output, l1_reuse, cuda::device::cache_reuse_low);
-  store_call(value, output, l1_reuse, cuda::device::cache_reuse_high);
+  store_call(value, output, l1_reuse, cuda::access_property::global{});
+  store_call(value, output, l1_reuse, cuda::access_property::streaming{});
+  store_call(value, output, l1_reuse, cuda::access_property::persisting{});
 }
 
 template <typename T>
@@ -82,11 +72,8 @@ __global__ void store_kernel()
   store_call(input16, reinterpret_cast<Bytes16*>(&pointer));
   store_call(input32, reinterpret_cast<Bytes32*>(&pointer));
 
-  unused(cuda::device::store(
-    cuda::annotated_ptr<uint8_t, cuda::access_property::normal>{pointer},
-    uint8_t{0},
-    cuda::device::cache_reuse_normal,
-    cuda::device::cache_reuse_normal));
+  cuda::device::store(
+    cuda::annotated_ptr<uint8_t, cuda::access_property::normal>{pointer}, uint8_t{0}, cuda::device::cache_reuse_normal);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

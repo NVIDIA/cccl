@@ -76,7 +76,7 @@ inline constexpr auto cache_reuse_high      = __cache_reuse_high_t{};
 inline constexpr auto cache_no_reuse        = __cache_no_reuse_t{};
 
 /***********************************************************************************************************************
- * Prefetch Spatial Locality
+ * _Prefetch Spatial Locality
  **********************************************************************************************************************/
 
 enum class _L2_PrefetchEnum
@@ -109,12 +109,143 @@ struct __l2_hint_t : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_same_v<_AccessPro
 {
   static_assert(::cuda::__is_global_access_property_v<_AccessProperty>, "invalid access property");
 
-  uint64_t __property;
+  _CUDA_VSTD::uint64_t __property;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit __l2_hint_t(_AccessProperty __property)
-      : __property(static_cast<uint64_t>(access_property{__property}))
+  _CCCL_API _CCCL_DEVICE explicit __l2_hint_t(_AccessProperty __property) noexcept
+      : __property(static_cast<_CUDA_VSTD::uint64_t>(access_property{__property}))
   {}
 };
+
+/***********************************************************************************************************************
+ * Load Properties
+ **********************************************************************************************************************/
+
+template <_MemoryAccess _MemAccess   = _MemoryAccess::_ReadWrite,
+          _CacheReuseEnum _L1        = _CacheReuseEnum::_Unchanged,
+          typename _AccessProperty   = access_property::global,
+          _L2_PrefetchEnum _Prefetch = _L2_PrefetchEnum::_None>
+struct _LoadProperties
+{
+  __l2_hint_t<_AccessProperty> __l2_hint{_AccessProperty{}};
+
+  _LoadProperties() = default;
+
+  _CCCL_DEVICE_API constexpr _LoadProperties(__memory_access_t<_MemAccess>) noexcept {}
+
+  _CCCL_DEVICE_API constexpr _LoadProperties(__cache_reuse_t<_L1>) noexcept {}
+
+  _CCCL_DEVICE_API constexpr _LoadProperties(__l2_prefetch_t<_Prefetch>) noexcept {}
+
+  _CCCL_DEVICE_API constexpr _LoadProperties(__l2_hint_t<_AccessProperty> __l2_hint1) noexcept
+      : __l2_hint{__l2_hint1}
+  {}
+};
+
+// operator|
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          _MemoryAccess _MemAccessNew>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+operator|(_LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop, __memory_access_t<_MemAccessNew>)
+{
+  return _LoadProperties<_MemAccessNew, _L1, _AccessProperty, _Prefetch>{__prop.__l2_hint};
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          _MemoryAccess _MemAccessNew>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+operator|(__memory_access_t<_MemAccessNew> __mem, _LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop)
+{
+  return __prop | __mem;
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          _CacheReuseEnum _L1New>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+operator|(_LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop, __cache_reuse_t<_L1New>)
+{
+  return _LoadProperties<_MemAccess, _L1New, _AccessProperty, _Prefetch>{__prop.__l2_hint};
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          _CacheReuseEnum _L1New>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+operator|(__cache_reuse_t<_L1New> __l1_reuse, _LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop)
+{
+  return __prop | __l1_reuse;
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          typename _AccessPropertyNew>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(
+  _LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop, __l2_hint_t<_AccessPropertyNew> __l2_hint)
+{
+  return _LoadProperties<_MemAccess, _L1, _AccessPropertyNew, _Prefetch>{__l2_hint};
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          typename _AccessPropertyNew>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(
+  __l2_hint_t<_AccessPropertyNew> __l2_hint, _LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop)
+{
+  return __prop | __l2_hint;
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          _L2_PrefetchEnum _PrefetchNew>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+operator|(_LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop, __l2_prefetch_t<_PrefetchNew>)
+{
+  return _LoadProperties<_MemAccess, _L1, _AccessProperty, _PrefetchNew>{__prop.__l2_hint};
+}
+
+template <_MemoryAccess _MemAccess,
+          _CacheReuseEnum _L1,
+          typename _AccessProperty,
+          _L2_PrefetchEnum _Prefetch,
+          _L2_PrefetchEnum _PrefetchNew>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(
+  __l2_prefetch_t<_PrefetchNew> __l2_prefetch, _LoadProperties<_MemAccess, _L1, _AccessProperty, _Prefetch> __prop)
+{
+  return __prop | __l2_prefetch;
+}
+
+template <_MemoryAccess _MemAccess, _CacheReuseEnum _L1>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(__memory_access_t<_MemAccess>, __cache_reuse_t<_L1>)
+{
+  return _LoadProperties<_MemoryAccess::_ReadWrite, _L1>{};
+}
+
+template <_MemoryAccess _MemAccess, _CacheReuseEnum _L1>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(__cache_reuse_t<_L1>, __memory_access_t<_MemAccess>)
+{
+  return _LoadProperties<_MemoryAccess::_ReadWrite, _L1>{};
+}
+
+/***********************************************************************************************************************
+ * PTX Maximum Access Size
+ **********************************************************************************************************************/
 
 #if __cccl_ptx_isa >= 830
 inline constexpr size_t __max_ptx_access_size = 16;
