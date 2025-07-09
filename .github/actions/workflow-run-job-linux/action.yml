@@ -149,6 +149,7 @@ runs:
           --env "CI=$CI" \
           --env "AWS_ROLE_ARN=" \
           --env "COMMAND=$COMMAND" \
+          --env "DISABLE_SCCACHE=1" \
           --env "SCCACHE_IDLE_TIMEOUT=0" \
           --env "GITHUB_ENV=$GITHUB_ENV" \
           --env "GITHUB_SHA=$GITHUB_SHA" \
