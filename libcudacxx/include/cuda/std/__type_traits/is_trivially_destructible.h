@@ -33,8 +33,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)>
 {};
 
 #elif defined(_CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
@@ -53,8 +53,8 @@ struct __cccl_trivial_destructor : public integral_constant<bool, is_scalar<_Tp>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
-    : public __cccl_trivial_destructor<remove_all_extents_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_destructible : public __cccl_trivial_destructor<remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp>

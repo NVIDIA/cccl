@@ -50,6 +50,11 @@ __host__ __device__ constexpr void test()
   static_assert(cuda::std::is_same<decltype(const_max_size), const typename inplace_vector::size_type>::value, "");
   assert(const_max_size == max_capacity);
 
+  // max_size is a static member function, so it should also work through the type
+  const auto static_max_size = inplace_vector::max_size();
+  static_assert(cuda::std::is_same<decltype(static_max_size), const typename inplace_vector::size_type>::value, "");
+  assert(static_max_size == max_capacity);
+
   const auto capacity = range.capacity();
   static_assert(cuda::std::is_same<decltype(capacity), const typename inplace_vector::size_type>::value, "");
   assert(capacity == max_capacity);
@@ -57,6 +62,11 @@ __host__ __device__ constexpr void test()
   const auto const_capacity = const_range.capacity();
   static_assert(cuda::std::is_same<decltype(const_capacity), const typename inplace_vector::size_type>::value, "");
   assert(const_capacity == max_capacity);
+
+  // capacity is a static member function, so it should also work through the type
+  const auto static_capacity = inplace_vector::capacity();
+  static_assert(cuda::std::is_same<decltype(static_capacity), const typename inplace_vector::size_type>::value, "");
+  assert(static_capacity == max_capacity);
 }
 
 __host__ __device__ constexpr bool test()
