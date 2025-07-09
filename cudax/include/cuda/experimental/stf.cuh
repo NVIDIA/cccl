@@ -32,3 +32,4 @@
 #include <cuda/experimental/__stf/places/inner_shape.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/__stf/utility/run_once.cuh>
+#include <cuda/experimental/__stf/localization/visualization.cuh>

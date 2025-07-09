@@ -29,7 +29,7 @@ int main()
   };
 
   for (auto& sub_place :
-       place_partition(ctx.async_resources(), exec_place::current_device(), place_partition_scope::green_context))
+       place_partition(exec_place::current_device(), ctx.async_resources(), place_partition_scope::green_context))
   {
     for (size_t i = 0; i < 4; i++)
     {
