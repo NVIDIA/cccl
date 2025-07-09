@@ -306,7 +306,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 template <class LengthT, class KeyT>
 struct policy_hub
 {
-  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(KeyT), sizeof(LengthT)));
+  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max) (sizeof(KeyT), sizeof(LengthT)));
   static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
 
   template <CacheLoadModifier LoadModifier>

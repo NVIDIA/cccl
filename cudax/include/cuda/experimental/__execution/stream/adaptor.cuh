@@ -33,6 +33,7 @@
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
@@ -92,7 +93,7 @@ struct __results_visitor
 // __state_t lives in managed memory. It stores everything the operation state needs,
 // besides the child operation state.
 template <class _Rcvr, class _Variant>
-struct __state_base_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
 {
   _Rcvr __rcvr_;
   _Variant __results_;
@@ -124,12 +125,13 @@ template <int _BlockThreads, class _Rcvr, class _Variant>
 _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
+  _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
   _Variant::__visit(__results_visitor<_Rcvr>{__state->__rcvr_}, __state->__results_);
 }
 
 // This is the environment of the inner receiver that is used to connect the child sender.
 template <class _Env, class _Config>
-struct __env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
 {
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
@@ -139,13 +141,11 @@ struct __env_t
     return __env_.query(_Query{});
   }
 
-  // Use the default domain when connecting the child sender to the inner receiver. We
-  // want senders on device to behave like senders on the host by default. We will further
-  // customize those algorithms that need to do something different on device, like
-  // `bulk`, `when_all`, and `let_value`.
-  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> default_domain
+  // This query is used to tell transform_sender that the child sender has been adapted to
+  // the stream domain.
+  [[nodiscard]] _CCCL_API static constexpr auto query(__stream::__adapted_t) noexcept -> _CUDA_VSTD::__ignore_t
   {
-    return default_domain{};
+    return {};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto query(get_launch_config_t) const noexcept -> _Config
@@ -159,7 +159,7 @@ struct __env_t
 
 // This is the inner receiver that is used to connect the child sender.
 template <class _Rcvr, class _Config, class _Variant>
-struct __rcvr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
 {
   template <class _Tag, class... _Args>
   _CCCL_API void __complete(_Tag, _Args&&... __args) noexcept
@@ -208,13 +208,13 @@ struct __rcvr_t
   __state_t<_Rcvr, _Config, _Variant>* __state_;
 };
 
-template <class _CvSndr, class _Rcvr>
-struct __opstate_t
+template <class _CvSndr, class _Rcvr, class _GetStream>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
 {
   using operation_state_concept = operation_state_t;
 
-  _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
-      : __stream_{__stream}
+  _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _GetStream __get_stream)
+      : __stream_{__get_stream(__sndr, execution::get_env(__rcvr))}
   {
     NV_IF_TARGET(NV_IS_HOST,
                  (__host_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));),
@@ -333,14 +333,26 @@ private:
   __variant<__state_t, _CUDA_VSTD::unique_ptr<__managed_box<__state_t>>> __state_{};
 };
 
-template <class _Sndr>
-struct __attrs_t
+template <class _Sndr, class _GetStream>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+template <class _Sndr, class _GetStream>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
   // This makes sure that when `connect` calls `transform_sender`, it will use the stream
   // domain to find a customization.
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
   {
     return {};
+  }
+
+  // If the child sender knows how to provide a stream, make it available via the stream
+  // adapter's attributes.
+  _CCCL_TEMPLATE(class _GetStream2 = _GetStream)
+  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<_GetStream2, _Sndr, env<>>)
+  [[nodiscard]] _CCCL_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
+  {
+    return __sndr_.__get_stream_(__sndr_.__sndr_, env{});
   }
 
   // This forwards even non-forwarding queries. A stream sender adaptor is not an ordinary
@@ -352,15 +364,15 @@ struct __attrs_t
   [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
     -> __query_result_t<env_of_t<_Sndr>, _Query>
   {
-    return execution::get_env(*__sndr_).query(_Query{});
+    return execution::get_env(__sndr_.__sndr_).query(_Query{});
   }
 
-  const _Sndr* __sndr_;
+  const __sndr_t<_Sndr, _GetStream>& __sndr_;
 };
 
 // This is the sender adaptor that adapts a non-stream sender to a stream sender.
-template <class _Sndr>
-struct __sndr_t
+template <class _Sndr, class _GetStream>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
 {
   using sender_concept = sender_t;
 
@@ -377,50 +389,37 @@ struct __sndr_t
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr, _GetStream>
   {
-    return __opstate_t<_Sndr, _Rcvr>(static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), __stream_);
+    return __opstate_t<_Sndr, _Rcvr, _GetStream>(
+      static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), __get_stream_);
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr, _GetStream>
   {
-    return __opstate_t<const _Sndr&, _Rcvr>(__sndr_, static_cast<_Rcvr&&>(__rcvr), __stream_);
+    return __opstate_t<const _Sndr&, _Rcvr, _GetStream>(__sndr_, static_cast<_Rcvr&&>(__rcvr), __get_stream_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr, _GetStream>
   {
-    return __attrs_t<_Sndr>{&__sndr_};
+    return __attrs_t<_Sndr, _GetStream>{*this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __adapted_t<tag_of_t<_Sndr>> __tag_;
-  stream_ref __stream_;
+  _CCCL_NO_UNIQUE_ADDRESS __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS _GetStream __get_stream_;
   _Sndr __sndr_;
 };
 
-template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr __sndr, [[maybe_unused]] stream_ref __stream) -> decltype(auto)
+template <class _Sndr, class _GetStream>
+_CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexcept(__nothrow_decay_copyable<_Sndr>)
 {
-  // Ensure that we are not trying to adapt a sender that is already adapted.
-  if constexpr (__is_specialization_of_v<_Sndr, __sndr_t>)
-  {
-    return static_cast<_Sndr>(static_cast<_Sndr&&>(__sndr)); // passthrough
-  }
-  else
-  {
-    return __sndr_t<_Sndr>{{}, __stream, static_cast<_Sndr&&>(__sndr)};
-  }
-}
-
-template <class _Sndr>
-_CCCL_API constexpr auto __adapt(_Sndr __sndr) -> decltype(auto)
-{
-  return __stream::__adapt(static_cast<_Sndr&&>(__sndr), get_stream(execution::get_env(__sndr)));
+  return __sndr_t<_Sndr, _GetStream>{{}, __get_stream, static_cast<_Sndr&&>(__sndr)};
 }
 } // namespace __stream
 
-template <class _Sndr>
-inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr>> = 3;
+template <class _Sndr, class _GetStream>
+inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
 
 } // namespace cuda::experimental::execution
 

@@ -52,8 +52,8 @@ private:
   static_assert(_CUDA_VSTD::__integer_like<_Stride> || _CUDA_VSTD::__integral_constant_like<_Stride>,
                 "The stride of a strided_iterator must either be an integer-like or integral-constant-like.");
 
-  _CCCL_NO_UNIQUE_ADDRESS _Iter __iter_{};
-  _CCCL_NO_UNIQUE_ADDRESS _Stride __stride_{};
+  _Iter __iter_{};
+  _Stride __stride_{};
 
   template <class, class>
   friend class strided_iterator;
