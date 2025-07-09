@@ -123,7 +123,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
   {
     static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
     {
-      cudax::pinned_memory_resource other_resource{};
+      cudax::legacy_pinned_memory_resource other_resource{};
       uninitialized_buffer input{other_resource, 42};
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr       = buf.data();
