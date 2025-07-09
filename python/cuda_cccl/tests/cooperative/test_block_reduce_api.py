@@ -8,7 +8,7 @@ import numpy as np
 from numba import cuda
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 patch.patch_numba_linker(lto=True)
 # example-end imports
@@ -22,7 +22,7 @@ def test_block_reduction():
         return a if a > b else b
 
     threads_per_block = 128
-    block_reduce = cudax.block.reduce(numba.int32, threads_per_block, op)
+    block_reduce = coop.block.reduce(numba.int32, threads_per_block, op)
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
@@ -46,7 +46,7 @@ def test_block_reduction():
 def test_block_sum():
     # example-begin sum
     threads_per_block = 128
-    block_sum = cudax.block.sum(numba.int32, threads_per_block)
+    block_sum = coop.block.sum(numba.int32, threads_per_block)
 
     @cuda.jit(link=block_sum.files)
     def kernel(input, output):

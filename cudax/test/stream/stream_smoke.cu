@@ -134,3 +134,31 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
     }
   }
 }
+
+C2H_CCCLRT_TEST("Stream ID", "[stream]")
+{
+  cudax::stream stream1{cudax::device_ref{0}};
+  cudax::stream stream2{cudax::device_ref{0}};
+
+  // Test that id() returns a valid ID
+  auto id1 = stream1.id();
+  auto id2 = stream2.id();
+
+  // Test that different streams have different IDs
+  CUDAX_REQUIRE(id1 != id2);
+
+  // Test that the same stream returns the same ID when called multiple times
+  CUDAX_REQUIRE(stream1.id() == id1);
+  CUDAX_REQUIRE(stream2.id() == id2);
+
+  {
+    // Test that stream_ref also supports id()
+    // NULL stream needs a device to be set
+    cudax::__ensure_current_device guard(cudax::device_ref{0});
+    cudax::stream_ref ref1(static_cast<cudaStream_t>(NULL));
+    cudax::stream_ref ref2(stream1);
+
+    CUDAX_REQUIRE(ref1.id() != ref2.id());
+    CUDAX_REQUIRE(ref2.id() == id1);
+  }
+}

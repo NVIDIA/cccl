@@ -50,15 +50,6 @@
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/bit>
 
-// The memcpy_async and ublkcp kernels need cooperative groups which are not support on NVHPC and from cccl.c yet.
-#if _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL)
-#  define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC() 0
-#  define _CUB_HAS_TRANSFORM_UBLKCP()       0
-#else // _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL))
-#  define _CUB_HAS_TRANSFORM_MEMCPY_ASYNC() 1
-#  define _CUB_HAS_TRANSFORM_UBLKCP()       1
-#endif // _CCCL_CUDA_COMPILER(NVHPC) || defined(CCCL_C_EXPERIMENTAL))
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -202,24 +193,25 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 constexpr int ldgsts_size_and_align = 16;
 
 template <typename ItValueSizesAlignments>
-_CCCL_HOST_DEVICE constexpr auto
-memcpy_async_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, int tile_size) -> int
+_CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(
+  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
 {
   int smem_size = 0;
-  for (auto&& [size, alignment] : it_value_sizes_alignments)
+  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
   {
-    smem_size = static_cast<int>(::cuda::round_up(smem_size, alignment));
-    // max aligned_base_ptr head_padding + max padding after == 16
-    smem_size += static_cast<int>(size) * tile_size + ldgsts_size_and_align;
+    smem_size = static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max<int>(vt_alignment, copy_alignment)));
+    // max head/tail padding is copy_alignment - sizeof(T) each
+    const int max_bytes_to_copy = vt_size * tile_size + ::cuda::std::max<int>(copy_alignment - vt_size, 0) * 2;
+    smem_size += max_bytes_to_copy;
   };
   return smem_size;
 }
 
 constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int ptx_version) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
 {
-  return ptx_version < 1000 ? 128 : 16;
+  return sm_arch < 1000 ? 128 : 16;
 }
 
 template <typename ItValueSizesAlignments>
@@ -227,6 +219,10 @@ _CCCL_HOST_DEVICE constexpr auto
 bulk_copy_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int bulk_copy_align)
   -> int
 {
+  // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments
+  _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
+  _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
+
   return ::cuda::round_up(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
        // 128 bytes of padding for each input tile (handles before + after)
        + tile_size
@@ -238,6 +234,7 @@ bulk_copy_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, i
              [](auto&& vsa) {
                return static_cast<int>(vsa.first);
              })
+       // padding for each input tile (handles before + after as long as tile_size is a multiple of bulk_copy_align)
        + static_cast<int>(it_value_sizes_alignments.size()) * bulk_copy_align;
 }
 
@@ -322,40 +319,61 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
   };
 
-  // TODO(bgruber): should we add a tuning for 750? They should have items_per_thread_from_occupancy(256, 4, ...)
-
-  template <Algorithm Alg, int AsyncBlockSize, int Alignment, int PtxVersion, int EnableAsyncCopy>
-  struct async_policy_base
+  struct policy800 : ChainedPolicy<800, policy800, policy300>
   {
   private:
-    using async_policy = async_copy_policy_t<AsyncBlockSize, Alignment>;
+    static constexpr int block_threads = 256;
+    using async_policy                 = async_copy_policy_t<block_threads, ldgsts_size_and_align>;
+    // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
+    // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
+    // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
+    static constexpr bool exhaust_smem =
+      memcpy_async_smem_for_tile_size(
+        make_sizes_alignments<RandomAccessIteratorsIn...>(),
+        block_threads* async_policy::min_items_per_thread,
+        ldgsts_size_and_align)
+      > int{max_smem_per_block};
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+
+  public:
+    static constexpr int min_bif    = arch_to_min_bytes_in_flight(800);
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<block_threads>, async_policy>;
+  };
+
+  template <int AsyncBlockSize, int PtxVersion>
+  struct bulk_copy_policy_base
+  {
+  private:
+    static constexpr int alignment = bulk_copy_alignment(PtxVersion);
+    using async_policy             = async_copy_policy_t<AsyncBlockSize, alignment>;
+    // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
+    // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
+    // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size(make_sizes_alignments<RandomAccessIteratorsIn...>(),
                                    async_policy::block_threads* async_policy::min_items_per_thread,
-                                   Alignment)
+                                   alignment)
       > int{max_smem_per_block}; // TODO(bgruber): we should use the architecture specific limit for SMEM here
-    static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > Alignment) || ...);
-    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem
-                                      || any_type_is_overalinged || !EnableAsyncCopy;
+    // FIXME(bgruber): we need to support overaligned types eventually !!!
+    static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > alignment) || ...);
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Alg;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
     using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
 
-  struct policy800
-      : async_policy_base<Algorithm::memcpy_async, 256, ldgsts_size_and_align, 800, _CUB_HAS_TRANSFORM_MEMCPY_ASYNC()>
-      , ChainedPolicy<800, policy800, policy300>
-  {};
-
   struct policy900
-      : async_policy_base<Algorithm::ublkcp, 256, bulk_copy_alignment(900), 900, _CUB_HAS_TRANSFORM_UBLKCP()>
+      : bulk_copy_policy_base<256, 900>
       , ChainedPolicy<900, policy900, policy800>
   {};
 
   struct policy1000
-      : async_policy_base<Algorithm::ublkcp, 128, bulk_copy_alignment(1000), 1000, _CUB_HAS_TRANSFORM_UBLKCP()>
+      : bulk_copy_policy_base<128, 1000>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 

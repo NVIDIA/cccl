@@ -62,6 +62,39 @@ TEST_CASE("counting_iterator", "[iterators]")
   }
 }
 
+TEST_CASE("permutation_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    thrust::device_vector<int> off{5, 2, 7, 0};
+    thrust::device_vector<int> res{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
+                 cuda::permutation_iterator{vec.begin(), off.end()},
+                 res.begin());
+    CHECK(res == thrust::device_vector<int>{6, 3, 8, 1, -1});
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    thrust::host_vector<int> off{5, 2, 7, 0};
+    thrust::host_vector<int> res{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
+                 cuda::permutation_iterator{vec.begin(), off.end()},
+                 res.begin());
+    CHECK(res == thrust::host_vector<int>{6, 3, 8, 1, -1});
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int> off{5, 2, 7, 0};
+    std::vector<int> res{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
+                 cuda::permutation_iterator{vec.begin(), off.end()},
+                 res.begin());
+    CHECK(res == std::vector<int>{6, 3, 8, 1, -1});
+  }
+}
+
 TEST_CASE("strided_iterator", "[iterators]")
 {
   auto discard = cuda::discard_iterator{};
@@ -115,6 +148,36 @@ struct plus_one
     return val + 1;
   }
 };
+
+TEST_CASE("transform_output_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::counting_iterator{0},
+                 cuda::counting_iterator{5},
+                 cuda::make_transform_output_iterator(vec.begin(), plus_one{}));
+    thrust::device_vector<int> expected{1, 2, 3, 4, 5};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::counting_iterator{0},
+                 cuda::counting_iterator{5},
+                 cuda::make_transform_output_iterator(vec.begin(), plus_one{}));
+    thrust::host_vector<int> expected{1, 2, 3, 4, 5};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{-1, -1, -1, -1, -1};
+    thrust::copy(cuda::counting_iterator{0},
+                 cuda::counting_iterator{5},
+                 cuda::make_transform_output_iterator(vec.begin(), plus_one{}));
+    std::vector<int> expected{1, 2, 3, 4, 5};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+}
 
 TEST_CASE("transform_iterator", "[iterators]")
 {

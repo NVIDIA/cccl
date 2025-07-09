@@ -41,21 +41,11 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
 namespace cuda::experimental::execution
 {
-// Map from a disposition to the corresponding tag types:
-namespace __detail
-{
-template <__disposition, class _Void = void>
-extern _CUDA_VSTD::__undefined<_Void> __upon_tag;
-template <class _Void>
-extern __fn_t<then_t>* __upon_tag<__disposition::__value, _Void>;
-template <class _Void>
-extern __fn_t<upon_error_t>* __upon_tag<__disposition::__error, _Void>;
-template <class _Void>
-extern __fn_t<upon_stopped_t>* __upon_tag<__disposition::__stopped, _Void>;
-} // namespace __detail
-
 namespace __upon
 {
 template <bool IsVoid, bool _Nothrow>
@@ -93,35 +83,30 @@ using __completion_ _CCCL_NODEBUG_ALIAS =
 template <class _Fn, class... _Ts>
 using __completion _CCCL_NODEBUG_ALIAS =
   __completion_<_CUDA_VSTD::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+
+template <class _Fn, class _Rcvr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
+{
+  _Rcvr __rcvr_;
+  _Fn __fn_;
+};
 } // namespace __upon
 
-template <__disposition _Disposition>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRED_NAME(upon_error_t)
-  _CCCL_PREFERRED_NAME(upon_stopped_t) __upon_t
+template <class _UponTag, class _SetTag>
+struct __upon_t
 {
   _CUDAX_SEMI_PRIVATE :
-  using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
-  using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
+  friend struct then_t;
+  friend struct upon_error_t;
+  friend struct upon_stopped_t;
 
-  template <class _Rcvr, class _CvSndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  using __upon_tag_t = _UponTag;
+  using __set_tag_t  = _SetTag;
+
+  template <class _Fn, class _Rcvr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
-    using __rcvr_t _CCCL_NODEBUG_ALIAS                = __rcvr_ref_t<__opstate_t, __env_t>;
-
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
-        : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
-        , __fn_{static_cast<_Fn&&>(__fn)}
-        , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
-    {}
-
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
-
-    _CCCL_API constexpr void start() noexcept
-    {
-      execution::start(__opstate_);
-    }
+    using receiver_concept = receiver_t;
 
     _CCCL_EXEC_CHECK_DISABLE
     template <bool _CanThrow = false, class... _Ts>
@@ -131,12 +116,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
       {
         if constexpr (_CUDA_VSTD::is_same_v<void, _CUDA_VSTD::__call_result_t<_Fn, _Ts...>>)
         {
-          static_cast<_Fn&&>(__fn_)(static_cast<_Ts&&>(__ts)...);
-          execution::set_value(static_cast<_Rcvr&&>(__rcvr_));
+          static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...);
+          execution::set_value(static_cast<_Rcvr&&>(__state_->__rcvr_));
         }
         else
         {
-          execution::set_value(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Fn&&>(__fn_)(static_cast<_Ts&&>(__ts)...));
+          // msvc warns that this is unreachable code, but it is reachable.
+          execution::set_value(static_cast<_Rcvr&&>(__state_->__rcvr_),
+                               static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...));
         }
       }
       else
@@ -147,7 +134,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
         }
         _CCCL_CATCH_ALL
         {
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
         }
       }
     }
@@ -155,40 +142,60 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
     template <class _Tag, class... _Ts>
     _CCCL_TRIVIAL_API void __complete(_Tag, _Ts&&... __ts) noexcept
     {
-      if constexpr (_CUDA_VSTD::is_same_v<_Tag, _SetTag>)
+      if constexpr (_Tag{} == _SetTag{})
       {
         __set(static_cast<_Ts&&>(__ts)...);
       }
       else
       {
-        _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
+        _Tag{}(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Ts&&>(__ts)...);
       }
     }
 
     template <class... _Ts>
     _CCCL_API void set_value(_Ts&&... __ts) noexcept
     {
-      __complete(set_value_t(), static_cast<_Ts&&>(__ts)...);
+      __complete(set_value_t{}, static_cast<_Ts&&>(__ts)...);
     }
 
     template <class _Error>
     _CCCL_API void set_error(_Error&& __error) noexcept
     {
-      __complete(set_error_t(), static_cast<_Error&&>(__error));
+      __complete(set_error_t{}, static_cast<_Error&&>(__error));
     }
 
     _CCCL_API void set_stopped() noexcept
     {
-      __complete(set_stopped_t());
+      __complete(set_stopped_t{});
     }
 
-    _CCCL_API constexpr auto get_env() const noexcept -> __env_t
+    _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
-      return execution::get_env(__rcvr_);
+      return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
 
-    _Rcvr __rcvr_;
-    _Fn __fn_;
+    __upon::__state_t<_Fn, _Rcvr>* __state_;
+  };
+
+  template <class _CvSndr, class _Fn, class _Rcvr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  {
+    using operation_state_concept = operation_state_t;
+    using __rcvr_t                = __upon_t::__rcvr_t<_Fn, _Rcvr>;
+
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
+        : __state_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn)}
+        , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_})}
+    {}
+
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+
+    _CCCL_API constexpr void start() noexcept
+    {
+      execution::start(__opstate_);
+    }
+
+    __upon::__state_t<_Fn, _Rcvr> __state_;
     connect_result_t<_CvSndr, __rcvr_t> __opstate_;
   };
 
@@ -212,13 +219,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRE
     }
   };
 
-public:
-  template <class _Fn, class _Sndr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+  template <class _Sndr, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
   template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
+  struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
+                                                  // extended (host/device) lambda
+  {
+    template <class _Sndr>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    {
+      return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
+    }
 
+    template <class _Sndr>
+    _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
+      -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    {
+      return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
+    }
+
+    _Fn __fn_;
+  };
+
+public:
   template <class _Sndr, class _Fn>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
@@ -226,25 +250,49 @@ public:
   _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
 };
 
-template <__disposition _Disposition>
-template <class _Fn, class _Sndr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
+struct then_t : __upon_t<then_t, set_value_t>
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS _UponTag __tag_;
-  _Fn __fn_;
-  _Sndr __sndr_;
+  template <class _Sndr, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
+};
+
+struct upon_error_t : __upon_t<upon_error_t, set_error_t>
+{
+  template <class _Sndr, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
+};
+
+struct upon_stopped_t : __upon_t<upon_stopped_t, set_stopped_t>
+{
+  template <class _Sndr, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
+};
+
+template <class _UponTag, class _SetTag>
+template <class _Sndr, class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr_base_t
+{
+  using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      if constexpr (_Disposition == __disposition::__value)
+      if constexpr (__set_tag_t{} == execution::set_value)
       {
         return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn>{});
       }
-      else if constexpr (_Disposition == __disposition::__error)
+      else if constexpr (__set_tag_t{} == execution::set_error)
       {
         return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn>{});
       }
@@ -259,70 +307,85 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
-    noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
-    -> __opstate_t<_Rcvr, _Sndr, _Fn>
+    noexcept(__nothrow_constructible<__opstate_t<_Sndr, _Fn, _Rcvr>, _Sndr, _Rcvr, _Fn>) //
+    -> __opstate_t<_Sndr, _Fn, _Rcvr>
   {
-    return __opstate_t<_Rcvr, _Sndr, _Fn>{
+    return __opstate_t<_Sndr, _Fn, _Rcvr>{
       static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
   }
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
-    noexcept(__nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
+    noexcept(__nothrow_constructible<__opstate_t<_Sndr const&, _Fn, _Rcvr>,
                                      const _Sndr&,
                                      _Rcvr,
                                      const _Fn&>) //
-    -> __opstate_t<_Rcvr, const _Sndr&, _Fn>
+    -> __opstate_t<_Sndr const&, _Fn, _Rcvr>
   {
-    return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
+    return __opstate_t<_Sndr const&, _Fn, _Rcvr>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }
-};
 
-template <__disposition _Disposition>
-template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
-{
-  using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
+  _CCCL_NO_UNIQUE_ADDRESS __upon_tag_t __tag_;
   _Fn __fn_;
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
-  {
-    return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
-  }
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
-    -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
-  {
-    return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
-  }
+  _Sndr __sndr_;
 };
 
-template <__disposition _Disposition>
 template <class _Sndr, class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
+struct _CCCL_TYPE_VISIBILITY_DEFAULT then_t::__sndr_t : __upon_t<then_t, set_value_t>::__sndr_base_t<_Sndr, _Fn>
+{};
+
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT then_t::__closure_t : __upon_t<then_t, set_value_t>::__closure_base_t<_Fn>
+{};
+
+template <class _Sndr, class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_error_t::__sndr_t
+    : __upon_t<upon_error_t, set_error_t>::__sndr_base_t<_Sndr, _Fn>
+{};
+
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_error_t::__closure_t
+    : __upon_t<upon_error_t, set_error_t>::__closure_base_t<_Fn>
+{};
+
+template <class _Sndr, class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__sndr_t
+    : __upon_t<upon_stopped_t, set_stopped_t>::__sndr_base_t<_Sndr, _Fn>
+{};
+
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__closure_t
+    : __upon_t<upon_stopped_t, set_stopped_t>::__closure_base_t<_Fn>
+{};
+
+template <class _UponTag, class _SetTag>
+template <class _Sndr, class _Fn>
+_CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
+  using __sndr_t   = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
+  using __domain_t = __early_domain_of_t<_Sndr>;
+
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
   {
-    __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Fn, _Sndr>>());
+    __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
   }
-  return transform_sender(__dom_t{}, __sndr_t<_Fn, _Sndr>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
+
+  return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
 }
 
-template <__disposition _Disposition>
+template <class _UponTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Fn __fn) const
+_CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
 {
-  return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
+  using __closure_t = typename _UponTag::template __closure_t<_Fn>;
+  return __closure_t{{static_cast<_Fn&&>(__fn)}};
 }
 
 template <class _Sndr, class _Fn>
@@ -337,6 +400,8 @@ _CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
 
 } // namespace cuda::experimental::execution
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

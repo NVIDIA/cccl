@@ -84,8 +84,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
                       typename iterator_traits<_Iter>::reference>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 private:
 #ifndef _LIBCUDACXX_ABI_NO_ITERATOR_BASES
   _Iter __t_; // no longer used as of LWG #2360, not removed due to ABI break
@@ -251,6 +249,7 @@ public:
     return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(reverse_iterator)
 

@@ -38,6 +38,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // lgamma
 
+#if _CCCL_CHECK_BUILTIN(builtin_lgamma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LGAMMAF(...) __builtin_lgammaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LGAMMA(...)  __builtin_lgamma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LGAMMAL(...) __builtin_lgammal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_lgamma)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LGAMMAF
+#  undef _CCCL_BUILTIN_LGAMMA
+#  undef _CCCL_BUILTIN_LGAMMAL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float lgamma(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LGAMMAF)
@@ -106,6 +118,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // tgamma
+
+#if _CCCL_CHECK_BUILTIN(builtin_tgamma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TGAMMAF(...) __builtin_tgammaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TGAMMA(...)  __builtin_tgamma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TGAMMAL(...) __builtin_tgammal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tgamma)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TGAMMAF
+#  undef _CCCL_BUILTIN_TGAMMA
+#  undef _CCCL_BUILTIN_TGAMMAL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float tgamma(float __x) noexcept
 {

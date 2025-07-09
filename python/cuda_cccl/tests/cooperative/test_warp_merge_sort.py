@@ -8,7 +8,7 @@ from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
@@ -20,7 +20,7 @@ def test_warp_merge_sort(T, items_per_thread):
     def op(a, b):
         return a < b
 
-    warp_merge_sort = cudax.warp.merge_sort_keys(T, items_per_thread, op)
+    warp_merge_sort = coop.warp.merge_sort_keys(T, items_per_thread, op)
     temp_storage_bytes = warp_merge_sort.temp_storage_bytes
 
     @cuda.jit(link=warp_merge_sort.files)
@@ -64,7 +64,7 @@ def test_warp_merge_sort_multiple_warps():
     def op(a, b):
         return a < b
 
-    warp_merge_sort = cudax.warp.merge_sort_keys(T, items_per_thread, op)
+    warp_merge_sort = coop.warp.merge_sort_keys(T, items_per_thread, op)
 
     @cuda.jit(link=warp_merge_sort.files)
     def kernel(input, output):

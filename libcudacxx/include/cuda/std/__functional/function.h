@@ -995,7 +995,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
 
   __func __f_;
 
-  template <class _Fp, bool = _And<_IsNotSame<remove_cvref_t<_Fp>, function>, __invokable<_Fp, _ArgTypes...>>::value>
+  template <class _Fp, bool = _And<_IsNotSame<remove_cvref_t<_Fp>, function>, __invocable<_Fp, _ArgTypes...>>::value>
   struct __callable;
   template <class _Fp>
   struct __callable<_Fp, true>
@@ -1088,7 +1088,7 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile>
 };
 
 template <class _Rp, class _Gp, class... _Ap>
-struct __strip_signature<_Rp (_Gp::*)(_Ap...)&>
+struct __strip_signature<_Rp (_Gp::*)(_Ap...) &>
 {
   using type = _Rp(_Ap...);
 };

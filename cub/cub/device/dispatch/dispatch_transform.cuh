@@ -173,9 +173,8 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel([[maybe_unused]] int alignment, SMemFunc smem_for_tile_size, ActivePolicy policy = {})
-    -> cuda_expected<
-      ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
+  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size, ActivePolicy policy = {}) -> cuda_expected<
+    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
   {
     auto wrapped_policy = MakeTransformPolicyWrapper(policy);
     int block_threads   = wrapped_policy.AlgorithmPolicy().BlockThreads();
@@ -205,7 +204,7 @@ struct dispatch_t<StableAddress,
       for (int elem_per_thread = +min_items_per_thread; elem_per_thread <= +max_items_per_thread; ++elem_per_thread)
       {
         const int tile_size = block_threads * elem_per_thread;
-        const int smem_size = smem_for_tile_size(tile_size);
+        const int smem_size = smem_for_tile_size(tile_size, alignment);
         if (smem_size > max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -436,9 +435,10 @@ struct dispatch_t<StableAddress,
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
-      const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
-        Offset{items_per_thread}, num_items / (config->sm_count * block_threads * config->max_occupancy)));
-      ipt                                      = ::cuda::std::clamp(items_per_thread_evenly_spread,
+      const int items_per_thread_evenly_spread = static_cast<int>(
+        (::cuda::std::min) (Offset{items_per_thread},
+                            num_items / (config->sm_count * block_threads * config->max_occupancy)));
+      ipt = ::cuda::std::clamp(items_per_thread_evenly_spread,
                                +wrapped_policy.AlgorithmPolicy().MinItemsPerThread(),
                                +wrapped_policy.AlgorithmPolicy().MaxItemsPerThread());
     }
@@ -466,8 +466,8 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         bulk_copy_align,
-        [this](int tile_size) {
-          return bulk_copy_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, bulk_copy_align);
+        [this](int tile_size, int alignment) {
+          return bulk_copy_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
         },
         seq,
         active_policy);
@@ -476,8 +476,8 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         ldgsts_size_and_align,
-        [this](int tile_size) {
-          return memcpy_async_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size);
+        [this](int tile_size, int alignment) {
+          return memcpy_async_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
         },
         seq,
         active_policy);

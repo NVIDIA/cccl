@@ -493,7 +493,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     if cuda_compile_arch:
         command += f' -arch "{cuda_compile_arch}"'
     if device_compiler["id"] != "nvcc":
-        command += f" -cuda \"{device_compiler['exe']}\""
+        command += f' -cuda "{device_compiler["exe"]}"'
     if cmake_options:
         command += f' -cmake-options "{cmake_options}"'
     if py_version:

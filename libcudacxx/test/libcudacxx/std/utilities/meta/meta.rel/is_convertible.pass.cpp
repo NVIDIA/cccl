@@ -198,7 +198,7 @@ int main(int, char**)
   static_assert((cuda::std::is_convertible<Array, StringType>::value), "");
 #if !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
   // TODO: Investigate why this is failing.
-  static_assert((cuda::std::is_convertible<char(&)[], StringType>::value), "");
+  static_assert((cuda::std::is_convertible<char (&)[], StringType>::value), "");
 #endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
 
   // char
