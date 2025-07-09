@@ -55,7 +55,7 @@ __host__ __device__ void test_log2(T value)
 }
 
 template <class T>
-__host__ __device__ void test_logb(T value)
+__host__ __device__ _CCCL_CONSTEXPR_CMATH_TRAITS void test_logb(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::logb(value)), ret>, "");
@@ -101,9 +101,38 @@ __global__ void test_global_kernel(float* value)
   test(*value);
 }
 
+template <class T>
+__host__ __device__ _CCCL_CONSTEXPR_CMATH_TRAITS void test_constexpr(T value)
+{
+  test_logb<T>(value);
+}
+
+__host__ __device__ _CCCL_CONSTEXPR_CMATH_TRAITS bool test_constexpr(float value)
+{
+  test_constexpr<float>(value);
+  test_constexpr<double>(value);
+#if _CCCL_HAS_LONG_DOUBLE()
+  test_constexpr<long double>(value);
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
+  test_constexpr<unsigned short>(static_cast<unsigned short>(value));
+  test_constexpr<int>(static_cast<int>(value));
+  test_constexpr<unsigned int>(static_cast<unsigned int>(value));
+  test_constexpr<long>(static_cast<long>(value));
+  test_constexpr<unsigned long>(static_cast<unsigned long>(value));
+  test_constexpr<long long>(static_cast<long long>(value));
+  test_constexpr<unsigned long long>(static_cast<unsigned long long>(value));
+
+  return true;
+}
+
 int main(int, char**)
 {
   volatile float value = 1.0f;
   test(value);
+
+#if _CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
+  static_assert(test_constexpr(1.0f));
+#endif // !_CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
   return 0;
 }
