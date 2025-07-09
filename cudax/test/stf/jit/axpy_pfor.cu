@@ -49,10 +49,6 @@ int main()
 
   /* Compute Y = Y + alpha X */
   parallel_for_scope_jit(ctx, exec_place::current_device(), lY.shape(), lX.read(), lY.rw())->*[alpha]() {
-    const char* header_template = R"(
-      #include <cuda/experimental/__stf/nvrtc/slice.cuh>
-      )";
-
     ::std::ostringstream body_stream;
     body_stream << R"(
       (size_t i, auto dX, auto dY) {
@@ -60,7 +56,7 @@ int main()
                 << alpha << R"(* dX(i);
       })";
 
-    return ::std::pair(::std::string(header_template), body_stream.str());
+    return body_stream.str();
   };
 
   ctx.finalize();

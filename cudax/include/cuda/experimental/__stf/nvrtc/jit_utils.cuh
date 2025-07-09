@@ -613,6 +613,10 @@ struct parallel_for_scope_jit
     return *this;
   }
 
+  const char* default_header_template = R"(
+      #include <cuda/experimental/__stf/nvrtc/slice.cuh>
+  )";
+
   template <typename Fun>
   void operator->*(Fun&& f)
   {
@@ -627,16 +631,30 @@ struct parallel_for_scope_jit
       k.set_symbol(symbol);
     }
 
-    k->*[&](auto... args) {
-      ::std::pair<::std::string, ::std::string> f_res = f();
+    ::std::string header;
+    ::std::string body;
 
-      auto gen_template =
-        parallel_for_template_generator(shape, f_res.second.c_str(), ::cuda::std::make_tuple(args...));
+    k->*[&](auto... args) {
+      using f_return_t = decltype(f());
+      // If f only returns a string, use a default header
+      if constexpr (::std::is_same_v<f_return_t, ::std::string>)
+      {
+        body   = f();
+        header = ::std::string(default_header_template);
+      }
+      else
+      {
+        auto&& [header_, body_] = f();
+        header                  = mv(header_);
+        body                    = mv(body_);
+      }
+
+      auto gen_template = parallel_for_template_generator(shape, body.c_str(), ::cuda::std::make_tuple(args...));
       // ::std::cout << "->* GEN TEMPLATE ALL\n";
       // ::std::cout << gen_template << ::std::endl;
       // ::std::cout << "->* GEN TEMPLATE END\n";
 
-      CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, f_res.first.c_str());
+      CUfunction kernel = lazy_jit(gen_template.c_str(), nvrtc_flags, header.c_str());
       // We do not pass the arguments directly, but only a "to_kernel_argd" form
       // which contains all necessary information to build their static
       // counterpart
