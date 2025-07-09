@@ -30,7 +30,7 @@ using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
 using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
 #endif
 
-C2H_TEST("cudax::async_buffer capacity", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::async_buffer capacity", "[container][async_buffer]", test_types)
 {
   using TestT     = c2h::get<0, TestType>;
   using Env       = typename extract_properties<TestT>::env;
@@ -39,7 +39,7 @@ C2H_TEST("cudax::async_buffer capacity", "[container][async_buffer]", test_types
   using T         = typename Buffer::value_type;
   using size_type = typename Buffer::size_type;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::empty")

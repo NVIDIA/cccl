@@ -36,7 +36,7 @@
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -50,13 +50,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #endif // ! _CCCL_ARCH(X86_64)
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield_processor()
+_CCCL_API inline void __cccl_thread_yield_processor()
 {
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
 template <class _Fn>
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
+_CCCL_API inline bool __cccl_thread_poll_with_backoff(
   _Fn&& __f, _CUDA_VSTD::chrono::nanoseconds __max = _CUDA_VSTD::chrono::nanoseconds::zero())
 {
   _CUDA_VSTD::chrono::high_resolution_clock::time_point const __start =
@@ -100,6 +100,6 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H

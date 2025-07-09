@@ -27,8 +27,6 @@
 
 #pragma once
 
-#include <cuda_runtime_api.h>
-
 #include <thrust/device_allocator.h>
 #include <thrust/mr/new.h>
 #include <thrust/system/cuda/memory.h>
@@ -38,6 +36,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+
+#include <cuda_runtime_api.h>
 
 namespace c2h
 {
@@ -51,18 +51,18 @@ struct memory_info
   bool override{false};
 };
 
-// If the environment variable CCCL_DEVICE_MEMORY_LIMIT is set, the total device memory
+// If the environment variable C2H_DEVICE_MEMORY_LIMIT is set, the total device memory
 // will be limited to this number of bytes.
 inline std::size_t get_device_memory_limit()
 {
-  static const char* override_str = std::getenv("CCCL_DEVICE_MEMORY_LIMIT");
+  static const char* override_str = std::getenv("C2H_DEVICE_MEMORY_LIMIT");
   static std::size_t result       = override_str ? static_cast<std::size_t>(std::atoll(override_str)) : 0;
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
-  static const char* debug_checked_allocs = std::getenv("CCCL_DEBUG_CHECKED_ALLOC_FAILURES");
+  static const char* debug_checked_allocs = std::getenv("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
   static bool result                      = debug_checked_allocs && (std::atoi(debug_checked_allocs) != 0);
   return result;
 }
@@ -79,7 +79,7 @@ inline cudaError_t get_device_memory(memory_info& info)
 
   if (device_memory_limit > 0)
   {
-    info.free  = (std::max)(std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
+    info.free  = (std::max) (std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
     info.total = device_memory_limit;
     info.override = true;
   }
@@ -112,7 +112,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
       if (info.override)
       {
         std::cerr
-          << "Available device memory has been limited (env var CCCL_DEVICE_MEMORY_LIMIT=" << get_device_memory_limit()
+          << "Available device memory has been limited (env var C2H_DEVICE_MEMORY_LIMIT=" << get_device_memory_limit()
           << ").\n";
       }
 
@@ -144,15 +144,16 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 }
 } // namespace detail
 
-using checked_cuda_memory_resource =
-  thrust::system::cuda::detail::cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
+using checked_cuda_memory_resource = THRUST_NS_QUALIFIER::system::cuda::detail::
+  cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, THRUST_NS_QUALIFIER::cuda::pointer<void>>;
 
 template <typename T>
 class checked_cuda_allocator
-    : public thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>
+    : public THRUST_NS_QUALIFIER::mr::
+        stateless_resource_allocator<T, THRUST_NS_QUALIFIER::device_ptr_memory_resource<checked_cuda_memory_resource>>
 {
-  using base =
-    thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
+  using base = THRUST_NS_QUALIFIER::mr::
+    stateless_resource_allocator<T, THRUST_NS_QUALIFIER::device_ptr_memory_resource<checked_cuda_memory_resource>>;
 
 public:
   template <typename U>
@@ -177,7 +178,7 @@ public:
   _CCCL_HOST_DEVICE ~checked_cuda_allocator() {}
 };
 
-struct checked_host_memory_resource final : public thrust::mr::new_delete_resource_base
+struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base
 {
   void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
   {
@@ -202,6 +203,6 @@ struct checked_host_memory_resource final : public thrust::mr::new_delete_resour
 };
 
 template <typename T>
-using checked_host_allocator = thrust::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
+using checked_host_allocator = THRUST_NS_QUALIFIER::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
 
 } // namespace c2h

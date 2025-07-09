@@ -31,10 +31,12 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/climits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __num_bits_impl() noexcept
+[[nodiscard]] _CCCL_API constexpr int __num_bits_impl() noexcept
 {
   if constexpr (is_arithmetic_v<_RawTp> || is_pointer_v<_RawTp>)
   {
@@ -115,5 +117,7 @@ template <typename _Tp>
 inline constexpr int __num_bits_v = __num_bits_helper_v<remove_cvref_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_NUM_BITS

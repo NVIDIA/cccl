@@ -4,16 +4,18 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDAX__UTILITY_DRIVER_API
 #define _CUDAX__UTILITY_DRIVER_API
 
+#include <cuda/std/__exception/cuda_error.h>
+
 #include <cuda.h>
 
-#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__cccl/prologue.h>
 
 // Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \
@@ -22,7 +24,7 @@
 #define CUDAX_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, version) \
   reinterpret_cast<decltype(versioned_fn_name)*>(get_driver_entry_point(#function_name, version))
 
-namespace cuda::experimental::detail::driver
+namespace cuda::experimental::__detail::driver
 {
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
@@ -135,6 +137,12 @@ inline bool isPrimaryCtxActive(CUdevice dev)
   return result == 1;
 }
 
+inline void streamSynchronize(CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamSynchronize);
+  call_driver_fn(driver_fn, "Failed to synchronize a stream", stream);
+}
+
 inline CUcontext streamGetCtx(CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCtx);
@@ -187,6 +195,28 @@ inline void streamWaitEvent(CUstream stream, CUevent event)
   call_driver_fn(driver_fn, "Failed to make a stream wait for an event", stream, event, CU_EVENT_WAIT_DEFAULT);
 }
 
+inline cudaError_t streamQuery(CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamQuery);
+  return static_cast<cudaError_t>(driver_fn(stream));
+}
+
+inline int streamGetPriority(CUstream stream)
+{
+  int __priority;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetPriority);
+  call_driver_fn(driver_fn, "Failed to get the priority of a stream", stream, &__priority);
+  return __priority;
+}
+
+inline unsigned long long streamGetId(CUstream stream)
+{
+  unsigned long long __id;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetId);
+  call_driver_fn(driver_fn, "Failed to get the ID of a stream", stream, &__id);
+  return __id;
+}
+
 inline void eventRecord(CUevent event, CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventRecord);
@@ -204,6 +234,12 @@ inline cudaError_t eventDestroy(CUevent event)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventDestroy);
   return static_cast<cudaError_t>(driver_fn(event));
+}
+
+inline void eventElapsedTime(CUevent start, CUevent end, float* ms)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventElapsedTime);
+  call_driver_fn(driver_fn, "Failed to get CUDA event elapsed time", ms, start, end);
 }
 
 #if CUDART_VERSION >= 12050
@@ -229,8 +265,31 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
   return result;
 }
+
 #endif // CUDART_VERSION >= 12050
-} // namespace cuda::experimental::detail::driver
+
+inline void memcpyAsync(void* dst, const void* src, size_t count, CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemcpyAsync);
+  call_driver_fn(
+    driver_fn,
+    "Failed to perform a memcpy",
+    reinterpret_cast<CUdeviceptr>(dst),
+    reinterpret_cast<CUdeviceptr>(src),
+    count,
+    stream);
+}
+
+inline void memsetAsync(void* dst, uint8_t value, size_t count, CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+  call_driver_fn(driver_fn, "Failed to perform a memset", reinterpret_cast<CUdeviceptr>(dst), value, count, stream);
+}
+
+} // namespace cuda::experimental::__detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif

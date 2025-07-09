@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -10,9 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda.h>
-
 #include <cub/util_device.cuh>
+
+#include <cuda.h>
 
 CUB_NAMESPACE_BEGIN
 

@@ -37,7 +37,7 @@ struct timespec
 };
 #endif // _CCCL_COMPILER(NVRTC)
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,9 +52,10 @@ using ::timespec;
 
 #if defined(clock)
 #  pragma push_macro("clock")
+#  undef clock
 #  define _LIBCUDACXX_POP_CLOCK_MACRO
 #endif // clock
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI clock_t clock() noexcept
+[[nodiscard]] _CCCL_API inline clock_t clock() noexcept
 #ifdef _LIBCUDACXX_POP_CLOCK_MACRO
 #  pragma pop_macro("clock")
 #  undef _LIBCUDACXX_POP_CLOCK_MACRO
@@ -67,9 +68,10 @@ using ::timespec;
 
 #if defined(difftime)
 #  pragma push_macro("difftime")
+#  undef difftime
 #  define _LIBCUDACXX_POP_DIFFTIME_MACRO
 #endif // difftime
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr double difftime(time_t __end, time_t __start) noexcept
+[[nodiscard]] _CCCL_API constexpr double difftime(time_t __end, time_t __start) noexcept
 #ifdef _LIBCUDACXX_POP_DIFFTIME_MACRO
 #  pragma pop_macro("difftime")
 #  undef _LIBCUDACXX_POP_DIFFTIME_MACRO
@@ -80,7 +82,7 @@ using ::timespec;
 
 // time
 
-#if _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE time_t __cccl_time_impl_device(time_t* __v) noexcept
 {
   const auto __t = static_cast<clock_t>(_CUDA_VPTX::get_sreg_globaltimer() / 1'000'000'000);
@@ -90,13 +92,14 @@ using ::timespec;
   }
   return __t;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#endif // _CCCL_CUDA_COMPILATION()
 
 #if defined(time)
 #  pragma push_macro("time")
+#  undef time
 #  define _LIBCUDACXX_POP_TIME_MACRO
 #endif // time
-_LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
+_CCCL_API inline time_t time(time_t* __v) noexcept
 #ifdef _LIBCUDACXX_POP_TIME_MACRO
 #  pragma pop_macro("time")
 #  undef _LIBCUDACXX_POP_TIME_MACRO
@@ -105,9 +108,11 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return _CUDA_VSTD::__cccl_time_impl_device(__v);))
 }
 
+#if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
+
 // timespec_get
 
-#if _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#  if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_timespec_get_impl_device(timespec* __ts, int __base) noexcept
 {
   if (__base != TIME_UTC)
@@ -119,25 +124,29 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
   __ts->tv_nsec  = static_cast<long>(__t % 1'000'000'000);
   return __base;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#  endif // _CCCL_CUDA_COMPILATION()
 
-#if defined(timespec_get)
-#  pragma push_macro("timespec_get")
-#  define _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
-#endif // timespec_get
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI int timespec_get(timespec* __ts, int __base) noexcept
-#ifdef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
-#  pragma pop_macro("timespec_get")
-#  undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
-#endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#  if defined(timespec_get)
+#    pragma push_macro("timespec_get")
+#    undef timespec_get
+#    define _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#  endif // timespec_get
+template <int = 0>
+[[nodiscard]] _CCCL_API inline int timespec_get(timespec* __ts, int __base) noexcept
+#  ifdef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#    pragma pop_macro("timespec_get")
+#    undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
+#  endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return _CUDA_VSTD::__cccl_timespec_get_impl_device(__ts, __base);))
 }
 
+#endif // !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_CTIME

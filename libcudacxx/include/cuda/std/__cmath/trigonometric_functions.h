@@ -33,11 +33,25 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // cos
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float cos(float __x) noexcept
+#if _CCCL_CHECK_BUILTIN(builtin_cos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSF(...) __builtin_cosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COS(...)  __builtin_cos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSL(...) __builtin_cosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_COSF
+#  undef _CCCL_BUILTIN_COS
+#  undef _CCCL_BUILTIN_COSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+[[nodiscard]] _CCCL_API inline float cos(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSF)
   return _CCCL_BUILTIN_COSF(__x);
@@ -46,7 +60,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // !_CCCL_BUILTIN_COSF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float cosf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline float cosf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSF)
   return _CCCL_BUILTIN_COSF(__x);
@@ -55,7 +69,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // !_CCCL_BUILTIN_COSF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double cos(double __x) noexcept
+[[nodiscard]] _CCCL_API inline double cos(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COS)
   return _CCCL_BUILTIN_COS(__x);
@@ -65,7 +79,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double cos(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double cos(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSL)
   return _CCCL_BUILTIN_COSL(__x);
@@ -74,7 +88,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  endif // !_CCCL_BUILTIN_COSL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double cosl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double cosl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSL)
   return _CCCL_BUILTIN_COSL(__x);
@@ -85,7 +99,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half cos(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline __half cos(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hcos(__x);), ({
                       float __xf            = __half2float(__x);
@@ -109,7 +123,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 cos(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 cos(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hcos(__x);), (return __float2bfloat16(_CUDA_VSTD::cosf(__bfloat162float(__x)));))
@@ -117,14 +131,26 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double cos(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline double cos(_Integer __x) noexcept
 {
   return _CUDA_VSTD::cos((double) __x);
 }
 
 // sin
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float sin(float __x) noexcept
+#if _CCCL_CHECK_BUILTIN(builtin_sin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINF(...) __builtin_sinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SIN(...)  __builtin_sin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINL(...) __builtin_sinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SINF
+#  undef _CCCL_BUILTIN_SIN
+#  undef _CCCL_BUILTIN_SINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+[[nodiscard]] _CCCL_API inline float sin(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINF)
   return _CCCL_BUILTIN_SINF(__x);
@@ -133,7 +159,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_SINF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float sinf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline float sinf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINF)
   return _CCCL_BUILTIN_SINF(__x);
@@ -142,7 +168,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_SINF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double sin(double __x) noexcept
+[[nodiscard]] _CCCL_API inline double sin(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SIN)
   return _CCCL_BUILTIN_SIN(__x);
@@ -152,7 +178,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double sin(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double sin(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINL)
   return _CCCL_BUILTIN_SINL(__x);
@@ -161,7 +187,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  endif // !_CCCL_BUILTIN_SINL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double sinl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double sinl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINL)
   return _CCCL_BUILTIN_SINL(__x);
@@ -172,7 +198,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline __half sin(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__x);), ({
                       float __xf            = __half2float(__x);
@@ -201,7 +227,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sin(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 sin(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hsin(__x);), (return __float2bfloat16(_CUDA_VSTD::sinf(__bfloat162float(__x)));))
@@ -209,14 +235,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double sin(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline double sin(_Integer __x) noexcept
 {
   return _CUDA_VSTD::sin((double) __x);
 }
 
 // tan
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float tan(float __x) noexcept
+#if _CCCL_CHECK_BUILTIN(builtin_tan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANF(...) __builtin_tanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TAN(...)  __builtin_tan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANL(...) __builtin_tanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TANF
+#  undef _CCCL_BUILTIN_TAN
+#  undef _CCCL_BUILTIN_TANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+[[nodiscard]] _CCCL_API inline float tan(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANF)
   return _CCCL_BUILTIN_TANF(__x);
@@ -225,7 +263,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_TANF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float tanf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline float tanf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANF)
   return _CCCL_BUILTIN_TANF(__x);
@@ -234,7 +272,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_TANF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double tan(double __x) noexcept
+[[nodiscard]] _CCCL_API inline double tan(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TAN)
   return _CCCL_BUILTIN_TAN(__x);
@@ -244,7 +282,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double tan(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double tan(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANL)
   return _CCCL_BUILTIN_TANL(__x);
@@ -253,7 +291,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  endif // !_CCCL_BUILTIN_TANL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double tanl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double tanl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANL)
   return _CCCL_BUILTIN_TANL(__x);
@@ -264,25 +302,27 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half tan(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline __half tan(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::tanf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 tan(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 tan(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::tanf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double tan(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline double tan(_Integer __x) noexcept
 {
   return _CUDA_VSTD::tan((double) __x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_TRIGONOMETRIC_FUNCTIONS_H

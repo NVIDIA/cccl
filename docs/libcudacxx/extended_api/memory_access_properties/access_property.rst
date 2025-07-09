@@ -44,13 +44,13 @@ The class ``cuda::access_property`` provides an opaque encoding for *L2 cache me
        __host__ __device__ constexpr access_property(persisting, float probability, streaming) noexcept;
 
        // Dynamic range global memory residence control property constructors:
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, normal);
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, streaming);
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, persisting);
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, global,     streaming);
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, normal,     streaming);
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, persisting, streaming);
-       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, streaming,  streaming);
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, normal) noexcept;
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, streaming) noexcept;
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, persisting) noexcept;
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, global,     streaming) noexcept;
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, normal,     streaming) noexcept;
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, persisting, streaming) noexcept;
+       __host__ __device__ access_property(void* ptr, size_t primary_bytes, size_t total_bytes, streaming,  streaming) noexcept;
    };
 
    } // namespace cuda
@@ -67,11 +67,11 @@ of a memory access are provided:
 
 - ``cuda::access_property::shared``: memory access to the shared memory space.
 
-*Static Global Memory properties*:
+*Global Memory properties*:
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-global:
 
-- ``cuda::access_property::global``: memory access to the global memory space without indicating an expected    frequency of access to that memory.
+- ``cuda::access_property::global``: memory access to the global memory space *without* indicating an expected frequency of access to that memory, namely the access behavior is not modified.
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-normal:
 
@@ -84,13 +84,6 @@ of a memory access are provided:
    .. _libcudacxx-extended-api-memory-access-properties-access-property-streaming:
 
 - ``cuda::access_property::streaming``: memory access to the global memory space expecting the memory to be accessed infrequently; this priority is suitable for streaming data.
-
-*Dynamic Global Memory properties*:
-
-   .. _libcudacxx-extended-api-memory-access-properties-access-property-dynamic:
-
--  ``normal``, ``persisting``, ``streaming``: static memory residence control properties may be specified at runtime.
--  Choose a ``probability`` of memory addresses to be accessed with one property and the remaining ``1 - probability`` addresses with another one.
 
 **Note**: The difference between ``cuda::access_property::global`` and ``cuda::access_property::normal`` is subtle.
 The ``cuda::access_property::normal`` hints that the pointer points to the global address space *and* the memory will
@@ -105,6 +98,14 @@ the global address-space, it does not hint about how frequent the accesses will 
 
 ----
 
+Global Memory Property Definition
+---------------------------------
+
+The L2 residence control can be specified in two ways:
+
+- **Interleaved**: A memory address is accessed with a property with a given ``probability``, while the remaining ``1 - probability`` accesses are performed with a second one.
+- **Range**: The first ``primary_bytes`` of a memory address is accessed with one property and the remaining ``total_bytes - primary_bytes`` addresses with a second one.
+
 Default constructor
 -------------------
 
@@ -112,7 +113,7 @@ Default constructor
 
    access_property() noexcept = default;
 
-**Effects**: as if ``access_property(global)``.
+**Effects**: as if ``access_property(global)`` (unchanged).
 
 Static global memory residence control property constructors
 ------------------------------------------------------------
@@ -124,33 +125,33 @@ Static global memory residence control property constructors
    __host__ __device__ constexpr access_property::access_property(streaming) noexcept;
    __host__ __device__ constexpr access_property::access_property(persisting) noexcept;
 
-**Effects**: as if ``access_property(PROPERTY, 1.0)`` where ``PROPERTY`` is one of ``global``, ``normal``, ``streaming``, or ``persisting``.
+**Effects**: as if ``access_property(PROPERTY, 1.0)`` where ``PROPERTY`` is one of ``global`` (unchanged), ``normal``, ``streaming``, or ``persisting``.
 
 Dynamic interleaved global memory residence control property constructors
 -------------------------------------------------------------------------
 
 .. code:: cuda
 
-   __host__ __device__ constexpr access_property::access_property(normal,     float probability);
-   __host__ __device__ constexpr access_property::access_property(streaming,  float probability);
-   __host__ __device__ constexpr access_property::access_property(persisting, float probability);
-   __host__ __device__ constexpr access_property::access_property(normal,     float probability, streaming);
-   __host__ __device__ constexpr access_property::access_property(persisting, float probability, streaming);
+   __host__ __device__ constexpr access_property::access_property(normal,     float probability) noexcept;
+   __host__ __device__ constexpr access_property::access_property(streaming,  float probability) noexcept;
+   __host__ __device__ constexpr access_property::access_property(persisting, float probability) noexcept;
+   __host__ __device__ constexpr access_property::access_property(normal,     float probability, streaming) noexcept;
+   __host__ __device__ constexpr access_property::access_property(persisting, float probability, streaming) noexcept;
 
 **Preconditions**: ``0 < probability <= 1.0``.
 
-**Effects**: constructs an *interleaved* access property that *requests* the first and third arguments - access properties - to be applied with ``probability`` and ``1 - probability`` to memory accesses. The overloads without a third argument request applying ``global`` with ``1 - probability``.
+**Effects**: constructs an *interleaved* access property that *requests* the first and third arguments - access properties - to be applied with ``probability`` and ``1 - probability`` to memory accesses. The overloads without a third argument request applying ``global`` (unchanged) with ``1 - probability``.
 
 Dynamic range global memory residence control property constructors
 -------------------------------------------------------------------
 
 .. code:: cuda
 
-   __host__ __device__ constexpr access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, normal);
-   __host__ __device__ constexpr access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, streaming);
-   __host__ __device__ constexpr access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, persisting);
-   __host__ __device__ constexpr access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, normal,     streaming);
-   __host__ __device__ constexpr access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, persisting, streaming);
+   __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, normal) noexcept;
+   __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, streaming) noexcept;
+   __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, persisting) noexcept;
+   __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, normal,     streaming) noexcept;
+   __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, persisting, streaming) noexcept;
 
 ..
 

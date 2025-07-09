@@ -27,11 +27,13 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Iter, class _Sent, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::pair<_Iter, _Iter>
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::pair<_Iter, _Iter>
 __unique(_Iter __first, _Sent __last, _BinaryPredicate&& __pred)
 {
   __first = _CUDA_VSTD::adjacent_find(__first, __last, __pred);
@@ -55,19 +57,20 @@ __unique(_Iter __first, _Sent __last, _BinaryPredicate&& __pred)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
   return _CUDA_VSTD::__unique<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred).first;
 }
 
 template <class _ForwardIterator>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
-unique(_ForwardIterator __first, _ForwardIterator __last)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator unique(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::unique(__first, __last, __equal_to{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_UNIQUE_H

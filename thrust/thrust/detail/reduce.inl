@@ -41,6 +41,7 @@ template <typename DerivedPolicy, typename InputIterator>
 _CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end reduce()
@@ -50,6 +51,7 @@ template <typename DerivedPolicy, typename InputIterator, typename T>
 _CCCL_HOST_DEVICE T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init);
 } // end reduce()
@@ -63,6 +65,7 @@ _CCCL_HOST_DEVICE T reduce(
   T init,
   BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init, binary_op);
 } // end reduce()
@@ -120,6 +123,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce_by_key");
   using thrust::system::detail::generic::reduce_by_key;
   return reduce_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -146,6 +150,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce_by_key");
   using thrust::system::detail::generic::reduce_by_key;
   return reduce_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -175,6 +180,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce_by_key");
   using thrust::system::detail::generic::reduce_by_key;
   return reduce_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -190,6 +196,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 template <typename InputIterator>
 detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -202,6 +209,7 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
 template <typename InputIterator, typename T>
 T reduce(InputIterator first, InputIterator last, T init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -214,6 +222,7 @@ T reduce(InputIterator first, InputIterator last, T init)
 template <typename InputIterator, typename T, typename BinaryFunction>
 T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -273,6 +282,7 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -302,6 +312,7 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -339,6 +350,7 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

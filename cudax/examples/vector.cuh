@@ -59,11 +59,11 @@ public:
   }
 
 private:
-  void sync_host_to_device([[maybe_unused]] ::cuda::stream_ref __str, detail::__param_kind __p) const
+  void sync_host_to_device([[maybe_unused]] ::cuda::stream_ref __str, __detail::__param_kind __p) const
   {
     if (__dirty_)
     {
-      if (__p == detail::__param_kind::_out)
+      if (__p == __detail::__param_kind::_out)
       {
         // There's no need to copy the data from host to device if the data is
         // only going to be written to. We can just allocate the device memory.
@@ -78,9 +78,9 @@ private:
     }
   }
 
-  void sync_device_to_host(::cuda::stream_ref __str, detail::__param_kind __p) const
+  void sync_device_to_host(::cuda::stream_ref __str, __detail::__param_kind __p) const
   {
-    if (__p != detail::__param_kind::_in)
+    if (__p != __detail::__param_kind::_in)
     {
       // TODO: use a memcpy async here
       __str.sync(); // wait for the kernel to finish executing
@@ -88,10 +88,10 @@ private:
     }
   }
 
-  template <detail::__param_kind _Kind>
-  class __action //: private detail::__immovable
+  template <__detail::__param_kind _Kind>
+  class __action //: private __detail::__immovable
   {
-    using __cv_vector = ::cuda::std::__maybe_const<_Kind == detail::__param_kind::_in, vector>;
+    using __cv_vector = ::cuda::std::__maybe_const<_Kind == __detail::__param_kind::_in, vector>;
 
   public:
     explicit __action(::cuda::stream_ref __str, __cv_vector& __v) noexcept
@@ -118,21 +118,21 @@ private:
     __cv_vector& __v_;
   };
 
-  _CCCL_NODISCARD_FRIEND __action<detail::__param_kind::_inout>
+  [[nodiscard]] friend __action<__detail::__param_kind::_inout>
   __cudax_launch_transform(::cuda::stream_ref __str, vector& __v) noexcept
   {
-    return __action<detail::__param_kind::_inout>{__str, __v};
+    return __action<__detail::__param_kind::_inout>{__str, __v};
   }
 
-  _CCCL_NODISCARD_FRIEND __action<detail::__param_kind::_in>
+  [[nodiscard]] friend __action<__detail::__param_kind::_in>
   __cudax_launch_transform(::cuda::stream_ref __str, const vector& __v) noexcept
   {
-    return __action<detail::__param_kind::_in>{__str, __v};
+    return __action<__detail::__param_kind::_in>{__str, __v};
   }
 
-  template <detail::__param_kind _Kind>
-  _CCCL_NODISCARD_FRIEND __action<_Kind>
-  __cudax_launch_transform(::cuda::stream_ref __str, detail::__box<vector, _Kind> __b) noexcept
+  template <__detail::__param_kind _Kind>
+  [[nodiscard]] friend __action<_Kind>
+  __cudax_launch_transform(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
   {
     return __action<_Kind>{__str, __b.__val};
   }

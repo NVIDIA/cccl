@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -23,6 +22,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_redu
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_argmin);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_argmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -56,6 +57,20 @@ struct get_max_from_counting_it_range_op
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
   {
     return begin == end ? init_val : end - 1;
+  }
+};
+
+template <typename IndexT>
+struct get_argmax_from_counting_it_range_op
+{
+  IndexT init_val;
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT end)
+  {
+    if (begin == end)
+    {
+      return {1, init_val};
+    }
+    return {static_cast<int>(end - begin - 1), end - 1};
   }
 };
 
@@ -276,71 +291,117 @@ struct dispatch_helper
   }
 };
 
+// generic test for fixed size segmented reduce
+template <bool IsReduceAlgorithm,
+          typename InputT,
+          typename AccumT,
+          typename OpT,
+          typename SegmentIdxT,
+          typename ComputeExpectedOp,
+          typename DeviceAlgorithm>
+void test_fixed_size_segmented_reduce(
+  const SegmentIdxT num_segments, ComputeExpectedOp compute_expected_op, const DeviceAlgorithm& device_algorithm)
+{
+  using offset_t       = SegmentIdxT;
+  using segment_size_t = int;
+
+  using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<AccumT, offset_t, OpT>;
+
+  // Get small and medium segment size thresholds from dispatch helper
+  const ::cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
+  const int small_segment_size                  = ::cuda::std::get<0>(thresholds);
+  const int medium_segment_size                 = ::cuda::std::get<1>(thresholds);
+
+  // Take one random segment size from each of the segment sizes
+  const segment_size_t segment_size = GENERATE_COPY(
+    values({0}),
+    take(1, random(1, small_segment_size)),
+    take(1, random(small_segment_size, medium_segment_size)),
+    take(1, random(medium_segment_size, medium_segment_size * 2)));
+
+  const ::cuda::std::int64_t num_items = num_segments * segment_size;
+
+  // Input data
+  const auto segment_index_it = thrust::make_counting_iterator(SegmentIdxT{});
+
+  // Segment offsets
+  segment_index_to_offset_op<offset_t, SegmentIdxT> index_to_offset_op{0, num_segments, segment_size, num_items};
+  auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
+
+  CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<SegmentIdxT>(), num_segments, segment_size, num_items);
+
+  try
+  {
+    // Prepare helper to check results
+    auto get_offset_pair_op  = thrust::make_zip_function(compute_expected_op);
+    auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_offset_pair_op);
+    auto check_result_helper = detail::large_problem_test_helper(num_segments);
+    auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+    // Run test
+    const auto input_it = thrust::make_counting_iterator(InputT{});
+    if constexpr (IsReduceAlgorithm)
+    {
+      device_algorithm(input_it, check_result_it, num_segments, segment_size, OpT{}, InputT{0});
+    }
+    else
+    {
+      device_algorithm(input_it, check_result_it, num_segments, segment_size);
+    }
+
+    // Verify all results were written as expected
+    check_result_helper.check_all_results_correct();
+  }
+  catch (std::bad_alloc& e)
+  {
+    std::cerr << "Skipping large num_segments fixed size segmented reduce test " << e.what() << "\n";
+  }
+}
+
 C2H_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]")
 {
-  using offset_t        = ::cuda::std::int64_t;
   using segment_index_t = ::cuda::std::int64_t;
-  using segment_size_t  = int; // fixed size segmented reduce supports only `int` as segment size
+  using offset_t        = segment_index_t;
 
   // To test atlest 2 invocations of the kernel
   const auto num_segments = static_cast<segment_index_t>(::cuda::std::numeric_limits<std::int32_t>::max()) + 1;
 
   SECTION("segmented reduce")
   {
-    using sum_t = ::cuda::std::int64_t;
+    using input_t = ::cuda::std::int64_t;
+    using accum_t = input_t;
+    using op_t    = custom_sum_op;
 
-    // Use a custom operator to increase test coverage
-    using op_t = custom_sum_op;
+    auto compute_expected_op = get_gaussian_sum_from_offset_op{};
 
-    // Initial value of reduction
-    const auto init_val = sum_t{0};
+    test_fixed_size_segmented_reduce<true, input_t, accum_t, op_t>(
+      num_segments, compute_expected_op, device_segmented_reduce);
+  }
 
-    // Binary reduction operator
-    const auto reduction_op = op_t{};
+  SECTION("segmented max")
+  {
+    using input_t = ::cuda::std::int64_t;
+    using accum_t = input_t;
+    using op_t    = ::cuda::maximum<>;
 
-    using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<sum_t, offset_t, op_t>;
+    auto compute_expected_op =
+      get_max_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::lowest()};
 
-    // Get small and medium segment size thresholds from dispatch helper
-    const ::cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
-    const int small_segment_size                  = ::cuda::std::get<0>(thresholds);
-    const int medium_segment_size                 = ::cuda::std::get<1>(thresholds);
+    test_fixed_size_segmented_reduce<false, input_t, accum_t, op_t>(
+      num_segments, compute_expected_op, device_segmented_max);
+  }
 
-    // Take one random segment size from each of the segment sizes
-    const segment_size_t segment_size = GENERATE_COPY(
-      take(1, random(1, small_segment_size)),
-      take(1, random(small_segment_size, medium_segment_size)),
-      take(1, random(medium_segment_size, medium_segment_size * 2)));
+  SECTION("segmented argmax")
+  {
+    using input_t = ::cuda::std::int64_t;
+    using accum_t = ::cuda::std::pair<int, input_t>;
+    using op_t    = cub::detail::arg_max;
 
-    const ::cuda::std::int64_t num_items = num_segments * segment_size;
+    auto compute_expected_op =
+      get_argmax_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::lowest()};
 
-    // Input data
-    const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
-
-    // Segment offsets
-    segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{0, num_segments, segment_size, num_items};
-    auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
-
-    CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<segment_index_t>(), num_segments, segment_size, num_items);
-
-    try
-    {
-      // Prepare helper to check results
-      auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
-      auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
-      auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
-      auto check_result_helper         = detail::large_problem_test_helper(num_segments);
-      auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
-
-      // Run test
-      const auto input_it = thrust::make_counting_iterator(sum_t{});
-      device_segmented_reduce(input_it, check_result_it, num_segments, segment_size, reduction_op, init_val);
-
-      // Verify all results were written as expected
-      check_result_helper.check_all_results_correct();
-    }
-    catch (std::bad_alloc& e)
-    {
-      std::cerr << "Skipping large num_segments fixed size segmented reduce test " << e.what() << "\n";
-    }
+    test_fixed_size_segmented_reduce<false, input_t, accum_t, op_t>(
+      num_segments, compute_expected_op, device_segmented_argmax);
   }
 }

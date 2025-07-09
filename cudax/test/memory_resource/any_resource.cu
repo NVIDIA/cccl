@@ -12,8 +12,9 @@
 
 #include <cuda/experimental/memory_resource.cuh>
 
-#include "test_resource.cuh"
 #include <testing.cuh>
+
+#include "test_resource.cuh"
 
 static_assert(cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, cudax::host_accessible>);
 static_assert(cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, get_data>);

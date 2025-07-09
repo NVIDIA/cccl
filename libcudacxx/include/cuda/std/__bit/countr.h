@@ -35,10 +35,12 @@
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_countr_zero_impl_constexpr(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_countr_zero_impl_constexpr(_Tp __v) noexcept
 {
   constexpr auto __digits = numeric_limits<uint32_t>::digits;
 
@@ -106,7 +108,7 @@ template <typename _Tp>
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countr_zero_impl_device(_Tp __v) noexcept
 {
@@ -119,10 +121,10 @@ template <typename _Tp>
     return ::__clzll(static_cast<long long>(::__brevll(__v)));
   }
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_countr_zero_impl(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_countr_zero_impl(_Tp __v) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -136,7 +138,7 @@ template <typename _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int countr_zero(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API constexpr int countr_zero(_Tp __v) noexcept
 {
   int __count{};
 
@@ -171,11 +173,13 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int countr_one(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int countr_one(_Tp __t) noexcept
 {
   return _CUDA_VSTD::countr_zero(static_cast<_Tp>(~__t));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_COUNTR_H

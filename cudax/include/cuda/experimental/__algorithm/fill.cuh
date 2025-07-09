@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,6 +26,8 @@
 #include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -36,8 +38,7 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
   static_assert(_CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
 
   // TODO do a host callback if not device accessible?
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemsetAsync, "Failed to perform a fill", __dst.data(), __value, __dst.size_bytes(), __stream.get());
+  __detail::driver::memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get());
 }
 
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
@@ -92,4 +93,7 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // __CUDAX_ALGORITHM_FILL

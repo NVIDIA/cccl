@@ -27,6 +27,8 @@
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <>
@@ -37,10 +39,9 @@ class barrier<thread_scope_thread, _CUDA_VSTD::__empty_completion> : private bar
 public:
   using __base::__base;
 
-  _LIBCUDACXX_HIDE_FROM_ABI friend void
-  init(barrier* __b,
-       _CUDA_VSTD::ptrdiff_t __expected,
-       _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
+  _CCCL_API inline friend void init(barrier* __b,
+                                    _CUDA_VSTD::ptrdiff_t __expected,
+                                    _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
   {
     init(static_cast<__base*>(__b), __expected, __completion);
   }
@@ -53,5 +54,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_BARRIER_THREAD_SCOPE_H

@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_reference.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
 
@@ -41,8 +43,8 @@ inline constexpr bool is_function_v = _CCCL_BUILTIN_IS_FUNCTION(_Tp);
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function
-    : public integral_constant<bool, !(is_reference<_Tp>::value || is_const<const _Tp>::value)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_function : public integral_constant<bool, !(is_reference<_Tp>::value || is_const<const _Tp>::value)>
 {};
 
 template <class _Tp>
@@ -53,5 +55,7 @@ inline constexpr bool is_function_v = is_function<_Tp>::value;
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_FUNCTIONAL_H

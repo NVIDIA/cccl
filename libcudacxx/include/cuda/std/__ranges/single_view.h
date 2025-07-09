@@ -37,83 +37,84 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp>
   requires is_object_v<_Tp>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp, enable_if_t<move_constructible<_Tp>, int> = 0, enable_if_t<is_object_v<_Tp>, int> = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class single_view : public view_interface<single_view<_Tp>>
 {
   _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Tp> __value_;
 
 public:
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI single_view()
     requires default_initializable<_Tp>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(default_initializable<_Tp2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr single_view() noexcept(is_nothrow_default_constructible_v<_Tp>)
+  _CCCL_API constexpr single_view() noexcept(is_nothrow_default_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
       , __value_(){};
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp) // avoids circular concept definitions with copy_constructible
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Tp2>, single_view>) _CCCL_AND copy_constructible<_Tp2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit single_view(const _Tp2& __t) noexcept(
-    is_nothrow_copy_constructible_v<_Tp2>)
+  _CCCL_API constexpr explicit single_view(const _Tp2& __t) noexcept(is_nothrow_copy_constructible_v<_Tp2>)
       : view_interface<single_view<_Tp2>>()
       , __value_(in_place, __t)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit single_view(_Tp&& __t) noexcept(is_nothrow_move_constructible_v<_Tp>)
+  _CCCL_API constexpr explicit single_view(_Tp&& __t) noexcept(is_nothrow_move_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
       , __value_(in_place, _CUDA_VSTD::move(__t))
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(constructible_from<_Tp, _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit single_view(in_place_t, _Args&&... __args) noexcept(
-    is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit single_view(in_place_t,
+                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : view_interface<single_view<_Tp>>()
       , __value_{in_place, _CUDA_VSTD::forward<_Args>(__args)...}
   {}
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* begin() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp* begin() noexcept
   {
     return data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* begin() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Tp* begin() const noexcept
   {
     return data();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* end() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp* end() noexcept
   {
     return data() + 1;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* end() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Tp* end() const noexcept
   {
     return data() + 1;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t size() noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t size() noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp* data() noexcept
   {
     return __value_.operator->();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Tp* data() const noexcept
   {
     return __value_.operator->();
   }
@@ -134,7 +135,7 @@ struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_single_view<_Tp>) // MSVC breaks without it
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(single_view<decay_t<_Tp>>(_CUDA_VSTD::forward<_Tp>(__t)))) -> single_view<decay_t<_Tp>>
   {
     return single_view<decay_t<_Tp>>(_CUDA_VSTD::forward<_Tp>(__t));
@@ -148,5 +149,7 @@ _CCCL_GLOBAL_CONSTANT auto single = __single_view::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_SINGLE_VIEW_H

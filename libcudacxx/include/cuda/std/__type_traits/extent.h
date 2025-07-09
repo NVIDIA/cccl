@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_ARRAY_EXTENT) && !defined(_LIBCUDACXX_USE_ARRAY_EXTENT_FALLBACK)
@@ -50,8 +52,8 @@ template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], 0> : public integral_constant<size_t, _Np>
 {};
 template <class _Tp, size_t _Np, unsigned _Ip>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], _Ip>
-    : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+extent<_Tp[_Np], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
 {};
 
 template <class _Tp, unsigned _Ip = 0>
@@ -60,5 +62,7 @@ inline constexpr size_t extent_v = extent<_Tp, _Ip>::value;
 #endif // !_CCCL_BUILTIN_ARRAY_EXTENT
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_EXTENT_H

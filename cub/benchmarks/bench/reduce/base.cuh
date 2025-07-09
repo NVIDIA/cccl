@@ -25,6 +25,8 @@
  *
  ******************************************************************************/
 
+#pragma once
+
 #include <cub/device/device_reduce.cuh>
 
 #ifndef TUNE_BASE
@@ -83,7 +85,8 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     >;
 
   // Retrieve axis parameters
-  const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
 

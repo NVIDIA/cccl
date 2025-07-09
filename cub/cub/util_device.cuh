@@ -47,16 +47,25 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+#include <cuda/std/array>
+#include <cuda/std/atomic>
+#include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#    include <format>
+#    include <string_view>
 
-#  include <array>
-#  include <atomic>
-#  include <cassert>
+#    include <nlohmann/json.hpp>
+#  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 #endif // !_CCCL_COMPILER(NVRTC)
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/detail/ptx-json/json.h>
+#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>
 
@@ -165,12 +174,12 @@ struct PerDeviceAttributeCache
 
   struct DeviceEntry
   {
-    std::atomic<DeviceEntryStatus> flag;
+    ::cuda::std::atomic<DeviceEntryStatus> flag;
     DevicePayload payload;
   };
 
 private:
-  std::array<DeviceEntry, detail::max_devices> entries_;
+  ::cuda::std::array<DeviceEntry, detail::max_devices> entries_;
 
 public:
   /**
@@ -203,13 +212,13 @@ public:
     DeviceEntryStatus old_status = DeviceEntryEmpty;
 
     // First, check for the common case of the entry being ready.
-    if (flag.load(std::memory_order_acquire) != DeviceEntryReady)
+    if (flag.load(::cuda::std::memory_order_acquire) != DeviceEntryReady)
     {
       // Assume the entry is empty and attempt to lock it so we can fill
       // it by trying to set the state from `DeviceEntryReady` to
       // `DeviceEntryInitializing`.
       if (flag.compare_exchange_strong(
-            old_status, DeviceEntryInitializing, std::memory_order_acq_rel, std::memory_order_acquire))
+            old_status, DeviceEntryInitializing, ::cuda::std::memory_order_acq_rel, ::cuda::std::memory_order_acquire))
       {
         // We successfully set the state to `DeviceEntryInitializing`;
         // we have the lock and it's our job to initialize this entry
@@ -227,7 +236,7 @@ public:
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
-        flag.store(DeviceEntryReady, std::memory_order_release);
+        flag.store(DeviceEntryReady, ::cuda::std::memory_order_release);
       }
 
       // If the `compare_exchange_weak` failed, then `old_status` has
@@ -240,7 +249,7 @@ public:
         // observe the entry status as `DeviceEntryReady`.
         do
         {
-          old_status = flag.load(std::memory_order_acquire);
+          old_status = flag.load(::cuda::std::memory_order_acquire);
         } while (old_status != DeviceEntryReady);
         // FIXME: Use `atomic::wait` instead when we have access to
         // host-side C++20 atomics. We could use libcu++, but it only
@@ -270,11 +279,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // in device code.
   // <nv/target> may provide an abstraction for this eventually. For now,
   // we have to keep this usage of __CUDA_ARCH__.
-#  if defined(_NVHPC_CUDA)
+#  if _CCCL_CUDA_COMPILER(NVHPC)
 #    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#  else
-#    define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#  endif
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#    define CUB_TEMP_GET_PTX _CCCL_PTX_ARCH()
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(
@@ -513,6 +522,8 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
     cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_sm_occupancy, kernel_ptr, block_threads, dynamic_smem_bytes));
 }
 
+#endif // !_CCCL_COMPILER(NVRTC)
+
 /******************************************************************************
  * Policy management
  ******************************************************************************/
@@ -521,49 +532,130 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 namespace detail
 {
 
-template <typename PolicyT, typename = void>
-struct PolicyWrapper : PolicyT
-{
-  CUB_RUNTIME_FUNCTION PolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  if !_CCCL_HAS_CONCEPTS()
+#    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
+#  endif // !_CCCL_HAS_CONCEPTS()
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
-template <typename StaticPolicyT>
-struct PolicyWrapper<
-  StaticPolicyT,
-  _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS), decltype(StaticPolicyT::ITEMS_PER_THREAD)>> : StaticPolicyT
-{
-  CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
+#define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
+#define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
 
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
-  {
-    return StaticPolicyT::BLOCK_THREADS;
+#define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                   \
+  __host__ __device__ static constexpr auto _CCCL_PP_SECOND field() \
+  {                                                                 \
+    return StaticPolicyT::_CCCL_PP_FIRST field;                     \
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread()
-  {
-    return StaticPolicyT::ITEMS_PER_THREAD;
-  }
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD(field) \
+    key<_CCCL_TO_STRING(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
 
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile()
-  {
-    return StaticPolicyT::ITEMS_PER_TILE;
-  }
-};
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)                                     \
+    _CCCL_DEVICE static constexpr auto EncodedPolicy()                                      \
+    {                                                                                       \
+      using namespace ptx_json;                                                             \
+      return object<_CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__) \
+                      key<"__dummy">() = value<0>()>();                                     \
+    }
+#else
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)
+#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
-template <typename PolicyT>
-CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  define CUB_DETAIL_POLICY_WRAPPER_FIELD(field)                       \
+    _CCCL_PP_THIRD field _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field); \
+    _CCCL_PP_THIRD field _CCCL_PP_SECOND field() const                 \
+    {                                                                  \
+      return _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field);             \
+    }
+
+#  define CUB_DETAIL_POLICY_WRAPPER_GET_FIELD(field)  \
+    ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
+      static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
+
+#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING(field) \
+    _CCCL_TO_STRING(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
+
+#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE(field) , (int) ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field)
+
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                                    \
+    struct Runtime##concept_name                                                                                       \
+    {                                                                                                                  \
+      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                                  \
+      static std::pair<Runtime##concept_name, std::string>                                                             \
+      from_json(const nlohmann::json& json, std::string_view subpolicy_name)                                           \
+      {                                                                                                                \
+        auto subpolicy = json[subpolicy_name];                                                                         \
+        assert(subpolicy);                                                                                             \
+        Runtime##concept_name ap;                                                                                      \
+        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                            \
+        return std::make_pair(                                                                                         \
+          ap,                                                                                                          \
+          std::format("struct {} {{\n" _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING, __VA_ARGS__) "}};\n", \
+                      subpolicy_name _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE, __VA_ARGS__)));          \
+      }                                                                                                                \
+    };
+#else
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
+
+template <typename T>
+_CCCL_CONCEPT always_true = true;
+
+#define CUB_DETAIL_POLICY_WRAPPER_DEFINE(concept_name, refines, ...)                                                   \
+  template <typename StaticPolicyT>                                                                                    \
+  _CCCL_CONCEPT concept_name = _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT, _CCCL_PP_EXPAND refines)    \
+    _CCCL_REQUIRES_EXPR((StaticPolicyT))(true _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST, __VA_ARGS__)); \
+  template <typename StaticPolicyT>                                                                                    \
+  struct concept_name##Wrapper : StaticPolicyT                                                                         \
+  {                                                                                                                    \
+    __host__ __device__ constexpr concept_name##Wrapper(StaticPolicyT base)                                            \
+        : StaticPolicyT(base)                                                                                          \
+    {}                                                                                                                 \
+    _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
+    CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(__VA_ARGS__)                                                              \
+  };                                                                                                                   \
+  _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
+  _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \
+  __host__ __device__ constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)           \
+  {                                                                                                                    \
+    return concept_name##Wrapper{policy};                                                                              \
+  }                                                                                                                    \
+  CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, __VA_ARGS__)
+
+// Generic agent policy
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
+
+_CCCL_TEMPLATE(typename PolicyT)
+_CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) )
+__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
-  return PolicyWrapper<PolicyT>{policy};
+  return policy;
 }
+
+} // namespace detail
 
 //----------------------------------------------------------------------------------------------------------------------
 // ChainedPolicy
 
+#if !_CCCL_COMPILER(NVRTC)
+
+namespace detail
+{
+
+// Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
+
+// By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
+// The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
+// in CUB tests. This allows us to:
+//   1. retrieve kernel pointers on the usage side of the API, and
+//   2. validate use of specified CUDA stream by accelerated algorithms.
+#  ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY
+#    define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY cub::detail::TripleChevronFactory
+#  endif
 
 /**
  * Kernel dispatch configuration
@@ -575,7 +667,9 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {

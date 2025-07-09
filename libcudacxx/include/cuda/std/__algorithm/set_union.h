@@ -28,6 +28,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -39,8 +41,7 @@ struct __set_union_result
   _OutIter __out_;
 
   // need a constructor as C++03 aggregate init is hard
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __set_union_result(
-    _InIter1&& __in_iter1, _InIter2&& __in_iter2, _OutIter&& __out_iter)
+  _CCCL_API constexpr __set_union_result(_InIter1&& __in_iter1, _InIter2&& __in_iter2, _OutIter&& __out_iter)
       : __in1_(_CUDA_VSTD::move(__in_iter1))
       , __in2_(_CUDA_VSTD::move(__in_iter2))
       , __out_(_CUDA_VSTD::move(__out_iter))
@@ -49,7 +50,7 @@ struct __set_union_result
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _InIter1, class _Sent1, class _InIter2, class _Sent2, class _OutIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __set_union_result<_InIter1, _InIter2, _OutIter>
+_CCCL_API constexpr __set_union_result<_InIter1, _InIter2, _OutIter>
 __set_union(_InIter1 __first1, _Sent1 __last1, _InIter2 __first2, _Sent2 __last2, _OutIter __result, _Compare&& __comp)
 {
   for (; __first1 != __last1; ++__result)
@@ -84,7 +85,7 @@ __set_union(_InIter1 __first1, _Sent1 __last1, _InIter2 __first2, _Sent2 __last2
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_union(
+_CCCL_API constexpr _OutputIterator set_union(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -104,7 +105,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_union(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_union(
+_CCCL_API constexpr _OutputIterator set_union(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -121,5 +122,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_union(
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SET_UNION_H

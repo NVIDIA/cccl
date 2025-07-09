@@ -24,6 +24,8 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/is_object.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 _CCCL_TEMPLATE(class _Tp)
@@ -31,23 +33,23 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_object, _Tp))
 class empty_view : public view_interface<empty_view<_Tp>>
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp* begin() noexcept
+  _CCCL_API static constexpr _Tp* begin() noexcept
   {
     return nullptr;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp* end() noexcept
+  _CCCL_API static constexpr _Tp* end() noexcept
   {
     return nullptr;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp* data() noexcept
+  _CCCL_API static constexpr _Tp* data() noexcept
   {
     return nullptr;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t size() noexcept
+  _CCCL_API static constexpr size_t size() noexcept
   {
     return 0;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool empty() noexcept
+  _CCCL_API static constexpr bool empty() noexcept
   {
     return true;
   }
@@ -69,5 +71,7 @@ _CCCL_GLOBAL_CONSTANT empty_view<_Tp> empty{};
 #endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_EMPTY_VIEW_H

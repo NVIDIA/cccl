@@ -20,11 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
+_CCCL_API constexpr void
 replace_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred, const _Tp& __new_value)
 {
   for (; __first != __last; ++__first)
@@ -37,5 +39,7 @@ replace_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred,
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_REPLACE_IF_H

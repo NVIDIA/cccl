@@ -15,10 +15,10 @@
 #endif // !CCCL_C_EXPERIMENTAL
 
 #include <cuda.h>
+#include <stdint.h>
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
-#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 

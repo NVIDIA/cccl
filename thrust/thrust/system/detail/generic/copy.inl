@@ -28,7 +28,6 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/for_each.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/transform.h>
@@ -62,7 +61,7 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
 
   zip_iter zipped = thrust::make_zip_iterator(first, result);
 
-  return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type(xfrm_type())).get_iterator_tuple());
+  return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()
 
 } // namespace generic

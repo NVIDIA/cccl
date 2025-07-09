@@ -25,11 +25,13 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __search_n(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator __search_n(
   _ForwardIterator __first,
   _ForwardIterator __last,
   _Size __count,
@@ -81,7 +83,7 @@ template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __search_n(
+[[nodiscard]] _CCCL_API constexpr _RandomAccessIterator __search_n(
   _RandomAccessIterator __first,
   _RandomAccessIterator __last,
   _Size __count,
@@ -135,7 +137,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, clas
 }
 
 template <class _ForwardIterator, class _Size, class _Tp, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_, _BinaryPredicate __pred)
 {
   return _CUDA_VSTD::__search_n<add_lvalue_reference_t<_BinaryPredicate>>(
@@ -148,12 +150,14 @@ search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const
 }
 
 template <class _ForwardIterator, class _Size, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_)
 {
   return _CUDA_VSTD::search_n(__first, __last, __convert_to_integral(__count), __value_, __equal_to{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SEARCH_N_H

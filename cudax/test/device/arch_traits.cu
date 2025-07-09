@@ -46,6 +46,9 @@ template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<800
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<860>>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<890>>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<900>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1000>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1030>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1200>>();
 
 template <unsigned int Arch>
 void constexpr compare_static_and_dynamic()
@@ -97,7 +100,7 @@ void constexpr compare_static_and_dynamic()
   static_assert(casted.compute_capability == dynamic_traits.compute_capability);
 }
 
-C2H_TEST("Traits", "[device]")
+C2H_CCCLRT_TEST("Traits", "[device]")
 {
   compare_static_and_dynamic<700>();
   compare_static_and_dynamic<750>();
@@ -105,44 +108,53 @@ C2H_TEST("Traits", "[device]")
   compare_static_and_dynamic<860>();
   compare_static_and_dynamic<890>();
   compare_static_and_dynamic<900>();
+  compare_static_and_dynamic<1000>();
+  compare_static_and_dynamic<1030>();
+  compare_static_and_dynamic<1200>();
 
   // Compare arch traits with attributes
   for (const cudax::device& dev : cudax::devices)
   {
-    auto traits = dev.get_arch_traits();
+    auto traits = dev.arch_traits();
 
-    CUDAX_REQUIRE(traits.max_threads_per_block == dev.attr(cudax::device::attrs::max_threads_per_block));
-    CUDAX_REQUIRE(traits.max_block_dim_x == dev.attr(cudax::device::attrs::max_block_dim_x));
-    CUDAX_REQUIRE(traits.max_block_dim_y == dev.attr(cudax::device::attrs::max_block_dim_y));
-    CUDAX_REQUIRE(traits.max_block_dim_z == dev.attr(cudax::device::attrs::max_block_dim_z));
-    CUDAX_REQUIRE(traits.max_grid_dim_x == dev.attr(cudax::device::attrs::max_grid_dim_x));
-    CUDAX_REQUIRE(traits.max_grid_dim_y == dev.attr(cudax::device::attrs::max_grid_dim_y));
-    CUDAX_REQUIRE(traits.max_grid_dim_z == dev.attr(cudax::device::attrs::max_grid_dim_z));
+    CUDAX_REQUIRE(traits.max_threads_per_block == dev.attribute(cudax::device::attributes::max_threads_per_block));
+    CUDAX_REQUIRE(traits.max_block_dim_x == dev.attribute(cudax::device::attributes::max_block_dim_x));
+    CUDAX_REQUIRE(traits.max_block_dim_y == dev.attribute(cudax::device::attributes::max_block_dim_y));
+    CUDAX_REQUIRE(traits.max_block_dim_z == dev.attribute(cudax::device::attributes::max_block_dim_z));
+    CUDAX_REQUIRE(traits.max_grid_dim_x == dev.attribute(cudax::device::attributes::max_grid_dim_x));
+    CUDAX_REQUIRE(traits.max_grid_dim_y == dev.attribute(cudax::device::attributes::max_grid_dim_y));
+    CUDAX_REQUIRE(traits.max_grid_dim_z == dev.attribute(cudax::device::attributes::max_grid_dim_z));
 
-    CUDAX_REQUIRE(traits.warp_size == dev.attr(cudax::device::attrs::warp_size));
-    CUDAX_REQUIRE(traits.total_constant_memory == dev.attr(cudax::device::attrs::total_constant_memory));
-    CUDAX_REQUIRE(traits.max_shared_memory_per_block == dev.attr(cudax::device::attrs::max_shared_memory_per_block));
-    CUDAX_REQUIRE(traits.gpu_overlap == dev.attr(cudax::device::attrs::gpu_overlap));
-    CUDAX_REQUIRE(traits.can_map_host_memory == dev.attr(cudax::device::attrs::can_map_host_memory));
-    CUDAX_REQUIRE(traits.concurrent_kernels == dev.attr(cudax::device::attrs::concurrent_kernels));
-    CUDAX_REQUIRE(traits.stream_priorities_supported == dev.attr(cudax::device::attrs::stream_priorities_supported));
-    CUDAX_REQUIRE(traits.global_l1_cache_supported == dev.attr(cudax::device::attrs::global_l1_cache_supported));
-    CUDAX_REQUIRE(traits.local_l1_cache_supported == dev.attr(cudax::device::attrs::local_l1_cache_supported));
-    CUDAX_REQUIRE(traits.max_registers_per_block == dev.attr(cudax::device::attrs::max_registers_per_block));
+    CUDAX_REQUIRE(traits.warp_size == dev.attribute(cudax::device::attributes::warp_size));
+    CUDAX_REQUIRE(traits.total_constant_memory == dev.attribute(cudax::device::attributes::total_constant_memory));
     CUDAX_REQUIRE(
-      traits.max_registers_per_multiprocessor == dev.attr(cudax::device::attrs::max_registers_per_multiprocessor));
-    CUDAX_REQUIRE(traits.compute_capability_major == dev.attr(cudax::device::attrs::compute_capability_major));
-    CUDAX_REQUIRE(traits.compute_capability_minor == dev.attr(cudax::device::attrs::compute_capability_minor));
-    CUDAX_REQUIRE(traits.compute_capability == dev.attr(cudax::device::attrs::compute_capability));
+      traits.max_shared_memory_per_block == dev.attribute(cudax::device::attributes::max_shared_memory_per_block));
+    CUDAX_REQUIRE(traits.gpu_overlap == dev.attribute(cudax::device::attributes::gpu_overlap));
+    CUDAX_REQUIRE(traits.can_map_host_memory == dev.attribute(cudax::device::attributes::can_map_host_memory));
+    CUDAX_REQUIRE(traits.concurrent_kernels == dev.attribute(cudax::device::attributes::concurrent_kernels));
+    CUDAX_REQUIRE(
+      traits.stream_priorities_supported == dev.attribute(cudax::device::attributes::stream_priorities_supported));
+    CUDAX_REQUIRE(
+      traits.global_l1_cache_supported == dev.attribute(cudax::device::attributes::global_l1_cache_supported));
+    CUDAX_REQUIRE(
+      traits.local_l1_cache_supported == dev.attribute(cudax::device::attributes::local_l1_cache_supported));
+    CUDAX_REQUIRE(traits.max_registers_per_block == dev.attribute(cudax::device::attributes::max_registers_per_block));
+    CUDAX_REQUIRE(traits.max_registers_per_multiprocessor
+                  == dev.attribute(cudax::device::attributes::max_registers_per_multiprocessor));
+    CUDAX_REQUIRE(
+      traits.compute_capability_major == dev.attribute(cudax::device::attributes::compute_capability_major));
+    CUDAX_REQUIRE(
+      traits.compute_capability_minor == dev.attribute(cudax::device::attributes::compute_capability_minor));
+    CUDAX_REQUIRE(traits.compute_capability == dev.attribute(cudax::device::attributes::compute_capability));
     CUDAX_REQUIRE(traits.max_shared_memory_per_multiprocessor
-                  == dev.attr(cudax::device::attrs::max_shared_memory_per_multiprocessor));
+                  == dev.attribute(cudax::device::attributes::max_shared_memory_per_multiprocessor));
     CUDAX_REQUIRE(
-      traits.max_blocks_per_multiprocessor == dev.attr(cudax::device::attrs::max_blocks_per_multiprocessor));
-    CUDAX_REQUIRE(
-      traits.max_threads_per_multiprocessor == dev.attr(cudax::device::attrs::max_threads_per_multiprocessor));
-    CUDAX_REQUIRE(
-      traits.reserved_shared_memory_per_block == dev.attr(cudax::device::attrs::reserved_shared_memory_per_block));
-    CUDAX_REQUIRE(
-      traits.max_shared_memory_per_block_optin == dev.attr(cudax::device::attrs::max_shared_memory_per_block_optin));
+      traits.max_blocks_per_multiprocessor == dev.attribute(cudax::device::attributes::max_blocks_per_multiprocessor));
+    CUDAX_REQUIRE(traits.max_threads_per_multiprocessor
+                  == dev.attribute(cudax::device::attributes::max_threads_per_multiprocessor));
+    CUDAX_REQUIRE(traits.reserved_shared_memory_per_block
+                  == dev.attribute(cudax::device::attributes::reserved_shared_memory_per_block));
+    CUDAX_REQUIRE(traits.max_shared_memory_per_block_optin
+                  == dev.attribute(cudax::device::attributes::max_shared_memory_per_block_optin));
   }
 }

@@ -25,6 +25,8 @@
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2023
@@ -37,7 +39,7 @@ struct allocation_result
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(allocation_result);
 
 template <class _Alloc>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<typename allocator_traits<_Alloc>::pointer>
+[[nodiscard]] _CCCL_API constexpr allocation_result<typename allocator_traits<_Alloc>::pointer>
 allocate_at_least(_Alloc& __alloc, size_t __n)
 {
   if constexpr (requires { __alloc.allocate_at_least(__n); })
@@ -51,7 +53,7 @@ allocate_at_least(_Alloc& __alloc, size_t __n)
 }
 
 template <class _Alloc>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __allocate_at_least(_Alloc& __alloc, size_t __n)
+[[nodiscard]] _CCCL_API constexpr auto __allocate_at_least(_Alloc& __alloc, size_t __n)
 {
   return _CUDA_VSTD::allocate_at_least(__alloc, __n);
 }
@@ -64,7 +66,7 @@ struct __allocation_result
 };
 
 template <class _Alloc>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __allocation_result<typename allocator_traits<_Alloc>::pointer>
+[[nodiscard]] _CCCL_API constexpr __allocation_result<typename allocator_traits<_Alloc>::pointer>
 __allocate_at_least(_Alloc& __alloc, size_t __n)
 {
   return {__alloc.allocate(__n), __n};
@@ -73,5 +75,7 @@ __allocate_at_least(_Alloc& __alloc, size_t __n)
 #endif // _CCCL_STD_VER >= 2023
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATE_AT_LEAST_H

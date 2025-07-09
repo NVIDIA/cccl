@@ -27,11 +27,13 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _InputIter)
 _CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _InputIter
+[[nodiscard]] _CCCL_API constexpr _InputIter
 next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
   _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
@@ -52,7 +54,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x) const
   {
     ++__x;
     return __x;
@@ -61,7 +63,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
     _CUDA_VRANGES::advance(__x, __n);
     return __x;
@@ -70,7 +72,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
   {
     _CUDA_VRANGES::advance(__x, __bound_sentinel);
     return __x;
@@ -79,8 +81,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip
-  operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
     _CUDA_VRANGES::advance(__x, __n, __bound_sentinel);
     return __x;
@@ -92,6 +93,9 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
 } // namespace __cpo
+
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_NEXT_H

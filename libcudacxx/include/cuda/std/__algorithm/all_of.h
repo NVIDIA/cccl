@@ -19,12 +19,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-all_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
+[[nodiscard]] _CCCL_API constexpr bool all_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
   {
@@ -37,5 +39,7 @@ all_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_ALL_OF_H

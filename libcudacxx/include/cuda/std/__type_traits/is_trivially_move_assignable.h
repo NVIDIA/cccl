@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/add_rvalue_reference.h>
 #include <cuda/std/__type_traits/is_trivially_assignable.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
@@ -42,8 +44,8 @@ inline constexpr bool is_trivially_move_assignable_v =
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_move_assignable
-    : public is_trivially_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_move_assignable : public is_trivially_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
@@ -52,5 +54,7 @@ inline constexpr bool is_trivially_move_assignable_v = is_trivially_move_assigna
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H

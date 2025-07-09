@@ -10,6 +10,7 @@ Standard API
    standard_api/c_library
    standard_api/concepts_library
    standard_api/container_library
+   standard_api/execution_library
    standard_api/numerics_library
    standard_api/ranges_library
    standard_api/synchronization_library
@@ -61,6 +62,8 @@ C++ Feature Availability Summary
     | `<complex> <https://en.cppreference.com/w/cpp/header/complex>`_                    | :ref:`<cuda/std/complex> <libcudacxx-standard-api-numerics-complex>`                 |   |V|          |  |V|        |             |  |V|        | ``constexpr`` if ``is_constant_evaluated`` is supported                                                        |
     +------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------+----------------+-------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------+
     | `<concepts> <https://en.cppreference.com/w/cpp/header/concepts>`_                  | :ref:`<cuda/std/concepts> <libcudacxx-standard-api-concepts>`                        |                |  |V|        |             |             |                                                                                                                |
+    +------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------+----------------+-------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------+
+    | `<execution> <https://en.cppreference.com/w/cpp/header/execution>`_                | :ref:`<cuda/std/execution> <libcudacxx-standard-api-execution>`                      |                |             |             |  |V|        | Only ``cuda::std::execution::prop``, ``cuda::std::execution::env``, ``cuda::std::execution::get_env`` for now  |
     +------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------+----------------+-------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------+
     | `<expected> <https://en.cppreference.com/w/cpp/header/expected>`_                  | :ref:`<cuda/std/expected> <libcudacxx-standard-api-utility-expected>`                |                |             |  |V|        |             |                                                                                                                |
     +------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------+----------------+-------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------+

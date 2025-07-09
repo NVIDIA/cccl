@@ -25,11 +25,13 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(forward_range<_Range>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Range> __unwrap_end(_Range& __range)
+[[nodiscard]] _CCCL_API constexpr iterator_t<_Range> __unwrap_end(_Range& __range)
 {
   if constexpr (common_range<_Range>)
   {
@@ -45,5 +47,7 @@ _CCCL_REQUIRES(forward_range<_Range>)
 }
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_UNWRAP_SENTINEL_H

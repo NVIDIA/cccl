@@ -23,13 +23,15 @@
 
 #include <cuda/std/__type_traits/common_type.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
 {
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
     return (__lhs < __rhs) ? __lhs : __rhs;
@@ -42,7 +44,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_T1, _T2>
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
     return (__lhs < __rhs) ? __lhs : __rhs;
@@ -50,5 +52,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_FUNCTIONAL_MINIMUM_H

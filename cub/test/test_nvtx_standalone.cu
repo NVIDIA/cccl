@@ -14,7 +14,7 @@
 
 int main()
 {
-  CUB_DETAIL_NVTX_RANGE_SCOPE("main");
+  _CCCL_NVTX_RANGE_SCOPE("main");
 
   thrust::counting_iterator<int> it{0};
   cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});

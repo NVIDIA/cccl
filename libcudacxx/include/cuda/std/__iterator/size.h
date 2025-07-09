@@ -25,24 +25,26 @@
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto size(const _Cont& __c) noexcept(noexcept(__c.size())) -> decltype(__c.size())
+_CCCL_API constexpr auto size(const _Cont& __c) noexcept(noexcept(__c.size())) -> decltype(__c.size())
 {
   return __c.size();
 }
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size(const _Tp (&)[_Sz]) noexcept
+_CCCL_API constexpr size_t size(const _Tp (&)[_Sz]) noexcept
 {
   return _Sz;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto ssize(const _Cont& __c) noexcept(
+_CCCL_API constexpr auto ssize(const _Cont& __c) noexcept(
   noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size())))
   -> common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>
 {
@@ -54,12 +56,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto ssize(const _Cont& __c) noexcept(
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsign-conversion")
 template <class _Tp, ptrdiff_t _Sz>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept
+_CCCL_API constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept
 {
   return _Sz;
 }
 _CCCL_DIAG_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_SIZE_H

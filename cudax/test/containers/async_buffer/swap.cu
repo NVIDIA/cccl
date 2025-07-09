@@ -29,7 +29,7 @@ using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
 using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
 #endif
 
-C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
 {
   using TestT     = c2h::get<0, TestType>;
   using Env       = typename extract_properties<TestT>::env;
@@ -38,7 +38,7 @@ C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
   using T         = typename Buffer::value_type;
   using size_type = typename Buffer::size_type;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())), void>);
@@ -48,11 +48,11 @@ C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
   STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Buffer&>(), cuda::std::declval<Buffer&>())));
 
   // Note we do not care about the elements just the sizes
-  Buffer vec_small{env, 5, cudax::uninit};
+  Buffer vec_small{env, 5, cudax::no_init};
 
   SECTION("Can swap async_buffer")
   {
-    Buffer vec_large{env, 42, cudax::uninit};
+    Buffer vec_large{env, 42, cudax::no_init};
 
     CUDAX_CHECK(vec_large.size() == 42);
     CUDAX_CHECK(vec_small.size() == 5);
@@ -74,7 +74,7 @@ C2H_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
 
   SECTION("Can swap async_buffer without allocation")
   {
-    Buffer vec_no_allocation{env, 0, cudax::uninit};
+    Buffer vec_no_allocation{env, 0, cudax::no_init};
 
     CUDAX_CHECK(vec_no_allocation.size() == 0);
     CUDAX_CHECK(vec_small.size() == 5);

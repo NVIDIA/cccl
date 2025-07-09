@@ -58,10 +58,9 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -190,7 +189,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       copy_items<MemcpyOpt == CopyAlg::Memcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
-        (::cuda::std::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
+        (::cuda::std::min) (buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
         tile_offset_within_buffer);
     }
 
