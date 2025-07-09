@@ -32,8 +32,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg, class _Result>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+pointer_to_unary_function : public __unary_function<_Arg, _Result>
 {
   _Result (*__f_)(_Arg);
 

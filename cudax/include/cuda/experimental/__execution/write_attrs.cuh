@@ -35,6 +35,10 @@ struct write_attrs_t
   template <class _Sndr, class _Attrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
+  template <class _Attrs, class _SndrAttrs>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t : env<__env_ref_t<_Attrs const&>, __fwd_env_t<_SndrAttrs>>
+  {};
+
   template <class _Attrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
@@ -108,7 +112,6 @@ template <class _Sndr, class _Attrs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_attrs_t::__sndr_t
 {
   using sender_concept = sender_t;
-  using __attrs_t      = env<const _Attrs&, env_of_t<_Sndr>>;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -128,9 +131,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_attrs_t::__sndr_t
     return execution::connect(__sndr_, static_cast<_Rcvr&&>(_rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Attrs, env_of_t<_Sndr>>
   {
-    return {__attrs_, execution::get_env(__sndr_)};
+    return {{__env_ref(__attrs_), __fwd_env(execution::get_env(__sndr_))}};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS write_attrs_t __tag_;

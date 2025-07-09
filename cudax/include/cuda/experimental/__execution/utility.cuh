@@ -28,6 +28,7 @@
 #include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
@@ -195,46 +196,85 @@ private:
   ~__managed_box() = default;
 };
 
-// Given a list of functions and a set of arguments, apply the first function that is
-// callable with those arguments.
+//! \brief A callable that wraps a set of functions and calls the first one that is
+//! callable with a given set of arguments.
 template <class... _Fns>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __call_first
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
 {
-  template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(const __call_first& __self) noexcept -> decltype(auto)
+private:
+  //! \brief Returns the first function that is callable with a given set of arguments.
+  template <class... _Args, class _Self>
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
-    constexpr bool __flags[] = {_CUDA_VSTD::__is_callable_v<const _Fns&, _Args...>..., false};
-    constexpr size_t __idx   = __find_pos(__flags, __flags + sizeof...(_Fns));
+    constexpr bool __flags[] = {
+      _CUDA_VSTD::__is_callable_v<_CUDA_VSTD::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
+    constexpr size_t __idx = execution::__find_pos(__flags, __flags + sizeof...(_Fns));
     if constexpr (__idx != __npos)
     {
-      return _CUDA_VSTD::__get<__idx>(__self.__fns_);
+      return _CUDA_VSTD::__get<__idx>(static_cast<_Self&&>(__self).__fns_);
     }
   }
 
-  template <class... _Args>
-  using __1st_fn_t _CCCL_NODEBUG_ALIAS = decltype(__call_first::__get_1st<_Args...>(declval<const __call_first&>()));
+  //! \brief Alias for the type of the first function that is callable with a given set of arguments.
+  template <class _Self, class... _Args>
+  using __1st_fn_t _CCCL_NODEBUG_ALIAS = decltype(__first_callable::__get_1st<_Args...>(declval<_Self>()));
 
+public:
+  //! \brief Calls the first function that is callable with a given set of arguments.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__1st_fn_t<_Args...>, _Args...>)
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const
-    noexcept(_CUDA_VSTD::__is_nothrow_callable_v<__1st_fn_t<_Args...>, _Args...>)
-      -> _CUDA_VSTD::__call_result_t<__1st_fn_t<_Args...>, _Args...>
+  template <class... _Args>
+  _CCCL_TRIVIAL_API constexpr auto
+  operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
+    -> _CUDA_VSTD::__call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
   {
-    return __call_first::__get_1st<_Args...>(*this)(static_cast<_Args&&>(__args)...);
+    return __first_callable::__get_1st<_Args...>(static_cast<__first_callable&&>(*this))(
+      static_cast<_Args&&>(__args)...);
+  }
+
+  //! \overload
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Args>
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
+    __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
+    -> _CUDA_VSTD::__call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
+  {
+    return __first_callable::__get_1st<_Args...>(*this)(static_cast<_Args&&>(__args)...);
   }
 
   _CUDA_VSTD::__tuple<_Fns...> __fns_;
 };
 
 template <class... _Fns>
-_CCCL_HOST_DEVICE __call_first(_Fns...) -> __call_first<_Fns...>;
+_CCCL_HOST_DEVICE __first_callable(_Fns...) -> __first_callable<_Fns...>;
+
+//! \brief A callable that always return a value of type _Ty, regardless of the arguments
+//! passed to it.
+template <class _Ty>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
+{
+  template <class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
+  {
+    return static_cast<_Ty&&>(__value);
+  }
+
+  template <class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
+  {
+    return __value;
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Ty __value{};
+};
+
+template <class _Ty>
+_CCCL_HOST_DEVICE __always(_Ty) -> __always<_Ty>;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 _CCCL_DIAG_SUPPRESS_NVHPC(probable_guiding_friend)
-_CCCL_NV_DIAG_SUPPRESS(probable_guiding_friend)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(probable_guiding_friend)
 
 // __zip/__unzip is for keeping type names short. It has the unfortunate side
 // effect of obfuscating the types.
@@ -308,7 +348,7 @@ using __unzip _CCCL_NODEBUG_ALIAS = decltype(__slot_allocated(_Id())());
 using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 } // namespace
 
-_CCCL_NV_DIAG_DEFAULT(probable_guiding_friend)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 } // namespace cuda::experimental::execution

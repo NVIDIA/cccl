@@ -43,6 +43,7 @@
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/iterator_category_to_system.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
+#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_categories.h>
 
 #include <cuda/iterator>
@@ -222,6 +223,17 @@ struct iterator_system<::cuda::counting_iterator<Start>>
 };
 template <class Start>
 struct iterator_traversal<::cuda::counting_iterator<Start>>
+{
+  using type = random_access_traversal_tag;
+};
+
+template <class Iter, class Offset>
+struct iterator_system<::cuda::permutation_iterator<Iter, Offset>>
+{
+  using type = detail::minimum_system_t<iterator_system_t<Iter>, iterator_system_t<Offset>>;
+};
+template <class Iter, class Offset>
+struct iterator_traversal<::cuda::permutation_iterator<Iter, Offset>>
 {
   using type = random_access_traversal_tag;
 };

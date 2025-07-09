@@ -69,7 +69,8 @@ template <class _BidirectionalIterator1, class _BidirectionalIterator2>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _BidirectionalIterator2
 copy_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
-  return _CUDA_VSTD::__copy_backward(__unwrap_iter(__first), __unwrap_iter(__last), __unwrap_iter(__result));
+  return _CUDA_VSTD::__copy_backward(
+    _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

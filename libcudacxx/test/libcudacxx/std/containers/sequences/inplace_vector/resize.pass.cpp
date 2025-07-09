@@ -187,10 +187,18 @@ __host__ __device__ constexpr void test_shrink_to_fit()
     assert(vec.empty());
   }
 
+  { // inplace_vector<T, 0>::shrink_to_fit as a static method
+    cuda::std::inplace_vector<T, 0>::shrink_to_fit();
+  }
+
   { // inplace_vector<T, N>::shrink_to_fit
     inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     vec.shrink_to_fit();
     assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(1), T(12), T(0), T(-1)}));
+  }
+
+  { // inplace_vector<T, 0>::shrink_to_fit as a static method
+    inplace_vector::shrink_to_fit();
   }
 }
 
@@ -206,10 +214,18 @@ __host__ __device__ constexpr void test_reserve()
     assert(vec.empty());
   }
 
+  { // inplace_vector<T, 0>::reserve as static method
+    cuda::std::inplace_vector<T, 0>::reserve(0);
+  }
+
   { // inplace_vector<T, N>::reserve
     inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     vec.reserve(13);
     assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(1), T(12), T(0), T(-1)}));
+  }
+
+  { // inplace_vector<T, 0>::reserve as static method
+    inplace_vector::reserve(0);
   }
 }
 

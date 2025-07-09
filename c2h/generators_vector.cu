@@ -180,11 +180,10 @@ struct vec_gen_t
 
 VEC_GEN_MOD_SPECIALIZATION(short2, short);
 VEC_GEN_MOD_SPECIALIZATION(uchar3, unsigned char);
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_GEN_MOD_SPECIALIZATION(ulonglong4_16a, unsigned long long);
+#  else
+VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

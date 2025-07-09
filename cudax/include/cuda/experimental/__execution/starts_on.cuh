@@ -151,7 +151,7 @@ struct starts_on_t
 
     [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
     {
-      return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
+      return __query_result_or_t<_Sch, get_domain_t, default_domain>{};
     }
 
     _CCCL_TEMPLATE(class _Query)
@@ -318,8 +318,9 @@ template <class _Sch, class _Sndr>
 [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
   using __sndr_t _CCCL_NODEBUG_ALIAS = starts_on_t::__sndr_t<_Sch, _Sndr>;
+  using __domain_t                   = __query_result_or_t<_Sch, get_domain_t, default_domain>;
   return execution::transform_sender(
-    execution::get_domain(__sch), __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
+    __domain_t{}, __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sch, class _Sndr>

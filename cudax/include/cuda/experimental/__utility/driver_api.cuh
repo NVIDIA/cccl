@@ -209,6 +209,14 @@ inline int streamGetPriority(CUstream stream)
   return __priority;
 }
 
+inline unsigned long long streamGetId(CUstream stream)
+{
+  unsigned long long __id;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetId);
+  call_driver_fn(driver_fn, "Failed to get the ID of a stream", stream, &__id);
+  return __id;
+}
+
 inline void eventRecord(CUevent event, CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventRecord);
