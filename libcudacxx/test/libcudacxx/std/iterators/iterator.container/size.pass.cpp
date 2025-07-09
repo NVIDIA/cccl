@@ -19,15 +19,9 @@
 #  include <cuda/std/list>
 #endif
 #include <cuda/std/initializer_list>
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/string_view>
-#endif
+#include <cuda/std/string_view>
 
 #include "test_macros.h"
-
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/string_view>
-#endif
 
 template <typename C>
 __host__ __device__ void test_container(C& c)
@@ -91,11 +85,9 @@ int main(int, char**)
   test_const_container(a);
   test_const_container(il);
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
   cuda::std::string_view sv{"ABC"};
   test_container(sv);
   test_const_container(sv);
-#endif
 
   test_const_array(arrA);
 

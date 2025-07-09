@@ -117,7 +117,7 @@ def plot_sol(medians, box):
         ax.bar_label(ax.containers[0], fmt="%.1f")
         for container in ax.containers[1:]:
             labels = [
-                f"{c:.1f}\n({(c/f)*100:.0f}%)"
+                f"{c:.1f}\n({(c / f) * 100:.0f}%)"
                 for f, c in zip(ax.containers[0].datavalues, container.datavalues)
             ]
             ax.bar_label(container, labels=labels)

@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import cupy as cp
+import numpy as np
+
+import cuda.cccl.parallel.experimental as parallel
+
 
 def test_device_segmented_reduce():
     # example-begin segmented-reduce-min
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental.algorithms as algorithms
 
     def min_op(a, b):
         return a if a < b else b
@@ -33,7 +34,7 @@ def test_device_segmented_reduce():
     d_output = cp.empty(n_segments, dtype=dtype)
 
     # Instantiate reduction for the given operator and initial value
-    segmented_reduce = algorithms.segmented_reduce(
+    segmented_reduce = parallel.segmented_reduce(
         d_output, d_output, start_o, end_o, min_op, h_init
     )
 
@@ -58,11 +59,6 @@ def test_device_segmented_reduce():
 
 def test_device_segmented_reduce_for_rowwise_sum():
     # example-begin segmented-reduce-rowwise-sum
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental.algorithms as algorithms
-    import cuda.cccl.parallel.experimental.iterators as iterators
 
     def add_op(a, b):
         return a + b
@@ -79,8 +75,8 @@ def test_device_segmented_reduce_for_rowwise_sum():
 
     zero = np.int32(0)
     row_offset = make_scaler(np.int32(n_cols))
-    start_offsets = iterators.TransformIterator(
-        iterators.CountingIterator(zero), row_offset
+    start_offsets = parallel.TransformIterator(
+        parallel.CountingIterator(zero), row_offset
     )
 
     end_offsets = start_offsets + 1
@@ -89,7 +85,7 @@ def test_device_segmented_reduce_for_rowwise_sum():
     h_init = np.zeros(tuple(), dtype=np.int32)
     d_output = cp.empty(n_rows, dtype=d_input.dtype)
 
-    alg = algorithms.segmented_reduce(
+    alg = parallel.segmented_reduce(
         d_input, d_output, start_offsets, end_offsets, add_op, h_init
     )
 

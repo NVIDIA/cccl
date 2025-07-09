@@ -106,7 +106,7 @@ int main(int, char**)
   test_is_not_default_constructible<void()>();
   test_is_not_default_constructible<void() const>();
   test_is_not_default_constructible<void() volatile>();
-  test_is_not_default_constructible<void()&>();
+  test_is_not_default_constructible<void() &>();
   test_is_not_default_constructible<void() &&>();
 
   return 0;

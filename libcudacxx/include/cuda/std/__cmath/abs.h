@@ -39,6 +39,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // fabs
 
+#if _CCCL_CHECK_BUILTIN(builtin_fabs) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FABSF(...) __builtin_fabsf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FABS(...)  __builtin_fabs(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
+
 [[nodiscard]] _CCCL_API inline float fabs(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_FABSF)

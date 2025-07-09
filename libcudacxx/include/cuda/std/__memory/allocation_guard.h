@@ -50,7 +50,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // This is similar to a unique_ptr, except it's easier to use with a
 // custom allocator.
 
-_CCCL_NV_DIAG_SUPPRESS(2659) // constexpr non-static member function will not be implicitly 'const' in C++14
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2659) // constexpr non-static member function will not be implicitly 'const' in C++14
 
 template <class _Alloc>
 struct __allocation_guard
@@ -91,7 +91,7 @@ private:
   _Pointer __ptr_;
 };
 
-_CCCL_NV_DIAG_DEFAULT(2659)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

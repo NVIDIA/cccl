@@ -335,6 +335,8 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__cmath/modulo.h>
+#include <cuda/std/__cmath/remainder.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cmath/signbit.h>
@@ -367,12 +369,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using ::double_t;
 using ::float_t;
 
-using ::fmod;
-using ::fmodf;
-
-using ::modf;
-using ::modff;
-
 using ::erf;
 using ::erfc;
 using ::erfcf;
@@ -383,20 +379,10 @@ using ::fdimf;
 using ::nan;
 using ::nanf;
 
-using ::remainder;
-using ::remainderf;
-using ::remquo;
-using ::remquof;
-
-using ::fmodl;
-using ::modfl;
-
 using ::erfcl;
 using ::erfl;
 using ::fdiml;
 using ::nanl;
-using ::remainderl;
-using ::remquol;
 
 #endif // _CCCL_COMPILER(NVRTC)
 

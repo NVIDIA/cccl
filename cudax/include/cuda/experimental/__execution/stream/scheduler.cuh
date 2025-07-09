@@ -224,6 +224,13 @@ private:
   stream_ref __stream_;
 };
 
+// The stream_scheduler's sender does not need to be wrapped in a __stream::__sndr_t
+// because it is already a stream sender. The following specialization ensures that
+// no transform is applied to the stream_scheduler's sender.
+template <>
+struct stream_domain::__apply_t<stream_scheduler::__tag_t> : stream_domain::__apply_passthru_t
+{};
+
 } // namespace execution
 
 _CCCL_HOST_API inline auto stream_ref::schedule() const noexcept

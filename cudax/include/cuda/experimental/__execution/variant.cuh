@@ -192,20 +192,9 @@ public:
   }
 };
 
-#if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
-struct __mk_variant_
-{
-  using __indices_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
-  using type _CCCL_NODEBUG_ALIAS        = __variant_impl<__indices_t, _Ts...>;
-};
-
-template <class... _Ts>
-using __variant _CCCL_NODEBUG_ALIAS = typename __mk_variant_<_Ts...>::type;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-template <class... _Ts>
-using __variant _CCCL_NODEBUG_ALIAS = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+struct __variant : __variant_impl<_CUDA_VSTD::index_sequence_for<_Ts...>, _Ts...>
+{};
 
 template <class... _Ts>
 using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<_CUDA_VSTD::decay_t<_Ts>...>;

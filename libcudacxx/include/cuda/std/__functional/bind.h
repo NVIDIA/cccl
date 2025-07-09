@@ -155,21 +155,21 @@ __mu(_Ti& __ti, _Uj&)
 template <class _Ti, bool IsReferenceWrapper, bool IsBindEx, bool IsPh, class _TupleUj>
 struct __mu_return_impl;
 
-template <bool _Invokable, class _Ti, class... _Uj>
-struct __mu_return_invokable // false
+template <bool _Invocable, class _Ti, class... _Uj>
+struct __mu_return_invocable // false
 {
   using type = __nat;
 };
 
 template <class _Ti, class... _Uj>
-struct __mu_return_invokable<true, _Ti, _Uj...>
+struct __mu_return_invocable<true, _Ti, _Uj...>
 {
   using type = typename __invoke_of<_Ti&, _Uj...>::type;
 };
 
 template <class _Ti, class... _Uj>
 struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...>>
-    : public __mu_return_invokable<__invokable<_Ti&, _Uj...>::value, _Ti, _Uj...>
+    : public __mu_return_invocable<__invocable<_Ti&, _Uj...>::value, _Ti, _Uj...>
 {};
 
 template <class _Ti, class _TupleUj>
@@ -209,13 +209,13 @@ struct __is_valid_bind_return
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invokable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = __invocable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invokable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = __invocable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj, bool = __is_valid_bind_return<_Fp, _BoundArgs, _TupleUj>::value>

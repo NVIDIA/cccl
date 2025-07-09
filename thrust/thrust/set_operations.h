@@ -45,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -124,7 +124,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -192,7 +192,7 @@ OutputIterator set_difference(
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -272,7 +272,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -675,11 +675,11 @@ OutputIterator set_intersection(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -758,11 +758,11 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -830,11 +830,11 @@ OutputIterator set_symmetric_difference(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -919,11 +919,11 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -996,7 +996,7 @@ OutputIterator set_symmetric_difference(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1077,7 +1077,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1147,7 +1147,7 @@ OutputIterator set_union(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1229,7 +1229,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n

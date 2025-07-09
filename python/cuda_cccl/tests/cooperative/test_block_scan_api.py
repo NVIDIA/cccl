@@ -7,7 +7,7 @@ import numpy as np
 from numba import cuda
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -22,7 +22,7 @@ def test_block_exclusive_sum():
     threads_per_block = 128
 
     # Specialize exclusive sum for a 1D block of 128 threads owning 4 integer items each
-    block_exclusive_sum = cudax.block.exclusive_sum(
+    block_exclusive_sum = coop.block.exclusive_sum(
         numba.int32, threads_per_block, items_per_thread
     )
 
@@ -60,7 +60,7 @@ def test_block_exclusive_sum_single_input_per_thread():
 
     # Specialize exclusive sum for a 1D block of 128 threads.  Each thread
     # owns a single integer item.
-    block_exclusive_sum = cudax.block.exclusive_sum(
+    block_exclusive_sum = coop.block.exclusive_sum(
         numba.int32, threads_per_block, items_per_thread
     )
 

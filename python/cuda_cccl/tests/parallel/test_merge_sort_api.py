@@ -8,7 +8,7 @@ def test_merge_sort():
     import cupy as cp
     import numpy as np
 
-    import cuda.cccl.parallel.experimental.algorithms as algorithms
+    import cuda.cccl.parallel.experimental as parallel
 
     def compare_op(lhs, rhs):
         return np.uint8(lhs < rhs)
@@ -22,7 +22,7 @@ def test_merge_sort():
     d_in_items = cp.asarray(h_in_items)
 
     # Instantiate merge_sort for the given keys, items, and operator
-    merge_sort = algorithms.merge_sort(
+    merge_sort = parallel.merge_sort(
         d_in_keys, d_in_items, d_in_keys, d_in_items, compare_op
     )
 

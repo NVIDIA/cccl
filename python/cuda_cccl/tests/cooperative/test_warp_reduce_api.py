@@ -7,7 +7,7 @@ import numpy as np
 from numba import cuda
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -21,7 +21,7 @@ def test_warp_reduction():
         return a if a > b else b
 
     # example-begin reduce
-    warp_reduce = cudax.warp.reduce(numba.int32, op)
+    warp_reduce = coop.warp.reduce(numba.int32, op)
 
     @cuda.jit(link=warp_reduce.files)
     def kernel(input, output):
@@ -44,7 +44,7 @@ def test_warp_reduction():
 
 def test_warp_sum():
     # example-begin sum
-    warp_sum = cudax.warp.sum(numba.int32)
+    warp_sum = coop.warp.sum(numba.int32)
 
     @cuda.jit(link=warp_sum.files)
     def kernel(input, output):

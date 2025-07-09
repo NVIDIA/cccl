@@ -79,7 +79,7 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid.v4.b32.b128 block_dim, try_cancel_response;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(int32_t(&block_dim)[4], longlong2)>(
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(int32_t (&block_dim)[4], longlong2)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid));));
 #  endif // __cccl_ptx_isa >= 860
 #endif // _CCCL_HAS_INT128()

@@ -39,6 +39,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // cos
 
+#if _CCCL_CHECK_BUILTIN(builtin_cos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSF(...) __builtin_cosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COS(...)  __builtin_cos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSL(...) __builtin_cosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_COSF
+#  undef _CCCL_BUILTIN_COS
+#  undef _CCCL_BUILTIN_COSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float cos(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSF)
@@ -125,6 +137,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // sin
+
+#if _CCCL_CHECK_BUILTIN(builtin_sin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINF(...) __builtin_sinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SIN(...)  __builtin_sin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINL(...) __builtin_sinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SINF
+#  undef _CCCL_BUILTIN_SIN
+#  undef _CCCL_BUILTIN_SINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float sin(float __x) noexcept
 {
@@ -217,6 +241,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // tan
+
+#if _CCCL_CHECK_BUILTIN(builtin_tan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANF(...) __builtin_tanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TAN(...)  __builtin_tan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANL(...) __builtin_tanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TANF
+#  undef _CCCL_BUILTIN_TAN
+#  undef _CCCL_BUILTIN_TANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float tan(float __x) noexcept
 {

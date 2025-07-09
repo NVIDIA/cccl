@@ -48,7 +48,7 @@
 #include <cuda/std/type_traits> // ::cuda::std::is_integral
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
 CUB_NAMESPACE_BEGIN
@@ -242,5 +242,5 @@ _CCCL_DIAG_POP
 CUB_NAMESPACE_END
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_DEFAULT(186)
+_CCCL_END_NV_DIAG_SUPPRESS()
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS

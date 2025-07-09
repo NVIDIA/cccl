@@ -86,20 +86,20 @@ struct __pointer_traits_difference_type<_Ptr, true>
   using type _CCCL_NODEBUG_ALIAS = typename _Ptr::difference_type;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up>
 struct __has_rebind
 {
 private:
   template <class _Xp>
   _CCCL_API inline static false_type __test(...);
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <class _Xp>
   _CCCL_API inline static true_type __test(typename _Xp::template rebind<_Up>* = 0);
-  _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
   static const bool value = decltype(__test<_Tp>(0))::value;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
@@ -223,6 +223,7 @@ __to_address(const _Pointer& __p) noexcept
 template <class _Pointer, class>
 struct __to_address_helper
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
   __call(const _Pointer& __p) noexcept
   {
@@ -233,6 +234,7 @@ struct __to_address_helper
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
   __call(const _Pointer& __p) noexcept
   {

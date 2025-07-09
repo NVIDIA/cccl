@@ -77,7 +77,7 @@ struct add_kernel
   }
 };
 
-C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
+C2H_CCCLRT_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
 {
   cudax::stream stream{cudax::device_ref{0}};
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cudax::device_ref{0}}, stream};

@@ -24,7 +24,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
         // tensorCoords], [smem_bar];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(
-            cuda::ptx::space_shared_t, cuda::ptx::space_global_t, void*, const void*, const int32_t(&)[5], uint64_t*)>(
+            cuda::ptx::space_shared_t, cuda::ptx::space_global_t, void*, const void*, const int32_t (&)[5], uint64_t*)>(
             cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -40,7 +40,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                cuda::ptx::cta_group_1_t,
                                void*,
                                const void*,
-                               const int32_t(&)[5],
+                               const int32_t (&)[5],
                                uint64_t*)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));
           // cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::2
           // [dstMem], [tensorMap, tensorCoords], [smem_bar];
@@ -50,7 +50,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                    cuda::ptx::cta_group_2_t,
                                    void*,
                                    const void*,
-                                   const int32_t(&)[5],
+                                   const int32_t (&)[5],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_101a,
@@ -63,7 +63,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                cuda::ptx::cta_group_1_t,
                                void*,
                                const void*,
-                               const int32_t(&)[5],
+                               const int32_t (&)[5],
                                uint64_t*)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));
           // cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::2
           // [dstMem], [tensorMap, tensorCoords], [smem_bar];
@@ -73,7 +73,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                    cuda::ptx::cta_group_2_t,
                                    void*,
                                    const void*,
-                                   const int32_t(&)[5],
+                                   const int32_t (&)[5],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -88,7 +88,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                cuda::ptx::space_global_t,
                                void*,
                                const void*,
-                               const int32_t(&)[5],
+                               const int32_t (&)[5],
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
   NV_IF_TARGET(
@@ -101,7 +101,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                cuda::ptx::space_global_t,
                                void*,
                                const void*,
-                               const int32_t(&)[5],
+                               const int32_t (&)[5],
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
 #endif // __cccl_ptx_isa >= 860
@@ -118,7 +118,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                cuda::ptx::cta_group_1_t,
                                void*,
                                const void*,
-                               const int32_t(&)[5],
+                               const int32_t (&)[5],
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));
           // cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
@@ -129,7 +129,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                    cuda::ptx::cta_group_2_t,
                                    void*,
                                    const void*,
-                                   const int32_t(&)[5],
+                                   const int32_t (&)[5],
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
   NV_IF_TARGET(
@@ -143,7 +143,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                cuda::ptx::cta_group_1_t,
                                void*,
                                const void*,
-                               const int32_t(&)[5],
+                               const int32_t (&)[5],
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));
           // cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
@@ -154,7 +154,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                    cuda::ptx::cta_group_2_t,
                                    void*,
                                    const void*,
-                                   const int32_t(&)[5],
+                                   const int32_t (&)[5],
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
 #endif // __cccl_ptx_isa >= 860
@@ -166,7 +166,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
         // cp.async.bulk.tensor.2d.global.shared::cta.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, const void*, const int32_t(&)[5], const void*)>(
+            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, const void*, const int32_t (&)[5], const void*)>(
             cuda::ptx::cp_async_bulk_tensor_tile_scatter4));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_101a,
@@ -174,7 +174,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
         // cp.async.bulk.tensor.2d.global.shared::cta.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, const void*, const int32_t(&)[5], const void*)>(
+            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, const void*, const int32_t (&)[5], const void*)>(
             cuda::ptx::cp_async_bulk_tensor_tile_scatter4));));
 #endif // __cccl_ptx_isa >= 860
 }

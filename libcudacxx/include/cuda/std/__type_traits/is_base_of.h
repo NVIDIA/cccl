@@ -67,8 +67,8 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
-    : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_base_of : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
 {};
 
 template <class _Bp, class _Dp>

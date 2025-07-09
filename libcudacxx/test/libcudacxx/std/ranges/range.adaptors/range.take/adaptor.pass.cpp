@@ -119,8 +119,8 @@ __host__ __device__ constexpr bool test()
       static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::take)>);
       static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::take), NotAView, int>);
       static_assert(CanBePiped<SomeView&, decltype(cuda::std::views::take(3))>);
-      static_assert(CanBePiped<int(&)[10], decltype(cuda::std::views::take(3))>);
-      static_assert(!CanBePiped<int(&&)[10], decltype(cuda::std::views::take(3))>);
+      static_assert(CanBePiped<int (&)[10], decltype(cuda::std::views::take(3))>);
+      static_assert(!CanBePiped<int (&&)[10], decltype(cuda::std::views::take(3))>);
       static_assert(!CanBePiped<NotAView, decltype(cuda::std::views::take(3))>);
 
 #if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC) // ICE

@@ -59,7 +59,6 @@ private:
         cudax_async::set_value_t(), //
         cudax_async::set_error_t(Error),
         cudax_async::set_stopped_t()>();
-      ;
     }
 
     template <class Rcvr>

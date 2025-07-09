@@ -40,6 +40,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_copysign) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COPYSIGNF(...) __builtin_copysignf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COPYSIGN(...)  __builtin_copysign(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COPYSIGNL(...) __builtin_copysignl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_copysign)
+
 [[nodiscard]] _CCCL_API inline float copysign(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGNF)

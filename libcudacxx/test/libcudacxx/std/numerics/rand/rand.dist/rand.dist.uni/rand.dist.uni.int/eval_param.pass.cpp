@@ -14,12 +14,14 @@
 
 // template<class _URng> result_type operator()(_URng& g, const param_type& parm);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 #include <cuda/std/numeric>
+#include <cuda/std/span>
 
 #include "test_macros.h"
 
@@ -38,8 +40,9 @@ int main(int, char**)
     G g;
     D d(5, 100);
     P p(-10, 20);
-    constexpr int N = 10000;
-    cuda::std::array<D::result_type, N> u;
+    constexpr int N                               = 10000;
+    cuda::std::unique_ptr<D::result_type[]> array = cuda::std::make_unique<D::result_type[]>(N);
+    cuda::std::span<D::result_type, N> u{array.get(), array.get() + N};
     for (int i = 0; i < N; ++i)
     {
       D::result_type v = d(g, p);

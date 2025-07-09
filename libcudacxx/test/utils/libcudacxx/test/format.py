@@ -103,9 +103,9 @@ class LibcxxTestFormat(object):
         is_pass_test = name.endswith(".pass.cpp") or name.endswith(".pass.mm")
         is_fail_test = name.endswith(".fail.cpp") or name.endswith(".fail.mm")
         is_runfail_test = name.endswith(".runfail.cpp") or name.endswith(".runfail.mm")
-        assert (
-            is_sh_test or name_ext == ".cpp" or name_ext == ".mm"
-        ), "non-cpp file must be sh test"
+        assert is_sh_test or name_ext == ".cpp" or name_ext == ".mm", (
+            "non-cpp file must be sh test"
+        )
 
         if test.config.unsupported:
             return (lit.Test.UNSUPPORTED, "A lit.local.cfg marked this unsupported")

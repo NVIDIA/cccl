@@ -38,8 +38,7 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
   static_assert(_CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
 
   // TODO do a host callback if not device accessible?
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemsetAsync, "Failed to perform a fill", __dst.data(), __value, __dst.size_bytes(), __stream.get());
+  __detail::driver::memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get());
 }
 
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.

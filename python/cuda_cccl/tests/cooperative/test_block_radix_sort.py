@@ -11,7 +11,7 @@ from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
@@ -30,7 +30,7 @@ def test_block_radix_sort_descending(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block)
     )
 
-    block_radix_sort = cudax.block.radix_sort_keys_descending(
+    block_radix_sort = coop.block.radix_sort_keys_descending(
         dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
@@ -76,7 +76,7 @@ def test_block_radix_sort(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block) * items_per_thread
     )
 
-    block_radix_sort = cudax.block.radix_sort_keys(
+    block_radix_sort = coop.block.radix_sort_keys(
         dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
@@ -117,7 +117,7 @@ def test_block_radix_sort_overloads_work():
     items_per_thread = 3
     items_per_tile = threads_per_block * items_per_thread
 
-    block_radix_sort = cudax.block.radix_sort_keys(
+    block_radix_sort = coop.block.radix_sort_keys(
         dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
@@ -152,14 +152,14 @@ def test_block_radix_sort_mangling():
     items_per_thread = 3
     items_per_tile = threads_per_block * items_per_thread
 
-    int_block_radix_sort = cudax.block.radix_sort_keys(
+    int_block_radix_sort = coop.block.radix_sort_keys(
         dtype=numba.int32,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
     )
     int_temp_storage_bytes = int_block_radix_sort.temp_storage_bytes
 
-    double_block_radix_sort = cudax.block.radix_sort_keys(
+    double_block_radix_sort = coop.block.radix_sort_keys(
         dtype=numba.float64,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,

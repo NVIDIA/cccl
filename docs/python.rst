@@ -1,19 +1,13 @@
 .. _cccl-python-libraries:
 
-CUDA Python Core Libraries
-==========================
+CCCL Python Libraries
+=====================
 
-.. toctree::
-   :hidden:
-   :maxdepth: 3
+.. raw:: html
 
-   cuda.cccl.cooperative <https://nvidia.github.io/cccl/cuda_cooperative/>
-   cuda.cccl.parallel <https://nvidia.github.io/cccl/cuda_parallel/>
+   <meta http-equiv="refresh" content="0; url=https://nvidia.github.io/cccl/python/">
+   <script>
+   window.location.href = "https://nvidia.github.io/cccl/python/";
+   </script>
 
-Welcome to the CUDA Core Compute Libraries (CCCL) libraries for Python.
-
-- `cuda.cccl.cooperative <https://nvidia.github.io/cccl/cuda_cooperative/>`__
-  is a still-experimental library exposing cooperative algorithms to Python.
-
-- `cuda.cccl.parallel <https://nvidia.github.io/cccl/cuda_parallel/>`__
-  is a still-experimental library exposing parallel algorithms to Python.
+If you are not redirected automatically, please click `here <https://nvidia.github.io/cccl/python/>`_.

@@ -37,6 +37,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
+#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isfinite)
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_impl(_Tp __x) noexcept
 {

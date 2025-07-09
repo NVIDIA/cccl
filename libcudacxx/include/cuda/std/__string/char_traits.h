@@ -169,13 +169,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t> : __cccl_char_traits_i
 #endif // _CCCL_HAS_CHAR8_T()
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>
-    : __cccl_char_traits_impl<char16_t, uint_least16_t /*, ??? */>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+char_traits<char16_t> : __cccl_char_traits_impl<char16_t, uint_least16_t /*, ??? */>
 {};
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
-    : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+char_traits<char32_t> : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
 {};
 
 #if _CCCL_HAS_WCHAR_T()

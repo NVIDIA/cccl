@@ -16,6 +16,7 @@
 
 // template<class _URng> result_type operator()(_URng& g);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -75,20 +76,21 @@ __host__ __device__ void test_statistics(cuda::std::span<ResultType, N> arr, Res
 
 __host__ __device__ void test()
 {
-  cuda::std::array<double, N> array;
+  cuda::std::unique_ptr<double[]> array = cuda::std::make_unique<double[]>(N);
+  cuda::std::span<double, N> span{array.get(), array.get() + N};
 
-  test_statistics<double, cuda::std::minstd_rand0>(array);
-  test_statistics<double, cuda::std::minstd_rand0>(array, -1.0, 1.0);
+  test_statistics<double, cuda::std::minstd_rand0>(span);
+  test_statistics<double, cuda::std::minstd_rand0>(span, -1.0, 1.0);
 #if 0 // not implemented
-  test_statistics<double, cuda::std::minstd_rand>(array);
-  test_statistics<double, cuda::std::minstd_rand>(array, 5.5, 25.0);
-  test_statistics<double, cuda::std::mt19937>(array);
-  test_statistics<double, cuda::std::mt19937_64>(array);
-  test_statistics<double, cuda::std::ranlux24_base>(array);
-  test_statistics<double, cuda::std::ranlux48_base>(array);
-  test_statistics<double, cuda::std::ranlux24>(array);
-  test_statistics<double, cuda::std::ranlux48>(array);
-  test_statistics<double, cuda::std::knuth_b>(array);
+  test_statistics<double, cuda::std::minstd_rand>(span);
+  test_statistics<double, cuda::std::minstd_rand>(span, 5.5, 25.0);
+  test_statistics<double, cuda::std::mt19937>(span);
+  test_statistics<double, cuda::std::mt19937_64>(span);
+  test_statistics<double, cuda::std::ranlux24_base>(span);
+  test_statistics<double, cuda::std::ranlux48_base>(span);
+  test_statistics<double, cuda::std::ranlux24>(span);
+  test_statistics<double, cuda::std::ranlux48>(span);
+  test_statistics<double, cuda::std::knuth_b>(span);
 #endif // not implemented
 }
 

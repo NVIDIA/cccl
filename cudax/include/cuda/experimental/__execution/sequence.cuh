@@ -45,63 +45,67 @@ namespace cuda::experimental::execution
 struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 {
   _CUDAX_SEMI_PRIVATE :
-  template <class _Rcvr, class _Sndr1, class _Sndr2>
-  struct __args
+  template <class _Rcvr, class _Sndr2>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
-    using __rcvr_t _CCCL_NODEBUG_ALIAS  = _Rcvr;
-    using __sndr1_t _CCCL_NODEBUG_ALIAS = _Sndr1;
-    using __sndr2_t _CCCL_NODEBUG_ALIAS = _Sndr2;
+    _CCCL_API constexpr explicit __state_t(_Rcvr&& __rcvr, _Sndr2&& __sndr2)
+        : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
+        , __opstate2_(execution::connect(static_cast<_Sndr2&&>(__sndr2), __ref_rcvr(__rcvr_)))
+    {}
+
+    _Rcvr __rcvr_;
+    connect_result_t<_Sndr2, __rcvr_ref_t<_Rcvr>> __opstate2_;
   };
 
-  template <class _Zip>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
+  template <class _Rcvr, class _Sndr2>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
+  {
+    using receiver_concept = receiver_t;
+
+    template <class... _Values>
+    _CCCL_API constexpr void set_value(_Values&&...) noexcept
+    {
+      execution::start(__state_->__opstate2_);
+    }
+
+    template <class _Error>
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
+    }
+
+    _CCCL_API constexpr void set_stopped() noexcept
+    {
+      execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
+    }
+
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    {
+      return __fwd_env(execution::get_env(__state_->__rcvr_));
+    }
+
+    __state_t<_Rcvr, _Sndr2>* __state_;
+  };
+
+  template <class _Rcvr, class _Sndr1, class _Sndr2>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
-    using __args_t _CCCL_NODEBUG_ALIAS  = __unzip<_Zip>; // __unzip<_Zip> is __args<_Rcvr, _Sndr1, _Sndr2>
-    using __rcvr_t _CCCL_NODEBUG_ALIAS  = typename __args_t::__rcvr_t;
-    using __sndr1_t _CCCL_NODEBUG_ALIAS = typename __args_t::__sndr1_t;
-    using __sndr2_t _CCCL_NODEBUG_ALIAS = typename __args_t::__sndr2_t;
-    using __env_t _CCCL_NODEBUG_ALIAS   = env_of_t<__rcvr_t>;
-
-    _CCCL_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
-        : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
-        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __ref_rcvr(*this)))
-        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __ref_rcvr(__rcvr_)))
+    _CCCL_API __opstate_t(_Sndr1&& __sndr1, _Sndr2&& __sndr2, _Rcvr&& __rcvr)
+        : __state_(static_cast<_Rcvr&&>(__rcvr), static_cast<_Sndr2&&>(__sndr2))
+        , __opstate1_(execution::connect(static_cast<_Sndr1&&>(__sndr1), __rcvr_t<_Rcvr, _Sndr2>{&__state_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate);
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
 
-    template <class... _Values>
-    _CCCL_API constexpr void set_value(_Values&&...) noexcept
-    {
-      execution::start(__opstate2_);
-    }
-
-    template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
-    {
-      execution::set_error(static_cast<__rcvr_t&&>(__rcvr_), static_cast<_Error&&>(__error));
-    }
-
-    _CCCL_API constexpr void set_stopped() noexcept
-    {
-      execution::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
-    }
-
-    _CCCL_API constexpr auto get_env() const noexcept -> __env_t
-    {
-      return execution::get_env(__rcvr_);
-    }
-
-    __rcvr_t __rcvr_;
-    connect_result_t<__sndr1_t, __rcvr_ref_t<__opstate, __env_t>> __opstate1_;
-    connect_result_t<__sndr2_t, __rcvr_ref_t<__rcvr_t>> __opstate2_;
+    __state_t<_Rcvr, _Sndr2> __state_;
+    connect_result_t<_Sndr1, __rcvr_t<_Rcvr, _Sndr2>> __opstate1_;
   };
 
 public:
@@ -116,8 +120,6 @@ template <class _Sndr1, class _Sndr2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  using __sndr1_t _CCCL_NODEBUG_ALIAS      = _Sndr1;
-  using __sndr2_t _CCCL_NODEBUG_ALIAS      = _Sndr2;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -137,14 +139,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) &&
   {
-    using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
+    using __opstate_t = __opstate_t<_Rcvr, _Sndr1, _Sndr2>;
     return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const&
   {
-    using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
+    using __opstate_t = __opstate_t<_Rcvr, const _Sndr1&, const _Sndr2&>;
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
@@ -155,8 +157,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
   _CCCL_NO_UNIQUE_ADDRESS _CUDA_VSTD::__ignore_t __ign_;
-  __sndr1_t __sndr1_;
-  __sndr2_t __sndr2_;
+  _Sndr1 __sndr1_;
+  _Sndr2 __sndr2_;
 };
 
 template <class _Sndr1, class _Sndr2>

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__utility/forward_like.h>
 
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/schedule_from.cuh>
@@ -43,10 +44,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     // _Sndr is a (possibly cvref-qualified) instance of continues_on_t::__sndr_t
     auto&& [__tag, __sch, __child] = static_cast<_Sndr&&>(__sndr);
     // By default, continues_on(sndr, sch) lowers to schedule_from(sch, sndr) in connect:
-    return schedule_from(__sch, static_cast<_CUDA_VSTD::__copy_cvref_t<_Sndr&&, decltype(__child)>>(__child));
+    return schedule_from(__sch, _CUDA_VSTD::forward_like<_Sndr>(__child));
   }
 
-  template <class _Sndr, class _Sch>
+  template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<continues_on_t, _Sch, _Sndr>
   {};
 
@@ -54,9 +55,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
     template <class _Sndr>
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) const
+    {
+      return continues_on_t{}(static_cast<_Sndr&&>(__sndr), __sch);
+    }
+
+    template <class _Sndr>
     [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
-      return continues_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
+      return continues_on_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
     }
 
     _Sch __sch;
@@ -69,7 +76,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     static_assert(__is_scheduler<_Sch>);
     // continues_on always dispatches based on the domain of the predecessor sender
     using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
-    return execution::transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+    return execution::transform_sender(__dom_t{}, __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 
   template <class _Sch>
@@ -79,8 +86,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   }
 };
 
-template <class _Sndr, class _Sch>
-inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sndr, _Sch>> = 3;
+template <class _Sch, class _Sndr>
+inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT continues_on_t continues_on{};
 } // namespace cuda::experimental::execution

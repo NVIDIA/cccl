@@ -202,7 +202,7 @@ __host__ __device__ void test()
   test_not_const<void (Empty::*)(const int&) const>();
   test_not_const<void (Empty::*)(const int&) volatile>();
   test_not_const<void (Empty::*)(const int&) const volatile>();
-  test_not_const<void (Empty::*)(const int&)&>();
+  test_not_const<void (Empty::*)(const int&) &>();
   test_not_const<void (Empty::*)(const int&) &&>();
   test_not_const<void (Empty::*)(const int&) noexcept>();
   test_not_const<void (Empty::*)(const int&) noexcept(true)>();

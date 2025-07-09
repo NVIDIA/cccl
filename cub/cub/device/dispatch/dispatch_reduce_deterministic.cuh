@@ -67,8 +67,8 @@ namespace detail
 namespace rfa
 {
 
-template <typename Invokable, typename InputT>
-using transformed_input_t = _CUDA_VSTD::decay_t<typename _CUDA_VSTD::__invoke_of<Invokable, InputT>::type>;
+template <typename Invocable, typename InputT>
+using transformed_input_t = _CUDA_VSTD::decay_t<typename _CUDA_VSTD::__invoke_of<Invocable, InputT>::type>;
 
 template <typename InitT, typename InputIteratorT, typename TransformOpT>
 using accum_t =

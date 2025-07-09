@@ -39,6 +39,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // log
 
+#if _CCCL_CHECK_BUILTIN(builtin_log) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOGF(...) __builtin_logf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG(...)  __builtin_log(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGL(...) __builtin_logl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOGF
+#  undef _CCCL_BUILTIN_LOG
+#  undef _CCCL_BUILTIN_LOGL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float log(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOGF)
@@ -129,6 +142,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // log10
 
+#if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10(...)  __builtin_log10(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10L(...) __builtin_log10l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOG10F
+#  undef _CCCL_BUILTIN_LOG10
+#  undef _CCCL_BUILTIN_LOG10L
+#endif //  _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float log10(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG10F)
@@ -204,6 +230,20 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // ilogb
 
+#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ILOGBF
+#  undef _CCCL_BUILTIN_ILOGB
+#  undef _CCCL_BUILTIN_ILOGBL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline int ilogb(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ILOGBF)
@@ -277,6 +317,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // log1p
 
+#if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1P(...)  __builtin_log1p(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1PL(...) __builtin_log1pl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1p)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOG1PF
+#  undef _CCCL_BUILTIN_LOG1P
+#  undef _CCCL_BUILTIN_LOG1PL
+#endif //  _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float log1p(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG1PF)
@@ -349,6 +402,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // log2
+
+#if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOG2F
+#  undef _CCCL_BUILTIN_LOG2
+#  undef _CCCL_BUILTIN_LOG2L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float log2(float __x) noexcept
 {
@@ -424,6 +490,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // logb
+
+#if _CCCL_CHECK_BUILTIN(builtin_logb) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOGBF
+#  undef _CCCL_BUILTIN_LOGB
+#  undef _CCCL_BUILTIN_LOGBL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float logb(float __x) noexcept
 {

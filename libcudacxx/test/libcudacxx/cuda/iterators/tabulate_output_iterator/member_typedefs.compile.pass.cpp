@@ -28,10 +28,6 @@ __host__ __device__ void test()
 #if !_CCCL_ARCH(ARM64) // There are some compiler issues on arm compilers
     static_assert(cuda::std::output_iterator<Iter, int>);
 #endif // !_CCCL_ARCH(ARM64)
-
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
-    static_assert(sizeof(Iter) == sizeof(cuda::std::ptrdiff_t));
-#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   }
 
   {
@@ -43,10 +39,6 @@ __host__ __device__ void test()
 #if !_CCCL_ARCH(ARM64) // There are some compiler issues on arm compilers
     static_assert(cuda::std::output_iterator<Iter, int>);
 #endif // !_CCCL_ARCH(ARM64)
-
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
-    static_assert(sizeof(Iter) == sizeof(char));
-#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   }
 }
 

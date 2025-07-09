@@ -39,6 +39,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // fmax
 
+#if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAXL(...) __builtin_fmaxl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
+
 [[nodiscard]] _CCCL_API inline float fmax(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_FMAX)
@@ -134,6 +140,12 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
 }
 
 // fmin
+
+#if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMINF(...) __builtin_fminf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMIN(...)  __builtin_fmin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
 
 [[nodiscard]] _CCCL_API inline float fmin(float __x, float __y) noexcept
 {
