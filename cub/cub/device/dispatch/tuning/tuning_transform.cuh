@@ -203,7 +203,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(
       static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max(static_cast<int>(vt_alignment), copy_alignment)));
     // max head/tail padding is copy_alignment - sizeof(T) each
     const int max_bytes_to_copy =
-      vt_size * tile_size + ::cuda::std::max(copy_alignment - static_cast<int>(vt_size), 0) * 2;
+      static_cast<int>(vt_size) * tile_size + ::cuda::std::max(copy_alignment - static_cast<int>(vt_size), 0) * 2;
     smem_size += max_bytes_to_copy;
   };
   return smem_size;
