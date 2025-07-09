@@ -30,6 +30,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
+#include <filesystem>
 #include <atomic>
 #include <iostream>
 #include <map>
@@ -555,9 +556,24 @@ template <typename shape_t, typename... Args>
 inline static const ::std::vector<::std::string>& get_nvrtc_flags()
 {
   static ::std::vector<::std::string> flags = [] {
+    namespace fs = ::std::filesystem;
+
+    // Returns the n-th parent of a path.
+    // For example: with path "foo/bar/baz/bla.cu" and n = 2, returns "foo/bar"
+    const auto get_nth_parent = [](::std::filesystem::path p, int n) -> ::std::filesystem::path {
+        while (n-- > 0 && !p.empty()) {
+            p = p.parent_path();
+        }
+        return p;
+    };
+
+    // cudax/include/cuda/experimental/__stf/nvrtc/jit_utils.cuh
+    fs::path  this_file   = __FILE__;
+    fs::path  cccl_root_dir     = get_nth_parent(this_file, 7);
+
     ::std::vector<::std::string> result;
-    result.push_back("-I../../libcudacxx/include");
-    result.push_back("-I../../cudax/include/");
+    result.push_back("-I" + (cccl_root_dir / "libcudacxx/include").string());
+    result.push_back("-I" + (cccl_root_dir / "cudax/include").string());
     result.push_back("-default-device");
 
     ::std::string s =
