@@ -44,6 +44,7 @@ Example
 -------
 
 .. code:: cuda
+
     #include <cuda/memory>
     #include <cuda/std/cstdint>
 
