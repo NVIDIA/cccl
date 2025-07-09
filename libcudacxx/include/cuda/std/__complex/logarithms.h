@@ -241,13 +241,13 @@ template <class _Tp>
   // Fix x == 0.0
   if (__x.real() == _Tp(0.0) && __x.imag() == _Tp(0.0))
   {
-    __abs_rescaled = _Tp(-INFINITY);
+    __abs_rescaled = -_CUDA_VSTD::numeric_limits<_Tp>::infinity();
   }
 
   // Fix hypot inf/nan case:
-  if ((__max == _Tp(INFINITY)) || (__min == _Tp(INFINITY)))
+  if ((__max == _CUDA_VSTD::numeric_limits<_Tp>::infinity()) || (__min == _CUDA_VSTD::numeric_limits<_Tp>::infinity()))
   {
-    __abs_rescaled = _Tp(INFINITY);
+    __abs_rescaled = _CUDA_VSTD::numeric_limits<_Tp>::infinity();
   }
 
   return complex<_Tp>(__abs_rescaled, _CUDA_VSTD::atan2(__x.imag(), __x.real()));
