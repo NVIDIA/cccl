@@ -24,14 +24,19 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <cuda/__barrier/aligned_size.h>
+#  include <cuda/__cmath/pow2.h>
 #  include <cuda/__data_movement/aligned_data.h>
 #  include <cuda/__data_movement/properties.h>
+#  include <cuda/__memory/is_aligned.h>
 #  include <cuda/__ptx/instructions/st.h>
+#  include <cuda/__utility/static_for.h>
 #  include <cuda/annotated_ptr>
 #  include <cuda/std/__algorithm/min.h>
-#  include <cuda/std/__bit/has_single_bit.h>
+#  include <cuda/std/__bit/bit_cast.h>
+#  include <cuda/std/__cccl/unreachable.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/array>
+#  include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -156,17 +161,17 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_dispatch(
  * UTILITIES
  **********************************************************************************************************************/
 
-template <typename _Tp, size_t _Np, _CacheReuseEnum _L1, _CacheReuseEnum _L2, typename _AccessProperty, size_t... _Ip>
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
-  const _CUDA_VSTD::array<_Tp, _Np>& data,
-  _Tp* __ptr,
-  __cache_reuse_t<_L1> __l1_reuse,
-  __cache_reuse_t<_L2> __l2_reuse,
-  __l2_hint_t<_AccessProperty> __l2_hint,
-  _CUDA_VSTD::index_sequence<_Ip...> = {})
-{
-  ((_CUDA_DEVICE::__store_dispatch(__ptr + _Ip, data[_Ip], __l1_reuse, __l2_reuse, __l2_hint)), ...);
-}
+// template <typename _Tp, size_t _Np, _CacheReuseEnum _L1, _CacheReuseEnum _L2, typename _AccessProperty, size_t...
+// _Ip> _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
+//   const _CUDA_VSTD::array<_Tp, _Np>& data,
+//   _Tp* __ptr,
+//   __cache_reuse_t<_L1> __l1_reuse,
+//   __cache_reuse_t<_L2> __l2_reuse,
+//   __l2_hint_t<_AccessProperty> __l2_hint,
+//   _CUDA_VSTD::index_sequence<_Ip...> = {})
+//{
+//   ((, ...);
+// }
 
 /***********************************************************************************************************************
  * INTERNAL API
@@ -186,20 +191,23 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_impl(
   __cache_reuse_t<_L2> __l2_reuse,
   __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
-  static_assert(_CUDA_VSTD::has_single_bit(_Align), "_Align must be a power of 2");
   static_assert(!_CUDA_VSTD::is_const_v<_Tp>, "_Tp must not be const");
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
   _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
-  _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "'ptr' must be aligned");
+  _CCCL_ASSERT(::cuda::is_aligned(__ptr, _Align));
   constexpr auto __max_align = _CUDA_VSTD::min({_Align, _MaxPtxAccessSize, sizeof(_Tp)});
   static_assert(sizeof(_Tp) % __max_align == 0);
+  static_assert(::cuda::is_power_of_two(__max_align), "sizeof(_Tp) must be a power of 2 for overaligned types");
   constexpr auto __num_unroll = sizeof(_Tp) / __max_align;
   using __aligned_data        = _AlignedData<__max_align>;
   auto __ptr_gmem             = _CUDA_VSTD::bit_cast<__aligned_data*>(__cvta_generic_to_global(__ptr));
   using __store_type          = _CUDA_VSTD::array<__aligned_data, __num_unroll>;
   auto __index_seq            = _CUDA_VSTD::make_index_sequence<__num_unroll>{};
   auto __data_tmp             = _CUDA_VSTD::bit_cast<__store_type>(__data);
-  _CUDA_DEVICE::__unroll_store(__ptr_gmem, __data_tmp, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
+  ::cuda::static_for<__num_unroll>([&](auto index) {
+    _CUDA_DEVICE::__store_dispatch(__ptr + index, __data_tmp[index], __l1_reuse, __l2_reuse, __l2_hint);
+  });
+  //_CUDA_DEVICE::__unroll_store(__ptr_gmem, __data_tmp, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
 }
 
 template <typename _Tp,
@@ -275,7 +283,6 @@ template <typename _Tp,
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(annotated_ptr<_Tp, _Prop> __ptr,
       _Tp __data,
-
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L1> __l2_reuse = cache_reuse_unchanged) noexcept
 {
@@ -291,7 +298,6 @@ template <size_t _Np,
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_Tp* __ptr,
       const _CUDA_VSTD::array<_Tp, _Np>& __data,
-
       aligned_size_t<_Align> __align  = aligned_size_t<_Align>{alignof(_Tp)},
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L1> __l2_reuse = cache_reuse_unchanged,
