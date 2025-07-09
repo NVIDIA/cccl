@@ -153,7 +153,6 @@ jobs:
         run: |
           gh release create ${release_tag} \
             --draft \
-            --generate-notes \
             --title "${release_tag}" \
             "${source_zipfile}#Source Archive (zip)" \
             "${source_tarball}#Source Archive (tar.gz)" \
