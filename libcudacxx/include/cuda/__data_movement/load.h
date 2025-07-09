@@ -137,11 +137,11 @@ template <typename _Tp, _MemoryAccess _Bp, _CacheReuseEnum _L1, _L2_PrefetchEnum
 {
   if constexpr (__l2_prefetch == L2_prefetch_none)
   {
-    return _CUDA_VDEV::__load_sm70(__ptr, __memory_access, __l1_reuse);
+    return _CUDA_DEVICE::__load_sm70(__ptr, __memory_access, __l1_reuse);
   }
   else if constexpr (__l2_prefetch == L2_prefetch_256B)
   {
-    return _CUDA_VDEV::__load_sm75(__ptr, __memory_access, __l1_reuse, L2_prefetch_128B); // fallback
+    return _CUDA_DEVICE::__load_sm75(__ptr, __memory_access, __l1_reuse, L2_prefetch_128B); // fallback
   }
   else if constexpr (__memory_access == read_write)
   {
@@ -163,7 +163,7 @@ template <typename _Tp, _MemoryAccess _Bp, _CacheReuseEnum _L1, typename _Access
 {
   if constexpr (!__l2_hint)
   {
-    return _CUDA_VDEV::__load_sm75(__ptr, __memory_access, __l1_reuse, __l2_prefetch);
+    return _CUDA_DEVICE::__load_sm75(__ptr, __memory_access, __l1_reuse, __l2_prefetch);
   }
   else if constexpr (__memory_access == read_write)
   {
@@ -229,11 +229,11 @@ template <typename _Tp,
 {
   // clang-format off
   NV_DISPATCH_TARGET(
-    NV_PROVIDES_SM_100, (return _CUDA_VDEV::__load_sm100(__ptr, __memory_access, __l1_reuse, __l2_reuse, __l2_hint,
+    NV_PROVIDES_SM_100, (return _CUDA_DEVICE::__load_sm100(__ptr, __memory_access, __l1_reuse, __l2_reuse, __l2_hint,
                                                          __l2_prefetch);),
-    NV_PROVIDES_SM_80,  (return _CUDA_VDEV::__load_sm80(__ptr, __memory_access, __l1_reuse, __l2_hint, __l2_prefetch);),
-    NV_PROVIDES_SM_75,  (return _CUDA_VDEV::__load_sm75(__ptr, __memory_access, __l1_reuse, __l2_prefetch);),
-    NV_PROVIDES_SM_70,  (return _CUDA_VDEV::__load_sm70(__ptr, __memory_access, __l1_reuse);),
+    NV_PROVIDES_SM_80,  (return _CUDA_DEVICE::__load_sm80(__ptr, __memory_access, __l1_reuse, __l2_hint, __l2_prefetch);),
+    NV_PROVIDES_SM_75,  (return _CUDA_DEVICE::__load_sm75(__ptr, __memory_access, __l1_reuse, __l2_prefetch);),
+    NV_PROVIDES_SM_70,  (return _CUDA_DEVICE::__load_sm70(__ptr, __memory_access, __l1_reuse);),
     NV_IS_DEVICE,       (return *__ptr;)); // fallback
   // clang-format on
   _CCCL_UNREACHABLE();
@@ -260,8 +260,8 @@ template <typename _Tp,
   _CUDA_VSTD::index_sequence<_Ip...> = {})
 {
   _CUDA_VSTD::array<_Tp, sizeof...(_Ip)> __tmp;
-  ((__tmp[_Ip] =
-      _CUDA_VDEV::__load_arch_dispatch(__ptr + _Ip, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch)),
+  ((__tmp[_Ip] = _CUDA_DEVICE::__load_arch_dispatch(
+      __ptr + _Ip, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch)),
    ...);
   return __tmp;
 };
@@ -297,7 +297,7 @@ template <size_t _MaxPtxAccessSize,
   using __aligned_data_t      = _AlignedData<__max_align>;
   auto __ptr_gmem             = _CUDA_VSTD::bit_cast<const __aligned_data_t*>(__cvta_generic_to_global(__ptr));
   auto __index_seq            = _CUDA_VSTD::make_index_sequence<__num_unroll>{};
-  auto __tmp                  = _CUDA_VDEV::__unroll_load(
+  auto __tmp                  = _CUDA_DEVICE::__unroll_load(
     __ptr_gmem, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch, __index_seq);
   return _CUDA_VSTD::bit_cast<_Tp>(__tmp);
 }
@@ -322,14 +322,14 @@ template <typename _Tp,
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_100,
-      (return _CUDA_VDEV::__load_impl<32>(
+      (return _CUDA_DEVICE::__load_impl<32>(
                 __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);),
-      (return _CUDA_VDEV::__load_impl<__max_ptx_access_size>(
+      (return _CUDA_DEVICE::__load_impl<__max_ptx_access_size>(
                 __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);))
   }
   else
   {
-    return _CUDA_VDEV::__load_impl<__max_ptx_access_size>(
+    return _CUDA_DEVICE::__load_impl<__max_ptx_access_size>(
       __ptr, __align, __memory_access, __l1_reuse, cache_reuse_unchanged, __l2_hint, __l2_prefetch);
   }
 }
@@ -355,7 +355,7 @@ template <size_t _Np,
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
   using __result_t = _CUDA_VSTD::array<_Tp, _Np>;
   auto __ptr1      = reinterpret_cast<const __result_t*>(__ptr);
-  return _CUDA_VDEV::__load_ptx_isa_dispatch(
+  return _CUDA_DEVICE::__load_ptx_isa_dispatch(
     __ptr1, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);
 }
 
@@ -378,7 +378,7 @@ template <typename _Tp,
   __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none) noexcept
 {
   constexpr auto __align = aligned_size_t<alignof(_Tp)>{};
-  return _CUDA_VDEV::__load_ptx_isa_dispatch(
+  return _CUDA_DEVICE::__load_ptx_isa_dispatch(
     __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint}, __l2_prefetch);
 }
 
@@ -396,7 +396,7 @@ load(annotated_ptr<_Tp, _Prop> __ptr,
      __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none) noexcept
 {
   constexpr auto __align = aligned_size_t<alignof(_Tp)>{};
-  return _CUDA_VDEV::__load_ptx_isa_dispatch(
+  return _CUDA_DEVICE::__load_ptx_isa_dispatch(
     __ptr.__get_raw_ptr(), __align, __memory_access, __l1_reuse, __l2_reuse, __ptr.__property(), __l2_prefetch);
 }
 
@@ -417,7 +417,7 @@ load(const _Tp* __ptr,
      _AccessProperty __l2_hint              = ::cuda::access_property::global{},
      __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none) noexcept
 {
-  return _CUDA_VDEV::__load_array<_Np>(
+  return _CUDA_DEVICE::__load_array<_Np>(
     __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint}, __l2_prefetch);
 }
 
@@ -437,7 +437,7 @@ load(annotated_ptr<_Tp, _Prop> __ptr,
      __cache_reuse_t<_L2> __l2_reuse        = cache_reuse_unchanged,
      __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none) noexcept
 {
-  return _CUDA_VDEV::__load_array<_Np>(
+  return _CUDA_DEVICE::__load_array<_Np>(
     __ptr.__get_raw_ptr(), __align, __memory_access, __l1_reuse, __l2_reuse, __ptr.__property(), __l2_prefetch);
 }
 

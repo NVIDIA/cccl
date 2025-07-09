@@ -105,7 +105,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm80(
 {
   if constexpr (!__l2_hint)
   {
-    _CUDA_VDEV::__store_sm70(__data, __ptr, __l1_reuse);
+    _CUDA_DEVICE::__store_sm70(__data, __ptr, __l1_reuse);
   }
   else
   {
@@ -123,7 +123,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm100(
 {
   if constexpr (__l2_reuse == cache_reuse_unchanged || sizeof(_Tp) <= 8)
   {
-    _CUDA_VDEV::__store_sm80(__data, __ptr, __l1_reuse, __l2_hint);
+    _CUDA_DEVICE::__store_sm80(__data, __ptr, __l1_reuse, __l2_hint);
   }
   else
   {
@@ -144,9 +144,9 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_dispatch(
   [[maybe_unused]] __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
   // clang-format off
-  NV_DISPATCH_TARGET(NV_PROVIDES_SM_100, (_CUDA_VDEV::__store_sm100(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint);),
-                     NV_PROVIDES_SM_80,  (_CUDA_VDEV::__store_sm80(__ptr,  __data, __l1_reuse, __l2_hint);),
-                     NV_PROVIDES_SM_70,  (_CUDA_VDEV::__store_sm70(__ptr,  __data, __l1_reuse);),
+  NV_DISPATCH_TARGET(NV_PROVIDES_SM_100, (_CUDA_DEVICE::__store_sm100(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint);),
+                     NV_PROVIDES_SM_80,  (_CUDA_DEVICE::__store_sm80(__ptr,  __data, __l1_reuse, __l2_hint);),
+                     NV_PROVIDES_SM_70,  (_CUDA_DEVICE::__store_sm70(__ptr,  __data, __l1_reuse);),
                      NV_IS_DEVICE,       (*__ptr = __data;)); // fallback
   // clang-format on
   _CCCL_UNREACHABLE();
@@ -165,7 +165,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
   __l2_hint_t<_AccessProperty> __l2_hint,
   _CUDA_VSTD::index_sequence<_Ip...> = {})
 {
-  ((_CUDA_VDEV::__store_dispatch(__ptr + _Ip, data[_Ip], __l1_reuse, __l2_reuse, __l2_hint)), ...);
+  ((_CUDA_DEVICE::__store_dispatch(__ptr + _Ip, data[_Ip], __l1_reuse, __l2_reuse, __l2_hint)), ...);
 }
 
 /***********************************************************************************************************************
@@ -199,7 +199,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_impl(
   using __store_type          = _CUDA_VSTD::array<__aligned_data, __num_unroll>;
   auto __index_seq            = _CUDA_VSTD::make_index_sequence<__num_unroll>{};
   auto __data_tmp             = _CUDA_VSTD::bit_cast<__store_type>(__data);
-  _CUDA_VDEV::__unroll_store(__ptr_gmem, __data_tmp, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
+  _CUDA_DEVICE::__unroll_store(__ptr_gmem, __data_tmp, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
 }
 
 template <typename _Tp,
@@ -222,14 +222,14 @@ template <typename _Tp,
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_100,
-      (return _CUDA_VDEV::__store_impl<32>(
+      (return _CUDA_DEVICE::__store_impl<32>(
                 __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);),
-      (return _CUDA_VDEV::__store_impl<__max_ptx_access_size>(
+      (return _CUDA_DEVICE::__store_impl<__max_ptx_access_size>(
                 __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);))
   }
   else
   {
-    return _CUDA_VDEV::__store_impl<__max_ptx_access_size>(
+    return _CUDA_DEVICE::__store_impl<__max_ptx_access_size>(
       __ptr, __align, __memory_access, __l1_reuse, cache_reuse_unchanged, __l2_hint, __l2_prefetch);
   }
 }
@@ -247,7 +247,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_array(
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
   using __result_t = _CUDA_VSTD::array<_Tp, _Np>;
   auto __ptr1      = reinterpret_cast<const __result_t*>(__ptr);
-  return _CUDA_VDEV::__store_ptx_isa_dispatch(__ptr1, __data, __align, __l1_reuse, __l2_reuse, __l2_hint);
+  return _CUDA_DEVICE::__store_ptx_isa_dispatch(__ptr1, __data, __align, __l1_reuse, __l2_reuse, __l2_hint);
 }
 
 /***********************************************************************************************************************
@@ -265,7 +265,7 @@ store(_Tp* __ptr,
       __cache_reuse_t<_L2> __l2_reuse = cache_reuse_unchanged,
       _AccessProperty __l2_hint       = access_property::global{}) noexcept
 {
-  _CUDA_VDEV::__store_ptx_isa_dispatch(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
+  _CUDA_DEVICE::__store_ptx_isa_dispatch(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
 }
 
 template <typename _Tp,
@@ -279,7 +279,7 @@ store(annotated_ptr<_Tp, _Prop> __ptr,
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L1> __l2_reuse = cache_reuse_unchanged) noexcept
 {
-  _CUDA_VDEV::__store_ptx_isa_dispatch(__ptr.__get_raw_ptr(), __data, __l1_reuse, __l2_reuse, __ptr.__property());
+  _CUDA_DEVICE::__store_ptx_isa_dispatch(__ptr.__get_raw_ptr(), __data, __l1_reuse, __l2_reuse, __ptr.__property());
 }
 
 template <size_t _Np,
@@ -297,7 +297,7 @@ store(_Tp* __ptr,
       __cache_reuse_t<_L1> __l2_reuse = cache_reuse_unchanged,
       _AccessProperty __l2_hint       = access_property::global{}) noexcept
 {
-  _CUDA_VDEV::__store_array<_Np>(__ptr, __data, __align, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
+  _CUDA_DEVICE::__store_array<_Np>(__ptr, __data, __align, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
 }
 
 template <size_t _Np,
@@ -314,7 +314,7 @@ store(annotated_ptr<_Tp, _Prop> __ptr,
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L2> __l2_reuse = cache_reuse_unchanged) noexcept
 {
-  _CUDA_VDEV::__store_array<_Np>(__ptr.__get_raw_ptr(), __data, __align, __l1_reuse, __l2_reuse, __ptr.__property());
+  _CUDA_DEVICE::__store_array<_Np>(__ptr.__get_raw_ptr(), __data, __align, __l1_reuse, __l2_reuse, __ptr.__property());
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
