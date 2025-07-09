@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,14 +40,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
     // don't use cuda::is_floating_point_v here to prevent fmax specialization for custom types
     if constexpr (_CUDA_VSTD::is_floating_point_v<_Up> || _CUDA_VSTD::__is_extended_floating_point_v<_Up>)
     {
-      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-      {
-        return _CUDA_VSTD::fmax(__lhs, __rhs);
-      }
-      if (_CUDA_VSTD::isnan(__lhs))
-      {
-        return __rhs;
-      }
+      return _CUDA_VSTD::fmax(__lhs, __rhs);
     }
     return (__lhs < __rhs) ? __rhs : __lhs;
   }
