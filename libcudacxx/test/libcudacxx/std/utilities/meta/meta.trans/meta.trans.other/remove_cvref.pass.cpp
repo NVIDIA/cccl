@@ -44,8 +44,8 @@ int main(int, char**)
   test_remove_cvref<int*, int*>();
   test_remove_cvref<int(int) const, int(int) const>();
   test_remove_cvref<int(int) volatile, int(int) volatile>();
-  test_remove_cvref<int(int)&, int(int)&>();
-  test_remove_cvref<int(int)&&, int(int) &&>();
+  test_remove_cvref<int(int) &, int(int) &>();
+  test_remove_cvref<int(int) &&, int(int) &&>();
 
   return 0;
 }

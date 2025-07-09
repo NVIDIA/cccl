@@ -66,13 +66,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+  const auto num_items = detail::make_large_offset<offset_t>();
 
   auto in_it              = thrust::make_counting_iterator(offset_t{0});
   auto expected_result_it = in_it;
@@ -92,13 +86,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+  const offset_t num_items = detail::make_large_offset<offset_t>();
 
   auto a_it               = thrust::make_counting_iterator(offset_t{0});
   auto b_it               = thrust::make_constant_iterator(offset_t{42});
@@ -540,28 +528,38 @@ C2H_TEST("DeviceTransform::Transform not trivially relocatable", "[device][trans
 
 C2H_TEST("DeviceTransform::Transform buffer start alignment",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, float, double>)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type          = c2h::get<0, TestType>;
-  const int num_items = GENERATE(10, 130, 100'000); // try to hit sub-size-alignment, small and full tile code paths
-  const int offset    = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
-  if (num_items <= offset)
+  const int num_items = GENERATE(
+    10, // try to hit sub-size-alignment, small and full tile code paths
+    130,
+    100'000,
+    128 * 22 /* blackwell u8 tilesize */ + 2,
+    128 * 11 /* blackwell u16 tilesize */ + 2,
+    128 * 6 /* blackwell u32 tilesize */ + 2,
+    128 * 3 /* blackwell u64 tilesize */ + 2);
+
+  // we should hit byte offsets up until 64 (128 is the highest bulk_copy_alignment)
+  const int offset_a = GENERATE(1, 2, 4, 8, 15, 16, 32, 64, 127);
+  const int offset_b = GENERATE(1, 2, 4, 8, 15, 16, 32, 64, 127);
+  if (num_items <= offset_a || num_items <= offset_b || offset_a * sizeof(type) > 64 || offset_b * sizeof(type) > 64)
   {
     return;
   }
-  CAPTURE(c2h::type_name<type>(), num_items, offset);
+  CAPTURE(c2h::type_name<type>(), num_items, offset_a, offset_b);
 
-  c2h::device_vector<type> input(num_items, thrust::no_init);
-  thrust::sequence(input.begin(), input.end());
+  c2h::device_vector<type> a(num_items + offset_a, thrust::no_init);
+  c2h::device_vector<type> b(num_items + offset_b, thrust::no_init);
+  thrust::sequence(a.begin(), a.end());
+  thrust::sequence(b.begin(), b.end(), num_items + offset_a);
   c2h::device_vector<type> result(num_items);
-  using thrust::placeholders::_1;
-  transform_many(::cuda::std::make_tuple(input.begin() + offset),
-                 result.begin() + offset,
-                 num_items - offset,
-                 _1 * 10); // FIXME(bgruber): does not work on negative
+  transform_many(
+    ::cuda::std::make_tuple(a.begin() + offset_a, b.begin() + offset_b), result.begin(), num_items, ::cuda::std::plus{});
 
+  using thrust::placeholders::_1;
   c2h::device_vector<type> reference(num_items);
-  thrust::tabulate(reference.begin() + offset, reference.end(), (_1 + offset) * 10);
+  thrust::tabulate(reference.begin(), reference.end(), (_1 + offset_a) * 2 + offset_b + num_items);
   REQUIRE(reference == result);
 }
 

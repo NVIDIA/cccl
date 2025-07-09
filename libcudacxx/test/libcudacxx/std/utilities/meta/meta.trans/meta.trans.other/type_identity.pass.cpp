@@ -33,7 +33,7 @@ int main(int, char**)
   test_type_identity<void (*)()>();
   test_type_identity<int(int) const>();
   test_type_identity<int(int) volatile>();
-  test_type_identity<int(int)&>();
+  test_type_identity<int(int) &>();
   test_type_identity<int(int) &&>();
 
   return 0;

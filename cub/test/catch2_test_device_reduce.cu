@@ -45,8 +45,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-_CCCL_NV_DIAG_SUPPRESS(1444)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
