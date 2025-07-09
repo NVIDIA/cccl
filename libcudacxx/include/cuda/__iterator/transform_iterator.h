@@ -155,8 +155,8 @@ class transform_iterator : public __transform_iterator_category_base<_Iter, _Fn>
                 "cuda::transform_iterator requires that the return type of _Fn is referenceable");
 
 public:
-  _CCCL_NO_UNIQUE_ADDRESS _Iter __current_;
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VRANGES::__movable_box<_Fn> __func_;
+  _Iter __current_;
+  _CUDA_VRANGES::__movable_box<_Fn> __func_;
 
   using iterator_concept = _CUDA_VSTD::conditional_t<
     _CUDA_VSTD::random_access_iterator<_Iter>,

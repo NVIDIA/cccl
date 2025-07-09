@@ -36,7 +36,7 @@ namespace cuda::experimental::execution
 struct start_detached_t
 {
 private:
-  struct __opstate_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_base_t
   {};
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t

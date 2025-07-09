@@ -38,8 +38,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT front_insert_iterator
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 protected:
   _Container* container;
 
@@ -81,6 +79,7 @@ public:
     return *this;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(front_insert_iterator);
 
 template <class _Container>

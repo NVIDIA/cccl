@@ -38,6 +38,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_isinf) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isinf)
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_impl(_Tp __x) noexcept
 {

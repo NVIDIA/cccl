@@ -592,13 +592,13 @@ static_assert(!equality_comparable_with<void, int (S::*)() volatile noexcept>, "
 static_assert(!equality_comparable_with<void, int (S::*)() const volatile>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const volatile noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() &>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() & noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const&>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() const& noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() const & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() volatile&>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() volatile& noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() volatile & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const volatile&>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() const volatile& noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() const volatile & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() &&>, "");
 static_assert(!equality_comparable_with < void, int (S::*)() && noexcept >, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const&&>, "");
