@@ -345,6 +345,20 @@ struct dispatch_t<StableAddress,
 
 #undef CUB_DEFINE_SFINAE_GETTER
 
+  template <typename T>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto is_pointer_aligned(T it, int alignment)
+  {
+    if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
+    {
+      return THRUST_NS_QUALIFIER::detail::util::is_aligned(
+        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
+    }
+    else
+    {
+      return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
+    }
+  }
+
   template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy active_policy = {})
@@ -397,19 +411,9 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      const int alignment     = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      auto is_pointer_aligned = [&](auto it) {
-        if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
-        {
-          return THRUST_NS_QUALIFIER::detail::util::is_aligned(
-            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
-        }
-        else
-        {
-          return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
-        }
-      };
-      can_vectorize = (is_pointer_aligned(::cuda::std::get<Is>(in)) && ...) && is_pointer_aligned(out);
+      const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize       = (is_pointer_aligned(::cuda::std::get<Is>(in), alignment) && ...)
+                   && is_pointer_aligned(out, alignment);
     }
 
     int ipt        = 0;
