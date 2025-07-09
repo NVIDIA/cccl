@@ -346,7 +346,7 @@ struct dispatch_t<StableAddress,
 #undef CUB_DEFINE_SFINAE_GETTER
 
   template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto is_pointer_aligned(T it, int alignment)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto is_pointer_aligned(T it, [[maybe_unused]] int alignment)
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
