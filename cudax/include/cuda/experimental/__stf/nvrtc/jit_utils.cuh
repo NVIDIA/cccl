@@ -356,11 +356,11 @@ struct jit_adapter<mdspan<T, P...>>
    */
   ::std::string kernel_side_t_name()
   {
-    auto constexpr R = caller_side_arg.rank();
-    using ET         = typename caller_side_t::element_type;
-    using Layout     = typename caller_side_t::layout_type;
-    using Accessor   = typename caller_side_t::accessor_type;
-    using XT         = typename caller_side_t::extents_type;
+    auto const R   = caller_side_arg.rank();
+    using ET       = typename caller_side_t::element_type;
+    using Layout   = typename caller_side_t::layout_type;
+    using Accessor = typename caller_side_t::accessor_type;
+    using XT       = typename caller_side_t::extents_type;
 
     ::std::ostringstream oss;
 
@@ -369,17 +369,18 @@ struct jit_adapter<mdspan<T, P...>>
 
     // Emit extents with as many static values as possible
     oss << ", cuda::std::extents<size_t";
-    if constexpr (R > 0)
+    if (R > 0)
     {
       oss << ", ";
     }
 
-    unroll<R>([&](auto i) {
+    for (size_t i = 0; i < R; i++)
+    {
       oss << (i ? ", " : "")
           << (XT::static_extent(i) != cuda::std::dynamic_extent
                 ? ::std::to_string(XT::static_extent(i))
                 : ::std::to_string(caller_side_arg.extent(i)));
-    });
+    }
 
     oss << ">";
 
