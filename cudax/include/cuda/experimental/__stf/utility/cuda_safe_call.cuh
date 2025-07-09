@@ -275,7 +275,7 @@ struct last_param_impl<R (*)(P)>
 template <typename R, typename P, typename... Ps>
 struct last_param_impl<R (*)(P, Ps...)>
 {
-    using type = typename last_param_impl<R (*)(Ps...)>::type;
+  using type = typename last_param_impl<R (*)(Ps...)>::type;
 };
 
 /*

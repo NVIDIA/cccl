@@ -30,8 +30,8 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
-#include <filesystem>
 #include <atomic>
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -431,7 +431,7 @@ struct jit_adapter<mdspan<T, P...>>
 
   ::std::string kernel_param_t_name()
   {
-       return ::std::string(type_name<kernel_param_t>);
+    return ::std::string(type_name<kernel_param_t>);
   }
 
 private:
@@ -561,15 +561,16 @@ inline static const ::std::vector<::std::string>& get_nvrtc_flags()
     // Returns the n-th parent of a path.
     // For example: with path "foo/bar/baz/bla.cu" and n = 2, returns "foo/bar"
     const auto get_nth_parent = [](::std::filesystem::path p, int n) -> ::std::filesystem::path {
-        while (n-- > 0 && !p.empty()) {
-            p = p.parent_path();
-        }
-        return p;
+      while (n-- > 0 && !p.empty())
+      {
+        p = p.parent_path();
+      }
+      return p;
     };
 
     // cudax/include/cuda/experimental/__stf/nvrtc/jit_utils.cuh
-    fs::path  this_file   = __FILE__;
-    fs::path  cccl_root_dir     = get_nth_parent(this_file, 7);
+    fs::path this_file     = __FILE__;
+    fs::path cccl_root_dir = get_nth_parent(this_file, 7);
 
     ::std::vector<::std::string> result;
     result.push_back("-I" + (cccl_root_dir / "libcudacxx/include").string());
