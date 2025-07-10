@@ -178,3 +178,31 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts determinism requirements", "[reduce]
   REQUIRE(min_output == expected_min);
   REQUIRE(index_output == expected_index);
 }
+
+template <class T>
+struct square_t
+{
+  __host__ __device__ T operator()(const T& x) const
+  {
+    return x * x;
+  }
+};
+
+C2H_TEST("cub::DeviceReduce::TransformReduce accepts determinism requirements", "[reduce][env]")
+{
+  // TODO(gevtushenko): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
+
+  // example-begin transform-reduce-env-determinism
+  auto input  = c2h::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  cub::DeviceReduce::TransformReduce(
+    input.begin(), output.begin(), input.size(), ::cuda::std::plus<float>{}, square_t<float>{}, 0.0f, env);
+
+  c2h::device_vector<float> expected{30.0f};
+  // example-end transform-reduce-env-determinism
+
+  REQUIRE(output == expected);
+}
