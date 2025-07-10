@@ -95,6 +95,9 @@ struct path_builder
       nullptr,
       nullptr,
       &__last_captured_node,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+      nullptr,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
       &__num_nodes);
     if (__capture_status != cudaStreamCaptureStatusActive)
     {
