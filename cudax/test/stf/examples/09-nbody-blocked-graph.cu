@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t start;
   cuda_safe_call(cudaEventCreate(&start));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   cudaGraphExec_t exec_graph = nullptr;
 
@@ -306,7 +306,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 
