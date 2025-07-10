@@ -104,9 +104,10 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 
 struct times_seven
 {
-  _CCCL_HOST_DEVICE auto operator()(unsigned char v) const -> char
+  template <typename T>
+  _CCCL_HOST_DEVICE auto operator()(T v) const -> T
   {
-    return static_cast<unsigned char>(v * 7);
+    return static_cast<T>(v * 7);
   }
 };
 
