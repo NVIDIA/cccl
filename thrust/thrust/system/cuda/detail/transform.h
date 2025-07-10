@@ -259,11 +259,19 @@ OutputIt THRUST_FUNCTION cub_transform_many(
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (cub::detail::transform::
-       dispatch_t<stable_address, decltype(num_items_fixed), ::cuda::std::tuple<InputIts...>, OutputIt, TransformOp>::
-         dispatch),
+    (cub::detail::transform::dispatch_t<stable_address,
+                                        decltype(num_items_fixed),
+                                        ::cuda::std::tuple<InputIts...>,
+                                        OutputIt,
+                                        cub::detail::transform::always_true_predicate,
+                                        TransformOp>::dispatch),
     num_items,
-    (firsts, result, num_items_fixed, transform_op, cuda_cub::stream(policy)));
+    (firsts,
+     result,
+     num_items_fixed,
+     cub::detail::transform::always_true_predicate{},
+     transform_op,
+     cuda_cub::stream(policy)));
   throw_on_error(status, "transform: failed inside CUB");
 
   status = cuda_cub::synchronize_optional(policy);
