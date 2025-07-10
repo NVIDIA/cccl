@@ -951,6 +951,57 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Computes a device-wide minimum using the less-than (``<``) operator. The result is written to the output
+  //! iterator.
+  //!
+  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   as the `env` parameter.
+  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin min-env-determinism
+  //!     :end-before: example-end min-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
@@ -1168,6 +1219,65 @@ public:
                        stream);
   }
 
+  //! @rst
+  //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //!
+  //! - The minimum is written to ``d_min_out``
+  //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
+  //!   ``cuda::std::int64_t``.
+  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
+  //!   ``1`` is written to ``d_index_out``.
+  //! - Does not support ``<`` operators that are non-commutative.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   as the `env` parameter.
+  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_min_out`` nor ``d_index_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin argmin-env-determinism
+  //!     :end-before: example-end argmin-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items
+  //!   (of some type `T`) @iterator
+  //!
+  //! @tparam ExtremumOutIteratorT
+  //!   **[inferred]** Output iterator type for recording minimum value
+  //!
+  //! @tparam IndexOutIteratorT
+  //!   **[inferred]** Output iterator type for recording index of the returned value
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Iterator to the input sequence of data items
+  //!
+  //! @param[out] d_min_out
+  //!   Iterator to which the minimum value is written
+  //!
+  //! @param[out] d_index_out
+  //!   Iterator to which the index of the returned value is written
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
@@ -1499,6 +1609,57 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Computes a device-wide maximum using the greater-than (``>``) operator. The result is written to the output
+  //! iterator.
+  //!
+  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   as the `env` parameter.
+  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin max-env-determinism
+  //!     :end-before: example-end max-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
@@ -1840,13 +2001,73 @@ public:
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
   }
 
+  //! @rst
+  //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
+  //! item.
+  //!
+  //! - The maximum is written to ``d_max_out``
+  //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
+  //!   ``cuda::std::int64_t``.
+  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::lowest()}`` is written to ``d_max_out``  and the index
+  //!   ``1`` is written to ``d_index_out``.
+  //! - Does not support ``>`` operators that are non-commutative.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   as the `env` parameter.
+  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_max_out`` nor ``d_index_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the argmax-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin argmax-env-determinism
+  //!     :end-before: example-end argmax-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items
+  //!   (of some type `T`) @iterator
+  //!
+  //! @tparam ExtremumOutIteratorT
+  //!   **[inferred]** Output iterator type for recording maximum value
+  //!
+  //! @tparam IndexOutIteratorT
+  //!   **[inferred]** Output iterator type for recording index of the returned value
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Iterator to the input sequence of data items
+  //!
+  //! @param[out] d_max_out
+  //!   Iterator to which the maximum value is written
+  //!
+  //! @param[out] d_index_out
+  //!   Iterator to which the index of the returned value is written
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,
-         ExtremumOutIteratorT d_min_out,
+         ExtremumOutIteratorT d_max_out,
          IndexOutIteratorT d_index_out,
          ::cuda::std::int64_t num_items,
          EnvT env = {})
@@ -1885,7 +2106,7 @@ public:
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
     auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
+      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     // Query the required temporary storage size
     cudaError_t error = detail::reduce::dispatch_streaming_arg_reduce_t<
