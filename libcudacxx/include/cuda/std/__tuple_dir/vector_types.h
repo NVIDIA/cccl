@@ -116,6 +116,14 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _32a)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(dim, unsigned int, 3)
 
+#  if _CCCL_HAS_NVFP16()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__half, __half, 2)
+#  endif // _CCCL_HAS_NVFP16()
+
+#  if _CCCL_HAS_NVBF16()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_bfloat16, __nv_bfloat16, 2)
+#  endif // _CCCL_HAS_NVBF16()
+
 template <size_t _Ip>
 struct __get_element;
 
@@ -260,6 +268,14 @@ _LIBCUDACXX_SPECIALIZE_GET(double4_16a, double)
 _LIBCUDACXX_SPECIALIZE_GET(double4_32a, double)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
+
+#  if _CCCL_HAS_NVFP16()
+_LIBCUDACXX_SPECIALIZE_GET(__half2, __half)
+#  endif // _CCCL_HAS_NVFP16()
+
+#  if _CCCL_HAS_NVBF16()
+_LIBCUDACXX_SPECIALIZE_GET(__nv_bfloat162, __nv_bfloat16)
+#  endif // _CCCL_HAS_NVBF16()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
