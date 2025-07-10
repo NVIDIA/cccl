@@ -177,7 +177,7 @@ jobs:
         run: |
           version_bump=$(git log -n 1 --pretty=format:%H --grep 'Bump [/A-Za-z]* to [0-9]*\.[0-9]*\.[0-9]*')
           closest_tag=$(git describe --abbrev=0 $version_bump)
-          
+
           note_gen=""
           if [ "${{ github.event.inputs.skip_generating_notes }}" = "false" ]; then
             note_gen="--generate-notes"
