@@ -107,18 +107,16 @@ struct large_problem_test_helper
   // Checks whether all results have been written correctly
   void check_all_results_correct()
   {
-    const bool all_correct = thrust::equal(
-      correctness_flags.cbegin(),
-      correctness_flags.cbegin() + (num_elements / bits_per_element),
-      thrust::make_constant_iterator(0xFFFFFFFFU));
+    auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
+    const bool all_correct =
+      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, thrust::make_constant_iterator(0xFFFFFFFFU));
 
     if (!all_correct)
     {
       using thrust::placeholders::_1;
-      auto mismatch_it = thrust::find_if_not(
-        correctness_flags.cbegin(), correctness_flags.cbegin() + (num_elements / bits_per_element), _1 == 0xFFFFFFFFU);
+      auto mismatch_it = thrust::find_if_not(correctness_flags.cbegin(), correctness_flags_end, _1 == 0xFFFFFFFFU);
       // Sanity check: if thrust::equals previously "failed", then mismatch_it must not be the end iterator
-      REQUIRE(mismatch_it != correctness_flags.cbegin() + (num_elements / bits_per_element));
+      REQUIRE(mismatch_it != correctness_flags_end);
       std::uint32_t mismatch_value = *mismatch_it;
       auto bit_index               = 0;
       // Find the first bit that is not set in the mismatch_value
@@ -131,8 +129,7 @@ struct large_problem_test_helper
         }
       }
       const auto wrong_element_index = (mismatch_it - correctness_flags.cbegin()) * bits_per_element + bit_index;
-      INFO("First wrong output index: " << wrong_element_index);
-      REQUIRE(all_correct == true);
+      FAIL("First wrong output index: " << wrong_element_index);
     }
     if (num_elements % bits_per_element != 0)
     {
