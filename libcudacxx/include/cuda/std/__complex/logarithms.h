@@ -89,7 +89,6 @@ template <class _Tp>
   // uint/ints of the same size as our fp type.
   // Shouldn't need make_unsigned, but just in case:
   using _UINT_T   = make_unsigned_t<__fp_storage_of_t<_Tp>>;
-  using _INT_T    = make_signed<_UINT_T>;
   using _CONST_TP = const _Tp;
 
   // Some needed constants:
