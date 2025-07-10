@@ -86,7 +86,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log(const complex<_Tp>& __x)
 {
-  // uint/ints of the same size as our fp type.
+  // Uint of the same size as our fp type.
   // Shouldn't need make_unsigned, but just in case:
   using _UINT_T   = make_unsigned_t<__fp_storage_of_t<_Tp>>;
   using _CONST_TP = const _Tp;
