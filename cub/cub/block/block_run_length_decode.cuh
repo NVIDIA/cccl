@@ -82,7 +82,7 @@ CUB_NAMESPACE_BEGIN
 //!      // Specialising BlockRunLengthDecode to have each thread hold 4 run-length decoded items
 //!      constexpr int DECODED_ITEMS_PER_THREAD = 4;
 //!
-//!      // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
+//!      // Specialize BlockRunLengthDecode for a 1D block of 128 threads owning 4 integer items each
 //!      using BlockRunLengthDecodeT =
 //!        cub::BlockRunLengthDecode<RunItemT, BLOCK_DIM_X, RUNS_PER_THREAD, DECODED_ITEMS_PER_THREAD>;
 //!
@@ -287,7 +287,7 @@ private:
     for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
     {
       OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
-      mid         = (::cuda::std::min)(mid, num_items - 1);
+      mid         = (::cuda::std::min) (mid, num_items - 1);
 
       if (val < input[mid])
       {

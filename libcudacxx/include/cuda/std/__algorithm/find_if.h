@@ -26,7 +26,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _InputIterator
+[[nodiscard]] _CCCL_API constexpr _InputIterator
 find_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)

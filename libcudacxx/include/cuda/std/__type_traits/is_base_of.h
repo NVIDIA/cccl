@@ -46,14 +46,14 @@ namespace __is_base_of_imp
 template <class _Tp>
 struct _Dst
 {
-  _LIBCUDACXX_HIDE_FROM_ABI _Dst(const volatile _Tp&);
+  _CCCL_API inline _Dst(const volatile _Tp&);
 };
 template <class _Tp>
 struct _Src
 {
-  _LIBCUDACXX_HIDE_FROM_ABI operator const volatile _Tp&();
+  _CCCL_API inline operator const volatile _Tp&();
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI operator const _Dst<_Up>&();
+  _CCCL_API inline operator const _Dst<_Up>&();
 };
 template <size_t>
 struct __one
@@ -67,8 +67,8 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
-    : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_base_of : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
 {};
 
 template <class _Bp, class _Dp>

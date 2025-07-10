@@ -94,7 +94,7 @@ struct RadixEncoder<short>
 template <>
 struct RadixEncoder<int>
 {
-  _CCCL_HOST_DEVICE unsigned long operator()(long x) const
+  _CCCL_HOST_DEVICE unsigned int operator()(int x) const
   {
     return x ^ static_cast<unsigned int>(1) << (8 * sizeof(unsigned int) - 1);
   }

@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_adjacent_difference.cuh>
 
@@ -89,6 +88,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   REQUIRE(reference == in);
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class T>
 struct ref_diff
 {
@@ -102,7 +102,6 @@ struct ref_diff
   {
     return ulonglong2{rhs.x - lhs.x, rhs.y - lhs.y};
   }
-
   __host__ __device__ constexpr ulonglong4 operator()(const ulonglong4& lhs, const ulonglong4& rhs) const noexcept
   {
     return ulonglong4{rhs.x - lhs.x, rhs.y - lhs.y, rhs.z - lhs.z, rhs.w - lhs.w};
@@ -113,6 +112,7 @@ struct ref_diff
     return long2{rhs.x - lhs.x, rhs.y - lhs.y};
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[device][adjacent_difference]", types)
 {
@@ -194,6 +194,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
   REQUIRE(reference == out);
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct cust_diff
 {
   template <class T>
@@ -217,6 +218,7 @@ struct cust_diff
     return long2{lhs.x - rhs.x, lhs.y - rhs.y};
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
          "[device][adjacent_difference]",

@@ -10,11 +10,20 @@
 
 #pragma once
 
+#include <cuda/std/__type_traits/copy_cvref.h>
+
 #include <cuda/experimental/execution.cuh>
 
 #include <iostream>
 
-#include "testing.cuh"
+#include "testing.cuh" // IWYU pragma: keep
+
+// Workaround for https://github.com/llvm/llvm-project/issues/113087
+#if defined(__clang__) && defined(__cpp_lib_tuple_like)
+#  define C2H_CHECK_TUPLE(...) CHECK((__VA_ARGS__))
+#else
+#  define C2H_CHECK_TUPLE(...) CHECK(__VA_ARGS__)
+#endif
 
 //! A move-only type
 struct movable
@@ -74,6 +83,33 @@ struct potentially_throwing
     os << "potentially_throwing{}";
     return os;
   }
+};
+
+struct non_default_constructible
+{
+  _CCCL_HOST_DEVICE constexpr explicit non_default_constructible(int value) noexcept
+      : value_(value)
+  {}
+
+  _CCCL_HOST_DEVICE friend constexpr bool
+  operator==(const non_default_constructible& a, const non_default_constructible& b) noexcept
+  {
+    return a.value_ == b.value_;
+  }
+
+  _CCCL_HOST_DEVICE friend constexpr bool
+  operator!=(const non_default_constructible& a, const non_default_constructible& b) noexcept
+  {
+    return a.value_ != b.value_;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const non_default_constructible& self)
+  {
+    os << "non_default_constructible{" << self.value_ << "}";
+    return os;
+  }
+
+  int value_;
 };
 
 struct string
@@ -195,18 +231,42 @@ template <class... Values, class Sndr>
 _CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
   using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, _CUDA_VSTD::__make_type_set>;
-  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>)
+  {
+    _CUDA_VSTD::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+  }
 }
 
 template <class... Errors, class Sndr>
 _CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
   using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, _CUDA_VSTD::__make_type_set>;
-  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>)
+  {
+    _CUDA_VSTD::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+  }
 }
 
 template <bool SendsStopped, class Sndr>
 _CCCL_HOST_DEVICE void check_sends_stopped(Sndr&&) noexcept
 {
   static_assert(cudax_async::sends_stopped<Sndr> == SendsStopped, "sends_stopped does not match expected value");
+}
+
+template <class Sndr, class... Ts>
+inline void wait_for_value(Sndr&& snd, Ts&&... val)
+{
+  _CUDA_VSTD::optional<_CUDA_VSTD::tuple<Ts...>> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd));
+  CHECK(res.has_value());
+  _CUDA_VSTD::tuple<Ts...> expected(static_cast<Ts&&>(val)...);
+  if constexpr (_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::tuple<Ts...>> == 1)
+  {
+    C2H_CHECK_TUPLE(_CUDA_VSTD::get<0>(res.value()) == _CUDA_VSTD::get<0>(expected));
+  }
+  else
+  {
+    C2H_CHECK_TUPLE(res.value() == expected);
+  }
 }

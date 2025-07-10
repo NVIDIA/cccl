@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -13,6 +12,7 @@
 
 #include <cstdint>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
@@ -68,14 +68,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   CAPTURE(c2h::type_name<offset_t>());
 
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  const offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(

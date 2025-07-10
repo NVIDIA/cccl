@@ -40,8 +40,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT istream_iterator
     : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 public:
   using iterator_category = input_iterator_tag;
   using value_type        = _Tp;
@@ -57,14 +55,14 @@ private:
   _Tp __value_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr istream_iterator()
+  _CCCL_API constexpr istream_iterator()
       : __in_stream_(nullptr)
       , __value_()
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr istream_iterator(default_sentinel_t)
+  _CCCL_API constexpr istream_iterator(default_sentinel_t)
       : istream_iterator()
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI istream_iterator(istream_type& __s)
+  _CCCL_API inline istream_iterator(istream_type& __s)
       : __in_stream_(_CUDA_VSTD::addressof(__s))
   {
     if (!(*__in_stream_ >> __value_))
@@ -73,15 +71,15 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Tp& operator*() const
+  _CCCL_API inline const _Tp& operator*() const
   {
     return __value_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI const _Tp* operator->() const
+  _CCCL_API inline const _Tp* operator->() const
   {
     return _CUDA_VSTD::addressof((operator*()));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI istream_iterator& operator++()
+  _CCCL_API inline istream_iterator& operator++()
   {
     if (!(*__in_stream_ >> __value_))
     {
@@ -89,7 +87,7 @@ public:
     }
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI istream_iterator operator++(int)
+  _CCCL_API inline istream_iterator operator++(int)
   {
     istream_iterator __t(*this);
     ++(*this);
@@ -97,39 +95,40 @@ public:
   }
 
   template <class _Up, class _CharU, class _TraitsU, class _DistanceU>
-  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
-                                                   const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
+  friend _CCCL_API inline bool operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
+                                          const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
 
-  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istream_iterator& __i, default_sentinel_t)
+  friend _CCCL_API inline bool operator==(const istream_iterator& __i, default_sentinel_t)
   {
     return __i.__in_stream_ == nullptr;
   }
 #if _CCCL_STD_VER < 2020
-  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(default_sentinel_t, const istream_iterator& __i)
+  friend _CCCL_API inline bool operator==(default_sentinel_t, const istream_iterator& __i)
   {
     return __i.__in_stream_ == nullptr;
   }
-  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const istream_iterator& __i, default_sentinel_t)
+  friend _CCCL_API inline bool operator!=(const istream_iterator& __i, default_sentinel_t)
   {
     return __i.__in_stream_ != nullptr;
   }
-  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(default_sentinel_t, const istream_iterator& __i)
+  friend _CCCL_API inline bool operator!=(default_sentinel_t, const istream_iterator& __i)
   {
     return __i.__in_stream_ != nullptr;
   }
 #endif // _CCCL_STD_VER < 2020
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-                                          const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
+_CCCL_API inline bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
+                                 const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
 {
   return __x.__in_stream_ == __y.__in_stream_;
 }
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-                                          const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
+_CCCL_API inline bool operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
+                                 const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
 {
   return !(__x == __y);
 }

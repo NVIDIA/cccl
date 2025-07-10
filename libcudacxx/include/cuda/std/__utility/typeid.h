@@ -220,14 +220,12 @@ struct __type_info_ptr_
 
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_ operator*() const noexcept;
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator!=(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return !(__a == __b);
   }
@@ -277,14 +275,12 @@ struct __type_info
     return __type_info_ptr_{__pfn_};
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator==(__type_info const& __a, __type_info const& __b) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(__type_info const& __a, __type_info const& __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_ || __a.__pfn_().__name_ == __b.__pfn_().__name_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator!=(__type_info const& __a, __type_info const& __b) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(__type_info const& __a, __type_info const& __b) noexcept
   {
     return !(__a == __b);
   }

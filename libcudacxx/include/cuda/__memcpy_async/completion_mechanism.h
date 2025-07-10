@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_COMPLETION_MECHANISM_H
-#define _CUDA___BARRIER_COMPLETION_MECHANISM_H
+#ifndef _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H
+#define _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,4 +44,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___BARRIER_COMPLETION_MECHANISM_H
+#endif // _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H

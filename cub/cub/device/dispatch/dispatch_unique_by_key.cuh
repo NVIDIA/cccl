@@ -32,6 +32,8 @@
  * items by key from sequences of data items residing within device-accessible memory.
  */
 
+#pragma once
+
 #include <cub/config.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -139,7 +141,7 @@ template <
     ScanTileState<OffsetT>,
     EqualityOpT,
     OffsetT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename VSMemHelperT          = detail::unique_by_key::VSMemHelper,
   typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
   typename ValueT                = detail::it_value_t<ValueInputIteratorT>>

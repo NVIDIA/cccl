@@ -31,7 +31,7 @@ using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
 using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
 #endif
 
-C2H_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
 {
   using TestT           = c2h::get<0, TestType>;
   using Env             = typename extract_properties<TestT>::env;
@@ -43,7 +43,7 @@ C2H_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
   using pointer         = typename Buffer::pointer;
   using const_pointer   = typename Buffer::const_pointer;
 
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::get_unsynchronized")
@@ -54,7 +54,7 @@ C2H_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
 
     {
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.get_stream().sync();
+      buf.stream().sync();
       auto& res = buf.get_unsynchronized(2);
       CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
@@ -73,14 +73,14 @@ C2H_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
 
     { // Works without allocation
       Buffer buf{env};
-      buf.get_stream().sync();
+      buf.stream().sync();
       CUDAX_CHECK(buf.data() == nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.get_stream().sync();
+      buf.stream().sync();
       CUDAX_CHECK(buf.data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());

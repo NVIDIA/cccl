@@ -14,7 +14,7 @@
 #  error \
     "cccl internal error: <cuda/std/__cccl/epilogue.h> must be included before next <cuda/std/__cccl/prologue.h> is reincluded"
 #endif
-#define _CCCL_PROLOGUE_INCLUDED
+#define _CCCL_PROLOGUE_INCLUDED() 1
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/diagnostic.h>
@@ -247,10 +247,21 @@
 #  define _CCCL_POP_MACRO_interface
 #endif // defined(interface)
 
-// msvc warnings push
+_CCCL_DIAG_PUSH
 
-#if _CCCL_COMPILER(MSVC)
-_CCCL_MSVC_WARNINGS_PUSH
-#endif // _CCCL_COMPILER(MSVC)
+// disable some msvc warnings
+// https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
+// warning C4100: 'quack': unreferenced formal parameter
+// warning C4127: conditional expression is constant
+// warning C4180: qualifier applied to function type has no meaning; ignored
+// warning C4197: 'purr': top-level volatile in cast is ignored
+// warning C4324: 'roar': structure was padded due to alignment specifier
+// warning C4455: literal suffix identifiers that do not start with an underscore are reserved
+// warning C4503: 'hum': decorated name length exceeded, name was truncated
+// warning C4522: 'woof' : multiple assignment operators specified
+// warning C4668: 'meow' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
+// warning C4800: 'boo': forcing value to bool 'true' or 'false' (performance warning)
+// warning C4996: 'meow': was declared deprecated
+_CCCL_DIAG_SUPPRESS_MSVC(4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996)
 
 // NO include guards here (this file is included multiple times)

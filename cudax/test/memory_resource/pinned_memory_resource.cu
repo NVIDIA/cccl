@@ -64,7 +64,7 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
 {
   using pinned_resource = TestType;
   pinned_resource res{};
-  cudax::stream stream{};
+  cudax::stream stream{cudax::device_ref{0}};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);

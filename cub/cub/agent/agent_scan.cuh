@@ -113,9 +113,7 @@ struct AgentScanPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace scan
+namespace detail::scan
 {
 
 /**
@@ -245,79 +243,43 @@ struct AgentScan
   // Block scan utility methods
   //---------------------------------------------------------------------
 
-  /**
-   * Exclusive scan specialization (first tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    AccumT init_value,
-    ScanOpT scan_op,
-    AccumT& block_aggregate,
-    ::cuda::std::false_type /*is_inclusive*/)
-  {
-    BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
-    block_aggregate = scan_op(init_value, block_aggregate);
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    AccumT init_value,
-    ScanOpT scan_op,
-    AccumT& block_aggregate,
-    ::cuda::std::true_type /*has_init*/)
-  {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, init_value, scan_op, block_aggregate);
-    block_aggregate = scan_op(init_value, block_aggregate);
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT /*init_value*/,
-    ScanOpT scan_op,
-    AccumT& block_aggregate,
-    ::cuda::std::false_type /*has_init*/)
-
-  {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
-  }
-
-  /**
-   * Inclusive scan specialization (first tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT init_value,
-    ScanOpT scan_op,
-    AccumT& block_aggregate,
-    ::cuda::std::true_type /*is_inclusive*/)
-  {
-    ScanTileInclusive(items, init_value, scan_op, block_aggregate, bool_constant_v<HAS_INIT>);
-  }
-
-  /**
-   * Exclusive scan specialization (subsequent tiles)
-   */
-  template <typename PrefixCallback>
+  template <bool Inclusive = IS_INCLUSIVE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
-           ScanOpT scan_op,
-           PrefixCallback& prefix_op,
-           ::cuda::std::false_type /*is_inclusive*/)
+  ScanFirstTile(AccumT (&items)[ITEMS_PER_THREAD], InitValueT init_value, ScanOpT scan_op, AccumT& block_aggregate)
   {
-    BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, scan_op, prefix_op);
+    BlockScanT blockScan(temp_storage.scan_storage.scan);
+    if constexpr (Inclusive)
+    {
+      if constexpr (HAS_INIT)
+      {
+        blockScan.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        block_aggregate = scan_op(init_value, block_aggregate);
+      }
+      else
+      {
+        blockScan.InclusiveScan(items, items, scan_op, block_aggregate);
+      }
+    }
+    else
+    {
+      blockScan.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
+      block_aggregate = scan_op(init_value, block_aggregate);
+    }
   }
 
-  /**
-   * Inclusive scan specialization (subsequent tiles)
-   */
-  template <typename PrefixCallback>
+  template <typename PrefixCallback, bool Inclusive = IS_INCLUSIVE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
-           ScanOpT scan_op,
-           PrefixCallback& prefix_op,
-           ::cuda::std::true_type /*is_inclusive*/)
+  ScanSubsequentTile(AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op)
   {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, prefix_op);
+    BlockScanT blockScan(temp_storage.scan_storage.scan);
+    if constexpr (Inclusive)
+    {
+      blockScan.InclusiveScan(items, items, scan_op, prefix_op);
+    }
+    else
+    {
+      blockScan.ExclusiveScan(items, items, scan_op, prefix_op);
+    }
   }
 
   //---------------------------------------------------------------------
@@ -377,7 +339,7 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last element with the first element because collectives are
       // not suffix guarded.
@@ -395,7 +357,7 @@ struct AgentScan
     {
       // Scan first tile
       AccumT block_aggregate;
-      ScanTile(items, init_value, scan_op, block_aggregate, bool_constant_v<IS_INCLUSIVE>);
+      ScanFirstTile(items, init_value, scan_op, block_aggregate);
 
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
       {
@@ -406,13 +368,13 @@ struct AgentScan
     {
       // Scan non-first tile
       TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
-      ScanTile(items, scan_op, prefix_op, bool_constant_v<IS_INCLUSIVE>);
+      ScanSubsequentTile(items, scan_op, prefix_op);
     }
 
     __syncthreads();
 
     // Store items
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
     }
@@ -483,7 +445,7 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last element with the first element because collectives are
       // not suffix guarded.
@@ -497,21 +459,21 @@ struct AgentScan
     __syncthreads();
 
     // Block scan
-    if (IS_FIRST_TILE)
+    if constexpr (IS_FIRST_TILE)
     {
       AccumT block_aggregate;
-      ScanTile(items, init_value, scan_op, block_aggregate, bool_constant_v<IS_INCLUSIVE>);
+      ScanFirstTile(items, init_value, scan_op, block_aggregate);
       prefix_op.running_total = block_aggregate;
     }
     else
     {
-      ScanTile(items, scan_op, prefix_op, bool_constant_v<IS_INCLUSIVE>);
+      ScanSubsequentTile(items, scan_op, prefix_op);
     }
 
     __syncthreads();
 
     // Store items
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, valid_items);
     }
@@ -594,7 +556,6 @@ struct AgentScan
   }
 };
 
-} // namespace scan
-} // namespace detail
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

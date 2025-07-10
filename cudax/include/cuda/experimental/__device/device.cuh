@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,7 +35,7 @@
 
 namespace cuda::experimental
 {
-namespace detail
+namespace __detail
 {
 //! @brief A proxy object used to in-place construct a `device` object from an
 //! integer ID. Used in __detail/all_devices.cuh.
@@ -47,7 +47,7 @@ struct __emplace_device
 
   [[nodiscard]] constexpr const __emplace_device* operator->() const;
 };
-} // namespace detail
+} // namespace __detail
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -56,25 +56,25 @@ struct __emplace_device
 class device : public device_ref
 {
 public:
-  using attrs = detail::__device_attrs;
+  using attributes = __detail::__device_attrs;
 
   //! @brief For a given attribute, returns the type of the attribute value.
   //!
   //! @par Example
   //! @code
-  //! using threads_per_block_t = device::attr_result_t<device::attrs::max_threads_per_block>;
+  //! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
   //! static_assert(std::is_same_v<threads_per_block_t, int>);
   //! @endcode
   //!
-  //! @sa device::attrs
+  //! @sa device::attributes
   template <::cudaDeviceAttr _Attr>
-  using attr_result_t = typename detail::__dev_attr<_Attr>::type;
+  using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
-  device(detail::__emplace_device __ed)
+  device(__detail::__emplace_device __ed)
       : device(__ed.__id_)
   {}
 #  endif
@@ -86,18 +86,18 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& get_arch_traits() const noexcept
+  const arch_traits_t& arch_traits() const noexcept
   {
     return __traits;
   }
 
-  CUcontext get_primary_context() const
+  CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
-      __device      = detail::driver::deviceGet(__id_);
-      __primary_ctx = detail::driver::primaryCtxRetain(__device);
+      __device      = __detail::driver::deviceGet(__id_);
+      __primary_ctx = __detail::driver::primaryCtxRetain(__device);
     });
-    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::attr_result_t::primary_context failed to get context");
+    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
     return __primary_ctx;
   }
 
@@ -105,7 +105,7 @@ public:
   {
     if (__primary_ctx)
     {
-      detail::driver::primaryCtxRelease(__device);
+      __detail::driver::primaryCtxRelease(__device);
     }
   }
 
@@ -114,7 +114,7 @@ private:
   // properties here.
 
   friend class device_ref;
-  friend struct detail::__emplace_device;
+  friend struct __detail::__emplace_device;
 
   mutable CUcontext __primary_ctx = nullptr;
   mutable CUdevice __device{};
@@ -127,7 +127,7 @@ private:
 
   explicit device(int __id)
       : device_ref(__id)
-      , __traits(detail::__arch_traits_might_be_unknown(__id, attrs::compute_capability(__id)))
+      , __traits(__detail::__arch_traits_might_be_unknown(__id, attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
@@ -145,7 +145,7 @@ private:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-namespace detail
+namespace __detail
 {
 [[nodiscard]] inline __emplace_device::operator device() const
 {
@@ -156,7 +156,7 @@ namespace detail
 {
   return this;
 }
-} // namespace detail
+} // namespace __detail
 
 } // namespace cuda::experimental
 

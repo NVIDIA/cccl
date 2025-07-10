@@ -36,39 +36,39 @@ enum class chars_format
   general    = fixed | scientific,
 };
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator~(chars_format __v) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator~(chars_format __v) noexcept
 {
   return chars_format(~_CUDA_VSTD::to_underlying(__v));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator&(chars_format __lhs, chars_format __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator&(chars_format __lhs, chars_format __rhs) noexcept
 {
   return chars_format(_CUDA_VSTD::to_underlying(__lhs) & _CUDA_VSTD::to_underlying(__rhs));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator|(chars_format __lhs, chars_format __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator|(chars_format __lhs, chars_format __rhs) noexcept
 {
   return chars_format(_CUDA_VSTD::to_underlying(__lhs) | _CUDA_VSTD::to_underlying(__rhs));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator^(chars_format __lhs, chars_format __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator^(chars_format __lhs, chars_format __rhs) noexcept
 {
   return chars_format(_CUDA_VSTD::to_underlying(__lhs) ^ _CUDA_VSTD::to_underlying(__rhs));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator&=(chars_format& __lhs, chars_format __rhs) noexcept
+_CCCL_API constexpr chars_format& operator&=(chars_format& __lhs, chars_format __rhs) noexcept
 {
   __lhs = __lhs & __rhs;
   return __lhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator|=(chars_format& __lhs, chars_format __rhs) noexcept
+_CCCL_API constexpr chars_format& operator|=(chars_format& __lhs, chars_format __rhs) noexcept
 {
   __lhs = __lhs | __rhs;
   return __lhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator^=(chars_format& __lhs, chars_format __rhs) noexcept
+_CCCL_API constexpr chars_format& operator^=(chars_format& __lhs, chars_format __rhs) noexcept
 {
   __lhs = __lhs ^ __rhs;
   return __lhs;

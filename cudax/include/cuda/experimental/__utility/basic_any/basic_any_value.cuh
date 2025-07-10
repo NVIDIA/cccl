@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -121,7 +122,7 @@ public:
     __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
   }
 
-#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
   //! \brief Move constructs a `basic_any` object.
   //! \pre `_Interface` must extend `imovable<>`.
   //! \post `__other.has_value() == false` and `has_value()` is `true` if and
@@ -141,12 +142,12 @@ public:
   {
     __convert_from(__other);
   }
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
   basic_any(basic_any&& __other)      = default;
   basic_any(basic_any const& __other) = default;
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! \brief Converting constructor that move constructs from a compatible
   //! `basic_any` object.
@@ -200,7 +201,7 @@ public:
     reset();
   }
 
-#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
   //! \brief Move assigns a `basic_any` object.
   //! \pre `_Interface` must extend `imovable<>`.
   //! \post `__other.has_value() == false` and `has_value()` is `true` if and
@@ -220,12 +221,12 @@ public:
   {
     return __assign_from(__other);
   }
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
   auto operator=(basic_any&& __other) -> basic_any&      = default;
   auto operator=(basic_any const& __other) -> basic_any& = default;
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! \brief Converting move assignment operator from a compatible `basic_any`
   //! object.
@@ -413,7 +414,7 @@ private:
     }
     else
     {
-      ::new (__buffer_) __identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
+      ::new (__buffer_) _CUDA_VSTD::type_identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
     }
 
     __vptr_for<_Interface> __vptr = experimental::__get_vtable_ptr_for<_Interface, _Tp>();
@@ -440,7 +441,7 @@ private:
     {
       if (!__from.__in_situ())
       {
-        ::new (__buffer_) __identity_t<void*>(__from.__get_optr());
+        ::new (__buffer_) _CUDA_VSTD::type_identity_t<void*>(__from.__get_optr());
         __vptr_.__set(__to_vptr, false);
         __from.__release();
       }

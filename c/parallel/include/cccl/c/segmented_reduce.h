@@ -30,6 +30,7 @@ typedef struct cccl_device_segmented_reduce_build_result_t
   CUlibrary library;
   uint64_t accumulator_size;
   CUkernel segmented_reduce_kernel;
+  void* runtime_policy;
 } cccl_device_segmented_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_READ_ENV
-#define __CUDAX_ASYNC_DETAIL_READ_ENV
+#ifndef __CUDAX_EXECUTION_READ_ENV
+#define __CUDAX_EXECUTION_READ_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -25,10 +25,12 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
@@ -50,7 +52,7 @@ private:
 
     _Rcvr __rcvr_;
 
-    _CCCL_API explicit __opstate_t(_Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr) noexcept
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
@@ -66,19 +68,18 @@ private:
       {
         // This looks like a use after move, but `set_value` takes its
         // arguments by forwarding reference, so it's safe.
-        execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
+        execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
       }
       else
       {
-        _CUDAX_TRY( //
-          ({ //
-            execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
-          }),
-          _CUDAX_CATCH(...) //
-          ({ //
-            execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-          }) //
-        )
+        _CCCL_TRY
+        {
+          execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
+        }
+        _CCCL_CATCH_ALL
+        {
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        }
       }
     }
   };
@@ -102,7 +103,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Self, class _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     if constexpr (!_CUDA_VSTD::__is_callable_v<_Query, _Env>)
     {
@@ -111,27 +112,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (_CUDA_VSTD::is_void_v<__call_result_t<_Query, _Env>>)
+    else if constexpr (_CUDA_VSTD::is_void_v<_CUDA_VSTD::__call_result_t<_Query, _Env>>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY),
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (__nothrow_callable<_Query, _Env>)
-    {
-      return completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>{};
-    }
     else
     {
-      return completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{}
+           + __eptr_completion_if<!__nothrow_callable<_Query, _Env>>();
     }
 
     _CCCL_UNREACHABLE();
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
@@ -152,4 +150,4 @@ _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_READ_ENV

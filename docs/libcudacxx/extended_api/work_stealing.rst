@@ -9,8 +9,8 @@ Defined in header ``<cuda/work_stealing>`` if the CUDA compiler supports at leas
 
    namespace cuda {
 
-       template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
-       __device__ void for_each_canceled_block(UnaryFunction uf);
+    template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
+    __device__ void for_each_canceled_block(UnaryFunction uf);
 
    } // namespace cuda
 
@@ -33,7 +33,7 @@ For better performance, extract the shared thread-block prologue and epilogue ou
 **Mandates**:
 
    - ``ThreadBlockRank`` equals the rank of the thread block: ``1``, ``2``, or ``3`` for one-dimensional, two-dimensional, and three-dimensional thread blocks, respectively.
-   - ``is_invokable_r_v<UnaryFunction, void, dim3>`` is true.
+   - ``is_invocable_r_v<UnaryFunction, void, dim3>`` is true.
 
 **Preconditions**:
 

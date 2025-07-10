@@ -96,9 +96,9 @@ private:
   // available per block and both (1) the fallback block sort and (2) the fallback merge agent would not exceed the
   // available shared memory
   static constexpr auto max_default_size =
-    (::cuda::std::max)(block_sort_helper_t::default_size, merge_helper_t::default_size);
+    (::cuda::std::max) (block_sort_helper_t::default_size, merge_helper_t::default_size);
   static constexpr auto max_fallback_size =
-    (::cuda::std::max)(block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
+    (::cuda::std::max) (block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
   static constexpr bool uses_fallback_policy =
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 

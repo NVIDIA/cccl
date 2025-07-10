@@ -1,24 +1,6 @@
-/***********************************************************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use input source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
- *       following disclaimer.
- *     * Redistributions input binary form must reproduce the above copyright notice, this list of conditions and the
- *       following disclaimer input the documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the names of its contributors may be used to endorse or promote
- *       products derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- **********************************************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
@@ -177,7 +159,19 @@ void warp_reduce_multiple_items_launch(c2h::device_vector<T>& input, c2h::device
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
-using full_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t, custom_t, ulonglong4, uchar3, short2>;
+using full_type_list =
+  c2h::type_list<uint8_t,
+                 uint16_t,
+                 int32_t,
+                 int64_t,
+                 custom_t,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+                 uchar3,
+                 short2>;
 
 using builtin_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t>;
 
@@ -201,8 +195,8 @@ void compute_host_reference(
   int items_per_logical_warp = 0,
   int items_per_thread1      = 1)
 {
-  constexpr auto identity = operator_identity_v<T, predefined_op>;
-  items_per_logical_warp  = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
+  const auto identity    = identity_v<predefined_op, T>;
+  items_per_logical_warp = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
   for (unsigned i = 0; i < total_warps; ++i)
   {
     for (int j = 0; j < logical_warps; ++j)

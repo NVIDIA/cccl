@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Shape>
-_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+_CCCL_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::persisting __prop) noexcept
@@ -38,7 +38,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
      auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+     if (!::__isGlobal(__ptr1))
      {
        return;
      }
@@ -53,7 +53,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
 }
 
 template <typename _Shape>
-_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+_CCCL_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::normal __prop) noexcept
@@ -63,7 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
      auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+     if (!::__isGlobal(__ptr1))
      {
        return;
      }

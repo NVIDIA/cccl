@@ -72,6 +72,38 @@ vector_base<T, Alloc>::vector_base(size_type n)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
+vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+
+    if constexpr (!::cuda::std::is_trivially_constructible_v<T>)
+    {
+      m_storage.value_initialize_n(begin(), size());
+    }
+  }
+}
+
+template <typename T, typename Alloc>
+template <typename T2>
+vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
+                "The vector's element type must be trivially constructible to skip initialization.");
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+  }
+}
+
+template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
@@ -209,13 +241,6 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-template <typename IteratorOrIntegralType>
-void vector_base<T, Alloc>::init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type)
-{
-  fill_init(n, value);
-} // end vector_base::init_dispatch()
-
-template <typename T, typename Alloc>
 void vector_base<T, Alloc>::value_init(size_type n)
 {
   if (n > 0)
@@ -238,13 +263,6 @@ void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
     m_storage.uninitialized_fill_n(begin(), size(), x);
   } // end if
 } // end vector_base::fill_init()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::init_dispatch(InputIterator first, InputIterator last, false_type)
-{
-  range_init(first, last);
-} // end vector_base::init_dispatch()
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
@@ -274,11 +292,8 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
 {
-  // check the type of InputIterator: if it's an integral type,
-  // we need to interpret this call as (size_type, value_type)
-  using Integer = ::cuda::std::is_integral<InputIterator>;
-
-  init_dispatch(first, last, Integer());
+  static_assert(!::cuda::std::is_integral_v<InputIterator>); // TODO(bgruber): remove, just for testing
+  range_init(first, last);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -288,11 +303,8 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, cons
     : m_storage(alloc)
     , m_size(0)
 {
-  // check the type of InputIterator: if it's an integral type,
-  // we need to interpret this call as (size_type, value_type)
-  using Integer = ::cuda::std::is_integral<InputIterator>;
-
-  init_dispatch(first, last, Integer());
+  static_assert(!::cuda::std::is_integral_v<InputIterator>); // TODO(bgruber): remove, just for testing
+  range_init(first, last);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -309,6 +321,35 @@ void vector_base<T, Alloc>::resize(size_type new_size)
     append(new_size - size());
   } // end else
 } // end vector_base::resize()
+
+template <typename T, typename Alloc>
+void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
+{
+  if (new_size < size())
+  {
+    erase(::cuda::std::next(begin(), new_size), end());
+  }
+  else
+  {
+    append</* SkipInit = */ ::cuda::std::is_trivially_constructible_v<T>>(new_size - size());
+  }
+}
+
+template <typename T, typename Alloc>
+template <typename T2>
+void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
+{
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
+                "The vector's element type must be trivially constructible to skip initialization.");
+  if (new_size < size())
+  {
+    erase(::cuda::std::next(begin(), new_size), end());
+  }
+  else
+  {
+    append</* SkipInit = */ true>(new_size - size());
+  }
+}
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
@@ -593,11 +634,15 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
-  // we could have received assign(n, x), so disambiguate on the
-  // type of InputIterator
-  using integral = typename ::cuda::std::is_integral<InputIterator>;
-
-  assign_dispatch(first, last, integral());
+  // we could have received assign(n, x), so disambiguate on the type of InputIterator
+  if constexpr (::cuda::std::is_integral_v<InputIterator>)
+  {
+    fill_assign(first, last);
+  }
+  else
+  {
+    range_assign(first, last);
+  }
 } // end vector_base::assign()
 
 template <typename T, typename Alloc>
@@ -637,20 +682,6 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 
   insert_dispatch(position, first, last, integral());
 } // end vector_base::insert()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::assign_dispatch(InputIterator first, InputIterator last, false_type)
-{
-  range_assign(first, last);
-} // end vector_base::assign_dispatch()
-
-template <typename T, typename Alloc>
-template <typename Integral>
-void vector_base<T, Alloc>::assign_dispatch(Integral n, Integral x, true_type)
-{
-  fill_assign(n, x);
-} // end vector_base::assign_dispatch()
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
@@ -777,6 +808,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
 } // end vector_base::copy_insert()
 
 template <typename T, typename Alloc>
+template <bool SkipInit>
 void vector_base<T, Alloc>::append(size_type n)
 {
   if (n != 0)
@@ -785,8 +817,11 @@ void vector_base<T, Alloc>::append(size_type n)
     {
       // we've got room for all of them
 
-      // default construct new elements at the end of the vector
-      m_storage.value_initialize_n(end(), n);
+      if constexpr (!SkipInit)
+      {
+        // default construct new elements at the end of the vector
+        m_storage.value_initialize_n(end(), n);
+      }
 
       // extend the size
       m_size += n;
@@ -815,8 +850,12 @@ void vector_base<T, Alloc>::append(size_type n)
         // construct copy all elements into the newly allocated storage
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
-        // construct new elements to insert
-        new_storage.value_initialize_n(new_end, n);
+        if constexpr (!SkipInit)
+        {
+          // construct new elements to insert
+          new_storage.value_initialize_n(new_end, n);
+        }
+
         new_end += n;
       } // end try
       catch (...)

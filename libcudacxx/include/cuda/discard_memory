@@ -28,8 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-_LIBCUDACXX_HIDE_FROM_ABI void
-discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] size_t __nbytes) noexcept
+_CCCL_API inline void discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] size_t __nbytes) noexcept
 {
   // The discard PTX instruction is only available with PTX ISA 7.4 and later
 #if __cccl_ptx_isa >= 740ULL
@@ -37,7 +36,7 @@ discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] size_t __
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer passed to discard_memory");
-    if (!__isGlobal((void*) __ptr)) {
+    if (!::__isGlobal((void*) __ptr)) {
       return;
     }
     constexpr size_t __line_size = 128;

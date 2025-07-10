@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -138,8 +138,8 @@ _CCCL_CONCEPT extension_of = __extension_of<_Derived, _Base>;
 template <template <class...> class _Interface, class... _Bases, size_t Size, size_t Align>
 struct interface<_Interface, extends<_Bases...>, Size, Align>
 {
-  static constexpr size_t size  = (_CUDA_VSTD::max)({Size, _Bases::size...});
-  static constexpr size_t align = (_CUDA_VSTD::max)({Align, _Bases::align...});
+  static constexpr size_t size  = (_CUDA_VSTD::max) ({Size, _Bases::size...});
+  static constexpr size_t align = (_CUDA_VSTD::max) ({Align, _Bases::align...});
 
   template <class... _Super>
   using __rebind _CCCL_NODEBUG_ALIAS = _Interface<_Super...>;
@@ -293,7 +293,7 @@ struct __make_interface_fn
 {
   static_assert(_CUDA_VSTD::is_class_v<_Super>, "expected a class type");
   template <class... _Interfaces>
-  using __call _CCCL_NODEBUG_ALIAS = detail::__inherit<__rebind_interface<_Interfaces, _Super>...>;
+  using __call _CCCL_NODEBUG_ALIAS = __inherit<__rebind_interface<_Interfaces, _Super>...>;
 };
 
 // Given an interface `_I<>`, let `_Bs<>...` be the list of types consisting

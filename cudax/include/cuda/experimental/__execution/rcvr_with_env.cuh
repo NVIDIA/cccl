@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
-#define __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
+#ifndef __CUDAX_EXECUTION_RCVR_WITH_ENV
+#define __CUDAX_EXECUTION_RCVR_WITH_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -31,52 +31,57 @@ namespace cuda::experimental::execution
 template <class _Rcvr, class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 {
+  // If _Env has a value for the `get_scheduler` query, then we must ensure that we report
+  // the domain correctly. Under no circumstances should we forward the `get_domain` query
+  // to the receiver's environment. That environment may have a domain that does not
+  // conform to the scheduler in _Env.
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    template <class _Query>
-    _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const __env_t& __self) noexcept
+    // Prefer to query _Env
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
+      -> __query_result_t<_Env, _Query>
     {
-      if constexpr (__queryable_with<_Env, _Query>)
-      {
-        return (__self.__rcvr_->__env_);
-      }
-      else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
-      {
-        return execution::get_env(static_cast<const _Rcvr&>(*__self.__rcvr_));
-      }
+      return __rcvr_->__env_.query(_Query{});
     }
 
-    template <class _Query>
-    using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
-
+    // Fallback to querying the inner receiver's environment, but only for forwarding
+    // queries.
     _CCCL_EXEC_CHECK_DISABLE
-    template <class _Query>
-    _CCCL_TRIVIAL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
-      -> __query_result_t<__1st_env_t<_Query>, _Query>
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES((!__queryable_with<_Env, _Query>)
+                     _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Rcvr>, _Query>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Rcvr>, _Query>) -> __query_result_t<env_of_t<_Rcvr>, _Query>
     {
-      return __env_t::__get_1st<_Query>(*this).query(_Query{});
+      // If _Env has a value for the `get_scheduler` query, then we should not be
+      // forwarding a get_domain query to the parent receiver's environment.
+      static_assert(!_CUDA_VSTD::is_same_v<_Query, get_domain_t> || !__queryable_with<_Env, get_scheduler_t>,
+                    "_Env specifies a scheduler but not a domain.");
+      return execution::get_env(__rcvr_->__base()).query(_Query{});
     }
 
     __rcvr_with_env_t const* __rcvr_;
   };
 
-  _CCCL_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
+  [[nodiscard]] _CCCL_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
   {
     return static_cast<_Rcvr&&>(*this);
   }
 
-  _CCCL_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
+  [[nodiscard]] _CCCL_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
   {
     return *this;
   }
 
-  _CCCL_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
+  [[nodiscard]] _CCCL_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
   {
     return *this;
   }
 
-  _CCCL_TRIVIAL_API auto get_env() const noexcept -> __env_t
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __env_t
   {
     return __env_t{this};
   }
@@ -85,10 +90,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 };
 
 template <class _Rcvr, class _Env>
-__rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
+_CCCL_HOST_DEVICE __rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
 
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_RCVR_WITH_ENV

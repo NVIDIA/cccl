@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,6 +24,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__device/device.cuh>
 
@@ -33,7 +34,7 @@
 
 namespace cuda::experimental
 {
-namespace detail
+namespace __detail
 {
 //! @brief A random-access range of all available CUDA devices
 class all_devices
@@ -53,7 +54,7 @@ public:
 
   [[nodiscard]] iterator end() const noexcept;
 
-  operator ::std::vector<device_ref>() const;
+  operator ::cuda::std::span<const device_ref>() const;
 
 private:
   struct __initializer_iterator;
@@ -143,9 +144,10 @@ struct all_devices::__initializer_iterator
   return __devices().end();
 }
 
-inline all_devices::operator ::std::vector<device_ref>() const
+inline all_devices::operator ::cuda::std::span<const device_ref>() const
 {
-  return ::std::vector<device_ref>(begin(), end());
+  static const ::std::vector<device_ref> __refs(begin(), end());
+  return ::cuda::std::span<const device_ref>(__refs);
 }
 
 inline const ::std::vector<device>& all_devices::__devices()
@@ -157,7 +159,7 @@ inline const ::std::vector<device>& all_devices::__devices()
   }();
   return __devices;
 }
-} // namespace detail
+} // namespace __detail
 
 //! @brief A range of all available CUDA devices
 //!
@@ -196,14 +198,14 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! @sa
 //! * device
 //! * device_ref
-inline constexpr detail::all_devices devices{};
+inline constexpr __detail::all_devices devices{};
 
-inline const arch_traits_t& device_ref::get_arch_traits() const
+inline const arch_traits_t& device_ref::arch_traits() const
 {
-  return devices[get()].get_arch_traits();
+  return devices[get()].arch_traits();
 }
 
-[[nodiscard]] inline ::std::vector<device_ref> device_ref::get_peers() const
+[[nodiscard]] inline ::std::vector<device_ref> device_ref::peer_devices() const
 {
   ::std::vector<device_ref> __result;
   __result.reserve(devices.size());

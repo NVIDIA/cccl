@@ -38,7 +38,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_overaligned_for_new(size_t __align) noexcept
+_CCCL_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
 {
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
   return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
@@ -48,7 +48,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_overaligned_for_new(size_t __align
 }
 
 template <class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI void* __cccl_operator_new(_Args... __args)
+_CCCL_API inline void* __cccl_operator_new(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
 #if defined(_CCCL_BUILTIN_OPERATOR_NEW)
@@ -59,7 +59,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* __cccl_operator_new(_Args... __args)
 }
 
 template <class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_operator_delete(_Args... __args)
+_CCCL_API inline void __cccl_operator_delete(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
 #if defined(_CCCL_BUILTIN_OPERATOR_DELETE)
@@ -73,20 +73,20 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_operator_delete(_Args... __args)
 using ::std::align_val_t;
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
-_LIBCUDACXX_HIDE_FROM_ABI void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __align)
+_CCCL_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (__is_overaligned_for_new(__align))
+  if (_CUDA_VSTD::__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return __cccl_operator_new(__size, __align_val);
+    return _CUDA_VSTD::__cccl_operator_new(__size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  return __cccl_operator_new(__size);
+  return _CUDA_VSTD::__cccl_operator_new(__size);
 }
 
 template <class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] size_t __size, _Args... __args)
+_CCCL_API inline void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] size_t __size, _Args... __args)
 {
 #if _LIBCUDACXX_HAS_SIZED_DEALLOCATION()
   return _CUDA_VSTD::__cccl_operator_delete(__ptr, __size, __args...);
@@ -95,28 +95,28 @@ _LIBCUDACXX_HIDE_FROM_ABI void __do_deallocate_handle_size(void* __ptr, [[maybe_
 #endif // !_LIBCUDACXX_HAS_SIZED_DEALLOCATION()
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)
+_CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (__is_overaligned_for_new(__align))
+  if (_CUDA_VSTD::__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return __do_deallocate_handle_size(__ptr, __size, __align_val);
+    return _CUDA_VSTD::__do_deallocate_handle_size(__ptr, __size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  return __do_deallocate_handle_size(__ptr, __size);
+  return _CUDA_VSTD::__do_deallocate_handle_size(__ptr, __size);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] size_t __align)
+_CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (__is_overaligned_for_new(__align))
+  if (_CUDA_VSTD::__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return __cccl_operator_delete(__ptr, __align_val);
+    return _CUDA_VSTD::__cccl_operator_delete(__ptr, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  return __cccl_operator_delete(__ptr);
+  return _CUDA_VSTD::__cccl_operator_delete(__ptr);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

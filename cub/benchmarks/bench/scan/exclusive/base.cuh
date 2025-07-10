@@ -25,6 +25,8 @@
  *
  ******************************************************************************/
 
+#pragma once
+
 #include <cub/device/device_scan.cuh>
 
 #include <cuda/std/__functional/invoke.h>
@@ -96,9 +98,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, policy_t>;
+  using dispatch_t = cub::
+    DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No, policy_t>;
 #else
-  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t>;
+  using dispatch_t =
+    cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No>;
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));

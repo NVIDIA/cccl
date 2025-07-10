@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,7 +26,7 @@ namespace cuda::experimental
 template <typename Dimensions, typename... Options>
 struct kernel_config;
 
-namespace detail
+namespace __detail
 {
 struct launch_option
 {
@@ -55,7 +55,7 @@ enum class launch_option_kind
 struct option_not_found
 {};
 
-template <detail::launch_option_kind Kind>
+template <__detail::launch_option_kind Kind>
 struct find_option_in_tuple_impl
 {
   template <typename Option, typename... Options>
@@ -77,7 +77,7 @@ struct find_option_in_tuple_impl
   }
 };
 
-template <detail::launch_option_kind Kind, typename... Options>
+template <__detail::launch_option_kind Kind, typename... Options>
 _CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
 {
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
@@ -93,7 +93,7 @@ template <typename Option, typename... Rest>
 inline constexpr bool no_duplicate_options<Option, Rest...> =
   !__option_present_in_list<Option, Rest...> && no_duplicate_options<Rest...>;
 
-} // namespace detail
+} // namespace __detail
 
 /**
  * @brief Launch option enabling cooperative launch
@@ -124,16 +124,16 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  * }
  * @endcode
  */
-struct cooperative_launch : public detail::launch_option
+struct cooperative_launch : public __detail::launch_option
 {
-  static constexpr bool needs_attribute_space      = true;
-  static constexpr bool is_relevant_on_device      = true;
-  static constexpr detail::launch_option_kind kind = detail::launch_option_kind::cooperative_launch;
+  static constexpr bool needs_attribute_space        = true;
+  static constexpr bool is_relevant_on_device        = true;
+  static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::cooperative_launch;
 
   constexpr cooperative_launch() = default;
 
   template <typename Dimensions, typename... Options>
-  friend cudaError_t detail::apply_kernel_config(
+  friend cudaError_t __detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
@@ -158,7 +158,7 @@ private:
  *
  * When launch configuration contains this option, that configuration can be then
  * passed to dynamic_smem_span or dynamic_smem_ref function to get a span/reference
- * to that shared memory allocation that is approprietly typed.
+ * to that shared memory allocation that is appropriately typed.
  * It is also possible to obtain that memory through the original
  * extern __shared__ variable[] declaration.
  *
@@ -199,12 +199,12 @@ private:
  *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
  */
 template <typename Content, std::size_t Extent = 1, bool NonPortableSize = false>
-struct dynamic_shared_memory_option : public detail::launch_option
+struct dynamic_shared_memory_option : public __detail::launch_option
 {
-  using content_type                               = Content;
-  static constexpr std::size_t extent              = Extent;
-  static constexpr bool is_relevant_on_device      = true;
-  static constexpr detail::launch_option_kind kind = detail::launch_option_kind::dynamic_shared_memory;
+  using content_type                                 = Content;
+  static constexpr std::size_t extent                = Extent;
+  static constexpr bool is_relevant_on_device        = true;
+  static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
   const std::size_t size;
 
   constexpr dynamic_shared_memory_option(std::size_t set_size) noexcept
@@ -212,7 +212,7 @@ struct dynamic_shared_memory_option : public detail::launch_option
   {}
 
   template <typename Dimensions, typename... Options>
-  friend cudaError_t detail::apply_kernel_config(
+  friend cudaError_t __detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
@@ -288,11 +288,11 @@ dynamic_shared_memory(std::size_t count) noexcept
  * More about stream priorities and valid values can be found in the CUDA programming guide
  * `here <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
  */
-struct launch_priority : public detail::launch_option
+struct launch_priority : public __detail::launch_option
 {
-  static constexpr bool needs_attribute_space      = true;
-  static constexpr bool is_relevant_on_dpevice     = false;
-  static constexpr detail::launch_option_kind kind = detail::launch_option_kind::launch_priority;
+  static constexpr bool needs_attribute_space        = true;
+  static constexpr bool is_relevant_on_dpevice       = false;
+  static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::launch_priority;
   int priority;
 
   launch_priority(int p) noexcept
@@ -300,7 +300,7 @@ struct launch_priority : public detail::launch_option
   {}
 
   template <typename Dimensions, typename... Options>
-  friend cudaError_t detail::apply_kernel_config(
+  friend cudaError_t __detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
@@ -336,7 +336,7 @@ struct __filter_options
   [[nodiscard]] auto operator()(const _Options&... __options)
   {
     return ::cuda::std::tuple_cat(
-      __option_or_empty<!detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
+      __option_or_empty<!__detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
   }
 };
 
@@ -371,8 +371,8 @@ struct kernel_config
   Dimensions dims;
   ::cuda::std::tuple<Options...> options;
 
-  static_assert(::cuda::std::_And<::cuda::std::is_base_of<detail::launch_option, Options>...>::value);
-  static_assert(detail::no_duplicate_options<Options...>);
+  static_assert(::cuda::std::_And<::cuda::std::is_base_of<__detail::launch_option, Options>...>::value);
+  static_assert(__detail::no_duplicate_options<Options...>);
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts)
       : dims(dims)
@@ -477,7 +477,7 @@ auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tupl
 template <typename Dimensions,
           typename... Options,
           typename Option,
-          typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<detail::launch_option, Option>>>
+          typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, Option>>>
 [[nodiscard]] constexpr auto
 operator&(const kernel_config<Dimensions, Options...>& config, const Option& option) noexcept
 {
@@ -486,7 +486,7 @@ operator&(const kernel_config<Dimensions, Options...>& config, const Option& opt
 
 template <typename... Levels,
           typename Option,
-          typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<detail::launch_option, Option>>>
+          typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, Option>>>
 [[nodiscard]] constexpr auto operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
 {
   return kernel_config(dims, option);
@@ -554,9 +554,9 @@ template <typename... Prev, typename Arg, typename... Rest>
 [[nodiscard]] constexpr auto
 __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg, const Rest&... rest)
 {
-  if constexpr (::cuda::std::is_base_of_v<detail::launch_option, Arg>)
+  if constexpr (::cuda::std::is_base_of_v<__detail::launch_option, Arg>)
   {
-    static_assert((::cuda::std::is_base_of_v<detail::launch_option, Rest> && ...),
+    static_assert((::cuda::std::is_base_of_v<__detail::launch_option, Rest> && ...),
                   "Hierarchy levels and launch options can't be mixed");
     if constexpr (sizeof...(Prev) == 0)
     {
@@ -579,7 +579,7 @@ template <typename... Args>
   return __process_config_args(::cuda::std::make_tuple(), args...);
 }
 
-namespace detail
+namespace __detail
 {
 
 template <typename Dimensions, typename... Options>
@@ -615,7 +615,7 @@ template <typename Dimensions, typename... Options>
 
   return &dynamic_smem[0];
 }
-} // namespace detail
+} // namespace __detail
 
 // Might consider cutting this one due to being a potential trap with missing & in auto& var = dynamic_smem_ref(...);
 /**
@@ -628,13 +628,13 @@ template <typename Dimensions, typename... Options>
 template <typename Dimensions, typename... Options>
 _CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  auto& option      = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  auto& option = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(config.options);
   using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
-  static_assert(!::cuda::std::is_same_v<option_type, detail::option_not_found>,
+  static_assert(!::cuda::std::is_same_v<option_type, __detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
   static_assert(option_type::extent == 1, "Usable only on dynamic shared memory with a single element");
 
-  return *reinterpret_cast<typename option_type::content_type*>(detail::get_smem_ptr());
+  return *reinterpret_cast<typename option_type::content_type*>(__detail::get_smem_ptr());
 }
 
 /**
@@ -648,13 +648,13 @@ _CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>&
 template <typename Dimensions, typename... Options>
 _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  auto& option      = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  auto& option = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(config.options);
   using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
-  static_assert(!::cuda::std::is_same_v<option_type, detail::option_not_found>,
+  static_assert(!::cuda::std::is_same_v<option_type, __detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
 
   return cuda::std::span<typename option_type::content_type, option_type::extent>(
-    reinterpret_cast<typename option_type::content_type*>(detail::get_smem_ptr()), option.size);
+    reinterpret_cast<typename option_type::content_type*>(__detail::get_smem_ptr()), option.size);
 }
 
 } // namespace cuda::experimental

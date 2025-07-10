@@ -121,7 +121,7 @@ def main():
 
     print("::group::Job times")
     print(f"{'Job':^10} {'Command':^10} {'Overhead':^10} Name")
-    print(f"{'-'*10} {'-'*10} {'-'*10} {'-'*10}")
+    print(f"{'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
     for id, stats in result.items():
         job_seconds = stats["job_seconds"]
         command_seconds = stats["command_seconds"]

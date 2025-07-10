@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -85,7 +85,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
   }
   else
   {
-    ::new (__dst) __identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
+    ::new (__dst) _CUDA_VSTD::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
     return false;
   }
 }
@@ -101,7 +101,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   }
   else
   {
-    ::new (__dst) __identity_t<_Tp*>(new _Tp(__src));
+    ::new (__dst) _CUDA_VSTD::type_identity_t<_Tp*>(new _Tp(__src));
     return false;
   }
 }
