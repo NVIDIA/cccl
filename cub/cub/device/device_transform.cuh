@@ -78,9 +78,11 @@ struct DeviceTransform
       offset_t,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,
+      detail::transform::always_true_predicate,
       TransformOp>::dispatch(::cuda::std::move(inputs),
                              ::cuda::std::move(output),
                              num_items,
+                             detail::transform::always_true_predicate{},
                              ::cuda::std::move(transform_op),
                              stream);
   }
@@ -222,9 +224,11 @@ struct DeviceTransform
       offset_t,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,
+      detail::transform::always_true_predicate,
       TransformOp>::dispatch(::cuda::std::move(inputs),
                              ::cuda::std::move(output),
                              num_items,
+                             detail::transform::always_true_predicate{},
                              ::cuda::std::move(transform_op),
                              stream);
   }
