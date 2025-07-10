@@ -220,7 +220,7 @@ public:
     return !(__lhs == __rhs);
   }
 
-private:
+protected:
   value_type __library_;
 };
 

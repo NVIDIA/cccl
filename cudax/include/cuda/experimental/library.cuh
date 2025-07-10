@@ -12,6 +12,7 @@
 #define _CUDAX_LIBRARY
 
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
+#include <cuda/experimental/__library/library.cuh>
 #include <cuda/experimental/__library/library_ref.cuh>
 
 #endif // _CUDAX_LIBRARY

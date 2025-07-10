@@ -298,6 +298,12 @@ inline cudaError_t libraryGetManaged(CUdeviceptr& dptr, _CUDA_VSTD::size_t& nbyt
   return static_cast<cudaError_t>(driver_fn(&dptr, &nbytes, lib, name));
 }
 
+inline cudaError_t libraryUnload(CUlibrary lib)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuLibraryUnload);
+  return static_cast<cudaError_t>(driver_fn(lib));
+}
+
 #if _CCCL_CTK_AT_LEAST(12, 3)
 inline const char* kernelGetName(CUkernel kernel)
 {
