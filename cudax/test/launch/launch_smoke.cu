@@ -134,14 +134,14 @@ struct launch_transform_to_int_convertible
     }
 
     // This is the value that will be passed to the kernel
-    int relocatable_value() const
+    int transformed_argument() const
     {
       return value_;
     }
   };
 
   [[nodiscard]] friend int_convertible
-  cccl_device_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
+  transform_device_argument(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);
   }

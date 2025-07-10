@@ -101,7 +101,7 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    RelocatableValue relocatable_value()
+    RelocatableValue transformed_argument()
     {
       return *this;
     };
@@ -118,7 +118,7 @@ struct weird_buffer
     }
   };
 
-  [[nodiscard]] friend transform_result cccl_device_transform(cuda::stream_ref, const weird_buffer& self) noexcept
+  [[nodiscard]] friend transform_result transform_device_argument(cuda::stream_ref, const weird_buffer& self) noexcept
   {
     return {self.data, self.size};
   }
