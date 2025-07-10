@@ -189,10 +189,9 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size)
-    -> cuda_expected<
-      ::cuda::std::
-        tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
+  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
+    ::cuda::std::
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
   {
     // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
     using policy_t              = typename ActivePolicy::algo_policy;
@@ -377,9 +376,10 @@ struct dispatch_t<StableAddress,
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
-      const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
-        Offset{items_per_thread}, num_items / (config->sm_count * block_threads * config->max_occupancy)));
-      const int items_per_thread_clamped       = ::cuda::std::clamp(
+      const int items_per_thread_evenly_spread = static_cast<int>(
+        (::cuda::std::min) (Offset{items_per_thread},
+                            num_items / (config->sm_count * block_threads * config->max_occupancy)));
+      const int items_per_thread_clamped = ::cuda::std::clamp(
         items_per_thread_evenly_spread, +wrapped_policy.MinItemsPerThread(), +wrapped_policy.MaxItemsPerThread());
       return items_per_thread_clamped;
     }();

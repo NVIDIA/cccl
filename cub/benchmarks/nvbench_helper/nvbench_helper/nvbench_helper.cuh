@@ -5,11 +5,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/std/cmath>
 #include <cuda/std/complex>
 #include <cuda/std/limits>
 #include <cuda/std/span>
-#include <cuda/std/cmath>
-#include <cuda/std/limits>
 
 #include <map>
 #include <stdexcept>
@@ -516,7 +515,6 @@ struct less_then_t
     return val < m_val;
   }
 };
-
 
 namespace
 {
