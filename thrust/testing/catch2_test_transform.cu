@@ -10,15 +10,6 @@
 #include "unittest/random.h"
 #include "unittest/special_types.h"
 
-// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
 {
   using Vector = TestType;
@@ -70,7 +61,6 @@ TEST_CASE("UnaryDispatchImplicit", "[transform]", )
   CHECK(13 == vec.front());
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnaryNoStencilSimple", "[transform_if]", vector_list)
 {
   using Vector = TestType;
@@ -128,7 +118,6 @@ TEST_CASE("UnaryNoStencilDispatchImplicit", "[transform_if]")
   CHECK(13 == vec.front());
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform_if]", vector_list)
 {
   using Vector = TestType;
@@ -191,7 +180,6 @@ TEST_CASE("UnaryDispatchImplicit", "[transform_if]")
   CHECK(13 == vec.front());
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
 {
   using Vector = TestType;
@@ -252,7 +240,6 @@ TEST_CASE("BinaryDispatchImplicit", "[transform]")
   CHECK(13 == vec.front());
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform_if]", vector_list)
 {
   using Vector = TestType;
@@ -347,7 +334,6 @@ TEST_CASE("BinaryDispatchImplicit", "[transform_if]")
   CHECK(13 == vec.front());
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("Unary", "[transform]", variable_list)
 {
   using T = TestType;
@@ -366,7 +352,6 @@ TEMPLATE_LIST_TEST_CASE("Unary", "[transform]", variable_list)
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform]", variable_list)
 {
   using T = TestType;
@@ -397,7 +382,6 @@ struct repeat2
   }
 };
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_list)
 {
   using T = TestType;
@@ -443,7 +427,6 @@ struct is_positive
   }
 };
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnaryNoStencil", "[transform_if]", variable_list)
 {
   using T = TestType;
@@ -462,7 +445,6 @@ TEMPLATE_LIST_TEST_CASE("UnaryNoStencil", "[transform_if]", variable_list)
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("Unary", "[transform_if]", variable_list)
 {
   using T = TestType;
@@ -486,7 +468,6 @@ TEMPLATE_LIST_TEST_CASE("Unary", "[transform_if]", variable_list)
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform_if]", variable_list)
 {
   using T = TestType;
@@ -521,7 +502,6 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform_if]", variable_lis
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("Binary", "[transform]", variable_list)
 {
   using T = TestType;
@@ -549,7 +529,6 @@ TEMPLATE_LIST_TEST_CASE("Binary", "[transform]", variable_list)
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform]", variable_list)
 {
   using T = TestType;
@@ -572,7 +551,6 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform]", variable_list)
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("Binary", "[transform_if]", variable_list)
 {
   using T = TestType;
@@ -633,7 +611,6 @@ TEMPLATE_LIST_TEST_CASE("Binary", "[transform_if]", variable_list)
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_list)
 {
   using T = TestType;
@@ -672,7 +649,6 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_li
   }
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("UnaryCountingIterator", "[transform]", generic_list)
 {
   using T        = TestType;
@@ -692,7 +668,6 @@ TEMPLATE_LIST_TEST_CASE("UnaryCountingIterator", "[transform]", generic_list)
   CHECK(h_result == d_result);
 }
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("BinaryCountingIterator", "[transform]", generic_list)
 {
   using T        = TestType;
@@ -723,7 +698,6 @@ struct plus_mod3
   }
 };
 
-// THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 TEMPLATE_LIST_TEST_CASE("WithIndirection", "[transform]", integral_vector_list)
 {
   // add numbers modulo 3 with external lookup table
