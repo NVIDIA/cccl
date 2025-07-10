@@ -186,7 +186,7 @@ OutputIt THRUST_FUNCTION cub_transform_many(
   }
 
   constexpr auto stable_address =
-    (::cuda::proclaims_copyable_arguments<TransformOp>::value)
+    (::cuda::proclaims_copyable_arguments<Predicate>::value && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
       ? cub::detail::transform::requires_stable_address::no
       : cub::detail::transform::requires_stable_address::yes;
 
