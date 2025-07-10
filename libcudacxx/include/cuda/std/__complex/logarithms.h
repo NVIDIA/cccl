@@ -97,7 +97,6 @@ template <class _Tp>
   constexpr _UINT_T __exp_mask  = __fp_exp_mask_of_v<_Tp>;
 
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
-  constexpr int32_t __exp_nbits  = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
 
   // Cut off the hi and low bit of __exp_mask.
