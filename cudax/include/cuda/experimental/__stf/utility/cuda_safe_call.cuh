@@ -418,7 +418,7 @@ auto cuda_try(Ps&&... ps)
   else if constexpr (::std::is_invocable_v<F, reserved::first_param<fun>, Ps...>)
   {
     static_assert(sizeof...(Ps) == 0 || !::std::is_invocable_v<F, Ps..., nullptr_t>,
-      "Ambiguous call to cuda_try: output could be either the last or the first parameter.");
+                  "Ambiguous call to cuda_try: output could be either the last or the first parameter.");
     ::std::remove_pointer_t<reserved::first_param<fun>> result{};
     cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
     return result;

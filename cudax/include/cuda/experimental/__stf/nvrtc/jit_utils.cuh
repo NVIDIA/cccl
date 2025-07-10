@@ -577,6 +577,7 @@ inline static const ::std::vector<::std::string>& get_nvrtc_flags()
     result.push_back("-I" + (cccl_root_dir / "libcudacxx/include").string());
     result.push_back("-I" + (cccl_root_dir / "cudax/include").string());
     result.push_back("-default-device");
+    result.push_back("-std=c++20");
 
     ::std::string s =
       run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
@@ -681,3 +682,7 @@ private:
 };
 
 } // end namespace cuda::experimental::stf
+
+#define JITABLE(name, ...) \
+  __VA_ARGS__ \
+  const char constexpr name[] = #__VA_ARGS__;

@@ -31,8 +31,22 @@ double Y0(int i)
   return cos((double) i);
 }
 
-const char* header_template = R"(
-)";
+JITABLE(header_template,
+template <typename Sx, typename Sy, auto alpha, typename T0, typename T1>
+__device__ void axpy(T0 dynX, T1 dynY)
+{
+  Sx X{dynX};
+  Sy Y{dynY};
+
+  int tidx = blockIdx.x * blockDim.x + threadIdx.x;
+  int dimx = blockDim.x * gridDim.x;
+
+  for (size_t i = tidx; i < X.extent(0); i+= dimx)
+  {
+     Y(i) += alpha * X(i);
+  }
+}
+)
 
 const char* axpy_kernel_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
@@ -40,16 +54,7 @@ const char* axpy_kernel_template = R"(
 extern "C"
 __global__ void %KERNEL_NAME%(%s dynX, %s dynY)
 {
-  %s X{dynX};
-  %s Y{dynY};
-
-  int tidx = blockIdx.x * blockDim.x + threadIdx.x;
-  int dimx = blockDim.x * gridDim.x;
-
-  for (size_t i = tidx; i < X.extent(0); i+= dimx)
-  {
-     Y(i) += %a * X(i);
-  }
+  axpy<%s, %s, %a>(dynX, dynY);
 }
 
 )";
