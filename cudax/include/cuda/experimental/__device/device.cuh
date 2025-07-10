@@ -43,22 +43,16 @@ struct __emplace_device
 {
   int __id_;
 
-  [[nodiscard]] operator device() const;
+  [[nodiscard]] operator physical_device() const;
 
   [[nodiscard]] constexpr const __emplace_device* operator->() const;
 };
 } // namespace __detail
 
-// This is the element type of the the global `devices` array. In the future, we
-// can cache device properties here.
-//
-//! @brief An immovable "owning" representation of a CUDA device.
-class device : public device_ref
-{
-public:
+namespace device {
   using attributes = __detail::__device_attrs;
 
-  //! @brief For a given attribute, returns the type of the attribute value.
+  //! @brief For a given attribute, type of the attribute value.
   //!
   //! @par Example
   //! @code
@@ -69,6 +63,15 @@ public:
   //! @sa device::attributes
   template <::cudaDeviceAttr _Attr>
   using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
+}
+
+// This is the element type of the the global `devices` array. In the future, we
+// can cache device properties here.
+//
+//! @brief An immovable "owning" representation of a CUDA device.
+class physical_device : public device_ref
+{
+public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
@@ -101,7 +104,7 @@ public:
     return __primary_ctx;
   }
 
-  ~device()
+  ~physical_device()
   {
     if (__primary_ctx)
     {
@@ -125,31 +128,31 @@ private:
   //  We should have some of the attributes just return from the arch traits
   arch_traits_t __traits;
 
-  explicit device(int __id)
+  explicit physical_device(int __id)
       : device_ref(__id)
-      , __traits(__detail::__arch_traits_might_be_unknown(__id, attributes::compute_capability(__id)))
+      , __traits(__detail::__arch_traits_might_be_unknown(__id, device::attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
-  device(device&&)                 = delete;
-  device(const device&)            = delete;
-  device& operator=(device&&)      = delete;
-  device& operator=(const device&) = delete;
+  physical_device(physical_device&&)                 = delete;
+  physical_device(const physical_device&)            = delete;
+  physical_device& operator=(physical_device&&)      = delete;
+  physical_device& operator=(const physical_device&) = delete;
 
-  friend bool operator==(const device& __lhs, int __rhs) = delete;
-  friend bool operator==(int __lhs, const device& __rhs) = delete;
+  friend bool operator==(const physical_device& __lhs, int __rhs) = delete;
+  friend bool operator==(int __lhs, const physical_device& __rhs) = delete;
 
 #if _CCCL_STD_VER <= 2017
-  friend bool operator!=(const device& __lhs, int __rhs) = delete;
-  friend bool operator!=(int __lhs, const device& __rhs) = delete;
+  friend bool operator!=(const physical_device& __lhs, int __rhs) = delete;
+  friend bool operator!=(int __lhs, const physical_device& __rhs) = delete;
 #endif // _CCCL_STD_VER <= 2017
 };
 
 namespace __detail
 {
-[[nodiscard]] inline __emplace_device::operator device() const
+[[nodiscard]] inline __emplace_device::operator physical_device() const
 {
-  return device(__id_);
+  return physical_device(__id_);
 }
 
 [[nodiscard]] inline constexpr const __emplace_device* __emplace_device::operator->() const
