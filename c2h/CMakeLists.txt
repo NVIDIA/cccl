@@ -20,6 +20,7 @@ option(C2H_ENABLE_CURAND "Use CUDA CURAND library in c2h." ${curand_default})
 
 add_library(cccl.c2h STATIC
   generators.cu
+  generators_vector.cu
 )
 target_include_directories(cccl.c2h PUBLIC "${C2H_SOURCE_DIR}/include")
 target_link_libraries(cccl.c2h PUBLIC

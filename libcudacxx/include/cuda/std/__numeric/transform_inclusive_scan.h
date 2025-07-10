@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
+_CCCL_API constexpr _OutputIterator transform_inclusive_scan(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _UnaryOp __u, _Tp __init)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -42,7 +42,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOp, class _UnaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
+_CCCL_API constexpr _OutputIterator transform_inclusive_scan(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _UnaryOp __u)
 {
   if (__first != __last)

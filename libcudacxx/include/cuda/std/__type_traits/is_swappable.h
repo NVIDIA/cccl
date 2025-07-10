@@ -55,8 +55,8 @@ struct __hidden_friend_swap_found
 {};
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
-_LIBCUDACXX_HIDE_FROM_ABI auto __swap(...) -> __hidden_friend_swap_found;
+_CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_CCCL_API inline auto __swap(...) -> __hidden_friend_swap_found;
 template <class _Tp>
 struct __has_hidden_friend_swap
     : is_same<decltype(__detect_hidden_friend_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
@@ -73,8 +73,8 @@ void swap(_Tp&, _Tp&) = delete;
 struct __no_adl_swap_found
 {};
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
-_LIBCUDACXX_HIDE_FROM_ABI auto __swap(...) -> __no_adl_swap_found;
+_CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_CCCL_API inline auto __swap(...) -> __no_adl_swap_found;
 template <class _Tp>
 struct __has_no_adl_swap
     : is_same<decltype(__detect_adl_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
@@ -107,12 +107,11 @@ using __swap_result_t _CCCL_NODEBUG_ALIAS =
 // overload resolution (which is ok since std::swap is only considered when explicitly called, or found by ADL for types
 // from std::)
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
+_CCCL_API constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value
-                                                && __is_swappable<_Tp>::value>
+_CCCL_API constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
   swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
 namespace __detail
@@ -123,10 +122,9 @@ template <class _Tp, class _Up = _Tp, bool _NotVoid = !_CCCL_TRAIT(is_void, _Tp)
 struct __swappable_with
 {
   template <class _LHS, class _RHS>
-  _LIBCUDACXX_HIDE_FROM_ABI static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>()))
-  __test_swap(int);
+  _CCCL_API inline static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>())) __test_swap(int);
   template <class, class>
-  _LIBCUDACXX_HIDE_FROM_ABI static __nat __test_swap(long);
+  _CCCL_API inline static __nat __test_swap(long);
 
   // Extra parens are needed for the C++03 definition of decltype.
   using __swap1 = decltype((__test_swap<_Tp, _Up>(0)));
@@ -161,8 +159,8 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
-    : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_swappable_with : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
@@ -173,8 +171,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
-    : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_swappable_with : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>

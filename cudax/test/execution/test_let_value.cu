@@ -394,7 +394,7 @@ C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_valu
 C2H_TEST("let_value can be customized", "[adaptors][let_value]")
 {
   // The customization will return a different value
-  auto sndr = ex::just(std::string{"hello"}) | write_attrs(ex::prop{ex::get_domain, let_value_test_domain{}})
+  auto sndr = ex::just(std::string{"hello"}) | ex::write_attrs(ex::prop{ex::get_domain, let_value_test_domain{}})
             | ex::let_value([](std::string& x) {
                 return ex::just(x + ", world");
               });
@@ -411,6 +411,25 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
                        });
               });
   wait_for_value(std::move(work), 2);
+}
+
+constexpr struct test_query_t
+{
+  template <class Env>
+  _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
+  {
+    return env.query(*this);
+  }
+} test_query{};
+
+C2H_TEST("let_value works when the function returns a dependent sender", "[adaptors][let_value]")
+{
+  auto sndr     = ex::write_env(ex::just() | ex::let_value([] {
+                              return ex::read_env(test_query);
+                            }),
+                            ex::prop{test_query, 42});
+  auto [result] = ex::sync_wait(std::move(sndr)).value();
+  CUDAX_CHECK(result == 42);
 }
 
 // NOT YET SUPPORTED
@@ -452,7 +471,7 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
 {
   auto attrs = ex::prop{ex::get_domain, let_value_test_domain{}};
   auto sndr  = ex::just() | ex::let_value([=] {
-                return write_attrs(ex::just(), attrs);
+                return ex::write_attrs(ex::just(), attrs);
               });
   auto dom   = ex::get_domain(ex::get_env(sndr));
   static_assert(_CUDA_VSTD::is_same_v<decltype(dom), let_value_test_domain>);

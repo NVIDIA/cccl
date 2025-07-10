@@ -51,6 +51,7 @@ runs:
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
+          --env COMMAND='& ${{inputs.command}}' \
           ${{ inputs.image }} \
           powershell -c "
             [System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}');
@@ -62,7 +63,7 @@ runs:
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}');
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
             git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
-            ${{inputs.command}}"
+            Invoke-Expression \$env:COMMAND"
     - name: Prepare job artifacts
       shell: bash --noprofile --norc -euo pipefail {0}
       id: done

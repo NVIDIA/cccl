@@ -40,7 +40,7 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
   _CCCL_REQUIRES(indirect_strict_weak_order<_Comp, projected<const _Tp*, _Proj>>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&
+  [[nodiscard]] _CCCL_API constexpr const _Tp&
   operator()(const _Tp& __a, const _Tp& __b, _Comp __comp = {}, _Proj __proj = {}) const
   {
     return _CUDA_VSTD::invoke(__comp, _CUDA_VSTD::invoke(__proj, __b), _CUDA_VSTD::invoke(__proj, __a)) ? __b : __a;
@@ -48,7 +48,7 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Tp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
   _CCCL_REQUIRES(indirect_strict_weak_order<_Comp, projected<const _Tp*, _Proj>>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+  [[nodiscard]] _CCCL_API constexpr _Tp
   operator()(initializer_list<_Tp> __il, _Comp __comp = {}, _Proj __proj = {}) const
   {
     _CCCL_ASSERT(__il.begin() != __il.end(), "initializer_list must contain at least one element");
@@ -58,8 +58,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Rp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
   _CCCL_REQUIRES(input_range<_Rp> _CCCL_AND indirect_strict_weak_order<_Comp, projected<iterator_t<_Rp>, _Proj>>
                    _CCCL_AND indirectly_copyable_storable<iterator_t<_Rp>, range_value_t<_Rp>*>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr range_value_t<_Rp>
-  operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr range_value_t<_Rp> operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
     auto __first = _CUDA_VRANGES::begin(__r);
     auto __last  = _CUDA_VRANGES::end(__r);

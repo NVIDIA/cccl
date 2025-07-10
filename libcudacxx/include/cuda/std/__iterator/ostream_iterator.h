@@ -39,8 +39,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT ostream_iterator
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 public:
   using iterator_category = output_iterator_tag;
   using value_type        = void;
@@ -60,15 +58,15 @@ private:
   const char_type* __delim_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator(ostream_type& __s) noexcept
+  _CCCL_API inline ostream_iterator(ostream_type& __s) noexcept
       : __out_stream_(_CUDA_VSTD::addressof(__s))
       , __delim_(nullptr)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
+  _CCCL_API inline ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
       : __out_stream_(_CUDA_VSTD::addressof(__s))
       , __delim_(__delimiter)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator=(const _Tp& __value)
+  _CCCL_API inline ostream_iterator& operator=(const _Tp& __value)
   {
     *__out_stream_ << __value;
     if (__delim_)
@@ -78,19 +76,20 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator*()
+  _CCCL_API inline ostream_iterator& operator*()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator++()
+  _CCCL_API inline ostream_iterator& operator++()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator++(int)
+  _CCCL_API inline ostream_iterator& operator++(int)
   {
     return *this;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

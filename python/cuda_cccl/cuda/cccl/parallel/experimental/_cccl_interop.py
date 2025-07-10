@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 import textwrap
+import warnings
 from typing import TYPE_CHECKING, Callable, List
 
 import numba
@@ -260,6 +261,7 @@ def to_cccl_op(op: Callable, sig: Signature) -> Op:
     order to link correctly without violating ODR.
     """
     wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
+
     ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,
@@ -299,9 +301,15 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
 
 
 @functools.lru_cache()
-def get_paths() -> List[str]:
-    paths = [f"-I{path}" for path in get_include_paths().as_tuple() if path is not None]
-    return paths
+def get_includes() -> List[str]:
+    def as_option(p):
+        if p is None:
+            return ""
+        return f"-I{p}"
+
+    paths = get_include_paths().as_tuple()
+    opts = [as_option(path) for path in paths]
+    return opts
 
 
 def _check_compile_result(cubin: bytes):
@@ -315,6 +323,9 @@ def _check_compile_result(cubin: bytes):
         if out.returncode != 0:
             raise RuntimeError("nvdisasm failed")
         sass = out.stdout.decode("utf-8")
+    except FileNotFoundError:
+        sass = "nvdiasm not found, skipping SASS validation"
+        warnings.warn(sass)
     finally:
         os.unlink(temp_cubin_file.name)
 
@@ -335,7 +346,7 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
     global _check_sass
 
     cc_major, cc_minor = cuda.get_current_device().compute_capability
-    cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
+    cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_includes()
     common_data = CommonData(
         cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
     )

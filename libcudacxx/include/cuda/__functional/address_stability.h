@@ -61,7 +61,7 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! implementation.
 //! @see proclaims_copyable_arguments
 template <typename F>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto proclaim_copyable_arguments(F&& f)
+[[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
   -> __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>
 {
   return {::cuda::std::forward<F>(f)};

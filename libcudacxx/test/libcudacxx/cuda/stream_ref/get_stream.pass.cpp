@@ -104,6 +104,21 @@ __host__ __device__ void test()
     assert(stream == ref);
   }
 
+  { // The get_stream method works with types that have a stream member function
+    struct with_stream
+    {
+      ::cudaStream_t stream_{};
+
+      __host__ __device__ ::cudaStream_t stream() const noexcept
+      {
+        return stream_;
+      }
+    };
+    with_stream str{stream};
+    auto ref = ::cuda::get_stream(str);
+    assert(stream == ref);
+  }
+
   { // Cannot call get_stream on a type with a non-const get_stream method
     struct with_query_not_convertible_to_stream_ref
     {

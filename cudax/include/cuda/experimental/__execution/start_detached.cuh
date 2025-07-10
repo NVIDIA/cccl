@@ -36,7 +36,7 @@ namespace cuda::experimental::execution
 struct start_detached_t
 {
 private:
-  struct __opstate_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_base_t
   {};
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -47,18 +47,18 @@ private:
     void (*__destroy)(__opstate_base_t*) noexcept;
 
     template <class... _As>
-    void set_value(_As&&...) && noexcept
+    constexpr void set_value(_As&&...) noexcept
     {
       __destroy(__opstate_);
     }
 
     template <class _Error>
-    void set_error(_Error&&) && noexcept
+    constexpr void set_error(_Error&&) noexcept
     {
       _CUDA_VSTD_NOVERSION::terminate();
     }
 
-    void set_stopped() && noexcept
+    constexpr void set_stopped() noexcept
     {
       __destroy(__opstate_);
     }
@@ -75,13 +75,13 @@ private:
       delete static_cast<__opstate_t*>(__ptr);
     }
 
-    _CCCL_API explicit __opstate_t(_Sndr&& __sndr)
+    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr)
         : __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_API constexpr void start() noexcept
     {
       execution::start(__opstate_);
     }
@@ -98,7 +98,7 @@ public:
   template <class _Sndr>
   _CCCL_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = __late_domain_of_t<_Sndr, env<>, __early_domain_of_t<_Sndr>>;
     execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };

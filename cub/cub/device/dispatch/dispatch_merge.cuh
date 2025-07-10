@@ -81,7 +81,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   const Offset partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
   {
-    const Offset partition_at       = (::cuda::std::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
+    const Offset partition_at       = (::cuda::std::min) (partition_idx * items_per_tile, keys1_count + keys2_count);
     merge_partitions[partition_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
   }
 }
@@ -120,7 +120,7 @@ __launch_bounds__(
 {
   // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
   using key_t = it_value_t<KeyIt1>;
-  static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
+  static_assert(::cuda::std::__invocable<CompareOp, key_t, key_t>::value,
                 "Comparison operator cannot compare two keys");
   static_assert(::cuda::std::is_convertible_v<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>,
                 "Comparison operator must be convertible to bool");

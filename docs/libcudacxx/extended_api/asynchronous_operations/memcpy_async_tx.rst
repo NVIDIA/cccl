@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx:
 
-cuda::device::memcpy_async_tx
+``cuda::device::memcpy_async_tx``
 =================================
 
 Defined in header ``<cuda/barrier>``:

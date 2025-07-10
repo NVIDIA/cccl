@@ -58,37 +58,36 @@ public:
 
   _CCCL_HIDE_FROM_ABI constexpr conjugated_accessor() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr conjugated_accessor(const _NestedAccessor& __acc)
+  _CCCL_API constexpr conjugated_accessor(const _NestedAccessor& __acc)
       : __nested_accessor_(__acc)
   {}
 
   _CCCL_TEMPLATE(class _OtherNestedAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
                    _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
+  _CCCL_API constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
       : __nested_accessor_(__other.nested_accessor())
   {}
 
   _CCCL_TEMPLATE(class _OtherNestedAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
                    _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor)))
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr conjugated_accessor(
-    const conjugated_accessor<_OtherNestedAccessor>& __other)
+  _CCCL_API explicit constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
       : __nested_accessor_(__other.nested_accessor())
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
+  [[nodiscard]] _CCCL_API constexpr typename offset_policy::data_handle_type
   offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __nested_accessor_.offset(__p, __i);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _NestedAccessor& nested_accessor() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _NestedAccessor& nested_accessor() const noexcept
   {
     return __nested_accessor_;
   }
@@ -98,7 +97,7 @@ private:
 };
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto conjugated(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+[[nodiscard]] _CCCL_API constexpr auto conjugated(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __value_type = typename decltype(__a)::value_type;
   // Current status of [linalg] only optimizes if _Accessor is conjugated_accessor<_Accessor> for some _Accessor.
@@ -122,7 +121,7 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
 
 // Conjugation is self-annihilating
 template <class _ElementType, class _Extents, class _Layout, class _NestedAccessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 conjugated(mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAccessor>> __a)
 {
   using __return_element_type  = typename _NestedAccessor::element_type;

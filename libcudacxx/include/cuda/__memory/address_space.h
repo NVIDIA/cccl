@@ -42,7 +42,7 @@ enum class address_space
   __max,
 };
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_valid_address_space(address_space __space) noexcept
+[[nodiscard]] _CCCL_API constexpr bool __cccl_is_valid_address_space(address_space __space) noexcept
 {
   const auto __v = _CUDA_VSTD::to_underlying(__space);
   return __v >= 0 && __v < _CUDA_VSTD::to_underlying(address_space::__max);

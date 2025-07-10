@@ -101,22 +101,22 @@ public:
   //!
   //! @sa device::attrs
   template <typename _Attr>
-  [[nodiscard]] auto attr(_Attr __attr) const
+  [[nodiscard]] auto attribute(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  [[nodiscard]] auto attr() const
+  [[nodiscard]] auto attribute() const
   {
-    return attr(__detail::__dev_attr<_Attr>());
+    return attribute(__detail::__dev_attr<_Attr>());
   }
 
   //! @brief Retrieve string with the name of this device.
   //!
   //! @return String containing the name of this device.
-  [[nodiscard]] ::std::string get_name() const
+  [[nodiscard]] ::std::string name() const
   {
     constexpr int __max_name_length = 256;
     ::std::string __name(256, 0);
@@ -152,7 +152,7 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& get_arch_traits() const;
+  const arch_traits_t& arch_traits() const;
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide
@@ -164,7 +164,7 @@ public:
   //! if a full group of peer devices is needed, it needs to be pushed_back separately.
   //!
   //! @throws cuda_error if any peer access query fails
-  ::std::vector<device_ref> get_peers() const;
+  ::std::vector<device_ref> peer_devices() const;
 };
 
 } // namespace cuda::experimental

@@ -41,15 +41,14 @@ struct __fn
   _CCCL_TEMPLATE(class _Ip, class _Sp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
   _CCCL_REQUIRES(forward_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
                    indirect_strict_weak_order<_Comp, projected<_Ip, _Proj>>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip
-  operator()(_Ip __first, _Sp __last, _Comp __comp = {}, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __first, _Sp __last, _Comp __comp = {}, _Proj __proj = {}) const
   {
     return _CUDA_VSTD::__min_element(__first, __last, __comp, __proj);
   }
 
   _CCCL_TEMPLATE(class _Rp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
   _CCCL_REQUIRES(forward_range<_Rp> _CCCL_AND indirect_strict_weak_order<_Comp, projected<iterator_t<_Rp>, _Proj>>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr borrowed_iterator_t<_Rp>
+  [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp>
   operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
     return _CUDA_VSTD::__min_element(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r), __comp, __proj);

@@ -59,7 +59,6 @@ private:
         cudax_async::set_value_t(), //
         cudax_async::set_error_t(Error),
         cudax_async::set_stopped_t()>();
-      ;
     }
 
     template <class Rcvr>
@@ -97,6 +96,7 @@ public:
       : _err(static_cast<Error&&>(err))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE sndr_t schedule() const noexcept
   {
     return {_err};

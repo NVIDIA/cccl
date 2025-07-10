@@ -75,15 +75,20 @@ struct _SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
 
 struct _ARGUMENTS_ARE_NOT_DECAY_COPYABLE;
 
+struct _THE_ENVIRONMENT_OF_THE_RECEIVER_DOES_NOT_HAVE_A_SCHEDULER_FOR_ON_TO_RETURN_TO;
+
 template <class... _Sigs>
 struct _WITH_COMPLETIONS
+{};
+
+struct _NOT_ABLE_TO_DETERMINE_WHAT_STREAM_TO_USE_FOR_THIS_OPERATION
 {};
 
 struct __merror_base
 {
   // _CCCL_HIDE_FROM_ABI virtual ~__merror_base() = default;
 
-  _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
+  _CCCL_HOST_DEVICE friend constexpr auto __ustdex_unhandled_error(void*) noexcept -> bool
   {
     return true;
   }

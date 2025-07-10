@@ -60,8 +60,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
       // forwarding a get_domain query to the parent receiver's environment.
       static_assert(!_CUDA_VSTD::is_same_v<_Query, get_domain_t> || !__queryable_with<_Env, get_scheduler_t>,
                     "_Env specifies a scheduler but not a domain.");
-      return __rcvr_->__base().query(_Query{});
-      // return execution::get_env(__rcvr_->__base()).query(_Query{});
+      return execution::get_env(__rcvr_->__base()).query(_Query{});
     }
 
     __rcvr_with_env_t const* __rcvr_;
@@ -82,7 +81,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     return *this;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API auto get_env() const noexcept -> __env_t
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __env_t
   {
     return __env_t{this};
   }

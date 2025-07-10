@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_OutputIterator1, _OutputIterator2> partition_copy(
+_CCCL_API constexpr pair<_OutputIterator1, _OutputIterator2> partition_copy(
   _InputIterator __first,
   _InputIterator __last,
   _OutputIterator1 __out_true,

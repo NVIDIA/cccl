@@ -25,6 +25,7 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_empty.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,9 +51,15 @@ struct __get_tuning_t
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
 template <class... _Tunings>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __tune(_Tunings... __tunings)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __tune(_Tunings...)
 {
-  return _CUDA_STD_EXEC::prop{__get_tuning_t{}, _CUDA_STD_EXEC::env{__tunings...}};
+  static_assert((_CUDA_VSTD::is_empty_v<_Tunings> && ...), "Stateful tunings are not implemented");
+
+  // clang < 19 doesn't like this code
+  // since all the tunings are stateless, let's ignore incoming parameters
+  _CUDA_STD_EXEC::env<_Tunings...> __env{};
+
+  return _CUDA_STD_EXEC::prop{__get_tuning_t{}, __env};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION

@@ -260,10 +260,7 @@ def normalize_dtype_param(
                 np_type = getattr(np, np_type_name)
                 return numba.from_dtype(np.dtype(np_type))
             except Exception as e:
-                msg = (
-                    f"Failed to convert numpy type {np_type_name} "
-                    f"to numba type: {e}"
-                )
+                msg = f"Failed to convert numpy type {np_type_name} to numba type: {e}"
                 raise ValueError(msg)
         else:
             # No period, assume it's a numba type.

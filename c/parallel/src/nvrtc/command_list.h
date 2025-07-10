@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
@@ -191,7 +192,12 @@ struct nvrtc2_pre_build
   // Compile program
   inline nvrtc2_post_build_nl compile_program(nvrtc_compile compile_args)
   {
-    auto result = nvrtcCompileProgram(context.program, compile_args.num_args, compile_args.args);
+    size_t n_actual_args = std::distance(
+      compile_args.args,
+      std::remove_if(compile_args.args, compile_args.args + compile_args.num_args, [](const char* ptr) -> bool {
+        return (ptr == nullptr);
+      }));
+    nvrtcResult result = nvrtcCompileProgram(context.program, n_actual_args, compile_args.args);
 
     size_t log_size{};
     check(nvrtcGetProgramLogSize(context.program, &log_size));

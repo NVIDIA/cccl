@@ -32,7 +32,7 @@ using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
 using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
 #endif
 
-C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_types)
 {
   using TestT     = c2h::get<0, TestType>;
   using Env       = typename extract_properties<TestT>::env;
@@ -69,8 +69,8 @@ C2H_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_type
 
   SECTION("cudax::async_buffer::begin/end thrust properties")
   {
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<iterator>::value);
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<const_iterator>::value);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<iterator>);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<const_iterator>);
 
     STATIC_REQUIRE(cuda::std::is_same_v<thrust::try_unwrap_contiguous_iterator_t<iterator>, int*>);
     STATIC_REQUIRE(

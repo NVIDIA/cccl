@@ -29,19 +29,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces around initializer
 
-// BUG (gcc#98995): copy elision fails when initializing a [[no_unique_address]] field
-// from a function returning an object of class type by value.
-// See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
-#if _CCCL_COMPILER(GCC)
-// By declaring the move constructor but not defining it, any TU that ODR-uses the move
-// constructor will cause a linker error.
-#  define _CCCL_IMMOVABLE_OPSTATE(_XP) _CCCL_API _XP(_XP&&) noexcept
-#else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
-#  define _CCCL_IMMOVABLE_OPSTATE(_XP) _XP(_XP&&) = delete
-#endif // !_CCCL_COMPILER(GCC)
-
 #if _CCCL_CUDA_COMPILER(NVHPC)
-_CCCL_NV_DIAG_SUPPRESS(cuda_compile)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_compile)
 #endif // _CCCL_CUDA_COMPILER(NVHPC)
 
 // private and protected nested class types cannot be used as tparams to __global__

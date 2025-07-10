@@ -27,7 +27,7 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative", "cuda_parallel" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python", "cccl"]
 
 # deps can be used to link to other projects' documentation
 deps = [
@@ -35,8 +35,87 @@ deps = [
     [ "cudax", "_build/docs/cudax/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
-    [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
-    [ "cuda_parallel", "_build/docs/cuda_parallel/latest" ],
+    [ "python", "_build/docs/python/latest" ],
+]
+
+# doxygen sometimes gets confused by macros. the array below allows the user to
+# tell doxygen how to expand a macro. defaults to an empty list.
+#
+# more information on the format can be found at:
+#     https://www.doxygen.nl/manual/config.html#cfg_predefined
+doxygen_predefined = [
+    "__device__=",
+    "__host__=",
+    "__global__=",
+    "__forceinline__=",
+    "__declspec(x)=",
+    "__align__(x)=",
+    "__cccl_lib_mdspan",
+    "_CCCL_AND=&&",
+    "_CCCL_CONCEPT=constexpr bool ",
+    "_CCCL_CONSTEXPR_FRIEND=friend ",
+    "_CCCL_CONSTEXPR_CXX20=constexpr",
+    "_CCCL_CONSTEXPR_CXX23=constexpr",
+    "_CCCL_CTK_AT_LEAST(x, y)=1",
+    "_CCCL_CTK_BELOW(x, y)=0",
+    "_CCCL_CUDACC_AT_LEAST(x, y)=1",
+    "_CCCL_CUDACC_BELOW(x, y)=0",
+    "_CCCL_DEVICE=",
+    "_CCCL_DIAG_PUSH=",
+    "_CCCL_DIAG_POP=",
+    "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
+    "_CCCL_DIAG_SUPPRESS_GCC(x)=",
+    "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
+    "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+    "_CCCL_DOXYGEN_INVOKED",
+    "_CCCL_EXEC_CHECK_DISABLE=",
+    "_CCCL_FORCEINLINE=",
+    "_CCCL_GLOBAL_CONSTANT=inline constexpr",
+    "_CCCL_HAS_CTK()=1",
+    "_CCCL_HIDE_FROM_ABI=",
+    "_CCCL_HOST=",
+    "_CCCL_HOST_DEVICE=",
+    "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
+    "_CCCL_STD_VER=2020",
+    "_CCCL_SUPPRESS_DEPRECATED_PUSH=",
+    "_CCCL_SUPPRESS_DEPRECATED_POP=",
+    "_CCCL_TEMPLATE(x)=template<x, ",
+    "_CCCL_TRAIT(x, y)=x<y>::value",
+    "_CCCL_TRAILING_REQUIRES(x)=-> x requires ",
+    "_CCCL_TYPE_VISIBILITY_DEFAULT=",
+    "_CCCL_API=inline",
+    "_CCCL_DEVICE_API=inline",
+    "_CCCL_HOST_API=inline",
+    "_CCCL_TRIVIAL_API=inline",
+    "_CCCL_TRIVIAL_DEVICE_API=inline",
+    "_CCCL_TRIVIAL_HOST_API=inline",
+    "_CCCL_VISIBILITY_DEFAULT=",
+    "_CCCL_VISIBILITY_HIDDEN=",
+    "_CCCL_TRY=try",
+    "_CCCL_CATCH=catch",
+    "_CCCL_CATCH_ALL=catch (...)",
+    "_CUDA_VMR=cuda::mr",
+    "_CUDA_VRANGES=cuda::std::ranges",
+    "_CUDA_VSTD=cuda::std",
+    "_CUDAX_PUBLIC_API=inline",
+    "_CUDAX_CONSTEXPR_FRIEND=friend",
+    "_LIBCUDACXX_BEGIN_NAMESPACE_STD=namespace cuda::std {",
+    "_LIBCUDACXX_END_NAMESPACE_STD=}",
+    "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1",
+    "CCCL_DEPRECATED=",
+    "CCCL_DEPRECATED_BECAUSE(x)=",
+    "CCCL_IGNORE_DEPRECATED_CPP_DIALECT",
+    "CUB_DISABLE_NAMESPACE_MAGIC",
+    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
+    "CUB_NAMESPACE_BEGIN=namespace cub {",
+    "CUB_NAMESPACE_END=}",
+    "CUB_STATIC_ASSERT(cond,msg)=",
+    "CUB_RUNTIME_FUNCTION=",
+    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE",
+    "THRUST_NAMESPACE_BEGIN=namespace thrust {",
+    "THRUST_NAMESPACE_END=}",
+    "THRUST_PREVENT_MACRO_SUBSTITUTION",
+    "THRUST_FWD(x)=x",
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -137,52 +216,6 @@ doxygen_aliases = [
   "lookback=`decoupled look-back <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_"
 ]
 
-# doxygen sometimes gets confused by macros. the array below allows the user to
-# tell doxygen how to expand a macro. defaults to an empty list.
-#
-# more information on the format can be found at:
-#     https://www.doxygen.nl/manual/config.html#cfg_predefined
-doxygen_predefined = [
-    "_CCCL_AND=&&",
-    "_CCCL_HOST",
-    "_CCCL_DEVICE",
-    "_CCCL_EAT_REST(x)=",
-    "_CCCL_HOST_DEVICE",
-    "_CCCL_FORCEINLINE",
-    "_CCCL_STD_VER",
-    "_CCCL_VISIBILITY_HIDDEN",
-    "_CCCL_SUPPRESS_DEPRECATED_PUSH",
-    "_CCCL_SUPPRESS_DEPRECATED_POP",
-    "_CCCL_DIAG_PUSH=",
-    "_CCCL_DIAG_POP=",
-    "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
-    "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-    "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
-    "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
-    "_CCCL_DOXYGEN_INVOKED",
-    "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
-    "_CCCL_TEMPLATE(x)=template<x, ",
-    "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
-    "__device__",
-    "__host__",
-    "__forceinline__",
-    "__declspec(x)=",
-    "__align__(x)=",
-    "__cccl_lib_mdspan",
-    "CCCL_IGNORE_DEPRECATED_CPP_DIALECT",
-    "CUB_DISABLE_NAMESPACE_MAGIC",
-    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
-    "CUB_NAMESPACE_BEGIN=namespace cub {",
-    "CUB_NAMESPACE_END=}",
-    "CCCL_DEPRECATED_BECAUSE(x)=",
-    "CCCL_DEPRECATED=",
-    "CUB_STATIC_ASSERT(cond,msg)=",
-    "CUB_RUNTIME_FUNCTION",
-    "CUDASTF_HOST",
-    "CUDASTF_DEVICE",
-    "CUDASTF_HOST_DEVICE"
-]
-
 # make sure to use ./fetch_imgs.sh
 doxygen_conf_extra = """
   IMAGE_PATH             = ${config_root}/img
@@ -248,43 +281,6 @@ doxygen_input = [
 #     https://www.doxygen.nl/manual/config.html#cfg_aliases
 doxygen_aliases = []
 
-# doxygen sometimes gets confused by macros. the array below allows the user to
-# tell doxygen how to expand a macro. defaults to an empty list.
-#
-# more information on the format can be found at:
-#     https://www.doxygen.nl/manual/config.html#cfg_predefined
-doxygen_predefined = [
-  "_CCCL_AND=",
-  "_CCCL_DEVICE=",
-  "_CCCL_EXEC_CHECK_DISABLE=",
-  "_CCCL_FORCEINLINE=",
-  "_CCCL_HOST=",
-  "_CCCL_HOST_DEVICE=",
-  "_CCCL_STD_VER",
-  "_CCCL_SUPPRESS_DEPRECATED_PUSH",
-  "_CCCL_SUPPRESS_DEPRECATED_POP",
-  "_CCCL_DIAG_PUSH=",
-  "_CCCL_DIAG_POP=",
-  "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
-  "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
-  "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
-  "_CCCL_GLOBAL_CONSTANT=constexpr",
-  "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
-  "_CCCL_TEMPLATE(x)=template<x, ",
-  "CUDASTF_HOST=",
-  "CUDASTF_DEVICE=",
-  "CUDASTF_HOST_DEVICE=",
-  "_CCCL_DOXYGEN_INVOKED",
-  "THRUST_NAMESPACE_BEGIN=namespace thrust {",
-  "THRUST_NAMESPACE_END=}",
-  "THRUST_PREVENT_MACRO_SUBSTITUTION",
-  "THRUST_FWD(x)=x",
-  "CCCL_DEPRECATED_BECAUSE(x)=",
-  "CCCL_DEPRECATED=",
-  "_LIBCUDACXX_HIDE_FROM_ABI="
-]
-
 # make sure to use ./fetch_imgs.sh
 doxygen_conf_extra = """
   IMAGE_PATH             = ${config_root}/img
@@ -301,35 +297,10 @@ doxygen_conf_extra = """
   STRIP_FROM_PATH        = ../../thrust
 """
 
-[repo_docs.projects.cuda_cooperative]
-name = "cuda.cccl.cooperative"
+[repo_docs.projects.python]
+name = "cuda.cccl.python"
 
-docs_root = "cuda_cooperative"
-logo = "../img/logo.png"
-
-repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
-social_media_set = ""
-social_media     = [
-    [ "github", "https://github.com/NVIDIA/cccl" ],
-]
-
-autodoc.mock_imports = [
-    "numba",
-    "pynvjitlink",
-    "cuda.bindings",
-    "llvmlite",
-    "numpy",
-    "cupy",
-]
-
-enhanced_search_enabled = true
-python_paths = [
-    "${root}/../python/cuda_cccl"
-]
-
-[repo_docs.projects.cuda_parallel]
-name = "cuda.cccl.parallel"
-docs_root = "cuda_parallel"
+docs_root = "python"
 logo = "../img/logo.png"
 
 repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
@@ -405,56 +376,6 @@ doxygen_input = [
 
 doxygen_exclude = [
     "../../cudax/include/cuda/experimental/__graph/fwd.cuh",
-]
-
-doxygen_predefined = [
-  "__device__",
-  "__host__",
-  "__global__",
-  "_CCCL_AND=&&",
-  "_CCCL_CUDACC_AT_LEAST(x, y)=1",
-  "_CCCL_CUDACC_BELOW(x, y)=0",
-  "_CCCL_CTK_AT_LEAST(x, y)=1",
-  "_CCCL_CTK_BELOW(x, y)=0",
-  "_CCCL_DEVICE=",
-  "_CCCL_DOXYGEN_INVOKED",
-  "_CCCL_EAT_REST(x)=",
-  "_CCCL_EXEC_CHECK_DISABLE=",
-  "_CCCL_FORCEINLINE=",
-  "_CCCL_GLOBAL_CONSTANT=constexpr",
-  "_CCCL_HAS_CTK()=1",
-  "_CCCL_HIDE_FROM_ABI=",
-  "_CCCL_HOST=",
-  "_CCCL_HOST_DEVICE=",
-  "_CCCL_STD_VER=2020",
-  "_CCCL_TRAIT(x, y)=x<y>::value",
-  "_CUDA_VMR=cuda::mr",
-  "_CUDA_VRANGES=cuda::std::ranges",
-  "_CUDA_VSTD=cuda::std",
-  "_CCCL_SUPPRESS_DEPRECATED_PUSH",
-  "_CCCL_SUPPRESS_DEPRECATED_POP",
-  "_CCCL_CONSTEXPR_CXX20=constexpr",
-  "_CCCL_CONSTEXPR_CXX23=constexpr",
-  "_CCCL_DIAG_PUSH=",
-  "_CCCL_DIAG_POP=",
-  "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
-  "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
-  "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
-  "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
-  "_CCCL_TEMPLATE(x)=template<x, ",
-  "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
-  "_CCCL_API",
-  "_CCCL_HOST_API",
-  "_CCCL_DEVICE_API",
-  "_CCCL_TRIVIAL_API",
-  "_CCCL_TRIVIAL_HOST_API",
-  "_CCCL_TRIVIAL_DEVICE_API",
-  "_CUDAX_PUBLIC_API",
-  "_CUDAX_CONSTEXPR_FRIEND=friend",
-  "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()",
-  "_LIBCUDACXX_HIDE_FROM_ABI=inline",
-  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 
 # make sure to use ./fetch_imgs.sh
