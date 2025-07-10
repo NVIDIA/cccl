@@ -104,16 +104,6 @@ struct DeviceReduceKernelSource
 
 namespace detail::nondeterministic_reduce
 {
-
-// This function handles both pointers passed from C++ and indirect_arg_t. We pass the address of the device pointer
-// here, cast it to a double pointer, and dereference it. This is necessary because indirect_arg_t stores the address of
-// the device pointer in `ptr`, which is a host pointer stored in `void*`. We can't dereference it directly, so we cast
-// it to a double pointer. This also just works for pointers from the C++ path.
-void* unwrap_indirect_arg(void* iterator)
-{
-  return *reinterpret_cast<void**>(iterator);
-}
-
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
@@ -450,6 +440,15 @@ struct DispatchNondeterministicReduce
     } while (0);
 
     return error;
+  }
+
+  // This function handles both pointers passed from C++ and indirect_arg_t. We pass the address of the device pointer
+  // here, cast it to a double pointer, and dereference it. This is necessary because indirect_arg_t stores the address
+  // of the device pointer in `ptr`, which is a host pointer stored in `void*`. We can't dereference it directly, so we
+  // cast it to a double pointer. This also just works for pointers from the C++ path.
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* unwrap_indirect_arg(void* iterator)
+  {
+    return *reinterpret_cast<void**>(iterator);
   }
 
   //---------------------------------------------------------------------------
