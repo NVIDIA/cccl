@@ -63,7 +63,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::nondeterministic_reduce
+namespace detail::reduce_nondeterministic
 {
 
 using CounterT = int;
@@ -100,10 +100,8 @@ struct DeviceReduceKernelSource
     return sizeof(AccumT);
   }
 };
-} // namespace detail::nondeterministic_reduce
+} // namespace detail::reduce_nondeterministic
 
-namespace detail::nondeterministic_reduce
-{
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
@@ -131,8 +129,8 @@ template <typename InputIteratorT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
-          typename PolicyHub    = detail::nondeterministic_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::nondeterministic_reduce::DeviceReduceKernelSource<
+          typename PolicyHub    = detail::reduce_nondeterministic::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource = detail::reduce_nondeterministic::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
             OutputIteratorT,
@@ -142,7 +140,7 @@ template <typename InputIteratorT,
             AccumT,
             TransformOpT>,
           typename KernelLauncherFactory = detail::TripleChevronFactory>
-struct DispatchNondeterministicReduce
+struct DispatchReduceNondeterministic
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -564,7 +562,5 @@ struct DispatchNondeterministicReduce
     return error;
   }
 };
-
-} // namespace detail::nondeterministic_reduce
 
 CUB_NAMESPACE_END
