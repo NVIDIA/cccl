@@ -21,8 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
+
+#include <cuda/experimental/__detail/type_traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -44,30 +48,26 @@ using _CUDA_VSTD::declval;
 // NOLINTEND(misc-unused-using-decls)
 
 // Classes can inherit from this type to become immovable.
-struct __immovable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __immovable
 {
   _CCCL_HIDE_FROM_ABI __immovable() = default;
   _CCCL_IMMOVABLE_OPSTATE(__immovable);
 };
 
 template <class... _Types>
-struct _CCCL_DECLSPEC_EMPTY_BASES __inherit : _Types...
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __inherit : _Types...
 {};
 
-template <class _Type, template <class...> class _Template>
-inline constexpr bool __is_specialization_of_v = false;
-
-template <template <class...> class _Template, class... _Args>
-inline constexpr bool __is_specialization_of_v<_Template<_Args...>, _Template> = true;
-
-struct no_init_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT no_init_t
 {
-  explicit no_init_t() = default;
+  _CCCL_HIDE_FROM_ABI explicit no_init_t() = default;
 };
 
 _CCCL_GLOBAL_CONSTANT no_init_t no_init{};
 
 using uninit_t CCCL_DEPRECATED_BECAUSE("Use cuda::experimental::no_init_t instead") = no_init_t;
+
+// TODO: CCCL_DEPRECATED_BECAUSE("Use cuda::experimental::no_init instead")
 _CCCL_GLOBAL_CONSTANT no_init_t uninit{};
 } // namespace cuda::experimental
 

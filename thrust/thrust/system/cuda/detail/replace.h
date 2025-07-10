@@ -51,29 +51,18 @@ struct constant_f
 {
   T value;
 
-  THRUST_FUNCTION
-  constant_f(T const& x)
-      : value(x)
-  {}
-
   template <class U>
   THRUST_DEVICE_FUNCTION T operator()(U const&) const
   {
     return value;
   }
-}; // struct constant_f
+};
 
 template <class Predicate, class NewType, class OutputType>
 struct new_value_if_f
 {
   Predicate pred;
   NewType new_value;
-
-  THRUST_FUNCTION
-  new_value_if_f(Predicate pred_, NewType new_value_)
-      : pred(pred_)
-      , new_value(new_value_)
-  {}
 
   template <class T>
   OutputType THRUST_DEVICE_FUNCTION operator()(T const& x)
@@ -86,7 +75,7 @@ struct new_value_if_f
   {
     return pred(y) ? new_value : x;
   }
-}; // struct new_value_if_f
+};
 
 } // namespace __replace
 
@@ -95,15 +84,14 @@ void _CCCL_HOST_DEVICE
 replace(execution_policy<Derived>& policy, Iterator first, Iterator last, T const& old_value, T const& new_value)
 {
   using thrust::placeholders::_1;
-
-  cuda_cub::transform_if(policy, first, last, first, __replace::constant_f<T>(new_value), _1 == old_value);
+  cuda_cub::transform_if(policy, first, last, first, __replace::constant_f<T>{new_value}, _1 == old_value);
 }
 
 template <class Derived, class Iterator, class Predicate, class T>
 void _CCCL_HOST_DEVICE
 replace_if(execution_policy<Derived>& policy, Iterator first, Iterator last, Predicate pred, T const& new_value)
 {
-  cuda_cub::transform_if(policy, first, last, first, __replace::constant_f<T>(new_value), pred);
+  cuda_cub::transform_if(policy, first, last, first, __replace::constant_f<T>{new_value}, pred);
 }
 
 template <class Derived, class Iterator, class StencilIt, class Predicate, class T>
@@ -115,7 +103,7 @@ void _CCCL_HOST_DEVICE replace_if(
   Predicate pred,
   T const& new_value)
 {
-  cuda_cub::transform_if(policy, first, last, stencil, first, __replace::constant_f<T>(new_value), pred);
+  cuda_cub::transform_if(policy, first, last, stencil, first, __replace::constant_f<T>{new_value}, pred);
 }
 
 template <class Derived, class InputIt, class OutputIt, class Predicate, class T>
@@ -129,7 +117,7 @@ OutputIt _CCCL_HOST_DEVICE replace_copy_if(
 {
   using output_type    = thrust::detail::it_value_t<OutputIt>;
   using new_value_if_t = __replace::new_value_if_f<Predicate, T, output_type>;
-  return cuda_cub::transform(policy, first, last, result, new_value_if_t(predicate, new_value));
+  return cuda_cub::transform(policy, first, last, result, new_value_if_t{predicate, new_value});
 }
 
 template <class Derived, class InputIt, class StencilIt, class OutputIt, class Predicate, class T>
@@ -144,7 +132,7 @@ OutputIt _CCCL_HOST_DEVICE replace_copy_if(
 {
   using output_type    = thrust::detail::it_value_t<OutputIt>;
   using new_value_if_t = __replace::new_value_if_f<Predicate, T, output_type>;
-  return cuda_cub::transform(policy, first, last, stencil, result, new_value_if_t(predicate, new_value));
+  return cuda_cub::transform(policy, first, last, stencil, result, new_value_if_t{predicate, new_value});
 }
 
 template <class Derived, class InputIt, class OutputIt, class T>
