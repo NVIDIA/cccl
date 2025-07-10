@@ -583,7 +583,7 @@ inline static const ::std::vector<::std::string>& get_nvrtc_flags()
     ::std::istringstream iss(s);
     result.insert(result.end(), ::std::istream_iterator<::std::string>{iss}, {});
 
-    int device                = cuda_try<cudaGetDevice>();
+    const int device          = cuda_try<cudaGetDevice>();
     const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(device);
     result.push_back("--gpu-architecture=compute_" + ::std::to_string(prop.major) + ::std::to_string(prop.minor));
 
@@ -595,8 +595,6 @@ inline static const ::std::vector<::std::string>& get_nvrtc_flags()
 template <typename context, typename exec_place_t, typename shape_t, typename... deps_ops_t>
 struct parallel_for_scope_jit
 {
-  //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
-  // tuple<slice<double>, slice<int>> ...
   using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
 
   parallel_for_scope_jit(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
