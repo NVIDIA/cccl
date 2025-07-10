@@ -149,9 +149,9 @@ private:
       result.poolProps.handleTypes             = cudaMemHandleTypeNone;
       result.poolProps.location                = {.type = cudaMemLocationTypeDevice, .id = 0};
       result.poolProps.win32SecurityAttributes = nullptr;
-#if CUDA_VERSION >= 12030
+#if _CCCL_CTK_AT_LEAST(12, 3)
       result.poolProps.maxSize = 0;
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 3)
       result.accessDescs     = nullptr;
       result.accessDescCount = 0;
       result.bytesize        = 0;

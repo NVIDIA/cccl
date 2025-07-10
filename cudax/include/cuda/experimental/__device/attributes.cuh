@@ -223,13 +223,13 @@ struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
   static constexpr type posix_file_descriptor = ::cudaMemHandleTypePosixFileDescriptor;
   static constexpr type win32                 = ::cudaMemHandleTypeWin32;
   static constexpr type win32_kmt             = ::cudaMemHandleTypeWin32Kmt;
-#if CUDART_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   static constexpr type fabric = ::cudaMemHandleTypeFabric;
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
   static inline const type fabric = static_cast<::cudaMemAllocationHandleType>(0x8);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
 };
-#if CUDART_VERSION >= 12020
+#if _CCCL_CTK_AT_LEAST(12, 2)
 template <>
 struct __dev_attr<::cudaDevAttrNumaConfig> //
     : __dev_attr_impl<::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>
@@ -237,7 +237,7 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
   static constexpr type none      = ::cudaDeviceNumaConfigNone;
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
 struct __device_attrs
 {
@@ -688,8 +688,7 @@ struct __device_attrs
   using ipc_event_support_t = __detail::__dev_attr<::cudaDevAttrIpcEventSupport>;
   static constexpr ipc_event_support_t ipc_event_support{};
 
-#if CUDART_VERSION >= 12020
-
+#if _CCCL_CTK_AT_LEAST(12, 2)
   // NUMA configuration of a device: value is of type cudaDeviceNumaConfig enum
   using numa_config_t = __detail::__dev_attr<::cudaDevAttrNumaConfig>;
   static constexpr numa_config_t numa_config{};
@@ -697,8 +696,7 @@ struct __device_attrs
   // NUMA node ID of the GPU memory
   using numa_id_t = __detail::__dev_attr<::cudaDevAttrNumaId>;
   static constexpr numa_id_t numa_id{};
-
-#endif // CUDART_VERSION >= 12020
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
   // capability in a single query
