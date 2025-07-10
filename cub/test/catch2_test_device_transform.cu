@@ -115,11 +115,13 @@ C2H_TEST("DeviceTransform::Transform with large input",
          offset_types)
 try
 {
-  using type     = unsigned char;
+  using type     = unsigned short;
   using offset_t = c2h::get<0, TestType>;
 
-  // make size a few thread blocks below/beyond 4GiB
-  constexpr offset_t num_items = static_cast<offset_t>((1ll << 32) + (sizeof(offset_t) == 4 ? -123456 : 123456));
+  // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
+  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
+  REQUIRE(num_items > 0);
+  std::cout << num_items << std::endl;
   c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input);
 
