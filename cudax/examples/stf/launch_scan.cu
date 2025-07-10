@@ -59,12 +59,12 @@ int main(int argc, char** argv)
     lX.set_write_back(false);
   }
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   cudaEvent_t start, stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   constexpr size_t BLOCK_THREADS = 128;
   constexpr size_t NBLOCKS       = 8;
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     }
   };
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

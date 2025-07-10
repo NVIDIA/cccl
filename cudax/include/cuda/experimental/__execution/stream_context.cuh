@@ -30,6 +30,7 @@
 #include <cuda/experimental/__execution/stream/launch.cuh>
 #include <cuda/experimental/__execution/stream/let_value.cuh>
 #include <cuda/experimental/__execution/stream/sequence.cuh>
+#include <cuda/experimental/__execution/stream/starts_on.cuh>
 #include <cuda/experimental/__execution/stream/sync_wait.cuh>
 // IWYU pragma: end_exports
 

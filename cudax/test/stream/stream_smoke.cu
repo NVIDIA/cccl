@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -17,7 +20,7 @@
 C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 {
   cudax::stream str{cudax::device_ref{0}};
-  ::test::managed<int> i(0);
+  ::test::pinned<int> i(0);
   cudax::launch(str, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   str.sync();
   CUDAX_REQUIRE(*i == 42);
@@ -31,7 +34,7 @@ C2H_CCCLRT_TEST("From native handle", "[stream]")
   {
     auto stream = cudax::stream::from_native_handle(handle);
 
-    ::test::managed<int> i(0);
+    ::test::pinned<int> i(0);
     cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
     stream.sync();
     CUDAX_REQUIRE(*i == 42);
@@ -46,7 +49,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
   CUDAX_REQUIRE(waiter != waitee);
 
   auto verify_dependency = [&](const auto& insert_dependency) {
-    ::test::managed<int> i(0);
+    ::test::pinned<int> i(0);
     ::cuda::atomic_ref atomic_i(*i);
 
     cudax::launch(waitee, ::test::one_thread_dims, ::test::spin_until_80{}, i.get());
@@ -132,5 +135,36 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
       cudax::stream side_stream(ldev);
       CUDAX_REQUIRE(side_stream.device() == dev0_stream.device());
     }
+  }
+}
+
+C2H_CCCLRT_TEST("Stream ID", "[stream]")
+{
+  STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cudax::stream_id>>);
+  STATIC_REQUIRE(cuda::std::is_same_v<cudax::stream_id, decltype(cuda::std::declval<cudax::stream_ref>().id())>);
+
+  cudax::stream stream1{cudax::device_ref{0}};
+  cudax::stream stream2{cudax::device_ref{0}};
+
+  // Test that id() returns a valid ID
+  auto id1 = stream1.id();
+  auto id2 = stream2.id();
+
+  // Test that different streams have different IDs
+  CUDAX_REQUIRE(id1 != id2);
+
+  // Test that the same stream returns the same ID when called multiple times
+  CUDAX_REQUIRE(stream1.id() == id1);
+  CUDAX_REQUIRE(stream2.id() == id2);
+
+  {
+    // Test that stream_ref also supports id()
+    // NULL stream needs a device to be set
+    cudax::__ensure_current_device guard(cudax::device_ref{0});
+    cudax::stream_ref ref1(static_cast<cudaStream_t>(NULL));
+    cudax::stream_ref ref2(stream1);
+
+    CUDAX_REQUIRE(ref1.id() != ref2.id());
+    CUDAX_REQUIRE(ref2.id() == id1);
   }
 }

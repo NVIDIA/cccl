@@ -185,7 +185,7 @@ struct expecter
      */
 #  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
     template <typename U>                                                                  \
-    auto operator op(const U& rhs)&&                                                       \
+    auto operator op(const U& rhs) &&                                                      \
     {                                                                                      \
       using T_noref = std::remove_reference_t<T>;                                          \
       using U_noref = std::remove_reference_t<U>;                                          \
@@ -222,7 +222,7 @@ struct expecter
      */
 #  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                \
     template <typename U>                                                      \
-    auto operator op(U&& rhs)&&                                                \
+    auto operator op(U&& rhs) &&                                               \
     {                                                                          \
       using Result = decltype(value op ::std::forward<U>(rhs));                \
       return term<Result>(::std::forward<T>(value) op ::std::forward<U>(rhs)); \

@@ -55,7 +55,7 @@ private:
   template <class, class>
   friend class transform_output_iterator;
 
-  _CCCL_NO_UNIQUE_ADDRESS _Iter __iter_;
+  _Iter __iter_;
   _Fn& __func_;
 
   template <class _MaybeConstFn, class _Arg>
@@ -142,8 +142,8 @@ class transform_output_iterator
   static_assert(_CUDA_VSTD::is_object_v<_Fn>, "cuda::transform_output_iterator requires that _Fn is a function object");
 
 public:
-  _CCCL_NO_UNIQUE_ADDRESS _Iter __current_{};
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VRANGES::__movable_box<_Fn> __func_{};
+  _Iter __current_{};
+  _CUDA_VRANGES::__movable_box<_Fn> __func_{};
 
   using _Cat = typename _CUDA_VSTD::iterator_traits<_Iter>::iterator_category;
 

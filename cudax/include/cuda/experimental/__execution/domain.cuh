@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/compose.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
@@ -52,8 +53,16 @@ using _CUDA_STD_EXEC::__query_result_t;
 using _CUDA_STD_EXEC::__queryable_with;
 
 using _CUDA_STD_EXEC::__query_or;
-using _CUDA_STD_EXEC::__query_result_or_t;
+// TODO: Remove this alias once https://github.com/NVIDIA/cccl/pull/5109 is merged.
+// using _CUDA_STD_EXEC::__query_result_or_t;
+template <class _Env, class _Query, class _Default>
+using __query_result_or_t _CCCL_NODEBUG_ALIAS =
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _CUDA_VSTD::declval<_Query>(), _CUDA_VSTD::declval<_Default>()));
 // NOLINTEND(misc-unused-using-decls)
+
+template <class _Env, class _Query, bool _Default>
+_CCCL_CONCEPT __nothrow_queryable_with_or =
+  bool(__queryable_with<_Env, _Query> ? __nothrow_queryable_with<_Env, _Query> : _Default);
 
 template <class _DomainOrTag, class... _Args>
 using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
@@ -138,16 +147,10 @@ struct get_domain_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
     -> _CUDA_VSTD::decay_t<__query_result_t<_Env, get_domain_t>>
   {
     return {};
-  }
-
-  // NOT TO SPEC: return default_domain if the environment does not provide a domain.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t) const noexcept
-  {
-    return default_domain{};
   }
 
   _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept
@@ -163,10 +166,15 @@ struct get_domain_override_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
     -> _CUDA_VSTD::decay_t<__query_result_t<_Env, get_domain_override_t>>
   {
     return {};
+  }
+
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return false;
   }
 };
 
@@ -174,13 +182,14 @@ _CCCL_GLOBAL_CONSTANT get_domain_override_t get_domain_override{};
 
 namespace __detail
 {
-template <class _Env, class _GetScheduler, class _Default>
-_CCCL_API auto __domain_of_fn(const _Env& __env, _GetScheduler, _Default) noexcept -> decltype(__query_or(
-  __env, get_domain, __query_or(__query_or(__env, _GetScheduler{}, __nil{}), get_domain, _Default{})));
-
+// Returns the type of the first expression that is well-formed:
+// - get_domain(env)
+// - get_domain(_GetScheduler{}(env))
+// - _Default{}
 template <class _Env, class _GetScheduler, class _Default = default_domain>
-using __domain_of_t =
-  decltype(__detail::__domain_of_fn(declval<_Env>(), declval<_GetScheduler>(), declval<_Default>()));
+using __domain_of_t = _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<
+  __first_callable<get_domain_t, _CUDA_VSTD::__compose_t<get_domain_t, _GetScheduler>, __always<_Default>>,
+  _Env>>;
 
 template <class _Sndr, class _Default = default_domain>
 _CCCL_TRIVIAL_API constexpr auto __get_domain_early() noexcept
@@ -191,19 +200,15 @@ _CCCL_TRIVIAL_API constexpr auto __get_domain_early() noexcept
 template <class _Sndr, class _Env, class _Default = default_domain>
 _CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
 {
-  using __env_domain_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Env, get_scheduler_t, _Default>;
-
-  // If the sender is a continues_on or schedule_from sender, we check with the sender for
-  // its domain. If it does not provide one, we fall back to using the domain from the
-  // receiver's environment.
+  // Check if the sender's attributes has a get_domain_override query. If so, use that.
+  // Otherwise, we fall back to using the domain from the receiver's environment.
   if constexpr (__queryable_with<env_of_t<_Sndr>, get_domain_override_t>)
   {
-    using __late_domain_t _CCCL_NODEBUG_ALIAS = __query_result_t<env_of_t<_Sndr>, get_domain_override_t>;
-    return _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<__late_domain_t, __nil>, __env_domain_t, __late_domain_t>{};
+    return _CUDA_VSTD::decay_t<__query_result_t<env_of_t<_Sndr>, get_domain_override_t>>{};
   }
   else
   {
-    return __env_domain_t{};
+    return __domain_of_t<_Env, get_scheduler_t, _Default>{};
   }
 }
 } // namespace __detail

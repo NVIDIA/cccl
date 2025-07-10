@@ -43,9 +43,9 @@ namespace cuda::experimental::execution
 {
 namespace __stream
 {
-// Transition from the GPU to the CPU domain
 struct __continues_on_t
 {
+  // Transition from the GPU to the CPU domain
   template <class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
@@ -82,9 +82,9 @@ struct __continues_on_t
     using operation_state_concept = operation_state_t;
     using __env_t                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
-    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr, stream_ref __stream)
+    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
-        , __stream_(__stream)
+        , __stream_(__get_stream(__sndr, execution::get_env(__rcvr_)))
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr>{__rcvr_}))
     {}
 
@@ -127,13 +127,13 @@ struct __continues_on_t
     template <class _Rcvr>
     [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
     {
-      return __opstate_t<_Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), __stream_};
+      return __opstate_t<_Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr)};
     }
 
     template <class _Rcvr>
     [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
     {
-      return __opstate_t<const _Sndr&, _Rcvr>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __stream_};
+      return __opstate_t<const _Sndr&, _Rcvr>{__sndr_, static_cast<_Rcvr&&>(__rcvr)};
     }
 
     [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> env_of_t<_Sndr>
@@ -142,19 +142,29 @@ struct __continues_on_t
     }
 
     _CCCL_NO_UNIQUE_ADDRESS __thunk_t __tag_;
-    stream_ref __stream_;
+    _CUDA_VSTD::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
 
-  template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, const _Env&) const -> decltype(auto)
+  template <class _Sndr>
+  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
   {
     auto& [__tag, __sched, __child] = __sndr;
-    static_assert(__is_specialization_of_v<decltype(__child), __stream::__sndr_t>);
-    using __child_t = _CUDA_VSTD::__copy_cvref_t<_Sndr, decltype(__child)>;
+    using __child_t                 = _CUDA_VSTD::__copy_cvref_t<_Sndr, decltype(__child)>;
 
-    auto __stream = get_stream(get_env(__child));
-    return execution::schedule_from(__sched, __sndr_t<__child_t>{{}, __stream, static_cast<__child_t&&>(__child)});
+    // If the child sender has not already been adapted to be a stream sender,
+    // we adapt it now.
+    if constexpr (!__is_specialization_of_v<decltype(__child), __stream::__sndr_t>)
+    {
+      auto __adapted_sndr    = __stream::__adapt(static_cast<__child_t&&>(__child));
+      using __adapted_sndr_t = decltype(__adapted_sndr);
+      return execution::schedule_from(
+        __sched, __sndr_t<__adapted_sndr_t>{{}, {}, static_cast<__adapted_sndr_t&&>(__adapted_sndr)});
+    }
+    else
+    {
+      return execution::schedule_from(__sched, __sndr_t<decltype(__child)>{{}, {}, static_cast<__child_t&&>(__child)});
+    }
   }
 };
 } // namespace __stream
@@ -164,7 +174,7 @@ struct stream_domain::__apply_t<continues_on_t> : __stream::__continues_on_t
 {};
 
 template <class _Sndr>
-inline constexpr size_t structured_binding_size<stream_domain::__apply_t<continues_on_t>::__sndr_t<_Sndr>> = 3;
+inline constexpr size_t structured_binding_size<__stream::__continues_on_t::__sndr_t<_Sndr>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
