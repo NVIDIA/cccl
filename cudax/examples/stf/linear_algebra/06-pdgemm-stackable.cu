@@ -364,7 +364,7 @@ void run(stackable_ctx& ctx, size_t N, size_t NB)
   cuda_safe_call(cudaEventCreate(&startEvent));
   cuda_safe_call(cudaEventCreate(&stopEvent));
 
-  cuda_safe_call(cudaEventRecord(startEvent, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(startEvent, ctx.fence()));
 
   ctx.push();
   A.push(access_mode::read);
@@ -373,7 +373,7 @@ void run(stackable_ctx& ctx, size_t N, size_t NB)
   PDGEMM(ctx, CUBLAS_OP_N, CUBLAS_OP_N, 1.0, A, B, -2.0, C);
   ctx.pop();
 
-  cuda_safe_call(cudaEventRecord(stopEvent, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stopEvent, ctx.fence()));
 
   ctx.finalize();
 

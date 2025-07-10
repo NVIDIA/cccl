@@ -1028,12 +1028,12 @@ public:
     return get_ctx(offset).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
-  auto task_fence()
+  auto fence()
   {
     auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
-    return get_ctx(offset).task_fence();
+    return get_ctx(offset).fence();
   }
 
   auto get_dot()
@@ -1964,7 +1964,7 @@ UNITTEST("stackable task_fence")
   ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
     reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42);
   };
-  ctx.task_fence();
+  ctx.fence();
   ctx.task(lA.read())->*[](cudaStream_t stream, auto a) {
     reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 44);
   };
