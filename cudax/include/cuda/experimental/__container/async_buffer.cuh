@@ -597,7 +597,8 @@ public:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = device_accessible>
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_device_argument(::cuda::stream_ref, async_buffer& __self) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
+  transform_device_argument(::cuda::stream_ref, async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(_CUDA_VSTD::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
     // TODO add auto synchronization

@@ -81,7 +81,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
     __remove_rvalue_reference_t<decltype(transform_device_argument(::cuda::stream_ref{}, _CUDA_VSTD::declval<_Arg>()))>;
 
   template <typename _Arg>
-  using __transformed_argument_t = __remove_rvalue_reference_t<decltype(_CUDA_VSTD::declval<_Arg>().transformed_argument())>;
+  using __transformed_argument_t =
+    __remove_rvalue_reference_t<decltype(_CUDA_VSTD::declval<_Arg>().transformed_argument())>;
 
 #if _CCCL_COMPILER(MSVC)
   // MSVC has a bug where it rejects the use of an immovable type in a defaulted function

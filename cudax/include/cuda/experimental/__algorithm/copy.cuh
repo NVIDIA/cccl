@@ -112,7 +112,8 @@ void __copy_bytes_impl(stream_ref __stream,
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(__spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
+_CCCL_REQUIRES(
+  __spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
   __detail::__copy_bytes_impl(__stream,

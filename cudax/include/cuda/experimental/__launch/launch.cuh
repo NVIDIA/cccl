@@ -233,7 +233,8 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   else
   {
     static_assert(::cuda::std::is_invocable_v<_Kernel, _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>);
-    auto __launcher = __kernel_launcher_no_config<_Kernel, _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>;
+    auto __launcher =
+      __kernel_launcher_no_config<_Kernel, _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>;
     return __launch_impl(
       __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
       __combined,
