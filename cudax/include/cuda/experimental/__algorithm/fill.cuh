@@ -70,7 +70,7 @@ void __fill_bytes_impl(
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__spannable<device_transform_result_t<_DstTy>>)
+_CCCL_REQUIRES(__spannable<transformed_device_argument_t<_DstTy>>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
   __detail::__fill_bytes_impl(
@@ -92,7 +92,7 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__mdspannable<device_transform_result_t<_DstTy>>)
+_CCCL_REQUIRES(__mdspannable<transformed_device_argument_t<_DstTy>>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
   __detail::__fill_bytes_impl(
