@@ -49,21 +49,22 @@ struct __emplace_device
 };
 } // namespace __detail
 
-namespace device {
-  using attributes = __detail::__device_attrs;
+namespace device
+{
+using attributes = __detail::__device_attrs;
 
-  //! @brief For a given attribute, type of the attribute value.
-  //!
-  //! @par Example
-  //! @code
-  //! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
-  //! static_assert(std::is_same_v<threads_per_block_t, int>);
-  //! @endcode
-  //!
-  //! @sa device::attributes
-  template <::cudaDeviceAttr _Attr>
-  using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
-}
+//! @brief For a given attribute, type of the attribute value.
+//!
+//! @par Example
+//! @code
+//! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
+//! static_assert(std::is_same_v<threads_per_block_t, int>);
+//! @endcode
+//!
+//! @sa device::attributes
+template <::cudaDeviceAttr _Attr>
+using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
+} // namespace device
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -72,13 +73,12 @@ namespace device {
 class physical_device : public device_ref
 {
 public:
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
-  device(__detail::__emplace_device __ed)
-      : device(__ed.__id_)
+  physical_device(__detail::__emplace_device __ed)
+      : physical_device(__ed.__id_)
   {}
 #  endif
 #endif
