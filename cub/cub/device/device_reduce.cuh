@@ -214,6 +214,39 @@ private:
       transform_op);
   }
 
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t transform_reduce_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT,
+    TransformOpT transform_op,
+    T init,
+    ::cuda::execution::determinism::gpu_to_gpu_t,
+    cudaStream_t stream)
+  {
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::
+      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
+
+    using reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
+    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t =
+      detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
+  }
+
   // TODO(gevtushenko): dispatch to atomic reduce once merged
   template <typename TuningEnvT,
             typename InputIteratorT,
