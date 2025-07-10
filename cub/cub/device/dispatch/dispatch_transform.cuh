@@ -54,6 +54,7 @@ namespace detail::transform
 template <typename Offset,
           typename RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
+          typename Predicate,
           typename TransformOp,
           typename PolicyHub>
 struct TransformKernelSource;
@@ -62,11 +63,13 @@ struct TransformKernelSource;
 template <typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
+          typename Predicate,
           typename TransformOp,
           typename PolicyHub>
 struct TransformKernelSource<Offset,
                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                              RandomAccessIteratorOut,
+                             Predicate,
                              TransformOp,
                              PolicyHub>
 {
@@ -74,6 +77,7 @@ struct TransformKernelSource<Offset,
     TransformKernel,
     transform_kernel<typename PolicyHub::max_policy,
                      Offset,
+                     Predicate,
                      TransformOp,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
@@ -139,11 +143,14 @@ template <
   typename Offset,
   typename RandomAccessIteratorTupleIn,
   typename RandomAccessIteratorOut,
+  typename Predicate,
   typename TransformOp,
-  typename PolicyHub =
-    policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn, RandomAccessIteratorOut>,
+  typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes,
+                                  Predicate,
+                                  RandomAccessIteratorTupleIn,
+                                  RandomAccessIteratorOut>,
   typename KernelSource =
-    TransformKernelSource<Offset, RandomAccessIteratorTupleIn, RandomAccessIteratorOut, TransformOp, PolicyHub>,
+    TransformKernelSource<Offset, RandomAccessIteratorTupleIn, RandomAccessIteratorOut, Predicate, TransformOp, PolicyHub>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct dispatch_t;
 
@@ -151,6 +158,7 @@ template <requires_stable_address StableAddress,
           typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
+          typename Predicate,
           typename TransformOp,
           typename PolicyHub,
           typename KernelSource,
@@ -159,6 +167,7 @@ struct dispatch_t<StableAddress,
                   Offset,
                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
+                  Predicate,
                   TransformOp,
                   PolicyHub,
                   KernelSource,
@@ -171,6 +180,7 @@ struct dispatch_t<StableAddress,
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
   RandomAccessIteratorOut out;
   Offset num_items;
+  Predicate pred;
   TransformOp op;
   int bulk_copy_align;
   cudaStream_t stream;
@@ -179,9 +189,10 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
-    ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
+  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size)
+    -> cuda_expected<
+      ::cuda::std::
+        tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
   {
     // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
     using policy_t              = typename ActivePolicy::algo_policy;
@@ -273,6 +284,7 @@ struct dispatch_t<StableAddress,
       num_items,
       elem_per_thread,
       false,
+      pred,
       op,
       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
       make_aligned_base_ptr_kernel_arg(
@@ -365,10 +377,9 @@ struct dispatch_t<StableAddress,
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
       // elements
-      const int items_per_thread_evenly_spread = static_cast<int>(
-        (::cuda::std::min) (Offset{items_per_thread},
-                            num_items / (config->sm_count * block_threads * config->max_occupancy)));
-      const int items_per_thread_clamped = ::cuda::std::clamp(
+      const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
+        Offset{items_per_thread}, num_items / (config->sm_count * block_threads * config->max_occupancy)));
+      const int items_per_thread_clamped       = ::cuda::std::clamp(
         items_per_thread_evenly_spread, +wrapped_policy.MinItemsPerThread(), +wrapped_policy.MaxItemsPerThread());
       return items_per_thread_clamped;
     }();
@@ -380,6 +391,7 @@ struct dispatch_t<StableAddress,
               num_items,
               ipt,
               can_vectorize,
+              pred,
               op,
               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
               kernel_source.MakeIteratorKernelArg(
@@ -412,6 +424,7 @@ struct dispatch_t<StableAddress,
     ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
     RandomAccessIteratorOut out,
     Offset num_items,
+    Predicate pred,
     TransformOp op,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
@@ -434,6 +447,7 @@ struct dispatch_t<StableAddress,
       ::cuda::std::move(in),
       ::cuda::std::move(out),
       num_items,
+      ::cuda::std::move(pred),
       ::cuda::std::move(op),
       bulk_copy_alignment(ptx_version),
       stream,

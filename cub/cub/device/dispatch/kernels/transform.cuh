@@ -77,16 +77,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // parameter yields a global memory address.
 template <typename PrefetchPolicy,
           typename Offset,
+          typename Predicate,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteratorIn>
 _CCCL_DEVICE void transform_kernel_prefetch(
-  Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, RandomAccessIteratorIn... ins)
+  Offset num_items,
+  int num_elem_per_thread,
+  Predicate pred,
+  F f,
+  RandomAccessIteratorOut out,
+  RandomAccessIteratorIn... ins)
 {
   constexpr int block_threads = PrefetchPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int valid_items       = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -105,8 +111,11 @@ _CCCL_DEVICE void transform_kernel_prefetch(
       const int idx = j * block_threads + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
-        // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
-        out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...);
+        if (pred(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...))
+        {
+          // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
+          out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...);
+        }
       }
     }
   };
@@ -187,7 +196,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_dim * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int valid_items   = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
@@ -473,9 +482,19 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
-template <typename LdgstsPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
+template <typename LdgstsPolicy,
+          typename Offset,
+          typename Predicate,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... InTs>
 _CCCL_DEVICE void transform_kernel_ldgsts(
-  Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
+  Offset num_items,
+  int num_elem_per_thread,
+  Predicate pred,
+  F f,
+  RandomAccessIteratorOut out,
+  aligned_base_ptr<InTs>... aligned_ptrs)
 {
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
@@ -512,9 +531,12 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
       const int idx = j * block_threads + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
-        out[idx] = ::cuda::std::apply(
+        ::cuda::std::apply(
           [&](const auto* __restrict__... smem_base_ptrs) {
-            return f(smem_base_ptrs[idx]...);
+            if (pred(smem_base_ptrs[idx]...))
+            {
+              out[idx] = f(smem_base_ptrs[idx]...);
+            }
           },
           smem_ptrs);
       }
@@ -605,9 +627,19 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 }
 
-template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
+template <typename BulkCopyPolicy,
+          typename Offset,
+          typename Predicate,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
-  Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
+  Offset num_items,
+  int num_elem_per_thread,
+  Predicate pred,
+  F f,
+  RandomAccessIteratorOut out,
+  aligned_base_ptr<InTs>... aligned_ptrs)
 {
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
@@ -650,7 +682,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_threads = BulkCopyPolicy::block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = (::cuda::std::min) (num_items - offset, Offset{tile_size});
+  const int valid_items       = (::cuda::std::min)(num_items - offset, Offset{tile_size});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -781,9 +813,12 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         };
 
         // need to expand into a tuple for guaranteed order of evaluation
-        out[idx] = ::cuda::std::apply(
+        ::cuda::std::apply(
           [&](auto... values) {
-            return f(values...);
+            if (pred(values[idx]...))
+            {
+              out[idx] = f(values[idx]...);
+            }
           },
           ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
       }
@@ -846,6 +881,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 // saves some compile-time and binary size.
 template <typename MaxPolicy,
           typename Offset,
+          typename Predicate,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteartorsIn>
@@ -854,6 +890,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     Offset num_items,
     int num_elem_per_thread,
     [[maybe_unused]] bool can_vectorize,
+    Predicate pred,
     F f,
     RandomAccessIteratorOut out,
     kernel_arg<RandomAccessIteartorsIn>... ins)
@@ -863,10 +900,17 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::prefetch)
   {
     transform_kernel_prefetch<typename MaxPolicy::ActivePolicy::algo_policy>(
-      num_items, num_elem_per_thread, ::cuda::std::move(f), ::cuda::std::move(out), ::cuda::std::move(ins.iterator)...);
+      num_items,
+      num_elem_per_thread,
+      ::cuda::std::move(pred),
+      ::cuda::std::move(f),
+      ::cuda::std::move(out),
+      ::cuda::std::move(ins.iterator)...);
   }
   else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::vectorized)
   {
+    static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
+                  "Cannot vectorize transform with a predicate");
     transform_kernel_vectorized<typename MaxPolicy::ActivePolicy::algo_policy>(
       num_items,
       num_elem_per_thread,
@@ -882,6 +926,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
       (transform_kernel_ldgsts<typename MaxPolicy::ActivePolicy::algo_policy>(
          num_items,
          num_elem_per_thread,
+         ::cuda::std::move(pred),
          ::cuda::std::move(f),
          ::cuda::std::move(out),
          ::cuda::std::move(ins.aligned_ptr)...);));
@@ -893,6 +938,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
       (transform_kernel_ublkcp<typename MaxPolicy::ActivePolicy::algo_policy>(
          num_items,
          num_elem_per_thread,
+         ::cuda::std::move(pred),
          ::cuda::std::move(f),
          ::cuda::std::move(out),
          ::cuda::std::move(ins.aligned_ptr)...);));
