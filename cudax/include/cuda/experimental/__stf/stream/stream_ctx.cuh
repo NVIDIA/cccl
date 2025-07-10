@@ -300,7 +300,7 @@ public:
     return result;
   }
 
-  cudaStream_t task_fence()
+  cudaStream_t fence()
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
@@ -309,12 +309,12 @@ public:
         ? user_dstream.value()
         : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
 
-    auto prereqs = get_state().insert_task_fence(*get_dot());
+    auto prereqs = get_state().insert_fence(*get_dot());
 
     prereqs.optimize(*this);
 
     // The output event is used for the tools in practice so we can ignore it
-    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
+    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "fence", false);
 
     return dstream.stream;
   }
@@ -585,10 +585,10 @@ public:
       }
 
       cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(task_fence()));
+      cuda_safe_call(cudaStreamSynchronize(fence()));
       cuda_safe_call(cudaEventCreate(&startEvent));
       cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, task_fence()));
+      cuda_safe_call(cudaEventRecord(startEvent, fence()));
     }
 
     for (int id : state.deferred_tasks)
@@ -600,7 +600,7 @@ public:
     if (reordering_tasks())
     {
       cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, task_fence()));
+      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
       cuda_safe_call(cudaEventSynchronize(stopEvent));
       cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
     }
@@ -609,14 +609,14 @@ public:
     state.erase_all_logical_data();
     state.detach_allocators(*this);
 
-    state.submitted_stream = task_fence();
+    state.submitted_stream = fence();
     assert(state.submitted_stream != nullptr);
 
     set_phase(backend_ctx_untyped::phase::submitted);
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_epoch() {}
+  void change_stage() {}
 
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
@@ -699,7 +699,7 @@ private:
     float submission_time         = 0.0;
 
     // If the context is attached to a user stream, we should use it for
-    // finalize() or task_fence()
+    // finalize() or fence()
     ::std::optional<decorated_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided

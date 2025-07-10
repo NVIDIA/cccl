@@ -630,7 +630,7 @@ public:
 
   // Non copyable unique id, ok because we use shared pointers
   unique_id<per_ctx_dot> id;
-
+  
   // Get the unique id of this per-context descriptor
   int get_unique_id() const
   {
@@ -767,7 +767,6 @@ public:
     if (outFile.is_open())
     {
       outFile << "digraph {\n";
-
       compute_critical_path(outFile);
 
       // We only put the root level (context) in a box if there are more than

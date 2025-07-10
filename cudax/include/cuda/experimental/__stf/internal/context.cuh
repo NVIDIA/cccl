@@ -615,12 +615,12 @@ public:
       payload);
   }
 
-  cudaStream_t task_fence()
+  cudaStream_t fence()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
-        return self.task_fence();
+        return self.fence();
       },
       payload);
   }
@@ -674,12 +674,12 @@ public:
       payload);
   }
 
-  void change_epoch()
+  void change_stage()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [](auto& self) {
-        self.change_epoch();
+        self.change_stage();
       },
       payload);
   }
@@ -852,7 +852,7 @@ public:
 UNITTEST("context")
 {
   context ctx;
-  ctx.task_fence();
+  ctx.fence();
   ctx.submit();
   ctx.finalize();
 };
@@ -867,7 +867,7 @@ UNITTEST("context from existing contexts")
 UNITTEST("context to make generic code")
 {
   auto f = [](context ctx) {
-    ctx.task_fence();
+    ctx.fence();
   };
 
   stream_ctx ctx1;

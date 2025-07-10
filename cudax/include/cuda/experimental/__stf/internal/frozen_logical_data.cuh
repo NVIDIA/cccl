@@ -91,7 +91,7 @@ private:
 
       /* Use the ID of the fake task to identify "get" events. This makes
        * it possible to automatically synchronize with these events when calling
-       * task_fence. */
+       * fence. */
       bctx.get_state().add_pending_freeze(freeze_fake_task, result.second);
 
       return mv(result);
@@ -118,7 +118,7 @@ private:
         }
       }
 
-      // There is no need to automatically synchronize with the get() operation in task_fence now
+      // There is no need to automatically synchronize with the get() operation in fence now
       bctx.get_state().remove_pending_freeze(freeze_fake_task);
 
       // This sets the "done prereqs" of the unfreeze fake task, so that other tasks can wait for its completion
