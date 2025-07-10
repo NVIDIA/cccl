@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 
   const char* const method = argc >= 2 ? argv[1] : "launch-partition";
 
-  stopwatch sw(stopwatch::autostart, ctx.task_fence());
+  stopwatch sw(stopwatch::autostart, ctx.fence());
 
   if (strcmp(method, "launch-partition") == 0)
   {
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  sw.stop(ctx.task_fence());
+  sw.stop(ctx.fence());
 
   ctx.finalize();
 

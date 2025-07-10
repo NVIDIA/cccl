@@ -90,9 +90,9 @@ __host__ __device__ constexpr bool test()
     assert(cuda::std::ranges::distance(a + 3, EvilSentinel<const int*>{a}) == -3);
     assert(cuda::std::ranges::distance(cuda::std::move(a), EvilSentinel<const int*>{a + 3}) == 3);
     static_assert(
-      !cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const int(&)[3], EvilSentinel<int*>>);
+      !cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const int (&)[3], EvilSentinel<int*>>);
     static_assert(
-      !cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const int(&&)[3], EvilSentinel<int*>>);
+      !cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const int (&&)[3], EvilSentinel<int*>>);
   }
 
   return true;

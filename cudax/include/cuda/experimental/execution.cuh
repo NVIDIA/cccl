@@ -24,6 +24,7 @@
 #include <cuda/experimental/__execution/just.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/let_value.cuh>
+#include <cuda/experimental/__execution/on.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/read_env.cuh>

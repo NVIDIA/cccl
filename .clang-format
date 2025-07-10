@@ -27,6 +27,7 @@ AttributeMacros: [
                   '_CCCL_ALIGNAS',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
+                  '_CCCL_DECLSPEC_EMPTY_BASES',
                   '_CCCL_DEVICE',
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HIDE_FROM_ABI',

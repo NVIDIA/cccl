@@ -34,8 +34,8 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
-                             // will always produce an error when instantiated.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
+                                   // will always produce an error when instantiated.
 
 namespace cuda::experimental
 {
@@ -198,8 +198,15 @@ extern __fn_ptr_t<_Tag> __tag_of_v;
 template <class _Sndr>
 using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
+template <class _Sndr, class... _Tag>
+inline constexpr bool __sender_for_v = _CCCL_REQUIRES_EXPR((_Sndr, variadic _Tag))(tag_of_t<_Sndr>{});
+
 template <class _Sndr, class _Tag>
-_CCCL_CONCEPT sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
+inline constexpr bool __sender_for_v<_Sndr, _Tag> =
+  _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
+
+template <class _Sndr, class... _Tag>
+_CCCL_CONCEPT sender_for = __sender_for_v<_Sndr, _Tag...>;
 
 namespace __detail
 {
@@ -222,7 +229,7 @@ struct stream_scheduler;
 
 } // namespace cuda::experimental
 
-_CCCL_NV_DIAG_DEFAULT(2642)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

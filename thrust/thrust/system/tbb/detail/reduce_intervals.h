@@ -76,7 +76,7 @@ struct body
     Size interval_idx = r.begin();
 
     Size offset_to_first = interval_size * interval_idx;
-    Size offset_to_last  = (::cuda::std::min)(n, offset_to_first + interval_size);
+    Size offset_to_last  = (::cuda::std::min) (n, offset_to_first + interval_size);
 
     RandomAccessIterator1 my_first = first + offset_to_first;
     RandomAccessIterator1 my_last  = first + offset_to_last;

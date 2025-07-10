@@ -9,7 +9,7 @@ from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
 from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -22,7 +22,7 @@ def test_warp_reduction_of_integral_type(T):
     def op(a, b):
         return a if a < b else b
 
-    warp_reduce = cudax.warp.reduce(T, op)
+    warp_reduce = coop.warp.reduce(T, op)
     temp_storage_bytes = warp_reduce.temp_storage_bytes
 
     @cuda.jit(link=warp_reduce.files)
@@ -53,7 +53,7 @@ def test_warp_reduction_of_integral_type(T):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_sum(T):
-    warp_reduce = cudax.warp.sum(T)
+    warp_reduce = coop.warp.sum(T)
     temp_storage_bytes = warp_reduce.temp_storage_bytes
 
     @cuda.jit(link=warp_reduce.files)

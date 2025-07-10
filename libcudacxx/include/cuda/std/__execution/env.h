@@ -427,7 +427,7 @@ _CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default>
 using __query_result_or_t _CCCL_NODEBUG_ALIAS =
-  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _Query{}, _CUDA_VSTD::declval<_Default>()));
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _CUDA_VSTD::declval<_Query>(), _CUDA_VSTD::declval<_Default>()));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 
