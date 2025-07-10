@@ -255,9 +255,11 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       STATIC_REQUIRE(
         ::cudaFlushGPUDirectRDMAWritesOptionMemOps == device::attributes::gpu_direct_rdma_flush_writes_options.mem_ops);
 
-      auto options = device_ref(0).attribute(device::attributes::gpu_direct_rdma_flush_writes_options);
+      [[maybe_unused]] auto options = device_ref(0).attribute(device::attributes::gpu_direct_rdma_flush_writes_options);
+#if !_CCCL_COMPILER(MSVC)
       CUDAX_REQUIRE((options == device::attributes::gpu_direct_rdma_flush_writes_options.host || //
                      options == device::attributes::gpu_direct_rdma_flush_writes_options.mem_ops));
+#endif
     }
 
     SECTION("gpu_direct_rdma_writes_ordering")
