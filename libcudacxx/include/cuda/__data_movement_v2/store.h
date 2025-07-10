@@ -47,44 +47,28 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 #  if 0
 
-#    define _CCCL_STORE_PTX_CALL(_L1_POLICY, _L2_POLICY, _L2_HINT, ...)                                    \
-      if constexpr (_L2_POLICY == cache_reuse_unchanged)                                                   \
-      {                                                                                                    \
-        _CUDA_VPTX::st##_L1_POLICY##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);                   \
-      }                                                                                                    \
-      else if constexpr (_L2_POLICY == cache_reuse_normal)                                                 \
-      {                                                                                                    \
-        _CUDA_VPTX::st##_L1_POLICY##_L2_evict_normal##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__); \
-      }                                                                                                    \
-      else if constexpr (_L2_POLICY == cache_reuse_low)                                                    \
-      {                                                                                                    \
-        _CUDA_VPTX::st##_L1_POLICY##_L2_evict_first##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);  \
-      }                                                                                                    \
-      else if constexpr (_L2_POLICY == cache_reuse_high)                                                   \
-      {                                                                                                    \
-        _CUDA_VPTX::st##_L1_POLICY##_L2_evict_last##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);   \
+#    define _CCCL_STORE_PTX_CALL(_L1_POLICY, _L2_POLICY, _L2_HINT, ...)                                   \
+      if constexpr (_L2_POLICY == cache_reuse_low)                                                        \
+      {                                                                                                   \
+        _CUDA_VPTX::st##_L1_POLICY##_L2_evict_first##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__); \
+      }                                                                                                   \
+      else if constexpr (_L2_POLICY == cache_reuse_high)                                                  \
+      {                                                                                                   \
+        _CUDA_VPTX::st##_L1_POLICY##_L2_evict_last##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);  \
       }
 
-#    define _CCCL_STORE_ADD_L1_POLICY(_L1_POLICY, _L2_POLICY, _L2_HINT, ...)       \
-      if constexpr (_L1_POLICY == cache_reuse_unchanged)                           \
-      {                                                                            \
-        _CCCL_STORE_PTX_CALL(, _L2_POLICY, _L2_HINT, __VA_ARGS__);                 \
-      }                                                                            \
-      else if constexpr (_L1_POLICY == cache_reuse_normal)                         \
-      {                                                                            \
-        _CCCL_STORE_PTX_CALL(_L1_evict_normal, _L2_POLICY, _L2_HINT, __VA_ARGS__); \
-      }                                                                            \
-      else if constexpr (_L1_POLICY == cache_reuse_low)                            \
-      {                                                                            \
-        _CCCL_STORE_PTX_CALL(_L1_evict_first, _L2_POLICY, _L2_HINT, __VA_ARGS__);  \
-      }                                                                            \
-      else if constexpr (_L1_POLICY == cache_reuse_high)                           \
-      {                                                                            \
-        _CCCL_STORE_PTX_CALL(_L1_evict_last, _L2_POLICY, _L2_HINT, __VA_ARGS__);   \
-      }                                                                            \
-      else if constexpr (_L1_POLICY == cache_no_reuse)                             \
-      {                                                                            \
-        _CCCL_STORE_PTX_CALL(_L1_no_allocate, _L2_POLICY, _L2_HINT, __VA_ARGS__);  \
+#    define _CCCL_STORE_ADD_L1_POLICY(_L1_POLICY, _L2_POLICY, _L2_HINT, ...)      \
+      if constexpr (_L1_POLICY == cache_reuse_low)                                \
+      {                                                                           \
+        _CCCL_STORE_PTX_CALL(_L1_evict_first, _L2_POLICY, _L2_HINT, __VA_ARGS__); \
+      }                                                                           \
+      else if constexpr (_L1_POLICY == cache_reuse_high)                          \
+      {                                                                           \
+        _CCCL_STORE_PTX_CALL(_L1_evict_last, _L2_POLICY, _L2_HINT, __VA_ARGS__);  \
+      }                                                                           \
+      else if constexpr (_L1_POLICY == cache_no_reuse)                            \
+      {                                                                           \
+        _CCCL_STORE_PTX_CALL(_L1_no_allocate, _L2_POLICY, _L2_HINT, __VA_ARGS__); \
       }
 
 /***********************************************************************************************************************
@@ -147,7 +131,7 @@ _CCCL_DEVICE_API void __store_sm100(
 
 template <typename _Tp, _LdStPropertyEnum... Args>
 _CCCL_DEVICE_API void
-__store_arch_dispatch(_Tp* __ptr, _Tp __data, [[maybe_unused]] _StoreProperties<Args...> __props) noexcept
+__store_arch_dispatch(_Tp* __ptr, _Tp __data, [[maybe_unused]] _LdstProperties<Args...> __props) noexcept
 {
   // clang-format off
   NV_DISPATCH_TARGET(//NV_PROVIDES_SM_100, (_CUDA_DEVICE::__store_sm100(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint);),
@@ -164,14 +148,14 @@ __store_arch_dispatch(_Tp* __ptr, _Tp __data, [[maybe_unused]] _StoreProperties<
 
 template <size_t _MaxPtxAccessSize, typename _Tp, size_t _Align, _LdStPropertyEnum... Args>
 _CCCL_DEVICE_API void
-__store_impl(_Tp* __ptr, _Tp __data, aligned_size_t<_Align>, _StoreProperties<Args...> __props) noexcept
+__store_impl(_Tp* __ptr, _Tp __data, aligned_size_t<_Align>, _LdstProperties<Args...> __props) noexcept
 {
   static_assert(!_CUDA_VSTD::is_const_v<_Tp>, "_Tp must not be const");
+  static_assert((!_CUDA_DEVICE::__has_property<Args>(__st_allowed{}) && ...), "property not allowed for store");
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
-  _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
+  _CCCL_ASSERT(::__isGlobal(__ptr), "'ptr' must point to global memory");
   _CCCL_ASSERT(::cuda::is_aligned(__ptr, _Align), "'ptr' must be aligned");
   constexpr auto __max_align = _CUDA_VSTD::min({_Align, _MaxPtxAccessSize, sizeof(_Tp)});
-  static_assert(!_CUDA_VSTD::is_pointer_v<_Tp>, "__data must not be a pointer");
   static_assert(sizeof(_Tp) % __max_align == 0);
   static_assert(::cuda::is_power_of_two(__max_align), "sizeof(_Tp) must be a power of 2 for overaligned types");
   constexpr auto __num_unroll = sizeof(_Tp) / __max_align;
@@ -186,7 +170,7 @@ __store_impl(_Tp* __ptr, _Tp __data, aligned_size_t<_Align>, _StoreProperties<Ar
 
 template <typename _Tp, size_t _Align, _LdStPropertyEnum... Args>
 _CCCL_DEVICE_API void __store_ptx_isa_dispatch(
-  _Tp* __ptr, _Tp __data, aligned_size_t<_Align> __align, _StoreProperties<Args...> __props) noexcept
+  _Tp* __ptr, _Tp __data, aligned_size_t<_Align> __align, _LdstProperties<Args...> __props) noexcept
 {
   if constexpr (__cccl_ptx_isa >= 880)
   {
@@ -205,7 +189,7 @@ _CCCL_DEVICE_API void __store_span(
   _Tp* __ptr,
   _CUDA_VSTD::span<_Tp, _Np> __data,
   aligned_size_t<_Align> __align,
-  _StoreProperties<Args...> __props) noexcept
+  _LdstProperties<Args...> __props) noexcept
 {
   static_assert(_Np > 0 && _Np != _CUDA_VSTD::dynamic_extent);
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
@@ -224,14 +208,14 @@ _CCCL_DEVICE_API void __store_span(
  **********************************************************************************************************************/
 
 template <typename _Tp, _LdStPropertyEnum... Args>
-_CCCL_DEVICE_API void store(_Tp* __ptr, _Tp __data, _StoreProperties<Args...> __props = {}) noexcept
+_CCCL_DEVICE_API void store(_Tp* __ptr, _Tp __data, _LdstProperties<Args...> __props = {}) noexcept
 {
   constexpr auto __align = aligned_size_t<alignof(_Tp)>{sizeof(_Tp)};
   _CUDA_DEVICE::__store_ptx_isa_dispatch(__ptr, __data, __align, __props);
 }
 
 template <typename _Tp, typename _Prop, _LdStPropertyEnum... Args>
-_CCCL_DEVICE_API void store(annotated_ptr<_Tp, _Prop> __ptr, _Tp __data, _StoreProperties<Args...> __props = {}) noexcept
+_CCCL_DEVICE_API void store(annotated_ptr<_Tp, _Prop> __ptr, _Tp __data, _LdstProperties<Args...> __props = {}) noexcept
 {
   constexpr auto __align = aligned_size_t<alignof(_Tp)>{sizeof(_Tp)};
   _CUDA_DEVICE::__store_ptx_isa_dispatch(__ptr, __data, __align, __props | __ptr.__property());
@@ -241,8 +225,8 @@ template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _LdStPropertyE
 _CCCL_DEVICE_API void
 store(_Tp* __ptr,
       _CUDA_VSTD::span<_Tp, _Np> __data,
-      aligned_size_t<_Align> __align    = aligned_size_t<_Align>{sizeof(_Tp) * _Np},
-      _StoreProperties<Args...> __props = {}) noexcept
+      aligned_size_t<_Align> __align   = aligned_size_t<_Align>{sizeof(_Tp) * _Np},
+      _LdstProperties<Args...> __props = {}) noexcept
 {
   _CUDA_DEVICE::__store_span<_Np>(__ptr, __data, __align, __props);
 }
@@ -251,8 +235,8 @@ template <size_t _Np, typename _Tp, typename _Prop, size_t _Align = alignof(_Tp)
 _CCCL_DEVICE_API void
 store(annotated_ptr<_Tp, _Prop> __ptr,
       _CUDA_VSTD::span<_Tp, _Np> __data,
-      aligned_size_t<_Align> __align    = aligned_size_t<_Align>{sizeof(_Tp) * _Np},
-      _StoreProperties<Args...> __props = {}) noexcept
+      aligned_size_t<_Align> __align   = aligned_size_t<_Align>{sizeof(_Tp) * _Np},
+      _LdstProperties<Args...> __props = {}) noexcept
 {
   _CUDA_DEVICE::__store_span<_Np>(__ptr.__get_raw_ptr(), __data, __align, __props | __ptr.__property());
 }

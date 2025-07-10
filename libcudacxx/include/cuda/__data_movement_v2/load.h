@@ -47,17 +47,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 #  if 0
 
 #    define _CCCL_LOAD_PTX_CALL(_LOAD_BEHAVIOR, _L1_POLICY, _L2_POLICY, _CACHE_HINT, _PREFETCH, ...) \
-      if constexpr ((_PREFETCH) == L2_prefetch_none)                                                 \
-      {                                                                                              \
-        return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##_L1_POLICY##_L2_POLICY##_CACHE_HINT(                  \
-          _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                \
-      }                                                                                              \
-      else if constexpr ((_PREFETCH) == L2_prefetch_64B)                                             \
-      {                                                                                              \
-        return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##_L1_POLICY##_L2_POLICY##_CACHE_HINT##_L2_64B(         \
-          _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                \
-      }                                                                                              \
-      else if constexpr ((_PREFETCH) == L2_prefetch_128B)                                            \
+      if constexpr ((_PREFETCH) == L2_prefetch_128B)                                                 \
       {                                                                                              \
         return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##_L1_POLICY##_L2_POLICY##_CACHE_HINT##_L2_128B(        \
           _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                \
@@ -68,44 +58,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
           _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                \
       }
 
-#    define _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_POLICY, _L2_POLICY, _CACHE_HINT, _PREFETCH, ...)       \
-      if constexpr ((_L2_POLICY) == cache_reuse_unchanged)                                                      \
-      {                                                                                                         \
-        _CCCL_LOAD_PTX_CALL(_LOAD_BEHAVIOR, _L1_POLICY, , _CACHE_HINT, _PREFETCH, __VA_ARGS__);                 \
-      }                                                                                                         \
-      else if constexpr ((_L2_POLICY) == cache_reuse_normal)                                                    \
-      {                                                                                                         \
-        _CCCL_LOAD_PTX_CALL(_LOAD_BEHAVIOR, _L1_POLICY, _L2_evict_normal, _CACHE_HINT, _PREFETCH, __VA_ARGS__); \
-      }                                                                                                         \
-      else if constexpr ((_L2_POLICY) == cache_reuse_low)                                                       \
-      {                                                                                                         \
-        _CCCL_LOAD_PTX_CALL(_LOAD_BEHAVIOR, _L1_POLICY, _L2_evict_first, _CACHE_HINT, _PREFETCH, __VA_ARGS__);  \
-      }                                                                                                         \
-      else if constexpr ((_L2_POLICY) == cache_reuse_high)                                                      \
-      {                                                                                                         \
-        _CCCL_LOAD_PTX_CALL(_LOAD_BEHAVIOR, _L1_POLICY, _L2_evict_last, _CACHE_HINT, _PREFETCH, __VA_ARGS__);   \
-      }
-
-#    define _CCCL_LOAD_ADD_L1_POLICY(_LOAD_BEHAVIOR, _L1_POLICY, _L2_POLICY, _CACHE_HINT, _PREFETCH, ...)            \
-      if constexpr ((_L1_POLICY) == cache_reuse_unchanged)                                                           \
-      {                                                                                                              \
-        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, , _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__);                 \
-      }                                                                                                              \
-      else if constexpr ((_L1_POLICY) == cache_reuse_normal)                                                         \
-      {                                                                                                              \
-        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_evict_normal, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__); \
-      }                                                                                                              \
-      else if constexpr ((_L1_POLICY) == cache_reuse_low)                                                            \
-      {                                                                                                              \
-        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_evict_first, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__);  \
-      }                                                                                                              \
-      else if constexpr ((_L1_POLICY) == cache_reuse_high)                                                           \
-      {                                                                                                              \
-        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_evict_last, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__);   \
-      }                                                                                                              \
-      else if constexpr ((_L1_POLICY) == cache_no_reuse)                                                             \
-      {                                                                                                              \
-        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_no_allocate, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__);  \
+#    define _CCCL_LOAD_ADD_L1_POLICY(_LOAD_BEHAVIOR, _L1_POLICY, _L2_POLICY, _CACHE_HINT, _PREFETCH, ...)           \
+      if constexpr ((_L1_POLICY) == cache_reuse_low)                                                                \
+      {                                                                                                             \
+        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_evict_first, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__); \
+      }                                                                                                             \
+      else if constexpr ((_L1_POLICY) == cache_reuse_high)                                                          \
+      {                                                                                                             \
+        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_evict_last, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__);  \
+      }                                                                                                             \
+      else if constexpr ((_L1_POLICY) == cache_no_reuse)                                                            \
+      {                                                                                                             \
+        _CCCL_LOAD_ADD_L2_POLICY(_LOAD_BEHAVIOR, _L1_no_allocate, _L2_POLICY, _CACHE_HINT, _PREFETCH, __VA_ARGS__); \
       }
 
 /***********************************************************************************************************************
@@ -178,38 +142,6 @@ template <typename _Tp, _MemoryAccess _MemAccess, _CacheReuseEnum _L1, typename 
   }
 }
 
-
-template <typename _Tp,
-          _MemoryAccess _MemAccess,
-          _CacheReuseEnum _L1,
-          _CacheReuseEnum _L2,
-          typename _AccessProperty,
-          _L2_PrefetchEnum _Prefecth>
-[[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _Tp __load_sm100(
-  const _Tp* __ptr,
-  __memory_access_t<_MemAccess> __memory_access,
-  __cache_reuse_t<_L1> __l1_reuse,
-  __cache_reuse_t<_L2> __l2_reuse,
-  __l2_hint_t<_AccessProperty> __l2_hint,
-  __l2_prefetch_t<_Prefecth> __l2_prefetch) noexcept
-{
-  if constexpr (__l2_reuse == cache_reuse_unchanged || sizeof(_Tp) <= 8)
-  {
-    return __load_sm80(__ptr, __memory_access, __l1_reuse, __l2_hint, __l2_prefetch);
-  }
-  else
-  {
-    if constexpr (__memory_access == read_write)
-    {
-      _CCCL_LOAD_ADD_L1_POLICY(, __l1_reuse, __l2_reuse, _L2_cache_hint, __l2_prefetch, __ptr, __l2_hint.__property);
-    }
-    else
-    {
-      _CCCL_LOAD_ADD_L1_POLICY(_nc, __l1_reuse, __l2_reuse, _L2_cache_hint, __l2_prefetch, __ptr, __l2_hint.__property);
-    }
-  }
-}
-
 #    undef _CCCL_LOAD_PTX_CALL
 #    undef _CCCL_LOAD_ADD_L1_POLICY
 
@@ -221,7 +153,7 @@ template <typename _Tp,
 
 template <typename _Tp, _LdStPropertyEnum... Args>
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _Tp
-__load_arch_dispatch(const _Tp* __ptr, [[maybe_unused]] _LoadProperties<Args...> __props) noexcept
+__load_arch_dispatch(const _Tp* __ptr, [[maybe_unused]] _LdstProperties<Args...> __props) noexcept
 {
   // clang-format off
   NV_DISPATCH_TARGET(
@@ -240,10 +172,10 @@ __load_arch_dispatch(const _Tp* __ptr, [[maybe_unused]] _LoadProperties<Args...>
 
 template <size_t _MaxPtxAccessSize, typename _Tp, size_t _Align, _LdStPropertyEnum... Args>
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _Tp
-__load_impl(const _Tp* __ptr, aligned_size_t<_Align>, _LoadProperties<Args...> __props) noexcept
+__load_impl(const _Tp* __ptr, aligned_size_t<_Align>, _LdstProperties<Args...> __props) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
-  _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
+  _CCCL_ASSERT(::__isGlobal(__ptr), "'ptr' must point to global memory");
   _CCCL_ASSERT(::cuda::is_aligned(__ptr, _Align), "'ptr' must be aligned");
   constexpr auto __max_align  = _CUDA_VSTD::min({_Align, _MaxPtxAccessSize, sizeof(_Tp)});
   constexpr auto __num_unroll = sizeof(_Tp) / __max_align;
@@ -260,7 +192,7 @@ __load_impl(const _Tp* __ptr, aligned_size_t<_Align>, _LoadProperties<Args...> _
 
 template <typename _Tp, size_t _Align, _LdStPropertyEnum... Args>
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _Tp
-__load_ptx_isa_dispatch(const _Tp* __ptr, aligned_size_t<_Align> __align, _LoadProperties<Args...> __props) noexcept
+__load_ptx_isa_dispatch(const _Tp* __ptr, aligned_size_t<_Align> __align, _LdstProperties<Args...> __props) noexcept
 {
   if constexpr (__cccl_ptx_isa >= 880)
   {
@@ -276,7 +208,7 @@ __load_ptx_isa_dispatch(const _Tp* __ptr, aligned_size_t<_Align> __align, _LoadP
 
 template <size_t _Np, typename _Tp, size_t _Align, _LdStPropertyEnum... Args>
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _CUDA_VSTD::array<_Tp, _Np>
-__load_array(const _Tp* __ptr, aligned_size_t<_Align> __align, _LoadProperties<Args...> __props) noexcept
+__load_array(const _Tp* __ptr, aligned_size_t<_Align> __align, _LdstProperties<Args...> __props) noexcept
 {
   static_assert(_Np > 0);
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
@@ -290,15 +222,21 @@ __load_array(const _Tp* __ptr, aligned_size_t<_Align> __align, _LoadProperties<A
  **********************************************************************************************************************/
 
 template <typename _Tp, _LdStPropertyEnum... Args>
-[[nodiscard]] _CCCL_PURE _CCCL_DEVICE_API _Tp load(const _Tp* __ptr, _LoadProperties<Args...> __props = {}) noexcept
+[[nodiscard]] _CCCL_PURE _CCCL_DEVICE_API _Tp load(const _Tp* __ptr, _LdstProperties<Args...> __props = {}) noexcept
 {
   constexpr auto __align = aligned_size_t<alignof(_Tp)>{sizeof(_Tp)};
   return _CUDA_DEVICE::__load_ptx_isa_dispatch(__ptr, __align, __props);
 }
 
+template <typename _Tp, _LdStPropertyEnum _Arg>
+[[nodiscard]] _CCCL_PURE _CCCL_DEVICE_API _Tp load(const _Tp* __ptr, __ld_st_property_t<_Arg>) noexcept
+{
+  return _CUDA_DEVICE::load(__ptr, _LdstProperties<_Arg>{});
+}
+
 template <typename _Tp, typename _Prop, _LdStPropertyEnum... Args>
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _Tp
-load(annotated_ptr<_Tp, _Prop> __ptr, _LoadProperties<Args...> __props = {}) noexcept
+load(annotated_ptr<_Tp, _Prop> __ptr, _LdstProperties<Args...> __props = {}) noexcept
 {
   constexpr auto __align = aligned_size_t<alignof(_Tp)>{sizeof(_Tp)};
   return _CUDA_DEVICE::__load_ptx_isa_dispatch(__ptr.__get_raw_ptr(), __align, __props | __ptr.__property());
@@ -308,7 +246,7 @@ template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _LdStPropertyE
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _CUDA_VSTD::array<_Tp, _Np>
 load_array(const _Tp* __ptr,
            aligned_size_t<_Align> __align   = aligned_size_t<_Align>{sizeof(_Tp) * _Np},
-           _LoadProperties<Args...> __props = {}) noexcept
+           _LdstProperties<Args...> __props = {}) noexcept
 {
   return _CUDA_DEVICE::__load_array<_Np>(__ptr, __align, __props);
 }
@@ -317,7 +255,7 @@ template <size_t _Np, typename _Tp, typename _Prop, size_t _Align = alignof(_Tp)
 [[nodiscard]] _CCCL_PURE _CCCL_API _CCCL_DEVICE_API _CUDA_VSTD::array<_Tp, _Np>
 load_array(annotated_ptr<_Tp, _Prop> __ptr,
            aligned_size_t<_Align> __align   = aligned_size_t<_Align>{sizeof(_Tp) * _Np},
-           _LoadProperties<Args...> __props = {}) noexcept
+           _LdstProperties<Args...> __props = {}) noexcept
 {
   return _CUDA_DEVICE::__load_array<_Np>(__ptr.__get_raw_ptr(), __align, __props | __ptr.__property());
 }

@@ -22,9 +22,8 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
-#include <cuda/__annotated_ptr/associate_access_property.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -54,13 +53,13 @@ using __cache_no_reuse_t   = __ld_st_property_t<_LdStPropertyEnum::_NoReuse>;
 using __enable_prefetch    = __ld_st_property_t<_LdStPropertyEnum::_EnablePrefetch>;
 using __enable_l2_hint     = __ld_st_property_t<_LdStPropertyEnum::_EnableL2Hint>;
 
-inline constexpr auto read_only        = __read_only_t{};
-inline constexpr auto read_write       = __read_write_t{};
-inline constexpr auto cache_reuse_low  = __cache_reuse_low_t{};
-inline constexpr auto cache_reuse_high = __cache_reuse_high_t{};
-inline constexpr auto cache_no_reuse   = __cache_no_reuse_t{};
-inline constexpr auto enable_prefetch  = __enable_prefetch{};
-inline constexpr auto enable_l2_hint   = __enable_l2_hint{};
+inline constexpr auto read_only          = __read_only_t{};
+inline constexpr auto read_write         = __read_write_t{};
+inline constexpr auto cache_reuse_low    = __cache_reuse_low_t{};
+inline constexpr auto cache_reuse_high   = __cache_reuse_high_t{};
+inline constexpr auto cache_no_reuse     = __cache_no_reuse_t{};
+inline constexpr auto enable_l2_prefetch = __enable_prefetch{};
+inline constexpr auto enable_l2_hint     = __enable_l2_hint{};
 
 /***********************************************************************************************************************
  * Cache Hint
@@ -81,8 +80,7 @@ template <_LdStPropertyEnum _Property, _LdStPropertyEnum... _Args>
 {
   if constexpr (sizeof...(_Args) > 0)
   {
-    constexpr _LdStPropertyEnum __array[] = {_Args...};
-    for (auto __v : __array)
+    for (auto __v : {_Args...})
     {
       if (__v == _Property)
       {
@@ -98,99 +96,64 @@ template <_LdStPropertyEnum _Property, _LdStPropertyEnum... _Args>
  **********************************************************************************************************************/
 
 template <_LdStPropertyEnum... _Args>
-struct _LoadProperties
+struct _LdstProperties
 {
   access_property __l2_hint;
 
-  _LoadProperties() noexcept = default;
+  _LdstProperties() noexcept = default;
 
-  _CCCL_DEVICE_API constexpr _LoadProperties(access_property __l2_hint1) noexcept
+  _CCCL_DEVICE_API constexpr _LdstProperties(access_property __l2_hint1) noexcept
       : __l2_hint{__l2_hint1}
   {}
 };
 
-_LoadProperties(access_property) -> _LoadProperties<_LdStPropertyEnum::_EnableL2Hint>;
-
 //----------------------------------------------------------------------------------------------------------------------
 // operator|
 
+template <_LdStPropertyEnum _Property1, _LdStPropertyEnum _Property2>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(__ld_st_property_t<_Property1>, __ld_st_property_t<_Property2>)
+{
+  return _LdstProperties<_Property1, _Property2>{};
+}
+
 template <_LdStPropertyEnum _Property, _LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(_LoadProperties<_Args...> __props, __ld_st_property_t<_Property>)
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(_LdstProperties<_Args...> __props, __ld_st_property_t<_Property>)
 {
   static_assert(!_CUDA_DEVICE::__has_property<_Property>(__ld_st_list<_Args...>{}), "property already set");
-  return _LoadProperties<_Args..., _Property>{__props.__l2_hint};
+  return _LdstProperties<_Args..., _Property>{__props.__l2_hint};
 }
 
 template <_LdStPropertyEnum _Property, _LdStPropertyEnum... _Args>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto
-operator|(__ld_st_property_t<_Property> __prop, _LoadProperties<_Args...> __props)
+operator|(__ld_st_property_t<_Property> __prop, _LdstProperties<_Args...> __props)
 {
   return __prop | __props;
 }
 
 template <_LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(_LoadProperties<_Args...> __props, access_property __l2_hint)
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(_LdstProperties<_Args...>, access_property __l2_hint)
 {
-  static_assert(!_CUDA_DEVICE::__has_property<_LdStPropertyEnum::_EnableL2Hint, _Args...>(__props),
+  static_assert(!_CUDA_DEVICE::__has_property<_LdStPropertyEnum::_EnableL2Hint>(__ld_st_list<_Args...>{}),
                 "property already set");
-  return _LoadProperties<_Args..., _LdStPropertyEnum::_EnableL2Hint>{__l2_hint};
+  return _LdstProperties<_Args..., _LdStPropertyEnum::_EnableL2Hint>{__l2_hint};
 }
 
 template <_LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(access_property __l2_hint, _LoadProperties<_Args...> __props)
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(access_property __l2_hint, _LdstProperties<_Args...> __props)
 {
   return __l2_hint | __props;
 }
 
-/***********************************************************************************************************************
- * Store Properties
- **********************************************************************************************************************/
-
-template <_LdStPropertyEnum... _Args>
-struct _StoreProperties
+template <_LdStPropertyEnum _Property>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(__ld_st_property_t<_Property>, access_property __l2_hint)
 {
-  access_property __l2_hint;
-
-  _StoreProperties() noexcept = default;
-
-  _CCCL_DEVICE_API constexpr _StoreProperties(access_property __l2_hint1) noexcept
-      : __l2_hint{__l2_hint1}
-  {}
-};
-
-_StoreProperties(access_property) -> _StoreProperties<_LdStPropertyEnum::_EnableL2Hint>;
-
-//----------------------------------------------------------------------------------------------------------------------
-// operator|
-
-template <_LdStPropertyEnum _Property, _LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto
-operator|(_StoreProperties<_Args...> __props, __ld_st_property_t<_Property>)
-{
-  static_assert(!_CUDA_DEVICE::__has_property<_Property>(__ld_st_list<_Args...>{}), "property already set");
-  static_assert(!_CUDA_DEVICE::__has_property<_Property>(__st_allowed{}), "property not allowed for store");
-  return _StoreProperties<_Args..., _Property>{__props.__l2_hint};
+  return _LdstProperties<_Property, _LdStPropertyEnum::_EnableL2Hint>{__l2_hint};
 }
 
-template <_LdStPropertyEnum _Property, _LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto
-operator|(__ld_st_property_t<_Property>, _StoreProperties<_Args...> __props)
+template <_LdStPropertyEnum _Property>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(access_property __l2_hint, __ld_st_property_t<_Property> __prop)
 {
-  return __props | _Property;
-}
-
-template <_LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(_StoreProperties<_Args...> __props, access_property __l2_hint)
-{
-  static_assert(!_CUDA_DEVICE::__has_property<_LdStPropertyEnum::_EnableL2Hint, _Args...>(__props),
-                "property already set");
-  return _StoreProperties<_Args..., _LdStPropertyEnum::_EnableL2Hint>{__l2_hint};
-}
-
-template <_LdStPropertyEnum... _Args>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto operator|(access_property __l2_hint, _StoreProperties<_Args...> __props)
-{
-  return __props | __l2_hint;
+  return __prop | __l2_hint;
 }
 
 /***********************************************************************************************************************
