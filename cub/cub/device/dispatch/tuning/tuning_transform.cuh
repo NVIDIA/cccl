@@ -44,12 +44,12 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/numeric>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
 CUB_NAMESPACE_BEGIN
-
 namespace detail::transform
 {
 struct always_true_predicate
@@ -60,7 +60,18 @@ struct always_true_predicate
     return true;
   }
 };
+} // namespace detail::transform
+CUB_NAMESPACE_END
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : _CUDA_VSTD::true_type
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
+namespace detail::transform
+{
 enum class Algorithm
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
