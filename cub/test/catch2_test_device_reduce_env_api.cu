@@ -71,7 +71,7 @@ C2H_TEST("cub::DeviceReduce::Min accepts determinism requirements", "[reduce][en
 {
   // TODO(gevtushenko): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
 
-  // example-begin sum-env-determinism
+  // example-begin min-env-determinism
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 
@@ -79,8 +79,8 @@ C2H_TEST("cub::DeviceReduce::Min accepts determinism requirements", "[reduce][en
 
   cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
 
-  c2h::device_vector<float> expected{6.0f};
-  // example-end sum-env-determinism
+  c2h::device_vector<float> expected{0.0f};
+  // example-end min-env-determinism
 
   REQUIRE(output == expected);
 }
@@ -89,7 +89,7 @@ C2H_TEST("cub::DeviceReduce::Max accepts determinism requirements", "[reduce][en
 {
   // TODO(gevtushenko): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
 
-  // example-begin sum-env-determinism
+  // example-begin max-env-determinism
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 
@@ -98,7 +98,7 @@ C2H_TEST("cub::DeviceReduce::Max accepts determinism requirements", "[reduce][en
   cub::DeviceReduce::Max(input.begin(), output.begin(), input.size(), env);
 
   c2h::device_vector<float> expected{3.0f};
-  // example-end sum-env-determinism
+  // example-end max-env-determinism
 
   REQUIRE(output == expected);
 }
@@ -139,7 +139,7 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts determinism requirements", "[reduce]
 
   c2h::device_vector<float> expected_min{4.0f};
   c2h::device_vector<::cuda::std::int64_t> expected_index{2};
-  // example-end argmin-env-determinism
+  // example-end argmax-env-determinism
 
   REQUIRE(min_output == expected_min);
   REQUIRE(index_output == expected_index);
