@@ -850,7 +850,7 @@ public:
 UNITTEST("context")
 {
   context ctx;
-  ctx.task_fence();
+  ctx.fence();
   ctx.submit();
   ctx.finalize();
 };
@@ -865,7 +865,7 @@ UNITTEST("context from existing contexts")
 UNITTEST("context to make generic code")
 {
   auto f = [](context ctx) {
-    ctx.task_fence();
+    ctx.fence();
   };
 
   stream_ctx ctx1;
