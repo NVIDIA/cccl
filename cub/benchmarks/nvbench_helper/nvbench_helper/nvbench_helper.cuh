@@ -7,6 +7,7 @@
 
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
@@ -515,6 +516,10 @@ struct less_then_t
     return val < m_val;
   }
 };
+
+template <typename T>
+struct ::cuda::proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
+{};
 
 namespace
 {
