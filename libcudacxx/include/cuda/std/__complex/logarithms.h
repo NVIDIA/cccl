@@ -203,7 +203,7 @@ template <class _Tp>
   _Tp sum_hi = max_2_hi + min_2_hi;
   _Tp sum_lo = min_2_hi + (max_2_hi - sum_hi);
 
-  // exact where it matters, with the previous range reduction.
+  // Exact where it matters, with the previous range reduction.
   sum_hi -= _Tp(1.0);
 
   // Compiler can rearrange the sum in brackets, same max error. Need all terms.
