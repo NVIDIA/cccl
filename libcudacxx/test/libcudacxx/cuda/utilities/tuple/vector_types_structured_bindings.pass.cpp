@@ -89,68 +89,11 @@ struct get_expected<BaseType, 3>
   }
 };
 
-template <class VType4, class BaseType>
-__host__ __device__ constexpr void test_4d()
-{
-  { // & overload
-    VType4 val                      = get_val<VType4, BaseType, 4>::create();
-    auto&& [ret1, ret2, ret3, ret4] = val;
-    static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret4), BaseType>::value, "");
-
-    assert(ret1 == (get_expected<BaseType, 0>::create()));
-    assert(ret2 == (get_expected<BaseType, 1>::create()));
-    assert(ret3 == (get_expected<BaseType, 2>::create()));
-    assert(ret4 == (get_expected<BaseType, 3>::create()));
-  }
-
-  { // const & overload
-    const VType4 val                = get_val<VType4, BaseType, 4>::create();
-    auto&& [ret1, ret2, ret3, ret4] = val;
-    static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret4), const BaseType>::value, "");
-
-    assert(ret1 == (get_expected<BaseType, 0>::create()));
-    assert(ret2 == (get_expected<BaseType, 1>::create()));
-    assert(ret3 == (get_expected<BaseType, 2>::create()));
-    assert(ret4 == (get_expected<BaseType, 3>::create()));
-  }
-
-  { // && overload
-    auto&& [ret1, ret2, ret3, ret4] = get_val<VType4, BaseType, 4>::create();
-    static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret4), BaseType>::value, "");
-
-    assert(ret1 == (get_expected<BaseType, 0>::create()));
-    assert(ret2 == (get_expected<BaseType, 1>::create()));
-    assert(ret3 == (get_expected<BaseType, 2>::create()));
-    assert(ret4 == (get_expected<BaseType, 3>::create()));
-  }
-
-  { // const&& overload
-    auto&& [ret1, ret2, ret3, ret4] = const_cast<const VType4&&>(get_val<VType4, BaseType, 4>::create());
-    static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret4), const BaseType>::value, "");
-
-    assert(ret1 == (get_expected<BaseType, 0>::create()));
-    assert(ret2 == (get_expected<BaseType, 1>::create()));
-    assert(ret3 == (get_expected<BaseType, 2>::create()));
-    assert(ret4 == (get_expected<BaseType, 3>::create()));
-  }
-}
-
 template <class BaseType, class VType1, class VType2, class VType3, class VType4>
 __host__ __device__ constexpr void test()
 {
   { // & overload
+    if constexpr (!cuda::std::is_void_v<VType1>)
     { // vec1 structured bindings
       VType1 val   = get_val<VType1, BaseType, 1>::create();
       auto&& [ret] = val;
@@ -159,6 +102,7 @@ __host__ __device__ constexpr void test()
       assert(ret == (get_expected<BaseType, 0>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType2>)
     { // vec2 structured bindings
       VType2 val          = get_val<VType2, BaseType, 2>::create();
       auto&& [ret1, ret2] = val;
@@ -169,6 +113,7 @@ __host__ __device__ constexpr void test()
       assert(ret2 == (get_expected<BaseType, 1>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType3>)
     { // vec3 structured bindings
       VType3 val                = get_val<VType3, BaseType, 3>::create();
       auto&& [ret1, ret2, ret3] = val;
@@ -181,6 +126,7 @@ __host__ __device__ constexpr void test()
       assert(ret3 == (get_expected<BaseType, 2>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType4>)
     { // vec4 structured bindings
       VType4 val                      = get_val<VType4, BaseType, 4>::create();
       auto&& [ret1, ret2, ret3, ret4] = val;
@@ -197,6 +143,7 @@ __host__ __device__ constexpr void test()
   }
 
   { // const & overload
+    if constexpr (!cuda::std::is_void_v<VType1>)
     { // vec1 structured bindings
       const VType1 val = get_val<VType1, BaseType, 1>::create();
       auto&& [ret]     = val;
@@ -205,6 +152,7 @@ __host__ __device__ constexpr void test()
       assert(ret == (get_expected<BaseType, 0>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType2>)
     { // vec2 structured bindings
       const VType2 val    = get_val<VType2, BaseType, 2>::create();
       auto&& [ret1, ret2] = val;
@@ -215,6 +163,7 @@ __host__ __device__ constexpr void test()
       assert(ret2 == (get_expected<BaseType, 1>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType3>)
     { // vec3 structured bindings
       const VType3 val          = get_val<VType3, BaseType, 3>::create();
       auto&& [ret1, ret2, ret3] = val;
@@ -227,6 +176,7 @@ __host__ __device__ constexpr void test()
       assert(ret3 == (get_expected<BaseType, 2>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType4>)
     { // vec4 structured bindings
       const VType4 val                = get_val<VType4, BaseType, 4>::create();
       auto&& [ret1, ret2, ret3, ret4] = val;
@@ -243,6 +193,7 @@ __host__ __device__ constexpr void test()
   }
 
   { // && overload
+    if constexpr (!cuda::std::is_void_v<VType1>)
     { // vec1 structured bindings
       auto&& [ret] = get_val<VType1, BaseType, 1>::create();
       static_assert(cuda::std::is_same<decltype(ret), BaseType>::value, "");
@@ -250,6 +201,7 @@ __host__ __device__ constexpr void test()
       assert(ret == (get_expected<BaseType, 0>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType2>)
     { // vec2 structured bindings
       auto&& [ret1, ret2] = get_val<VType2, BaseType, 2>::create();
       static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
@@ -259,6 +211,7 @@ __host__ __device__ constexpr void test()
       assert(ret2 == (get_expected<BaseType, 1>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType3>)
     { // vec3 structured bindings
       auto&& [ret1, ret2, ret3] = get_val<VType3, BaseType, 3>::create();
       static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
@@ -270,6 +223,7 @@ __host__ __device__ constexpr void test()
       assert(ret3 == (get_expected<BaseType, 2>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType4>)
     { // vec4 structured bindings
       auto&& [ret1, ret2, ret3, ret4] = get_val<VType4, BaseType, 4>::create();
       static_assert(cuda::std::is_same<decltype(ret1), BaseType>::value, "");
@@ -285,6 +239,7 @@ __host__ __device__ constexpr void test()
   }
 
   { // const&& overload
+    if constexpr (!cuda::std::is_void_v<VType1>)
     { // vec1 structured bindings
       auto&& [ret] = const_cast<const VType1&&>(get_val<VType1, BaseType, 1>::create());
       static_assert(cuda::std::is_same<decltype(ret), const BaseType>::value, "");
@@ -292,6 +247,7 @@ __host__ __device__ constexpr void test()
       assert(ret == (get_expected<BaseType, 0>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType2>)
     { // vec2 structured bindings
       auto&& [ret1, ret2] = const_cast<const VType2&&>(get_val<VType2, BaseType, 2>::create());
       static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
@@ -301,6 +257,7 @@ __host__ __device__ constexpr void test()
       assert(ret2 == (get_expected<BaseType, 1>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType3>)
     { // vec3 structured bindings
       auto&& [ret1, ret2, ret3] = const_cast<const VType3&&>(get_val<VType3, BaseType, 3>::create());
       static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
@@ -312,6 +269,7 @@ __host__ __device__ constexpr void test()
       assert(ret3 == (get_expected<BaseType, 2>::create()));
     }
 
+    if constexpr (!cuda::std::is_void_v<VType4>)
     { // vec4 structured bindings
       auto&& [ret1, ret2, ret3, ret4] = const_cast<const VType4&&>(get_val<VType4, BaseType, 4>::create());
       static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
@@ -329,7 +287,7 @@ __host__ __device__ constexpr void test()
 
 #define EXPAND_VECTOR_TYPE(Type, BaseType) test<BaseType, Type##1, Type##2, Type##3, Type##4>();
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ constexpr bool test_constexpr()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
@@ -345,70 +303,39 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(double, double);
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  test_4d<long4_16a, long>();
-  test_4d<long4_32a, long>();
-  test_4d<ulong4_16a, unsigned long>();
-  test_4d<ulong4_32a, unsigned long>();
-  test_4d<longlong4_16a, long long>();
-  test_4d<longlong4_32a, long long>();
-  test_4d<ulonglong4_16a, unsigned long long>();
-  test_4d<ulonglong4_32a, unsigned long long>();
-  test_4d<double4_16a, double>();
-  test_4d<double4_32a, double>();
+  test<long, void, void, void, long4_16a>();
+  test<long, void, void, void, long4_32a>();
+  test<unsigned long, void, void, void, ulong4_16a>();
+  test<unsigned long, void, void, void, ulong4_32a>();
+  test<long long, void, void, void, longlong4_16a>();
+  test<long long, void, void, void, longlong4_32a>();
+  test<unsigned long long, void, void, void, ulonglong4_16a>();
+  test<unsigned long long, void, void, void, ulonglong4_32a>();
+  test<double, void, void, void, double4_16a>();
+  test<double, void, void, void, double4_32a>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+#if !TEST_COMPILER(MSVC)
+  test<unsigned, void, void, dim3, void>();
+#endif // !TEST_COMPILER(MSVC)
 
   return true;
 }
 
-__host__ __device__
-#if !TEST_COMPILER(MSVC)
-  constexpr
-#endif // !TEST_COMPILER(MSVC)
-  bool
-  test_dim3()
+__host__ __device__ bool test()
 {
-  { // & overload
-    dim3 val                  = get_val<dim3, unsigned int, 3>::create();
-    auto&& [ret1, ret2, ret3] = val;
-    static_assert(cuda::std::is_same<decltype(ret1), unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), unsigned int>::value, "");
+  test_constexpr();
 
-    assert(ret1 == (get_expected<unsigned int, 0>::create()));
-    assert(ret2 == (get_expected<unsigned int, 1>::create()));
-    assert(ret3 == (get_expected<unsigned int, 2>::create()));
-  }
-  { // const& overload
-    const dim3 val            = get_val<dim3, unsigned int, 3>::create();
-    auto&& [ret1, ret2, ret3] = val;
-    static_assert(cuda::std::is_same<decltype(ret1), const unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), const unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), const unsigned int>::value, "");
+#if _CCCL_HAS_NVFP16()
+  test<__half, void, __half2, void, void>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16, void, __nv_bfloat162, void, void>();
+#endif // _CCCL_HAS_NVBF16()
 
-    assert(ret1 == (get_expected<unsigned int, 0>::create()));
-    assert(ret2 == (get_expected<unsigned int, 1>::create()));
-    assert(ret3 == (get_expected<unsigned int, 2>::create()));
-  }
-  { // && overload
-    auto&& [ret1, ret2, ret3] = get_val<dim3, unsigned int, 3>::create();
-    static_assert(cuda::std::is_same<decltype(ret1), unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), unsigned int>::value, "");
-
-    assert(ret1 == (get_expected<unsigned int, 0>::create()));
-    assert(ret2 == (get_expected<unsigned int, 1>::create()));
-    assert(ret3 == (get_expected<unsigned int, 2>::create()));
-  }
-  { // const&& overload
-    auto&& [ret1, ret2, ret3] = const_cast<const dim3&&>(get_val<dim3, unsigned int, 3>::create());
-    static_assert(cuda::std::is_same<decltype(ret1), const unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret2), const unsigned int>::value, "");
-    static_assert(cuda::std::is_same<decltype(ret3), const unsigned int>::value, "");
-
-    assert(ret1 == (get_expected<unsigned int, 0>::create()));
-    assert(ret2 == (get_expected<unsigned int, 1>::create()));
-    assert(ret3 == (get_expected<unsigned int, 2>::create()));
-  }
+#if TEST_COMPILER(MSVC)
+  test<unsigned, void, void, dim3, void>();
+#endif // TEST_COMPILER(MSVC)
 
   return true;
 }
@@ -416,11 +343,6 @@ __host__ __device__
 int main(int arg, char** argv)
 {
   test();
-  test_dim3();
-  static_assert(test(), "");
-#if !TEST_COMPILER(MSVC)
-  static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER(MSVC)
-
+  static_assert(test_constexpr());
   return 0;
 }

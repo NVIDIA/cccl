@@ -57,6 +57,13 @@ __host__ __device__ constexpr bool test()
   test<double4_32a, 4>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
+#if _CCCL_HAS_NVFP16()
+  test<__half2, 2>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat162, 2>();
+#endif // _CCCL_HAS_NVBF16()
+
   return true;
 }
 
