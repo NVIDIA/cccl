@@ -61,8 +61,9 @@ struct cuda_kernel_desc
 
     // Ensure we are packing arguments of the proper types to call func (only
     // valid with the runtime API)
-    if constexpr (!::std::is_same_v<CUfunction, Fun>) {
-        static_assert(::std::is_invocable_v<Fun, Args...>);
+    if constexpr (!::std::is_same_v<CUfunction, Fun>)
+    {
+      static_assert(::std::is_invocable_v<Fun, Args...>);
     }
 
     // Get the address of every tuple entry
