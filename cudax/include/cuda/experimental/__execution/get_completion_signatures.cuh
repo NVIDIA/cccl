@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sender_type_check_failure //
   {}
 
 private:
-  friend __sender_type_check_failure::__compile_time_error;
+  friend struct __compile_time_error<__sender_type_check_failure>;
 
   _CCCL_TRIVIAL_API constexpr auto __what() const noexcept -> const char*
   {
@@ -108,7 +108,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT dependent_sender_error : __compile_time_err
   {}
 
 private:
-  friend dependent_sender_error::__compile_time_error;
+  friend struct __compile_time_error<dependent_sender_error>;
 
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __what() const noexcept -> char const*
   {
