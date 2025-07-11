@@ -126,7 +126,6 @@ struct async_config
   int items_per_thread;
   int max_occupancy;
   int sm_count;
-  int smem_size;
 };
 
 struct prefetch_config
@@ -186,7 +185,7 @@ struct dispatch_t<StableAddress,
     auto wrapped_policy     = detail::transform::MakeTransformPolicyWrapper(active_policy);
     const int block_threads = wrapped_policy.BlockThreads();
 
-// TODO(bgruber): this should probably be a ceil_div:
+    // TODO(bgruber): this should probably be a ceil_div:
     const int items_per_thread_evenly_spread = static_cast<int>(
       (::cuda::std::min)(Offset{items_per_thread}, num_items / (sm_count * block_threads * max_occupancy)));
     const int items_per_thread_clamped = ::cuda::std::clamp(
@@ -247,7 +246,7 @@ struct dispatch_t<StableAddress,
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
         }
 
-        const auto config = async_config{items_per_thread, max_occupancy, sm_count, smem_size};
+        const auto config = async_config{items_per_thread, max_occupancy, sm_count};
 
         const int bytes_in_flight_SM = max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
         if (ActivePolicy::min_bif <= bytes_in_flight_SM)
@@ -273,17 +272,16 @@ struct dispatch_t<StableAddress,
     _CCCL_ASSERT(config->items_per_thread > 0, "");
     _CCCL_ASSERT(config->items_per_thread > 0, "");
     _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
-    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const int ipt =
       spread_out_items_per_thread(ActivePolicy{}, config->items_per_thread, config->sm_count, config->max_occupancy);
     const int tile_size = block_threads * ipt;
+    const int smem_size = smem_for_tile_size(tile_size, alignment);
+    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return ::cuda::std::make_tuple(
-      launcher_factory(grid_dim, block_threads, config->smem_size, stream),
-      kernel_source.TransformKernel(),
-      config->items_per_thread);
+      launcher_factory(grid_dim, block_threads, smem_size, stream), kernel_source.TransformKernel(), ipt);
   }
 
   template <typename ActivePolicy, typename SMemFunc, std::size_t... Is>
