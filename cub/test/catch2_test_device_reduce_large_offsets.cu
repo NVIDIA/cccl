@@ -8,7 +8,7 @@
 
 #include <thrust/iterator/counting_iterator.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 #include <cstdint>
 
