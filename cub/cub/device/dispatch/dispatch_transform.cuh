@@ -186,6 +186,7 @@ struct dispatch_t<StableAddress,
     auto wrapped_policy     = detail::transform::MakeTransformPolicyWrapper(active_policy);
     const int block_threads = wrapped_policy.BlockThreads();
 
+// TODO(bgruber): this should probably be a ceil_div:
     const int items_per_thread_evenly_spread = static_cast<int>(
       (::cuda::std::min)(Offset{items_per_thread}, num_items / (sm_count * block_threads * max_occupancy)));
     const int items_per_thread_clamped = ::cuda::std::clamp(
