@@ -930,17 +930,25 @@ public:
       },
       deps);
 
-    // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
-    // To do so, we pack all argument in a dynamically allocated tuple
+    // Wrap this call in a host callback launched in CUDA stream associated with that task
+    // To do so, we pack all argument in a dynamically allocated object
     // that will be deleted by the callback
-    auto args = new args_t(mv(instances), n, mv(f), shape);
+    auto* args = new args_t(mv(instances), n, mv(f), shape);
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
-      auto p = static_cast<decltype(args)>(untyped_args);
+      auto p = static_cast<args_t*>(untyped_args);
       SCOPE(exit)
       {
-        delete p;
+        // Delete the heap allocation with the argument if we are not building
+        // a CUDA graph. If this is a CUDA graph, that argument will be
+        // retained until the graph can be destroyed so that we can safely call
+        // this graph multiple times without erasing the arguments on the first
+        // call
+        if constexpr (!::std::is_same_v<context, graph_ctx>)
+        {
+          delete p;
+        }
       };
 
       auto& data               = ::std::get<0>(*p);
@@ -973,6 +981,18 @@ public:
       cudaHostNodeParams params;
       params.userData = args;
       params.fn       = host_func;
+
+      // If this is a CUDA graph callback, we want to retain this argument until
+      // the graph can be destroyed. It is possible that we launch the same graph
+      // multiple times, so we cannot simply delete the argument in the callback
+      // unless we know it is not going to be launched multiple times (as this is
+      // the case for the stream backend).
+      ::std::shared_ptr<void> void_wrapper{args, [](void* p) {
+                                             // custom deleter: cast back and delete
+                                             delete static_cast<args_t*>(p);
+                                           }};
+
+      ctx.callback_retain_arguments(mv(void_wrapper));
 
       // Put this host node into the child graph that implements the graph_task<>
       cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
