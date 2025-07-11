@@ -55,4 +55,3 @@ Please analyze the data systematically and provide actionable tuning recommendat
 reliability.
 
 After you identify the best variant, modify CUB sources in cub/cub/device/dispatch/tuning for appropriate algorithm such that found tuning variant is used.
-
