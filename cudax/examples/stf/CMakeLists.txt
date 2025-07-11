@@ -39,6 +39,7 @@ set(stf_example_codegen_sources
   logical_gates_composition.cu
   mandelbrot.cu
   parallel_for_2D.cu
+  parallel_for_epoch.cu
   pi.cu
   scan.cu
   standalone-launches.cu
