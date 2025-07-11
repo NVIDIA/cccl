@@ -47,7 +47,7 @@ struct cuda_kernel_desc
 {
   template <typename Fun, typename... Args>
   cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
-      : func((const void*) func)
+      : func_variant(store_func(mv(func)))
       , gridDim(gridDim_)
       , blockDim(blockDim_)
       , sharedMem(sharedMem_)
@@ -57,16 +57,19 @@ struct cuda_kernel_desc
     // We first copy all arguments into a tuple because the kernel
     // implementation needs pointers to the argument, so we cannot use
     // directly those passed in the pack of arguments
-    auto arg_tuple = ::std::make_shared<TupleType>(std::forward<Args>(args)...);
+    auto arg_tuple = ::std::make_shared<TupleType>(mv(args)...);
 
-    // Ensure we are packing arguments of the proper types to call func
-    static_assert(::std::is_invocable_v<Fun, Args...>);
+    // Ensure we are packing arguments of the proper types to call func (only
+    // valid with the runtime API)
+    if constexpr (!::std::is_same_v<CUfunction, Fun>) {
+        static_assert(::std::is_invocable_v<Fun, Args...>);
+    }
 
     // Get the address of every tuple entry
     ::std::apply(
       [this](auto&... elems) {
         // Push back the addresses of each tuple element into the args vector
-        ((args_ptr.push_back(static_cast<void*>(&elems))), ...);
+        ((args_ptr.push_back(&elems)), ...);
       },
       *arg_tuple);
 
@@ -74,17 +77,99 @@ struct cuda_kernel_desc
     arg_tuple_type_erased = mv(arg_tuple);
   }
 
-  /* __global__ function */
-  const void* func;
+  /* CUfunction (CUDA driver API) or __global__ function (CUDA runtime API) */
+  using func_variant_t = ::std::variant<CUfunction, const void*>;
+  func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
-  size_t sharedMem;
+  size_t sharedMem = 0;
 
   // Vector of pointers to the arg_tuple which saves arguments in a typed-erased way
-  ::std::vector<void*> args_ptr;
+  // Mutable so that launch can be const
+  mutable ::std::vector<void*> args_ptr;
+
+  // Helper to launch the kernel using CUDA stream based API
+  void launch(cudaStream_t stream) const
+  {
+    ::std::visit(
+      [&](auto&& kernel_func) {
+        using T = ::std::decay_t<decltype(kernel_func)>;
+        if constexpr (::std::is_same_v<T, const void*>)
+        {
+          cuda_safe_call(cudaLaunchKernel(kernel_func, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
+        }
+        else
+        {
+          static_assert(::std::is_same_v<T, CUfunction>, "Unsupported function type in func_variant");
+          cuda_safe_call(cuLaunchKernel(
+            kernel_func,
+            gridDim.x,
+            gridDim.y,
+            gridDim.z,
+            blockDim.x,
+            blockDim.y,
+            blockDim.z,
+            sharedMem,
+            stream,
+            args_ptr.data(),
+            nullptr));
+        }
+      },
+      func_variant);
+  }
+
+  void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
+  {
+    ::std::visit(
+      [&](auto&& kernel_func) {
+        using T = ::std::decay_t<decltype(kernel_func)>;
+
+        if constexpr (::std::is_same_v<T, CUfunction>)
+        {
+          CUDA_KERNEL_NODE_PARAMS params{
+            .func           = kernel_func,
+            .gridDimX       = gridDim.x,
+            .gridDimY       = gridDim.y,
+            .gridDimZ       = gridDim.z,
+            .blockDimX      = blockDim.x,
+            .blockDimY      = blockDim.y,
+            .blockDimZ      = blockDim.z,
+            .sharedMemBytes = static_cast<unsigned>(sharedMem),
+            .kernelParams   = const_cast<void**>(args_ptr.data()),
+            .extra          = nullptr,
+            .kern           = nullptr,
+            .ctx            = nullptr};
+          cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+        }
+        else
+        {
+          static_assert(::std::is_same_v<T, const void*>, "Unsupported kernel function type");
+          cudaKernelNodeParams params{
+            .func           = const_cast<void*>(kernel_func),
+            .gridDim        = gridDim,
+            .blockDim       = blockDim,
+            .sharedMemBytes = static_cast<unsigned>(sharedMem),
+            .kernelParams   = args_ptr.data(),
+            .extra          = nullptr};
+          cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+        }
+      },
+      func_variant);
+  }
 
 private:
   ::std::shared_ptr<void> arg_tuple_type_erased;
+
+  static func_variant_t store_func(CUfunction f)
+  {
+    return f;
+  }
+
+  template <typename T>
+  static func_variant_t store_func(T* f)
+  {
+    return reinterpret_cast<const void*>(f);
+  }
 };
 
 namespace reserved
@@ -252,7 +337,7 @@ public:
         // graph, or we rely on a child graph
         if (res.size() == 1)
         {
-          insert_one_kernel(res[0], t.get_node(), g);
+          res[0].launch_in_graph(t.get_node(), g);
         }
         else
         {
@@ -262,7 +347,7 @@ public:
           // Create a chain of kernels
           for (size_t i = 0; i < res.size(); i++)
           {
-            insert_one_kernel(res[i], chain[i], g);
+            res[i].launch_in_graph(chain[i], g);
             if (i > 0)
             {
               cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
@@ -275,8 +360,7 @@ public:
         // Rely on stream semantic to have a dependency between the kernels
         for (auto& k : res)
         {
-          cuda_safe_call(
-            cudaLaunchKernel(k.func, k.gridDim, k.blockDim, k.args_ptr.data(), k.sharedMem, t.get_stream()));
+          k.launch(t.get_stream());
         }
       }
     }
@@ -287,35 +371,21 @@ public:
       // descriptor, not a vector
       static_assert(!chained);
 
-      cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
+      cuda_kernel_desc res = ::cuda::std::apply(f, deps.instance(t));
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
         auto lock = t.lock_ctx_graph();
-        insert_one_kernel(res, t.get_node(), t.get_ctx_graph());
+        res.launch_in_graph(t.get_node(), t.get_ctx_graph());
       }
       else
       {
-        cuda_safe_call(
-          cudaLaunchKernel(res.func, res.gridDim, res.blockDim, res.args_ptr.data(), res.sharedMem, t.get_stream()));
+        res.launch(t.get_stream());
       }
     }
   }
 
 private:
-  /* Add a kernel to a CUDA graph given its description */
-  auto insert_one_kernel(cuda_kernel_desc& k, cudaGraphNode_t& n, cudaGraph_t& g) const
-  {
-    cudaKernelNodeParams kconfig;
-    kconfig.blockDim       = k.blockDim;
-    kconfig.extra          = nullptr;
-    kconfig.func           = const_cast<void*>(k.func);
-    kconfig.gridDim        = k.gridDim;
-    kconfig.kernelParams   = k.args_ptr.data();
-    kconfig.sharedMemBytes = k.sharedMem;
-    cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
-  }
-
   ::std::string symbol;
   Ctx& ctx;
   // Statically defined deps
