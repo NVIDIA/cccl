@@ -139,7 +139,7 @@ runs:
         # Download new sccache binary
         mkdir -p "${{runner.temp}}/bin"
         curl -fsSL \
-          "https://github.com/rapidsai/sccache/releases/download/v0.10.0-rapids.34/sccache-v0.10.0-rapids.34-$(uname -m)-unknown-linux-musl.tar.gz" \
+          "https://github.com/rapidsai/sccache/releases/download/v0.10.0-rapids.35/sccache-v0.10.0-rapids.35-$(uname -m)-unknown-linux-musl.tar.gz" \
         | tar -C "${{runner.temp}}/bin" -zf - --wildcards --strip-components=1 -x '*/sccache'
 
         declare -a extra_launch_args=(
@@ -200,7 +200,7 @@ runs:
           if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
             if ! grep -q '_python.sh' <<< "$COMMAND"; then
               extra_launch_args+=(
-                --env "PARALLEL_LEVEL=$(ulimit -Hn)"
+                --env "PARALLEL_LEVEL=$((CPUS < 32 ? 32 : CPUS))"
                 --ulimit "nofile=$(ulimit -Hn):$(ulimit -Hn)"
               )
             else
