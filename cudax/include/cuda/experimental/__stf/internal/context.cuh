@@ -550,7 +550,6 @@ public:
     using result_t = unified_scope<reserved::launch_scope<stream_ctx, thread_hierarchy_spec_t, Deps...>,
                                    reserved::launch_scope<graph_ctx, thread_hierarchy_spec_t, Deps...>>;
     return payload->*[&](auto& self) {
-      using Self = ::std::remove_reference_t<decltype((self))>;
       return result_t(self.launch(mv(spec), mv(e_place), deps...));
     };
   }
