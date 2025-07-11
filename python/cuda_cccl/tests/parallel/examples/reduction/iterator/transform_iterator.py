@@ -14,6 +14,7 @@ import numpy as np
 import cuda.cccl.parallel.experimental.algorithms as algorithms
 import cuda.cccl.parallel.experimental.iterators as iterators
 
+
 def transform_iterator_example():
     """Demonstrate reduction with transform iterator."""
 
