@@ -214,13 +214,4 @@
 #  define _CCCL_WARNING(_MSG) _CCCL_PRAGMA(GCC warning _MSG)
 #endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_COMPILER(MSVC)
-#  if (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1) \
-    && !defined(CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING)
-_CCCL_WARNING("MSVC/cl.exe with traditional preprocessor is used. This may lead unexpected compilation errors. Please "
-              "switch to the standard conforming preprocessor by passing `/Zc:preprocessor` to cl.exe. You can define "
-              "CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.");
-#  endif // !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1
-#endif // _CCCL_COMPILER(MSVC)
-
 #endif // __CCCL_COMPILER_H
