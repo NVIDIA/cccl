@@ -25,7 +25,7 @@ Analysis Requirements:
 3. Statistical reliability check:
   - Decompress samples data using fpzip.decompress(samples)
   - Distributions can be multi-modal, so
-  - Identify likelyhood of speedup and discard it if it's low
+  - Identify likelihood of speedup and discard it if it's low
 4. Ranking criteria (in order):
   - Variants that beat baseline on ALL workloads
   - Variants with highest weighted performance improvement (weight by Elements{io})
