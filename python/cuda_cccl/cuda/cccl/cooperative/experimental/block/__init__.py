@@ -5,6 +5,12 @@
 from ._block_load_store import (
     load,
     store,
+    BlockLoad,
+    BlockStore,
+)
+from ._block_histogram import (
+    histogram,
+    BlockHistogram,
 )
 from ._block_merge_sort import merge_sort_keys
 from ._block_radix_sort import (
@@ -33,4 +39,6 @@ __all__ = [
     "radix_sort_keys_descending",
     "load",
     "store",
+    "BlockLoad",
+    "BlockStore",
 ]

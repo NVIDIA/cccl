@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from . import block, warp
+from .block._block_load_store import (
+    BlockLoad,
+    BlockStore,
+)
 from ._array import local, shared
 from ._enums import (
     BlockLoadAlgorithm,
@@ -20,8 +24,10 @@ from ._types import (
 __all__ = [
     "_init_extension",
     "block",
+    "BlockLoad",
     "BlockLoadAlgorithm",
     "BlockStoreAlgorithm",
+    "BlockStore",
     "local",
     "shared",
     "StatefulFunction",
