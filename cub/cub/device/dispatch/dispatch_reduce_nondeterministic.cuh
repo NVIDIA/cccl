@@ -48,7 +48,7 @@
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_nondeterministic_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -63,7 +63,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::reduce_nondeterministic
+namespace detail::reduce
 {
 
 using CounterT = int;
@@ -79,8 +79,8 @@ template <typename MaxPolicyT,
 struct DeviceReduceKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(
-    LastBlockKernel,
-    DeviceReduceLastBlockKernel<
+    AtomicKernel,
+    NondeterministicDeviceReduceAtomicKernel<
       MaxPolicyT,
       InputIteratorT,
       OutputIteratorT,
@@ -88,19 +88,14 @@ struct DeviceReduceKernelSource
       ReductionOpT,
       InitT,
       AccumT,
-      TransformOpT,
-      CounterT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    AtomicKernel,
-    DeviceReduceAtomicKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>);
+      TransformOpT>);
 
   CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
   }
 };
-} // namespace detail::reduce_nondeterministic
+} // namespace detail::reduce
 
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
@@ -129,8 +124,8 @@ template <typename InputIteratorT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
-          typename PolicyHub    = detail::reduce_nondeterministic::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::reduce_nondeterministic::DeviceReduceKernelSource<
+          typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
             OutputIteratorT,
@@ -188,7 +183,7 @@ struct DispatchReduceNondeterministic
   //---------------------------------------------------------------------------
 
   /// Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchNondeterministicReduce(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduceNondeterministic(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -216,123 +211,6 @@ struct DispatchReduceNondeterministic
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
   {}
-
-  //---------------------------------------------------------------------------
-  // Small-problem (single tile) invocation
-  //---------------------------------------------------------------------------
-
-  /**
-   * @brief Invoke a single block block to reduce in-core
-   *
-   * @tparam ActivePolicyT
-   *   Umbrella policy active for the target device
-   *
-   * @tparam LastBlockKernelT
-   *   Function type of cub::DeviceReduceLastBlockKernel
-   *
-   * @param[in] last_block_kernel
-   *   Kernel function pointer to parameterization of
-   *   cub::DeviceReduceLastBlockKernel
-   */
-  template <typename ActivePolicyT, typename LastBlockKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  InvokeLastBlockKernel(LastBlockKernelT last_block_kernel, ActivePolicyT active_policy = {})
-  {
-    cudaError error = cudaSuccess;
-    do
-    {
-      // Get SM count
-      int sm_count;
-      error = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Init regular kernel configuration
-      detail::KernelConfig reduce_config;
-      error = CubDebug(reduce_config.Init(last_block_kernel, active_policy.LastBlock(), launcher_factory));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
-
-      // Even-share work distribution
-      int max_blocks = reduce_device_occupancy * detail::subscription_factor;
-      GridEvenShare<OffsetT> even_share;
-      even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
-
-      // Temporary storage allocation requirements
-      void* allocations[2]       = {nullptr, nullptr};
-      size_t allocation_sizes[2] = {max_blocks * kernel_source.AccumSize(), // bytes needed for privatized block
-                                                                            // reductions
-                                    sizeof(CounterT)};
-
-      // Alias the temporary allocations from the single storage blob (or
-      // compute the necessary size of the blob)
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      if (d_temp_storage == nullptr)
-      {
-        // Return if the caller is simply requesting the size of the storage
-        // allocation
-        return cudaSuccess;
-      }
-
-      // Alias the allocation for the privatized per-block reductions
-      AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
-
-      // Alias the allocation for the counter
-      CounterT* d_counter = static_cast<CounterT*>(allocations[1]);
-
-      error = CubDebug(launcher_factory.MemsetAsync(d_counter, 0, 1, sizeof(CounterT), stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Get grid size for device_reduce_sweep_kernel
-      int reduce_grid_size = even_share.grid_size;
-
-// Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceLastBlockKernel<<<%lu, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              (unsigned long) reduce_grid_size,
-              active_policy.LastBlockReduce().BlockThreads(),
-              (long long) stream,
-              active_policy.LastBlockReduce().ItemsPerThread(),
-              reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
-
-      // Invoke DeviceReduceKernel
-      launcher_factory(reduce_grid_size, active_policy.LastBlock().BlockThreads(), 0, stream)
-        .doit(
-          last_block_kernel, d_in, d_out, d_block_reductions, even_share, reduction_op, init, transform_op, d_counter);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
-  }
 
   /**
    * @brief Invoke a single block block to reduce in-core
@@ -365,7 +243,7 @@ struct DispatchReduceNondeterministic
 
       // Init regular kernel configuration
       detail::KernelConfig reduce_config;
-      error = CubDebug(reduce_config.Init(atomic_kernel, active_policy.Atomic(), launcher_factory));
+      error = CubDebug(reduce_config.Init(atomic_kernel, active_policy.Reduce(), launcher_factory));
       if (cudaSuccess != error)
       {
         break;
@@ -403,14 +281,14 @@ struct DispatchReduceNondeterministic
       _CubLog("Invoking DeviceLastBlockKernel<<<%lu, %d, 0, %lld>>>(), %d items "
               "per thread, %d SM occupancy\n",
               (unsigned long) reduce_grid_size,
-              active_policy.Atomic().BlockThreads(),
+              active_policy.Reduce().BlockThreads(),
               (long long) stream,
-              active_policy.Atomic().ItemsPerThread(),
+              active_policy.Reduce().ItemsPerThread(),
               reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
-      launcher_factory(reduce_grid_size, active_policy.Atomic().BlockThreads(), 0, stream)
+      launcher_factory(reduce_grid_size, active_policy.Reduce().BlockThreads(), 0, stream)
         .doit(atomic_kernel,
               d_in,
               d_out,
@@ -462,16 +340,8 @@ struct DispatchReduceNondeterministic
       return cudaSuccess;
     }
 
-    auto wrapped_policy = detail::nondeterministic_reduce::MakeReducePolicyWrapper(active_policy);
-
-    if (Algorithm::atomic == wrapped_policy.GetAlgorithm())
-    {
-      return InvokeAtomicKernel(kernel_source.AtomicKernel(), wrapped_policy);
-    }
-    else
-    {
-      return InvokeLastBlockKernel(kernel_source.LastBlockKernel(), wrapped_policy);
-    }
+    auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(active_policy);
+    return InvokeAtomicKernel(kernel_source.AtomicKernel(), wrapped_policy);
   }
 
   //---------------------------------------------------------------------------
@@ -536,7 +406,7 @@ struct DispatchReduceNondeterministic
       }
 
       // Create dispatch functor
-      DispatchNondeterministicReduce dispatch(
+      DispatchReduceNondeterministic dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
