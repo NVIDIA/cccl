@@ -106,7 +106,7 @@ Single Config CMake Options
 
    -  Selects the device system. Default: ``CUDA``
 
--  ``THRUST_CPP_DIALECT={11, 14, 17}``
+-  ``THRUST_CPP_DIALECT={17, 20}``
 
    -  Selects the C++ standard dialect to use. Default is ``14``
       (C++14).
@@ -119,7 +119,7 @@ Multi Config CMake Options
 -  ``THRUST_MULTICONFIG_ENABLE_DIALECT_CPPXX={ON, OFF}``
 
    -  Toggle whether a specific C++ dialect will be targeted.
-   -  Possible values of ``XX`` are ``{11, 14, 17}``.
+   -  Possible values of ``XX`` are ``{17, 20}``.
    -  By default, only C++14 is enabled.
 
 -  ``THRUST_MULTICONFIG_ENABLE_SYSTEM_XXXX={ON, OFF}``
