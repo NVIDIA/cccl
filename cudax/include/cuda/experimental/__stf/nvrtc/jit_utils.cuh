@@ -170,9 +170,9 @@ inline CUfunction lazy_jit(
   //  check_printf(template_with_name.c_str(), make_printfable(args)...);
 
   // This will be our cache lookup key: a pair of options and the source code string
-  auto key = ::std::pair(opts, ::std::string());
+  auto key   = ::std::pair(opts, ::std::string());
   key.second = "namespace cuda::experimental::stf "
-    "{ [[maybe_unused]] inline constexpr bool jit_execution = true; }\n";
+               "{ [[maybe_unused]] inline constexpr bool jit_execution = true; }\n";
   key.second += header_template;
 
   // Format code
@@ -183,7 +183,7 @@ inline CUfunction lazy_jit(
   }
   else
   {
-    const int size        = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
+    const int size = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
 
     if (size < 0)
     {
@@ -672,6 +672,7 @@ private:
 
 } // end namespace cuda::experimental::stf
 
-#define JITABLE(name, ...) \
-  __VA_ARGS__              \
-  const char constexpr name[] = #__VA_ARGS__;
+#define JITABLE_CODE(...) \
+  #__VA_ARGS__;           \
+  __VA_ARGS__;            \
+  static_assert(true, "JITABLE_CODE must end with a semicolon.")

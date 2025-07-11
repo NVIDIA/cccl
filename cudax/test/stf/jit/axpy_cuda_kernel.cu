@@ -31,11 +31,10 @@ double Y0(int i)
   return cos((double) i);
 }
 
-JITABLE(
-  header_template,
-  template <typename Sx, typename Sy, auto alpha, typename T0, typename T1>
-  __device__ void axpy(T0 dynX, T1 dynY) {
-    if constexpr (!cuda::experimental::stf::jit_execution) {
+constexpr char header_template[] = JITABLE_CODE(
+  template <typename Sx, typename Sy, auto alpha, typename T0, typename T1> __device__ void axpy(T0 dynX, T1 dynY) {
+    if constexpr (!cuda::experimental::stf::jit_execution)
+    {
       assert(!"That's not supposed to happen.");
     }
     Sx X{dynX};
@@ -48,7 +47,7 @@ JITABLE(
     {
       Y(i) += alpha * X(i);
     }
-  })
+  });
 
 const char* axpy_kernel_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
