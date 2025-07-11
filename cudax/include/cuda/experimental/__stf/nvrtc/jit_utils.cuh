@@ -169,28 +169,32 @@ inline CUfunction lazy_jit(
   // Check if the format string is valid
   //  check_printf(template_with_name.c_str(), make_printfable(args)...);
 
-  // Format code
+  // This will be our cache lookup key: a pair of options and the source code string
   auto key = ::std::pair(opts, ::std::string());
+  key.second = "namespace cuda::experimental::stf "
+    "{ [[maybe_unused]] inline constexpr bool jit_execution = true; }\n";
+  key.second += header_template;
 
+  // Format code
   if constexpr (sizeof...(args) == 0)
   {
     // Security warning upon calling snprintf with no arguments
-    key.second = header_template;
-    key.second += '\n';
     key.second += template_str;
   }
   else
   {
-    const int header_size = ::std::strlen(header_template);
     const int size        = ::std::snprintf(nullptr, 0, template_str, make_printfable(args)...);
-    // This will be our cache lookup key: a pair of options and the source code string
-    key.second = ::std::string(size + header_size + 1, '\0');
+
+    if (size < 0)
+    {
+      throw ::std::runtime_error("Error formatting JIT template: " + ::std::string(template_str));
+    }
+
+    const auto header_size = key.second.size();
+    key.second.resize(header_size + size + 1, '\0');
 
     // Write header
-    ::std::strcpy(key.second.data(), header_template);
-    key.second.data()[header_size] = '\n'; // replace '\0'
-
-    ::std::snprintf(key.second.data() + header_size, key.second.size() + 1, template_str, make_printfable(args)...);
+    ::std::snprintf(key.second.data() + header_size, size, template_str, make_printfable(args)...);
   }
 
   {
@@ -216,6 +220,14 @@ inline CUfunction lazy_jit(
   {
     raw_opts.push_back(s.c_str());
   }
+
+  if (getenv("CUDASTF_JIT_DEBUG_PTX") || getenv("CUDASTF_JIT_DEBUG"))
+  {
+    ::std::cerr << "SOURCE BEGIN:\n";
+    ::std::cerr << template_with_name << ::std::endl;
+    ::std::cerr << "SOURCE END:\n";
+  }
+
   nvrtcResult res = nvrtcCompileProgram(prog, raw_opts.size(), raw_opts.data());
   if (res != NVRTC_SUCCESS)
   {
@@ -239,9 +251,6 @@ inline CUfunction lazy_jit(
     int num_registers = cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, kernel);
     ::std::cerr
       << "kernel_name " << kernel_name << " using " << ::std::to_string(num_registers) << " registers" << ::std::endl;
-    ::std::cerr << "SOURCE BEGIN:\n";
-    ::std::cerr << template_with_name << ::std::endl;
-    ::std::cerr << "SOURCE END:\n";
   }
 
   if (getenv("CUDASTF_JIT_DEBUG_PTX"))
@@ -653,6 +662,13 @@ private:
   shape_t shape;
   ::std::vector<::std::string> nvrtc_flags;
 };
+
+/**
+ * @brief Can be used in kernels to check whether they are executing as JIT code. If false, the kernel is
+ * executing as a regular CUDA kernel compiled ahead of time.
+ *
+ */
+[[maybe_unused]] constexpr bool jit_execution = false;
 
 } // end namespace cuda::experimental::stf
 

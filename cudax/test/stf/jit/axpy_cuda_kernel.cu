@@ -35,6 +35,9 @@ JITABLE(
   header_template,
   template <typename Sx, typename Sy, auto alpha, typename T0, typename T1>
   __device__ void axpy(T0 dynX, T1 dynY) {
+    if constexpr (!cuda::experimental::stf::jit_execution) {
+      assert(!"That's not supposed to happen.");
+    }
     Sx X{dynX};
     Sy Y{dynY};
 
