@@ -666,7 +666,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // Since alignment via the attribute may not work, we have to align explicitly if it's larger than the default dynamic
   // shared memory alignment (16). This is not needed when the tile size does not retain the alignment, since we align
   // each tile separately later
-  if constexpr (tile_sizes_retain_max_alignment && tile_padding > 16)
+  if constexpr (tile_sizes_retain_max_alignment && max_alignment > 16)
   {
     smem_base = round_up_smem_ptr<tile_padding>(smem_base);
     asm("" : "+l"(smem_base)); // keep the compiler from pulling the alignment deeper into the kernel
