@@ -231,10 +231,10 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
                             bool>();
     ::test_device_attribute<device::attributes::ipc_event_support, ::cudaDevAttrIpcEventSupport, bool>();
 
-#if CUDART_VERSION >= 12020
+#if _CCCL_CTK_AT_LEAST(12, 2)
     ::test_device_attribute<device::attributes::numa_config, ::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>();
     ::test_device_attribute<device::attributes::numa_id, ::cudaDevAttrNumaId, int>();
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
     SECTION("compute_mode")
     {
@@ -283,12 +283,12 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
                      == device::attributes::memory_pool_supported_handle_types.posix_file_descriptor);
       STATIC_REQUIRE(::cudaMemHandleTypeWin32 == device::attributes::memory_pool_supported_handle_types.win32);
       STATIC_REQUIRE(::cudaMemHandleTypeWin32Kmt == device::attributes::memory_pool_supported_handle_types.win32_kmt);
-#if CUDART_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
       STATIC_REQUIRE(::cudaMemHandleTypeFabric == 0x8);
       STATIC_REQUIRE(::cudaMemHandleTypeFabric == device::attributes::memory_pool_supported_handle_types.fabric);
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
       STATIC_REQUIRE(0x8 == device::attributes::memory_pool_supported_handle_types.fabric);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
 
       constexpr int all_handle_types =
         device::attributes::memory_pool_supported_handle_types.none
@@ -300,7 +300,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       CUDAX_REQUIRE(static_cast<int>(handle_types) <= static_cast<int>(all_handle_types));
     }
 
-#if CUDART_VERSION >= 12020
+#if _CCCL_CTK_AT_LEAST(12, 2)
     SECTION("numa_config")
     {
       STATIC_REQUIRE(::cudaDeviceNumaConfigNone == device::attributes::numa_config.none);
@@ -310,7 +310,8 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       CUDAX_REQUIRE((config == device::attributes::numa_config.none || //
                      config == device::attributes::numa_config.numa_node));
     }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
+
     SECTION("Compute capability")
     {
       int compute_cap       = device_ref(0).attribute(device::attributes::compute_capability);
