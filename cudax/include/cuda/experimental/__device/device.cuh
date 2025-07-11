@@ -49,22 +49,17 @@ struct __emplace_device
 };
 } // namespace __detail
 
-namespace device
-{
-using attributes = __detail::__device_attrs;
-
 //! @brief For a given attribute, type of the attribute value.
 //!
 //! @par Example
 //! @code
-//! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
+//! using threads_per_block_t = device::attr_result_t<device_attributes::max_threads_per_block>;
 //! static_assert(std::is_same_v<threads_per_block_t, int>);
 //! @endcode
 //!
-//! @sa device::attributes
+//! @sa device_attributes
 template <::cudaDeviceAttr _Attr>
-using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
-} // namespace device
+using device_attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -130,7 +125,7 @@ private:
 
   explicit physical_device(int __id)
       : device_ref(__id)
-      , __traits(__detail::__arch_traits_might_be_unknown(__id, device::attributes::compute_capability(__id)))
+      , __traits(__detail::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.

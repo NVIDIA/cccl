@@ -21,7 +21,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 {
   cudax::device_ref dev0(0);
   STATIC_REQUIRE(Attr == ExpectedAttr);
-  STATIC_REQUIRE(::cuda::std::is_same_v<cudax::device::attribute_result_t<Attr>, ExpectedResult>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<cudax::device_attribute_result_t<Attr>, ExpectedResult>);
 
   auto result = dev0.attribute(Attr);
   STATIC_REQUIRE(::cuda::std::is_same_v<decltype(result), ExpectedResult>);
@@ -33,7 +33,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 
 C2H_CCCLRT_TEST("Smoke", "[device]")
 {
-  using attributes = cudax::device::attributes;
+  namespace attributes = cudax::device_attributes;
   using cudax::device_ref;
 
   SECTION("Compare")
