@@ -35,7 +35,7 @@
 namespace cuda::experimental::stf
 {
 
-/// @cond NEVER_DOCUMENT
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * @brief Invokes the provided callable on the value of the given variant.
  *
@@ -67,7 +67,7 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
 {
   return ::std::visit(::std::forward<F>(f), v);
 }
-/// @endcond
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Generic context implementation

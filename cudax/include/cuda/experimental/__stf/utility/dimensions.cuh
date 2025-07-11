@@ -442,7 +442,7 @@ private:
   ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> s;
 };
 
-/// @cond NEVER_DOCUMENT
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // Deduction guides
 template <typename... Int>
 box(Int...) -> box<sizeof...(Int)>;
@@ -450,7 +450,7 @@ template <typename... E>
 box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
 template <typename E, size_t dimensions>
 box(::std::array<E, dimensions>) -> box<dimensions>;
-/// \endcond
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #ifdef UNITTESTED_FILE
 UNITTEST("box<3>")
