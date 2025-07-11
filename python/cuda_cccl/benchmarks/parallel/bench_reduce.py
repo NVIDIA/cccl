@@ -104,3 +104,84 @@ def bench_reduce_struct(benchmark, size):
         reduce_struct(input_array, build_only=False)
 
     benchmark(run)
+
+
+def bench_reduce_pointer_single_phase(benchmark, size):
+    input_array = cp.random.randint(0, 10, size)
+
+    # warm up run
+    reduce_pointer_single_phase(input_array, build_only=False)
+
+    # benchmark run
+    def run():
+        reduce_pointer_single_phase(input_array, build_only=False)
+
+    benchmark(run)
+
+
+def bench_reduce_iterator_single_phase(benchmark, size):
+    inp = parallel.CountingIterator(np.int32(0))
+
+    # warm up run
+    reduce_iterator_single_phase(inp, size, build_only=False)
+
+    # benchmark run
+    def run():
+        reduce_iterator_single_phase(inp, size, build_only=False)
+
+    benchmark(run)
+
+
+def bench_reduce_struct_single_phase(benchmark, size):
+    input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(MyStruct)
+
+    # warm up run
+    reduce_struct_single_phase(input_array, build_only=False)
+
+    # benchmark run
+    def run():
+        reduce_struct_single_phase(input_array, build_only=False)
+
+    benchmark(run)
+
+
+def reduce_pointer_single_phase(input_array, build_only):
+    """Single-phase API that automatically manages temporary storage."""
+    size = len(input_array)
+    res = cp.empty(tuple(), dtype=input_array.dtype)
+    h_init = np.zeros(tuple(), dtype=input_array.dtype)
+
+    def my_add(a, b):
+        return a + b
+
+    parallel.reduce_into(input_array, res, my_add, size, h_init)
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
+def reduce_struct_single_phase(input_array, build_only):
+    """Single-phase API that automatically manages temporary storage for structs."""
+    size = len(input_array)
+    res = cp.empty(tuple(), dtype=input_array.dtype)
+    h_init = MyStruct(0, 0)
+
+    def my_add(a, b):
+        return MyStruct(a.x + b.x, a.y + b.y)
+
+    parallel.reduce_into(input_array, res, my_add, size, h_init)
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
+def reduce_iterator_single_phase(inp, size, build_only):
+    """Single-phase API that automatically manages temporary storage for iterators."""
+    dt = cp.int32
+    res = cp.empty(tuple(), dtype=dt)
+    h_init = np.zeros(tuple(), dtype=dt)
+
+    def my_add(a, b):
+        return a + b
+
+    parallel.reduce_into(inp, res, my_add, size, h_init)
+
+    cp.cuda.runtime.deviceSynchronize()
