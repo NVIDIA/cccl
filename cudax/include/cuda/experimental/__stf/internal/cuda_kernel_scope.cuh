@@ -158,6 +158,27 @@ struct cuda_kernel_desc
       func_variant);
   }
 
+  // Utility to query the number of registers used by this kernel
+  int get_num_registers() const
+  {
+    return ::std::visit(
+      [](auto&& kernel_func) {
+        using T = ::std::decay_t<decltype(kernel_func)>;
+        if constexpr (::std::is_same_v<T, CUfunction>)
+        {
+          return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, kernel_func);
+        }
+        else
+        {
+          static_assert(::std::is_same_v<T, const void*>, "Unsupported kernel function type");
+          cudaFuncAttributes func_attr{};
+          cuda_safe_call(cudaFuncGetAttributes(&func_attr, kernel_func));
+          return func_attr.numRegs;
+        }
+      },
+      func_variant);
+  }
+
 private:
   ::std::shared_ptr<void> arg_tuple_type_erased;
 
@@ -323,11 +344,27 @@ public:
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
     }
 
+    // If CUDASTF_CUDA_KERNEL_DEBUG is set, we display the number of registers
+    // used by the kernel(s)
+    static bool display_register_cnt = [] {
+      const char* env = ::std::getenv("CUDASTF_CUDA_KERNEL_DEBUG");
+      return env && (atoi(env) != 0);
+    }();
+
     // When chained is enable, we expect a vector of kernel description which should be executed one after the other
     if constexpr (chained)
     {
       ::std::vector<cuda_kernel_desc> res = ::std::apply(f, deps.instance(t));
       assert(!res.empty());
+
+      if (display_register_cnt)
+      {
+        fprintf(stderr, "cuda_kernel_chain (%s):\n", symbol.c_str());
+        for (size_t i = 0; i < res.size(); i++)
+        {
+          fprintf(stderr, "- kernel %ld uses %d register(s)\n", i, res[i].get_num_registers());
+        }
+      }
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
@@ -373,6 +410,10 @@ public:
       static_assert(!chained);
 
       cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
+      if (display_register_cnt)
+      {
+        fprintf(stderr, "cuda_kernel (%s): uses %d register(s)\n", symbol.c_str(), res.get_num_registers());
+      }
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
