@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_copy.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/distance.h>
+#include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
 #include <thrust/find.h>
 #include <thrust/for_each.h>
@@ -278,11 +278,11 @@ std::size_t gen_uniform_offsets(
   seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size)
 {
   gen_values_between(seed, segment_offsets, min_segment_size, max_segment_size);
-  segment_offsets[total_elements] = total_elements + 1;
+  *thrust::device_ptr<T>(&segment_offsets[total_elements]) = total_elements + 1;
   thrust::exclusive_scan(device_policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
   const auto iter =
     thrust::find_if(device_policy, segment_offsets.begin(), segment_offsets.end(), greater_equal_op<T>{total_elements});
-  *iter = total_elements;
+  *thrust::device_ptr<T>(&*iter) = total_elements;
   return iter - segment_offsets.begin() + 1;
 }
 
