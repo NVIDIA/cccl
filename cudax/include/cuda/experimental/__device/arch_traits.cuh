@@ -488,16 +488,15 @@ namespace __detail
   {
     // If the architecture is unknown, we need to craft the arch_traits from attributes
     arch_traits_t __traits{};
-    __traits.compute_capability_major = __arch / 100;
-    __traits.compute_capability_minor = (__arch / 10) % 10;
-    __traits.compute_capability       = __arch;
-    __traits.max_shared_memory_per_multiprocessor =
-      __detail::__device_attrs::max_shared_memory_per_multiprocessor(__device);
-    __traits.max_blocks_per_multiprocessor  = __detail::__device_attrs::max_blocks_per_multiprocessor(__device);
-    __traits.max_threads_per_multiprocessor = __detail::__device_attrs::max_threads_per_multiprocessor(__device);
+    __traits.compute_capability_major             = __arch / 100;
+    __traits.compute_capability_minor             = (__arch / 10) % 10;
+    __traits.compute_capability                   = __arch;
+    __traits.max_shared_memory_per_multiprocessor = device_attributes::max_shared_memory_per_multiprocessor(__device);
+    __traits.max_blocks_per_multiprocessor        = device_attributes::max_blocks_per_multiprocessor(__device);
+    __traits.max_threads_per_multiprocessor       = device_attributes::max_threads_per_multiprocessor(__device);
     __traits.max_warps_per_multiprocessor =
       __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
-    __traits.reserved_shared_memory_per_block = __detail::__device_attrs::reserved_shared_memory_per_block(__device);
+    __traits.reserved_shared_memory_per_block = device_attributes::reserved_shared_memory_per_block(__device);
     __traits.max_shared_memory_per_block_optin =
       __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
