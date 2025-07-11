@@ -85,7 +85,7 @@ runs:
         echo -e "::endgroup::"
         echo -e "\e[1;34m${COMMAND}\e[0m"
         exit_code=0
-        eval "${COMMAND} || exit_code=$?"
+        eval "${COMMAND}" || exit_code=$?
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"

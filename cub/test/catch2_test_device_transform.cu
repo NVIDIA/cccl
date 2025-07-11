@@ -60,19 +60,14 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
   REQUIRE(reference_h == result);
 }
 
+// note: because this uses a fancy iterator type, it will only test the fallback kernel
 C2H_TEST("DeviceTransform::Transform works for large number of items",
          "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+  const auto num_items = detail::make_large_offset<offset_t>();
 
   auto in_it              = thrust::make_counting_iterator(offset_t{0});
   auto expected_result_it = in_it;
@@ -92,13 +87,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_max_ull = ::cuda::std::clamp(
-    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-    std::size_t{0},
-    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+  const offset_t num_items = detail::make_large_offset<offset_t>();
 
   auto a_it               = thrust::make_counting_iterator(offset_t{0});
   auto b_it               = thrust::make_constant_iterator(offset_t{42});
@@ -115,29 +104,34 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 
 struct times_seven
 {
-  _CCCL_HOST_DEVICE auto operator()(unsigned char v) const -> char
+  template <typename T>
+  _CCCL_HOST_DEVICE auto operator()(T v) const -> T
   {
-    return static_cast<unsigned char>(v * 7);
+    return static_cast<T>(v * 7);
   }
 };
 
 C2H_TEST("DeviceTransform::Transform with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
 try
 {
-  using type     = unsigned char;
-  using offset_t = cuda::std::int64_t;
+  using type     = unsigned short;
+  using offset_t = c2h::get<0, TestType>;
 
-  constexpr offset_t num_items = (offset_t{1} << 32) + 123456; // a few thread blocks beyond 4GiB
-  c2h::device_vector<type> input(num_items, thrust::no_init);
+  // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
+  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
+  REQUIRE(num_items > 0);
+
+  c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input);
 
-  c2h::device_vector<type> result(num_items, thrust::no_init);
+  c2h::device_vector<type> result(static_cast<size_t>(num_items), thrust::no_init);
   transform_many(::cuda::std::make_tuple(input.begin()), result.begin(), num_items, times_seven{});
 
   // compute reference and verify
   c2h::host_vector<type> input_h = input;
-  c2h::host_vector<type> reference_h(num_items, thrust::no_init);
+  c2h::host_vector<type> reference_h(static_cast<size_t>(num_items), thrust::no_init);
   std::transform(input_h.begin(), input_h.end(), reference_h.begin(), times_seven{});
   REQUIRE((reference_h == result));
 }

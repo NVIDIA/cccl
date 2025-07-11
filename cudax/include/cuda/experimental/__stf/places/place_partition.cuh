@@ -81,9 +81,9 @@ public:
   /** @brief Partition an execution place into a vector of subplaces */
   place_partition(async_resources_handle& handle, exec_place place, place_partition_scope scope)
   {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
-#endif
+#endif // _CCCL_CTK_BELOW(12, 4)
     compute_subplaces(handle, place, scope);
   }
 
@@ -171,7 +171,7 @@ private:
     }
 
 // Green contexts are only supported since CUDA 12.4
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
     if (place.is_grid() && scope == place_partition_scope::green_context)
     {
       // Recursively partition grid into devices, then into green contexts
@@ -207,7 +207,7 @@ private:
 
       return;
     }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
     assert(!"Internal error: unreachable code.");
   }
 

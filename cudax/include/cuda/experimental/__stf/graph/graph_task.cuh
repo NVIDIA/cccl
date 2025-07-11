@@ -62,12 +62,12 @@ public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
-             size_t epoch,
+             size_t stage,
              exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx_graph(EXPECT(g))
       , graph_mutex(graph_mutex)
-      , epoch(epoch)
+      , stage(stage)
       , ctx(mv(ctx))
   {
     this->ctx.increment_task_count();
@@ -95,7 +95,7 @@ public:
     for (auto& e : prereqs)
     {
       auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
-      if (ge->epoch == epoch)
+      if (ge->stage == stage)
       {
         ready_dependencies.push_back(ge->node);
       }
@@ -119,7 +119,7 @@ public:
       // done_prereqs
       for (auto& node : done_nodes)
       {
-        auto gnp = reserved::graph_event(node, epoch, ctx_graph);
+        auto gnp = reserved::graph_event(node, stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
@@ -151,7 +151,7 @@ public:
           ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
           cuda_safe_call(cudaGraphAddDependencies(
             ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-          auto gnp = reserved::graph_event(node, epoch, ctx_graph);
+          auto gnp = reserved::graph_event(node, stage, ctx_graph);
           gnp->set_symbol(ctx, "done " + get_symbol());
           /* This node is now the output dependency of the task */
           done_prereqs.add(mv(gnp));
@@ -165,7 +165,7 @@ public:
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
 
         // Overall the task depends on the completion of the last node
-        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch, ctx_graph);
+        auto gnp = reserved::graph_event(chained_task_nodes.back(), stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         done_prereqs.add(mv(gnp));
       }
@@ -187,7 +187,7 @@ public:
           cuda_safe_call(cudaGraphDestroy(childGraph));
         }
 
-        auto gnp = reserved::graph_event(n, epoch, ctx_graph);
+        auto gnp = reserved::graph_event(n, stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
@@ -452,7 +452,7 @@ private:
   // the graph_task class remains move assignable.
   ::std::reference_wrapper<::std::mutex> graph_mutex;
 
-  size_t epoch = 0;
+  size_t stage = 0;
 
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
@@ -475,10 +475,10 @@ public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
-             size_t epoch,
+             size_t stage,
              exec_place e_place,
              task_dep<Deps>... deps)
-      : graph_task<>(mv(ctx), g, graph_mutex, epoch, mv(e_place))
+      : graph_task<>(mv(ctx), g, graph_mutex, stage, mv(e_place))
   {
     static_assert(sizeof(*this) == sizeof(graph_task<>), "Cannot add state - it would be lost by slicing.");
     add_deps(mv(deps)...);

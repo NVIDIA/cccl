@@ -18,7 +18,7 @@ template <typename ResourceType>
 void test_deallocate_async(ResourceType& resource)
 {
   cudax::stream stream{cudax::device_ref{0}};
-  test::managed<int> i(0);
+  test::pinned<int> i(0);
   cuda::atomic_ref atomic_i(*i);
 
   int* allocation = static_cast<int*>(resource.allocate(sizeof(int)));

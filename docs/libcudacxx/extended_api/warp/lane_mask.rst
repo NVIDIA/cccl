@@ -61,7 +61,7 @@ Defined in ``<cuda/warp>`` header.
 The class provides several ``static`` member functions to create common lane masks:
 
 - ``none()`` and ``all()`` are equivalent to ``lane_mask{0x0}`` and ``lane_mask{0xFFFFFFFF}``, respectively
-- ``all_active()`` returns a mask with all active lanes in the warp, equivalent to the result ``__activemask()``, and finally
+- ``all_active()`` returns a mask with all currently active lanes in the warp, equivalent to the result ``__activemask()``, and finally
 - ``this_lane()`` and other functions like ``all_greater()`` or ``all_less_equal()`` return masks depending on the current lane index. They are implemented using the PTX special registers.
 
 **Preconditions**
@@ -80,27 +80,8 @@ Example
     __global__ void lane_mask_kernel() {
         // import lane_mask symbol to current scope
         using cuda::device::lane_mask;
-
-        // all 32 lanes are active in the beginning
-        assert(lane_mask::all_active() == lane_mask::all());
-
         // this_lane() is equivalent to ~(all_less() | all_greater())
         assert(lane_mask::this_lane() == ~(lane_mask::all_less() | lane_mask::all_greater()));
-
-        constexpr auto active_lanes      = 20u;
-        constexpr auto active_lanes_mask = lane_mask{(1u << active_lanes) - 1};
-
-        // early exit lanes [20, 31]
-        if (threadIdx.x >= active_lanes)
-        {
-            return;
-        }
-
-        // not all lanes are active anymore
-        assert(lane_mask::all_active() != lane_mask::all());
-
-        // only lanes [0, 19] should be active now
-        assert(lane_mask::all_active() == lane_mask{active_lanes_mask});
     }
 
     int main() {
@@ -109,4 +90,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/Ed4s5oTr8>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/W7hExs16v>`_

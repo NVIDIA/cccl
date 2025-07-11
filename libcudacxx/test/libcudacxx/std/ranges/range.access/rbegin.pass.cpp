@@ -93,9 +93,10 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int x[2][2] = {};
     unused(x);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int(*)[2]>>);
     static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<const int(*)[2]>>);
+      cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int (*)[2]>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<const int (*)[2]>>);
   }
   {
     Different x{};

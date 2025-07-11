@@ -88,14 +88,14 @@ public:
       , __ctx(__dev.primary_context())
   {}
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
   //! @brief Construct logical_device from a green_context
   logical_device(const green_context& __gctx)
       : __dev_id(__gctx.__dev_id)
       , __kind(kinds::green_context)
       , __ctx(__gctx.__transformed)
   {}
-#endif // CUDART_VERSION >= 12050
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
   //! @brief Compares two logical_devices for equality
   //!

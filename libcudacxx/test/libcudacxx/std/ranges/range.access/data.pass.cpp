@@ -82,8 +82,8 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int x[2][2] = {};
     unused(x);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int(*)[2]>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int(*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int (*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int (*)[2]>);
   }
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*>);

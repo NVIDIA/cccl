@@ -504,7 +504,7 @@ void bulk_forwards_values()
   int counter[n]{0};
 
   auto sndr = ex::just(magic_number, &counter) //
-            | ex::bulk(ex::par, n, [](int i, int val, int(*counter)[n]) {
+            | ex::bulk(ex::par, n, [](int i, int val, int (*counter)[n]) {
                 if (val == magic_number)
                 {
                   (*counter)[i]++;

@@ -369,7 +369,7 @@ public:
 
   [[nodiscard]] void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
-    bytes = (std::max)(bytes, m_options.smallest_block_size);
+    bytes = (std::max) (bytes, m_options.smallest_block_size);
     assert(detail::is_power_of_2(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -481,7 +481,7 @@ public:
 
   virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max)(n, m_options.smallest_block_size);
+    n = (std::max) (n, m_options.smallest_block_size);
     assert(detail::is_power_of_2(alignment));
 
     // verify that the pointer is at least as aligned as claimed

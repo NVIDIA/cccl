@@ -33,12 +33,14 @@ inline void* get_driver_entry_point(const char* name, [[maybe_unused]] int versi
 {
   void* fn;
   cudaDriverEntryPointQueryResult result;
-#if CUDART_VERSION >= 12050
+
+#if _CCCL_CTK_AT_LEAST(12, 5)
   cudaGetDriverEntryPointByVersion(name, &fn, version, cudaEnableDefault, &result);
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
   // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
   cudaGetDriverEntryPoint(name, &fn, cudaEnableDefault, &result);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
+
   if (result != cudaDriverEntryPointSuccess)
   {
     if (result == cudaDriverEntryPointVersionNotSufficent)
@@ -151,7 +153,7 @@ inline CUcontext streamGetCtx(CUstream stream)
   return result;
 }
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
 struct __ctx_from_stream
 {
   enum class __kind
@@ -187,7 +189,7 @@ inline __ctx_from_stream streamGetCtx_v2(CUstream stream)
   }
   return __result;
 }
-#endif // CUDART_VERSION >= 12050
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 inline void streamWaitEvent(CUstream stream, CUevent event)
 {
@@ -242,7 +244,7 @@ inline void eventElapsedTime(CUevent start, CUevent end, float* ms)
   call_driver_fn(driver_fn, "Failed to get CUDA event elapsed time", ms, start, end);
 }
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
 // Add actual resource description input once exposure is ready
 inline CUgreenCtx greenCtxCreate(CUdevice dev)
 {
@@ -265,8 +267,7 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
   return result;
 }
-
-#endif // CUDART_VERSION >= 12050
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 inline void memcpyAsync(void* dst, const void* src, size_t count, CUstream stream)
 {

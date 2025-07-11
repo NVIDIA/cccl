@@ -442,7 +442,7 @@ struct digit_f
       using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
       using bit_ordered_type = typename traits::bit_ordered_type;
 
-      const ::cuda::std::uint32_t bits_to_copy = (::cuda::std::min)(src_size - src_bit_start, num_bits);
+      const ::cuda::std::uint32_t bits_to_copy = (::cuda::std::min) (src_size - src_bit_start, num_bits);
 
       if (bits_to_copy)
       {

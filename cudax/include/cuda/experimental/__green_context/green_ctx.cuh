@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
 namespace cuda::experimental
 {
 struct device_ref;
@@ -85,8 +85,10 @@ private:
       , __transformed(__ctx)
   {}
 };
+
 } // namespace cuda::experimental
-#endif // CUDART_VERSION >= 12050
+
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 #include <cuda/std/__cccl/epilogue.h>
 
