@@ -1,9 +1,7 @@
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
-from cuda.cccl.parallel.experimental.struct import gpu_struct
+import cuda.cccl.parallel.experimental as parallel
 
 
 def reduce_pointer(input_array, build_only):
@@ -14,12 +12,11 @@ def reduce_pointer(input_array, build_only):
     def my_add(a, b):
         return a + b
 
-    alg = algorithms.reduce_into(input_array, res, my_add, h_init)
-
+    alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
-        temp_bytes = alg(None, input_array, res, size, h_init)
-        scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, input_array, res, size, h_init)
+        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        alg(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -32,12 +29,11 @@ def reduce_struct(input_array, build_only):
     def my_add(a, b):
         return MyStruct(a.x + b.x, a.y + b.y)
 
-    alg = algorithms.reduce_into(input_array, res, my_add, h_init)
-
+    alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
-        temp_bytes = alg(None, input_array, res, size, h_init)
-        scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, input_array, res, size, h_init)
+        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        alg(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -50,17 +46,16 @@ def reduce_iterator(inp, size, build_only):
     def my_add(a, b):
         return a + b
 
-    alg = algorithms.reduce_into(inp, res, my_add, h_init)
-
+    alg = parallel.make_reduce_into(inp, res, my_add, h_init)
     if not build_only:
-        temp_bytes = alg(None, inp, res, size, h_init)
-        scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, inp, res, size, h_init)
+        temp_storage_bytes = alg(None, inp, res, size, h_init)
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        alg(temp_storage, inp, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
+@parallel.gpu_struct
 class MyStruct:
     x: np.int32
     y: np.int32
@@ -72,16 +67,16 @@ def bench_compile_reduce_pointer(compile_benchmark):
     def run():
         reduce_pointer(input_array, build_only=True)
 
-    compile_benchmark(algorithms.reduce_into, run)
+    compile_benchmark(parallel.make_reduce_into, run)
 
 
 def bench_compile_reduce_iterator(compile_benchmark):
-    inp = iterators.CountingIterator(np.int32(0))
+    inp = parallel.CountingIterator(np.int32(0))
 
     def run():
         reduce_iterator(inp, 10, build_only=True)
 
-    compile_benchmark(algorithms.reduce_into, run)
+    compile_benchmark(parallel.make_reduce_into, run)
 
 
 def bench_reduce_pointer(benchmark, size):
@@ -94,7 +89,7 @@ def bench_reduce_pointer(benchmark, size):
 
 
 def bench_reduce_iterator(benchmark, size):
-    inp = iterators.CountingIterator(np.int32(0))
+    inp = parallel.CountingIterator(np.int32(0))
 
     def run():
         reduce_iterator(inp, size, build_only=False)
