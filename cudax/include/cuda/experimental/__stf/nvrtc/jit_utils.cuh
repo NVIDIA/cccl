@@ -259,30 +259,6 @@ inline CUfunction lazy_jit(
   return kernel;
 }
 
-inline ::std::string run_command(const char* cmd)
-{
-  ::std::array<char, 1024 * 64> buffer;
-  ::std::string result;
-
-  ::std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-  if (!pipe)
-  {
-    return result;
-  }
-
-  while (fgets(buffer.data(), buffer.size(), pipe.get()))
-  {
-    result += buffer.data();
-  }
-
-  if (result.back() == '\n')
-  {
-    result.pop_back(); // Remove trailing newline
-  }
-
-  return result;
-}
-
 /**
  * @brief JIT adapter for kernel parameters (see specializations below).
  */
@@ -575,14 +551,11 @@ inline static const ::std::vector<::std::string>& get_nvrtc_flags()
 
     ::std::vector<::std::string> result;
     result.push_back("-I" + (cccl_root_dir / "libcudacxx/include").string());
+    result.push_back("-I" + (cccl_root_dir / "cub").string());
+    result.push_back("-I" + (cccl_root_dir / "thrust").string());
     result.push_back("-I" + (cccl_root_dir / "cudax/include").string());
     result.push_back("-default-device");
     result.push_back("-std=c++20");
-
-    ::std::string s =
-      run_command(R"(echo "" | nvcc -v -x cu - -c 2>&1 | grep '#$ INCLUDES="' | grep -oP '(?<=INCLUDES=").*(?=" *$)')");
-    ::std::istringstream iss(s);
-    result.insert(result.end(), ::std::istream_iterator<::std::string>{iss}, {});
 
     const int device          = cuda_try<cudaGetDevice>();
     const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(device);
