@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -48,8 +48,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-CUB_NAMESPACE_BEGIN
+#include <cuda/ptx>
 
+CUB_NAMESPACE_BEGIN
+namespace detail
+{
 /**
  * @brief BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction
  *        across a CUDA thread block. Supports non-commutative reduction operators.
@@ -64,11 +67,8 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam BLOCK_DIM_Z
  *   The thread block length in threads along the Z dimension
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 struct BlockReduceWarpReductions
 {
   /// Constants
@@ -78,26 +78,26 @@ struct BlockReduceWarpReductions
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
     /// Number of warp threads
-    WARP_THREADS = CUB_WARP_THREADS(0),
+    WARP_THREADS = warp_threads,
 
     /// Number of active warps
     WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
     /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = CUB_MIN(BLOCK_THREADS, WARP_THREADS),
+    LOGICAL_WARP_SIZE = (BLOCK_THREADS < WARP_THREADS ? BLOCK_THREADS : WARP_THREADS), // MSVC bug with cuda::std::min
 
     /// Whether or not the logical warp size evenly divides the thread block size
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
   };
 
   ///  WarpReduce utility type
-  using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+  using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage
   {
     /// Buffer for warp-synchronous reduction
-    typename WarpReduce::TempStorage warp_reduce[WARPS];
+    typename WarpReduceInternal::TempStorage warp_reduce[WARPS];
 
     /// Shared totals from each warp-synchronous reduction
     T warp_aggregates[WARPS];
@@ -121,7 +121,7 @@ struct BlockReduceWarpReductions
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
-      , lane_id(LaneId())
+      , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
 
   /**
@@ -136,14 +136,14 @@ struct BlockReduceWarpReductions
    */
   template <bool FULL_TILE, typename ReductionOp, int SUCCESSOR_WARP>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp reduction_op, T warp_aggregate, int num_valid, Int2Type<SUCCESSOR_WARP> /*successor_warp*/)
+    ReductionOp reduction_op, T warp_aggregate, int num_valid, constant_t<SUCCESSOR_WARP> /*successor_warp*/)
   {
     if (FULL_TILE || (SUCCESSOR_WARP * LOGICAL_WARP_SIZE < num_valid))
     {
       T addend       = temp_storage.warp_aggregates[SUCCESSOR_WARP];
       warp_aggregate = reduction_op(warp_aggregate, addend);
     }
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<SUCCESSOR_WARP + 1>());
+    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<SUCCESSOR_WARP + 1>);
   }
 
   /**
@@ -158,7 +158,7 @@ struct BlockReduceWarpReductions
    */
   template <bool FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, Int2Type<WARPS> /*successor_warp*/)
+    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, constant_t<int{WARPS}> /*successor_warp*/)
   {
     return warp_aggregate;
   }
@@ -184,12 +184,12 @@ struct BlockReduceWarpReductions
       detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Update total aggregate in warp 0, lane 0
     if (linear_tid == 0)
     {
-      warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<1>());
+      warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<1>);
     }
 
     return warp_aggregate;
@@ -217,7 +217,7 @@ struct BlockReduceWarpReductions
 
     // Warp reduction in every warp
     T warp_aggregate =
-      WarpReduce(temp_storage.warp_reduce[warp_id])
+      WarpReduceInternal(temp_storage.warp_reduce[warp_id])
         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
@@ -247,12 +247,13 @@ struct BlockReduceWarpReductions
                          : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id])
+    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
                          .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

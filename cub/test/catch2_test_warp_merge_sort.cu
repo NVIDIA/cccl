@@ -88,7 +88,7 @@ __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_siz
     const int idx     = thread_offset + item;
     thread_data[item] = in[idx];
   }
-  cub::WARP_SYNC(warp_sort.get_member_mask());
+  __syncwarp(warp_sort.get_member_mask());
 
   // Run merge sort test
   action(warp_sort, thread_data, valid_items, oob_default);
@@ -153,7 +153,7 @@ __global__ void warp_merge_sort_kernel(
     keys[item]    = keys_in[idx];
     values[item]  = values_in[idx];
   }
-  cub::WARP_SYNC(warp_sort.get_member_mask());
+  __syncwarp(warp_sort.get_member_mask());
 
   // Run merge sort test
   action(warp_sort, keys, values, valid_items, oob_default);
@@ -411,7 +411,7 @@ C2H_TEST(
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
-  const auto oob_default = std::numeric_limits<type>::max();
+  const auto oob_default = ::cuda::std::numeric_limits<type>::max();
   c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
@@ -442,7 +442,7 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   c2h::device_vector<int> d_segment_sizes(params::total_warps);
-  const auto oob_default = std::numeric_limits<type>::max();
+  const auto oob_default = ::cuda::std::numeric_limits<type>::max();
   c2h::gen(C2H_SEED(5), d_in);
   c2h::gen(C2H_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
 
@@ -478,7 +478,7 @@ C2H_TEST("Warp sort on keys-value pairs works",
   c2h::device_vector<value_type> d_values_in(params::tile_size);
   c2h::device_vector<value_type> d_values_out(params::tile_size);
   auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
-  const auto oob_default = std::numeric_limits<key_type>::max();
+  const auto oob_default = ::cuda::std::numeric_limits<key_type>::max();
   c2h::gen(C2H_SEED(10), d_keys_in);
 
   // Run test
@@ -521,7 +521,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   c2h::device_vector<value_type> d_values_in(params::tile_size);
   c2h::device_vector<value_type> d_values_out(params::tile_size);
   c2h::device_vector<int> d_segment_sizes(params::total_warps);
-  const auto oob_default = std::numeric_limits<key_type>::max();
+  const auto oob_default = ::cuda::std::numeric_limits<key_type>::max();
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
 

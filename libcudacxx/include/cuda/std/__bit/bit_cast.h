@@ -25,14 +25,18 @@
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_BIT_CAST)
-#  define _LIBCUDACXX_CONSTEXPR_BIT_CAST constexpr
+#  define _LIBCUDACXX_CONSTEXPR_BIT_CAST       constexpr
+#  define _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() 1
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST
+#  define _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() 0
 #  if _CCCL_COMPILER(GCC, >=, 8)
 // GCC starting with GCC8 warns about our extended floating point types having protected data members
 _CCCL_DIAG_PUSH
@@ -46,7 +50,7 @@ template <
   enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                                                = 0,
   enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To) || _CCCL_TRAIT(__is_extended_floating_point, _To), int>     = 0,
   enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
+[[nodiscard]] _CCCL_API inline _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_CCCL_BUILTIN_BIT_CAST)
   return _CCCL_BUILTIN_BIT_CAST(_To, __from);
@@ -67,5 +71,7 @@ _CCCL_DIAG_POP
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_BIT_CAST_H

@@ -18,14 +18,12 @@
 
 static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::source_location>::value, "support.srcloc.cons (1.1)");
 static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::source_location>::value, "support.srcloc.cons (1.2)");
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::is_nothrow_swappable<cuda::std::source_location>::value, "support.srcloc.cons (1.3)");
-#endif // TEST_STD_VER >= 2014
 
-ASSERT_NOEXCEPT(cuda::std::source_location());
-#if !defined(TEST_COMPILER_NVCC)
-ASSERT_NOEXCEPT(cuda::std::source_location::current());
-#endif // TEST_COMPILER_NVCC
+static_assert(noexcept(cuda::std::source_location()));
+#if !TEST_CUDA_COMPILER(NVCC)
+static_assert(noexcept(cuda::std::source_location::current()));
+#endif // TEST_CUDA_COMPILER(NVCC)
 
 __host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexcept
 {
@@ -84,22 +82,22 @@ __host__ __device__ void test()
   assert(global_source.line() != 0);
 
 // nvrtc only supports this in C++20
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 || _CCCL_COMPILER(NVRTC, >=, 12, 9)
   assert(global_source.column() != 0);
 #else
   assert(global_source.column() == 0);
-#endif // TEST_STD_VER <= 2017
+#endif // TEST_STD_VER<= 2017
 
 #line 2000
   auto local = cuda::std::source_location::current();
   assert(compare_strings(global_source.file_name(), local.file_name()));
 
 // nvrtc only supports this in C++20
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 || _CCCL_COMPILER(NVRTC, >=, 12, 9)
   assert(local.line() == 2000);
 #else
   assert(global_source.line() == local.line());
-#endif // TEST_STD_VER <= 2017
+#endif // TEST_STD_VER<= 2017
 
   // This is expected
   // assert(global_source.column() == local.column());

@@ -26,16 +26,27 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 #include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/counted.h>
 #include <cuda/std/__ranges/dangling.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/empty.h>
+#include <cuda/std/__ranges/empty_view.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/enable_view.h>
+#include <cuda/std/__ranges/iota_view.h>
+#include <cuda/std/__ranges/owning_view.h>
 #include <cuda/std/__ranges/rbegin.h>
+#include <cuda/std/__ranges/ref_view.h>
 #include <cuda/std/__ranges/rend.h>
+#include <cuda/std/__ranges/repeat_view.h>
+#include <cuda/std/__ranges/single_view.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/subrange.h>
+#include <cuda/std/__ranges/take_view.h>
+#include <cuda/std/__ranges/take_while_view.h>
+#include <cuda/std/__ranges/transform_view.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__ranges/views.h>
 
@@ -43,9 +54,9 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/version>
 
 // [ranges.syn]
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/initializer_list>
 #include <cuda/std/iterator>
 

@@ -27,6 +27,8 @@
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Locked atomics must override the dispatch to be able to implement RMW primitives around the embedded lock.
@@ -85,8 +87,8 @@ _CCCL_HOST_DEVICE inline void __atomic_store_dispatch(_Sto* __a, _Up __val, memo
 }
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -97,8 +99,8 @@ __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {}) -> __at
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -152,8 +154,8 @@ __atomic_compare_exchange_weak_dispatch(_Sto* __a, _Up* __expected, _Up __value,
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -165,8 +167,8 @@ __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {}) -> 
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -178,8 +180,8 @@ __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {}) -> 
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -191,8 +193,8 @@ __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {}) -
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -204,8 +206,8 @@ __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {}) ->
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -217,5 +219,7 @@ __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {}) -
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H

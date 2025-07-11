@@ -2,15 +2,16 @@
 
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/integer_traits.h>
-#include <thrust/limits.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
 #include <thrust/mr/host_memory_resource.h>
 #include <thrust/mr/universal_memory_resource.h>
 
+#include <cuda/std/limits>
+
 #include <cstdio>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -178,7 +179,7 @@ public:
   DEFINE_OPERATOR(>)
   DEFINE_OPERATOR(>=)
   DEFINE_OPERATOR(&&)
-  DEFINE_OPERATOR(||);
+  DEFINE_OPERATOR(||)
 
 #undef DEFINE_OPERATOR
 
@@ -199,23 +200,18 @@ private:
   }
 };
 
-THRUST_NAMESPACE_BEGIN
-
+namespace std
+{
 template <>
 struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
+} // namespace std
 
-namespace detail
-{
-
-// For random number generation
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-class integer_traits<custom_numeric> : public integer_traits_base<int, INT_MIN, INT_MAX>
+struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
-
-} // namespace detail
-
-THRUST_NAMESPACE_END
+_LIBCUDACXX_END_NAMESPACE_STD
 
 using NumericTypes = unittest::type_list<
   char,
@@ -288,7 +284,46 @@ enum TestStatus
 using ArgumentSet = std::set<std::string>;
 using ArgumentMap = std::map<std::string, std::string>;
 
-std::vector<size_t> get_test_sizes();
+// clang-format off
+inline constexpr size_t standard_test_sizes[] =
+{
+  0, 1, 2, 3, 4, 5, 8, 10, 13, 16, 17, 19, 27, 30, 31, 32,
+  33, 35, 42, 53, 58, 63, 64, 65, 72, 97, 100, 127, 128, 129, 142, 183, 192, 201, 240, 255, 256,
+  257, 302, 511, 512, 513, 687, 900, 1023, 1024, 1025, 1565, 1786, 1973, 2047, 2048, 2049, 3050, 4095, 4096,
+  4097, 5030, 7791, 10000, 10027, 12345, 16384, 17354, 26255, 32768, 43718, 65533, 65536,
+  65539, 123456, 131072, 731588, 1048575, 1048576,
+  3398570, 9760840, (1 << 24) - 1, (1 << 24),
+  (1 << 24) + 1, (1 << 25) - 1, (1 << 25), (1 << 25) + 1, (1 << 26) - 1, 1 << 26,
+  (1 << 26) + 1, (1 << 27) - 1, (1 << 27)
+};
+// clang-format on
+
+inline constexpr size_t tiny_threshold    = 1 << 5; //   32
+inline constexpr size_t small_threshold   = 1 << 8; //  256
+inline constexpr size_t medium_threshold  = 1 << 12; //   4K
+inline constexpr size_t default_threshold = 1 << 16; //  64K
+inline constexpr size_t large_threshold   = 1 << 20; //   1M
+inline constexpr size_t huge_threshold    = 1 << 24; //  16M
+inline constexpr size_t epic_threshold    = 1 << 26; //  64M
+inline constexpr size_t max_threshold     = (std::numeric_limits<size_t>::max)();
+
+inline std::vector<size_t> test_sizes = [] {
+  std::vector<size_t> v;
+  for (size_t s : standard_test_sizes)
+  {
+    if (s <= default_threshold)
+    {
+      v.push_back(s);
+    }
+  }
+  return v;
+}();
+
+inline const std::vector<size_t>& get_test_sizes()
+{
+  return test_sizes;
+}
+
 void set_test_sizes(const std::string&);
 
 class UnitTest
@@ -324,7 +359,7 @@ protected:
   virtual bool post_test_smoke_check(const UnitTest& test, bool concise);
 
 public:
-  inline virtual ~UnitTestDriver() {};
+  inline virtual ~UnitTestDriver() {}
 
   void register_test(UnitTest* test);
   virtual bool run_tests(const ArgumentSet& args, const ArgumentMap& kwargs);
@@ -571,10 +606,8 @@ public:
 
 template <template <typename> class TestName,
           typename TypeList,
-          template <typename, typename>
-          class Vector,
-          template <typename>
-          class Alloc>
+          template <typename, typename> class Vector,
+          template <typename> class Alloc>
 struct VectorUnitTest : public UnitTest
 {
   VectorUnitTest()

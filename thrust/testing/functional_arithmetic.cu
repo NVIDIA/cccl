@@ -49,8 +49,8 @@ void TestBinaryFunctional()
 #define INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestBinaryFunctional<thrust::vector_type<data_type>,                                       \
                        thrust::vector_type<data_type>,                                       \
-                       thrust::operator_name<data_type>,                                     \
-                       std::operator_name<data_type>>();
+                       ::cuda::std::operator_name<data_type>,                                \
+                       ::std::operator_name<data_type>>();
 // op(T,T) -> T
 #define DECLARE_BINARY_ARITHMETIC_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
   void Test##OperatorName##FunctionalHost()                                                             \

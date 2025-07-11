@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;

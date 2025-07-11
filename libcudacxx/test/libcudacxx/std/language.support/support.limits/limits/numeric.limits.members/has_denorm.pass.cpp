@@ -33,10 +33,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t, cuda::std::denorm_absent>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t, cuda::std::denorm_absent>();
   test<char32_t, cuda::std::denorm_absent>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short, cuda::std::denorm_absent>();
   test<unsigned short, cuda::std::denorm_absent>();
   test<int, cuda::std::denorm_absent>();
@@ -45,15 +43,42 @@ int main(int, char**)
   test<unsigned long, cuda::std::denorm_absent>();
   test<long long, cuda::std::denorm_absent>();
   test<unsigned long long, cuda::std::denorm_absent>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, cuda::std::denorm_absent>();
   test<__uint128_t, cuda::std::denorm_absent>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, cuda::std::denorm_present>();
   test<double, cuda::std::denorm_present>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, cuda::std::denorm_present>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_NVFP16()
+  test<__half, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8_E4M3()
+  test<__nv_fp8_e4m3, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
+  test<__nv_fp8_e5m2, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
+  test<__nv_fp8_e8m0, cuda::std::denorm_absent>();
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
+  test<__nv_fp6_e2m3, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
+  test<__nv_fp6_e3m2, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
+  test<__nv_fp4_e2m1, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128, cuda::std::denorm_present>();
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // <cuda/std/tuple>
 
 // See llvm.org/PR20855
@@ -18,9 +16,11 @@
 
 #include "test_macros.h"
 
-#if TEST_HAS_BUILTIN_IDENTIFIER(__reference_binds_to_temporary)
-#  define ASSERT_REFERENCE_BINDS_TEMPORARY(...)     static_assert(__reference_binds_to_temporary(__VA_ARGS__), "")
-#  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) static_assert(!__reference_binds_to_temporary(__VA_ARGS__), "")
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#  define ASSERT_REFERENCE_BINDS_TEMPORARY(...) \
+    static_assert(cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>, "")
+#  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) \
+    static_assert(!cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>, "")
 #else
 #  define ASSERT_REFERENCE_BINDS_TEMPORARY(...)     static_assert(true, "")
 #  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) static_assert(true, "")

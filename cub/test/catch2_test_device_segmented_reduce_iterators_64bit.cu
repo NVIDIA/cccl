@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_segmented_reduce.cuh>
 
@@ -34,7 +33,6 @@
 
 #include <cstdint>
 
-#include "catch2/catch.hpp"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 

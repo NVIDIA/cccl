@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr void swap(expected& rhs) noexcept(see below);
 //
 // Constraints:
@@ -32,9 +30,8 @@
 
 // Test Constraints:
 template <class T, class E>
-_CCCL_CONCEPT_FRAGMENT(HasMemberSwap_, requires(cuda::std::expected<T, E> x, cuda::std::expected<T, E> y)((x.swap(y))));
-template <class T, class E>
-_CCCL_CONCEPT HasMemberSwap = _CCCL_FRAGMENT(HasMemberSwap_, T, E);
+_CCCL_CONCEPT HasMemberSwap =
+  _CCCL_REQUIRES_EXPR((T, E), cuda::std::expected<T, E> x, cuda::std::expected<T, E> y)((x.swap(y)));
 
 static_assert(HasMemberSwap<int, int>, "");
 
@@ -72,10 +69,8 @@ static_assert(HasMemberSwap<MoveMayThrow, int>, "");
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(HasMemberSwap<int, MoveMayThrow>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(!HasMemberSwap<MoveMayThrow, MoveMayThrow>, "");
-#endif // TEST_COMPILER_ICC
 
 // Test noexcept
 template <class T, class E, bool = HasMemberSwap<T, E>>
@@ -87,7 +82,6 @@ constexpr bool MemberSwapNoexcept<T, E, true> =
 
 static_assert(MemberSwapNoexcept<int, int>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T>
 static_assert(!MemberSwapNoexcept<MoveMayThrow, int>, "");
 
@@ -104,7 +98,6 @@ static_assert(!MemberSwapNoexcept<SwapMayThrow, int>, "");
 
 // !is_nothrow_swappable_v<E>
 static_assert(!MemberSwapNoexcept<int, SwapMayThrow>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -215,7 +208,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
   // !e1.has_value() && e2.has_value()
@@ -250,7 +243,7 @@ void test_exceptions()
     }
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -258,8 +251,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test(), "");
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

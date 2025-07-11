@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -54,9 +53,9 @@ __host__ __device__ void test_sfinae()
   {};
 
   static_assert(has_visit<cuda::std::variant<int>>(int()), "");
-#if !defined(TEST_COMPILER_MSVC) // MSVC cannot deal with that even with std::variant
+#if !TEST_COMPILER(MSVC) // MSVC cannot deal with that even with std::variant
   static_assert(!has_visit<BadVariant>(int()), "");
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 }
 
 int main(int, char**)

@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool>
@@ -45,17 +47,19 @@ using _If _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes
 template <bool _Bp, class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
 {
-  typedef _If type;
+  using type = _If;
 };
 template <class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
 {
-  typedef _Then type;
+  using type = _Then;
 };
 
 template <bool _Bp, class _If, class _Then>
 using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_CONDITIONAL_H

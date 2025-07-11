@@ -398,6 +398,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
     std_str = ("C++" + str(matrix_job["std"]) + " ") if "std" in matrix_job else ""
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
+    py_version = (
+        (", py" + matrix_job["py_version"]) if "py_version" in matrix_job else ""
+    )
     cuda_compile_arch = (
         (" sm{" + str(matrix_job["sm"]) + "}") if "sm" in matrix_job else ""
     )
@@ -415,7 +418,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
+    return (
+        f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}{py_version}){extra_info}"
+    )
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
@@ -478,6 +483,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cuda_compile_arch = matrix_job["sm"] if "sm" in matrix_job else ""
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
+    py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+
     command = f'"{script_name}"'
     if job_args:
         command += f" {job_args}"
@@ -486,9 +493,11 @@ def generate_dispatch_job_command(matrix_job, job_type):
     if cuda_compile_arch:
         command += f' -arch "{cuda_compile_arch}"'
     if device_compiler["id"] != "nvcc":
-        command += f" -cuda \"{device_compiler['exe']}\""
+        command += f' -cuda "{device_compiler["exe"]}"'
     if cmake_options:
         command += f' -cmake-options "{cmake_options}"'
+    if py_version:
+        command += f' -py-version "{py_version}"'
 
     return command
 
@@ -930,12 +939,19 @@ def validate_tags(matrix_job, ignore_required=False):
                 error_message_with_matrix_job(matrix_job, f"Unknown tag '{tag}'")
             )
 
-    if "gpu" in matrix_job and matrix_job["gpu"] not in matrix_yaml["gpus"].keys():
-        raise Exception(
-            error_message_with_matrix_job(
-                matrix_job, f"Unknown gpu '{matrix_job['gpu']}'"
-            )
+    if "gpu" in matrix_job:
+        gpus = (
+            matrix_job["gpu"]
+            if isinstance(matrix_job["gpu"], list)
+            else [matrix_job["gpu"]]
         )
+        for gpu in gpus:
+            if gpu not in matrix_yaml["gpus"].keys():
+                raise Exception(
+                    error_message_with_matrix_job(
+                        matrix_job, f"Unknown gpu '{matrix_job['gpu']}'"
+                    )
+                )
 
 
 def set_default_tags(matrix_job):
@@ -1072,13 +1088,10 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     # Fill in default values, explode lists.
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
 
-    if args:
-        if (
-            args.dirty_projects is not None
-        ):  # Explicitly check for None, as an empty list is valid:
-            matrix_jobs = [
-                job for job in matrix_jobs if job["project"] in args.dirty_projects
-            ]
+    if args and args.dirty_projects is not None and workflow_name != "override":
+        matrix_jobs = [
+            job for job in matrix_jobs if job["project"] in args.dirty_projects
+        ]
 
     # Don't remove excluded jobs if we're currently parsing them:
     if not is_exclusion_matrix:

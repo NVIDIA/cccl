@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -20,9 +18,9 @@
 #include "test_macros.h"
 #include "types.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  include <stdexcept>
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
 __host__ __device__ constexpr void test_resize()
@@ -189,10 +187,18 @@ __host__ __device__ constexpr void test_shrink_to_fit()
     assert(vec.empty());
   }
 
+  { // inplace_vector<T, 0>::shrink_to_fit as a static method
+    cuda::std::inplace_vector<T, 0>::shrink_to_fit();
+  }
+
   { // inplace_vector<T, N>::shrink_to_fit
     inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     vec.shrink_to_fit();
     assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(1), T(12), T(0), T(-1)}));
+  }
+
+  { // inplace_vector<T, 0>::shrink_to_fit as a static method
+    inplace_vector::shrink_to_fit();
   }
 }
 
@@ -208,10 +214,18 @@ __host__ __device__ constexpr void test_reserve()
     assert(vec.empty());
   }
 
+  { // inplace_vector<T, 0>::reserve as static method
+    cuda::std::inplace_vector<T, 0>::reserve(0);
+  }
+
   { // inplace_vector<T, N>::reserve
     inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     vec.reserve(13);
     assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(1), T(12), T(0), T(-1)}));
+  }
+
+  { // inplace_vector<T, 0>::reserve as static method
+    inplace_vector::reserve(0);
   }
 }
 
@@ -241,7 +255,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 { // resize and reserve throw std::bad_alloc
   {
@@ -284,7 +298,7 @@ void test_exceptions()
     }
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -293,8 +307,8 @@ int main(int, char**)
   static_assert(test(), "");
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

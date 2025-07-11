@@ -49,6 +49,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -71,19 +72,20 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          /** \brief Number of private histograms to use in the ranker;
-              ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
-          int _RANK_NUM_PARTS,
-          /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
-            support warp-strided key arrangement and count callbacks are supported. */
-          RadixRankAlgorithm _RANK_ALGORITHM,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          RadixSortStoreAlgorithm _STORE_ALGORITHM,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  /** \brief Number of private histograms to use in the ranker;
+      ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
+  int _RANK_NUM_PARTS,
+  /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
+    support warp-strided key arrangement and count callbacks are supported. */
+  RadixRankAlgorithm _RANK_ALGORITHM,
+  BlockScanAlgorithm _SCAN_ALGORITHM,
+  RadixSortStoreAlgorithm _STORE_ALGORITHM,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum
@@ -96,20 +98,25 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
+namespace detail
+{
+namespace radix_sort
+{
+
 template <typename AgentRadixSortOnesweepPolicy,
           bool IS_DESCENDING,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
           typename PortionOffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortOnesweep
 {
   // constants
   enum
   {
     ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY             = std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY             = ::cuda::std::is_same_v<ValueT, NullType>,
     BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS,
     RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS,
     TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD,
@@ -117,7 +124,7 @@ struct AgentRadixSortOnesweep
     RADIX_DIGITS          = 1 << RADIX_BITS,
     BINS_PER_THREAD       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
     FULL_BINS             = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS          = CUB_PTX_WARP_THREADS,
+    WARP_THREADS          = warp_threads,
     BLOCK_WARPS           = BLOCK_THREADS / WARP_THREADS,
     WARP_MASK             = ~0,
     LOOKBACK_PARTIAL_MASK = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 2),
@@ -126,7 +133,7 @@ struct AgentRadixSortOnesweep
     LOOKBACK_VALUE_MASK   = ~LOOKBACK_KIND_MASK,
   };
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -203,7 +210,7 @@ struct AgentRadixSortOnesweep
   }
 
   // helper methods
-  _CCCL_DEVICE _CCCL_FORCEINLINE std::uint32_t Digit(bit_ordered_type key)
+  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t Digit(bit_ordered_type key)
   {
     return digit_extractor().Digit(key);
   }
@@ -215,7 +222,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackPartial(int (&bins)[BINS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin = ThreadBin(u);
@@ -245,7 +252,7 @@ struct AgentRadixSortOnesweep
     {}
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(int (&other_bins)[BINS_PER_THREAD])
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
         bins[u] = other_bins[u];
@@ -258,7 +265,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackGlobal(int (&bins)[BINS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin = ThreadBin(u);
@@ -279,7 +286,7 @@ struct AgentRadixSortOnesweep
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
-          want_mask = WARP_BALLOT((value_j & LOOKBACK_GLOBAL_MASK) == 0, want_mask);
+          want_mask = __ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
           if (value_j & LOOKBACK_GLOBAL_MASK)
           {
             break;
@@ -305,7 +312,7 @@ struct AgentRadixSortOnesweep
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       keys[u] = Twiddle::In(keys[u], decomposer);
@@ -341,7 +348,8 @@ struct AgentRadixSortOnesweep
   {
     // check if any bin can be short-circuited
     bool short_circuit = false;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       if (FULL_BINS || ThreadBin(u) < RADIX_DIGITS)
@@ -349,7 +357,7 @@ struct AgentRadixSortOnesweep
         short_circuit = short_circuit || bins[u] == TILE_ITEMS;
       }
     }
-    short_circuit = CTA_SYNC_OR(short_circuit);
+    short_circuit = __syncthreads_or(short_circuit);
     if (!short_circuit)
     {
       return;
@@ -364,9 +372,10 @@ struct AgentRadixSortOnesweep
     // short-circuit handling; note that global look-back is still required
 
     // compute offsets
-    std::uint32_t common_bin = Digit(keys[0]);
+    uint32_t common_bin = Digit(keys[0]);
     int offsets[BINS_PER_THREAD];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin    = ThreadBin(u);
@@ -377,11 +386,12 @@ struct AgentRadixSortOnesweep
     LoadBinsToOffsetsGlobal(offsets);
     LookbackGlobal(bins);
     UpdateBinsGlobal(bins, offsets);
-    CTA_SYNC();
+    __syncthreads();
 
     // scatter the keys
     OffsetT global_offset = s.global_offsets[common_bin];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       keys[u] = Twiddle::Out(keys[u], decomposer);
@@ -419,8 +429,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterKeysShared(bit_ordered_type (&keys)[ITEMS_PER_THREAD], int (&ranks)[ITEMS_PER_THREAD])
   {
-// write to shared memory
-#pragma unroll
+    // write to shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       s.keys_out[ranks[u]] = keys[u];
@@ -430,8 +440,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterValuesShared(ValueT (&values)[ITEMS_PER_THREAD], int (&ranks)[ITEMS_PER_THREAD])
   {
-// write to shared memory
-#pragma unroll
+    // write to shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       s.values_out[ranks[u]] = values[u];
@@ -440,8 +450,8 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadBinsToOffsetsGlobal(int (&offsets)[BINS_PER_THREAD])
   {
-// global offset - global part
-#pragma unroll
+    // global offset - global part
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin = ThreadBin(u);
@@ -457,7 +467,7 @@ struct AgentRadixSortOnesweep
     bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
     if (d_bins_out != nullptr && last_block)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
         int bin = ThreadBin(u);
@@ -473,7 +483,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobalDirect()
   {
     int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       int idx              = threadIdx.x + u * BLOCK_THREADS;
@@ -483,7 +494,7 @@ struct AgentRadixSortOnesweep
       {
         d_keys_out[global_idx] = Twiddle::Out(key, decomposer);
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
     }
   }
 
@@ -491,7 +502,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValuesGlobalDirect(int (&digits)[ITEMS_PER_THREAD])
   {
     int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       int idx            = threadIdx.x + u * BLOCK_THREADS;
@@ -501,7 +513,7 @@ struct AgentRadixSortOnesweep
       {
         d_values_out[global_idx] = value;
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
     }
   }
 
@@ -527,7 +539,7 @@ struct AgentRadixSortOnesweep
       {
         num_writes -= int(global_idx + 1) % ALIGN;
       }
-      num_writes = SHFL_IDX_SYNC(num_writes, last_lane, WARP_MASK);
+      num_writes = __shfl_sync(WARP_MASK, num_writes, last_lane);
       if (lane < num_writes)
       {
         ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
@@ -581,7 +593,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeKeyDigits(int (&digits)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       int idx   = threadIdx.x + u * BLOCK_THREADS;
@@ -589,7 +601,8 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], Int2Type<false> keys_only)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::false_type keys_only)
   {
     // compute digits corresponding to the keys
     int digits[ITEMS_PER_THREAD];
@@ -600,14 +613,16 @@ struct AgentRadixSortOnesweep
     LoadValues(block_idx * TILE_ITEMS, values);
 
     // scatter values
-    CTA_SYNC();
+    __syncthreads();
     ScatterValuesShared(values, ranks);
 
-    CTA_SYNC();
+    __syncthreads();
     ScatterValuesGlobal(digits);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], Int2Type<true> keys_only) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::true_type keys_only)
+  {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
@@ -625,7 +640,7 @@ struct AgentRadixSortOnesweep
       .RankKeys(keys, ranks, digit_extractor(), exclusive_digit_prefix, CountsCallback(*this, bins, keys));
 
     // scatter keys in shared memory
-    CTA_SYNC();
+    __syncthreads();
     ScatterKeysShared(keys, ranks);
 
     // compute global offsets
@@ -634,11 +649,11 @@ struct AgentRadixSortOnesweep
     UpdateBinsGlobal(bins, exclusive_digit_prefix);
 
     // scatter keys in global memory
-    CTA_SYNC();
+    __syncthreads();
     ScatterKeysGlobal();
 
     // scatter values if necessary
-    GatherScatterValues(ranks, Int2Type<KEYS_ONLY>());
+    GatherScatterValues(ranks, bool_constant_v<KEYS_ONLY>);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE //
@@ -669,7 +684,7 @@ struct AgentRadixSortOnesweep
       , current_bit(current_bit)
       , num_bits(num_bits)
       , warp(threadIdx.x / WARP_THREADS)
-      , lane(LaneId())
+      , lane(::cuda::ptx::get_sreg_laneid())
       , decomposer(decomposer)
   {
     // initialization
@@ -677,10 +692,13 @@ struct AgentRadixSortOnesweep
     {
       s.block_idx = atomicAdd(d_ctrs, 1);
     }
-    CTA_SYNC();
+    __syncthreads();
     block_idx  = s.block_idx;
     full_block = (block_idx + 1) * TILE_ITEMS <= num_items;
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

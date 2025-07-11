@@ -510,6 +510,14 @@ def qrde_hd(samples):
     return width, height
 
 
+def hd_quantiles(samples):
+    min_sample, max_sample = min(samples), max(samples)
+    num_quantiles = math.ceil(1.0 / precision)
+    quantiles = np.linspace(precision, 1 - precision, num_quantiles - 1)
+    hd_quantiles = [min_sample] + list(hdquantiles(samples, quantiles)) + [max_sample]
+    return hd_quantiles
+
+
 def extract_peaks(pdf):
     peaks = []
     for i in range(1, len(pdf) - 1):
@@ -527,7 +535,7 @@ def extract_modes(samples):
     """
     mode_ids = []
 
-    widths, heights = qrde_hd(samples)
+    widths, heights = hd_displot(samples)
     peak_ids = extract_peaks(heights)
     bin_area = 1.0 / len(heights)
 
@@ -631,8 +639,8 @@ def variant_ratio(data, variant, ax):
     variant_samples = data[variant]
     base_samples = data["base"]
 
-    variant_widths, variant_heights = qrde_hd(variant_samples)
-    base_widths, base_heights = qrde_hd(base_samples)
+    variant_widths = hd_quantiles(variant_samples)
+    base_widths = hd_quantiles(base_samples)
 
     quantiles = []
     ratios = []
@@ -640,7 +648,7 @@ def variant_ratio(data, variant, ax):
     base_x = min(base_samples)
     variant_x = min(variant_samples)
 
-    for i in range(1, len(variant_heights) - 1):
+    for i in range(1, len(variant_widths) - 1):
         base_x += base_widths[i] / 2
         variant_x += variant_widths[i] / 2
         quantiles.append(i * precision)

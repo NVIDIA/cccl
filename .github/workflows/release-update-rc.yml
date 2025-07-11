@@ -1,0 +1,153 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: "Release: 2. Test and Tag New RC"
+
+# This workflow must be started on the "branch/{major}.{minor}.x" release branch
+# after the release-create-new workflow runs.
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.prepare.outputs.tag_name }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Prepare environment and validate tags
+        id: prepare
+        run: |
+          log_vars() {
+            for var in "$@"; do
+              printf "%-15s %s\n" "${var}:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+            done
+          }
+          export_vars() {
+            for var in "$@"; do
+              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            done
+          }
+
+          # Parse repo version info:
+          full_version=$(jq -r  .full  cccl-version.json)
+          major_version=$(jq -r .major cccl-version.json)
+          minor_version=$(jq -r .minor cccl-version.json)
+          patch_version=$(jq -r .patch cccl-version.json)
+          branch_name="branch/${major_version}.${minor_version}.x"
+
+          log_vars full_version major_version minor_version patch_version branch_name GITHUB_REF GITHUB_SHA
+          export_vars full_version major_version minor_version patch_version branch_name
+
+          # The workflow must be started on a release branch:
+          if [[ "${GITHUB_REF}" != "refs/heads/${branch_name}" ]]; then
+            echo "::error::GITHUB_REF (${GITHUB_REF}) does not match expected branch name (${branch_name})."
+            exit 1
+          fi
+
+          # The release tag must not exist:
+          full_version_escaped=$(echo "${full_version}" | sed 's/\./\\./g')
+          if git ls-remote --tags origin | grep -q "refs/tags/v${full_version_escaped}\$"; then
+            echo "::error::Tag v${full_version} already exists. Was the automated version-bump PR merged?"
+            exit 1
+          fi
+
+          # Look for previous release candidates:
+          declare -i last_rc=-1
+          for tag in $(git ls-remote --tags origin); do
+              if [[ $tag =~ refs/tags/v${full_version_escaped}-rc([0-9]+)$ ]]; then
+                echo "Found prior release candidate: ${tag}"
+                rc=${BASH_REMATCH[1]}
+                if (( rc > last_rc )); then
+                  last_rc=rc
+                fi
+              fi
+          done
+
+          next_rc=$((last_rc + 1))
+          tag_name="v${full_version}-rc${next_rc}"
+
+          log_vars last_rc next_rc tag_name
+          export_vars tag_name
+
+  # TODO:
+  #  - Kick off CI for repo before tagging release
+
+  tag:
+    needs:
+      - prepare
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Tag the release candidate
+        run: |
+          rc_tag=${{ needs.prepare.outputs.tag_name }}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a -m "CCCL Release Candidate ${rc_tag}" ${rc_tag} ${GITHUB_SHA}
+          git push origin ${rc_tag}
+          echo "Tagged release candidate ${rc_tag}."
+
+  notify-success:
+    if: ${{ success() }}
+    needs:
+      - tag
+      - prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            A new release candidate `${{ needs.prepare.outputs.tag_name }}` has been tagged.
+
+            Workflow summary: ${{ env.SUMMARY_URL }}
+
+  notify-failure:
+    if: ${{ failure() }}
+    needs:
+      - tag
+      - prepare
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify Slack (failure)
+      if: ${{ failure() }}
+      uses: slackapi/slack-github-action@v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+        SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      with:
+        channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+        slack-message: |
+          An error has occurred while creating release candidate `${{ needs.prepare.outputs.tag_name }}`.
+
+          Details: ${{ env.SUMMARY_URL }}

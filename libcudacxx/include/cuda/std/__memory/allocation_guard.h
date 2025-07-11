@@ -26,6 +26,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Helper class to allocate memory using an Allocator in an exception safe
@@ -48,7 +50,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // This is similar to a unique_ptr, except it's easier to use with a
 // custom allocator.
 
-_CCCL_NV_DIAG_SUPPRESS(2659) // constexpr non-static member function will not be implicitly 'const' in C++14
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2659) // constexpr non-static member function will not be implicitly 'const' in C++14
 
 template <class _Alloc>
 struct __allocation_guard
@@ -57,13 +59,13 @@ struct __allocation_guard
   using _Size    = typename allocator_traits<_Alloc>::size_type;
 
   template <class _AllocT> // we perform the allocator conversion inside the constructor
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(_AllocT __alloc, _Size __n)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(_AllocT __alloc, _Size __n)
       : __alloc_(_CUDA_VSTD::move(__alloc))
       , __n_(__n)
       , __ptr_(allocator_traits<_Alloc>::allocate(__alloc_, __n_)) // initialization order is important
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~__allocation_guard() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__allocation_guard() noexcept
   {
     if (__ptr_ != nullptr)
     {
@@ -71,14 +73,14 @@ struct __allocation_guard
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Pointer __release_ptr() noexcept
+  _CCCL_API constexpr _Pointer __release_ptr() noexcept
   { // not called __release() because it's a keyword in objective-c++
     _Pointer __tmp = __ptr_;
     __ptr_         = nullptr;
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Pointer __get() const noexcept
+  _CCCL_API constexpr _Pointer __get() const noexcept
   {
     return __ptr_;
   }
@@ -89,8 +91,10 @@ private:
   _Pointer __ptr_;
 };
 
-_CCCL_NV_DIAG_DEFAULT(2659)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATION_GUARD_H

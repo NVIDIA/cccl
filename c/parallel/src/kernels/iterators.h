@@ -11,11 +11,14 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include <cccl/c/types.h>
 
-std::string make_kernel_input_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter);
+std::string make_kernel_input_iterator(
+  std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter);
 
-std::string make_kernel_output_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter);
+std::string make_kernel_output_iterator(
+  std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter);
 
 std::string make_kernel_inout_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter);

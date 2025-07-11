@@ -23,22 +23,22 @@
 
 struct S
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 S(int i)
+  __host__ __device__ constexpr S(int i)
       : i_(i)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator==(const S& other) = delete;
+  __host__ __device__ constexpr bool operator==(const S& other) = delete;
   int i_;
 };
 
 struct eq
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const S& a, const S& b)
+  __host__ __device__ constexpr bool operator()(const S& a, const S& b)
   {
     return a.i_ == b.i_;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     const int ia[]    = {0};
@@ -56,7 +56,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -71,7 +70,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0};
@@ -83,7 +81,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -91,7 +88,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
 
   {
@@ -104,7 +100,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -119,7 +114,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0};
@@ -131,7 +125,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -139,7 +132,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0};
@@ -151,7 +143,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -159,7 +150,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0};
@@ -171,7 +161,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -179,7 +168,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1};
@@ -191,7 +179,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -199,7 +186,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1};
@@ -211,7 +197,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -226,7 +211,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1};
@@ -238,7 +222,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -253,7 +236,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1};
@@ -265,7 +247,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -273,7 +254,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 0};
@@ -285,7 +265,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -293,7 +272,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 0};
@@ -305,7 +283,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -320,7 +297,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 0};
@@ -332,7 +308,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -347,7 +322,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 0};
@@ -359,7 +333,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -367,7 +340,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 1};
@@ -379,7 +351,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -387,7 +359,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 1};
@@ -399,7 +370,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -407,7 +378,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 1};
@@ -419,7 +389,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -427,7 +397,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {1, 1};
@@ -439,7 +408,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -454,7 +423,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
 
   {
@@ -467,7 +435,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -475,7 +443,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -487,7 +454,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -495,7 +462,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -507,7 +473,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -515,7 +481,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -527,7 +492,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -535,7 +500,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -547,7 +511,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -555,7 +519,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -567,7 +530,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -575,7 +538,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -587,7 +549,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -595,7 +557,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -607,7 +568,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -615,7 +576,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 0};
@@ -627,7 +587,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -635,7 +595,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 1};
@@ -647,7 +606,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -662,7 +621,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 1};
@@ -674,7 +632,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -682,7 +640,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1, 2};
@@ -694,7 +651,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -709,7 +666,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1, 2};
@@ -721,7 +677,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -736,7 +692,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1, 2};
@@ -748,7 +703,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -763,7 +718,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1, 2};
@@ -775,7 +729,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -790,7 +744,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 1};
@@ -802,7 +755,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -810,7 +763,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 0, 1};
@@ -822,7 +774,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -844,7 +796,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa - 1),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const int ia[]    = {0, 1, 2, 3, 0, 5, 6, 2, 4, 4};
@@ -856,7 +807,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == true);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -899,7 +850,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              counting_equals)
            == false);
     assert(comparison_count == 0);
-#endif
   }
   {
     const int ia[]    = {0, 1, 2, 3, 0, 5, 6, 2, 4, 4};
@@ -911,7 +861,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib),
              cuda::std::equal_to<const int>())
            == false);
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
              forward_iterator<const int*>(ia),
              forward_iterator<const int*>(ia + sa),
@@ -919,7 +869,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
              forward_iterator<const int*>(ib + sa),
              cuda::std::equal_to<const int>())
            == false);
-#endif
   }
   {
     const S a[]       = {S(0), S(1)};
@@ -927,14 +876,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     const unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_permutation(
       forward_iterator<const S*>(a), forward_iterator<const S*>(a + sa), forward_iterator<const S*>(b), eq()));
-#if TEST_STD_VER >= 2014
+
     assert(cuda::std::is_permutation(
       forward_iterator<const S*>(a),
       forward_iterator<const S*>(a + sa),
       forward_iterator<const S*>(b),
       forward_iterator<const S*>(b + sa),
       eq()));
-#endif
   }
 
   return true;
@@ -943,10 +891,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

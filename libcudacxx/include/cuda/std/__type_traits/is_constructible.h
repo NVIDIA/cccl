@@ -32,6 +32,8 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace __is_construct
@@ -75,7 +77,7 @@ struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&>
 struct __is_constructible_helper
 {
   template <class _To>
-  _LIBCUDACXX_HIDE_FROM_ABI static void __eat(_To);
+  _CCCL_API inline static void __eat(_To);
 
   // This overload is needed to work around a Clang bug that disallows
   // static_cast<T&&>(e) for non-reference-compatible types.
@@ -83,26 +85,26 @@ struct __is_constructible_helper
   // NOTE: The static_cast implementation below is required to support
   //  classes with explicit conversion operators.
   template <class _To, class _From, class = decltype(__eat<_To>(_CUDA_VSTD::declval<_From>()))>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test_cast(int);
+  _CCCL_API inline static true_type __test_cast(int);
 
   template <class _To, class _From, class = decltype(static_cast<_To>(_CUDA_VSTD::declval<_From>()))>
-  _LIBCUDACXX_HIDE_FROM_ABI static integral_constant<
+  _CCCL_API inline static integral_constant<
     bool,
     !__is_invalid_base_to_derived_cast<_To, _From>::value && !__is_invalid_lvalue_to_rvalue_cast<_To, _From>::value>
   __test_cast(long);
 
   template <class, class>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test_cast(...);
+  _CCCL_API inline static false_type __test_cast(...);
 
   template <class _Tp, class... _Args, class = decltype(_Tp(_CUDA_VSTD::declval<_Args>()...))>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test_nary(int);
+  _CCCL_API inline static true_type __test_nary(int);
   template <class _Tp, class...>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test_nary(...);
+  _CCCL_API inline static false_type __test_nary(...);
 
   template <class _Tp, class _A0, class = decltype(::new _Tp(_CUDA_VSTD::declval<_A0>()))>
-  _LIBCUDACXX_HIDE_FROM_ABI static is_destructible<_Tp> __test_unary(int);
+  _CCCL_API inline static is_destructible<_Tp> __test_unary(int);
   template <class, class>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test_unary(...);
+  _CCCL_API inline static false_type __test_unary(...);
 };
 
 template <class _Tp, bool = is_void<_Tp>::value>
@@ -125,7 +127,7 @@ template <class _Tp, class... _Args>
 struct __cccl_is_constructible
 {
   static_assert(sizeof...(_Args) > 1, "Wrong specialization");
-  typedef decltype(__is_constructible_helper::__test_nary<_Tp, _Args...>(0)) type;
+  using type = decltype(__is_constructible_helper::__test_nary<_Tp, _Args...>(0));
 };
 
 template <class _Tp>
@@ -148,27 +150,25 @@ struct __cccl_is_constructible<_Tp&&, _A0> : public decltype(__is_constructible_
 
 #if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_CCCL_INLINE_VAR constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
 
 #else
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __cccl_is_constructible<_Tp, _Args...>::type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_CCCL_INLINE_VAR constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H

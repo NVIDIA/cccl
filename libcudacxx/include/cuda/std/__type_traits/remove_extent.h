@@ -22,6 +22,8 @@
 
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
@@ -38,17 +40,17 @@ using remove_extent_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[]>
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[_Np]>
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 
 template <class _Tp>
@@ -57,5 +59,7 @@ using remove_extent_t _CCCL_NODEBUG_ALIAS = typename remove_extent<_Tp>::type;
 #endif // defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_EXTENT_H

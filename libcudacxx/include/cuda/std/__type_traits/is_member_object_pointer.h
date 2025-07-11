@@ -24,34 +24,34 @@
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_OBJECT_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_object_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
-    : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_obj>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_object_pointer : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_obj>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H

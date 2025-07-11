@@ -111,11 +111,12 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p BinaryFunction's \c first_argument_type and
- * \c second_argument_type, and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p BinaryFunction's first and second argument
+ * type, and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of
  * \c value_types. \tparam OutputIterator is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam BinaryFunction's \c
- * result_type is convertible to a type in \p OutputIterator's set of \c value_types.
+ * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam BinaryFunction The functions's return type convertible to a type in \p OutputIterator's set of \c
+ * value_types.
  *
  *  \remark Note that \p result is permitted to be the same iterator as \p first. This is
  *          useful for computing differences "in place".
@@ -133,7 +134,8 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *  thrust::device_vector<int> d_data(h_data, h_data + 8);
  *  thrust::device_vector<int> d_result(8);
  *
- *  thrust::adjacent_difference(thrust::device, d_data.begin(), d_data.end(), d_result.begin(), thrust::plus<int>());
+ *  thrust::adjacent_difference(thrust::device, d_data.begin(), d_data.end(), d_result.begin(),
+ * ::cuda::std::plus<int>());
  *
  *  // d_result is now [1, 3, 3, 3, 3, 3, 3, 3]
  *  \endcode
@@ -210,11 +212,12 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
  *  \return The iterator <tt>result + (last - first)</tt>
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p BinaryFunction's \c first_argument_type and
- * \c second_argument_type, and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of
- * \c value_types. \tparam OutputIterator is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam BinaryFunction's \c
- * result_type is convertible to a type in \p OutputIterator's set of \c value_types.
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p BinaryFunction's first and second argument
+ * type, and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>.
+ *  \tparam BinaryFunction The function's return type must be convertible to a type in \p OutputIterator's
+ * set of \c value_types.
  *
  *  \remark Note that \p result is permitted to be the same iterator as \p first. This is
  *          useful for computing differences "in place".
@@ -231,7 +234,7 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
  *  thrust::device_vector<int> d_data(h_data, h_data + 8);
  *  thrust::device_vector<int> d_result(8);
  *
- *  thrust::adjacent_difference(d_data.begin(), d_data.end(), d_result.begin(), thrust::plus<int>());
+ *  thrust::adjacent_difference(d_data.begin(), d_data.end(), d_result.begin(), ::cuda::std::plus<int>());
  *
  *  // d_result is now [1, 3, 3, 3, 3, 3, 3, 3]
  *  \endcode

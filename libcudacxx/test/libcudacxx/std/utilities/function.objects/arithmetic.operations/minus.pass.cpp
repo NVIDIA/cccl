@@ -10,7 +10,7 @@
 
 // minus
 
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -45,7 +45,7 @@ int main(int, char**)
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::result_type>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert(f(3, 2) == 1);
 
   typedef cuda::std::minus<> F2;
@@ -53,13 +53,11 @@ int main(int, char**)
   assert(f2(3, 2) == 1);
   assert(f2(3.0, 2) == 1);
   assert(f2(3, 2.5) == 0.5);
-#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::minus<int>()(3, 2);
   static_assert(foo == 1, "");
 
   constexpr double bar = cuda::std::minus<>()(3.0, 2);
   static_assert(bar == 1.0, "");
-#endif
 
   return 0;
 }

@@ -63,8 +63,8 @@ void TestDeviceDereferenceTransformIterator()
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<int> output(input.size(), 0);
 
-  simple_copy(thrust::make_transform_iterator(input.begin(), thrust::identity<int>()),
-              thrust::make_transform_iterator(input.end(), thrust::identity<int>()),
+  simple_copy(thrust::make_transform_iterator(input.begin(), ::cuda::std::identity{}),
+              thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
   ASSERT_EQUAL(input, output);
@@ -76,8 +76,8 @@ void TestDeviceDereferenceTransformIteratorInputConversion()
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<double> output(input.size(), 0);
 
-  simple_copy(thrust::make_transform_iterator(input.begin(), thrust::identity<double>()),
-              thrust::make_transform_iterator(input.end(), thrust::identity<double>()),
+  simple_copy(thrust::make_transform_iterator(input.begin(), ::cuda::std::identity{}),
+              thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
   ASSERT_EQUAL(input == output, true);
@@ -89,8 +89,8 @@ void TestDeviceDereferenceTransformIteratorOutputConversion()
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<double> output(input.size(), 0);
 
-  simple_copy(thrust::make_transform_iterator(input.begin(), thrust::identity<int>()),
-              thrust::make_transform_iterator(input.end(), thrust::identity<int>()),
+  simple_copy(thrust::make_transform_iterator(input.begin(), ::cuda::std::identity{}),
+              thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
   ASSERT_EQUAL(input == output, true);
@@ -118,8 +118,8 @@ void TestDeviceDereferenceTransformedCountingIterator()
 
   thrust::device_vector<int> output(5);
 
-  simple_copy(thrust::make_transform_iterator(first, thrust::negate<int>()),
-              thrust::make_transform_iterator(last, thrust::negate<int>()),
+  simple_copy(thrust::make_transform_iterator(first, ::cuda::std::negate<int>()),
+              thrust::make_transform_iterator(last, ::cuda::std::negate<int>()),
               output.begin());
 
   thrust::device_vector<int> ref{-1, -2, -3, -4, -5};

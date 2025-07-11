@@ -32,13 +32,13 @@ namespace cuda::experimental::stf::reserved
  * @brief Repeats a blocks of code for a fixed number of steps
  *
  * This construct aims at allowing CUDASTF to automate some optimizations such
- * as introducing new epochs, or doing some scheduling work.
+ * as introducing new stages, or doing some scheduling work.
  */
 template <typename context_t>
 class repeat_scope
 {
 public:
-  static constexpr size_t tasks_per_epoch = 200;
+  static constexpr size_t tasks_per_stage = 200;
 
   repeat_scope(context_t& ctx, size_t count)
       : condition(count)
@@ -64,11 +64,11 @@ public:
       size_t after_cnt = ctx.task_count();
       assert(after_cnt >= before_cnt);
 
-      // If there is more than a specific number of tasks, fire a new epoch !
+      // If there is more than a specific number of tasks, fire a new stage !
       task_cnt += after_cnt - before_cnt;
-      if (task_cnt > tasks_per_epoch)
+      if (task_cnt > tasks_per_stage)
       {
-        ctx.change_epoch();
+        ctx.change_stage();
         task_cnt = 0;
       }
     }

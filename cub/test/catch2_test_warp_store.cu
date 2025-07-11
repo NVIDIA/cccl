@@ -26,6 +26,7 @@
  ******************************************************************************/
 
 #include <cub/iterator/cache_modified_output_iterator.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_store.cuh>
 
 #include <c2h/catch2_test_helper.h>
@@ -115,7 +116,7 @@ c2h::device_vector<T> compute_reference(int valid_items)
   constexpr int total_item_count = TOTAL_WARPS * tile_size;
   c2h::device_vector<T> d_input(total_item_count);
 
-  _CCCL_IF_CONSTEXPR (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
+  if constexpr (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
   {
     c2h::host_vector<T> input(total_item_count);
     fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(input.begin());
@@ -168,7 +169,7 @@ struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == CUB_WARP_THREADS(0));
+  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
   static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
@@ -279,3 +280,34 @@ C2H_TEST("Warp store unguarded range works with cache modified iterator",
       valid_items);
   REQUIRE(d_expected_output == d_out);
 }
+
+#if ALGO_TYPE == 3 // cub::WarpStoreAlgorithm::WARP_STORE_VECTORIZE
+C2H_TEST("Vectorized warp store with different alignment cases",
+         "[store][warp]",
+         c2h::type_list<std::int32_t>,
+         logical_warp_threads,
+         items_per_thread,
+         algorithm)
+{
+  using params = params_t<TestType>;
+  using type   = typename params::type;
+
+  c2h::device_vector<type> d_out_ref(params::total_item_count, type{});
+  constexpr int valid_items = params::tile_size;
+
+  const int offset_for_elements = GENERATE_COPY(0, 1, 2, 3, 4);
+  c2h::device_vector<type> d_out(params::total_item_count + offset_for_elements, type{});
+  auto out = thrust::raw_pointer_cast(d_out.data());
+
+  warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
+    out + offset_for_elements, unguarded_store_t{});
+  thrust::copy_n(d_out.begin() + offset_for_elements, params::total_item_count, d_out_ref.begin());
+
+  auto d_expected_output =
+    compute_reference<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
+      valid_items);
+
+  REQUIRE(d_expected_output == d_out_ref);
+}
+
+#endif

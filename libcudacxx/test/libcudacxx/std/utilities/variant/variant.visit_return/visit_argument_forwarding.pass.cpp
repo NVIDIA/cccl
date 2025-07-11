@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 // UNSUPPORTED: gcc-6

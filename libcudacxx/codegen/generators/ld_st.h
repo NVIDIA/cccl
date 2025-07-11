@@ -44,8 +44,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); _CCCL_FALLTHROUGH();
-        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); [[fallthrough]];
+        case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: __cuda_load(__atomic_cuda_acquire{}); break;
         case __ATOMIC_RELAXED: __cuda_load(__atomic_cuda_relaxed{}); break;
         default: assert(0);
@@ -53,8 +53,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); _CCCL_FALLTHROUGH();
-        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); [[fallthrough]];
+        case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: __cuda_load(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: __cuda_load(__atomic_cuda_volatile{}); break;
         default: assert(0);
@@ -207,15 +207,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_store_memory_order_dispatch(_Fn &_
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
         case __ATOMIC_RELEASE: __cuda_store(__atomic_cuda_release{}); break;
-        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); [[fallthrough]];
         case __ATOMIC_RELAXED: __cuda_store(__atomic_cuda_relaxed{}); break;
         default: assert(0);
       }
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_RELEASE: _CCCL_FALLTHROUGH();
-        case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); _CCCL_FALLTHROUGH();
+        case __ATOMIC_RELEASE: [[fallthrough]];
+        case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); [[fallthrough]];
         case __ATOMIC_RELAXED: __cuda_store(__atomic_cuda_volatile{}); break;
         default: assert(0);
       }

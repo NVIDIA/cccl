@@ -25,7 +25,7 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_copy.cuh>
+#include <cub/device/device_memcpy.cuh>
 
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
@@ -118,7 +118,7 @@ using block_delay_constructor_t =
 
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
+  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
     using AgentSmallBufferPolicyT = cub::detail::AgentBatchMemcpyPolicy<
       TUNE_THREADS,
@@ -184,22 +184,17 @@ void copy(nvbench::state& state,
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
 
-  constexpr bool is_memcpy = true;
-
-#if !TUNE_BASE
-  using policy_t = policy_hub_t;
-#else
-  using policy_t = cub::detail::batch_memcpy::policy_hub<buffer_offset_t, block_offset_t>;
-#endif
-
   using dispatch_t = cub::detail::DispatchBatchMemcpy<
     input_buffer_it_t,
     output_buffer_it_t,
     buffer_size_it_t,
-    buffer_offset_t,
     block_offset_t,
-    policy_t,
-    is_memcpy>;
+    cub::CopyAlg::Memcpy
+#if !TUNE_BASE
+    ,
+    policy_hub_t
+#endif
+    >;
 
   thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
@@ -245,16 +240,17 @@ void copy(nvbench::state& state,
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_buffers,
-      d_output_buffers,
-      d_buffer_sizes,
-      buffers,
-      launch.get_stream());
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               dispatch_t::Dispatch(
+                 d_temp_storage,
+                 temp_storage_bytes,
+                 d_input_buffers,
+                 d_output_buffers,
+                 d_buffer_sizes,
+                 buffers,
+                 launch.get_stream());
+             });
 }
 
 template <class T, class OffsetT>

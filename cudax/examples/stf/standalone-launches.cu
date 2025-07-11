@@ -42,12 +42,12 @@ int main()
   auto handle_Z = ctx.logical_data(Z, {N});
 
   ctx.task(handle_X.read(), handle_Y.write(), handle_Z.write())
-      ->*[](cudaStream_t s, slice<int> x, slice<int> y, slice<int> z) {
+      ->*[](cudaStream_t s, slice<const int> x, slice<int> y, slice<int> z) {
             std::vector<cudaStream_t> streams;
             streams.push_back(s);
             auto spec = par(1024);
             reserved::launch(spec, exec_place::current_device(), streams, std::tuple{x, y})
-                ->*[] _CCCL_DEVICE(auto t, slice<int> x, slice<int> y) {
+                ->*[] _CCCL_DEVICE(auto t, slice<const int> x, slice<int> y) {
                       size_t tid      = t.rank();
                       size_t nthreads = t.size();
                       for (size_t ind = tid; ind < N; ind += nthreads)

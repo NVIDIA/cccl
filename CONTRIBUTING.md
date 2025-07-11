@@ -50,9 +50,9 @@ For more information about design and development practices for each CCCL compon
 #### CUB
 
 - [CUB Developer Guide](docs/cub/developer_overview.rst) - General overview of the design of CUB internals
-- [CUB Test Overview](docs/cub/test_overview.rst) - Overview of how to write CUB unit tests
+- [CUB Tests](docs/cub/test_overview.rst) - Overview of how to write CUB unit tests
 - [CUB Benchmarks](docs/cub/benchmarking.rst) - Overview of CUB's performance benchmarks
-- [CUB Tuning Infrastructure](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
+- [CUB Tunings](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
 
 #### Thrust
 
@@ -76,9 +76,9 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 
 ```bash
    ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
-
+```
 - **HOST_COMPILER**: The desired host compiler (e.g., `g++`, `clang++`).
-- **CXX_STANDARD**: The C++ standard version (e.g., `11`, `14`, `17`, `20`).
+- **CXX_STANDARD**: The C++ standard version (e.g., `17`, `20`).
 - **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., `"70;85;90"`). This uses the same syntax as CMake's [CUDA_ARCHITECTURES](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES):
    - `70` - both PTX and SASS
    - `70-real` - SASS only
@@ -86,7 +86,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 
 **Example:**
 ```bash
-./ci/build_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
+./ci/build_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
 ```
 
 #### Testing
@@ -100,7 +100,7 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 **Example:**
 
 ```bash
-./ci/test_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
+./ci/test_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
 ```
 
 ### Using CMake Presets
@@ -131,15 +131,15 @@ The `dev` presets are intended as a base for general development while the other
 
 #### Using CMake Presets via Command Line
 
-CMake automatically generates the preset build directories. You can configure, build and test for a specific preset (e.g. `thrust-cpp11`) via cmake from the root directory by appending `--preset=thrust-cpp11` to the corresponding commands. For example:
+CMake automatically generates the preset build directories. You can configure, build and test for a specific preset (e.g. `thrust-cpp17`) via cmake from the root directory by appending `--preset=thrust-cpp17` to the corresponding commands. For example:
 
 ```bash
-cmake --preset=thrust-cpp11
-cmake --build --preset=thrust-cpp11
-ctest --preset=thrust-cpp11
+cmake --preset=thrust-cpp17
+cmake --build --preset=thrust-cpp17
+ctest --preset=thrust-cpp17
 ```
 
-That will create `build/<optional devcontainer name>/thrust-cpp11/` and build everything in there. The devcontainer name is inserted automatically on devcontainer builds to keep build artifacts separate for the different toolchains.
+That will create `build/<optional devcontainer name>/thrust-cpp17/` and build everything in there. The devcontainer name is inserted automatically on devcontainer builds to keep build artifacts separate for the different toolchains.
 
 It's also worth mentioning that additional cmake options can still be passed in and will override the preset settings.
 

@@ -22,9 +22,9 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 #  include <utility>
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 struct CopyOnly
 {
@@ -59,8 +59,8 @@ private:
 };
 
 template <class Tp>
-__host__ __device__ auto
-can_swap_test(int) -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
+__host__ __device__ auto can_swap_test(int)
+  -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
 
 template <class Tp>
 __host__ __device__ auto can_swap_test(...) -> cuda::std::false_type;
@@ -71,7 +71,6 @@ __host__ __device__ constexpr bool can_swap()
   return cuda::std::is_same<decltype(can_swap_test<Tp>(0)), void>::value;
 }
 
-#if TEST_STD_VER >= 2014
 __host__ __device__ constexpr bool test_swap_constexpr()
 {
   int i[3] = {1, 2, 3};
@@ -79,11 +78,10 @@ __host__ __device__ constexpr bool test_swap_constexpr()
   cuda::std::swap(i, j);
   return i[0] == 4 && i[1] == 5 && i[2] == 6 && j[0] == 1 && j[1] == 2 && j[2] == 3;
 }
-#endif // TEST_STD_VER >= 2014
 
 __host__ __device__ void test_ambiguous_std()
 {
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_MSVC_2017)
+#if !TEST_COMPILER(NVRTC)
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (
     cuda::std::pair<::std::pair<int, int>, int> i[3] = {};
@@ -91,7 +89,7 @@ __host__ __device__ void test_ambiguous_std()
     swap(i,j);
   ))
   // clang-format on
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 int main(int, char**)
@@ -140,9 +138,7 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::swap(ma, ma)), "");
   }
 
-#if TEST_STD_VER >= 2014
   static_assert(test_swap_constexpr(), "");
-#endif // TEST_STD_VER >= 2014
 
   test_ambiguous_std();
 

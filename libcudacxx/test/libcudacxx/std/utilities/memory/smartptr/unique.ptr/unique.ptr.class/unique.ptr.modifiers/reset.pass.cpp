@@ -28,7 +28,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_pointer()
     using U = cuda::std::unique_ptr<VT>;
     U u;
     unused(u);
-    ASSERT_NOEXCEPT(u.reset((A*) nullptr));
+    static_assert(noexcept(u.reset((A*) nullptr)));
   }
   {
     cuda::std::unique_ptr<VT> p(newValue<VT>(expect_alive));
@@ -89,7 +89,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_nullptr()
     using U = cuda::std::unique_ptr<VT>;
     U u;
     unused(u);
-    ASSERT_NOEXCEPT(u.reset(nullptr));
+    static_assert(noexcept(u.reset(nullptr)));
   }
   {
     cuda::std::unique_ptr<VT> p(newValue<VT>(expect_alive));
@@ -121,7 +121,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_no_arg()
     using U = cuda::std::unique_ptr<VT>;
     U u;
     unused(u);
-    ASSERT_NOEXCEPT(u.reset());
+    static_assert(noexcept(u.reset()));
   }
   {
     cuda::std::unique_ptr<VT> p(newValue<VT>(expect_alive));

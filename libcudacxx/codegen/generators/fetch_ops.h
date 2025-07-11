@@ -57,8 +57,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); _CCCL_FALLTHROUGH();
-        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); [[fallthrough]];
+        case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: __cuda_fetch(__atomic_cuda_acquire{}); break;
         case __ATOMIC_ACQ_REL: __cuda_fetch(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __cuda_fetch(__atomic_cuda_release{}); break;
@@ -68,9 +68,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST: _CCCL_FALLTHROUGH();
-        case __ATOMIC_ACQ_REL: __cuda_atomic_membar(_Sco{}); _CCCL_FALLTHROUGH();
-        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: [[fallthrough]];
+        case __ATOMIC_ACQ_REL: __cuda_atomic_membar(_Sco{}); [[fallthrough]];
+        case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: __cuda_fetch(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __cuda_fetch(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_volatile{}); break;

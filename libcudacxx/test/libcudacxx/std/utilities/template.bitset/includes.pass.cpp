@@ -20,8 +20,7 @@ int main(int, char**)
 {
 #ifdef _LIBCUDACXX_HAS_STRING
   { // test for <cuda/std/string>
-    cuda::std::string s;
-    ((void) s);
+    [[maybe_unused]] cuda::std::string s;
   }
 #endif
   { // test for <cuda/std/iosfwd>

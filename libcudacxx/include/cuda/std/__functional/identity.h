@@ -25,16 +25,18 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct __is_identity : false_type
 {};
 
-struct __identity
+struct identity
 {
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
     return _CUDA_VSTD::forward<_Tp>(__t);
   }
@@ -43,21 +45,17 @@ struct __identity
 };
 
 template <>
-struct __is_identity<__identity> : true_type
+struct __is_identity<identity> : true_type
 {};
 template <>
-struct __is_identity<reference_wrapper<__identity>> : true_type
+struct __is_identity<reference_wrapper<identity>> : true_type
 {};
 template <>
-struct __is_identity<reference_wrapper<const __identity>> : true_type
+struct __is_identity<reference_wrapper<const identity>> : true_type
 {};
-
-#if _CCCL_STD_VER > 2011
-
-using identity = __identity;
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_IDENTITY_H

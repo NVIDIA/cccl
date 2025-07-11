@@ -77,11 +77,14 @@ using vector = thrust::detail::vector_base<T, Allocator>;
  *  \see host_vector For the documentation of the complete interface which is
  *                   shared by \p tbb::universal_vector
  *  \see device_vector
- *  \see universal_vector
+ *  \see universal_host_pinned_vector
  */
 template <typename T, typename Allocator = thrust::system::tbb::universal_allocator<T>>
 using universal_vector = thrust::detail::vector_base<T, Allocator>;
 
+//! Like \ref universal_vector but uses pinned memory when the system supports it.
+//! \see device_vector
+//! \see universal_vector
 template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
 } // namespace tbb

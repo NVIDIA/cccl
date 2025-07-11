@@ -24,10 +24,9 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-#if _CCCL_STD_VER > 2014
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
 // MSVC requires an interesting workaround for a /permissive- bug
 // We cannot simply define unreachable_sentinel_t with it friendfunctions,
@@ -35,56 +34,51 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 // are only ever found through ADL
 
 struct unreachable_sentinel_t
-#  if _CCCL_COMPILER(MSVC)
+#if _CCCL_COMPILER(MSVC)
   ;
 namespace __unreachable_sentinel_detail
 {
 struct __unreachable_base
-#  endif // _CCCL_COMPILER(MSVC)
+#endif // _CCCL_COMPILER(MSVC)
 {
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator==(const unreachable_sentinel_t&, const _Iter&) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const unreachable_sentinel_t&, const _Iter&) noexcept
   {
     return false;
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator==(const _Iter&, const unreachable_sentinel_t&) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const _Iter&, const unreachable_sentinel_t&) noexcept
   {
     return false;
   }
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator!=(const unreachable_sentinel_t&, const _Iter&) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const unreachable_sentinel_t&, const _Iter&) noexcept
   {
     return true;
   }
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator!=(const _Iter&, const unreachable_sentinel_t&) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const _Iter&, const unreachable_sentinel_t&) noexcept
   {
     return true;
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 };
 
-#  if _CCCL_COMPILER(MSVC)
+#if _CCCL_COMPILER(MSVC)
 } // namespace __unreachable_sentinel_detail
 struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_base
 {};
-#  endif // _CCCL_COMPILER(MSVC)
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
+#endif // _CCCL_COMPILER(MSVC)
 
 _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER > 2014
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H

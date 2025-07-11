@@ -65,7 +65,7 @@ VariableUnitTest<TestComparisonSortByKeyDeviceDevice, unittest::type_list<unitte
 template <typename T, typename ExecutionPolicy>
 void TestSortByKeyDevice(ExecutionPolicy exec, const size_t n)
 {
-  TestComparisonSortByKeyDevice<T>(exec, n, thrust::less<T>());
+  TestComparisonSortByKeyDevice<T>(exec, n, ::cuda::std::less<T>());
 };
 
 template <typename T>

@@ -10,7 +10,7 @@ cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.an
    // .src       = { .shared::cta }
    // .type      = { .b32 }
    // .op        = { .and }
-   template <typename B32>
+   template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline void cp_reduce_async_bulk(
      cuda::ptx::space_cluster_t,
      cuda::ptx::space_shared_t,
@@ -29,7 +29,7 @@ cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.or
    // .src       = { .shared::cta }
    // .type      = { .b32 }
    // .op        = { .or }
-   template <typename B32>
+   template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline void cp_reduce_async_bulk(
      cuda::ptx::space_cluster_t,
      cuda::ptx::space_shared_t,
@@ -48,7 +48,7 @@ cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.xo
    // .src       = { .shared::cta }
    // .type      = { .b32 }
    // .op        = { .xor }
-   template <typename B32>
+   template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline void cp_reduce_async_bulk(
      cuda::ptx::space_cluster_t,
      cuda::ptx::space_shared_t,

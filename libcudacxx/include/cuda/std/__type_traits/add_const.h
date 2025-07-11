@@ -20,17 +20,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT add_const
 {
-  typedef _CCCL_NODEBUG_ALIAS const _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = const _Tp;
 };
 
 template <class _Tp>
 using add_const_t _CCCL_NODEBUG_ALIAS = typename add_const<_Tp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ADD_CONST_H

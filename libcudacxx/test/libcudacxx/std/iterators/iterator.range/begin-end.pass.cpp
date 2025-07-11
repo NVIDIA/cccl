@@ -30,12 +30,10 @@
 //
 //  All of these are constexpr in C++17
 
-#include <cuda/std/cassert>
-#include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
 #include <cuda/std/array>
+#include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
+#include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_LIST)
 #  include <cuda/std/list>
 #endif
@@ -43,14 +41,15 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 #  include <iterator>
 #  include <utility>
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 // cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
+TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 template <typename C>
 __host__ __device__ void test_const_container(const C& c, typename C::value_type val)
@@ -59,7 +58,6 @@ __host__ __device__ void test_const_container(const C& c, typename C::value_type
   assert(*cuda::std::begin(c) == val);
   assert(cuda::std::begin(c) != c.end());
   assert(cuda::std::end(c) == c.end());
-#if TEST_STD_VER >= 2014
   assert(cuda::std::cbegin(c) == c.cbegin());
   assert(cuda::std::cbegin(c) != c.cend());
   assert(cuda::std::cend(c) == c.cend());
@@ -69,7 +67,6 @@ __host__ __device__ void test_const_container(const C& c, typename C::value_type
   assert(cuda::std::crbegin(c) == c.crbegin());
   assert(cuda::std::crbegin(c) != c.crend());
   assert(cuda::std::crend(c) == c.crend());
-#endif // TEST_STD_VER >= 2014
 }
 
 template <typename T>
@@ -79,11 +76,10 @@ __host__ __device__ void test_const_container(const cuda::std::initializer_list<
   assert(*cuda::std::begin(c) == val);
   assert(cuda::std::begin(c) != c.end());
   assert(cuda::std::end(c) == c.end());
-#if TEST_STD_VER >= 2014
+
   assert(cuda::std::cbegin(c) != cuda::std::cend(c));
   assert(cuda::std::rbegin(c) != cuda::std::rend(c));
   assert(cuda::std::crbegin(c) != cuda::std::crend(c));
-#endif // TEST_STD_VER >= 2014
 }
 
 template <typename C>
@@ -93,7 +89,6 @@ __host__ __device__ void test_container(C& c, typename C::value_type val)
   assert(*cuda::std::begin(c) == val);
   assert(cuda::std::begin(c) != c.end());
   assert(cuda::std::end(c) == c.end());
-#if TEST_STD_VER >= 2014
   assert(cuda::std::cbegin(c) == c.cbegin());
   assert(cuda::std::cbegin(c) != c.cend());
   assert(cuda::std::cend(c) == c.cend());
@@ -103,7 +98,6 @@ __host__ __device__ void test_container(C& c, typename C::value_type val)
   assert(cuda::std::crbegin(c) == c.crbegin());
   assert(cuda::std::crbegin(c) != c.crend());
   assert(cuda::std::crend(c) == c.crend());
-#endif // TEST_STD_VER >= 2014
 }
 
 template <typename T>
@@ -113,11 +107,9 @@ __host__ __device__ void test_container(cuda::std::initializer_list<T>& c, T val
   assert(*cuda::std::begin(c) == val);
   assert(cuda::std::begin(c) != c.end());
   assert(cuda::std::end(c) == c.end());
-#if TEST_STD_VER >= 2014
   assert(cuda::std::cbegin(c) != cuda::std::cend(c));
   assert(cuda::std::rbegin(c) != cuda::std::rend(c));
   assert(cuda::std::crbegin(c) != cuda::std::crend(c));
-#endif // TEST_STD_VER >= 2014
 }
 
 template <typename T, size_t Sz>
@@ -127,24 +119,18 @@ __host__ __device__ void test_const_array(const T (&array)[Sz])
   assert(*cuda::std::begin(array) == array[0]);
   assert(cuda::std::begin(array) != cuda::std::end(array));
   assert(cuda::std::end(array) == array + Sz);
-#if TEST_STD_VER >= 2014
   assert(cuda::std::cbegin(array) == array);
   assert(*cuda::std::cbegin(array) == array[0]);
   assert(cuda::std::cbegin(array) != cuda::std::cend(array));
   assert(cuda::std::cend(array) == array + Sz);
-#endif // TEST_STD_VER >= 2014
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_array[]{1, 2, 3};
-#if TEST_STD_VER > 2014
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_const_array[] = {0, 1, 2, 3, 4};
-#  endif // nvcc > 11.2
-#endif // TEST_STD_VER > 2014
+TEST_GLOBAL_VARIABLE constexpr int global_array[]{1, 2, 3};
+TEST_GLOBAL_VARIABLE constexpr int global_const_array[] = {0, 1, 2, 3, 4};
 
 __host__ __device__ void test_ambiguous_std()
 {
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (
     {
@@ -161,7 +147,6 @@ __host__ __device__ void test_ambiguous_std()
       assert(end(init) == init.end());
     }
   ))
-#if TEST_STD_VER >= 2014
   NV_IF_TARGET(NV_IS_HOST, (
     {
       cuda::std::array<::std::pair<int, int>, 10> c = {};
@@ -183,17 +168,15 @@ __host__ __device__ void test_ambiguous_std()
       assert(crbegin(init) != crend(init));
     }
   ))
-#endif // TEST_STD_VER >= 2014
+
   // clang-format on
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-  cuda::std::vector<int> v;
+  cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
-#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   cuda::std::list<int> l;
   l.push_back(2);
@@ -202,18 +185,14 @@ int main(int, char**)
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   test_container(v, 1);
-#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_container(l, 2);
 #endif
   test_container(a, 3);
   test_container(il, 4);
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
   test_const_container(v, 1);
-#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_const_container(l, 2);
 #endif
@@ -221,13 +200,10 @@ int main(int, char**)
   test_const_container(il, 4);
 
   test_const_array(global_array);
-#if TEST_STD_VER >= 2014
   constexpr const int* b = cuda::std::cbegin(global_array);
   constexpr const int* e = cuda::std::cend(global_array);
   static_assert(e - b == 3, "");
-#endif // TEST_STD_VER >= 2014
 
-#if TEST_STD_VER >= 2017
   {
     typedef cuda::std::array<int, 5> C;
     constexpr const C local_const_array{0, 1, 2, 3, 4};
@@ -256,15 +232,12 @@ int main(int, char**)
     static_assert(*cuda::std::crbegin(local_const_array) == 4, "");
   }
 
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
   {
     static_assert(*cuda::std::begin(global_const_array) == 0, "");
     static_assert(*cuda::std::cbegin(global_const_array) == 0, "");
     static_assert(*cuda::std::rbegin(global_const_array) == 4, "");
     static_assert(*cuda::std::crbegin(global_const_array) == 4, "");
   }
-#  endif // nvcc > 11.2
-#endif // TEST_STD_VER >= 2017
 
   test_ambiguous_std();
 

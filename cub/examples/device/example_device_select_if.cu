@@ -43,8 +43,11 @@
 #include <cub/device/device_select.cuh>
 #include <cub/util_allocator.cuh>
 
-#include "../../test/test_util.h"
+#include <cuda/std/limits>
+
 #include <stdio.h>
+
+#include "../../test/test_util.h"
 
 using namespace cub;
 
@@ -84,14 +87,13 @@ void Initialize(int* h_in, int num_items, int max_segment)
   while (i < num_items)
   {
     // Randomly select number of repeating occurrences uniformly from [1..max_segment]
-    unsigned short max_short = (unsigned short) -1;
-    unsigned short repeat;
-    RandomBits(repeat);
-    repeat = (unsigned short) ((float(repeat) * (float(max_segment) / float(max_short))));
-    repeat = CUB_MAX(1, repeat);
+    unsigned short bits;
+    RandomBits(bits);
+    const int repeat = cuda::std::max(
+      1, static_cast<int>(bits * (static_cast<float>(max_segment) / cuda::std::numeric_limits<unsigned short>::max())));
 
     int j = i;
-    while (j < CUB_MIN(i + repeat, num_items))
+    while (j < cuda::std::min(i + repeat, num_items))
     {
       h_in[j] = key;
       j++;

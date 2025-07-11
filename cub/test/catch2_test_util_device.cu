@@ -125,9 +125,7 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 struct policy_hub_all
 {
   // for the list of supported architectures, see libcudacxx/include/nv/target
-  GEN_POLICY(350, 350);
-  GEN_POLICY(370, 350);
-  GEN_POLICY(500, 370);
+  GEN_POLICY(500, 500);
   GEN_POLICY(520, 500);
   GEN_POLICY(530, 520);
   GEN_POLICY(600, 530);
@@ -142,8 +140,12 @@ struct policy_hub_all
   GEN_POLICY(890, 870);
   GEN_POLICY(900, 890);
   GEN_POLICY(1000, 900);
+  GEN_POLICY(1010, 1000);
+  GEN_POLICY(1030, 1010);
+  GEN_POLICY(1100, 1030);
+  GEN_POLICY(1200, 1100);
   // add more policies here when new architectures emerge
-  GEN_POLICY(2000, 1000); // non-existing architecture, just to test pruning
+  GEN_POLICY(2000, 1200); // non-existing architecture, just to test pruning
 
   using max_policy = policy2000;
 };
@@ -258,8 +260,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(check_chained_policy_selects_correct_policy,
 
 struct policy_hub_some
 {
-  GEN_POLICY(350, 350);
-  GEN_POLICY(500, 350);
+  GEN_POLICY(500, 500);
   GEN_POLICY(700, 500);
   GEN_POLICY(900, 700);
   GEN_POLICY(2000, 900); // non-existing architecture, just to test
@@ -268,30 +269,30 @@ struct policy_hub_some
 
 struct policy_hub_few
 {
-  GEN_POLICY(350, 350);
-  GEN_POLICY(860, 350);
+  GEN_POLICY(500, 500);
+  GEN_POLICY(860, 500);
   GEN_POLICY(2000, 860); // non-existing architecture, just to test
   using max_policy = policy2000;
 };
 
 struct policy_hub_minimal
 {
-  GEN_POLICY(350, 350);
-  using max_policy = policy350;
+  GEN_POLICY(500, 500);
+  using max_policy = policy500;
 };
 
 C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
 {
   SECTION("policy_hub_some")
   {
-    check_wrapper_some<policy_hub_some, 5>(::cuda::std::array<int, 5>{350, 500, 700, 900, 2000});
+    check_wrapper_some<policy_hub_some, 4>(::cuda::std::array<int, 4>{500, 700, 900, 2000});
   }
   SECTION("policy_hub_few")
   {
-    check_wrapper_some<policy_hub_few, 3>(::cuda::std::array<int, 3>{350, 860, 2000});
+    check_wrapper_some<policy_hub_few, 3>(::cuda::std::array<int, 3>{500, 860, 2000});
   }
   SECTION("policy_hub_minimal")
   {
-    check_wrapper_some<policy_hub_minimal, 1>(::cuda::std::array<int, 1>{350});
+    check_wrapper_some<policy_hub_minimal, 1>(::cuda::std::array<int, 1>{500});
   }
 }

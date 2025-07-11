@@ -45,12 +45,12 @@ template <typename ExecutionPolicy, typename BidirectionalIterator>
 _CCCL_HOST_DEVICE void
 reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last)
 {
-  using difference_type = typename thrust::iterator_difference<BidirectionalIterator>::type;
+  using difference_type = thrust::detail::it_difference_t<BidirectionalIterator>;
 
   // find the midpoint of [first,last)
-  difference_type N = thrust::distance(first, last);
+  difference_type N = ::cuda::std::distance(first, last);
   BidirectionalIterator mid(first);
-  thrust::advance(mid, N / 2);
+  ::cuda::std::advance(mid, N / 2);
 
   // swap elements of [first,mid) with [last - 1, mid)
   thrust::swap_ranges(exec, first, mid, thrust::make_reverse_iterator(last));

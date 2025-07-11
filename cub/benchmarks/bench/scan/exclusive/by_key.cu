@@ -25,6 +25,7 @@
  *
  ******************************************************************************/
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
 
 #include <look_back_helper.cuh>
@@ -82,7 +83,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
   using val_input_it_t  = const ValueT*;
   using val_output_it_t = ValueT*;
   using equality_op_t   = ::cuda::std::equal_to<>;
-  using offset_t        = OffsetT;
+  using offset_t        = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t;
@@ -132,7 +133,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       d_tmp,
       tmp_size,

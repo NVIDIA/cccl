@@ -158,7 +158,13 @@ launch_docker() {
     # Read image
     local DOCKER_IMAGE="$(json_string '"image"' < "${devcontainer_json}")"
     # Always pull the latest copy of the image
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::group::Pulling Docker image ${DOCKER_IMAGE}"
+    fi
     docker pull "$DOCKER_IMAGE"
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::endgroup::"
+    fi
 
     # Read workspaceFolder
     local WORKSPACE_FOLDER="$(json_string '"workspaceFolder"' < "${devcontainer_json}")"
@@ -224,6 +230,7 @@ launch_docker() {
 
     if test -n "${SSH_AUTH_SOCK:-}" && test -e "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
+        ENV_VARS+=(--env "HOST_WORKSPACE=$(pwd)")
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
     fi
 
@@ -231,6 +238,9 @@ launch_docker() {
     if test -v volumes && test ${#volumes[@]} -gt 0; then
         MOUNTS+=("${volumes[@]}")
     fi
+
+    # mount /var/run/docker.sock
+    MOUNTS+=(--mount "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind")
 
     # Append user-provided envvars
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then

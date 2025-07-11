@@ -17,10 +17,8 @@
 template <class T, class U>
 __host__ __device__ void test_remove_reference()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::remove_reference<T>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(U, cuda::std::remove_reference_t<T>);
-#endif
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::remove_reference<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::remove_reference_t<T>>);
 }
 
 int main(int, char**)
@@ -33,13 +31,13 @@ int main(int, char**)
 
   test_remove_reference<int&, int>();
   test_remove_reference<const int&, const int>();
-  test_remove_reference<int(&)[3], int[3]>();
+  test_remove_reference<int (&)[3], int[3]>();
   test_remove_reference<int*&, int*>();
   test_remove_reference<const int*&, const int*>();
 
   test_remove_reference<int&&, int>();
   test_remove_reference<const int&&, const int>();
-  test_remove_reference<int(&&)[3], int[3]>();
+  test_remove_reference<int (&&)[3], int[3]>();
   test_remove_reference<int*&&, int*>();
   test_remove_reference<const int*&&, const int*>();
 

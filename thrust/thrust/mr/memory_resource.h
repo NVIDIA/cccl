@@ -73,7 +73,7 @@ public:
    *  \throws thrust::bad_alloc when no memory with requested size and alignment can be allocated.
    *  \return A pointer to void to the newly allocated memory.
    */
-  _CCCL_NODISCARD pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
+  [[nodiscard]] pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
   {
     return do_allocate(bytes, alignment);
   }
@@ -144,7 +144,7 @@ public:
 
   virtual ~memory_resource() = default;
 
-  _CCCL_NODISCARD pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
+  [[nodiscard]] pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
   {
     return do_allocate(bytes, alignment);
   }

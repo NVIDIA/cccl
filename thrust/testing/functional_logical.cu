@@ -53,8 +53,8 @@ Macro(vector_type, operator_name, unittest::uint64_t)
 #define INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestBinaryFunctional<thrust::vector_type<data_type>,                                    \
                        thrust::vector_type<data_type>,                                    \
-                       thrust::operator_name<data_type>,                                  \
-                       std::operator_name<data_type>>();
+                       ::cuda::std::operator_name<data_type>,                             \
+                       ::std::operator_name<data_type>>();
 
 // op(T,T) -> bool
 #define DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \

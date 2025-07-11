@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -55,7 +55,7 @@
 #  include <thrust/system/cuda/detail/uninitialized_copy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -87,10 +87,6 @@ struct DispatchPartitionIf
     std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
     void* allocations[2]            = {nullptr, nullptr};
 
-    // Partitioning algorithm keeps "rejected" items
-    constexpr bool keep_rejects = true;
-    constexpr bool may_alias    = false;
-
     // Query algorithm memory requirements
     status = cub::DispatchSelectIf<
       InputIt,
@@ -100,21 +96,20 @@ struct DispatchPartitionIf
       Predicate,
       equality_op_t,
       OffsetT,
-      keep_rejects,
-      may_alias>::Dispatch(nullptr,
-                           allocation_sizes[0],
-                           first,
-                           stencil,
-                           output,
-                           static_cast<num_selected_out_it_t>(nullptr),
-                           predicate,
-                           equality_op_t{},
-                           num_items,
-                           stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+      cub::SelectImpl::Partition>::Dispatch(nullptr,
+                                            allocation_sizes[0],
+                                            first,
+                                            stencil,
+                                            output,
+                                            static_cast<num_selected_out_it_t>(nullptr),
+                                            predicate,
+                                            equality_op_t{},
+                                            num_items,
+                                            stream);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
     if (d_temp_storage == nullptr)
@@ -141,22 +136,21 @@ struct DispatchPartitionIf
       Predicate,
       equality_op_t,
       OffsetT,
-      keep_rejects,
-      may_alias>::Dispatch(allocations[0],
-                           allocation_sizes[0],
-                           first,
-                           stencil,
-                           output,
-                           d_num_selected_out,
-                           predicate,
-                           equality_op_t{},
-                           num_items,
-                           stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+      cub::SelectImpl::Partition>::Dispatch(allocations[0],
+                                            allocation_sizes[0],
+                                            first,
+                                            stencil,
+                                            output,
+                                            d_num_selected_out,
+                                            predicate,
+                                            equality_op_t{},
+                                            num_items,
+                                            stream);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items
     status = cuda_cub::synchronize(policy);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     num_selected = static_cast<std::size_t>(get_value(policy, d_num_selected_out));
 
     return status;
@@ -172,9 +166,9 @@ THRUST_RUNTIME_FUNCTION std::size_t partition(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
 
-  size_type num_items = thrust::distance(first, last);
+  size_type num_items = ::cuda::std::distance(first, last);
   std::size_t num_selected{};
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
@@ -225,13 +219,13 @@ THRUST_RUNTIME_FUNCTION pair<SelectedOutIt, RejectedOutIt> stable_partition_copy
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
-  if (thrust::distance(first, last) <= 0)
+  if (::cuda::std::distance(first, last) <= 0)
   {
     return thrust::make_pair(selected_result, rejected_result);
   }
 
-  using output_it_wrapper_t = cub::detail::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
-  std::size_t num_items     = static_cast<std::size_t>(thrust::distance(first, last));
+  using output_it_wrapper_t = cub::detail::select::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
+  std::size_t num_items     = static_cast<std::size_t>(::cuda::std::distance(first, last));
   std::size_t num_selected =
     partition(policy, first, last, stencil, output_it_wrapper_t{selected_result, rejected_result}, predicate);
   return thrust::make_pair(selected_result + num_selected, rejected_result + num_items - num_selected);
@@ -241,14 +235,14 @@ template <typename Derived, typename InputIt, typename StencilIt, typename Predi
 THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  if (thrust::distance(first, last) <= 0)
+  if (::cuda::std::distance(first, last) <= 0)
   {
     return first;
   }
 
   // Element type of the input iterator
-  using value_t         = typename iterator_traits<InputIt>::value_type;
-  std::size_t num_items = static_cast<std::size_t>(thrust::distance(first, last));
+  using value_t         = thrust::detail::it_value_t<InputIt>;
+  std::size_t num_items = static_cast<std::size_t>(::cuda::std::distance(first, last));
 
   // Allocate temporary storage, which will serve as the input to the partition
   thrust::detail::temporary_array<value_t, Derived> tmp(policy, num_items);

@@ -55,18 +55,14 @@ struct Class
 // specializations of hash for nullptr t and all cv-unqualified
 // arithmetic, enumeration, and pointer types.
 using LibraryHashTypes = TypeList<
-#if TEST_STD_VER > 2014
   decltype(nullptr),
-#endif
   bool,
   char,
   signed char,
   unsigned char,
   wchar_t,
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   char16_t,
   char32_t,
-#endif
   short,
   unsigned short,
   int,
@@ -75,18 +71,16 @@ using LibraryHashTypes = TypeList<
   unsigned long,
   long long,
   unsigned long long,
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   __int128_t,
   __uint128_t,
-#endif
+#endif // _CCCL_HAS_INT128()
   float,
   double,
   long double,
-#if TEST_STD_VER >= 2014
   // Enum types
   PoisonedHashDetail::Enum,
   PoisonedHashDetail::EnumClass,
-#endif
   // pointer types
   void*,
   void const*,
@@ -178,11 +172,7 @@ void test_hash_enabled(InputKey const& key)
   static_assert(std::is_copy_assignable<Hash>::value, "");
   static_assert(std::is_move_assignable<Hash>::value, "");
 
-#if TEST_STD_VER > 2014
   static_assert(std::is_swappable<Hash>::value, "");
-#elif defined(_LIBCUDACXX_VERSION)
-  static_assert(std::__is_swappable<Hash>::value, "");
-#endif
 
   // Hashable requirements
   static_assert(can_hash<Hash(Key&)>(), "");

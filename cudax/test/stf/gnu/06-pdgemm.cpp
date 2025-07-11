@@ -16,10 +16,8 @@
  * stream_ctx and a graph_ctx backend.
  */
 
-#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
-#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
-
-#include <nvtx3/nvToolsExt.h>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #define TILED
 
@@ -155,9 +153,9 @@ public:
   void fill(T (*func)(matrix<T>*, int, int))
   {
     // Fill blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
-      for (int rowb = 0; rowb < mt; rowb++)
+      for (size_t rowb = 0; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
 #ifdef TILED
@@ -167,9 +165,9 @@ public:
         int ld = m;
 #endif
 
-        for (int lrow = 0; lrow < mb; lrow++)
+        for (size_t lrow = 0; lrow < mb; lrow++)
         {
-          for (int lcol = 0; lcol < nb; lcol++)
+          for (size_t lcol = 0; lcol < nb; lcol++)
           {
             size_t row = lrow + rowb * mb;
             size_t col = lcol + colb * nb;
@@ -257,9 +255,9 @@ void PDGEMM(Ctx& ctx,
             double beta,
             matrix<double>& C)
 {
-  for (int m = 0; m < C.mt; m++)
+  for (size_t m = 0; m < C.mt; m++)
   {
-    for (int n = 0; n < C.nt; n++)
+    for (size_t n = 0; n < C.nt; n++)
     {
       //=========================================
       // alpha*A*B does not contribute; scale C
@@ -277,7 +275,7 @@ void PDGEMM(Ctx& ctx,
         if (transb == CUBLAS_OP_N)
         {
           assert(A.nt == B.mt);
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, m, k, B, k, n, zbeta, C, m, n);
@@ -288,7 +286,7 @@ void PDGEMM(Ctx& ctx,
         //=====================================
         else
         {
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, m, k, B, n, k, zbeta, C, m, n);
@@ -302,7 +300,7 @@ void PDGEMM(Ctx& ctx,
         //=====================================
         if (transb == CUBLAS_OP_N)
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, k, m, B, k, n, zbeta, C, m, n);
@@ -313,7 +311,7 @@ void PDGEMM(Ctx& ctx,
         //==========================================
         else
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, k, m, B, n, k, zbeta, C, m, n);

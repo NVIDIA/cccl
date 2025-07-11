@@ -31,6 +31,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Pred, class _Proj>
@@ -39,7 +41,7 @@ struct _ProjectedPred
   _Pred& __pred; // Can be a unary or a binary predicate.
   _Proj& __proj;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _ProjectedPred(_Pred& __pred_arg, _Proj& __proj_arg)
+  _CCCL_API constexpr _ProjectedPred(_Pred& __pred_arg, _Proj& __proj_arg)
       : __pred(__pred_arg)
       , __proj(__proj_arg)
   {}
@@ -48,7 +50,7 @@ struct _ProjectedPred
   typename __invoke_of<
     _Pred&,
     decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>()))>::type constexpr
-    _LIBCUDACXX_HIDE_FROM_ABI
+    _CCCL_API inline
     operator()(_Tp&& __v) const
   {
     return _CUDA_VSTD::__invoke(__pred, _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_Tp>(__v)));
@@ -59,7 +61,7 @@ struct _ProjectedPred
     _Pred&,
     decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T1>())),
     decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>()))>::type constexpr
-    _LIBCUDACXX_HIDE_FROM_ABI
+    _CCCL_API inline
     operator()(_T1&& __lhs, _T2&& __rhs) const
   {
     return _CUDA_VSTD::__invoke(__pred,
@@ -71,7 +73,7 @@ struct _ProjectedPred
 template <class _Pred,
           class _Proj,
           enable_if_t<!(!is_member_pointer<decay_t<_Pred>>::value && __is_identity<decay_t<_Proj>>::value), int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred, _Proj& __proj)
+_CCCL_API constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred, _Proj& __proj)
 {
   return _ProjectedPred<_Pred, _Proj>(__pred, __proj);
 }
@@ -82,11 +84,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ProjectedPred<_Pred, _Proj> __make_projecte
 template <class _Pred,
           class _Proj,
           enable_if_t<!is_member_pointer<decay_t<_Pred>>::value && __is_identity<decay_t<_Proj>>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Pred& __make_projected(_Pred& __pred, _Proj&)
+_CCCL_API constexpr _Pred& __make_projected(_Pred& __pred, _Proj&)
 {
   return __pred;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H

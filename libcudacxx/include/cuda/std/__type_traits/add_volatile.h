@@ -20,17 +20,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT add_volatile
 {
-  typedef _CCCL_NODEBUG_ALIAS volatile _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = volatile _Tp;
 };
 
 template <class _Tp>
 using add_volatile_t _CCCL_NODEBUG_ALIAS = typename add_volatile<_Tp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ADD_VOLATILE_H

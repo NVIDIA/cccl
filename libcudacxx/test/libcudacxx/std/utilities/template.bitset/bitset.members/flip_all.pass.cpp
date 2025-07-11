@@ -15,10 +15,10 @@
 #include "../bitset_test_cases.h"
 #include "test_macros.h"
 
-_CCCL_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_flip_all()
+__host__ __device__ constexpr void test_flip_all()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -26,11 +26,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_flip_all()
     cuda::std::bitset<N> v1(cases[c]);
     cuda::std::bitset<N> v2 = v1;
     v2.flip();
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 0; i < v1.size(); ++i)
     {
-      _CCCL_DIAG_POP
       {
         assert(v2[i] == ~v1[i]);
       }
@@ -38,7 +35,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_flip_all()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_flip_all<0>();
   test_flip_all<1>();
@@ -56,10 +53,7 @@ int main(int, char**)
 {
   test();
   test_flip_all<1000>(); // not in constexpr because of constexpr evaluation step limits
-// 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && _CCCL_CUDACC_AT_LEAST(11, 4)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

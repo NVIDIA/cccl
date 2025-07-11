@@ -63,6 +63,11 @@ struct AgentAdjacentDifferencePolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
+namespace detail
+{
+namespace adjacent_difference
+{
+
 template <typename Policy,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -74,7 +79,7 @@ template <typename Policy,
           bool ReadLeft>
 struct AgentDifference
 {
-  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, InputIteratorT>::type;
+  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, InputIteratorT>::type;
 
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
@@ -114,7 +119,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(Policy(), input_it))
+      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(Policy(), input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)
@@ -138,7 +143,7 @@ struct AgentDifference
       BlockLoad(temp_storage.load).Load(load_it + tile_base, input);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (ReadLeft)
     {
@@ -186,7 +191,7 @@ struct AgentDifference
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_LAST_TILE)
     {
@@ -249,5 +254,8 @@ struct AgentDifferenceInit
     }
   }
 };
+
+} // namespace adjacent_difference
+} // namespace detail
 
 CUB_NAMESPACE_END

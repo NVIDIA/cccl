@@ -28,6 +28,9 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/cstring>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -43,7 +46,7 @@ _CCCL_HOST_DEVICE constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp
 }
 
 template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
-_CCCL_HOST_DEVICE constexpr inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+_CCCL_HOST_DEVICE constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   return static_cast<_Tp>(__val);
 }
@@ -53,7 +56,7 @@ template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
-  memcpy(&__temp, &__val, sizeof(_Tp));
+  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -61,7 +64,7 @@ template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _Tp __temp{};
-  memcpy(&__temp, &__val, sizeof(_Tp));
+  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -72,10 +75,11 @@ struct __atomic_small_storage
   using __proxy_t                     = __atomic_small_proxy_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
-  _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage() noexcept
-      : __a_value{__proxy_t{}} {};
+  _CCCL_HOST_DEVICE constexpr explicit __atomic_small_storage() noexcept
+      : __a_value{__proxy_t{}}
+  {}
 
-  _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage(_Tp __value) noexcept
+  _CCCL_HOST_DEVICE constexpr explicit __atomic_small_storage(_Tp __value) noexcept
       : __a_value{__atomic_small_to_32(__value)}
   {}
 
@@ -95,16 +99,16 @@ _CCCL_HOST_DEVICE inline void __atomic_store_dispatch(_Sto* __a, _Up __val, memo
 }
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(__atomic_load_dispatch(&__a->__a_value, __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -155,8 +159,8 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -164,8 +168,8 @@ __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco =
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -173,8 +177,8 @@ __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco =
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -182,8 +186,8 @@ __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -191,8 +195,8 @@ __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco 
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -200,8 +204,8 @@ __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -209,8 +213,8 @@ __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto
-__atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
@@ -218,5 +222,7 @@ __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_TYPES_SMALL_H

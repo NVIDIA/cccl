@@ -23,31 +23,33 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace rel_ops
 {
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator!=(const _Tp& __x, const _Tp& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator>(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator>(const _Tp& __x, const _Tp& __y)
 {
   return __y < __x;
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator<=(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator<=(const _Tp& __x, const _Tp& __y)
 {
   return !(__y < __x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator>=(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator>=(const _Tp& __x, const _Tp& __y)
 {
   return !(__x < __y);
 }
@@ -55,5 +57,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool operator>=(const _Tp& __x, const _Tp& __y)
 } // namespace rel_ops
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_REL_OPS_H

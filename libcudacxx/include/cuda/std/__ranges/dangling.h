@@ -25,30 +25,30 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+#include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2014
+_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 struct dangling
 {
   _CCCL_HIDE_FROM_ABI dangling() = default;
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr dangling(_Args&&...) noexcept
+  _CCCL_API constexpr dangling(_Args&&...) noexcept
   {}
 };
 
-#  if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
 template <range _Rp>
 using borrowed_iterator_t = _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>;
-#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Rp>
 using borrowed_iterator_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>>;
-#  endif // _CCCL_STD_VER <= 2017
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 // borrowed_subrange_t defined in <__ranges/subrange.h>
 
-#endif // _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_DANGLING_H

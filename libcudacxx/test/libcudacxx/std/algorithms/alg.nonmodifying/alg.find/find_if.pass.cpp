@@ -32,7 +32,7 @@ struct Comparable
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   constexpr int arr[] = {2, 4, 6, 8};
   using Iter          = cpp17_input_iterator<const int*>;
@@ -79,10 +79,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
 
   return 0;
 }

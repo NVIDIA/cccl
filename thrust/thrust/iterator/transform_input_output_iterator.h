@@ -14,10 +14,9 @@
  *  limitations under the License.
  */
 
-/*! \file thrust/iterator/transform_input_output_iterator.h
- *  \brief An iterator which adapts another iterator by applying transform
- *         functions when reading and writing dereferenced values.
- */
+//! \file thrust/iterator/transform_input_output_iterator.h
+//! \brief An iterator which adapts another iterator by applying transform functions when reading and writing
+//! dereferenced values.
 
 #pragma once
 
@@ -30,92 +29,160 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/detail/transform_input_output_iterator.inl>
+
+#include <thrust/detail/type_traits.h>
+#include <thrust/iterator/iterator_adaptor.h>
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup iterators
- *  \{
- */
-
-/*! \addtogroup fancyiterator Fancy Iterators
- *  \ingroup iterators
- *  \{
- */
-
-/*! \p transform_input_output_iterator is a special kind of iterator which applies
- * transform functions when reading from or writing to dereferenced values.
- * This iterator is useful for algorithms that operate on a type that needs to
- * be serialized/deserialized from values in another iterator, avoiding the
- * need to materialize intermediate results in memory. This also enables the
- * transform functions to be fused with the operations that read and write to
- * the `transform_input_output_iterator`.
- *
- * The following code snippet demonstrates how to create a
- * \p transform_input_output_iterator which performs different transformations when
- * reading from and writing to the iterator.
- *
- * \code
- * #include <thrust/iterator/transform_input_output_iterator.h>
- * #include <thrust/device_vector.h>
- *
- *  int main()
- *  {
- *    const size_t size = 4;
- *    thrust::device_vector<float> v(size);
- *
- *    // Write 1.0f, 2.0f, 3.0f, 4.0f to vector
- *    thrust::sequence(v.begin(), v.end(), 1);
- *
- *    // Iterator that returns negated values and writes squared values
- *    auto iter = thrust::make_transform_input_output_iterator(v.begin(),
- *        thrust::negate<float>{}, thrust::square<float>{});
- *
- *    // Iterator negates values when reading
- *    std::cout << iter[0] << " ";  // -1.0f;
- *    std::cout << iter[1] << " ";  // -2.0f;
- *    std::cout << iter[2] << " ";  // -3.0f;
- *    std::cout << iter[3] << "\n"; // -4.0f;
- *
- *    // Write 1.0f, 2.0f, 3.0f, 4.0f to iterator
- *    thrust::sequence(iter, iter + size, 1);
- *
- *    // Values were squared before writing to vector
- *    std::cout << v[0] << " ";  // 1.0f;
- *    std::cout << v[1] << " ";  // 4.0f;
- *    std::cout << v[2] << " ";  // 9.0f;
- *    std::cout << v[3] << "\n"; // 16.0f;
- *
- *  }
- * \endcode
- *
- * \see make_transform_input_output_iterator
- */
-
 template <typename InputFunction, typename OutputFunction, typename Iterator>
-class transform_input_output_iterator
-    : public detail::transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type
+class transform_input_output_iterator;
+
+namespace detail
 {
-  /*! \cond
-   */
+// Proxy reference that invokes InputFunction when reading from and
+// OutputFunction when writing to the dereferenced iterator
+template <typename InputFunction, typename OutputFunction, typename Iterator>
+class transform_input_output_iterator_proxy
+{
+  using iterator_value_type = it_value_t<Iterator>;
+  using Value               = invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
-  using super_t = typename detail::transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type;
+  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy(
+    const Iterator& io, InputFunction input_function, OutputFunction output_function)
+      : io(io)
+      , input_function(input_function)
+      , output_function(output_function)
+  {}
 
-  friend class thrust::iterator_core_access;
-  /*! \endcond
-   */
+  transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE operator Value() const
+  {
+    return input_function(*io);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename T>
+  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const T& x)
+  {
+    *io = output_function(x);
+    return *this;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const transform_input_output_iterator_proxy& x)
+  {
+    *io = output_function(x);
+    return *this;
+  }
+
+private:
+  Iterator io;
+  InputFunction input_function;
+  OutputFunction output_function;
+};
+
+// Compute the iterator_adaptor instantiation to be used for transform_input_output_iterator
+template <typename InputFunction, typename OutputFunction, typename Iterator>
+struct make_transform_input_output_iterator_base
+{
+private:
+  using iterator_value_type = it_value_t<Iterator>;
+
+public:
+  using type =
+    iterator_adaptor<transform_input_output_iterator<InputFunction, OutputFunction, Iterator>,
+                     Iterator,
+                     invoke_result_t<InputFunction, iterator_value_type>,
+                     use_default,
+                     use_default,
+                     transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>>;
+};
+
+// Register transform_input_output_iterator_proxy with 'is_proxy_reference' from type_traits to enable its use with
+// algorithms.
+template <typename InputFunction, typename OutputFunction, typename Iterator>
+inline constexpr bool
+  is_proxy_reference_v<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> = true;
+
+} // namespace detail
+
+//! \addtogroup iterators
+//! \{
+
+//! \addtogroup fancyiterator Fancy Iterators
+//! \ingroup iterators
+//! \{
+
+//! \p transform_input_output_iterator is a special kind of iterator which applies transform functions when reading from
+//! or writing to dereferenced values. This iterator is useful for algorithms that operate on a type that needs to be
+//! serialized/deserialized from values in another iterator, avoiding the need to materialize intermediate results in
+//! memory. This also enables the transform functions to be fused with the operations that read and write to the
+//! `transform_input_output_iterator`.
+//!
+//! The following code snippet demonstrates how to create a \p transform_input_output_iterator which performs different
+//! transformations when reading from and writing to the iterator.
+//!
+//! \code
+//! #include <thrust/iterator/transform_input_output_iterator.h>
+//! #include <thrust/device_vector.h>
+//!
+//!  int main()
+//!  {
+//!    const size_t size = 4;
+//!    thrust::device_vector<float> v(size);
+//!
+//!    // Write 1.0f, 2.0f, 3.0f, 4.0f to vector
+//!    thrust::sequence(v.begin(), v.end(), 1);
+//!
+//!    // Iterator that returns negated values and writes squared values
+//!    auto iter = thrust::make_transform_input_output_iterator(v.begin(),
+//!        ::cuda::std::negate<float>{}, thrust::square<float>{});
+//!
+//!    // Iterator negates values when reading
+//!    std::cout << iter[0] << " ";  // -1.0f;
+//!    std::cout << iter[1] << " ";  // -2.0f;
+//!    std::cout << iter[2] << " ";  // -3.0f;
+//!    std::cout << iter[3] << "\n"; // -4.0f;
+//!
+//!    // Write 1.0f, 2.0f, 3.0f, 4.0f to iterator
+//!    thrust::sequence(iter, iter + size, 1);
+//!
+//!    // Values were squared before writing to vector
+//!    std::cout << v[0] << " ";  // 1.0f;
+//!    std::cout << v[1] << " ";  // 4.0f;
+//!    std::cout << v[2] << " ";  // 9.0f;
+//!    std::cout << v[3] << "\n"; // 16.0f;
+//!
+//!  }
+//! \endcode
+//!
+//! \see make_transform_input_output_iterator
+template <typename InputFunction, typename OutputFunction, typename Iterator>
+class transform_input_output_iterator
+    : public detail::make_transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type
+{
+  //! \cond
+
+public:
+  using super_t =
+    typename detail::make_transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type;
+
+  friend class iterator_core_access;
+  //! \endcond
 
   transform_input_output_iterator() = default;
 
-  /*! This constructor takes as argument a \c Iterator an \c InputFunction and an
-   * \c OutputFunction and copies them to a new \p transform_input_output_iterator
-   *
-   * \param io An \c Iterator pointing to where the input to \c InputFunction
-   *           will be read from and the result of \c OutputFunction will be written to
-   * \param input_function An \c InputFunction to be executed on values read from the iterator
-   * \param output_function An \c OutputFunction to be executed on values written to the iterator
-   */
+  //!  This constructor takes as argument a \c Iterator an \c InputFunction and an
+  //! \c OutputFunction and copies them to a new \p transform_input_output_iterator
+  //!
+  //! \param io An \c Iterator pointing to where the input to \c InputFunction will be read from and the result of \c
+  //!           OutputFunction will be written to
+  //! \param input_function An \c InputFunction to be executed on values read from the iterator
+  //! \param output_function An \c OutputFunction to be executed on values written to the iterator
   _CCCL_HOST_DEVICE
   transform_input_output_iterator(Iterator const& io, InputFunction input_function, OutputFunction output_function)
       : super_t(io)
@@ -123,8 +190,7 @@ public:
       , output_function(output_function)
   {}
 
-  /*! \cond
-   */
+  //! \cond
 
 private:
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
@@ -136,30 +202,25 @@ private:
   InputFunction input_function;
   OutputFunction output_function;
 
-  /*! \endcond
-   */
-}; // end transform_input_output_iterator
+  //! \endcond
+};
 
-/*! \p make_transform_input_output_iterator creates a \p transform_input_output_iterator from
- *  an \c Iterator a \c InputFunction and a \c OutputFunction
- *
- * \param io An \c Iterator pointing to where the input to \c InputFunction
- *           will be read from and the result of \c OutputFunction will be written to
- * \param input_function An \c InputFunction to be executed on values read from the iterator
- * \param output_function An \c OutputFunction to be executed on values written to the iterator
- *  \see transform_input_output_iterator
- */
+//! \p make_transform_input_output_iterator creates a \p transform_input_output_iterator from an \c Iterator a \c
+//! InputFunction and a \c OutputFunction
+//!
+//! \param io An \c Iterator pointing to where the input to \c InputFunction will be read from and the result of \c
+//!           OutputFunction will be written to
+//! \param input_function An \c InputFunction to be executed on values read from the iterator
+//! \param output_function An \c OutputFunction to be executed on values written to the iterator
+//! \see transform_input_output_iterator
 template <typename InputFunction, typename OutputFunction, typename Iterator>
 transform_input_output_iterator<InputFunction, OutputFunction, Iterator> _CCCL_HOST_DEVICE
 make_transform_input_output_iterator(Iterator io, InputFunction input_function, OutputFunction output_function)
 {
   return transform_input_output_iterator<InputFunction, OutputFunction, Iterator>(io, input_function, output_function);
-} // end make_transform_input_output_iterator
+}
 
-/*! \} // end fancyiterators
- */
-
-/*! \} // end iterators
- */
+//! \} // end fancyiterators
+//! \} // end iterators
 
 THRUST_NAMESPACE_END

@@ -29,6 +29,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __unwrap_range and __rewrap_range are used to unwrap ranges which may have different iterator and sentinel types.
@@ -39,7 +41,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Iter, class _Sent>
 struct __unwrap_range_impl
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __unwrap(_Iter __first, _Sent __sent)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API static constexpr auto __unwrap(_Iter __first, _Sent __sent)
     requires random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>
   {
     auto __last = ranges::next(__first, __sent);
@@ -47,19 +50,22 @@ struct __unwrap_range_impl
                 _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__last))};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __unwrap(_Iter __first, _Sent __last)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API static constexpr auto __unwrap(_Iter __first, _Sent __last)
   {
     return pair{_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last)};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API static constexpr auto
   __rewrap(_Iter __orig_iter, decltype(_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__orig_iter))) __iter)
     requires random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>
   {
     return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __rewrap(const _Iter&, _Iter __iter)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API static constexpr auto __rewrap(const _Iter&, _Iter __iter)
     requires(!(random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>) )
   {
     return __iter;
@@ -69,45 +75,52 @@ struct __unwrap_range_impl
 template <class _Iter>
 struct __unwrap_range_impl<_Iter, _Iter>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __unwrap(_Iter __first, _Iter __last)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API static constexpr auto __unwrap(_Iter __first, _Iter __last)
   {
     return pair{_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__first)),
                 _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__last))};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __rewrap(_Iter __orig_iter, decltype(_CUDA_VSTD::__unwrap_iter(__orig_iter)) __iter)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API static constexpr auto __rewrap(_Iter __orig_iter, decltype(_CUDA_VSTD::__unwrap_iter(__orig_iter)) __iter)
   {
     return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Sent>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __unwrap_range(_Iter __first, _Sent __last)
+_CCCL_API constexpr auto __unwrap_range(_Iter __first, _Sent __last)
 {
   return __unwrap_range_impl<_Iter, _Sent>::__unwrap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Sent, class _Iter, class _Unwrapped>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
+_CCCL_API constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
 {
   return __unwrap_range_impl<_Iter, _Sent>::__rewrap(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Unwrapped = decltype(_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::declval<_Iter>()))>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Unwrapped, _Unwrapped> __unwrap_range(_Iter __first, _Iter __last)
+_CCCL_API constexpr pair<_Unwrapped, _Unwrapped> __unwrap_range(_Iter __first, _Iter __last)
 {
   return _CUDA_VSTD::make_pair(
     _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__first)), _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__last)));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Unwrapped>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
+_CCCL_API constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
 {
   return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }
 #endif // _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_UNWRAP_RANGE_H

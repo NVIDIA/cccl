@@ -18,24 +18,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 #include <cuda/std/limits>
 
 #include "test_macros.h"
-
-__host__ __device__ cuda::std::size_t test_memcmp(void* lhs, void* rhs, size_t bytes) noexcept
-{
-  const unsigned char* clhs = (const unsigned char*) lhs;
-  const unsigned char* crhs = (const unsigned char*) rhs;
-
-  for (; bytes > 0; --bytes)
-  {
-    if (*clhs++ != *crhs++)
-    {
-      return clhs[-1] < crhs[-1] ? -1 : 1;
-    }
-  }
-  return 0;
-}
 
 // cuda::std::bit_cast does not preserve padding bits, so if T has padding bits,
 // the results might not memcmp cleanly.
@@ -52,11 +38,11 @@ __host__ __device__ void test_roundtrip_through_buffer(T from)
 
   assert((from == to) == (from == from)); // because NaN
 
-  _CCCL_IF_CONSTEXPR (HasUniqueObjectRepresentations)
+  if constexpr (HasUniqueObjectRepresentations)
   {
-    assert(test_memcmp(&from, &middle, sizeof(T)) == 0);
-    assert(test_memcmp(&to, &middle, sizeof(T)) == 0);
-    assert(test_memcmp(&middle, &middle2, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&from, &middle, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&to, &middle, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&middle, &middle2, sizeof(T)) == 0);
   }
 }
 
@@ -75,11 +61,11 @@ __host__ __device__ void test_roundtrip_through_nested_T(T from)
 
   assert((from == to) == (from == from)); // because NaN
 
-  _CCCL_IF_CONSTEXPR (HasUniqueObjectRepresentations)
+  if constexpr (HasUniqueObjectRepresentations)
   {
-    assert(test_memcmp(&from, &middle, sizeof(T)) == 0);
-    assert(test_memcmp(&to, &middle, sizeof(T)) == 0);
-    assert(test_memcmp(&middle, &middle2, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&from, &middle, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&to, &middle, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&middle, &middle2, sizeof(T)) == 0);
   }
 }
 
@@ -94,11 +80,11 @@ __host__ __device__ void test_roundtrip_through(T from)
 
   assert((from == to) == (from == from)); // because NaN
 
-  _CCCL_IF_CONSTEXPR (HasUniqueObjectRepresentations)
+  if constexpr (HasUniqueObjectRepresentations)
   {
-    assert(test_memcmp(&from, &middle, sizeof(T)) == 0);
-    assert(test_memcmp(&to, &middle, sizeof(T)) == 0);
-    assert(test_memcmp(&middle, &middle2, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&from, &middle, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&to, &middle, sizeof(T)) == 0);
+    assert(cuda::std::memcmp(&middle, &middle2, sizeof(T)) == 0);
   }
 }
 
@@ -260,10 +246,12 @@ __host__ __device__ bool tests()
         1e-20f,
         2.71828f,
         3.14159f,
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nanf(""),
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
-        __builtin_nanf("0x55550001"), // NaN with a payload
+#endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
+#if defined(_CCCL_BUILTIN_NANF)
+        _CCCL_BUILTIN_NANF("0x55550001"), // NaN with a payload
+#endif // _CCCL_BUILTIN_NANF
         cuda::std::numeric_limits<float>::signaling_NaN(),
         cuda::std::numeric_limits<float>::quiet_NaN(),
         cuda::std::numeric_limits<float>::infinity()})
@@ -285,9 +273,9 @@ __host__ __device__ bool tests()
         1e-100,
         2.718281828459045,
         3.141592653589793238462643383279502884197169399375105820974944,
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nan(""),
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
+#endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::numeric_limits<double>::signaling_NaN(),
         cuda::std::numeric_limits<double>::quiet_NaN(),
         cuda::std::numeric_limits<double>::infinity()})
@@ -297,7 +285,7 @@ __host__ __device__ bool tests()
     test_roundtrip_through<long long>(i);
   }
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   // Extended floating point type __half
   for (__half i :
        {__float2half(0.0f),
@@ -312,9 +300,9 @@ __host__ __device__ bool tests()
     test_roundtrip_through_buffer(i);
     test_roundtrip_through<cuda::std::int16_t>(i);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
   // Extended floating point type __half
   for (__nv_bfloat16 i :
        {__float2bfloat16(0.0f),
@@ -329,7 +317,7 @@ __host__ __device__ bool tests()
     test_roundtrip_through_buffer(i);
     test_roundtrip_through<cuda::std::int16_t>(i);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   // Test pointers
   {
@@ -359,7 +347,6 @@ __host__ __device__ bool tests()
 #if defined(_CCCL_BUILTIN_BIT_CAST)
 __host__ __device__ constexpr bool basic_constexpr_test()
 {
-#  if TEST_STD_VER >= 2014
   struct Nested
   {
     char buffer[sizeof(int)];
@@ -368,10 +355,6 @@ __host__ __device__ constexpr bool basic_constexpr_test()
   Nested middle = cuda::std::bit_cast<Nested>(from);
   int to        = cuda::std::bit_cast<int>(middle);
   return (from == to);
-#  else // ^^^ C++14 ^^^ / vvv C++11 vvv
-  // only do a sanity check in C++11
-  return (3 == cuda::std::bit_cast<unsigned>(3u));
-#  endif // TEST_STD_VER >= 2014
 }
 #endif // _CCCL_BUILTIN_BIT_CAST
 

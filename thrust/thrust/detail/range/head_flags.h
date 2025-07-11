@@ -36,9 +36,9 @@ namespace detail
 {
 
 template <typename RandomAccessIterator,
-          typename BinaryPredicate = thrust::equal_to<typename thrust::iterator_value<RandomAccessIterator>::type>,
+          typename BinaryPredicate = ::cuda::std::equal_to<it_value_t<RandomAccessIterator>>,
           typename ValueType       = bool,
-          typename IndexType       = typename thrust::iterator_difference<RandomAccessIterator>::type>
+          typename IndexType       = it_difference_t<RandomAccessIterator>>
 class head_flags
 {
 public:
@@ -92,7 +92,7 @@ public:
     return *(begin() + i);
   }
 
-  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags, iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags, iterator)
 
 private:
   iterator m_begin;

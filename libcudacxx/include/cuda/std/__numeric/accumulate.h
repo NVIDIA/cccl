@@ -24,11 +24,12 @@
 
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp
-accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
+[[nodiscard]] _CCCL_API constexpr _Tp accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
   for (; __first != __last; ++__first)
   {
@@ -38,7 +39,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 }
 
 template <class _InputIterator, class _Tp, class _BinaryOperation>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOperation __binary_op)
 {
   for (; __first != __last; ++__first)
@@ -49,5 +50,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOpe
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_ACCUMULATE_H

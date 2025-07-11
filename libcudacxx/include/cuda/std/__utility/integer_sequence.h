@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t...>
@@ -61,7 +63,7 @@ struct __repeat;
 template <typename _Tp, _Tp... _Np, size_t... _Extra>
 struct __repeat<__integer_sequence<_Tp, _Np...>, _Extra...>
 {
-  typedef _CCCL_NODEBUG_ALIAS __integer_sequence<
+  using type _CCCL_NODEBUG_ALIAS = __integer_sequence<
     _Tp,
     _Np...,
     sizeof...(_Np) + _Np...,
@@ -71,8 +73,7 @@ struct __repeat<__integer_sequence<_Tp, _Np...>, _Extra...>
     5 * sizeof...(_Np) + _Np...,
     6 * sizeof...(_Np) + _Np...,
     7 * sizeof...(_Np) + _Np...,
-    _Extra...>
-    type;
+    _Extra...>;
 };
 
 template <size_t _Np>
@@ -85,42 +86,42 @@ struct __make : __parity<_Np % 8>::template __pmake<_Np>
 template <>
 struct __make<0>
 {
-  typedef __integer_sequence<size_t> type;
+  using type = __integer_sequence<size_t>;
 };
 template <>
 struct __make<1>
 {
-  typedef __integer_sequence<size_t, 0> type;
+  using type = __integer_sequence<size_t, 0>;
 };
 template <>
 struct __make<2>
 {
-  typedef __integer_sequence<size_t, 0, 1> type;
+  using type = __integer_sequence<size_t, 0, 1>;
 };
 template <>
 struct __make<3>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2> type;
+  using type = __integer_sequence<size_t, 0, 1, 2>;
 };
 template <>
 struct __make<4>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3>;
 };
 template <>
 struct __make<5>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3, 4> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3, 4>;
 };
 template <>
 struct __make<6>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3, 4, 5> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3, 4, 5>;
 };
 template <>
 struct __make<7>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3, 4, 5, 6> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3, 4, 5, 6>;
 };
 
 template <>
@@ -192,9 +193,9 @@ using __make_indices_imp _CCCL_NODEBUG_ALIAS =
 template <class _Tp, _Tp... _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 {
-  typedef _Tp value_type;
+  using value_type = _Tp;
   static_assert(is_integral<_Tp>::value, "std::integer_sequence can only be instantiated with an integral type");
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() noexcept
+  static _CCCL_API constexpr size_t size() noexcept
   {
     return sizeof...(_Ip);
   }
@@ -226,7 +227,7 @@ struct __make_integer_sequence_checked
   static_assert(0 <= _Ep, "std::make_integer_sequence must have a non-negative sequence length");
   // Workaround GCC bug by preventing bad installations when 0 <= _Ep
   // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68929
-  typedef _CCCL_NODEBUG_ALIAS __make_integer_sequence_unchecked<_Tp, 0 <= _Ep ? _Ep : 0> type;
+  using type _CCCL_NODEBUG_ALIAS = __make_integer_sequence_unchecked<_Tp, 0 <= _Ep ? _Ep : 0>;
 };
 
 template <class _Tp, _Tp _Ep>
@@ -244,5 +245,7 @@ template <class... _Tp>
 using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_INTEGER_SEQUENCE_H

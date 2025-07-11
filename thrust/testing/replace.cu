@@ -12,11 +12,6 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
-// GCC 12 + omp + c++11 miscompiles some test cases and emits spurious warnings.
-#if _CCCL_COMPILER(GCC, ==, 12) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP && _CCCL_STD_VER == 2011
-#  define THRUST_GCC12_OMP_MISCOMPILE
-#endif
-
 // New GCC, new miscompile. 13 + TBB this time.
 #if _CCCL_COMPILER(GCC, ==, 13) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
 #  define THRUST_GCC13_TBB_MISCOMPILE
@@ -88,7 +83,6 @@ void TestReplace(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestReplace);
 
 #ifndef THRUST_GCC13_TBB_MISCOMPILE
-#  ifndef THRUST_GCC12_OMP_MISCOMPILE
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
 {
@@ -105,7 +99,6 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
   ASSERT_EQUAL(dest, result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
-#  endif
 #endif
 
 template <typename InputIterator, typename OutputIterator, typename T>

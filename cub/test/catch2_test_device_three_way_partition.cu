@@ -26,10 +26,13 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
 #include <thrust/random.h>
 #include <thrust/reduce.h>
@@ -38,6 +41,8 @@
 
 #include <cuda/std/utility>
 
+#include "catch2_large_problem_helper.cuh"
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
 #include <c2h/catch2_test_helper.h>
@@ -48,20 +53,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 
 using types = c2h::type_list<std::int32_t, std::int64_t>;
 
-template <typename T>
-struct less_than_t
-{
-  T compare;
-
-  explicit __host__ less_than_t(T compare)
-      : compare(compare)
-  {}
-
-  __device__ bool operator()(const T& a) const
-  {
-    return a < compare;
-  }
-};
+// List of offset types to be used for testing large number of items
+using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
 template <typename T>
 struct equal_to_t
@@ -103,6 +96,29 @@ struct count_to_pair_t
   }
 };
 
+template <typename T>
+struct mod_equal_to
+{
+  T mod;
+  T val;
+  __host__ __device__ bool operator()(T x) const
+  {
+    return x % mod == val;
+  }
+};
+
+template <typename T>
+struct multiply_and_add
+{
+  T mul;
+  T add;
+
+  __host__ __device__ T operator()(T x) const
+  {
+    return x * mul + add;
+  }
+};
+
 C2H_TEST("Device three-way partition can handle empty problems", "[partition][device]", types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -113,12 +129,15 @@ C2H_TEST("Device three-way partition can handle empty problems", "[partition][de
   type* d_first_part_out{};
   type* d_second_part_out{};
   type* d_unselected_out{};
-  type* d_num_selected_out{};
+  c2h::device_vector<type> num_selected_out{42, 42};
+  type* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   less_than_t<type> le(type{0});
   greater_or_equal_t<type> ge(type{1});
 
   partition(in, d_first_part_out, d_second_part_out, d_unselected_out, d_num_selected_out, num_items, le, ge);
+  REQUIRE(num_selected_out[0] == 0);
+  REQUIRE(num_selected_out[1] == 0);
 }
 
 template <typename T>
@@ -204,7 +223,7 @@ thrust_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp seco
     c2h::device_policy, in.begin(), in.end(), result.first_part.begin(), intermediate_result.begin(), first_selector);
 
   result.num_items_in_first_part =
-    static_cast<int>(thrust::distance(result.first_part.begin(), intermediate_iterators.first));
+    static_cast<int>(cuda::std::distance(result.first_part.begin(), intermediate_iterators.first));
 
   auto final_iterators = thrust::partition_copy(
     c2h::device_policy,
@@ -215,9 +234,10 @@ thrust_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp seco
     second_selector);
 
   result.num_items_in_second_part =
-    static_cast<int>(thrust::distance(result.second_part.begin(), final_iterators.first));
+    static_cast<int>(cuda::std::distance(result.second_part.begin(), final_iterators.first));
 
-  result.num_unselected_items = static_cast<int>(thrust::distance(result.unselected.begin(), final_iterators.second));
+  result.num_unselected_items =
+    static_cast<int>(cuda::std::distance(result.unselected.begin(), final_iterators.second));
 
   return result;
 }
@@ -439,4 +459,59 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
     output.begin() + num_items_in_first_part + num_items_in_second_part,
     second_part_val);
   REQUIRE(actual_num_items_in_second_part == num_items_in_second_part);
+}
+
+C2H_TEST("Device three-way partition works for very large number of items",
+         "[device][partition][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
+try
+{
+  using offset_t = typename c2h::get<0, TestType>;
+
+  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
+  const offset_t num_items     = GENERATE_COPY(
+    values(
+      {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
+    take(2, random(num_items_min, num_items_max)));
+
+  auto in = thrust::make_counting_iterator(offset_t{0});
+
+  auto first_selector  = mod_equal_to<offset_t>{3, 0};
+  auto second_selector = mod_equal_to<offset_t>{3, 1};
+
+  offset_t expected_first  = num_items / offset_t{3} + (num_items % offset_t{3} >= 1);
+  offset_t expected_second = num_items / offset_t{3} + (num_items % offset_t{3} >= 2);
+  offset_t expected_third  = num_items / offset_t{3};
+
+  auto expected_first_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 0});
+  auto expected_second_it = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 1});
+  auto expected_third_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 2});
+
+  // Prepare tabulate output iterators to verify results in a memory-efficient way
+  auto check_first_partition_helper  = detail::large_problem_test_helper(expected_first);
+  auto check_first_it                = check_first_partition_helper.get_flagging_output_iterator(expected_first_it);
+  auto check_second_partition_helper = detail::large_problem_test_helper(expected_second);
+  auto check_second_it               = check_second_partition_helper.get_flagging_output_iterator(expected_second_it);
+  auto check_third_partition_helper  = detail::large_problem_test_helper(expected_third);
+  auto check_third_it                = check_third_partition_helper.get_flagging_output_iterator(expected_third_it);
+
+  // Needs to be device accessible
+  c2h::device_vector<offset_t> num_selected_out{0, 0};
+  offset_t* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  partition(
+    in, check_first_it, check_second_it, check_third_it, d_num_selected_out, num_items, first_selector, second_selector);
+
+  // Ensure that we created the correct output
+  REQUIRE(num_selected_out[0] == expected_first);
+  REQUIRE(num_selected_out[1] == expected_second);
+  check_first_partition_helper.check_all_results_correct();
+  check_second_partition_helper.check_all_results_correct();
+  check_third_partition_helper.check_all_results_correct();
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }

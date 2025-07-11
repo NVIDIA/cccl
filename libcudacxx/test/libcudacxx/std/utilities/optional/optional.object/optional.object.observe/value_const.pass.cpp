@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // constexpr const T& optional<T>::value() const &;
@@ -22,7 +20,7 @@
 using cuda::std::in_place;
 using cuda::std::in_place_t;
 using cuda::std::optional;
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 using cuda::std::bad_optional_access;
 #endif
 
@@ -34,7 +32,7 @@ struct X
   {
     return 3;
   }
-  __host__ __device__ int test() &
+  __host__ __device__ constexpr int test() &
   {
     return 4;
   }
@@ -42,16 +40,16 @@ struct X
   {
     return 5;
   }
-  __host__ __device__ int test() &&
+  __host__ __device__ constexpr int test() &&
   {
     return 6;
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
-  const optional<X> opt;
+  const optional<X> opt{};
   try
   {
     (void) opt.value();
@@ -60,31 +58,45 @@ void test_exceptions()
   catch (const bad_optional_access&)
   {}
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
+
+__host__ __device__ constexpr bool test()
+{
+  {
+    const optional<X> opt{};
+    unused(opt);
+    static_assert(!noexcept(opt.value()));
+    static_assert(cuda::std::is_same_v<decltype(opt.value()), const X&>);
+
+    const optional<X&> optref;
+    unused(optref);
+    static_assert(noexcept(optref.value()));
+    static_assert(cuda::std::is_same_v<decltype(optref.value()), X&>);
+  }
+
+  {
+    const optional<X> opt{cuda::std::in_place};
+    assert(opt.value().test() == 3);
+  }
+
+  {
+    X val{};
+    const optional<X&> opt{val};
+    assert(opt.value().test() == 4);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(opt.value()));
+  }
+
+  return true;
+}
 
 int main(int, char**)
 {
-  {
-    const optional<X> opt;
-    unused(opt);
-#ifndef TEST_COMPILER_ICC
-    ASSERT_NOT_NOEXCEPT(opt.value());
-#endif // TEST_COMPILER_ICC
-    ASSERT_SAME_TYPE(decltype(opt.value()), X const&);
-  }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    constexpr optional<X> opt(in_place);
-    static_assert(opt.value().test() == 3, "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    const optional<X> opt(in_place);
-    assert(opt.value().test() == 3);
-  }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+  test();
+  static_assert(test(), "");
+
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

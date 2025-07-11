@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/is_referenceable.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_ADD_LVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_LVALUE_REFERENCE_FALLBACK)
@@ -34,12 +36,12 @@ using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFE
 template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
 struct __add_lvalue_reference_impl
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct __add_lvalue_reference_impl<_Tp, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp& type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp&;
 };
 
 template <class _Tp>
@@ -54,5 +56,7 @@ struct add_lvalue_reference
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ADD_LVALUE_REFERENCE_H

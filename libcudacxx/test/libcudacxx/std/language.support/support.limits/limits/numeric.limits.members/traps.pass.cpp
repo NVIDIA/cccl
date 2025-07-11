@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__pnacl__) || defined(__wasm__)
+#if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
 static const bool integral_types_trap = true;
 #else
 static const bool integral_types_trap = false;
@@ -39,10 +39,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t, integral_types_trap>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t, integral_types_trap>();
   test<char32_t, integral_types_trap>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short, integral_types_trap>();
   test<unsigned short, integral_types_trap>();
   test<int, integral_types_trap>();
@@ -51,15 +49,42 @@ int main(int, char**)
   test<unsigned long, integral_types_trap>();
   test<long long, integral_types_trap>();
   test<unsigned long long, integral_types_trap>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, integral_types_trap>();
   test<__uint128_t, integral_types_trap>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, false>();
   test<double, false>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, false>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_NVFP16()
+  test<__half, false>();
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16, false>();
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8_E4M3()
+  test<__nv_fp8_e4m3, false>();
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
+  test<__nv_fp8_e5m2, false>();
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
+  test<__nv_fp8_e8m0, false>();
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
+  test<__nv_fp6_e2m3, false>();
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
+  test<__nv_fp6_e3m2, false>();
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
+  test<__nv_fp4_e2m1, false>();
+#endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128, false>();
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }

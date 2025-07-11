@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda.h>
-
 #include <cuda/experimental/__device/arch_traits.cuh>
 #include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
@@ -31,9 +29,13 @@
 #include <cassert>
 #include <mutex>
 
+#include <cuda.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
-namespace detail
+namespace __detail
 {
 //! @brief A proxy object used to in-place construct a `device` object from an
 //! integer ID. Used in __detail/all_devices.cuh.
@@ -41,11 +43,11 @@ struct __emplace_device
 {
   int __id_;
 
-  _CCCL_NODISCARD operator device() const;
+  [[nodiscard]] operator device() const;
 
-  _CCCL_NODISCARD constexpr const __emplace_device* operator->() const;
+  [[nodiscard]] constexpr const __emplace_device* operator->() const;
 };
-} // namespace detail
+} // namespace __detail
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -54,30 +56,36 @@ struct __emplace_device
 class device : public device_ref
 {
 public:
-  using attrs = detail::__device_attrs;
+  using attributes = __detail::__device_attrs;
 
   //! @brief For a given attribute, returns the type of the attribute value.
   //!
   //! @par Example
   //! @code
-  //! using threads_per_block_t = device::attr_result_t<device::attrs::max_threads_per_block>;
+  //! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
   //! static_assert(std::is_same_v<threads_per_block_t, int>);
   //! @endcode
   //!
-  //! @sa device::attrs
+  //! @sa device::attributes
   template <::cudaDeviceAttr _Attr>
-  using attr_result_t = typename detail::__dev_attr<_Attr>::type;
+  using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
-  device(detail::__emplace_device __ed)
+  device(__detail::__emplace_device __ed)
       : device(__ed.__id_)
   {}
 #  endif
 #endif
 
+  //! @brief Retrieve architecture traits of this device.
+  //!
+  //! Architecture traits object contains information about certain traits
+  //! that are shared by all devices belonging to given architecture.
+  //!
+  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
   const arch_traits_t& arch_traits() const noexcept
   {
     return __traits;
@@ -86,10 +94,10 @@ public:
   CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
-      __device      = detail::driver::deviceGet(__id_);
-      __primary_ctx = detail::driver::primaryCtxRetain(__device);
+      __device      = __detail::driver::deviceGet(__id_);
+      __primary_ctx = __detail::driver::primaryCtxRetain(__device);
     });
-    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::attr_result_t::primary_context failed to get context");
+    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
     return __primary_ctx;
   }
 
@@ -97,7 +105,7 @@ public:
   {
     if (__primary_ctx)
     {
-      detail::driver::primaryCtxRelease(__device);
+      __detail::driver::primaryCtxRelease(__device);
     }
   }
 
@@ -106,7 +114,7 @@ private:
   // properties here.
 
   friend class device_ref;
-  friend struct detail::__emplace_device;
+  friend struct __detail::__emplace_device;
 
   mutable CUcontext __primary_ctx = nullptr;
   mutable CUdevice __device{};
@@ -119,7 +127,7 @@ private:
 
   explicit device(int __id)
       : device_ref(__id)
-      , __traits(detail::__arch_traits_might_be_unknown(__id, attrs::compute_capability(__id)))
+      , __traits(__detail::__arch_traits_might_be_unknown(__id, attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
@@ -137,19 +145,21 @@ private:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-namespace detail
+namespace __detail
 {
-_CCCL_NODISCARD inline __emplace_device::operator device() const
+[[nodiscard]] inline __emplace_device::operator device() const
 {
   return device(__id_);
 }
 
-_CCCL_NODISCARD inline constexpr const __emplace_device* __emplace_device::operator->() const
+[[nodiscard]] inline constexpr const __emplace_device* __emplace_device::operator->() const
 {
   return this;
 }
-} // namespace detail
+} // namespace __detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,119 +27,51 @@
 
 #pragma once
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
-template <typename T, typename = int>
-struct has_x : std::false_type
-{};
-
-template <typename T>
-struct has_x<T, decltype((void) T::x, 0)> : std::true_type
-{};
-
-template <typename T, typename = int>
-struct has_y : std::false_type
-{};
-
-template <typename T>
-struct has_y<T, decltype((void) T::y, 0)> : std::true_type
-{};
-
-template <typename T, typename = int>
-struct has_z : std::false_type
-{};
-
-template <typename T>
-struct has_z<T, decltype((void) T::z, 0)> : std::true_type
-{};
-
-template <typename T, typename = int>
-struct has_w : std::false_type
-{};
-
-template <typename T>
-struct has_w<T, decltype((void) T::w, 0)> : std::true_type
-{};
-
-template <typename ScalarT, typename = int>
-struct component_type_impl_t
-{
-  using type = ScalarT;
-};
-
-template <typename VectorT>
-struct component_type_impl_t<VectorT, decltype((void) VectorT::x, 0)>
-{
-  using type = decltype(std::declval<VectorT>().x);
-};
-
-template <typename T>
-using component_type_t = typename component_type_impl_t<T>::type;
-
-template <typename VectorT>
+template <typename VectorT, typename = void>
 struct scalar_to_vec_t
 {
-  using component_t = component_type_t<VectorT>;
-
-  template <typename T, typename V = VectorT>
-  __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && !has_x<V>::value, V>::type
-    operator()(T scalar)
+  template <typename T>
+  __host__ __device__ __forceinline__ auto operator()(T scalar) -> VectorT
   {
-    return static_cast<component_t>(scalar);
+    return static_cast<VectorT>(scalar);
   }
+};
 
-  template <typename T, typename V = VectorT>
-  __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_x<V>::value && !has_y<V>::value, V>::type
-    operator()(T scalar)
+template <typename VectorT>
+struct scalar_to_vec_t<VectorT, ::cuda::std::void_t<decltype(VectorT::x)>>
+{
+  template <typename T>
+  __host__ __device__ __forceinline__ auto operator()(T scalar) -> VectorT
   {
-    V val;
-    val.x = static_cast<component_t>(scalar);
-    return val;
-  }
-
-  template <typename T, typename V = VectorT>
-  __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_y<V>::value && !has_z<V>::value, V>::type
-    operator()(T scalar)
-  {
-    V val;
-    val.x = static_cast<component_t>(scalar);
-    val.y = static_cast<component_t>(scalar);
-    return val;
-  }
-
-  template <typename T, typename V = VectorT>
-  __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_z<V>::value && !has_w<V>::value, V>::type
-    operator()(T scalar)
-  {
-    V val;
-    val.x = static_cast<component_t>(scalar);
-    val.y = static_cast<component_t>(scalar);
-    val.z = static_cast<component_t>(scalar);
-    return val;
-  }
-
-  template <typename T, typename V = VectorT>
-  __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_w<V>::value, V>::type
-    operator()(T scalar)
-  {
-    V val;
-    val.x = static_cast<component_t>(scalar);
-    val.y = static_cast<component_t>(scalar);
-    val.z = static_cast<component_t>(scalar);
-    val.w = static_cast<component_t>(scalar);
-    return val;
+    const auto c = static_cast<decltype(VectorT::x)>(scalar);
+    VectorT r;
+    constexpr auto components = ::cuda::std::tuple_size_v<VectorT>;
+    if constexpr (components >= 1)
+    {
+      r.x = c;
+    }
+    if constexpr (components >= 2)
+    {
+      r.y = c;
+    }
+    if constexpr (components >= 3)
+    {
+      r.z = c;
+    }
+    if constexpr (components >= 4)
+    {
+      r.w = c;
+    }
+    return r;
   }
 };
 
 template <int LogicalWarpThreads, int ItemsPerThread, int BlockThreads, typename IteratorT>
 void fill_striped(IteratorT it)
 {
-  using T = cub::detail::value_t<IteratorT>;
+  using T = cub::detail::it_value_t<IteratorT>;
 
   constexpr int warps_in_block = BlockThreads / LogicalWarpThreads;
   constexpr int items_per_warp = LogicalWarpThreads * ItemsPerThread;

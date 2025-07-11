@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #define C2H_EXPORTS
 
@@ -40,15 +16,18 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/complex>
+#include <cuda/std/cstdint>
+#include <cuda/type_traits>
 
-#include <cstdint>
-
+#include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/fill_striped.h>
+#include <c2h/generators.cuh>
 #include <c2h/generators.h>
+#include <c2h/half.cuh>
 #include <c2h/vector.h>
 
 #if C2H_HAS_CURAND
@@ -78,134 +57,22 @@ struct i_to_rnd_t
 };
 #endif // !C2H_HAS_CURAND
 
-class generator_t
-{
-private:
-  generator_t();
-
-public:
-  static generator_t& instance();
-  ~generator_t();
-
-  template <typename T>
-  void operator()(seed_t seed,
-                  c2h::device_vector<T>& data,
-                  T min = std::numeric_limits<T>::min(),
-                  T max = std::numeric_limits<T>::max());
-
-  template <typename T>
-  void operator()(modulo_t modulo, c2h::device_vector<T>& data);
-
-  float* distribution();
-
-#if C2H_HAS_CURAND
-  curandGenerator_t& gen()
-  {
-    return m_gen;
-  }
-#endif // C2H_HAS_CURAND
-
-  float* prepare_random_generator(seed_t seed, std::size_t num_items);
-
-  void generate();
-
-private:
-#if C2H_HAS_CURAND
-  curandGenerator_t m_gen;
-#else
-  thrust::default_random_engine m_re;
-#endif
-  c2h::device_vector<float> m_distribution;
-};
-
-// TODO(bgruber): modelled after cub::Traits. We should generalize this somewhere into libcu++.
 template <typename T>
-struct is_floating_point : ::cuda::std::is_floating_point<T>
-{};
-#ifdef _CCCL_HAS_NVFP16
-template <>
-struct is_floating_point<__half> : ::cuda::std::true_type
-{};
-#endif // _CCCL_HAS_NVFP16
-#ifdef _CCCL_HAS_NVBF16
-template <>
-struct is_floating_point<__nv_bfloat16> : ::cuda::std::true_type
-{};
-#endif // _CCCL_HAS_NVBF16
-#ifdef __CUDA_FP8_TYPES_EXIST__
-template <>
-struct is_floating_point<__nv_fp8_e4m3> : ::cuda::std::true_type
-{};
-template <>
-struct is_floating_point<__nv_fp8_e5m2> : ::cuda::std::true_type
-{};
-#endif // __CUDA_FP8_TYPES_EXIST__
-
-template <typename T, bool = is_floating_point<T>::value>
-struct random_to_item_t
+struct random_to_item_t<cuda::std::complex<T>, false>
 {
-  float m_min;
-  float m_max;
+  cuda::std::complex<T> m_min;
+  cuda::std::complex<T> m_max;
 
-  __host__ __device__ random_to_item_t(T min, T max)
-      : m_min(static_cast<float>(min))
-      , m_max(static_cast<float>(max))
+  __host__ __device__ random_to_item_t(cuda::std::complex<T> min, cuda::std::complex<T> max)
+      : m_min(min)
+      , m_max(max)
   {}
 
-  __device__ T operator()(float random_value)
+  __device__ cuda::std::complex<T> operator()(float random_value)
   {
-    return static_cast<T>((m_max - m_min) * random_value + m_min);
+    return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
-
-template <typename T>
-struct random_to_item_t<T, true>
-{
-  using storage_t = ::cuda::std::_If<(sizeof(T) > 4), double, float>;
-  storage_t m_min;
-  storage_t m_max;
-
-  __host__ __device__ random_to_item_t(T min, T max)
-      : m_min(static_cast<storage_t>(min))
-      , m_max(static_cast<storage_t>(max))
-  {}
-
-  __device__ T operator()(float random_value)
-  {
-    return static_cast<T>(m_max * random_value + m_min * (1.0f - random_value));
-  }
-};
-
-template <typename T, int VecItem>
-struct random_to_vec_item_t;
-
-#define RANDOM_TO_VEC_ITEM_SPEC(VEC_ITEM, VEC_FIELD)                               \
-  template <typename T>                                                            \
-  struct random_to_vec_item_t<T, VEC_ITEM>                                         \
-  {                                                                                \
-    __device__ void operator()(std::size_t idx)                                    \
-    {                                                                              \
-      auto min             = m_min.VEC_FIELD;                                      \
-      auto max             = m_max.VEC_FIELD;                                      \
-      m_out[idx].VEC_FIELD = random_to_item_t<decltype(min)>(min, max)(m_in[idx]); \
-    }                                                                              \
-    random_to_vec_item_t(T min, T max, float* in, T* out)                          \
-        : m_min(min)                                                               \
-        , m_max(max)                                                               \
-        , m_in(in)                                                                 \
-        , m_out(out)                                                               \
-    {}                                                                             \
-    T m_min;                                                                       \
-    T m_max;                                                                       \
-    float* m_in{};                                                                 \
-    T* m_out{};                                                                    \
-  }
-
-RANDOM_TO_VEC_ITEM_SPEC(0, x);
-RANDOM_TO_VEC_ITEM_SPEC(1, y);
-RANDOM_TO_VEC_ITEM_SPEC(2, z);
-RANDOM_TO_VEC_ITEM_SPEC(3, w);
-#undef RANDOM_TO_VEC_ITEM_SPEC
 
 generator_t::generator_t()
 {
@@ -295,17 +162,13 @@ void generator_t::operator()(seed_t seed, c2h::device_vector<T>& data, T min, T 
 template <typename T>
 struct count_to_item_t
 {
-  unsigned long long int n;
-
-  count_to_item_t(unsigned long long int n)
-      : n(n)
-  {}
+  uint64_t n;
 
   template <typename CounterT>
   __device__ T operator()(CounterT id)
   {
     // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<float>(static_cast<unsigned long long int>(id) % n));
+    return static_cast<T>(static_cast<float>(static_cast<uint64_t>(id) % n));
   }
 };
 
@@ -478,15 +341,15 @@ template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, float* out, std::size_t element_size);
 template void init_key_segments(
   const c2h::device_vector<std::uint32_t>& segment_offsets, custom_type_state_t* out, std::size_t element_size);
-#ifdef _CCCL_HAS_NVFP16
+#if TEST_HALF_T()
 template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, half_t* out, std::size_t element_size);
-#endif // _CCCL_HAS_NVFP16
+#endif // TEST_HALF_T()
 
-#ifdef _CCCL_HAS_NVBF16
+#if TEST_BF_T()
 template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, bfloat16_t* out, std::size_t element_size);
-#endif // _CCCL_HAS_NVBF16
+#endif // TEST_BF_T()
 } // namespace detail
 
 template <typename T>
@@ -542,144 +405,41 @@ INSTANTIATE(std::int16_t);
 INSTANTIATE(std::int32_t);
 INSTANTIATE(std::int64_t);
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
 INSTANTIATE(__nv_fp8_e5m2);
 INSTANTIATE(__nv_fp8_e4m3);
-#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#endif // _CCCL_HAS_NVFP8()
 INSTANTIATE(float);
 INSTANTIATE(double);
+INSTANTIATE(cuda::std::complex<float>);
+INSTANTIATE(cuda::std::complex<double>);
 
 INSTANTIATE(bool);
 INSTANTIATE(char);
 
-#ifdef _CCCL_HAS_NVFP16
+#if TEST_HALF_T()
 INSTANTIATE(half_t);
 INSTANTIATE(__half);
-#endif // _CCCL_HAS_NVFP16
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+INSTANTIATE(cuda::std::complex<__half>);
+#  endif
+#endif // TEST_HALF_T()
 
-#ifdef _CCCL_HAS_NVBF16
+#if TEST_BF_T()
 INSTANTIATE(bfloat16_t);
 INSTANTIATE(__nv_bfloat16);
-#endif // _CCCL_HAS_NVBF16
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+INSTANTIATE(cuda::std::complex<__nv_bfloat16>);
+#  endif
+#endif // TEST_BF_T()
+
+#if TEST_INT128()
+INSTANTIATE(__int128_t);
+INSTANTIATE(__uint128_t);
+#endif // TEST_INT128()
 
 #undef INSTANTIATE_RND
 #undef INSTANTIATE_MOD
 #undef INSTANTIATE
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-template <typename T, int VecItem>
-struct vec_gen_helper_t;
-
-template <typename T>
-struct vec_gen_helper_t<T, -1>
-{
-  static void gen(c2h::device_vector<T>&, T, T) {}
-};
-
-template <typename T, int VecItem>
-struct vec_gen_helper_t
-{
-  static void gen(c2h::device_vector<T>& data, T min, T max)
-  {
-    thrust::counting_iterator<std::size_t> cnt_begin(0);
-    thrust::counting_iterator<std::size_t> cnt_end(data.size());
-
-    generator_t& generator = generator_t::instance();
-    float* d_in            = generator.distribution();
-    T* d_out               = thrust::raw_pointer_cast(data.data());
-
-    generator.generate();
-
-    thrust::for_each(c2h::device_policy, cnt_begin, cnt_end, random_to_vec_item_t<T, VecItem>{min, max, d_in, d_out});
-
-    vec_gen_helper_t<T, VecItem - 1>::gen(data, min, max);
-  }
-};
-
-#  define VEC_SPECIALIZATION(TYPE, SIZE)                                                                     \
-    template <>                                                                                              \
-    void gen<TYPE##SIZE>(seed_t seed, c2h::device_vector<TYPE##SIZE> & data, TYPE##SIZE min, TYPE##SIZE max) \
-    {                                                                                                        \
-      generator_t& generator = generator_t::instance();                                                      \
-      generator.prepare_random_generator(seed, data.size());                                                 \
-      vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
-    }
-
-VEC_SPECIALIZATION(char, 2);
-VEC_SPECIALIZATION(char, 3);
-VEC_SPECIALIZATION(char, 4);
-
-// VEC_SPECIALIZATION(uchar, 2);
-VEC_SPECIALIZATION(uchar, 3);
-// VEC_SPECIALIZATION(uchar, 4);
-
-VEC_SPECIALIZATION(short, 2);
-VEC_SPECIALIZATION(short, 3);
-VEC_SPECIALIZATION(short, 4);
-
-// VEC_SPECIALIZATION(ushort, 2);
-// VEC_SPECIALIZATION(ushort, 3);
-// VEC_SPECIALIZATION(ushort, 4);
-
-VEC_SPECIALIZATION(int, 2);
-VEC_SPECIALIZATION(int, 3);
-VEC_SPECIALIZATION(int, 4);
-
-// VEC_SPECIALIZATION(uint, 2);
-// VEC_SPECIALIZATION(uint, 3);
-// VEC_SPECIALIZATION(uint, 4);
-
-VEC_SPECIALIZATION(long, 2);
-VEC_SPECIALIZATION(long, 3);
-VEC_SPECIALIZATION(long, 4);
-
-// VEC_SPECIALIZATION(ulong, 2);
-// VEC_SPECIALIZATION(ulong, 3);
-// VEC_SPECIALIZATION(ulong, 4);
-
-VEC_SPECIALIZATION(longlong, 2);
-VEC_SPECIALIZATION(longlong, 3);
-VEC_SPECIALIZATION(longlong, 4);
-
-VEC_SPECIALIZATION(ulonglong, 2);
-// VEC_SPECIALIZATION(ulonglong, 3);
-VEC_SPECIALIZATION(ulonglong, 4);
-
-VEC_SPECIALIZATION(float, 2);
-VEC_SPECIALIZATION(float, 3);
-VEC_SPECIALIZATION(float, 4);
-
-VEC_SPECIALIZATION(double, 2);
-VEC_SPECIALIZATION(double, 3);
-VEC_SPECIALIZATION(double, 4);
-
-template <typename VecType, typename Type>
-struct vec_gen_t
-{
-  std::size_t n;
-  scalar_to_vec_t<VecType> convert;
-
-  vec_gen_t(std::size_t n)
-      : n(n)
-  {}
-
-  template <typename CounterT>
-  __device__ VecType operator()(CounterT id)
-  {
-    return convert(static_cast<Type>(id) % n);
-  }
-};
-
-#  define VEC_GEN_MOD_SPECIALIZATION(VEC_TYPE, SCALAR_TYPE)                                                        \
-    template <>                                                                                                    \
-    void gen<VEC_TYPE>(modulo_t mod, c2h::device_vector<VEC_TYPE> & data)                                          \
-    {                                                                                                              \
-      thrust::tabulate(c2h::device_policy, data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()}); \
-    }
-
-VEC_GEN_MOD_SPECIALIZATION(short2, short);
-VEC_GEN_MOD_SPECIALIZATION(uchar3, unsigned char);
-VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
-VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
-#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h

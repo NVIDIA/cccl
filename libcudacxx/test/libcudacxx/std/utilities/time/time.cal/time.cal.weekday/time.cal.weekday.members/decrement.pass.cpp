@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday;
@@ -42,15 +41,14 @@ __host__ __device__ constexpr bool testConstexpr()
 int main(int, char**)
 {
   using weekday = cuda::std::chrono::weekday;
-  ASSERT_NOEXCEPT(--(cuda::std::declval<weekday&>()));
-  ASSERT_NOEXCEPT((cuda::std::declval<weekday&>())--);
+  static_assert(noexcept(--(cuda::std::declval<weekday&>())));
+  static_assert(noexcept((cuda::std::declval<weekday&>())--));
 
-  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday&>()--));
-  ASSERT_SAME_TYPE(weekday&, decltype(--cuda::std::declval<weekday&>()));
+  static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<weekday&>()--)>);
+  static_assert(cuda::std::is_same_v<weekday&, decltype(--cuda::std::declval<weekday&>())>);
 
   static_assert(testConstexpr<weekday>(), "");
 
-#ifndef TEST_COMPILER_ICC
   for (unsigned i = 0; i <= 6; ++i)
   {
     weekday wd(i);
@@ -58,7 +56,6 @@ int main(int, char**)
     assert(((wd--).c_encoding() == euclidian_subtraction<unsigned, 0, 6>(i, 1)));
     assert(((wd).c_encoding() == euclidian_subtraction<unsigned, 0, 6>(i, 2)));
   }
-#endif // TEST_COMPILER_ICC
 
   return 0;
 }

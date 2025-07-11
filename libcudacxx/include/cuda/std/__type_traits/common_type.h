@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class... _Tp>
@@ -101,7 +103,7 @@ using __msvc_declval_workaround =
 template <class _Tp, class _Up>
 struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>, __msvc_declval_workaround<_Tp, _Up>>>
 {
-  typedef _CCCL_NODEBUG_ALIAS decay_t<__cond_type<_Tp, _Up>> type;
+  using type _CCCL_NODEBUG_ALIAS = decay_t<__cond_type<_Tp, _Up>>;
 };
 
 template <class, class = void>
@@ -114,7 +116,7 @@ struct __common_types;
 template <class _Tp, class _Up>
 struct __common_type_impl<__common_types<_Tp, _Up>, void_t<common_type_t<_Tp, _Up>>>
 {
-  typedef common_type_t<_Tp, _Up> type;
+  using type = common_type_t<_Tp, _Up>;
 };
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
@@ -152,21 +154,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up> : __common_type2<_Tp,
 // bullet 4 - sizeof...(Tp) > 2
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up, _Vp, _Rest...>
-    : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+common_type<_Tp, _Up, _Vp, _Rest...> : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
 {};
 
 template <class... _Tp>
 using common_type_t _CCCL_NODEBUG_ALIAS = typename common_type<_Tp...>::type;
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class, class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_common_type = false;
+inline constexpr bool __has_common_type = false;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H

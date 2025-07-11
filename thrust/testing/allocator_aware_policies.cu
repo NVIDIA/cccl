@@ -3,6 +3,8 @@
 #include <thrust/system/omp/detail/par.h>
 #include <thrust/system/tbb/detail/par.h>
 
+#include <cuda/__cccl_config>
+
 #include <unittest/unittest.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -93,10 +95,6 @@ struct TestAllocatorAttachment
     test_temporary_allocation_valid(policy(alloc));
     test_temporary_allocation_valid(policy(const_alloc));
     test_temporary_allocation_valid(policy(&test_memory_resource));
-
-    test_temporary_allocation_valid(policy(std::allocator<int>()).after(1));
-    test_temporary_allocation_valid(policy(alloc).after(1));
-    test_temporary_allocation_valid(policy(const_alloc).after(1));
   }
 };
 

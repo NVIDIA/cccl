@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept semiregular = see below;
 
@@ -38,25 +36,25 @@ static_assert(semiregular<int (S::*)() noexcept>, "");
 static_assert(semiregular<int (S::*)() &>, "");
 static_assert(semiregular<int (S::*)() & noexcept>, "");
 static_assert(semiregular<int (S::*)() &&>, "");
-static_assert(semiregular < int(S::*)() && noexcept >, "");
+static_assert(semiregular < int (S::*)() && noexcept >, "");
 static_assert(semiregular<int (S::*)() const>, "");
 static_assert(semiregular<int (S::*)() const noexcept>, "");
 static_assert(semiregular<int (S::*)() const&>, "");
 static_assert(semiregular<int (S::*)() const & noexcept>, "");
 static_assert(semiregular<int (S::*)() const&&>, "");
-static_assert(semiregular < int(S::*)() const&& noexcept >, "");
+static_assert(semiregular < int (S::*)() const&& noexcept >, "");
 static_assert(semiregular<int (S::*)() volatile>, "");
 static_assert(semiregular<int (S::*)() volatile noexcept>, "");
 static_assert(semiregular<int (S::*)() volatile&>, "");
 static_assert(semiregular<int (S::*)() volatile & noexcept>, "");
 static_assert(semiregular<int (S::*)() volatile&&>, "");
-static_assert(semiregular < int(S::*)() volatile && noexcept >, "");
+static_assert(semiregular < int (S::*)() volatile && noexcept >, "");
 static_assert(semiregular<int (S::*)() const volatile>, "");
 static_assert(semiregular<int (S::*)() const volatile noexcept>, "");
 static_assert(semiregular<int (S::*)() const volatile&>, "");
 static_assert(semiregular<int (S::*)() const volatile & noexcept>, "");
 static_assert(semiregular<int (S::*)() const volatile&&>, "");
-static_assert(semiregular < int(S::*)() const volatile&& noexcept >, "");
+static_assert(semiregular < int (S::*)() const volatile&& noexcept >, "");
 
 static_assert(semiregular<has_volatile_member>, "");
 static_assert(semiregular<has_array_member>, "");
@@ -83,9 +81,10 @@ static_assert(!semiregular<volatile_copy_assignment volatile>, "");
 static_assert(semiregular<cv_copy_assignment const volatile>, "");
 static_assert(!semiregular<no_copy_constructor>, "");
 static_assert(!semiregular<no_copy_assignment>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
+                                                // of SMF
 static_assert(!semiregular<no_copy_assignment_mutable>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!semiregular<derived_from_noncopyable>, "");
 static_assert(!semiregular<has_noncopyable>, "");
 static_assert(!semiregular<has_const_member>, "");
@@ -98,10 +97,11 @@ static_assert(!semiregular<deleted_assignment_from_const_rvalue>, "");
 // Not default_initialzable
 static_assert(!semiregular<no_copy_constructor>, "");
 static_assert(!semiregular<no_copy_assignment>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
+                                                // of SMF
 static_assert(cuda::std::is_copy_assignable_v<no_copy_assignment_mutable>, "");
 static_assert(!semiregular<no_copy_assignment_mutable>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!semiregular<derived_from_noncopyable>, "");
 static_assert(!semiregular<has_noncopyable>, "");
 

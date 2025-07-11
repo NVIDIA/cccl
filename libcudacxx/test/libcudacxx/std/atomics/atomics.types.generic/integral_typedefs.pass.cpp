@@ -57,10 +57,8 @@ int main(int, char**)
   static_assert((cuda::std::is_same<cuda::std::atomic<long long>, cuda::std::atomic_llong>::value), "");
   static_assert((cuda::std::is_same<cuda::std::atomic<unsigned long long>, cuda::std::atomic_ullong>::value), "");
   static_assert((cuda::std::is_same<cuda::std::atomic<wchar_t>, cuda::std::atomic_wchar_t>::value), "");
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   static_assert((cuda::std::is_same<cuda::std::atomic<char16_t>, cuda::std::atomic_char16_t>::value), "");
   static_assert((cuda::std::is_same<cuda::std::atomic<char32_t>, cuda::std::atomic_char32_t>::value), "");
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
   //  Added by LWG 2441
   static_assert((cuda::std::is_same<cuda::std::atomic<intptr_t>, cuda::std::atomic_intptr_t>::value), "");

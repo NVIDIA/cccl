@@ -29,6 +29,8 @@
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
@@ -37,6 +39,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
 #include <cuda/experimental/__stf/utility/cub_algorithm.cuh>
+#include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
 {
@@ -63,11 +66,11 @@ public:
     void* result = nullptr;
 
     // That is a miss, we need to do an allocation
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       cuda_safe_call(cudaMallocHost(&result, s));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaMallocManaged(&result, s));
     }
@@ -120,13 +123,13 @@ public:
       op.set_symbol("cudaFreeAsync");
     }
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // XXX TODO defer to deinit (or implement a blocking policy)?
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFreeHost(ptr));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFree(ptr));
@@ -212,7 +215,7 @@ public:
 
     // Create an event in the stream
     auto start_e = reserved::record_event_in_stream(dstream);
-    get_stack().add_start_events(event_list(mv(start_e)));
+    get_state().add_start_events(*this, event_list(mv(start_e)));
 
     // When a stream is attached to the context creation, the finalize()
     // semantic is non-blocking
@@ -221,11 +224,6 @@ public:
 
   // Indicate if the finalize() call should be blocking or not
   bool blocking_finalize = true;
-
-  ::std::string to_string() const
-  {
-    return "stream backend context";
-  }
 
   using backend_ctx<stream_ctx>::task;
 
@@ -274,7 +272,7 @@ public:
     return result;
   }
 
-  cudaStream_t task_fence()
+  cudaStream_t fence()
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
@@ -283,12 +281,12 @@ public:
         ? user_dstream.value()
         : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
 
-    auto prereqs = get_stack().insert_task_fence(*get_dot());
+    auto prereqs = get_state().insert_fence(*get_dot());
 
-    prereqs.optimize();
+    prereqs.optimize(*this);
 
     // The output event is used for the tools in practice so we can ignore it
-    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
+    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "fence", false);
 
     return dstream.stream;
   }
@@ -508,7 +506,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {
@@ -522,38 +520,6 @@ public:
     }
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
-
-#ifdef CUDASTF_DEBUG
-    // Ensure that the total number of CUDA events created corresponds to
-    // the number of events destroyed
-    const auto alive = reserved::counter<reserved::cuda_event_tag::alive>.load();
-    if (alive != 0)
-    {
-      fprintf(stderr,
-              "WARNING!!! %lu CUDA events leaked (approx %lu created vs. %lu destroyed).\n",
-              alive,
-              reserved::counter<reserved::cuda_event_tag::created>.load(),
-              reserved::counter<reserved::cuda_event_tag::destroyed>.load());
-    }
-
-    assert(alive == 0);
-
-    const char* display_stats_env = getenv("CUDASTF_DISPLAY_STATS");
-    if (!display_stats_env || atoi(display_stats_env) == 0)
-    {
-      return;
-    }
-
-    fprintf(stderr,
-            "[STATS CUDA EVENTS] created=%lu destroyed=%lu alive=%lu reserved::high_water_mark=%lu\n",
-            reserved::counter<reserved::cuda_event_tag::created>.load(),
-            reserved::counter<reserved::cuda_event_tag::destroyed>.load(),
-            alive,
-            reserved::high_water_mark<reserved::cuda_event_tag>.load());
-    fprintf(stderr,
-            "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n",
-            reserved::counter<reserved::cuda_stream_wait_event_tag>.load());
-#endif
   }
 
   float get_submission_time_ms() const
@@ -565,9 +531,8 @@ public:
   void submit()
   {
     auto& state = this->state();
-    assert(!state.submitted_stream);
-
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(!state.submitted_stream, "");
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
 
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
@@ -592,10 +557,10 @@ public:
       }
 
       cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(task_fence()));
+      cuda_safe_call(cudaStreamSynchronize(fence()));
       cuda_safe_call(cudaEventCreate(&startEvent));
       cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, task_fence()));
+      cuda_safe_call(cudaEventRecord(startEvent, fence()));
     }
 
     for (int id : state.deferred_tasks)
@@ -607,7 +572,7 @@ public:
     if (reordering_tasks())
     {
       cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, task_fence()));
+      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
       cuda_safe_call(cudaEventSynchronize(stopEvent));
       cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
     }
@@ -616,19 +581,19 @@ public:
     state.erase_all_logical_data();
     state.detach_allocators(*this);
 
-    state.submitted_stream = task_fence();
+    state.submitted_stream = fence();
     assert(state.submitted_stream != nullptr);
 
     set_phase(backend_ctx_untyped::phase::submitted);
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_epoch()
+  void change_stage()
   {
     auto& dot = *get_dot();
     if (dot.is_tracing())
     {
-      dot.change_epoch();
+      dot.change_stage();
     }
   }
 
@@ -654,7 +619,7 @@ public:
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       out = owning_container_of<T>::get_value(data);
     };
@@ -708,13 +673,25 @@ private:
       return event_list(mv(e));
     }
 
+    ::std::string to_string() const override
+    {
+      return "stream backend context";
+    }
+
+    // We need to ensure all dangling events have been completed (eg. by having
+    // the CUDA stream used in the finalization wait on these events)
+    bool track_dangling_events() const override
+    {
+      return true;
+    }
+
     ::std::vector<int> deferred_tasks; // vector of mapping_ids
     ::std::unordered_map<int, deferred_stream_task<>> task_map; // maps from a mapping_id to the deferred_task
     cudaStream_t submitted_stream = nullptr; // stream used in submit
     float submission_time         = 0.0;
 
     // If the context is attached to a user stream, we should use it for
-    // finalize() or task_fence()
+    // finalize() or fence()
     ::std::optional<decorated_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
@@ -881,7 +858,7 @@ UNITTEST("logical_data_untyped moveable")
 };
 #  endif // !_CCCL_COMPILER(MSVC)
 
-#  ifdef __CUDACC__
+#  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 
@@ -1152,7 +1129,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1183,7 +1160,7 @@ inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(exec_place::host, lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
+  ctx.parallel_for(exec_place::host(), lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1213,7 +1190,7 @@ inline void unit_test_pfor_mix_host_dev()
     sx(pos) = 17 * pos + 4;
   };
 
-  ctx.parallel_for(exec_place::host, lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
+  ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
     sx(pos) = sx(pos) * sx(pos);
   };
 
@@ -1240,16 +1217,14 @@ inline void unit_test_untyped_place_pfor()
 {
   stream_ctx ctx;
 
-  exec_place where = exec_place::host;
+  exec_place where = exec_place::host();
 
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
   // We have to put both __host__ __device__ qualifiers as this is resolved
   // dynamically and both host and device codes will be generated
   ctx.parallel_for(where, lA.shape(), lA.write())->*[] _CCCL_HOST_DEVICE(size_t i, slice<size_t> A) {
-#    ifdef __CUDA_ARCH__
     // Even if we do have a __device__ qualifier, we are not supposed to call it
-    assert(0);
-#    endif
+    NV_IF_TARGET(NV_IS_DEVICE, (assert(0);))
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1340,7 +1315,7 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
 

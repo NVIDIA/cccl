@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <cuda/std/iterator>
 //
 // friend constexpr iter_rvalue_reference_t<Iterator>
@@ -49,10 +47,8 @@ struct MaybeNoexceptMove
 using ThrowingBase = MaybeNoexceptMove<false>;
 using NoexceptBase = MaybeNoexceptMove<true>;
 static_assert(cuda::std::input_iterator<ThrowingBase>);
-#ifndef TEST_COMPILER_ICC
-ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(cuda::std::declval<ThrowingBase>()));
-#endif // TEST_COMPILER_ICC
-ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(cuda::std::declval<NoexceptBase>()));
+static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<ThrowingBase>())));
+static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<NoexceptBase>())));
 
 __host__ __device__ constexpr bool test()
 {
@@ -82,12 +78,10 @@ __host__ __device__ constexpr bool test()
 
   // Check the `noexcept` specification.
   {
-#ifndef TEST_COMPILER_ICC
     using ThrowingIter = cuda::std::move_iterator<ThrowingBase>;
-    ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<ThrowingIter>()));
-#endif // TEST_COMPILER_ICC
+    static_assert(!noexcept(iter_move(cuda::std::declval<ThrowingIter>())));
     using NoexceptIter = cuda::std::move_iterator<NoexceptBase>;
-    ASSERT_NOEXCEPT(iter_move(cuda::std::declval<NoexceptIter>()));
+    static_assert(noexcept(iter_move(cuda::std::declval<NoexceptIter>())));
   }
 
   return true;

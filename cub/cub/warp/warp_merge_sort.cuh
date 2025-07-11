@@ -41,6 +41,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -121,14 +122,7 @@ CUB_NAMESPACE_BEGIN
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a
 //!   keys-only sort)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   Unused.
-//!
-template <typename KeyT,
-          int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS = CUB_WARP_THREADS(0),
-          typename ValueT          = NullType,
-          int LEGACY_PTX_ARCH      = 0>
+template <typename KeyT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = detail::warp_threads, typename ValueT = NullType>
 class WarpMergeSort
     : public BlockMergeSortStrategy<KeyT,
                                     ValueT,
@@ -137,8 +131,8 @@ class WarpMergeSort
                                     WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
 {
 private:
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
-  static constexpr bool KEYS_ONLY    = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
+  static constexpr bool KEYS_ONLY    = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
 
   using BlockMergeSortStrategyT =
@@ -151,8 +145,10 @@ public:
   WarpMergeSort() = delete;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
+      : BlockMergeSortStrategyT(
+          temp_storage,
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
@@ -164,7 +160,7 @@ public:
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
   }
 
   friend BlockMergeSortStrategyT;

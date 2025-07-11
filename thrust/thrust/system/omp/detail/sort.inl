@@ -56,7 +56,7 @@ void inplace_merge(execution_policy<DerivedPolicy>& exec,
                    RandomAccessIterator last,
                    StrictWeakOrdering comp)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
 
   thrust::detail::temporary_array<value_type, DerivedPolicy> a(exec, first, middle);
   thrust::detail::temporary_array<value_type, DerivedPolicy> b(exec, middle, last);
@@ -76,8 +76,8 @@ void inplace_merge_by_key(
   RandomAccessIterator2 first2,
   StrictWeakOrdering comp)
 {
-  using value_type1 = typename thrust::iterator_value<RandomAccessIterator1>::type;
-  using value_type2 = typename thrust::iterator_value<RandomAccessIterator2>::type;
+  using value_type1 = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using value_type2 = thrust::detail::it_value_t<RandomAccessIterator2>;
 
   RandomAccessIterator2 middle2 = first2 + (middle1 - first1);
   RandomAccessIterator2 last2   = first2 + (last1 - first1);
@@ -102,14 +102,13 @@ void stable_sort(
   // X Note to the user: If you've found this line due to a compiler error, X
   // X you need to enable OpenMP support in your compiler.                  X
   // ========================================================================
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<RandomAccessIterator,
-                                             (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value),
-    "OpenMP compiler support is not enabled");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator,
+                                                        (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value,
+                "OpenMP compiler support is not enabled");
 
   // Avoid issues on compilers that don't provide `omp_get_num_threads()`.
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-  using IndexType = typename thrust::iterator_difference<RandomAccessIterator>::type;
+  using IndexType = thrust::detail::it_difference_t<RandomAccessIterator>;
 
   if (first == last)
   {
@@ -131,7 +130,7 @@ void stable_sort(
 
     THRUST_PRAGMA_OMP(barrier)
 
-    // XXX For some reason, MSVC 2015 yields an error unless we include this meaningless semicolon here
+    // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
     ;
 
     IndexType nseg = decomp.size();
@@ -160,6 +159,9 @@ void stable_sort(
       h *= 2;
 
       THRUST_PRAGMA_OMP(barrier)
+
+      // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
+      ;
     }
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
@@ -181,14 +183,13 @@ void stable_sort_by_key(
   // X Note to the user: If you've found this line due to a compiler error, X
   // X you need to enable OpenMP support in your compiler.                  X
   // ========================================================================
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<RandomAccessIterator1,
-                                             (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value),
-    "OpenMP compiler support is not enabled");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator1,
+                                                        (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value,
+                "OpenMP compiler support is not enabled");
 
   // Avoid issues on compilers that don't provide `omp_get_num_threads()`.
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-  using IndexType = typename thrust::iterator_difference<RandomAccessIterator1>::type;
+  using IndexType = thrust::detail::it_difference_t<RandomAccessIterator1>;
 
   if (keys_first == keys_last)
   {
@@ -216,7 +217,7 @@ void stable_sort_by_key(
 
     THRUST_PRAGMA_OMP(barrier)
 
-    // XXX For some reason, MSVC 2015 yields an error unless we include this meaningless semicolon here
+    // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
     ;
 
     IndexType nseg = decomp.size();
@@ -250,6 +251,9 @@ void stable_sort_by_key(
       h *= 2;
 
       THRUST_PRAGMA_OMP(barrier)
+
+      // #5020: For some reason, MSVC may yield an error unless we include this meaningless semicolon here
+      ;
     }
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE

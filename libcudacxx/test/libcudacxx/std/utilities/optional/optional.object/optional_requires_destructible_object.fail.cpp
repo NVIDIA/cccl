@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // T shall be an object type and shall satisfy the requirements of Destructible
@@ -29,8 +27,7 @@ int main(int, char**)
   {
     // expected-error-re@optional:* 2 {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with
     // a reference type is ill-formed}}
-    optional<int&> opt1;
-    optional<int&&> opt2;
+    optional<int&&> opt2{};
   }
   {
     // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a

@@ -43,7 +43,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -187,11 +186,11 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<InputIteratorT>;
+    using InitT   = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
     InitT init_value{};
@@ -206,24 +205,6 @@ struct DeviceScan
                num_items,
                stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveSum<InputIteratorT, OutputIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum in-place.
@@ -301,22 +282,6 @@ struct DeviceScan
     return ExclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveSum<IteratorT>(d_temp_storage, temp_storage_bytes, d_data, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary ``scan_op`` functor. The ``init_value`` value is applied as
@@ -339,8 +304,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -433,7 +398,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -448,26 +413,6 @@ struct DeviceScan
       num_items,
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -489,8 +434,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -578,25 +523,6 @@ struct DeviceScan
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveScan<IteratorT, ScanOpT, InitValueT>(
-      d_temp_storage, temp_storage_bytes, d_data, scan_op, init_value, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary ``scan_op`` functor. The ``init_value`` value is provided as a future value.
@@ -618,8 +544,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -722,7 +648,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -737,31 +663,6 @@ struct DeviceScan
       num_items,
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ScanOpT,
-            typename InitValueT,
-            typename InitValueIterT = InitValueT*,
-            typename NumItemsT      = int>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ScanOpT scan_op,
-    FutureValue<InitValueT, InitValueIterT> init_value,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, InitValueIterT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -781,8 +682,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -879,29 +780,6 @@ struct DeviceScan
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT,
-            typename ScanOpT,
-            typename InitValueT,
-            typename InitValueIterT = InitValueT*,
-            typename NumItemsT      = int>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    ScanOpT scan_op,
-    FutureValue<InitValueT, InitValueIterT> init_value,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveScan<IteratorT, ScanOpT, InitValueT, InitValueIterT>(
-      d_temp_storage, temp_storage_bytes, d_data, scan_op, init_value, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @}  end member group
   //! @name Inclusive scans
   //! @{
@@ -993,7 +871,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1001,24 +879,6 @@ struct DeviceScan
     return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return InclusiveSum<InputIteratorT, OutputIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum in-place.
@@ -1095,22 +955,6 @@ struct DeviceScan
     return InclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return InclusiveSum<IteratorT>(d_temp_storage, temp_storage_bytes, d_data, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
   //!
@@ -1131,8 +975,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1218,7 +1062,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1307,12 +1151,11 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::value_t<InputIteratorT>, InitValueT>;
-    constexpr bool ForceInclusive = true;
+    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
     return DispatchScan<
       InputIteratorT,
@@ -1321,35 +1164,15 @@ struct DeviceScan
       detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
-      detail::scan::policy_hub<AccumT, ScanOpT>,
-      ForceInclusive>::Dispatch(d_temp_storage,
-                                temp_storage_bytes,
-                                d_in,
-                                d_out,
-                                scan_op,
-                                detail::InputValue<InitValueT>(init_value),
-                                num_items,
-                                stream);
+      ForceInclusive::Yes>::Dispatch(d_temp_storage,
+                                     temp_storage_bytes,
+                                     d_in,
+                                     d_out,
+                                     scan_op,
+                                     detail::InputValue<InitValueT>(init_value),
+                                     num_items,
+                                     stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ScanOpT scan_op,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return InclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -1368,8 +1191,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1449,23 +1272,6 @@ struct DeviceScan
   {
     return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT, typename ScanOpT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    ScanOpT scan_op,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return InclusiveScan<IteratorT, ScanOpT>(d_temp_storage, temp_storage_bytes, d_data, scan_op, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum-by-key with key equality
@@ -1568,7 +1374,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1579,11 +1385,11 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<ValuesInputIteratorT>;
+    using InitT   = cub::detail::it_value_t<ValuesInputIteratorT>;
 
     // Initial value
     InitT init_value{};
@@ -1606,30 +1412,6 @@ struct DeviceScan
                          num_items,
                          stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveSumByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, EqualityOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan-by-key using the
@@ -1657,8 +1439,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1776,7 +1558,7 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1789,7 +1571,7 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1812,48 +1594,6 @@ struct DeviceScan
                          num_items,
                          stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename ScanOpT,
-            typename InitValueT,
-            typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ExclusiveScanByKey<KeysInputIteratorT,
-                              ValuesInputIteratorT,
-                              ValuesOutputIteratorT,
-                              ScanOpT,
-                              InitValueT,
-                              EqualityOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      scan_op,
-      init_value,
-      num_items,
-      equality_op,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
@@ -1954,7 +1694,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1965,7 +1705,7 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1988,30 +1728,6 @@ struct DeviceScan
                          num_items,
                          stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return InclusiveSumByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, EqualityOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
@@ -2037,8 +1753,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -2143,7 +1859,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2155,7 +1871,7 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2178,32 +1894,6 @@ struct DeviceScan
                          num_items,
                          stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename ScanOpT,
-            typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    ScanOpT scan_op,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return InclusiveScanByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, ScanOpT, EqualityOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, scan_op, num_items, equality_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}  end member group
 };

@@ -8,57 +8,104 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cstdint>
+#include <iostream> // std::cerr
+#include <optional> // std::optional
+#include <string>
+
 #include <cuda_runtime.h>
 
+#include "algorithm_execution.h"
+#include "build_result_caching.h"
 #include "test_util.h"
+#include <cccl/c/reduce.h>
 
-void reduce(cccl_iterator_t input, cccl_iterator_t output, unsigned long long num_items, cccl_op_t op, cccl_value_t init)
+using BuildResultT = cccl_device_reduce_build_result_t;
+
+struct reduce_cleanup
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
+  CUresult operator()(BuildResultT* build_data) const noexcept
+  {
+    return cccl_device_reduce_cleanup(build_data);
+  }
+};
 
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
+using reduce_deleter       = BuildResultDeleter<BuildResultT, reduce_cleanup>;
+using reduce_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, reduce_deleter>>;
 
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_reduce_build_result_t build;
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_reduce_build(
-            &build, input, output, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  size_t temp_storage_bytes = 0;
-  REQUIRE(
-    CUDA_SUCCESS == cccl_device_reduce(build, nullptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_reduce(build, temp_storage.ptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<reduce_build_cache_t, Tag>::get_or_create().get_value();
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Reduce works with integral types", "[reduce]", integral_types)
+struct reduce_build
 {
-  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
-  const std::vector<TestType> input = generate<TestType>(num_items);
-  pointer_t<TestType> input_ptr(input);
-  pointer_t<TestType> output_ptr(1);
-  value_t<TestType> init{TestType{42}};
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    cccl_value_t init,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_reduce_build(
+      build_ptr, input, output, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path);
+  }
+};
 
-  reduce(input_ptr, output_ptr, num_items, op, init);
+struct reduce_run
+{
+  template <typename... Ts>
+  CUresult operator()(Ts... args) const noexcept
+  {
+    return cccl_device_reduce(args...);
+  }
+};
 
-  const TestType output   = output_ptr[0];
-  const TestType expected = std::accumulate(input.begin(), input.end(), init.value);
+template <typename BuildCache = reduce_build_cache_t, typename KeyT = std::string>
+void reduce(cccl_iterator_t input,
+            cccl_iterator_t output,
+            uint64_t num_items,
+            cccl_op_t op,
+            cccl_value_t init,
+            std::optional<BuildCache>& cache,
+            const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run, BuildCache, KeyT>(
+    cache, lookup_key, input, output, num_items, op, init);
+}
+
+// ===============
+//   Tests section
+// ===============
+
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+struct Reduce_IntegralTypes_Fixture_Tag;
+C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Reduce_IntegralTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, init, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
   REQUIRE(output == expected);
 }
 
@@ -68,15 +115,19 @@ struct pair
   size_t b;
 };
 
-TEST_CASE("Reduce works with custom types", "[reduce]")
+struct Reduce_CustomTypes_Fixture_Tag;
+C2H_TEST("Reduce works with custom types", "[reduce]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
-    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
+    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
+    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
+    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
     "}");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
@@ -89,7 +140,10 @@ TEST_CASE("Reduce works with custom types", "[reduce]")
   pointer_t<pair> output_ptr(1);
   value_t<pair> init{pair{4, 2}};
 
-  reduce(input_ptr, output_ptr, num_items, op, init);
+  auto& build_cache    = get_cache<Reduce_CustomTypes_Fixture_Tag>();
+  const auto& test_key = make_key<pair>();
+
+  reduce(input_ptr, output_ptr, num_items, op, init, build_cache, test_key);
 
   const pair output   = output_ptr[0];
   const pair expected = std::accumulate(input.begin(), input.end(), init.value, [](const pair& lhs, const pair& rhs) {
@@ -99,152 +153,107 @@ TEST_CASE("Reduce works with custom types", "[reduce]")
   REQUIRE(output.b == expected.b);
 }
 
-struct counting_iterator_state_t
+struct Reduce_InputIterators_Fixture_Tag;
+C2H_TEST("Reduce works with input iterators", "[reduce]")
 {
-  int value;
-};
-
-TEST_CASE("Reduce works with input iterators", "[reduce]")
-{
-  const std::size_t num_items                         = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                                      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, counting_iterator_state_t> input_it = make_iterator<int, counting_iterator_state_t>(
-    "struct counting_iterator_state_t { int value; };\n",
-    {"advance",
-     "extern \"C\" __device__ void advance(counting_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->value += offset;\n"
-     "}"},
-    {"dereference",
-     "extern \"C\" __device__ int dereference(counting_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value = 0;
+  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  iterator_t<int, counting_iterator_state_t<int>> input_it = make_counting_iterator<int>("int");
+  input_it.state.value                                     = 0;
   pointer_t<int> output_it(1);
   value_t<int> init{42};
 
-  reduce(input_it, output_it, num_items, op, init);
+  auto& build_cache    = get_cache<Reduce_CustomTypes_Fixture_Tag>();
+  const auto& test_key = make_key<int>();
+
+  reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
   const int output   = output_it[0];
   const int expected = init.value + num_items * (num_items - 1) / 2;
   REQUIRE(output == expected);
 }
 
-struct transform_output_iterator_state_t
-{
-  int* d_output;
-};
-
-TEST_CASE("Reduce works with output iterators", "[reduce]")
+struct Reduce_OutputIterators_Fixture_Tag;
+C2H_TEST("Reduce works with output iterators", "[reduce]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
-    "struct transform_output_iterator_state_t { int* d_output; };\n",
-    {"advance",
-     "extern \"C\" __device__ void advance(transform_output_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->d_output += offset;\n"
-     "}"},
-    {"dereference",
-     "extern \"C\" __device__ void dereference(transform_output_iterator_state_t* state, int x) { \n"
-     "  *state->d_output = 2 * x;\n"
-     "}"});
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
   pointer_t<int> inner_output_it(1);
-  output_it.state.d_output = inner_output_it.ptr;
+  output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  reduce(input_it, output_it, num_items, op, init);
+  auto& build_cache    = get_cache<Reduce_OutputIterators_Fixture_Tag>();
+  const auto& test_key = make_key<int>();
+
+  reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
   const int output   = inner_output_it[0];
   const int expected = std::accumulate(input.begin(), input.end(), init.value);
   REQUIRE(output == expected * 2);
 }
 
-template <class T>
-struct constant_iterator_state_t
-{
-  T value;
-};
-
-TEST_CASE("Reduce works with input and output iterators", "[reduce]")
+struct Reduce_InputOutputIterators_Fixture_Tag;
+C2H_TEST("Reduce works with input and output iterators", "[reduce]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, constant_iterator_state_t<int>> input_it = make_iterator<int, constant_iterator_state_t<int>>(
-    "struct constant_iterator_state_t { int value; };\n",
-    {"in_advance",
-     "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {\n"
-     "}"},
-    {"in_dereference",
-     "extern \"C\" __device__ int in_dereference(constant_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value                                         = 1;
-  iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
-    "struct transform_output_iterator_state_t { int* d_output; };\n",
-    {"out_advance",
-     "extern \"C\" __device__ void out_advance(transform_output_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->d_output += offset;\n"
-     "}"},
-    {"out_dereference",
-     "extern \"C\" __device__ void out_dereference(transform_output_iterator_state_t* state, int x) { \n"
-     "  *state->d_output = 2 * x;\n"
-     "}"});
+  iterator_t<int, constant_iterator_state_t<int>> input_it = make_constant_iterator<int>("int");
+  input_it.state.value                                     = 1;
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   pointer_t<int> inner_output_it(1);
-  output_it.state.d_output = inner_output_it.ptr;
+  output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  reduce(input_it, output_it, num_items, op, init);
+  auto& build_cache    = get_cache<Reduce_InputOutputIterators_Fixture_Tag>();
+  const auto& test_key = make_key<int>();
+
+  reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
   const int output   = inner_output_it[0];
   const int expected = 2 * (init.value + num_items);
   REQUIRE(output == expected);
 }
 
-TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
+struct Reduce_AccumulatorType_Fixture_Tag;
+C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
 {
   const std::size_t num_items = 1 << 14; // 16384 > 128
 
   operation_t op = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
-  iterator_t<char, constant_iterator_state_t<char>> input_it = make_iterator<char, constant_iterator_state_t<char>>(
-    "struct constant_iterator_state_t { char value; };\n",
-    {"in_advance",
-     "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {\n"
-     "}"},
-    {"in_dereference",
-     "extern \"C\" __device__ char in_dereference(constant_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value = 1;
+  iterator_t<char, constant_iterator_state_t<char>> input_it = make_constant_iterator<char>("char");
+  input_it.state.value                                       = 1;
   pointer_t<size_t> output_it(1);
   value_t<size_t> init{42};
 
-  reduce(input_it, output_it, num_items, op, init);
+  auto& build_cache    = get_cache<Reduce_AccumulatorType_Fixture_Tag>();
+  const auto& test_key = make_key<char, size_t>();
+
+  reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
   const size_t output   = output_it[0];
   const size_t expected = init.value + num_items;
   REQUIRE(output == expected);
 }
 
-TEST_CASE("Reduce works with large inputs", "[reduce]")
+C2H_TEST("Reduce works with large inputs", "[reduce]")
 {
   const size_t num_items = 1ull << 33;
   operation_t op         = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
-  iterator_t<char, constant_iterator_state_t<char>> input_it = make_iterator<char, constant_iterator_state_t<char>>(
-    "struct constant_iterator_state_t { char value; };\n",
-    {"in_advance",
-     "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {\n"
-     "}"},
-    {"in_dereference",
-     "extern \"C\" __device__ char in_dereference(constant_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value = 1;
+  iterator_t<char, constant_iterator_state_t<char>> input_it = make_constant_iterator<char>("char");
+  input_it.state.value                                       = 1;
   pointer_t<size_t> output_it(1);
   value_t<size_t> init{42};
 
-  reduce(input_it, output_it, num_items, op, init);
+  // reuse fixture cache from previous example, as it runs identical example on larger input
+  auto& build_cache    = get_cache<Reduce_AccumulatorType_Fixture_Tag>();
+  const auto& test_key = make_key<char, size_t>();
+
+  reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
   const size_t output   = output_it[0];
   const size_t expected = init.value + num_items;
@@ -256,16 +265,19 @@ struct invocation_counter_state_t
   int* d_counter;
 };
 
-TEST_CASE("Reduce works with stateful operators", "[reduce]")
+C2H_TEST("Reduce works with stateful operators", "[reduce]")
 {
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
   stateful_operation_t<invocation_counter_state_t> op = make_operation(
     "op",
     "struct invocation_counter_state_t { int* d_counter; };\n"
-    "extern \"C\" __device__ int op(invocation_counter_state_t *state, int a, int b) {\n"
+    "extern \"C\" __device__ void op(void* state_ptr, void* a_ptr, void* b_ptr, void* out_ptr) {\n"
+    "  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);\n"
     "  atomicAdd(state->d_counter, 1);\n"
-    "  return a + b;\n"
+    "  int a = *static_cast<int*>(a_ptr);\n"
+    "  int b = *static_cast<int*>(b_ptr);\n"
+    "  *static_cast<int*>(out_ptr) = a + b;\n"
     "}",
     invocation_counter_state_t{counter.ptr});
 
@@ -274,7 +286,11 @@ TEST_CASE("Reduce works with stateful operators", "[reduce]")
   pointer_t<int> output_ptr(1);
   value_t<int> init{42};
 
-  reduce(input_ptr, output_ptr, num_items, op, init);
+  // turn off caching, since the example is only compiled once
+  std::optional<reduce_build_cache_t> build_cache = std::nullopt;
+  std::optional<std::string> test_key             = std::nullopt;
+
+  reduce(input_ptr, output_ptr, num_items, op, init, build_cache, test_key);
 
   const int invocation_count          = counter[0];
   const int expected_invocation_count = num_items - 1;

@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 3, 0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -63,9 +63,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
 
   return 0;
 }

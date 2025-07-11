@@ -20,11 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
+[[nodiscard]] _CCCL_API constexpr bool is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
   {
@@ -49,5 +51,7 @@ is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_CLAMP_H

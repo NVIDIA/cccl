@@ -64,9 +64,36 @@ _create_rapids_cmake_override_json() {
         rapids_cmake_upstream="$(yq '.x-git-defaults.upstream' /opt/rapids-build-utils/manifest.yaml)";
     fi
 
+    # Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+    if test -n "${CCCL_TAG-}"; then
+        # If CCCL_TAG is defined, fetch it to the local checkout
+        git -C "${HOME}/cccl" fetch origin "${CCCL_TAG}";
+        cccl_sha="$(git -C "${HOME}/cccl" rev-parse FETCH_HEAD)";
+    else
+        cccl_sha="$(git -C "${HOME}/cccl" rev-parse HEAD)";
+    fi
+    echo "CCCL_VERSION: ${CCCL_VERSION-}";
+    echo "CCCL_TAG: ${CCCL_TAG-}";
+    echo "cccl_sha: ${cccl_sha}";
+
+    echo
+    echo "Replacing CCCL repo information in rapids-cmake versions.json:";
     curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_tag}/rapids-cmake/cpm/versions.json" \
-  | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"$(git -C "${HOME}/cccl" rev-parse HEAD)\", \"always_download\": true}" \
-  | tee ~/rapids-cmake-override-versions.json;
+  | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"${cccl_sha}\", \"always_download\": true}" \
+  > ~/rapids-cmake-override-versions-cccl-repo.json;
+
+    if test -n "${CCCL_VERSION-}"; then
+        echo "Patching CCCL_VERSION in rapids-cmake versions.json:";
+        jq -r ".packages.CCCL.version = \"${CCCL_VERSION}\"" ~/rapids-cmake-override-versions-cccl-repo.json \
+      > ~/rapids-cmake-override-versions.json;
+    else
+        echo "Using the default CCCL version in rapids-cmake versions.json:";
+        mv ~/rapids-cmake-override-versions-cccl-repo.json ~/rapids-cmake-override-versions.json;
+    fi
+
+    echo
+    echo "Final rapids-cmake-override-versions.json:";
+    cat ~/rapids-cmake-override-versions.json;
 
     # Define default CMake args for each repo
     local -a cmake_args=(BUILD_TESTS BUILD_BENCHMARKS BUILD_PRIMS_BENCH BUILD_CUGRAPH_MG_TESTS);

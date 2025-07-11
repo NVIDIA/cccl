@@ -12,9 +12,9 @@
 
 #include <testing.cuh>
 
-TEST_CASE("Call each driver api", "[utility]")
+C2H_TEST("Call each driver api", "[utility]")
 {
-  namespace driver = cuda::experimental::detail::driver;
+  namespace driver = cuda::experimental::__detail::driver;
   cudaStream_t stream;
   // Assumes the ctx stack was empty or had one ctx, should be the case unless some other
   // test leaves 2+ ctxs on the stack

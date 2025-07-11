@@ -16,7 +16,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 
-#if _CCCL_COMPILER(ICC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
 #  define SKIP_SFINAE_TESTS
@@ -232,7 +232,7 @@ static_assert(
     ::cuda::std::__type_list<_CUDA_VSTD::integral_constant<size_t, 0>, _CUDA_VSTD::integral_constant<size_t, 1>>>::value,
   "");
 static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<int(float&, double&&)>,
-                                   ::cuda::std::__type_list<float&, double&&>>::value,
+                                   ::cuda::std::__type_list<int, float&, double&&>>::value,
               "");
 
 // __type_callable

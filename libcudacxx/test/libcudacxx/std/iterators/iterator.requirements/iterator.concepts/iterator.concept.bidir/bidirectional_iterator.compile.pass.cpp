@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept bidirectional_iterator;
 
@@ -173,9 +171,9 @@ struct no_postdecrement
   __host__ __device__ no_postdecrement operator++(int);
 
   __host__ __device__ no_postdecrement& operator--();
-#if defined(TEST_COMPILER_MSVC) //  single-argument function used for postfix "--" (anachronism)
+#if TEST_COMPILER(MSVC) //  single-argument function used for postfix "--" (anachronism)
   __host__ __device__ no_postdecrement& operator--(int) = delete;
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 #if TEST_STD_VER > 2017
   bool operator==(no_postdecrement const&) const = default;

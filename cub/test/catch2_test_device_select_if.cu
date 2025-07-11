@@ -26,13 +26,14 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 
 #include <thrust/distance.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/offset_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/partition.h>
@@ -83,13 +84,30 @@ using all_types =
                  std::uint32_t,
                  std::uint64_t,
                  ulonglong2,
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  int,
                  long2,
                  c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
-using types = c2h::
-  type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
+using types =
+  c2h::type_list<std::uint8_t,
+                 std::uint32_t,
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
+                 c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
 C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
 {
@@ -316,7 +334,8 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::int64_t;
@@ -361,7 +380,8 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of output items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::uint8_t;
@@ -404,4 +424,30 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+}
+
+C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]")
+{
+  using type = int;
+
+  const int num_items = 10'000;
+  c2h::device_vector<type> in(num_items);
+  thrust::sequence(in.begin(), in.end());
+  c2h::device_vector<type> out(num_items);
+  using thrust::placeholders::_1;
+
+  // select twice, appending the second selection to the first one without bringing the first selection's count to the
+  // host
+  c2h::device_vector<int> num_selected_out(2);
+  select_if(in.begin(), out.begin(), num_selected_out.begin(), num_items, _1 < 1000); // [0;999]
+  auto output_end = thrust::offset_iterator{out.begin(), num_selected_out.begin()};
+  select_if(in.begin(), output_end, num_selected_out.begin() + 1, num_items, _1 >= 9000); // [9000;9999]
+
+  c2h::device_vector<type> expected(2000);
+  thrust::sequence(expected.begin(), expected.begin() + 1000);
+  thrust::sequence(expected.begin() + 1000, expected.end(), 9000);
+
+  out.resize(2000);
+  REQUIRE(num_selected_out == c2h::device_vector<int>{1000, 1000});
+  REQUIRE(out == expected);
 }

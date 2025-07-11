@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // <cuda/std/iterator>
 
 // back_insert_iterator
@@ -17,14 +15,12 @@
 //   back_insert_iterator<Cont>&
 //   operator=(Cont::value_type&& value);
 
+#include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/cassert>
-#  include <cuda/std/memory>
-#  include <cuda/std/vector>
-
-#  include "test_macros.h"
+#include "MoveOnly.h"
+#include "test_macros.h"
 
 template <class C>
 __host__ __device__ void test(C c)
@@ -36,13 +32,7 @@ __host__ __device__ void test(C c)
 
 int main(int, char**)
 {
-  test(cuda::std::vector<cuda::std::unique_ptr<int>>());
+  test(cuda::std::inplace_vector<MoveOnly, 3>());
 
   return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif

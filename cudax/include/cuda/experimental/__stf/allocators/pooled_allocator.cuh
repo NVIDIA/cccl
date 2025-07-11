@@ -66,7 +66,7 @@ public:
       , block_size(block_size)
       , root_allocator(mv(root_allocator_))
   {
-    if (this->place == data_place::host || this->place == data_place::managed)
+    if (this->place.is_host() || this->place.is_managed())
     {
       /* Pinned memory is not cheap, so we currently only allocate 4 blocks (arbitrarily) */
       nentries = 4;
@@ -170,7 +170,7 @@ public:
   {
     const ptrdiff_t offset = static_cast<char*>(ptr) - static_cast<char*>(base);
     // Add an assertion that offset % block_size == 0 ?
-    return (offset >= 0 && offset < static_cast<ptrdiff_t>(entries.size() * block_size));
+    return offset >= 0 && offset < static_cast<ptrdiff_t>(entries.size() * block_size);
   }
 
   // Free the memory allocated for this block of allocations
@@ -249,12 +249,12 @@ struct pooled_allocator_config
   size_t get_max_entries_per_place() const
   {
     return max_entries_per_place.has_value() ? max_entries_per_place.value() : ::std::numeric_limits<size_t>::max();
-  };
+  }
 
   double get_max_ratio() const
   {
     return max_ratio.has_value() ? max_ratio.value() : 0.9;
-  };
+  }
 };
 
 namespace reserved
@@ -437,7 +437,7 @@ public:
   pooled_allocator(pooled_allocator_config config)
   {
     pool_set.set_config(mv(config));
-  };
+  }
 
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override

@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // <span>
 
@@ -21,21 +20,21 @@
 template <typename Span>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t sz)
 {
-  ASSERT_NOEXCEPT(sp.size());
+  static_assert(noexcept(sp.size()));
   return sp.size() == sz;
 }
 
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp, size_t sz)
 {
-  ASSERT_NOEXCEPT(sp.size());
+  static_assert(noexcept(sp.size()));
   assert(sp.size() == sz);
 }
 
 struct A
 {};
-constexpr int iArr1[]              = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-STATIC_TEST_GLOBAL_VAR int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+constexpr int iArr1[]            = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+TEST_GLOBAL_VARIABLE int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 int main(int, char**)
 {

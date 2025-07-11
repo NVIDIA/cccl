@@ -8,35 +8,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03
-
-#include "test_macros.h"
 #include <nv/target>
 
-#if !defined(TEST_COMPILER_NVRTC)
+#include "test_macros.h"
+
+#if !TEST_COMPILER(NVRTC)
 #  include <assert.h>
 #  include <stdio.h>
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
-#if defined(__NVCC__) || defined(TEST_COMPILER_NVRTC)
-#  define TEST_NVCC
-#elif defined(__NVCOMPILER)
-#  define TEST_NVCXX
-#elif defined(__CUDA__)
-#  define TEST_CLANG_CUDA
-#else
-#  define TEST_HOST
-#endif
-
-#if defined(TEST_NVCC) || defined(TEST_CLANG_CUDA)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_CUDA_COMPILER(CLANG) || TEST_COMPILER(NVRTC)
 
 __host__ __device__ void test()
 {
-#  if defined(__CUDA_ARCH__)
-  constexpr int arch_val = __CUDA_ARCH__;
-#  else
-  constexpr int arch_val = 0;
-#  endif
+  constexpr int arch_val = _CCCL_PTX_ARCH();
 
   // This test ensures that the fallthrough cases are not invoked.
   // SM_80 would imply that SM_72 is available, yet it should not be expanded by the macro
@@ -65,10 +50,6 @@ __host__ __device__ void test()
     (static_assert(arch_val >= 520, "cuda arch expected 520");),
     NV_PROVIDES_SM_50,
     (static_assert(arch_val >= 500, "cuda arch expected 500");),
-    NV_PROVIDES_SM_37,
-    (static_assert(arch_val >= 370, "cuda arch expected 370");),
-    NV_PROVIDES_SM_35,
-    (static_assert(arch_val >= 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
@@ -98,10 +79,6 @@ __host__ __device__ void test()
     (static_assert(arch_val == 520, "cuda arch expected 520");),
     NV_IS_EXACTLY_SM_50,
     (static_assert(arch_val == 500, "cuda arch expected 500");),
-    NV_IS_EXACTLY_SM_37,
-    (static_assert(arch_val == 370, "cuda arch expected 370");),
-    NV_IS_EXACTLY_SM_35,
-    (static_assert(arch_val == 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
@@ -129,7 +106,7 @@ __host__ __device__ void test()
      static_assert(__CUDA_MINIMUM_ARCH__ == __CUDA_ARCH__, "arch mismatch");))
 }
 
-#elif defined(TEST_NVCXX)
+#elif TEST_CUDA_COMPILER(NVHPC)
 
 __host__ __device__ void test()
 {
@@ -158,10 +135,6 @@ __host__ __device__ void test()
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_PROVIDES_SM_50,
     (invoke_count += 1; invoke_count += threadIdx.x;),
-    NV_PROVIDES_SM_37,
-    (invoke_count += 1; invoke_count += threadIdx.x;),
-    NV_PROVIDES_SM_35,
-    (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_IS_HOST,
     (invoke_count += 1;))
 
@@ -187,10 +160,6 @@ __host__ __device__ void test()
     NV_IS_EXACTLY_SM_52,
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_IS_EXACTLY_SM_50,
-    (invoke_count += 1; invoke_count += threadIdx.x;),
-    NV_IS_EXACTLY_SM_37,
-    (invoke_count += 1; invoke_count += threadIdx.x;),
-    NV_IS_EXACTLY_SM_35,
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_IS_HOST,
     (invoke_count += 1;))
@@ -223,7 +192,7 @@ __host__ __device__ void test()
        nv::target::detail::toint(NV_TARGET_MINIMUM_SM_SELECTOR) == (__CUDA_MINIMUM_ARCH__ / 10), "arch mismatch");))
 }
 
-#elif defined(TEST_HOST)
+#elif !TEST_HAS_CUDA_COMPILER()
 
 void test()
 {
@@ -252,10 +221,6 @@ void test()
     (static_assert(arch_val == 520, "cuda arch expected 520");),
     NV_PROVIDES_SM_50,
     (static_assert(arch_val == 500, "cuda arch expected 500");),
-    NV_PROVIDES_SM_37,
-    (static_assert(arch_val == 370, "cuda arch expected 370");),
-    NV_PROVIDES_SM_35,
-    (static_assert(arch_val == 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
@@ -281,10 +246,6 @@ void test()
     (static_assert(arch_val == 520, "cuda arch expected 520");),
     NV_IS_EXACTLY_SM_50,
     (static_assert(arch_val == 500, "cuda arch expected 500");),
-    NV_IS_EXACTLY_SM_37,
-    (static_assert(arch_val == 370, "cuda arch expected 370");),
-    NV_IS_EXACTLY_SM_35,
-    (static_assert(arch_val == 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 

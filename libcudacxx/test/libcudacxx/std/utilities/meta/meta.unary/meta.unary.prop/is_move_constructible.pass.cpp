@@ -18,18 +18,14 @@ template <class T>
 __host__ __device__ void test_is_move_constructible()
 {
   static_assert(cuda::std::is_move_constructible<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_move_constructible_v<T>, "");
-#endif
 }
 
 template <class T>
 __host__ __device__ void test_is_not_move_constructible()
 {
   static_assert(!cuda::std::is_move_constructible<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_move_constructible_v<T>, "");
-#endif
 }
 
 class Empty
@@ -67,10 +63,10 @@ struct B
 
 int main(int, char**)
 {
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
+#if !TEST_COMPILER(GCC) || TEST_STD_VER < 2020
   test_is_not_move_constructible<char[3]>();
   test_is_not_move_constructible<char[]>();
-#endif
+#endif // !TEST_COMPILER(GCC) || TEST_STD_VER < 2020
   test_is_not_move_constructible<void>();
   test_is_not_move_constructible<Abstract>();
 

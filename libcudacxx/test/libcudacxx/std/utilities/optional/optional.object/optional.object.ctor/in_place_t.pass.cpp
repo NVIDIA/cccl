@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: c++03, c++11
 
 // <cuda/std/optional>
 
@@ -30,20 +29,20 @@ class X
   int j_ = 0;
 
 public:
-  __host__ __device__ X()
+  __host__ __device__ constexpr X()
       : i_(0)
   {}
-  __host__ __device__ X(int i)
+  __host__ __device__ constexpr X(int i)
       : i_(i)
   {}
-  __host__ __device__ X(int i, int j)
+  __host__ __device__ constexpr X(int i, int j)
       : i_(i)
       , j_(j)
   {}
 
-  __host__ __device__ ~X() {}
+  __host__ __device__ TEST_CONSTEXPR_CXX20 ~X() {}
 
-  __host__ __device__ friend bool operator==(const X& x, const X& y)
+  __host__ __device__ constexpr friend bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -72,7 +71,51 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+template <class T, class... Args>
+__host__ __device__ constexpr void test(Args... vals)
+{
+  const T expected{vals...};
+  {
+    optional<T> opt(in_place, vals...);
+    assert(opt.has_value());
+    assert(*opt == expected);
+  }
+
+  {
+    const optional<T> opt(in_place, vals...);
+    assert(opt.has_value());
+    assert(*opt == expected);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(cuda::std::addressof(expected) == opt.operator->());
+    }
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+  test<const int>();
+
+  test<int>(42);
+  test<const int>(42);
+
+  test<X>();
+  test<X>(42);
+  test<X>(42, 1337);
+
+  test<Y>();
+  test<Y>(42);
+  test<Y>(42, 1337);
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>(42);
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  return true;
+}
+
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
 public:
@@ -94,87 +137,18 @@ void test_exceptions()
     assert(i == 6);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    constexpr optional<int> opt(in_place, 5);
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(*opt == 5, "");
+  test();
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test(), "");
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
-    struct test_constexpr_ctor : public optional<int>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(in_place_t, int i)
-          : optional<int>(in_place, i)
-      {}
-    };
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    optional<const int> opt(in_place, 5);
-    assert(*opt == 5);
-  }
-#ifndef TEST_COMPILER_ICC
-  {
-    const optional<X> opt(in_place);
-    assert(static_cast<bool>(opt) == true);
-    assert(*opt == X());
-  }
-  {
-    const optional<X> opt(in_place, 5);
-    assert(static_cast<bool>(opt) == true);
-    assert(*opt == X(5));
-  }
-  {
-    const optional<X> opt(in_place, 5, 4);
-    assert(static_cast<bool>(opt) == true);
-    assert(*opt == X(5, 4));
-  }
-#endif // TEST_COMPILER_ICC
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    constexpr optional<Y> opt(in_place);
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(*opt == Y(), "");
-
-    struct test_constexpr_ctor : public optional<Y>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(in_place_t)
-          : optional<Y>(in_place)
-      {}
-    };
-  }
-  {
-    constexpr optional<Y> opt(in_place, 5);
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(*opt == Y(5), "");
-
-    struct test_constexpr_ctor : public optional<Y>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(in_place_t, int i)
-          : optional<Y>(in_place, i)
-      {}
-    };
-  }
-  {
-    constexpr optional<Y> opt(in_place, 5, 4);
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(*opt == Y(5, 4), "");
-
-    struct test_constexpr_ctor : public optional<Y>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(in_place_t, int i, int j)
-          : optional<Y>(in_place, i, j)
-      {}
-    };
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

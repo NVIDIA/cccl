@@ -70,12 +70,11 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertible
- * to \c OutputIterator's \c value_type. \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The functions return type must be
+ *  convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -90,8 +89,8 @@ THRUST_NAMESPACE_BEGIN
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(thrust::host, data, data + 6, data, unary_op, binary_op); // in-place scan
  *
@@ -135,12 +134,11 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertible
- * to \c OutputIterator's \c value_type. \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type is convertible
+ * to \c OutputIterator's \c value_type.
+ * \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -152,8 +150,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(data, data + 6, data, unary_op, binary_op); // in-place scan
  *
@@ -195,13 +193,11 @@ OutputIterator transform_inclusive_scan(
  *  Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  *  Iterator</a>.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
- *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type is
  *  convertible to \c OutputIterator's \c value_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of
- *  <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
- *  AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  *  first))</tt> shall not overlap otherwise.
@@ -216,8 +212,8 @@ OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(thrust::host, data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *
@@ -266,13 +262,11 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  *  Iterator</a>.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
- *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type is
  * convertible to \c OutputIterator's \c value_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of
- * <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -285,8 +279,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *
@@ -331,13 +325,12 @@ OutputIterator transform_inclusive_scan(
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertible
- * to \c OutputIterator's \c value_type. \tparam T is convertible to \c OutputIterator's \c value_type. \tparam
- * AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type must be
+ * convertible to \c OutputIterator's \c value_type.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -352,8 +345,8 @@ OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_exclusive_scan(thrust::host, data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *
@@ -400,13 +393,12 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertible
- * to \c OutputIterator's \c value_type. \tparam T is convertible to \c OutputIterator's \c value_type. \tparam
- * AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type must be
+ * convertible to \c OutputIterator's \c value_type.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -418,8 +410,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_exclusive_scan(data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *

@@ -49,21 +49,11 @@ namespace merge
 template <typename KeyT, typename ValueT>
 struct policy_hub
 {
-  static constexpr bool has_values = !::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool has_values = !::cuda::std::is_same_v<ValueT, NullType>;
 
   using tune_type = char[has_values ? sizeof(KeyT) + sizeof(ValueT) : sizeof(KeyT)];
 
-  struct policy300 : ChainedPolicy<300, policy300, policy300>
-  {
-    using merge_policy =
-      agent_policy_t<128,
-                     Nominal4BItemsToItems<tune_type>(7),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_DEFAULT,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  struct policy350 : ChainedPolicy<350, policy350, policy300>
+  struct policy500 : ChainedPolicy<500, policy500, policy500>
   {
     using merge_policy =
       agent_policy_t<256,
@@ -73,7 +63,7 @@ struct policy_hub
                      BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  struct policy520 : ChainedPolicy<520, policy520, policy350>
+  struct policy520 : ChainedPolicy<520, policy520, policy500>
   {
     using merge_policy =
       agent_policy_t<512,

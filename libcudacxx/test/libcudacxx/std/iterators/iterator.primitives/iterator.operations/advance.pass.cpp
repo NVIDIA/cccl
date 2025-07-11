@@ -27,14 +27,14 @@
 #include "test_macros.h"
 
 template <class Distance, class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check_advance(It it, Distance n, It result)
+__host__ __device__ constexpr void check_advance(It it, Distance n, It result)
 {
   static_assert(cuda::std::is_same<decltype(cuda::std::advance(it, n)), void>::value, "");
   cuda::std::advance(it, n);
   assert(it == result);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   const char* s = "1234567890";
 
@@ -75,8 +75,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER > 2014
   static_assert(tests(), "");
-#endif
   return 0;
 }

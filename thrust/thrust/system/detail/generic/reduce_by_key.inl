@@ -30,14 +30,14 @@
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <limits>
+#include <cuda/std/iterator>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -86,12 +86,12 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  using difference_type = typename thrust::iterator_traits<InputIterator1>::difference_type;
+  using difference_type = thrust::detail::it_difference_t<InputIterator1>;
 
   using FlagType = unsigned int; // TODO use difference_type
 
   // Use the input iterator's value type per https://wg21.link/P0571
-  using ValueType = typename thrust::iterator_value<InputIterator2>::type;
+  using ValueType = thrust::detail::it_value_t<InputIterator2>;
 
   if (keys_first == keys_last)
   {
@@ -106,12 +106,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   // compute head flags
   thrust::detail::temporary_array<FlagType, ExecutionPolicy> head_flags(exec, n);
   thrust::transform(
-    exec, keys_first, keys_last - 1, keys_first + 1, head_flags.begin() + 1, thrust::not_fn(binary_pred));
+    exec, keys_first, keys_last - 1, keys_first + 1, head_flags.begin() + 1, ::cuda::std::not_fn(binary_pred));
   head_flags[0] = 1;
 
   // compute tail flags
   thrust::detail::temporary_array<FlagType, ExecutionPolicy> tail_flags(exec, n); // COPY INSTEAD OF TRANSFORM
-  thrust::transform(exec, keys_first, keys_last - 1, keys_first + 1, tail_flags.begin(), thrust::not_fn(binary_pred));
+  thrust::transform(
+    exec, keys_first, keys_last - 1, keys_first + 1, tail_flags.begin(), ::cuda::std::not_fn(binary_pred));
   tail_flags[n - 1] = 1;
 
   // scan the values by flag
@@ -120,13 +121,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 
   thrust::inclusive_scan(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(values_first, head_flags.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(values_last, head_flags.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(scanned_values.begin(), scanned_tail_flags.begin())),
+    thrust::make_zip_iterator(values_first, head_flags.begin()),
+    thrust::make_zip_iterator(values_last, head_flags.end()),
+    thrust::make_zip_iterator(scanned_values.begin(), scanned_tail_flags.begin()),
     detail::reduce_by_key_functor<ValueType, FlagType, BinaryFunction>(binary_op));
 
   thrust::exclusive_scan(
-    exec, tail_flags.begin(), tail_flags.end(), scanned_tail_flags.begin(), FlagType(0), thrust::plus<FlagType>());
+    exec, tail_flags.begin(), tail_flags.end(), scanned_tail_flags.begin(), FlagType(0), ::cuda::std::plus<FlagType>());
 
   // number of unique keys
   FlagType N = scanned_tail_flags[n - 1] + 1;
@@ -152,11 +153,11 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
-  using KeyType = typename thrust::iterator_value<InputIterator1>::type;
+  using KeyType = thrust::detail::it_value_t<InputIterator1>;
 
   // use equal_to<KeyType> as default BinaryPredicate
   return thrust::reduce_by_key(
-    exec, keys_first, keys_last, values_first, keys_output, values_output, thrust::equal_to<KeyType>());
+    exec, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyType>());
 } // end reduce_by_key()
 
 template <typename ExecutionPolicy,
@@ -174,13 +175,15 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using T = typename thrust::detail::eval_if<thrust::detail::is_output_iterator<OutputIterator2>::value,
-                                             thrust::iterator_value<InputIterator2>,
-                                             thrust::iterator_value<OutputIterator2>>::type;
+  using T = ::cuda::std::
+
+    _If<thrust::detail::is_output_iterator<OutputIterator2>,
+        thrust::detail::it_value_t<InputIterator2>,
+        thrust::detail::it_value_t<OutputIterator2>>;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(
-    exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, thrust::plus<T>());
+    exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, ::cuda::std::plus<T>());
 } // end reduce_by_key()
 
 } // end namespace generic

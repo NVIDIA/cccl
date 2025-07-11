@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,16 +28,18 @@
 #include <string>
 #include <vector>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 class device;
 struct arch_traits_t;
 
-namespace detail
+namespace __detail
 {
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;
-} // namespace detail
+} // namespace __detail
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref
@@ -55,11 +57,12 @@ public:
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!
   //! @return int The native device ordinal held by the `device_ref` object
-  _CCCL_NODISCARD constexpr int get() const noexcept
+  [[nodiscard]] constexpr int get() const noexcept
   {
     return __id_;
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -68,12 +71,12 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -82,11 +85,12 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] constexpr friend bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Retrieve the specified attribute for the device
   //!
@@ -97,25 +101,28 @@ public:
   //!
   //! @sa device::attrs
   template <typename _Attr>
-  _CCCL_NODISCARD auto attr(_Attr __attr) const
+  [[nodiscard]] auto attribute(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  _CCCL_NODISCARD auto attr() const
+  [[nodiscard]] auto attribute() const
   {
-    return attr(detail::__dev_attr<_Attr>());
+    return attribute(__detail::__dev_attr<_Attr>());
   }
 
-  _CCCL_NODISCARD ::std::string get_name() const
+  //! @brief Retrieve string with the name of this device.
+  //!
+  //! @return String containing the name of this device.
+  [[nodiscard]] ::std::string name() const
   {
     constexpr int __max_name_length = 256;
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    detail::driver::getName(__name.data(), __max_name_length, get());
+    __detail::driver::getName(__name.data(), __max_name_length, get());
     return __name;
   }
 
@@ -139,6 +146,12 @@ public:
     return __can_access;
   }
 
+  //! @brief Retrieve architecture traits of this device.
+  //!
+  //! Architecture traits object contains information about certain traits
+  //! that are shared by all devices belonging to given architecture.
+  //!
+  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
   const arch_traits_t& arch_traits() const;
 
   // TODO this might return some more complex type in the future
@@ -151,9 +164,11 @@ public:
   //! if a full group of peer devices is needed, it needs to be pushed_back separately.
   //!
   //! @throws cuda_error if any peer access query fails
-  ::std::vector<device_ref> get_peers() const;
+  ::std::vector<device_ref> peer_devices() const;
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE_REF

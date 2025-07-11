@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // type_traits
 
 // is_swappable
@@ -92,7 +90,7 @@ int main(int, char**)
     // test non-referenceable types
     static_assert(!cuda::std::is_swappable<void>::value, "");
     static_assert(!cuda::std::is_swappable<int() const>::value, "");
-    static_assert(!cuda::std::is_swappable<int()&>::value, "");
+    static_assert(!cuda::std::is_swappable<int() &>::value, "");
   }
   {
     // test that a deleted swap is correctly handled.

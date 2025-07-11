@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int (&input_data)[num_elements])
+__host__ __device__ constexpr void test(const int (&input_data)[num_elements])
 {
   Iter first{cuda::std::begin(input_data)};
   Iter last{cuda::std::end(input_data)};
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int (&input_data)[num_e
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   constexpr int input_data[num_elements] = INPUT_DATA;
   test<forward_iterator<const int*>>(input_data);
@@ -56,9 +56,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

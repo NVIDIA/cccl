@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -74,18 +73,21 @@ struct DeviceMerge
             typename CompareOp = ::cuda::std::less<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorIn1 keys_in1,
-    int num_keys1,
+    ::cuda::std::int64_t num_keys1,
     KeyIteratorIn2 keys_in2,
-    int num_keys2,
+    ::cuda::std::int64_t num_keys2,
     KeyIteratorOut keys_out,
     CompareOp compare_op = {},
     cudaStream_t stream  = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
+
+    using offset_t = ::cuda::std::int64_t;
+
     return detail::merge::
-      dispatch_t<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, KeyIteratorOut, NullType*, int, CompareOp>::
+      dispatch_t<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, KeyIteratorOut, NullType*, offset_t, CompareOp>::
         dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -158,19 +160,22 @@ struct DeviceMerge
             typename CompareOp = ::cuda::std::less<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorIn1 keys_in1,
     ValueIteratorIn1 values_in1,
-    int num_pairs1,
+    ::cuda::std::int64_t num_pairs1,
     KeyIteratorIn2 keys_in2,
     ValueIteratorIn2 values_in2,
-    int num_pairs2,
+    ::cuda::std::int64_t num_pairs2,
     KeyIteratorOut keys_out,
     ValueIteratorOut values_out,
     CompareOp compare_op = {},
     cudaStream_t stream  = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
+
+    using offset_t = ::cuda::std::int64_t;
+
     return detail::merge::dispatch_t<
       KeyIteratorIn1,
       ValueIteratorIn1,
@@ -178,7 +183,7 @@ struct DeviceMerge
       ValueIteratorIn2,
       KeyIteratorOut,
       ValueIteratorOut,
-      int,
+      offset_t,
       CompareOp>::dispatch(d_temp_storage,
                            temp_storage_bytes,
                            keys_in1,

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class In, class Out>
 // concept indirectly_movable;
 
@@ -24,7 +22,9 @@ static_assert(!cuda::std::indirectly_movable<int*, const int*>, "");
 static_assert(cuda::std::indirectly_movable<const int*, int*>, "");
 
 // Can move from a pointer into an array but arrays aren't considered indirectly movable-from.
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(cuda::std::indirectly_movable<int*, int[2]>, "");
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(!cuda::std::indirectly_movable<int[2], int*>, "");
 static_assert(!cuda::std::indirectly_movable<int[2], int[2]>, "");
 static_assert(!cuda::std::indirectly_movable<int (&)[2], int (&)[2]>, "");
@@ -41,13 +41,11 @@ static_assert(!cuda::std::indirectly_movable<int(), int()>, "");
 static_assert(!cuda::std::indirectly_movable<int*, int()>, "");
 static_assert(!cuda::std::indirectly_movable<void, void>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
 // Can move move-only objects.
 static_assert(cuda::std::indirectly_movable<MoveOnly*, MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_movable<MoveOnly*, const MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_movable<const MoveOnly*, const MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_movable<const MoveOnly*, MoveOnly*>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 template <class T>
 struct PointerTo
@@ -56,7 +54,6 @@ struct PointerTo
   __host__ __device__ T& operator*() const;
 };
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
 // Can copy through a dereferenceable class.
 static_assert(cuda::std::indirectly_movable<int*, PointerTo<int>>, "");
 static_assert(!cuda::std::indirectly_movable<int*, PointerTo<const int>>, "");
@@ -65,7 +62,6 @@ static_assert(!cuda::std::indirectly_copyable<PointerTo<int>, PointerTo<const in
 static_assert(cuda::std::indirectly_movable<MoveOnly*, PointerTo<MoveOnly>>, "");
 static_assert(cuda::std::indirectly_movable<PointerTo<MoveOnly>, MoveOnly*>, "");
 static_assert(cuda::std::indirectly_movable<PointerTo<MoveOnly>, PointerTo<MoveOnly>>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {

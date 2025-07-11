@@ -21,21 +21,21 @@ public:
   typedef Arg argument_type;
   typedef bool result_type;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 unary_counting_predicate(Predicate p)
+  __host__ __device__ constexpr unary_counting_predicate(Predicate p)
       : p_(p)
       , count_(0)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const Arg& a)
+  __host__ __device__ constexpr bool operator()(const Arg& a)
   {
     ++count_;
     return p_(a);
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 size_t count() const
+  __host__ __device__ constexpr size_t count() const
   {
     return count_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void reset()
+  __host__ __device__ constexpr void reset()
   {
     count_ = 0;
   }
@@ -53,21 +53,21 @@ public:
   typedef Arg2 second_argument_type;
   typedef bool result_type;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 binary_counting_predicate(Predicate p)
+  __host__ __device__ constexpr binary_counting_predicate(Predicate p)
       : p_(p)
       , count_(0)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const Arg1& a1, const Arg2& a2)
+  __host__ __device__ constexpr bool operator()(const Arg1& a1, const Arg2& a2)
   {
     ++count_;
     return p_(a1, a2);
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 size_t count() const
+  __host__ __device__ constexpr size_t count() const
   {
     return count_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void reset()
+  __host__ __device__ constexpr void reset()
   {
     count_ = 0;
   }
@@ -91,27 +91,22 @@ public:
   {}
 
   template <class... Args>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 auto
-  operator()(Args&&... args) -> decltype(pred_(cuda::std::forward<Args>(args)...))
+  __host__ __device__ constexpr auto operator()(Args&&... args) -> decltype(pred_(cuda::std::forward<Args>(args)...))
   {
     ++(*count_);
     return pred_(cuda::std::forward<Args>(args)...);
   }
 
   template <class... Args>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 auto
-  operator()(Args&&... args) const -> decltype(pred_(cuda::std::forward<Args>(args)...))
+  __host__ __device__ constexpr auto operator()(Args&&... args) const
+    -> decltype(pred_(cuda::std::forward<Args>(args)...))
   {
     ++(*count_);
     return pred_(cuda::std::forward<Args>(args)...);
   }
 };
 
-#if TEST_STD_VER > 2014
-
 template <class Predicate>
 counting_predicate(Predicate pred, int& count) -> counting_predicate<Predicate>;
-
-#endif // TEST_STD_VER > 2014
 
 #endif // TEST_SUPPORT_COUNTING_PREDICATES_H

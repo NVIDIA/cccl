@@ -3,7 +3,10 @@ Param(
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
-    [int]$CXX_STANDARD = 17
+    [int]$CXX_STANDARD = 17,
+    [Parameter(Mandatory = $false)]
+    [Alias("arch")]
+    [string]$CUDA_ARCH = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,6 +21,12 @@ $script:CL_VERSION_STRING = & cl.exe /?
 if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
     $CL_VERSION = [version]$matches[1]
     Write-Host "Detected cl.exe version: $CL_VERSION"
+}
+
+$script:GLOBAL_CMAKE_OPTIONS = ""
+if ($CUDA_ARCH -ne "") {
+    # Quote the value to ensure it's treated as a single argument, even with semicolons
+    $script:GLOBAL_CMAKE_OPTIONS += "`"-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH`" "
 }
 
 if (-not $env:CCCL_BUILD_INFIX) {
@@ -40,8 +49,8 @@ $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
 # Prepare environment for CMake:
 $env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
 $env:CTEST_PARALLEL_LEVEL = 1
-$env:CUDAHOSTCXX = $HOST_COMPILER.FullName
-$env:CXX = $HOST_COMPILER.FullName
+$env:CUDAHOSTCXX = $script:HOST_COMPILER
+$env:CXX = $script:HOST_COMPILER
 
 Write-Host "========================================"
 Write-Host "Begin build"
@@ -56,6 +65,7 @@ Write-Host "NVCC_VERSION=$NVCC_VERSION"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
 Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
+Write-Host "GLOBAL_CMAKE_OPTIONS=$script:GLOBAL_CMAKE_OPTIONS"
 Write-Host "Current commit is:"
 Write-Host "$(git log -1 --format=short)"
 Write-Host "========================================"
@@ -82,7 +92,7 @@ function configure_preset {
     pushd ".."
 
     # Echo and execute command to stdout:
-    $configure_command = "cmake --preset $PRESET $CMAKE_OPTIONS --log-level VERBOSE"
+    $configure_command = "cmake --preset $PRESET $script:GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS --log-level VERBOSE"
     Write-Host $configure_command
     Invoke-Expression $configure_command
     $test_result = $LastExitCode

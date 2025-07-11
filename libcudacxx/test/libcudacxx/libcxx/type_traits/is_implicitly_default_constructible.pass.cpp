@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // UNSUPPORTED: gcc-5
 // Before GCC 6, this trait fails. See https://stackoverflow.com/q/41799015/627587.
 
@@ -90,10 +88,10 @@ static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstr
 static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible3>::value, "");
 static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructible>::value, "");
 static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructible>::value, "");
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 7 // GCC 6 + 7 complain about implicit conversion
+#if !TEST_COMPILER(GCC, <, 8) // GCC 6 + 7 complain about implicit conversion
 static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructibleWithBase>::value, "");
 static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructibleWithBase>::value, "");
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 7
+#endif // !TEST_COMPILER(GCC, <, 8)
 
 int main(int, char**)
 {

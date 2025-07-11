@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,34 +20,40 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __cccl_is_unsigned_integer : public false_type
-{};
+inline constexpr bool __cccl_is_unsigned_integer_v = false;
+
 template <>
-struct __cccl_is_unsigned_integer<unsigned char> : public true_type
-{};
+inline constexpr bool __cccl_is_unsigned_integer_v<unsigned char> = true;
+
 template <>
-struct __cccl_is_unsigned_integer<unsigned short> : public true_type
-{};
+inline constexpr bool __cccl_is_unsigned_integer_v<unsigned short> = true;
+
 template <>
-struct __cccl_is_unsigned_integer<unsigned int> : public true_type
-{};
+inline constexpr bool __cccl_is_unsigned_integer_v<unsigned int> = true;
+
 template <>
-struct __cccl_is_unsigned_integer<unsigned long> : public true_type
-{};
+inline constexpr bool __cccl_is_unsigned_integer_v<unsigned long> = true;
+
 template <>
-struct __cccl_is_unsigned_integer<unsigned long long> : public true_type
-{};
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+inline constexpr bool __cccl_is_unsigned_integer_v<unsigned long long> = true;
+
+#if _CCCL_HAS_INT128()
 template <>
-struct __cccl_is_unsigned_integer<__uint128_t> : public true_type
-{};
-#endif
+inline constexpr bool __cccl_is_unsigned_integer_v<__uint128_t> = true;
+#endif // _CCCL_HAS_INT128()
+
+template <class _Tp>
+inline constexpr bool __cccl_is_cv_unsigned_integer_v = __cccl_is_unsigned_integer_v<remove_cv_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H

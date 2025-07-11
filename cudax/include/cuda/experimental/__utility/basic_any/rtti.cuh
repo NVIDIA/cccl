@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,8 +12,6 @@
 #define __CUDAX_DETAIL_BASIC_ANY_RTTI_H
 
 #include <cuda/std/detail/__config>
-
-#include "cuda/std/__cccl/unreachable.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
@@ -30,12 +29,11 @@
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
-#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
-
 #include <nv/target>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -61,18 +59,18 @@ struct bad_any_cast : ::std::bad_cast
   }
 };
 
-_CCCL_NORETURN _CUDAX_HOST_API inline void __throw_bad_any_cast()
+[[noreturn]] _CCCL_HOST_API inline void __throw_bad_any_cast()
 {
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
-struct __rtti_base : detail::__immovable
+struct __rtti_base : __immovable
 {
-  _CUDAX_HOST_API constexpr __rtti_base(
+  _CCCL_HOST_API constexpr __rtti_base(
     __vtable_kind __kind, uint16_t __nbr_interfaces, _CUDA_VSTD::__type_info_ref __self) noexcept
       : __kind_(__kind)
       , __nbr_interfaces_(__nbr_interfaces)
@@ -113,7 +111,7 @@ _CCCL_GLOBAL_CONSTANT __object_metadata __object_metadata_v = {
   sizeof(_Tp), alignof(_Tp), &_CCCL_TYPEID(_Tp), &_CCCL_TYPEID(_Tp*), &_CCCL_TYPEID(_Tp const*)};
 
 template <class _Tp>
-_CUDAX_HOST_API void __dtor_fn(void* __pv, bool __small) noexcept
+_CCCL_HOST_API void __dtor_fn(void* __pv, bool __small) noexcept
 {
   __small ? static_cast<_Tp*>(__pv)->~_Tp() //
           : delete *static_cast<_Tp**>(__pv);
@@ -127,7 +125,7 @@ _CUDAX_HOST_API void __dtor_fn(void* __pv, bool __small) noexcept
 struct __rtti : __rtti_base
 {
   template <class _Tp, class _Super, class... _Interfaces>
-  _CUDAX_TRIVIAL_HOST_API constexpr __rtti(
+  _CCCL_TRIVIAL_HOST_API constexpr __rtti(
     __tag<_Tp, _Super>, __tag<_Interfaces...>, __base_info const* __base_vptr_map) noexcept
       : __rtti_base{__vtable_kind::__rtti, sizeof...(_Interfaces), _CCCL_TYPEID(__rtti)}
       , __dtor_(&__dtor_fn<_Tp>)
@@ -137,8 +135,8 @@ struct __rtti : __rtti_base
   {}
 
   template <class... _Interfaces>
-  _CCCL_NODISCARD _CUDAX_HOST_API auto
-  __query_interface(__iset<_Interfaces...>) const noexcept -> __vptr_for<__iset<_Interfaces...>>
+  [[nodiscard]] _CCCL_HOST_API auto __query_interface(__iset<_Interfaces...>) const noexcept
+    -> __vptr_for<__iset<_Interfaces...>>
   {
     // TODO: find a way to check at runtime that the requested __iset is a subset
     // of the interfaces in the vtable.
@@ -149,7 +147,7 @@ struct __rtti : __rtti_base
   // comparing typeids. If the requested interface is found, return a pointer to
   // its vtable; otherwise, return nullptr.
   template <class _Interface>
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_HOST_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     // On sane implementations, comparing type_info objects first compares their
     // addresses and, if that fails, it does a string comparison. What we want is
@@ -186,7 +184,7 @@ template <size_t _NbrInterfaces>
 struct __rtti_ex : __rtti
 {
   template <class _Tp, class _Super, class... _Interfaces, class _VPtr>
-  _CUDAX_HOST_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VPtr __self) noexcept
+  _CCCL_HOST_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VPtr __self) noexcept
       : __rtti{__type, __ibases, __base_vptr_array}
       , __base_vptr_array{{&_CCCL_TYPEID(_Interfaces), static_cast<__vptr_for<_Interfaces>>(__self)}...}
   {}
@@ -201,8 +199,8 @@ struct __rtti_ex : __rtti
 //! interfaces.
 //!
 template <class _SrcInterface, class _DstInterface>
-_CCCL_NODISCARD _CUDAX_HOST_API auto
-__try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept -> __vptr_for<_DstInterface>
+[[nodiscard]] _CCCL_HOST_API auto __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept
+  -> __vptr_for<_DstInterface>
 {
   static_assert(_CUDA_VSTD::is_class_v<_SrcInterface> && _CUDA_VSTD::is_class_v<_DstInterface>, "expected class types");
   if (__src_vptr == nullptr)
@@ -227,7 +225,7 @@ __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept -> __vptr_for<_Ds
 }
 
 template <class _SrcInterface, class _DstInterface>
-_CCCL_NODISCARD _CUDAX_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
+[[nodiscard]] _CCCL_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
   noexcept(_CUDA_VSTD::is_same_v<_SrcInterface, _DstInterface>) //
   -> __vptr_for<_DstInterface>
 {
@@ -249,6 +247,6 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_RTTI_H

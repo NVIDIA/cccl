@@ -42,16 +42,40 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::merge_sort
 {
-namespace merge_sort
+
+template <typename PolicyT, typename = void>
+struct MergeSortPolicyWrapper : PolicyT
 {
+  CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct MergeSortPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::MergeSortPolicy::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_DEFINE_SUB_POLICY_GETTER(MergeSort);
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper<PolicyT> MakeMergeSortPolicyWrapper(PolicyT policy)
+{
+  return MergeSortPolicyWrapper<PolicyT>{policy};
+}
+
 template <typename KeyIteratorT>
 struct policy_hub
 {
-  using KeyT = value_t<KeyIteratorT>;
+  using KeyT = it_value_t<KeyIteratorT>;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     using MergeSortPolicy =
       AgentMergeSortPolicy<256,
@@ -63,9 +87,9 @@ struct policy_hub
 
   // NVBug 3384810
 #if defined(_NVHPC_CUDA)
-  using Policy520 = Policy350;
+  using Policy520 = Policy500;
 #else
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
+  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
       AgentMergeSortPolicy<512,
@@ -88,10 +112,7 @@ struct policy_hub
 
   using MaxPolicy = Policy600;
 };
-} // namespace merge_sort
-} // namespace detail
 
-template <typename KeyIteratorT>
-using DeviceMergeSortPolicy = detail::merge_sort::policy_hub<KeyIteratorT>;
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

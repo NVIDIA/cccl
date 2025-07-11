@@ -14,8 +14,6 @@
 //   bool
 //   operator==(const tuple<TTypes...>& t, const tuple<UTypes...>& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 // cuda::std::string not supported
 // #include <cuda/std/string>
@@ -145,7 +143,6 @@ int main(int, char**)
     assert(!(t1 == t2));
     assert(t1 != t2);
   }
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::tuple<long, int, double> T1;
     typedef cuda::std::tuple<double, long, int> T2;
@@ -154,7 +151,6 @@ int main(int, char**)
     static_assert(!(t1 == t2), "");
     static_assert(t1 != t2, "");
   }
-#endif
 
   return 0;
 }

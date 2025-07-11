@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // struct incrementable_traits;
 
@@ -17,31 +15,14 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 2017
 template <class T>
-concept check_has_difference_type = requires { typename cuda::std::incrementable_traits<T>::difference_type; };
+_CCCL_CONCEPT check_has_difference_type =
+  _CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::incrementable_traits<T>::difference_type));
 
 template <class T, class Expected>
-concept check_difference_type_matches =
-  check_has_difference_type<T>
-  && cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>;
-#else
-template <class T, class = void>
-_CCCL_INLINE_VAR constexpr bool check_has_difference_type = false;
-
-template <class T>
-_CCCL_INLINE_VAR constexpr bool
-  check_has_difference_type<T, cuda::std::void_t<typename cuda::std::incrementable_traits<T>::difference_type>> = true;
-
-template <class T, class Expected>
-_CCCL_CONCEPT_FRAGMENT(
-  check_difference_type_matches_,
-  requires()(requires(check_has_difference_type<T>),
-             requires(cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>)));
-
-template <class T, class Expected>
-_CCCL_CONCEPT check_difference_type_matches = _CCCL_FRAGMENT(check_difference_type_matches_, T, Expected);
-#endif
+_CCCL_CONCEPT check_difference_type_matches = _CCCL_REQUIRES_EXPR(
+  (T, Expected))(requires(check_has_difference_type<T>),
+                 requires(cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>));
 
 template <class T, class Expected>
 __host__ __device__ constexpr bool check_incrementable_traits()
@@ -147,9 +128,9 @@ static_assert(!check_has_difference_type<long double>, "");
 static_assert(!check_has_difference_type<float&>, "");
 static_assert(!check_has_difference_type<float const&>, "");
 
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue with void
+#if !TEST_COMPILER(GCC, <, 11) || TEST_STD_VER < 2020 // gcc 10 has an issue with void
 static_assert(!check_has_difference_type<void*>, "");
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020
+#endif // !TEST_COMPILER(GCC, <, 11) || TEST_STD_VER < 2020
 static_assert(!check_has_difference_type<cuda::std::nullptr_t>, "");
 static_assert(!check_has_difference_type<int()>, "");
 static_assert(!check_has_difference_type<int() noexcept>, "");
@@ -164,7 +145,7 @@ static_assert(!check_has_difference_type<int (&)() noexcept>, "");
   static_assert(!check_has_difference_type<int (type::*)() cv&>, "");           \
   static_assert(!check_has_difference_type<int (type::*)() cv & noexcept>, ""); \
   static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");          \
-  static_assert(!check_has_difference_type < int(type::*)() cv && noexcept >, "");
+  static_assert(!check_has_difference_type < int (type::*)() cv && noexcept >, "");
 
 struct empty
 {};

@@ -25,21 +25,21 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_assignable : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_nothrow_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg);
 
-#elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE)
+#else // ^^^ _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE ^^^ / vvv !_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE vvv
 
 template <bool, class _Tp, class _Arg>
 struct __cccl_is_nothrow_assignable;
@@ -54,72 +54,17 @@ struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
-    : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_assignable : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 {};
-
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class _Arg>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
-
-#else // ^^^ _LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE ^^^ / vvv !_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE vvv
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable : public false_type
-{};
+inline constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
 
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable<_Tp&, _Tp>
-#  if defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(_Tp)>
-{};
-#  else
-    : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
-#  endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable<_Tp&, _Tp&>
-#  if defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(_Tp)>
-{};
-#  else
-    : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
-#  endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable<_Tp&, const _Tp&>
-#  if defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(_Tp)>
-{};
-#  else
-    : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
-#  endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-template <class _Tp>
-struct is_nothrow_assignable<_Tp&, _Tp&&>
-#  if defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(_Tp)>
-{};
-#  else
-    : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
-#  endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class _Arg>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
-
-#endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE)
+#endif // !_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H

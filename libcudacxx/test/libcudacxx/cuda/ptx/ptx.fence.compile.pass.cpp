@@ -18,7 +18,9 @@
 #include "generated/fence_mbarrier_init.h"
 #include "generated/fence_proxy_alias.h"
 #include "generated/fence_proxy_async.h"
+#include "generated/fence_proxy_async_generic_sync_restrict.h"
 #include "generated/fence_proxy_tensormap_generic.h"
+#include "generated/fence_sync_restrict.h"
 
 int main(int, char**)
 {

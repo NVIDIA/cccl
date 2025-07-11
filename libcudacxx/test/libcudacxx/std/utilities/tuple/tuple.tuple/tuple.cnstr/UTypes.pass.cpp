@@ -16,16 +16,12 @@
 // XFAIL: gcc-4.8, gcc-4.9
 // XFAIL: msvc-19.12, msvc-19.13
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
 #include "MoveOnly.h"
 #include "test_convertible.h"
 #include "test_macros.h"
-
-#if TEST_STD_VER > 2011
 
 struct Empty
 {};
@@ -36,8 +32,6 @@ struct A
       : id_(i)
   {}
 };
-
-#endif
 
 struct NoDefault
 {
@@ -104,7 +98,7 @@ int main(int, char**)
     assert(cuda::std::get<2>(t) == 2);
   }
   // extensions, MSVC issues
-#if defined(_LIBCUDACXX_VERSION) && !defined(_MSC_VER)
+#if defined(_LIBCUDACXX_VERSION) && !TEST_COMPILER(MSVC)
   {
     using E   = MoveOnly;
     using Tup = cuda::std::tuple<E, E, E>;
@@ -125,16 +119,13 @@ int main(int, char**)
     assert(cuda::std::get<2>(t2) == E());
   }
 #endif
-#if TEST_STD_VER > 2011
   {
-    constexpr cuda::std::tuple<Empty> t0{Empty()};
-    (void) t0;
+    [[maybe_unused]] constexpr cuda::std::tuple<Empty> t0{Empty()};
   }
   {
     constexpr cuda::std::tuple<A, A> t(3, 2);
     static_assert(cuda::std::get<0>(t).id_ == 3, "");
   }
-#endif
   // Check that SFINAE is properly applied with the default reduced arity
   // constructor extensions.
   test_default_constructible_extension_sfinae();

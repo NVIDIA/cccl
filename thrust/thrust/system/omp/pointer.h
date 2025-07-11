@@ -33,7 +33,7 @@
 #include <thrust/detail/reference.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -89,7 +89,10 @@ using pointer = thrust::pointer<T, thrust::system::omp::tag, thrust::tagged_refe
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_pointer = thrust::pointer<T, thrust::system::omp::tag, typename std::add_lvalue_reference<T>::type>;
+using universal_pointer = thrust::pointer<T, thrust::system::omp::tag, ::cuda::std::add_lvalue_reference_t<T>>;
+
+template <typename T>
+using universal_host_pinned_pointer = universal_pointer<T>;
 
 /*! \p reference is a wrapped reference to an object stored in memory available
  *  to the \p omp system. \p reference is the type of the result of
@@ -114,6 +117,7 @@ namespace omp
 {
 using thrust::system::omp::pointer;
 using thrust::system::omp::reference;
+using thrust::system::omp::universal_host_pinned_pointer;
 using thrust::system::omp::universal_pointer;
 } // namespace omp
 

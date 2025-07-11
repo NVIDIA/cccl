@@ -70,21 +70,49 @@
  */
 
 #include <cuda/__ptx/instructions/barrier_cluster.h>
+#include <cuda/__ptx/instructions/bfind.h>
+#include <cuda/__ptx/instructions/bmsk.h>
+#include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_tensor.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
+#include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/__ptx/instructions/exit.h>
 #include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/getctarank.h>
+#include <cuda/__ptx/instructions/ld.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/multimem_ld_reduce.h>
+#include <cuda/__ptx/instructions/multimem_red.h>
+#include <cuda/__ptx/instructions/multimem_st.h>
+#include <cuda/__ptx/instructions/prmt.h>
 #include <cuda/__ptx/instructions/red_async.h>
+#include <cuda/__ptx/instructions/shfl_sync.h>
+#include <cuda/__ptx/instructions/shl.h>
+#include <cuda/__ptx/instructions/shr.h>
+#include <cuda/__ptx/instructions/st.h>
 #include <cuda/__ptx/instructions/st_async.h>
+#include <cuda/__ptx/instructions/st_bulk.h>
+#include <cuda/__ptx/instructions/tcgen05_alloc.h>
+#include <cuda/__ptx/instructions/tcgen05_commit.h>
+#include <cuda/__ptx/instructions/tcgen05_cp.h>
+#include <cuda/__ptx/instructions/tcgen05_fence.h>
+#include <cuda/__ptx/instructions/tcgen05_ld.h>
+#include <cuda/__ptx/instructions/tcgen05_mma.h>
+#include <cuda/__ptx/instructions/tcgen05_mma_ws.h>
+#include <cuda/__ptx/instructions/tcgen05_shift.h>
+#include <cuda/__ptx/instructions/tcgen05_st.h>
+#include <cuda/__ptx/instructions/tcgen05_wait.h>
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
 #include <cuda/__ptx/instructions/tensormap_replace.h>
+#include <cuda/__ptx/instructions/trap.h>
 
 #endif // _CUDA_PTX

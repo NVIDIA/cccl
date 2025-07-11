@@ -31,7 +31,7 @@ int main()
   void_interface sync;
   auto token2 = ctx.logical_data(sync);
 
-  auto token3 = ctx.logical_token();
+  auto token3 = ctx.token();
   ctx.task(token2.write(), token.read())->*[](cudaStream_t, auto, auto) {
 
   };

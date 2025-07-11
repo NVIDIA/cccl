@@ -19,10 +19,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _InputIterator
+[[nodiscard]] _CCCL_API constexpr _InputIterator
 find_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
@@ -36,5 +40,7 @@ find_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_FIND_IF_H

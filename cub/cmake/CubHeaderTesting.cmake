@@ -15,7 +15,6 @@ function(cub_add_header_test label definitions)
     set(headertest_target ${config_prefix}.headers.${label})
 
     cccl_generate_header_tests(${headertest_target} cub
-      DIALECT ${config_dialect}
       GLOBS "cub/*.cuh"
     )
     target_link_libraries(${headertest_target} PUBLIC ${cub_target})
@@ -47,3 +46,10 @@ set(header_definitions
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
   "CCCL_DISABLE_FP16_SUPPORT")
 cub_add_header_test(no_half "${header_definitions}")
+
+# Check that half support can be disabled
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
+  "CCCL_DISABLE_FP8_SUPPORT")
+cub_add_header_test(no_fp8 "${header_definitions}")

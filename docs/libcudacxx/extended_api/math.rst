@@ -1,52 +1,87 @@
 .. _libcudacxx-extended-api-math:
 
 Math
-=====
+====
 
-.. code:: cuda
+.. toctree::
+   :hidden:
+   :maxdepth: 1
 
-   template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr T ceil_div(T a, T b) noexcept;
+   math/ceil_div
+   math/round_up
+   math/round_down
+   math/ilog
+   math/ipow
+   math/pow2
+   math/isqrt
+   math/neg
+   math/uabs
 
-ceil_div
----------
+.. list-table::
+   :widths: 25 45 30 30
+   :header-rows: 1
 
-- _Requires_: `is_integral_v<T>` is true.
-- _Preconditions_: `a >= 0` is true and `b > 0` is true.
-- _Returns_: divides `a` by `b`. If `a` is not a multiple of `b` rounds the result up to the next integer value.
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
 
-.. note::
+   * - :ref:`ceil_div <libcudacxx-extended-api-math-ceil-div>`
+     - Ceiling division
+     - CCCL 2.7.0
+     - CUDA 12.8
 
-   The function is only constexpr from C++14 onwards
+   * - :ref:`round_up <libcudacxx-extended-api-math-round-up>`
+     - Round up to the next multiple
+     - CCCL 2.9.0
+     - CUDA 12.9
 
-**Example**: This API is very useful for determining the *number of thread blocks* required to process a fixed amount of work, given a fixed number of threads per block:
+   * - :ref:`round_down <libcudacxx-extended-api-math-round-down>`
+     - Round down to the previous multiple
+     - CCCL 2.9.0
+     - CUDA 12.9
 
-.. code:: cuda
+   * - :ref:`ilog2 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 2
+     - CCCL 3.0.0
+     - CUDA 13.0
 
-   #include <vector>
-   #include <cuda/cmath>
+   * - :ref:`ilog10 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 10
+     - CCCL 3.0.0
+     - CUDA 13.0
 
-   __global__ void vscale(int n, float s, float *x) {
-     int i = blockIdx.x * blockDim.x + threadIdx.x;
-     if (i < n) x[i] *= s;
-   }
+   * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
+     - Integer power
+     - CCCL 3.1.0
+     - CUDA 13.1
 
-   int main() {
-     const int n = 100000;
-     const float s = 2.f;
-     std::vector<float> x(n, 1.f);
+   * - :ref:`is_power_of_two <libcudacxx-extended-api-math-pow2>`
+     - If the value is a power of two
+     - CCCL 3.1.0
+     - CUDA 13.1
 
-     // Given a fixed number of threads per block...
-     constexpr int threads_per_block = 256;
+   * - :ref:`isqrt <libcudacxx-extended-api-math-isqrt>`
+     - Integer square root
+     - CCCL 3.1.0
+     - CUDA 13.1
 
-     // ...dividing some "n" by "threads_per_block" may lead to a remainder,
-     // requiring the kernel to be launched with an extra thread block to handle it.
-     const int thread_blocks = cuda::ceil_div(n, threads_per_block);
+   * - :ref:`neg <libcudacxx-extended-api-math-neg>`
+     - Integer negation
+     - CCCL 3.1.0
+     - CUDA 13.1
 
-     vscale<<<thread_blocks, threads_per_block>>>(n, s, x.data());
-     cudaDeviceSynchronize();
+   * - :ref:`next_power_of_two <libcudacxx-extended-api-math-pow2>`
+     - Next power of two
+     - CCCL 3.1.0
+     - CUDA 13.1
 
-     return 0;
-   }
+   * - :ref:`prev_power_of_two <libcudacxx-extended-api-math-pow2>`
+     - Previous power of two
+     - CCCL 3.1.0
+     - CUDA 13.1
 
-`See it on Godbolt TODO`
+   * - :ref:`uabs <libcudacxx-extended-api-math-uabs>`
+     - Unsigned absolute value
+     - CCCL 3.1.0
+     - CUDA 13.1

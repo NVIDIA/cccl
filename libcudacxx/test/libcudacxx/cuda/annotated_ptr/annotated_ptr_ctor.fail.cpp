@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-
 #include "utils.h"
 
 template <typename T, typename P>

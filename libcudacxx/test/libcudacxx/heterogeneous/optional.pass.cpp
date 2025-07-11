@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
-// UNSUPPORTED: c++11
 
 #include <cuda/std/cassert>
 #include <cuda/std/optional>

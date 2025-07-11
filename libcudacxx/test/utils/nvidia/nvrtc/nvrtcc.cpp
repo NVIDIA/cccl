@@ -17,10 +17,11 @@
 #include <string>
 #include <vector>
 
+#include <stdio.h>
+
 #include "nvrtcc_build.h"
 #include "nvrtcc_run.h"
 #include "utils/platform.h"
-#include <stdio.h>
 
 ArgList nvrtcArguments;
 ArgList ignoredArguments;
@@ -160,6 +161,12 @@ ArgPair argHandlers[] = {
    std::regex("^(?:-G|--device-debug)$"),
    [](const std::smatch&) {
      nvrtcArguments.emplace_back("-G");
+     return NORMAL;
+   }},
+  {// Matches -D
+   std::regex("^-D.+$"),
+   [](const std::smatch& match) {
+     nvrtcArguments.emplace_back(match[0].str());
      return NORMAL;
    }},
   {// Capture an argument that is just '-'. If no input file is listed input is on stdin

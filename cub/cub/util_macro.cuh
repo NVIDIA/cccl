@@ -49,55 +49,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  define CUB_PREVENT_MACRO_SUBSTITUTION
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
-{
-  return t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u);
-}
-
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t))
-{
-  return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
-}
-#  undef CUB_PREVENT_MACRO_SUBSTITUTION
-#endif
-
-#ifndef CUB_MAX
-/// Select maximum(a, b)
-#  define CUB_MAX(a, b) (((b) > (a)) ? (b) : (a))
-#endif
-
-#ifndef CUB_MIN
-/// Select minimum(a, b)
-#  define CUB_MIN(a, b) (((b) < (a)) ? (b) : (a))
-#endif
-
-#ifndef CUB_QUOTIENT_FLOOR
-/// Quotient of x/y rounded down to nearest integer
-#  define CUB_QUOTIENT_FLOOR(x, y) ((x) / (y))
-#endif
-
-#ifndef CUB_QUOTIENT_CEILING
-/// Quotient of x/y rounded up to nearest integer
-// FIXME(bgruber): the following computation can overflow, use cuda::ceil_div instead
-#  define CUB_QUOTIENT_CEILING(x, y) (((x) + (y) - 1) / (y))
-#endif
-
-#ifndef CUB_ROUND_UP_NEAREST
-/// x rounded up to the nearest multiple of y
-#  define CUB_ROUND_UP_NEAREST(x, y) (CUB_QUOTIENT_CEILING(x, y) * y)
-#endif
-
-#ifndef CUB_ROUND_DOWN_NEAREST
-/// x rounded down to the nearest multiple of y
-#  define CUB_ROUND_DOWN_NEAREST(x, y) (((x) / (y)) * y)
-#endif
-
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
 #  define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #endif
@@ -112,12 +63,6 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #  if !_CCCL_CUDA_COMPILER(NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  endif // !_CCCL_CUDA_COMPILER(NVHPC)
-#  if _CCCL_COMPILER(ICC)
-#    pragma nv_diag_suppress 1407 // the "__visibility__" attribute can only appear on functions and
-                                  // variables with external linkage'
-#    pragma warning(disable : 1890) // the "__visibility__" attribute can only appear on functions and
-                                    // variables with external linkage'
-#  endif // _CCCL_COMPILER(ICC)
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 #ifndef CUB_DEFINE_KERNEL_GETTER
@@ -129,11 +74,18 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #endif
 
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
-#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                                         \
-    CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::name##Policy> name() \
-    {                                                                                                \
-      return MakePolicyWrapper(typename StaticPolicyT::name##Policy());                              \
+#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                            \
+    CUB_RUNTIME_FUNCTION static constexpr auto name()                   \
+    {                                                                   \
+      return MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
     }
 #endif
+
+// RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
+#if defined(CCCL_AVOID_SORT_UNROLL)
+#  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_NOUNROLL()
+#else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
+#  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_UNROLL_FULL()
+#endif // !CCCL_AVOID_SORT_UNROLL
 
 CUB_NAMESPACE_END

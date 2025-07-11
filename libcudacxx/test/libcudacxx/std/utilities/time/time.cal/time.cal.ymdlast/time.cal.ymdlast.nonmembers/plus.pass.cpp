@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_day_last;
@@ -101,13 +100,15 @@ int main(int, char**)
   auto constexpr January = cuda::std::chrono::January;
 
   { // year_month_day_last + months
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last>() + cuda::std::declval<months>());
-    ASSERT_NOEXCEPT(cuda::std::declval<months>() + cuda::std::declval<year_month_day_last>());
+    static_assert(noexcept(cuda::std::declval<year_month_day_last>() + cuda::std::declval<months>()));
+    static_assert(noexcept(cuda::std::declval<months>() + cuda::std::declval<year_month_day_last>()));
 
-    ASSERT_SAME_TYPE(year_month_day_last,
-                     decltype(cuda::std::declval<year_month_day_last>() + cuda::std::declval<months>()));
-    ASSERT_SAME_TYPE(year_month_day_last,
-                     decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_day_last>()));
+    static_assert(
+      cuda::std::is_same_v<year_month_day_last,
+                           decltype(cuda::std::declval<year_month_day_last>() + cuda::std::declval<months>())>);
+    static_assert(
+      cuda::std::is_same_v<year_month_day_last,
+                           decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_day_last>())>);
 
     static_assert(testConstexprMonths(year_month_day_last{year{1}, month_day_last{January}}), "");
 
@@ -125,13 +126,15 @@ int main(int, char**)
   }
 
   { // year_month_day_last + years
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last>() + cuda::std::declval<years>());
-    ASSERT_NOEXCEPT(cuda::std::declval<years>() + cuda::std::declval<year_month_day_last>());
+    static_assert(noexcept(cuda::std::declval<year_month_day_last>() + cuda::std::declval<years>()));
+    static_assert(noexcept(cuda::std::declval<years>() + cuda::std::declval<year_month_day_last>()));
 
-    ASSERT_SAME_TYPE(year_month_day_last,
-                     decltype(cuda::std::declval<year_month_day_last>() + cuda::std::declval<years>()));
-    ASSERT_SAME_TYPE(year_month_day_last,
-                     decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_day_last>()));
+    static_assert(
+      cuda::std::is_same_v<year_month_day_last,
+                           decltype(cuda::std::declval<year_month_day_last>() + cuda::std::declval<years>())>);
+    static_assert(
+      cuda::std::is_same_v<year_month_day_last,
+                           decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_day_last>())>);
 
     static_assert(testConstexprYears(year_month_day_last{year{1}, month_day_last{January}}), "");
 

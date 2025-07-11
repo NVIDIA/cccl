@@ -7,18 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class U, class... Args>
 //   T& optional<T>::emplace(initializer_list<U> il, Args&&... args);
 
 #include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
-#ifdef _LIBCUDACXX_HAS_VECTOR
-#  include <cuda/std/vector>
-#endif
 
 #include "test_macros.h"
 
@@ -94,7 +91,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_X()
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
 {
-  optional<Y> opt;
+  optional<Y> opt{};
   auto& v = opt.emplace({1, 2});
   static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
   assert(static_cast<bool>(opt) == true);
@@ -103,14 +100,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
   int j_ = 0;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, bool);
+  STATIC_MEMBER_VAR(dtor_called, bool)
   Z()
       : i_(0)
   {}
@@ -142,7 +139,7 @@ void test_exceptions()
   {
     assert(static_cast<bool>(opt) == true);
     assert(Z::dtor_called() == false);
-    auto& v = opt.emplace({1, 2});
+    [[maybe_unused]] auto& v = opt.emplace({1, 2});
     static_assert(cuda::std::is_same_v<Z&, decltype(v)>, "");
     assert(false);
   }
@@ -153,7 +150,7 @@ void test_exceptions()
     assert(Z::dtor_called() == true);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -163,25 +160,23 @@ int main(int, char**)
     static_assert(check_X());
 #endif
   }
-#ifdef _LIBCUDACXX_HAS_VECTOR
   {
-    optional<cuda::std::vector<int>> opt;
-    auto& v = opt.emplace({1, 2, 3}, cuda::std::allocator<int>());
-    static_assert(cuda::std::is_same_v<cuda::std::vector<int>&, decltype(v)>, "");
+    optional<cuda::std::inplace_vector<int, 3>> opt{};
+    auto& v = opt.emplace({1, 2, 3});
+    static_assert(cuda::std::is_same_v<cuda::std::inplace_vector<int, 3>&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
-    assert(*opt == cuda::std::vector<int>({1, 2, 3}));
+    assert((*opt == cuda::std::inplace_vector<int, 3>({1, 2, 3})));
     assert(&v == &*opt);
   }
-#endif
   {
     check_Y();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(check_Y());
 #endif
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

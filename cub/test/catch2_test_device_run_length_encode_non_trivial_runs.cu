@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_run_length_encode.cuh>
 
@@ -56,19 +55,18 @@ using all_types =
 
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
-#if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs with one or less elements
-      // https://github.com/NVIDIA/cccl/issues/426
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   REQUIRE(out_num_runs.front() == 0);
 }
@@ -79,15 +77,15 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   REQUIRE(out_num_runs.front() == 0);
 }
-#endif
 
 #if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs larger than INT32_MAX
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
@@ -258,13 +256,13 @@ struct device_rle_policy_hub
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using RleSweepPolicyT = cub::
       AgentRlePolicy<threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 
 struct CustomDeviceRunLengthEncode

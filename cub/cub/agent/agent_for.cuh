@@ -65,7 +65,7 @@ struct agent_block_striped_t
   template <bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int block_threads)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; item++)
     {
       const auto idx = static_cast<OffsetT>(block_threads * item + threadIdx.x);

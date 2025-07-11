@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_POINTER) && !defined(_LIBCUDACXX_USE_REMOVE_POINTER_FALLBACK)
@@ -36,27 +38,27 @@ using remove_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp*>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* const>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* volatile>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* const volatile>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 
 template <class _Tp>
@@ -65,5 +67,7 @@ using remove_pointer_t _CCCL_NODEBUG_ALIAS = typename remove_pointer<_Tp>::type;
 #endif // defined(_CCCL_BUILTIN_REMOVE_POINTER) && !defined(_LIBCUDACXX_USE_REMOVE_POINTER_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_POINTER_H

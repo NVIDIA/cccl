@@ -34,7 +34,7 @@
 #include <thrust/detail/config/memory_resource.h>
 #include <thrust/detail/integer_math.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr

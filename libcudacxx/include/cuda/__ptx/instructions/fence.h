@@ -28,6 +28,8 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.4. Parallel Synchronization and Communication Instructions: membar/fence
@@ -36,8 +38,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/fence_mbarrier_init.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_alias.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_async.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_async_generic_sync_restrict.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_tensormap_generic.h>
+#include <cuda/__ptx/instructions/generated/fence_sync_restrict.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_FENCE_H_

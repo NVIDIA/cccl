@@ -50,6 +50,15 @@ class LibcxxTestFormat(object):
             IntegratedTestKeywordParser(
                 "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
             ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_DEFINITIONS:", ParserKind.LIST, initial_value=[]
+            ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_OPTIONS_HOST:", ParserKind.LIST, initial_value=[]
+            ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
+            ),
         ]
 
     @staticmethod
@@ -94,9 +103,9 @@ class LibcxxTestFormat(object):
         is_pass_test = name.endswith(".pass.cpp") or name.endswith(".pass.mm")
         is_fail_test = name.endswith(".fail.cpp") or name.endswith(".fail.mm")
         is_runfail_test = name.endswith(".runfail.cpp") or name.endswith(".runfail.mm")
-        assert (
-            is_sh_test or name_ext == ".cpp" or name_ext == ".mm"
-        ), "non-cpp file must be sh test"
+        assert is_sh_test or name_ext == ".cpp" or name_ext == ".mm", (
+            "non-cpp file must be sh test"
+        )
 
         if test.config.unsupported:
             return (lit.Test.UNSUPPORTED, "A lit.local.cfg marked this unsupported")
@@ -127,6 +136,33 @@ class LibcxxTestFormat(object):
         if is_fail_test:
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
+
+        extra_compile_definitions = self._get_parser(
+            "ADDITIONAL_COMPILE_DEFINITIONS:", parsers
+        ).getValue()
+        test_cxx.compile_flags += [
+            ("-D%s" % mdef.strip()) for mdef in extra_compile_definitions
+        ]
+
+        extra_compile_options_host = self._get_parser(
+            "ADDITIONAL_COMPILE_OPTIONS_HOST:", parsers
+        ).getValue()
+        if test_cxx.type == "nvcc":
+            for flag in extra_compile_options_host:
+                if test_cxx.host_cxx.addCompileFlagIfSupported(flag.strip()):
+                    test_cxx.warning_flags += ["-Xcompiler", flag.strip()]
+
+            extra_compile_options_cuda = self._get_parser(
+                "ADDITIONAL_COMPILE_OPTIONS_CUDA:", parsers
+            ).getValue()
+            for flag in extra_compile_options_cuda:
+                if test_cxx.addCompileFlagIfSupported(flag.strip()):
+                    test_cxx.warning_flags += [flag.strip()]
+        else:
+            for flag in extra_compile_options_host:
+                if test_cxx.addCompileFlagIfSupported(flag.strip()):
+                    test_cxx.warning_flags += [flag.strip()]
+
         extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:
             test_cxx.compile_flags += [
@@ -269,7 +305,15 @@ class LibcxxTestFormat(object):
             # nodiscard before enabling it
             test_str_list = [b"ignoring return value", b"nodiscard", b"NODISCARD"]
             if any(test_str in contents for test_str in test_str_list):
-                test_cxx.flags += ["-Werror=unused-result"]
+                if test_cxx.type != "nvc++":
+                    test_cxx.flags += [
+                        "-Xcompiler",
+                        "-Werror",
+                        "-Xcompiler",
+                        "-Wunused",
+                    ]
+                else:
+                    test_cxx.flags += ["-Xcompiler", "-Werror=unused-result"]
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
 
         def check_rc(rc):

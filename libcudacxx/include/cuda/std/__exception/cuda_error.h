@@ -22,11 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/source_location>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
@@ -35,53 +32,111 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+#if _CCCL_HAS_CTK()
+using __cuda_error_t = ::cudaError_t;
+#else
+using __cuda_error_t = int;
+#endif
+
+#if _CCCL_HAS_EXCEPTIONS()
+
+namespace __detail
+{
+
+struct __msg_storage
+{
+  char __buffer[512]{0};
+};
+
+static char* __format_cuda_error(
+  __msg_storage& __msg_buffer,
+  const int __status,
+  const char* __msg,
+  const char* __api                 = nullptr,
+  _CUDA_VSTD::source_location __loc = _CUDA_VSTD::source_location::current()) noexcept
+{
+  ::snprintf(
+    __msg_buffer.__buffer,
+    512,
+    "%s:%d %s%s%s(%d): %s",
+    __loc.file_name(),
+    __loc.line(),
+    __api ? __api : "",
+    __api ? " " : "",
+#  if _CCCL_HAS_CTK()
+    ::cudaGetErrorString(::cudaError_t(__status)),
+#  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
+    "cudaError",
+#  endif // ^^^ !_CCCL_HAS_CTK() ^^^
+    __status,
+    __msg);
+  return __msg_buffer.__buffer;
+}
+
+} // namespace __detail
 
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-#if _CCCL_HAS_CUDA_COMPILER
-#  ifndef _CCCL_NO_EXCEPTIONS
 class cuda_error : public ::std::runtime_error
 {
-private:
-  struct __msg_storage
-  {
-    char __buffer[256];
-  };
+public:
+  cuda_error(const __cuda_error_t __status,
+             const char* __msg,
+             const char* __api                    = nullptr,
+             _CUDA_VSTD::source_location __loc    = _CUDA_VSTD::source_location::current(),
+             __detail::__msg_storage __msg_buffer = {}) noexcept
+      : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
+      , __status_(__status)
+  {}
 
-  static char* __format_cuda_error(::cudaError_t __status, const char* __msg, char* __msg_buffer) noexcept
+  [[nodiscard]] auto status() const noexcept -> __cuda_error_t
   {
-    ::snprintf(__msg_buffer, 256, "cudaError %d: %s", __status, __msg);
-    return __msg_buffer;
+    return __status_;
   }
 
-public:
-  cuda_error(::cudaError_t __status, const char* __msg, __msg_storage __msg_buffer = {0}) noexcept
-      : ::std::runtime_error(__format_cuda_error(__status, __msg, __msg_buffer.__buffer))
-  {}
+private:
+  __cuda_error_t __status_;
 };
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t __status, const char* __msg)
+[[noreturn]] _CCCL_API inline void __throw_cuda_error(
+  [[maybe_unused]] const __cuda_error_t __status,
+  [[maybe_unused]] const char* __msg,
+  [[maybe_unused]] const char* __api                 = nullptr,
+  [[maybe_unused]] _CUDA_VSTD::source_location __loc = _CUDA_VSTD::source_location::current())
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw ::cuda::cuda_error(__status, __msg);),
-                    ((void) __status; (void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+                    (::cudaGetLastError(); // clear CUDA error state
+                     throw ::cuda::cuda_error(__status, __msg, __api, __loc);), //
+                    (_CUDA_VSTD_NOVERSION::terminate();))
 }
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 class cuda_error
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI cuda_error(::cudaError_t, const char*) noexcept {}
+  _CCCL_API inline cuda_error(const __cuda_error_t,
+                              const char*,
+                              const char*                 = nullptr,
+                              _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current()) noexcept
+  {}
 };
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t, const char*)
+[[noreturn]] _CCCL_API inline void __throw_cuda_error(
+  const __cuda_error_t,
+  const char*,
+  const char*                 = nullptr,
+  _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current())
 {
   _CUDA_VSTD_NOVERSION::terminate();
 }
-#  endif // _CCCL_NO_EXCEPTIONS
-#endif // _CCCL_CUDA_COMPILER
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXCEPTION_CUDA_ERROR_H

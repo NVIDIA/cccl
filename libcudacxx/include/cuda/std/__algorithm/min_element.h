@@ -28,13 +28,13 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent, class _Proj>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter
-__min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
+_CCCL_API constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
 {
   if (__first == __last)
   {
@@ -53,15 +53,17 @@ __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
   return __first;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
+_CCCL_API constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
 {
-  auto __proj = __identity();
+  auto __proj = identity();
   return _CUDA_VSTD::__min_element<_Comp>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __proj);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value, "std::min_element requires a ForwardIterator");
@@ -73,14 +75,13 @@ min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-min_element(_ForwardIterator __first, _ForwardIterator __last)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator min_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::min_element(__first, __last, __less{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H

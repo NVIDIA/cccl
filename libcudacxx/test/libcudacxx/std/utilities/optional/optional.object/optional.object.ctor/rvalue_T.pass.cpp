@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: c++03, c++11
 
 // <cuda/std/optional>
 
@@ -22,7 +21,31 @@
 
 using cuda::std::optional;
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+template <class T>
+__host__ __device__ constexpr void test()
+{
+  static_assert(cuda::std::is_convertible_v<const T&, optional<T>> == cuda::std::is_convertible_v<const T&, T>, "");
+  {
+    cuda::std::remove_reference_t<T> input{42};
+    optional<T> opt{cuda::std::move(input)};
+    assert(opt.has_value());
+    assert(*opt == input);
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+  test<double>();
+  test<const int>();
+
+  test<ConstexprTestTypes::TestType>();
+  test<ExplicitConstexprTestTypes::TestType>();
+
+  return true;
+}
+
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
 public:
@@ -46,39 +69,10 @@ void test_exceptions()
     assert(i == 6);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    typedef int T;
-    constexpr optional<T> opt(T(5));
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(*opt == 5, "");
-
-    struct test_constexpr_ctor : public optional<T>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(T&&) {}
-    };
-  }
-  {
-    typedef double T;
-    constexpr optional<T> opt(T(3));
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(*opt == 3, "");
-
-    struct test_constexpr_ctor : public optional<T>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(T&&) {}
-    };
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    const int x = 42;
-    optional<const int> o(cuda::std::move(x));
-    assert(*o == 42);
-  }
   {
     typedef TestTypes::TestType T;
     T::reset();
@@ -109,47 +103,11 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == true);
     assert(opt.value().value == 3);
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    typedef ConstexprTestTypes::TestType T;
-    constexpr optional<T> opt = {T(3)};
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(opt.value().value == 3, "");
-
-    struct test_constexpr_ctor : public optional<T>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(const T&) {}
-    };
-  }
-  {
-    typedef ConstexprTestTypes::TestType T;
-    constexpr optional<T> opt = {3};
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(opt.value().value == 3, "");
-
-    struct test_constexpr_ctor : public optional<T>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(const T&) {}
-    };
-  }
-  {
-    typedef ExplicitConstexprTestTypes::TestType T;
-    static_assert(!cuda::std::is_convertible<T&&, optional<T>>::value, "");
-    constexpr optional<T> opt(T{3});
-    static_assert(static_cast<bool>(opt) == true, "");
-    static_assert(opt.value().value == 3, "");
-
-    struct test_constexpr_ctor : public optional<T>
-    {
-      __host__ __device__ constexpr test_constexpr_ctor(T&&) {}
-    };
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   {
     NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
   }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

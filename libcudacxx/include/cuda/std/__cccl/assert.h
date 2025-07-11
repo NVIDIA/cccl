@@ -55,7 +55,7 @@
 
 //! Ensure that we switch on device assertions when all assertions are enabled
 #ifndef CCCL_ENABLE_DEVICE_ASSERTIONS
-#  ifdef CCCL_ENABLE_ASSERTIONS
+#  if defined(CCCL_ENABLE_ASSERTIONS) || defined(__CUDACC_DEBUG__)
 #    define CCCL_ENABLE_DEVICE_ASSERTIONS
 #  endif // CCCL_ENABLE_ASSERTIONS
 #endif // !CCCL_ENABLE_DEVICE_ASSERTIONS
@@ -79,15 +79,9 @@ _CCCL_HOST_DEVICE
   __attribute__((__noreturn__));
 }
 #  endif // NDEBUG
-// ICC cannot deal with `__builtin_expect` in the constexpr evaluator, so just drop it
-#  if _CCCL_COMPILER(ICC)
-#    define _CCCL_ASSERT_IMPL_HOST(expression, message) \
-      static_cast<bool>(expression) ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__);
-#  else // ^^^ _CCCL_COMPILER(ICC) ^^^ / vvv !_CCCL_COMPILER(ICC) vvv
-#    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
-      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
-      ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
-#  endif // !_CCCL_COMPILER(ICC)
+#  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+    _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+    ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
 #endif // !MSVC STL
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
@@ -106,11 +100,11 @@ _CCCL_HOST_DEVICE
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
       ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
 #  endif // !_CCCL_COMPILER(MSVC)
-#elif _CCCL_HAS_CUDA_COMPILER
+#elif _CCCL_CUDA_COMPILATION()
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER vvv
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) ((void) 0)
-#endif // !_CCCL_HAS_CUDA_COMPILER
+#endif // !_CCCL_CUDA_COMPILATION()
 
 //! _CCCL_ASSERT_HOST is enabled conditionally depending on CCCL_ENABLE_HOST_ASSERTIONS
 #ifdef CCCL_ENABLE_HOST_ASSERTIONS
@@ -128,24 +122,25 @@ _CCCL_HOST_DEVICE
 
 //! _CCCL_VERIFY is enabled unconditionally and reserved for critical checks that are required to always be on
 //! _CCCL_ASSERT is enabled conditionally depending on CCCL_ENABLE_HOST_ASSERTIONS and CCCL_ENABLE_DEVICE_ASSERTIONS
-#if _CCCL_CUDA_COMPILER(NVHPC) // NVHPC needs to use NV_IF_TARGET instead of __CUDA_ARCH__
-#  define _CCCL_VERIFY(expression, message) \
-    NV_IF_ELSE_TARGET(                      \
-      NV_IS_DEVICE, (_CCCL_ASSERT_IMPL_DEVICE(expression, message);), (_CCCL_ASSERT_IMPL_HOST(expression, message);))
-#  define _CCCL_ASSERT(expression, message) \
-    NV_IF_ELSE_TARGET(                      \
-      NV_IS_DEVICE, (_CCCL_ASSERT_DEVICE(expression, message);), (_CCCL_ASSERT_HOST(expression, message);))
-#elif _CCCL_HAS_CUDA_COMPILER
-#  ifdef __CUDA_ARCH__
+#if _CCCL_CUDA_COMPILER(NVHPC) // NVHPC can't have different behavior for host and device.
+                               // The host version of the assert will also work in device code.
+#  define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
+#  if defined(CCCL_ENABLE_HOST_ASSERTIONS) || defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
+#  else
+#    define _CCCL_ASSERT(expression, message) ((void) 0)
+#  endif
+#elif _CCCL_CUDA_COMPILATION()
+#  if _CCCL_DEVICE_COMPILATION()
 #    define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_DEVICE(expression, message)
 #    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_DEVICE(expression, message)
-#  else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 #    define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
-#  endif // !__CUDA_ARCH__
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER vvv
+#  endif // !_CCCL_DEVICE_COMPILATION()
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #  define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
-#endif // !_CCCL_HAS_CUDA_COMPILER
+#endif // !_CCCL_CUDA_COMPILATION()
 
 #endif // __CCCL_ASSERT_H

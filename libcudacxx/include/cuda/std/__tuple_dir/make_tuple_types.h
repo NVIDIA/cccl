@@ -32,6 +32,8 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __make_tuple_types<_Tuple<_Types...>, _Ep, _Sp>::type is a
@@ -77,18 +79,20 @@ struct __make_tuple_types
 template <class... _Types, size_t _Ep>
 struct __make_tuple_types<tuple<_Types...>, _Ep, 0, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS __tuple_types<_Types...> type;
+  using type _CCCL_NODEBUG_ALIAS = __tuple_types<_Types...>;
 };
 
 template <class... _Types, size_t _Ep>
 struct __make_tuple_types<__tuple_types<_Types...>, _Ep, 0, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS __tuple_types<_Types...> type;
+  using type _CCCL_NODEBUG_ALIAS = __tuple_types<_Types...>;
 };
 
 template <class _Tp, size_t _Ep = tuple_size<remove_reference_t<_Tp>>::value, size_t _Sp = 0>
 using __make_tuple_types_t = typename __make_tuple_types<_Tp, _Ep, _Sp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H

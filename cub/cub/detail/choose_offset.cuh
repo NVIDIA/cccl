@@ -41,8 +41,6 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include <cstdint>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -56,12 +54,12 @@ template <typename NumItemsT>
 struct choose_offset
 {
   // NumItemsT must be an integral type (but not bool).
-  static_assert(::cuda::std::is_integral<NumItemsT>::value
-                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
+  static_assert(::cuda::std::is_integral_v<NumItemsT>
+                  && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), std::uint32_t, unsigned long long>;
+  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), uint32_t, unsigned long long>;
 };
 
 /**
@@ -79,12 +77,12 @@ template <typename NumItemsT>
 struct promote_small_offset
 {
   // NumItemsT must be an integral type (but not bool).
-  static_assert(::cuda::std::is_integral<NumItemsT>::value
-                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
+  static_assert(::cuda::std::is_integral_v<NumItemsT>
+                  && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), std::int32_t, NumItemsT>;
+  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
 };
 
 /**
@@ -103,18 +101,17 @@ template <typename NumItemsT>
 struct choose_signed_offset
 {
   // NumItemsT must be an integral type (but not bool).
-  static_assert(::cuda::std::is_integral<NumItemsT>::value
-                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
+  static_assert(::cuda::std::is_integral_v<NumItemsT>
+                  && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
   // Signed integer type for global offsets.
   // uint32 -> int64, else
   // LEQ 4B -> int32, else
   // int64
-  using type =
-    ::cuda::std::_If<(::cuda::std::is_integral<NumItemsT>::value && ::cuda::std::is_unsigned<NumItemsT>::value),
-                     ::cuda::std::int64_t,
-                     ::cuda::std::_If<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>>;
+  using type = ::cuda::std::_If<(::cuda::std::is_integral_v<NumItemsT> && ::cuda::std::is_unsigned_v<NumItemsT>),
+                                ::cuda::std::int64_t,
+                                ::cuda::std::_If<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>>;
 
   /**
    * Checks if the given num_items can be covered by the selected offset type. If not, returns cudaErrorInvalidValue,

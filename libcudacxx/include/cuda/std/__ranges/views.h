@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
 
@@ -33,6 +33,6 @@ namespace views = ranges::views; // NOLINT: misc-unused-alias-decls
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER >= 2014
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_VIEWS

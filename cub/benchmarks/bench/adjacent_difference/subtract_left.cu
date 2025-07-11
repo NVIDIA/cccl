@@ -35,7 +35,7 @@
 #if !TUNE_BASE
 struct policy_hub_t
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using AdjacentDifferencePolicy =
       cub::AgentAdjacentDifferencePolicy<TUNE_THREADS_PER_BLOCK,
@@ -45,27 +45,35 @@ struct policy_hub_t
                                          cub::BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 
 template <class T, class OffsetT>
 void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  constexpr bool may_alias = false;
-  constexpr bool read_left = true;
-
   using input_it_t      = const T*;
   using output_it_t     = T*;
   using difference_op_t = ::cuda::std::minus<>;
   using offset_t        = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
-  using dispatch_t = cub::
-    DispatchAdjacentDifference<input_it_t, output_it_t, difference_op_t, offset_t, may_alias, read_left, policy_hub_t>;
+  using dispatch_t = cub::DispatchAdjacentDifference<
+    input_it_t,
+    output_it_t,
+    difference_op_t,
+    offset_t,
+    cub::MayAlias::No,
+    cub::ReadOption::Left,
+    policy_hub_t>;
 #else
-  using dispatch_t =
-    cub::DispatchAdjacentDifference<input_it_t, output_it_t, difference_op_t, offset_t, may_alias, read_left>;
+  using dispatch_t = cub::DispatchAdjacentDifference<
+    input_it_t,
+    output_it_t,
+    difference_op_t,
+    offset_t,
+    cub::MayAlias::No,
+    cub::ReadOption::Left>;
 #endif // TUNE_BASE
 
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -85,7 +93,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   std::uint8_t* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       d_temp_storage,
       temp_storage_bytes,

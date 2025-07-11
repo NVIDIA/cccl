@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -20,15 +18,14 @@
 #include "test_macros.h"
 #include "types.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  include <stdexcept>
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
@@ -106,7 +103,6 @@ __host__ __device__ constexpr void test_range()
     assert(++res == input.end());
   }
 }
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 
 template <class T>
 __host__ __device__ constexpr void test()
@@ -200,12 +196,10 @@ __host__ __device__ constexpr void test()
     assert(res == vec.cbegin() + 1);
   }
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
   test_range<T, input_range>();
   test_range<T, uncommon_range>();
   test_range<T, sized_uncommon_range>();
   test_range<T, cuda::std::array>();
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 }
 
 __host__ __device__ constexpr bool test()
@@ -223,7 +217,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 { // insert throws std::bad_alloc
   using inplace_vector = cuda::std::inplace_vector<int, 2>;
@@ -305,7 +299,6 @@ void test_exceptions()
     assert(false);
   }
 
-#  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
   try
   {
     too_small.insert_range(too_small.begin(), input_range<int, 3>{42, 3, 1337});
@@ -401,9 +394,8 @@ void test_exceptions()
   {
     assert(false);
   }
-#  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -412,8 +404,8 @@ int main(int, char**)
   static_assert(test(), "");
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

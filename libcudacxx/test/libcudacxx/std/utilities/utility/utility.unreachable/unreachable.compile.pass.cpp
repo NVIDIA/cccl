@@ -10,7 +10,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-static_assert(cuda::std::is_same<decltype(cuda::std::unreachable()), void>::value, "");
+static_assert(cuda::std::is_same_v<decltype(cuda::std::unreachable()), void>);
 
 int main(int, char**)
 {

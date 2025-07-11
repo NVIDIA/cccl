@@ -37,6 +37,11 @@ body:
         - Thrust
         - CUB
         - libcu++
+        - CUDA Experimental (cudax)
+        - cuda.cccl.cooperative (Python)
+        - cuda.cccl.parallel (Python)
+        - General CCCL
+        - Infrastructure
         - Not sure
     validations:
       required: true

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+
 // <chrono>
 
 // template <class Duration>
@@ -24,8 +24,8 @@ template <typename Duration>
 __host__ __device__ constexpr auto check_seconds(Duration d)
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
-  ASSERT_SAME_TYPE(cuda::std::chrono::seconds, decltype(cuda::std::declval<HMS>().seconds()));
-  ASSERT_NOEXCEPT(cuda::std::declval<HMS>().seconds());
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::seconds, decltype(cuda::std::declval<HMS>().seconds())>);
+  static_assert(noexcept(cuda::std::declval<HMS>().seconds()));
   return HMS(d).seconds().count();
 }
 

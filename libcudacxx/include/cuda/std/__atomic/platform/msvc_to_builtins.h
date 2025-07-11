@@ -34,14 +34,16 @@
 #    define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 #  endif // _CCCL_COMPILER(MSVC, <, 19, 24)
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
-#  if defined(_M_ARM) || defined(_M_ARM64)
+#  if _CCCL_ARCH(ARM64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
-#  elif defined(_M_IX86) || defined(_M_X64)
+#  elif _CCCL_ARCH(X86_64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
 // x86/x64 hardware only emits memory barriers inside _Interlocked intrinsics
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()
@@ -128,7 +130,7 @@ void __atomic_load(const volatile _Type* __ptr, _Type* __ret, int __memorder)
   {
     case __ATOMIC_SEQ_CST:
       _LIBCUDACXX_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       __atomic_load_relaxed(__ptr, __ret);
@@ -199,7 +201,7 @@ void __atomic_store(volatile _Type* __ptr, _Type* __val, int __memorder)
       break;
     case __ATOMIC_SEQ_CST:
       _LIBCUDACXX_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_RELAXED:
       __atomic_store_relaxed(__ptr, __val);
       break;
@@ -273,7 +275,7 @@ bool __atomic_compare_exchange(
       break;
     case __ATOMIC_ACQ_REL:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       success = __atomic_compare_exchange_relaxed(__ptr, __expected, __desired);
@@ -328,7 +330,7 @@ void __atomic_exchange(_Type volatile* __ptr, const _Type* __val, _Type* __ret, 
       break;
     case __ATOMIC_ACQ_REL:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       __atomic_exchange_relaxed(__ptr, __val, __ret);
@@ -385,7 +387,7 @@ _Type __atomic_fetch_add(_Type volatile* __ptr, _Delta __val, int __memorder)
       break;
     case __ATOMIC_ACQ_REL:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       __atomic_fetch_add_relaxed(__ptr, &__val, __dest);
@@ -448,7 +450,7 @@ _Type __atomic_fetch_and(_Type volatile* __ptr, _Delta __val, int __memorder)
       break;
     case __ATOMIC_ACQ_REL:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       __atomic_fetch_and_relaxed(__ptr, &__val, __dest);
@@ -506,7 +508,7 @@ _Type __atomic_fetch_xor(_Type volatile* __ptr, _Delta __val, int __memorder)
       break;
     case __ATOMIC_ACQ_REL:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       __atomic_fetch_xor_relaxed(__ptr, &__val, __dest);
@@ -564,7 +566,7 @@ _Type __atomic_fetch_or(_Type volatile* __ptr, _Delta __val, int __memorder)
       break;
     case __ATOMIC_ACQ_REL:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case __ATOMIC_CONSUME:
     case __ATOMIC_ACQUIRE:
       __atomic_fetch_or_relaxed(__ptr, &__val, __dest);
@@ -642,6 +644,8 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #  undef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 

@@ -22,7 +22,7 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -32,14 +32,13 @@ enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
   sized
 };
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-#  if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
 template <input_or_output_iterator _Iter,
           sentinel_for<_Iter> _Sent = _Iter,
           subrange_kind _Kind       = sized_sentinel_for<_Sent, _Iter> ? subrange_kind::sized : subrange_kind::unsized>
   requires(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>)
 class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
-#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Iter,
           class _Sent         = _Iter,
           subrange_kind _Kind = sized_sentinel_for<_Sent, _Iter> ? subrange_kind::sized : subrange_kind::unsized,
@@ -47,11 +46,10 @@ template <class _Iter,
           enable_if_t<sentinel_for<_Sent, _Iter>, int>                                           = 0,
           enable_if_t<(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>), int> = 0>
 class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
-#  endif // _CCCL_STD_VER <= 2017
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_SUBRANGE_H

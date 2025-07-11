@@ -29,8 +29,9 @@
 #include <thrust/execution_policy.h>
 #include <thrust/tabulate.h>
 
-#include "thrust/detail/raw_pointer_cast.h"
 #include <nvbench_helper.cuh>
+
+#include "thrust/detail/raw_pointer_cast.h"
 
 template <class T>
 struct seg_size_t
@@ -58,9 +59,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc;
   seg_size_t<T> op{thrust::raw_pointer_cast(input.data())};
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::tabulate(policy(alloc, launch), output.begin(), output.end(), op);
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::tabulate(policy(alloc, launch), output.begin(), output.end(), op);
+             });
 }
 
 using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;

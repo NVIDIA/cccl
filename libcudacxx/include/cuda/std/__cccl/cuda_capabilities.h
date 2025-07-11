@@ -21,23 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-// CUDA headers might not be present when using NVRTC, see NVIDIA/cccl#2095 for detail
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cuda_runtime_api.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__cccl/cuda_toolkit.h>
 
 #include <nv/target>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 // True, when programmatic dependent launch is available, otherwise false.
-#define _CCCL_HAS_PDL _CCCL_CUDACC_AT_LEAST(12, 0)
+#define _CCCL_HAS_PDL _CCCL_CTK_AT_LEAST(12, 0)
+
 #if _CCCL_HAS_PDL
 // Waits for the previous kernel to complete (when it reaches its final membar). Should be put before the first global
 // memory access in a kernel.

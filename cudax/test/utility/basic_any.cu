@@ -16,7 +16,7 @@
 
 #undef interface
 
-using immovable = cudax::detail::__immovable;
+using immovable = cudax::__immovable;
 
 struct TestCounters
 {
@@ -302,10 +302,9 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     CHECK(a != b);
     CHECK(b != a);
 
-    int const k                                  = 0;
-    cudax::basic_any<cudax::imovable<> const*> c = &k;
+    int const k                                                   = 0;
+    [[maybe_unused]] cudax::basic_any<cudax::imovable<> const*> c = &k;
     STATIC_REQUIRE(!_CUDA_VSTD::constructible_from<cudax::basic_any<cudax::imovable<>>, decltype(*c)>);
-    (void) c;
   }
 
   SECTION("any ibase pointer to model")
@@ -567,7 +566,7 @@ struct any_regular_ref : cudax::basic_any<iregular<>&>
   using cudax::basic_any<iregular<>&>::basic_any;
 };
 
-TEST_CASE("basic_any test for ambiguous conversions", "[utility][basic_any]")
+C2H_TEST("basic_any test for ambiguous conversions", "[utility][basic_any]")
 {
   int i = 42;
   any_regular_ref ref{i};

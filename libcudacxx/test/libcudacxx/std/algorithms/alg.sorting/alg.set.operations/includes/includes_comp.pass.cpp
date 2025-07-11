@@ -24,18 +24,16 @@
 #include "test_macros.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
-  int ia[]          = {4, 4, 4, 4, 3, 3, 3, 2, 2, 1};
-  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  int ib[]          = {4, 2};
-  const unsigned sb = sizeof(ib) / sizeof(ib[0]);
-  int ic[]          = {2, 1};
-  const unsigned sc = sizeof(ic) / sizeof(ic[0]);
-  ((void) sc);
-  int id[]          = {3, 3, 3, 3};
-  const unsigned sd = sizeof(id) / sizeof(id[0]);
-  ((void) sd);
+  int ia[]                           = {4, 4, 4, 4, 3, 3, 3, 2, 2, 1};
+  const unsigned sa                  = sizeof(ia) / sizeof(ia[0]);
+  int ib[]                           = {4, 2};
+  const unsigned sb                  = sizeof(ib) / sizeof(ib[0]);
+  int ic[]                           = {2, 1};
+  [[maybe_unused]] const unsigned sc = sizeof(ic) / sizeof(ic[0]);
+  int id[]                           = {3, 3, 3, 3};
+  [[maybe_unused]] const unsigned sd = sizeof(id) / sizeof(id[0]);
 
   assert(cuda::std::includes(Iter1(ia), Iter1(ia), Iter2(ib), Iter2(ib), cuda::std::greater<int>()));
   assert(!cuda::std::includes(Iter1(ia), Iter1(ia), Iter2(ib), Iter2(ib + 1), cuda::std::greater<int>()));
@@ -54,7 +52,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(!cuda::std::includes(Iter1(ia), Iter1(ia + sa), Iter2(id), Iter2(id + 4), cuda::std::greater<int>()));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<const int*>>();
@@ -92,9 +90,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

@@ -38,17 +38,17 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
-#include <cub/util_type.cuh> // CUB_IS_INT128_ENABLED
+#include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
 #include <cuda/cmath> // cuda::std::ceil_div
-#include <cuda/std/bit> // std::has_single_bit
+#include <cuda/std/bit> // cuda::std::has_single_bit
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
 #include <cuda/std/limits> // numeric_limits
-#include <cuda/std/type_traits> // std::is_integral
+#include <cuda/std/type_traits> // ::cuda::std::is_integral
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
 CUB_NAMESPACE_BEGIN
@@ -63,63 +63,59 @@ namespace detail
 template <typename T, typename = void>
 struct larger_unsigned_type
 {
-  static_assert(sizeof(T) >= 8, "64-bit integer are only supported from CUDA >= 11.5");
   using type = void;
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) < 4)>>
 {
   using type = ::cuda::std::uint32_t;
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) == 4)>>
 {
   using type = ::cuda::std::uint64_t;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) == 8)>>
 {
   using type = __uint128_t;
 };
 
-#endif // CUB_IS_INT128_ENABLED
+#endif // _CCCL_HAS_INT128()
 
 template <typename T>
 using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;
 
 template <typename T>
-using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
+using unsigned_implicit_prom_t = ::cuda::std::make_unsigned_t<implicit_prom_t<T>>;
 
 template <typename T>
-using supported_integral = ::cuda::std::bool_constant<
-  ::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value && (sizeof(T) <= 8)>;
+using supported_integral =
+  ::cuda::std::bool_constant<::cuda::std::is_integral_v<T> && !::cuda::std::is_same_v<T, bool> && (sizeof(T) <= 8)>;
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
  **********************************************************************************************************************/
 
 template <typename DivisorType, typename T, typename R>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<DivisorType>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<DivisorType>
 multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
   static_assert(supported_integral<R>::value, "unsupported type");
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186) // pointless comparison of unsigned integer with zero
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(::cuda::std::is_signed, T))
+  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, T))
   {
     _CCCL_ASSERT(value >= 0, "value must be non-negative");
   }
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(::cuda::std::is_signed, R))
+  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, R))
   {
     _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
   }
-  _CCCL_DIAG_POP
   static constexpr int NumBits = sizeof(DivisorType) * CHAR_BIT;
   using unsigned_t             = unsigned_implicit_prom_t<DivisorType>;
   using larger_t               = larger_unsigned_type_t<DivisorType>;
@@ -147,7 +143,7 @@ class fast_div_mod
   static_assert(supported_integral<T1>::value, "unsupported type");
 
   // uint16_t is a special case that would requires complex logic. Workaround: convert to int
-  using T          = ::cuda::std::conditional_t<::cuda::std::is_same<T1, ::cuda::std::uint16_t>::value, int, T1>;
+  using T          = ::cuda::std::conditional_t<::cuda::std::is_same_v<T1, ::cuda::std::uint16_t>, int, T1>;
   using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:
@@ -161,7 +157,7 @@ public:
 
   fast_div_mod() = delete;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
       : _divisor{static_cast<unsigned_t>(divisor)}
   {
     using larger_t = larger_unsigned_type_t<T>;
@@ -193,7 +189,7 @@ public:
   fast_div_mod(fast_div_mod&&) noexcept = default;
 
   template <typename R>
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<R> operator()(R dividend) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<R> operator()(R dividend) const noexcept
   {
     static_assert(supported_integral<R>::value, "unsupported type");
     using common_t  = decltype(R{} / T{});
@@ -246,5 +242,5 @@ _CCCL_DIAG_POP
 CUB_NAMESPACE_END
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_DEFAULT(186)
+_CCCL_END_NV_DIAG_SUPPRESS()
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS

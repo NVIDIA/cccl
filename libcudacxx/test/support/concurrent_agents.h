@@ -13,17 +13,13 @@
 
 #ifndef __CUDA_ARCH__
 #  include <thread>
-#else
-#  if __CUDA_ARCH__ < 350
-#    error "This test requires CUDA dynamic parallelism to work."
-#  endif
 #endif
 
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-TEST_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class Fun>
 __host__ __device__ void execute_on_main_thread(Fun&& fun)
 {
@@ -50,8 +46,7 @@ __host__ __device__ void concurrent_agents_launch(Fs... fs)
      __syncthreads();),
     (std::thread threads[]{std::thread{std::forward<Fs>(fs)}...};
 
-     for (auto&& thread
-          : threads) { thread.join(); }))
+     for (auto&& thread : threads) { thread.join(); }))
 }
 
 #endif // _CONCURRENT_AGENTS_H

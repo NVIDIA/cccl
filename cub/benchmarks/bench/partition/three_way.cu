@@ -47,7 +47,7 @@
 template <typename InputT>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
+  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
     using ThreeWayPartitionPolicy = //
       cub::AgentThreeWayPartitionPolicy<TUNE_THREADS_PER_BLOCK,
@@ -111,7 +111,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
   T min_val{};
-  T max_val = std::numeric_limits<T>::max();
+  T max_val = ::cuda::std::numeric_limits<T>::max();
 
   T left_border  = max_val / 3;
   T right_border = left_border * 2;
@@ -143,7 +143,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,

@@ -14,8 +14,6 @@
 //   const typename tuple_element<I, tuple<Types...> >::type&&
 //   get(const tuple<Types...>&& t);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 // cuda::std::string not supported
@@ -72,14 +70,12 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
   }
 
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::tuple<double, int> T;
     constexpr const T t(2.718, 5);
     static_assert(cuda::std::get<0>(cuda::std::move(t)) == 2.718, "");
     static_assert(cuda::std::get<1>(cuda::std::move(t)) == 5, "");
   }
-#endif
 
   return 0;
 }

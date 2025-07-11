@@ -73,49 +73,21 @@
  */
 #  define CUB_RUNTIME_FUNCTION
 
-/**
- * \def CUB_RUNTIME_ENABLED
- *
- * Whether or not the active compiler pass is allowed to invoke device kernels
- * or methods from the CUDA runtime API.
- *
- * This macro should not be used in CUB, as it depends on `__CUDA_ARCH__`
- * and is not compatible with `NV_IF_TARGET`. It is provided for legacy
- * purposes only.
- *
- * Replace any usages with `CUB_RDC_ENABLED` and `NV_IF_TARGET`.
- */
-#  define CUB_RUNTIME_ENABLED
-
 #else // Non-doxygen pass:
 
 #  ifndef CUB_RUNTIME_FUNCTION
-
 #    if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
-
 #      define CUB_RDC_ENABLED
 #      define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
-
 #    else // RDC disabled:
-
 #      define CUB_RUNTIME_FUNCTION _CCCL_HOST
-
 #    endif // RDC enabled
-
-#    if !defined(__CUDA_ARCH__) || defined(__CUDACC_RDC__)
-// Legacy only -- do not use in new code.
-#      define CUB_RUNTIME_ENABLED
-#    endif
-
 #  endif // CUB_RUNTIME_FUNCTION predefined
 
 #  ifdef CUB_RDC_ENABLED
-// Detect available version of CDP:
-#    if __CUDACC_VER_MAJOR__ < 12 || defined(CUDA_FORCE_CDP1_IF_SUPPORTED)
-#      define CUB_DETAIL_CDPv1
-#    else
-#      define CUB_DETAIL_CDPv2
-#    endif
+#    ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
+#      error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
+#    endif // CUDA_FORCE_CDP1_IF_SUPPORTED
 #  endif
 
 #endif // Do not document

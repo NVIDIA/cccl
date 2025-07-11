@@ -24,20 +24,17 @@
 #endif // no system header
 
 // Check for deprecation opt outs
-#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT) || defined(THRUST_IGNORE_DEPRECATED_CPP_DIALECT) \
-  || defined(CUB_IGNORE_DEPRECATED_CPP_DIALECT)
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT)
 #  if !defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
 #    define CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #  endif
 #endif // suppress all dialect deprecation warnings
-#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_14) || defined(THRUST_IGNORE_DEPRECATED_CPP_14) \
-  || defined(CUB_IGNORE_DEPRECATED_CPP_14) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_14) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
 #  if !defined(CCCL_IGNORE_DEPRECATED_CPP_14)
 #    define CCCL_IGNORE_DEPRECATED_CPP_14
 #  endif
 #endif // suppress all c++14 dialect deprecation warnings
-#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_11) || defined(THRUST_IGNORE_DEPRECATED_CPP_11) \
-  || defined(CUB_IGNORE_DEPRECATED_CPP_11) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)    \
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_11) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT) \
   || defined(CCCL_IGNORE_DEPRECATED_CPP_14)
 #  if !defined(CCCL_IGNORE_DEPRECATED_CPP_11)
 #    define CCCL_IGNORE_DEPRECATED_CPP_11
@@ -62,31 +59,11 @@
 #  define CCCL_DEPRECATED
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED_BECAUSE(MSG)
-#elif _CCCL_STD_VER >= 2014
+#else // ^^^ CCCL_IGNORE_DEPRECATED_API ^^^ / vvv !CCCL_IGNORE_DEPRECATED_API vvv
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED              [[deprecated]]
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#elif _CCCL_COMPILER(MSVC)
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED              __declspec(deprecated)
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
-#elif _CCCL_COMPILER(CLANG)
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED              __attribute__((deprecated))
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#elif _CCCL_COMPILER(GCC)
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED              __attribute__((deprecated))
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#else
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED
-//! deprecated [Since 2.8]
-#  define CCCL_DEPRECATED_BECAUSE(MSG)
-#endif
+#endif // !CCCL_IGNORE_DEPRECATED_API
 
 #endif // __CCCL_DEPRECATED_H

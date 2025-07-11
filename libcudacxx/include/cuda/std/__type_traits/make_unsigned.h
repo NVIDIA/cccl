@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
@@ -38,17 +40,17 @@ template <class _Tp>
 using make_unsigned_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
 
 #else
-typedef __type_list<unsigned char,
-                    unsigned short,
-                    unsigned int,
-                    unsigned long,
-                    unsigned long long
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
-                    ,
-                    __uint128_t
-#  endif
-                    >
-  __unsigned_types;
+using __unsigned_types =
+  __type_list<unsigned char,
+              unsigned short,
+              unsigned int,
+              unsigned long,
+              unsigned long long
+#  if _CCCL_HAS_INT128()
+              ,
+              __uint128_t
+#  endif // _CCCL_HAS_INT128()
+              >;
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
 struct __make_unsigned_impl
@@ -72,55 +74,55 @@ struct __make_unsigned_impl<bool, true>
 template <>
 struct __make_unsigned_impl<signed short, true>
 {
-  typedef unsigned short type;
+  using type = unsigned short;
 };
 template <>
 struct __make_unsigned_impl<unsigned short, true>
 {
-  typedef unsigned short type;
+  using type = unsigned short;
 };
 template <>
 struct __make_unsigned_impl<signed int, true>
 {
-  typedef unsigned int type;
+  using type = unsigned int;
 };
 template <>
 struct __make_unsigned_impl<unsigned int, true>
 {
-  typedef unsigned int type;
+  using type = unsigned int;
 };
 template <>
 struct __make_unsigned_impl<signed long, true>
 {
-  typedef unsigned long type;
+  using type = unsigned long;
 };
 template <>
 struct __make_unsigned_impl<unsigned long, true>
 {
-  typedef unsigned long type;
+  using type = unsigned long;
 };
 template <>
 struct __make_unsigned_impl<signed long long, true>
 {
-  typedef unsigned long long type;
+  using type = unsigned long long;
 };
 template <>
 struct __make_unsigned_impl<unsigned long long, true>
 {
-  typedef unsigned long long type;
+  using type = unsigned long long;
 };
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 template <>
 struct __make_unsigned_impl<__int128_t, true>
 {
-  typedef __uint128_t type;
+  using type = __uint128_t;
 };
 template <>
 struct __make_unsigned_impl<__uint128_t, true>
 {
-  typedef __uint128_t type;
+  using type = __uint128_t;
 };
-#  endif // !_LIBCUDACXX_HAS_NO_INT128
+#  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
 using make_unsigned_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_unsigned_impl<remove_cv_t<_Tp>>::type>;
@@ -134,7 +136,7 @@ struct make_unsigned
 };
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
+_CCCL_API constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 {
   return static_cast<make_unsigned_t<_Tp>>(__x);
 }
@@ -143,5 +145,7 @@ template <class _Tp, class _Up>
 using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<_CCCL_TRAIT(is_unsigned, _Tp), make_unsigned_t<_Up>, _Up>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H

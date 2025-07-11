@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -62,12 +61,10 @@ __host__ __device__ void test_T_ctor_noexcept()
     using V = cuda::std::variant<Dummy, NoThrowT>;
     static_assert(cuda::std::is_nothrow_constructible<V, int>::value, "");
   }
-#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<Dummy, ThrowsT>;
     static_assert(!cuda::std::is_nothrow_constructible<V, int>::value, "");
   }
-#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__ void test_T_ctor_sfinae()
@@ -217,10 +214,10 @@ struct Baz
 __host__ __device__ void test_construction_with_repeated_types()
 {
   using V = cuda::std::variant<int, Bar, Baz, int, Baz, int, int>;
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 7
+#if !TEST_COMPILER(GCC, <, 7)
   static_assert(!cuda::std::is_constructible<V, int>::value, "");
   static_assert(!cuda::std::is_constructible<V, Baz>::value, "");
-#endif // !gcc-6
+#endif // !TEST_COMPILER(GCC, <, 7)
   // OK, the selected type appears only once and so it shouldn't
   // be affected by the duplicate types.
   static_assert(cuda::std::is_constructible<V, Bar>::value, "");

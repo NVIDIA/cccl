@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/system/cuda/detail/mismatch.h>
@@ -55,8 +55,8 @@ equal(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputI
 template <class Derived, class InputIt1, class InputIt2>
 bool _CCCL_HOST_DEVICE equal(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2)
 {
-  using InputType1 = typename thrust::iterator_value<InputIt1>::type;
-  return cuda_cub::equal(policy, first1, last1, first2, equal_to<InputType1>());
+  using InputType1 = thrust::detail::it_value_t<InputIt1>;
+  return cuda_cub::equal(policy, first1, last1, first2, ::cuda::std::equal_to<InputType1>());
 }
 
 } // namespace cuda_cub

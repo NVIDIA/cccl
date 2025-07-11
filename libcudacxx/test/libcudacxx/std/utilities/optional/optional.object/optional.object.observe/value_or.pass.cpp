@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class U> constexpr T optional<T>::value_or(U&& v) &&;
@@ -69,13 +68,13 @@ __host__ __device__ constexpr int test()
     assert(*opt == 0);
   }
   {
-    optional<X> opt;
+    optional<X> opt{};
     Y y(3);
     assert(cuda::std::move(opt).value_or(y) == 3);
     assert(!opt);
   }
   {
-    optional<X> opt;
+    optional<X> opt{};
     assert(cuda::std::move(opt).value_or(Y(3)) == 4);
     assert(!opt);
   }

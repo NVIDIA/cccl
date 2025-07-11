@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: gcc-6
 
 // <cuda/std/optional>
@@ -86,7 +85,7 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
@@ -115,7 +114,7 @@ void test_exceptions()
   {
     optional<Z> opt1;
     opt1.emplace(1);
-    optional<Z> opt2;
+    optional<Z> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -135,7 +134,7 @@ void test_exceptions()
   }
   {
     optional<Z> opt1;
-    optional<Z> opt2;
+    optional<Z> opt2{};
     opt2.emplace(2);
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
     assert(static_cast<bool>(opt1) == false);
@@ -157,7 +156,7 @@ void test_exceptions()
   {
     optional<Z> opt1;
     opt1.emplace(1);
-    optional<Z> opt2;
+    optional<Z> opt2{};
     opt2.emplace(2);
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
     assert(static_cast<bool>(opt1) == true);
@@ -179,7 +178,7 @@ void test_exceptions()
     assert(*opt2 == 2);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 struct NonSwappable
 {
@@ -236,7 +235,7 @@ int main(int, char**)
   test_swap_sfinae();
   {
     optional<int> opt1;
-    optional<int> opt2;
+    optional<int> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == true, "");
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
@@ -246,7 +245,7 @@ int main(int, char**)
   }
   {
     optional<int> opt1(1);
-    optional<int> opt2;
+    optional<int> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == true, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -284,7 +283,7 @@ int main(int, char**)
   }
   {
     optional<X> opt1;
-    optional<X> opt2;
+    optional<X> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == true, "");
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
@@ -295,7 +294,7 @@ int main(int, char**)
   }
   {
     optional<X> opt1(1);
-    optional<X> opt2;
+    optional<X> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == true, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -339,10 +338,8 @@ int main(int, char**)
   }
   {
     optional<Y> opt1;
-    optional<Y> opt2;
-#ifndef TEST_COMPILER_ICC
+    optional<Y> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     swap(opt1, opt2);
@@ -352,10 +349,8 @@ int main(int, char**)
   }
   {
     optional<Y> opt1(1);
-    optional<Y> opt2;
-#ifndef TEST_COMPILER_ICC
+    optional<Y> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == false);
@@ -369,9 +364,7 @@ int main(int, char**)
   {
     optional<Y> opt1;
     optional<Y> opt2(2);
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == true);
     assert(*opt2 == 2);
@@ -385,9 +378,7 @@ int main(int, char**)
   {
     optional<Y> opt1(1);
     optional<Y> opt2(2);
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == true);
@@ -402,10 +393,8 @@ int main(int, char**)
   }
   {
     optional<TerminatesOnMoveAssignmentAndSwap> opt1;
-    optional<TerminatesOnMoveAssignmentAndSwap> opt2;
-#ifndef TEST_COMPILER_ICC
+    optional<TerminatesOnMoveAssignmentAndSwap> opt2{};
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     swap(opt1, opt2);
@@ -413,9 +402,30 @@ int main(int, char**)
     assert(static_cast<bool>(opt2) == false);
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+  {
+    int value       = 42;
+    int other_value = 1337;
+    optional<int&> opt1(value);
+    optional<int&> opt2(other_value);
+    static_assert(noexcept(swap(opt1, opt2)), "");
+    assert(opt1.has_value());
+    assert(*opt1 == value);
+    assert(opt2.has_value());
+    assert(*opt2 == other_value);
+    assert(cuda::std::addressof(value) == opt1.operator->());
+    assert(cuda::std::addressof(other_value) == opt2.operator->());
+    swap(opt1, opt2);
+    assert(opt1.has_value());
+    assert(*opt1 == other_value);
+    assert(opt2.has_value());
+    assert(*opt2 == value);
+    assert(cuda::std::addressof(value) == opt2.operator->());
+    assert(cuda::std::addressof(other_value) == opt1.operator->());
+  }
+
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

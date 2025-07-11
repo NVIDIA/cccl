@@ -14,7 +14,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -46,7 +45,9 @@ struct DeviceTransform
   //!
   //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
   //! iterators' value types must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
@@ -60,7 +61,7 @@ struct DeviceTransform
     TransformOp transform_op,
     cudaStream_t stream = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
 
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
@@ -72,10 +73,16 @@ struct DeviceTransform
       return error;
     }
 
-    return detail::transform::
-      dispatch_t<false, offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
-        dispatch(
-          ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
+    return detail::transform::dispatch_t<
+      detail::transform::requires_stable_address::no,
+      offset_t,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      TransformOp>::dispatch(::cuda::std::move(inputs),
+                             ::cuda::std::move(output),
+                             num_items,
+                             ::cuda::std::move(transform_op),
+                             stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -110,7 +117,9 @@ struct DeviceTransform
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
   //! must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
@@ -180,7 +189,9 @@ struct DeviceTransform
   //!
   //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
   //! iterators' value types must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
@@ -194,7 +205,7 @@ struct DeviceTransform
     TransformOp transform_op,
     cudaStream_t stream = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
 
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
@@ -206,10 +217,16 @@ struct DeviceTransform
       return error;
     }
 
-    return detail::transform::
-      dispatch_t<true, offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
-        dispatch(
-          ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
+    return detail::transform::dispatch_t<
+      detail::transform::requires_stable_address::yes,
+      offset_t,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      TransformOp>::dispatch(::cuda::std::move(inputs),
+                             ::cuda::std::move(output),
+                             num_items,
+                             ::cuda::std::move(transform_op),
+                             stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -242,7 +259,9 @@ struct DeviceTransform
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
   //! must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call

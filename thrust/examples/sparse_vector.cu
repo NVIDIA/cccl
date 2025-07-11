@@ -64,8 +64,8 @@ void sum_sparse_vectors(
       temp_index.end() - 1,
       temp_index.begin() + 1,
       size_t(0),
-      thrust::plus<size_t>(),
-      thrust::not_equal_to<IndexType>())
+      ::cuda::std::plus<size_t>(),
+      ::cuda::std::not_equal_to<IndexType>())
     + 1;
 
   // allocate space for output
@@ -79,8 +79,8 @@ void sum_sparse_vectors(
     temp_value.begin(),
     C_index.begin(),
     C_value.begin(),
-    thrust::equal_to<IndexType>(),
-    thrust::plus<ValueType>());
+    ::cuda::std::equal_to<IndexType>(),
+    ::cuda::std::plus<ValueType>());
 }
 
 int main()

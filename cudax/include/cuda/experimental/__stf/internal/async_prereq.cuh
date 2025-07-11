@@ -32,7 +32,6 @@
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
-#include <cuda/experimental/__stf/utility/unstable_unique.cuh>
 
 #include <algorithm>
 #include <atomic>
@@ -131,7 +130,7 @@ public:
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(reserved::event_vector& /*unused*/)
+  virtual bool factorize(backend_ctx_untyped&, reserved::event_vector&)
   {
     return false;
   }
@@ -205,7 +204,7 @@ public:
   /// Optimize the list to remove redundant entries which are either
   /// identical events, or events which are implicit from other events in the
   /// list.
-  void optimize()
+  void optimize(backend_ctx_untyped& bctx)
   {
     // No need to remove duplicates on a list that was already sanitized,
     // and that has not been modified since
@@ -214,23 +213,25 @@ public:
       return;
     }
 
-    assert(!payload.empty());
+    _CCCL_ASSERT(!payload.empty(), "internal error");
 
     // nvtx_range r("optimize");
+
+    // This is a list of shared_ptr to events, we want to sort by events
+    // ID, not by addresses of the ptr
+    ::std::sort(payload.begin(), payload.end(), [](auto& a, auto& b) {
+      return *a < *b;
+    });
 
     // All items will have the same (derived) event type as the type of the front element.
     // If the type of the event does not implement a factorize method, a
     // false value is returned (eg. with cudaGraphs)
-    bool factorized = payload.front()->factorize(payload);
+    bool factorized = payload.front()->factorize(bctx, payload);
 
     if (!factorized)
     {
-      // This is a list of shared_ptr to events, we want to sort by events
-      // ID, not by addresses of the ptr
-      ::std::sort(payload.begin(), payload.end(), [](auto& a, auto& b) {
-        return *a < *b;
-      });
-      auto new_end = unstable_unique(payload.begin(), payload.end(), [](auto& a, auto& b) {
+      // Note that the list was already sorted above so we can call unique directly
+      auto new_end = ::std::unique(payload.begin(), payload.end(), [](auto& a, auto& b) {
         return *a == *b;
       });
       // Erase the "undefined" elements at the end of the container
@@ -433,15 +434,6 @@ inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) co
 }
 _CCCL_DIAG_POP
 
-namespace reserved
-{
-
-// For counters
-class join_tag
-{};
-
-} // end namespace reserved
-
 /**
  * @brief Introduce a dependency from all entries of an event list to an event.
 
@@ -474,7 +466,6 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
     {
       from = static_cast<some_event*>(item.operator->());
     }
-    reserved::counter<reserved::join_tag>::increment();
     to.insert_dep(ctx.async_resources(), *from);
     from->outbound_deps++;
   }

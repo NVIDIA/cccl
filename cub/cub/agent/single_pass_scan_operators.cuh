@@ -53,8 +53,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -173,9 +171,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(Delay);));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);), ((void) ns;));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);));
 }
 
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
@@ -185,9 +183,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 }
 
 template <unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), ((void) ns; __threadfence_block();));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
 }
 
 template <unsigned int Delay = 350>
@@ -196,9 +194,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
   NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), ((void) ns; __threadfence_block();));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
 }
 
 template <unsigned int L2WriteLatency>
@@ -488,14 +486,14 @@ using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
 
 template <class T>
 using default_delay_constructor_t =
-  ::cuda::std::_If<Traits<T>::PRIMITIVE, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
+  ::cuda::std::_If<is_primitive<T>::value, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
 
 template <class T>
 using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
 
 template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
-  ::cuda::std::_If<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
+  ::cuda::std::_If<is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16),
                    reduce_by_key_delay_constructor_t<350, 450>,
                    default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
 
@@ -542,12 +540,58 @@ struct tile_state_with_memory_order
     return tile_state.template LoadValid<Order>(tile_idx);
   }
 };
+
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int num_tiles_to_num_tile_states(int num_tiles)
+{
+  return warp_threads + num_tiles;
+}
+
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t
+tile_state_allocation_size(int bytes_per_description, int bytes_per_payload, int num_tiles)
+{
+  int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  size_t allocation_sizes[]{
+    // bytes needed for tile status descriptors
+    static_cast<size_t>(num_tile_states * bytes_per_description),
+    // bytes needed for partials
+    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    // bytes needed for inclusives
+    static_cast<size_t>(num_tile_states * bytes_per_payload)};
+  // Set the necessary size of the blob
+  size_t temp_storage_bytes = 0;
+  void* allocations[3]      = {};
+  AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+
+  return temp_storage_bytes;
+};
+
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
+  int bytes_per_description,
+  int bytes_per_payload,
+  int num_tiles,
+  void* d_temp_storage,
+  size_t temp_storage_bytes,
+  void* (&allocations)[3])
+{
+  int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  size_t allocation_sizes[]{
+    // bytes needed for tile status descriptors
+    static_cast<size_t>(num_tile_states * bytes_per_description),
+    // bytes needed for partials
+    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    // bytes needed for inclusives
+    static_cast<size_t>(num_tile_states * bytes_per_payload)};
+
+  // Set the necessary size of the blob
+  return AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+}
+
 } // namespace detail
 
 /**
  * Tile status interface.
  */
-template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
+template <typename T, bool SINGLE_WORD = detail::is_primitive<T>::value>
 struct ScanTileState;
 
 /**
@@ -579,11 +623,14 @@ struct ScanTileState<T, true>
   // Constants
   enum
   {
-    TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Device storage
   TxnWord* d_tile_descriptors;
+
+  static constexpr size_t description_bytes_per_tile = sizeof(TxnWord);
+  static constexpr size_t payload_bytes_per_tile     = 0;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
@@ -620,10 +667,11 @@ struct ScanTileState<T, true>
    * @param[out] temp_storage_bytes
    *   Size in bytes of \t d_temp_storage allocation
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
+  AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    // bytes needed for tile status descriptors
-    temp_storage_bytes = (num_tiles + TILE_STATUS_PADDING) * sizeof(TxnWord);
+    temp_storage_bytes =
+      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
     return cudaSuccess;
   }
 
@@ -654,28 +702,28 @@ struct ScanTileState<T, true>
 
 private:
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_relaxed(ptr, alias);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_release(ptr, alias);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), TxnWord>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
     return detail::load_relaxed(ptr);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), TxnWord>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
@@ -683,12 +731,12 @@ private:
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   ThreadfenceForLoadAcqPreVolta()
   {}
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   ThreadfenceForLoadAcqPreVolta()
   {
     NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
@@ -735,7 +783,7 @@ public:
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
 
-    while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff))
+    while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)))
     {
       delay_or_prevent_hoisting();
       TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
@@ -776,13 +824,16 @@ struct ScanTileState<T, false>
   // Constants
   enum
   {
-    TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Device storage
   StatusWord* d_tile_status;
   T* d_tile_partial;
   T* d_tile_inclusive;
+
+  static constexpr size_t description_bytes_per_tile = sizeof(StatusWord);
+  static constexpr size_t payload_bytes_per_tile     = sizeof(Uninitialized<T>);
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
@@ -812,25 +863,12 @@ struct ScanTileState<T, false>
     do
     {
       void* allocations[3] = {};
-      size_t allocation_sizes[3];
-
-      // bytes needed for tile status descriptors
-      allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);
-
-      // bytes needed for partials
-      allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
-
-      // bytes needed for inclusives
-      allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
-
-      // Compute allocation pointers into the single storage blob
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-
+      error                = detail::tile_state_init(
+        description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
       if (cudaSuccess != error)
       {
         break;
       }
-
       // Alias the offsets
       d_tile_status    = reinterpret_cast<StatusWord*>(allocations[0]);
       d_tile_partial   = reinterpret_cast<T*>(allocations[1]);
@@ -849,25 +887,13 @@ struct ScanTileState<T, false>
    * @param[out] temp_storage_bytes
    *   Size in bytes of \t d_temp_storage allocation
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
+  AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    // Specify storage allocation requirements
-    size_t allocation_sizes[3];
-
-    // bytes needed for tile status descriptors
-    allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);
-
-    // bytes needed for partials
-    allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
-
-    // bytes needed for inclusives
-    allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
-
-    // Set the necessary size of the blob
-    void* allocations[3] = {};
-    return CubDebug(AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
+    temp_storage_bytes =
+      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
+    return cudaSuccess;
   }
-
   /**
    * Initialize (from device)
    */
@@ -920,7 +946,7 @@ struct ScanTileState<T, false>
       delay();
       status = detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
       __threadfence();
-    } while (WARP_ANY((status == SCAN_TILE_INVALID), 0xffffffff));
+    } while (__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
 
     if (status == StatusWord(SCAN_TILE_PARTIAL))
     {
@@ -952,7 +978,7 @@ struct ScanTileState<T, false>
  */
 template <typename ValueT,
           typename KeyT,
-          bool SINGLE_WORD = (Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16)>
+          bool SINGLE_WORD = detail::is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16)>
 struct ReduceByKeyScanTileState;
 
 /**
@@ -986,7 +1012,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE,
     STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE,
 
-    TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Status word type
@@ -1147,7 +1173,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
       TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
 
-    } while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff));
+    } while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)));
 
     status      = tile_descriptor.status;
     value.value = tile_descriptor.value;
@@ -1172,7 +1198,6 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          int LEGACY_PTX_ARCH        = 0,
           typename DelayConstructorT = detail::default_delay_constructor_t<T>>
 struct TilePrefixCallbackOp
 {
@@ -1270,9 +1295,9 @@ struct TilePrefixCallbackOp
     exclusive_prefix = window_aggregate;
 
     // Keep sliding the window back until we come across a tile whose inclusive prefix is known
-    while (WARP_ALL((predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE)), 0xffffffff))
+    while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
     {
-      predecessor_idx -= CUB_PTX_WARP_THREADS;
+      predecessor_idx -= detail::warp_threads;
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());

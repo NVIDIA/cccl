@@ -44,14 +44,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
 
-#include <iterator>
-
-#include <stdio.h>
+#include <thrust/iterator/constant_iterator.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -178,7 +177,8 @@ struct DeviceRunLengthEncode
   template <typename InputIteratorT,
             typename UniqueOutputIteratorT,
             typename LengthsOutputIteratorT,
-            typename NumRunsOutputIteratorT>
+            typename NumRunsOutputIteratorT,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -186,28 +186,30 @@ struct DeviceRunLengthEncode
     UniqueOutputIteratorT d_unique_out,
     LengthsOutputIteratorT d_counts_out,
     NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
-    using offset_t     = int; // Signed integer type for global offsets
     using equality_op  = ::cuda::std::equal_to<>; // Default == operator
     using reduction_op = ::cuda::std::plus<>; // Value reduction operator
+
+    // Offset type used for global offsets
+    using offset_t = detail::choose_signed_offset_t<NumItemsT>;
 
     // The lengths output value type
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
 
     // Generator type for providing 1s values for run-length reduction
-    using lengths_input_iterator_t = ConstantInputIterator<length_t, offset_t>;
+    using lengths_input_iterator_t = THRUST_NS_QUALIFIER::constant_iterator<length_t, offset_t>;
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 
-    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
     using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
-    return DispatchReduceByKey<
+    return detail::reduce::DispatchStreamingReduceByKey<
       InputIteratorT,
       UniqueOutputIteratorT,
       lengths_input_iterator_t,
@@ -229,29 +231,6 @@ struct DeviceRunLengthEncode
                           num_items,
                           stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT,
-            typename UniqueOutputIteratorT,
-            typename LengthsOutputIteratorT,
-            typename NumRunsOutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    UniqueOutputIteratorT d_unique_out,
-    LengthsOutputIteratorT d_counts_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Encode<InputIteratorT, UniqueOutputIteratorT, LengthsOutputIteratorT, NumRunsOutputIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Enumerates the starting offsets and lengths of all non-trivial runs
@@ -363,7 +342,7 @@ struct DeviceRunLengthEncode
     int num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
     using OffsetT    = int; // Signed integer type for global offsets
     using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
@@ -384,30 +363,6 @@ struct DeviceRunLengthEncode
                          num_items,
                          stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT,
-            typename OffsetsOutputIteratorT,
-            typename LengthsOutputIteratorT,
-            typename NumRunsOutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  NonTrivialRuns(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OffsetsOutputIteratorT d_offsets_out,
-    LengthsOutputIteratorT d_lengths_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return NonTrivialRuns<InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, NumRunsOutputIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

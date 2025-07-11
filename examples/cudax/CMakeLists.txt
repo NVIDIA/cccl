@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 project(CUDAX_SAMPLES CUDA CXX)
 
@@ -23,13 +23,13 @@ include(cmake/CPM.cmake)
 
 # We define these as variables so they can be overridden in CI to pull from a PR instead of CCCL `main`
 # In your project, these variables are unnecessary and you can just use the values directly
-set(CCCL_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository to fetch CCCL from")
+set(CCCL_REPOSITORY "https://github.com/NVIDIA/cccl" CACHE STRING "Git repository to fetch CCCL from")
 set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
 CPMAddPackage(
   NAME CCCL
-  GITHUB_REPOSITORY ${CCCL_REPOSITORY}
+  GIT_REPOSITORY "${CCCL_REPOSITORY}"
   GIT_TAG ${CCCL_TAG}
   GIT_SHALLOW ON
   # The following is required to make the `CCCL::cudax` target available:

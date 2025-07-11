@@ -25,8 +25,9 @@
  *
  ******************************************************************************/
 
-#include "thrust/iterator/transform_iterator.h"
 #include <nvbench_helper.cuh>
+
+#include "thrust/iterator/transform_iterator.h"
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -89,12 +90,18 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 
+  using dispatch_t = cub::DispatchReduce<
+    input_it_t,
+    output_it_t,
+    offset_t,
+    reduction_op_t,
+    init_t,
+    accum_t
 #  if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t, offset_t>;
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, reduction_op_t, init_t, accum_t, policy_t>;
-#  else // TUNE_BASE
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, reduction_op_t, init_t, accum_t>;
+    ,
+    policy_hub_t<accum_t, offset_t>
 #  endif // TUNE_BASE
+    >;
 
   // Retrieve axis parameters
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -117,7 +124,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,
@@ -180,7 +187,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,

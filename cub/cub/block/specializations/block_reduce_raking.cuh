@@ -50,7 +50,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockReduceRaking provides raking-based methods of parallel reduction across a CUDA thread
  *        block. Supports non-commutative reduction operators.
@@ -76,19 +77,12 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam BLOCK_DIM_Z
  *   The thread block length in threads along the Z dimension
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 struct BlockReduceRaking
 {
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
 
   /// Layout type for padded thread block raking grid
   using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
@@ -97,25 +91,21 @@ struct BlockReduceRaking
   using WarpReduce = typename WarpReduce<T, BlockRakingLayout::RAKING_THREADS>::InternalWarpReduce;
 
   /// Constants
-  enum
-  {
-    /// Number of raking threads
-    RAKING_THREADS = BlockRakingLayout::RAKING_THREADS,
+  /// Number of raking threads
+  static constexpr int RAKING_THREADS = BlockRakingLayout::RAKING_THREADS;
 
-    /// Number of raking elements per warp synchronous raking thread
-    SEGMENT_LENGTH = BlockRakingLayout::SEGMENT_LENGTH,
+  /// Number of raking elements per warp synchronous raking thread
+  static constexpr int SEGMENT_LENGTH = BlockRakingLayout::SEGMENT_LENGTH;
 
-    /// Cooperative work can be entirely warp synchronous
-    WARP_SYNCHRONOUS = (int(RAKING_THREADS) == int(BLOCK_THREADS)),
+  /// Cooperative work can be entirely warp synchronous
+  static constexpr bool WARP_SYNCHRONOUS = (RAKING_THREADS == BLOCK_THREADS);
 
-    /// Whether or not warp-synchronous reduction should be unguarded (i.e., the warp-reduction elements is a power of
-    /// two
-    WARP_SYNCHRONOUS_UNGUARDED = PowerOfTwo<RAKING_THREADS>::VALUE,
+  /// Whether or not warp-synchronous reduction should be unguarded (i.e., the warp-reduction elements is a power of
+  /// two
+  static constexpr int WARP_SYNCHRONOUS_UNGUARDED = PowerOfTwo<RAKING_THREADS>::VALUE;
 
-    /// Whether or not accesses into smem are unguarded
-    RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED,
-
-  };
+  /// Whether or not accesses into smem are unguarded
+  static constexpr bool RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED;
 
   /// Shared memory storage layout type
   union _TempStorage
@@ -153,7 +143,7 @@ struct BlockReduceRaking
    */
   template <bool IS_FULL_TILE, typename ReductionOp, int ITERATION>
   _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(
-    ReductionOp reduction_op, T* raking_segment, T partial, int num_valid, Int2Type<ITERATION> /*iteration*/)
+    ReductionOp reduction_op, T* raking_segment, T partial, int num_valid, constant_t<ITERATION> /*iteration*/)
   {
     // Update partial if addend is in range
     if ((IS_FULL_TILE && RAKING_UNGUARDED) || ((linear_tid * SEGMENT_LENGTH) + ITERATION < num_valid))
@@ -161,7 +151,7 @@ struct BlockReduceRaking
       T addend = raking_segment[ITERATION];
       partial  = reduction_op(partial, addend);
     }
-    return RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, Int2Type<ITERATION + 1>());
+    return RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, constant_t<ITERATION + 1>());
   }
 
   /**
@@ -180,7 +170,7 @@ struct BlockReduceRaking
     T* /*raking_segment*/,
     T partial,
     int /*num_valid*/,
-    Int2Type<SEGMENT_LENGTH> /*iteration*/)
+    constant_t<SEGMENT_LENGTH> /*iteration*/)
   {
     return partial;
   }
@@ -212,7 +202,7 @@ struct BlockReduceRaking
       // Place partial into shared memory grid.
       *BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid) = partial;
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
@@ -221,14 +211,14 @@ struct BlockReduceRaking
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
         partial           = raking_segment[0];
 
-        partial = RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, Int2Type<1>());
+        partial = RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, constant_v<1>);
 
         int valid_raking_threads = (IS_FULL_TILE) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
-        static_assert(RAKING_THREADS <= CUB_PTX_WARP_THREADS, "RAKING_THREADS must be <= warp size.");
+        static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
-        WARP_SYNC(mask);
+        __syncwarp(mask);
 
         partial = WarpReduce(temp_storage.warp_storage)
                     .template Reduce<(IS_FULL_TILE && RAKING_UNGUARDED)>(partial, valid_raking_threads, reduction_op);
@@ -257,5 +247,6 @@ struct BlockReduceRaking
     return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

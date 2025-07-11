@@ -5,7 +5,7 @@
 
 #include "test_macros.h"
 
-#if defined(_LIBCUDACXX_VERSION) && TEST_STD_VER < 2017
+#if defined(_LIBCUDACXX_VERSION)
 namespace fs = std::__fs::filesystem;
 #else
 namespace fs = std::filesystem;

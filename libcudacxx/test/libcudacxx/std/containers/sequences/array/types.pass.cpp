@@ -58,8 +58,8 @@ int main(int, char**)
     typedef cuda::std::array<T, 10> C;
     static_assert((cuda::std::is_same<C::reference, T&>::value), "");
     static_assert((cuda::std::is_same<C::const_reference, const T&>::value), "");
-    LIBCPP_STATIC_ASSERT((cuda::std::is_same<C::iterator, T*>::value), "");
-    LIBCPP_STATIC_ASSERT((cuda::std::is_same<C::const_iterator, const T*>::value), "");
+    static_assert((cuda::std::is_same<C::iterator, T*>::value), "");
+    static_assert((cuda::std::is_same<C::const_iterator, const T*>::value), "");
     test_iterators<C>();
     static_assert((cuda::std::is_same<C::pointer, T*>::value), "");
     static_assert((cuda::std::is_same<C::const_pointer, const T*>::value), "");
@@ -85,8 +85,8 @@ int main(int, char**)
     typedef cuda::std::array<T, 0> C;
     static_assert((cuda::std::is_same<C::reference, T&>::value), "");
     static_assert((cuda::std::is_same<C::const_reference, const T&>::value), "");
-    LIBCPP_STATIC_ASSERT((cuda::std::is_same<C::iterator, T*>::value), "");
-    LIBCPP_STATIC_ASSERT((cuda::std::is_same<C::const_iterator, const T*>::value), "");
+    static_assert((cuda::std::is_same<C::iterator, T*>::value), "");
+    static_assert((cuda::std::is_same<C::const_iterator, const T*>::value), "");
     test_iterators<C>();
     static_assert((cuda::std::is_same<C::pointer, T*>::value), "");
     static_assert((cuda::std::is_same<C::const_pointer, const T*>::value), "");

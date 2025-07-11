@@ -21,8 +21,8 @@
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(decltype(cuda::std::is_constant_evaluated()), bool);
-  ASSERT_NOEXCEPT(cuda::std::is_constant_evaluated());
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::is_constant_evaluated()), bool>);
+  static_assert(noexcept(cuda::std::is_constant_evaluated()));
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   static_assert(cuda::std::is_constant_evaluated(), "");

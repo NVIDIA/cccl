@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,25 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __has_single_bit(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+[[nodiscard]] _CCCL_API constexpr bool has_single_bit(_Tp __t) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__has_single_bit requires unsigned");
-  return __t != 0 && (((__t & (__t - 1)) == 0));
-}
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, bool>
-has_single_bit(_Tp __t) noexcept
-{
-  return __has_single_bit(__t);
+  return _CUDA_VSTD::popcount(__t) == 1;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_HAS_SINGLE_BIT_H

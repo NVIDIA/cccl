@@ -43,7 +43,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperat
 _CCCL_HOST_DEVICE void tabulate(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)
 {
-  using difference_type = typename iterator_difference<ForwardIterator>::type;
+  using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
   // by default, counting_iterator uses a 64b difference_type on 32b platforms to avoid overflowing its counter.
   // this causes problems when a zip_iterator is created in transform's implementation -- ForwardIterator is
@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE void tabulate(
   // to avoid this, specify the counting_iterator's difference_type to be the same as ForwardIterator's.
   thrust::counting_iterator<difference_type, thrust::use_default, thrust::use_default, difference_type> iter(0);
 
-  thrust::transform(exec, iter, iter + thrust::distance(first, last), first, unary_op);
+  thrust::transform(exec, iter, iter + ::cuda::std::distance(first, last), first, unary_op);
 } // end tabulate()
 
 } // end namespace generic

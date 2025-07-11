@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,6 +31,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 //! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
@@ -47,11 +49,19 @@ public:
     record(__stream);
   }
 
+  //! @brief Construct a new `timed_event` object with the specified flags. The event can only be recorded on streams
+  //! from the specified device.
+  //!
+  //! @throws cuda_error if the event creation fails.
+  explicit timed_event(device_ref __device, flags __flags = flags::none)
+      : event(__device, static_cast<unsigned int>(__flags))
+  {}
+
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr timed_event(uninit_t) noexcept
-      : event(uninit)
+  explicit constexpr timed_event(no_init_t) noexcept
+      : event(no_init)
   {}
 
   timed_event(timed_event&&) noexcept            = default;
@@ -66,7 +76,7 @@ public:
   //! @return timed_event The constructed `timed_event` object
   //!
   //! @note The constructed `timed_event` object takes ownership of the native handle.
-  _CCCL_NODISCARD static timed_event from_native_handle(::cudaEvent_t __evnt) noexcept
+  [[nodiscard]] static timed_event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
     return timed_event(__evnt);
   }
@@ -87,11 +97,10 @@ public:
   //! @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
   //!
   //! @note The elapsed time has a resolution of approximately 0.5 microseconds.
-  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
+  [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
-    _CCCL_TRY_CUDA_API(
-      ::cudaEventElapsedTime, "Failed to get CUDA event elapsed time", &__ms, __start.get(), __end.get());
+    __detail::driver::eventElapsedTime(__start.get(), __end.get(), &__ms);
     return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 
@@ -103,5 +112,7 @@ private:
   {}
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_TIMED_EVENT_DETAIL_H

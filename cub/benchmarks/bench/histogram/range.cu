@@ -27,8 +27,9 @@
 
 #include <thrust/sequence.h>
 
-#include "histogram_common.cuh"
 #include <nvbench_helper.cuh>
+
+#include "histogram_common.cuh"
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
@@ -88,14 +89,10 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
-  CounterT* d_histogram1[1] = {d_histogram};
-  int num_levels1[1]        = {num_levels};
-  SampleT* d_levels1[1]     = {d_levels};
-
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
-  cub::Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+  cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
   OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
   OffsetT num_rows           = 1;
   OffsetT row_stride_samples = num_row_pixels;
@@ -108,9 +105,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     d_temp_storage,
     temp_storage_bytes,
     d_input,
-    d_histogram1,
-    num_levels1,
-    d_levels1,
+    {d_histogram},
+    {num_levels},
+    {d_levels},
     num_row_pixels,
     num_rows,
     row_stride_samples,
@@ -120,14 +117,14 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::DispatchRange(
       d_temp_storage,
       temp_storage_bytes,
       d_input,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      {d_histogram},
+      {num_levels},
+      {d_levels},
       num_row_pixels,
       num_rows,
       row_stride_samples,

@@ -11,7 +11,7 @@
 // result_of<Fn(ArgTypes...)>
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/type_traits>
 #ifdef _LIBCUDACXX_HAS_MEMORY
@@ -52,7 +52,6 @@ template <class T>
 struct HasType<T, typename Voider<typename T::type>::type> : cuda::std::true_type
 {};
 
-#if TEST_STD_VER > 2011
 template <typename T, typename U>
 struct test_invoke_result;
 
@@ -63,21 +62,17 @@ struct test_invoke_result<Fn(Args...), Ret>
   {
     static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
     static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
-    ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn, Args...>::type);
+    static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
   }
 };
-#endif
 
 template <class T, class U>
 __host__ __device__ void test_result_of()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
-#if TEST_STD_VER > 2011
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
   test_invoke_result<T, U>::call();
-#endif
 }
 
-#if TEST_STD_VER > 2011
 template <typename T>
 struct test_invoke_no_result;
 
@@ -90,28 +85,22 @@ struct test_invoke_no_result<Fn(Args...)>
     static_assert((!HasType<cuda::std::invoke_result<Fn, Args...>>::value), "");
   }
 };
-#endif
 
 template <class T>
 __host__ __device__ void test_no_result()
 {
   static_assert((!HasType<cuda::std::result_of<T>>::value), "");
-#if TEST_STD_VER > 2011
   test_invoke_no_result<T>::call();
-#endif
 }
 
-#if defined(__NVCC__)
+#if TEST_CUDA_COMPILER(NVCC)
 template <class Ret, class Fn>
 __host__ __device__ void test_lambda(Fn&&)
 {
-  ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
-
-#  if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
-#  endif
+  static_assert(cuda::std::is_same_v<Ret, typename cuda::std::result_of<Fn()>::type>);
+  static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn>::type>);
 }
-#endif
+#endif // TEST_CUDA_COMPILER(NVCC)
 
 int main(int, char**)
 {
@@ -404,7 +393,7 @@ int main(int, char**)
     test_result_of<PMS3CV(S&, int, long), const int&>();
   }
   { // pointer to member data
-    typedef char S::*PMD;
+    typedef char S::* PMD;
     test_result_of<PMD(S&), char&>();
     test_result_of<PMD(S*), char&>();
     test_result_of<PMD(S* const), char&>();
@@ -426,7 +415,7 @@ int main(int, char**)
     test_result_of<PMD(cuda::std::reference_wrapper<S const>), const char&>();
     test_no_result<PMD(ND&)>();
   }
-#if defined(TEST_COMPILER_NVCC)
+#if TEST_CUDA_COMPILER(NVCC)
   { // extended lambda
     NV_IF_TARGET(
       NV_IS_DEVICE,
@@ -443,7 +432,7 @@ int main(int, char**)
       return 42.0;
     }));
   }
-#endif
+#endif // TEST_CUDA_COMPILER(NVCC)
 
   return 0;
 }

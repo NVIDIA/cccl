@@ -35,8 +35,8 @@
 C2H_TEST("Device inclusive scan works", "[scan][device]")
 {
   // example-begin device-inclusive-scan
-  thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
-  thrust::device_vector<int> out(input.size());
+  c2h::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
+  c2h::device_vector<int> out(input.size());
 
   int init = 1;
   size_t temp_storage_bytes{};
@@ -45,7 +45,7 @@ C2H_TEST("Device inclusive scan works", "[scan][device]")
     nullptr, temp_storage_bytes, input.begin(), out.begin(), ::cuda::maximum<>{}, init, static_cast<int>(input.size()));
 
   // Allocate temporary storage for inclusive scan
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
 
   // Run inclusive prefix sum
   cub::DeviceScan::InclusiveScanInit(
@@ -57,7 +57,7 @@ C2H_TEST("Device inclusive scan works", "[scan][device]")
     init,
     static_cast<int>(input.size()));
 
-  thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
+  c2h::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
   // example-end device-inclusive-scan
 
   REQUIRE(expected == out);

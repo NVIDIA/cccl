@@ -138,12 +138,12 @@ public:
     assert(src_memory_node != dst_memory_node);
 
     cudaMemcpyKind kind = cudaMemcpyDeviceToDevice;
-    if (src_memory_node == data_place::host)
+    if (src_memory_node.is_host())
     {
       kind = cudaMemcpyHostToDevice;
     }
 
-    if (dst_memory_node == data_place::host)
+    if (dst_memory_node.is_host())
     {
       kind = cudaMemcpyDeviceToHost;
     }
@@ -173,7 +173,7 @@ public:
 
     T* base_ptr;
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // Fallback to a synchronous method as there is no asynchronous host allocation API
       cuda_safe_call(cudaStreamSynchronize(stream));
@@ -199,7 +199,7 @@ public:
     cudaStream_t stream) override
   {
     matrix<T>& instance = this->instance(instance_id);
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // Fallback to a synchronous method as there is no asynchronous host deallocation API
       cuda_safe_call(cudaStreamSynchronize(stream));

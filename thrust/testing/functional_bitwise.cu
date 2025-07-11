@@ -8,39 +8,6 @@
 
 const size_t NUM_SAMPLES = 10000;
 
-// STL doesn't necessarily have these available
-namespace ref
-{
-
-template <typename T>
-struct bit_and
-{
-  T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs & rhs;
-  }
-};
-
-template <typename T>
-struct bit_or
-{
-  T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs | rhs;
-  }
-};
-
-template <typename T>
-struct bit_xor
-{
-  T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs ^ rhs;
-  }
-};
-
-} // namespace ref
-
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 void TestBinaryFunctional()
 {
@@ -88,8 +55,8 @@ Macro(vector_type, operator_name, unittest::uint64_t)
 #define INSTANTIATE_BINARY_BITWISE_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestBinaryFunctional<thrust::vector_type<data_type>,                                    \
                        thrust::vector_type<data_type>,                                    \
-                       thrust::operator_name<data_type>,                                  \
-                       ref::operator_name<data_type>>();
+                       ::cuda::std::operator_name<data_type>,                             \
+                       ::std::operator_name<data_type>>();
 
 // op(T,T) -> T (for bitwise op and integer T only)
 #define DECLARE_BINARY_BITWISE_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                          \

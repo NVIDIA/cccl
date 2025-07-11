@@ -20,11 +20,6 @@ void TestVectorManipulation(size_t n)
   ASSERT_EQUAL(test1.size(), n);
   ASSERT_EQUAL((test1 == std::vector<T>(n, T(3))), true);
 
-#if _CCCL_COMPILER(MSVC, <=, 14)
-  // XXX MSVC 2005's STL unintentionally uses adl to dispatch advance which
-  //     produces an ambiguity between std::advance & thrust::advance
-  //     don't produce a KNOWN_FAILURE, just ignore the issue
-#else
   // initializing from other vector
   std::vector<T> stl_vector(src.begin(), src.end());
   Vector cpy0 = src;
@@ -33,7 +28,6 @@ void TestVectorManipulation(size_t n)
   ASSERT_EQUAL(cpy0, src);
   ASSERT_EQUAL(cpy1, src);
   ASSERT_EQUAL(cpy2, src);
-#endif
 
   // resizing
   Vector vec1(src);

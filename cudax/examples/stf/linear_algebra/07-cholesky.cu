@@ -16,10 +16,10 @@
  * It also illustrates how we can use CUDASTF to allocate temporary data for CUSOLVER in CUDASTF tasks
  */
 
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <cublas_v2.h>
-#include <nvtx3/nvToolsExt.h>
 
 #define TILED
 
@@ -91,10 +91,10 @@ public:
 
     handles.resize(mt * nt);
 
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
       int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
         auto& h   = handle(rowb, colb);
@@ -169,12 +169,13 @@ public:
   template <typename Fun>
   void fill(Fun&& fun)
   {
-    nvtxRangePushA("FILL");
+    nvtx_range r("fill");
+
     // Fill blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      size_t low_rowb = sym_matrix ? colb : 0;
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
         auto& h   = handle(rowb, colb);
@@ -188,7 +189,6 @@ public:
           };
       }
     }
-    nvtxRangePop();
   }
 
   std::vector<T> h_array;
@@ -363,9 +363,9 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
   reserved::dot::set_current_color("red");
 #endif
 
-  for (int rowb = 0; rowb < A->mt; rowb++)
+  for (size_t rowb = 0; rowb < A->mt; rowb++)
   {
-    for (int colb = 0; colb < A->nt; colb++)
+    for (size_t colb = 0; colb < A->nt; colb++)
     {
       ctx.host_launch(A->handle(rowb, colb).read())->*[=](auto sA) {
         double res2 = 0.0;
@@ -399,7 +399,6 @@ void PDPOTRF(matrix<double>& A)
 
   cuda_safe_call(cudaSetDevice(0));
 
-  nvtxRangePushA("SUBMIT_PDPOTRF");
   for (int K = 0; K < NBLOCKS; K++)
   {
     int dev_akk = A.get_preferred_devid(K, K);
@@ -422,8 +421,6 @@ void PDPOTRF(matrix<double>& A)
     }
   }
   cuda_safe_call(cudaSetDevice(0));
-
-  nvtxRangePop();
 }
 
 // Algorithm from PLASMA
@@ -435,6 +432,8 @@ void PDTRSM(cublasSideMode_t side,
             class matrix<double>& A,
             class matrix<double>& B)
 {
+  auto guard = ctx.dot_section("PDTRSM");
+
   //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
 
   if (side == CUBLAS_SIDE_LEFT)
@@ -452,17 +451,17 @@ void PDTRSM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int k = 0; k < B.mt; k++)
+        for (size_t k = 0; k < B.mt; k++)
         {
           double lalpha = k == 0 ? alpha : 1.0;
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_safe_call(cudaSetDevice(A.get_preferred_devid(k, k)));
             DTRSM(side, uplo, trans, diag, lalpha, A, k, k, B, k, n);
           }
-          for (int m = k + 1; m < B.mt; m++)
+          for (size_t m = k + 1; m < B.mt; m++)
           {
-            for (int n = 0; n < B.nt; n++)
+            for (size_t n = 0; n < B.nt; n++)
             {
               cuda_safe_call(cudaSetDevice(A.get_preferred_devid(m, k)));
               DGEMM(CUBLAS_OP_N, CUBLAS_OP_N, -1.0, A, m, k, B, k, n, lalpha, B, m, n);
@@ -475,17 +474,17 @@ void PDTRSM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int k = 0; k < B.mt; k++)
+        for (size_t k = 0; k < B.mt; k++)
         {
           double lalpha = k == 0 ? alpha : 1.0;
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_safe_call(cudaSetDevice(A.get_preferred_devid(B.mt - k - 1, B.mt - k - 1)));
             DTRSM(side, uplo, trans, diag, lalpha, A, B.mt - k - 1, B.mt - k - 1, B, B.mt - k - 1, n);
           }
-          for (int m = k + 1; m < B.mt; m++)
+          for (size_t m = k + 1; m < B.mt; m++)
           {
-            for (int n = 0; n < B.nt; n++)
+            for (size_t n = 0; n < B.nt; n++)
             {
               cuda_safe_call(cudaSetDevice(A.get_preferred_devid(B.mt - k - 1, B.mt - 1 - m)));
               DGEMM(
@@ -539,13 +538,15 @@ void PDGEMM(cublasOperation_t transa,
             double beta,
             class matrix<double>& C)
 {
+  auto guard = ctx.dot_section("PDGEMM");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("blue");
 #endif
 
-  for (int m = 0; m < C.mt; m++)
+  for (size_t m = 0; m < C.mt; m++)
   {
-    for (int n = 0; n < C.nt; n++)
+    for (size_t n = 0; n < C.nt; n++)
     {
       //=========================================
       // alpha*A*B does not contribute; scale C
@@ -562,7 +563,7 @@ void PDGEMM(cublasOperation_t transa,
         //================================
         if (transb == CUBLAS_OP_N)
         {
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, m, k, B, k, n, zbeta, C, m, n);
@@ -573,7 +574,7 @@ void PDGEMM(cublasOperation_t transa,
         //=====================================
         else
         {
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, m, k, B, n, k, zbeta, C, m, n);
@@ -587,7 +588,7 @@ void PDGEMM(cublasOperation_t transa,
         //=====================================
         if (transb == CUBLAS_OP_N)
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, k, m, B, k, n, zbeta, C, m, n);
@@ -598,7 +599,7 @@ void PDGEMM(cublasOperation_t transa,
         //==========================================
         else
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, k, m, B, n, k, zbeta, C, m, n);
@@ -640,7 +641,7 @@ int main(int argc, char** argv)
   int ndevs;
   cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
-  for (size_t d = 0; d < ndevs; d++)
+  for (int d = 0; d < ndevs; d++)
   {
     auto lX = ctx.logical_data(shape_of<slice<double>>(1));
     ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] _CCCL_DEVICE(size_t, auto) {};
@@ -659,14 +660,14 @@ int main(int argc, char** argv)
     return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
   };
 
-  ctx.dot_push_section("fillA");
+  auto s = ctx.dot_section("fillA");
   if (check_result)
   {
     Aref.fill(hilbert);
   }
 
   A.fill(hilbert);
-  ctx.dot_pop_section();
+  s.end();
 
   /* Right-hand side */
   matrix<double> B_potrs(N, 1, NB, 1, false, "B");
@@ -693,25 +694,25 @@ int main(int argc, char** argv)
   cudaEvent_t startEvent_pdpotrf, stopEvent_pdpotrf;
   float milliseconds_pdpotrf = 0;
 
-  //    for (int row = 0; row < A.mt; row++)
+  //    for (size_t row = 0; row < A.mt; row++)
   //    {
-  //        for (int col = 0; col <= row; col++)
+  //        for (size_t col = 0; col <= row; col++)
   //        {
   //            cuda_safe_call(cudaSetDevice(A.get_preferred_devid(row, col)));
   //            NOOP(A, row, col);
   //        }
   //    }
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   cuda_safe_call(cudaEventCreate(&startEvent_pdpotrf));
   cuda_safe_call(cudaEventCreate(&stopEvent_pdpotrf));
 
-  cuda_safe_call(cudaEventRecord(startEvent_pdpotrf, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(startEvent_pdpotrf, ctx.fence()));
 
   PDPOTRF(A);
 
-  cuda_safe_call(cudaEventRecord(stopEvent_pdpotrf, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stopEvent_pdpotrf, ctx.fence()));
 
   /*
    *  POTRS

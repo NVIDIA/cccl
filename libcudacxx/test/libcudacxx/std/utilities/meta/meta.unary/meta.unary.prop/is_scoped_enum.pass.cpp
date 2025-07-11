@@ -24,12 +24,10 @@ __host__ __device__ void test_positive()
   static_assert(cuda::std::is_scoped_enum<volatile T>::value, "");
   static_assert(cuda::std::is_scoped_enum<const volatile T>::value, "");
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
   static_assert(cuda::std::is_scoped_enum_v<T>, "");
   static_assert(cuda::std::is_scoped_enum_v<const T>, "");
   static_assert(cuda::std::is_scoped_enum_v<volatile T>, "");
   static_assert(cuda::std::is_scoped_enum_v<const volatile T>, "");
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 }
 
 template <class T>
@@ -40,12 +38,10 @@ __host__ __device__ void test_negative()
   static_assert(!cuda::std::is_scoped_enum<volatile T>::value, "");
   static_assert(!cuda::std::is_scoped_enum<const volatile T>::value, "");
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
   static_assert(!cuda::std::is_scoped_enum_v<T>, "");
   static_assert(!cuda::std::is_scoped_enum_v<const T>, "");
   static_assert(!cuda::std::is_scoped_enum_v<volatile T>, "");
   static_assert(!cuda::std::is_scoped_enum_v<const volatile T>, "");
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 }
 
 class Empty

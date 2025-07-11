@@ -16,12 +16,10 @@
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(void, cuda::std::enable_if<true>::type);
-  ASSERT_SAME_TYPE(int, cuda::std::enable_if<true, int>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(void, cuda::std::enable_if_t<true, void>);
-  ASSERT_SAME_TYPE(int, cuda::std::enable_if_t<true, int>);
-#endif
+  static_assert(cuda::std::is_same_v<void, cuda::std::enable_if<true>::type>);
+  static_assert(cuda::std::is_same_v<int, cuda::std::enable_if<true, int>::type>);
+  static_assert(cuda::std::is_same_v<void, cuda::std::enable_if_t<true, void>>);
+  static_assert(cuda::std::is_same_v<int, cuda::std::enable_if_t<true, int>>);
 
   return 0;
 }

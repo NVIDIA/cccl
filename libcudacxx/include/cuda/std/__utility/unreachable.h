@@ -20,13 +20,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+[[noreturn]] _CCCL_API inline void unreachable()
 {
+  _CCCL_ASSERT(false, "unreachable");
   _CCCL_UNREACHABLE();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _LIBCUDACXX___UTILITY_UNREACHABLE_H

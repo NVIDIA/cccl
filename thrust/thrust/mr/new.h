@@ -65,17 +65,17 @@ public:
 #endif
   }
 
-  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void* p,
+                     [[maybe_unused]] std::size_t bytes,
+                     [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
 #if defined(__cpp_aligned_new)
 #  if defined(__cpp_sized_deallocation)
     ::operator delete(p, bytes, std::align_val_t(alignment));
 #  else
-    (void) bytes;
     ::operator delete(p, std::align_val_t(alignment));
 #  endif
 #else
-    (void) alignment;
     char* ptr = static_cast<char*>(p);
     // calculate where the offset is stored
     std::size_t* offset = reinterpret_cast<std::size_t*>(ptr + bytes);

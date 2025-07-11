@@ -67,7 +67,7 @@ template <typename KeyType>
 class key_sort_ref_key_transform
 {
   static constexpr double max_key = static_cast<double>(::cuda::std::numeric_limits<KeyType>::max());
-  const double m_conversion;
+  double m_conversion;
   std::size_t m_num_items;
   bool m_is_descending;
 
@@ -140,7 +140,7 @@ public:
   _CCCL_HOST_DEVICE KeyType operator()(std::size_t idx) const
   {
     // The final summary may be padded, so truncate the summary_idx at the last valid idx:
-    const std::size_t summary_idx = thrust::min(m_num_summaries - 1, idx / m_unpadded_run_size);
+    const std::size_t summary_idx = cuda::std::min(m_num_summaries - 1, idx / m_unpadded_run_size);
     const KeyType key = m_is_descending ? static_cast<KeyType>((m_num_summaries - 1 - summary_idx) * m_key_conversion)
                                         : static_cast<KeyType>(summary_idx * m_key_conversion);
 
@@ -253,7 +253,7 @@ struct large_array_sort_helper
   // Pass the sorted outputs to verify_stable_pair_sort to validate.
   void initialize_for_stable_pair_sort(c2h::seed_t seed, std::size_t num_items, bool is_descending)
   {
-    static_assert(!::cuda::std::is_same<ValueType, cub::NullType>::value, "ValueType must be valid.");
+    static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
     using summary_t = detail::summary<KeyType>;
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
@@ -371,7 +371,7 @@ struct large_array_sort_helper
     const c2h::device_vector<KeyType>& keys,
     const c2h::device_vector<ValueType>& values)
   {
-    static_assert(!::cuda::std::is_same<ValueType, cub::NullType>::value, "ValueType must be valid.");
+    static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
     const std::size_t num_summaries = this->compute_num_summaries(num_items, max_summaries);

@@ -18,18 +18,18 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   {
     typedef cuda::std::array<int, 2> C;
     C c = {};
-    ASSERT_NOEXCEPT(c.empty());
+    static_assert(noexcept(c.empty()));
     assert(!c.empty());
   }
   {
     typedef cuda::std::array<int, 0> C;
     C c = {};
-    ASSERT_NOEXCEPT(c.empty());
+    static_assert(noexcept(c.empty()));
     assert(c.empty());
   }
 
@@ -39,9 +39,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014
   static_assert(tests(), "");
-#endif
 
   // Sanity check for constexpr in C++11
   {

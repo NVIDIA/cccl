@@ -18,7 +18,7 @@
 using namespace cuda::experimental::stf;
 
 // B += alpha*A;
-__global__ void axpy(double alpha, double* d_ptrA, double* d_ptrB, size_t N)
+__global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;

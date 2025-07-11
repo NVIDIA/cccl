@@ -45,6 +45,11 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * This agent will be implementing the `DeviceSegmentedRadixSort` when the
  * https://github.com/NVIDIA/cub/issues/383 is addressed.
@@ -69,7 +74,7 @@ template <bool IS_DESCENDING,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentSegmentedRadixSort
 {
   OffsetT num_items;
@@ -78,9 +83,9 @@ struct AgentSegmentedRadixSort
   static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
   static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr int KEYS_ONLY        = std::is_same<ValueT, NullType>::value;
+  static constexpr int KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  using traits           = detail::radix::traits_t<KeyT>;
+  using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
 
   // Huge segment handlers
@@ -154,18 +159,24 @@ struct AgentSegmentedRadixSort
     {
       BlockValueLoadT(temp_storage.values_load).Load(d_values_in, thread_values, num_items);
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     {
       BlockKeyLoadT(temp_storage.keys_load).Load(d_keys_in, thread_keys, num_items, oob_default);
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     BlockRadixSortT(temp_storage.sort)
       .SortBlockedToStriped(
-        thread_keys, thread_values, begin_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
+        thread_keys,
+        thread_values,
+        begin_bit,
+        end_bit,
+        bool_constant_v<IS_DESCENDING>,
+        bool_constant_v<KEYS_ONLY>,
+        decomposer);
 
     cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
@@ -187,18 +198,18 @@ struct AgentSegmentedRadixSort
     BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
     upsweep.ProcessRegion(OffsetT{}, num_items);
 
-    CTA_SYNC();
+    __syncthreads();
 
     // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
     OffsetT bin_count[BINS_TRACKED_PER_THREAD];
     upsweep.ExtractCounts(bin_count);
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_DESCENDING)
     {
-// Reverse bin counts
-#pragma unroll
+      // Reverse bin counts
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -209,9 +220,9 @@ struct AgentSegmentedRadixSort
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -231,8 +242,8 @@ struct AgentSegmentedRadixSort
 
     if (IS_DESCENDING)
     {
-// Reverse bin offsets
-#pragma unroll
+      // Reverse bin offsets
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -243,9 +254,9 @@ struct AgentSegmentedRadixSort
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -257,7 +268,7 @@ struct AgentSegmentedRadixSort
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Downsweep
     BlockDownsweepT downsweep(
@@ -274,5 +285,8 @@ struct AgentSegmentedRadixSort
     downsweep.ProcessRegion(OffsetT{}, num_items);
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

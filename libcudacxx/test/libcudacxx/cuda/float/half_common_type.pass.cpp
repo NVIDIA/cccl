@@ -11,7 +11,7 @@
 
 #include "test_macros.h"
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
 static_assert(cuda::std::is_same<cuda::std::common_type<__half, __half>::type, __half>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__half, __half&>::type, __half>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__half&, __half>::type, __half>::value, "");
@@ -27,9 +27,9 @@ static_assert(cuda::std::is_same<cuda::std::common_type<__half, float&&>::type, 
 static_assert(cuda::std::is_same<cuda::std::common_type<__half&&, float>::type, float>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__half&, float&&>::type, float>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__half&&, float&>::type, float>::value, "");
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16>::type, __nv_bfloat16>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16&>::type, __nv_bfloat16>::value,
               "");
@@ -52,7 +52,6 @@ static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, float>:
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&, float&&>::type, float>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, float&>::type, float>::value, "");
 
-#  if TEST_STD_VER >= 2014
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16, __half>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16, __half&>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&, __half>, "");
@@ -60,8 +59,8 @@ static_assert(!cuda::std::__has_common_type<__nv_bfloat16, __half&&>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&&, __half>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&, __half&&>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&&, __half&>, "");
-#  endif // TEST_STD_VER >= 2014
-#endif // _LIBCUDACXX_HAS_NVBF16
+
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 int main(int argc, char** argv)
 {

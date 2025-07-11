@@ -1,48 +1,22 @@
-/*
-//@HEADER
-// ************************************************************************
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
 //
-//                        Kokkos v. 2.0
-//              Copyright (2019) Sandia Corporation
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
-// Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
+//                        Kokkos v. 4.0
+//       Copyright (2022) National Technology & Engineering
+//               Solutions of Sandia, LLC (NTESS).
+//
+// Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// 1. Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-// notice, this list of conditions and the following disclaimer in the
-// documentation and/or other materials provided with the distribution.
-//
-// 3. Neither the name of the Corporation nor the names of the
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY SANDIA CORPORATION "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL SANDIA CORPORATION OR THE
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
-//
-// ************************************************************************
-//@HEADER
-*/
+//===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_HPP
-#define _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_HPP
+#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_H
+#define _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_H
 
 #include <cuda/std/detail/__config>
 
@@ -54,223 +28,288 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/layout_stride.h>
-#include <cuda/std/__mdspan/macros.h>
-#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
+#include <cuda/std/limits>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
-//==============================================================================
-
+// Helper for lightweight test checking that one did pass a layout policy as LayoutPolicy template argument
 template <class _Extents>
-class layout_left::mapping
+class layout_left::mapping : private __mdspan_ebco<_Extents>
 {
 public:
+  static_assert(__mdspan_detail::__is_extents<_Extents>::value,
+                "layout_left::mapping template argument must be a specialization of extents.");
+
   using extents_type = _Extents;
   using index_type   = typename extents_type::index_type;
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_left;
+  using __base       = __mdspan_ebco<_Extents>;
+
+  template <class, class, class, class>
+  friend class mdspan;
 
 private:
-  static_assert(__detail::__is_extents_v<extents_type>,
-                "layout_left::mapping must be instantiated with a specialization of _CUDA_VSTD::extents.");
-
-  template <class>
-  friend class mapping;
-
-  // i0+(i1 + E(1)*(i2 + E(2)*i3))
-  template <size_t _r, size_t _Rank>
-  struct __rank_count
-  {};
-
-  template <size_t _r, size_t _Rank, class _Ip, class... _Indices>
-  _CCCL_HOST_DEVICE constexpr index_type
-  __compute_offset(__rank_count<_r, _Rank>, const _Ip& __i, _Indices... __idx) const
+  [[nodiscard]] _CCCL_API static constexpr bool __mul_overflow(index_type x, index_type y, index_type* res) noexcept
   {
-    return __compute_offset(__rank_count<_r + 1, _Rank>(), __idx...) * __extents.template __extent<_r>() + __i;
+    *res = x * y;
+    return x && ((*res / x) != y);
   }
 
-  template <class _Ip>
-  _CCCL_HOST_DEVICE constexpr index_type
-  __compute_offset(__rank_count<extents_type::rank() - 1, extents_type::rank()>, const _Ip& __i) const
+  [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(const extents_type& __ext)
   {
-    return __i;
+    if constexpr (extents_type::rank() != 0)
+    {
+      index_type __prod = __ext.extent(0);
+      for (rank_type __r = 1; __r < extents_type::rank(); __r++)
+      {
+        if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
+        {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
-  _CCCL_HOST_DEVICE constexpr index_type __compute_offset(__rank_count<0, 0>) const
+  static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
+                "layout_left::mapping product of static extents must be representable as index_type.");
+
+public:
+  // [mdspan.layout.left.cons], constructors
+  _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping(const mapping&) noexcept = default;
+
+  _CCCL_API constexpr mapping(const extents_type& __ext) noexcept
+      : __base(__ext)
+  {
+    // not catching this could lead to out-of-bounds access later when used inside mdspan
+    // mapping<dextents<char, 2>> map(dextents<char, 2>(40,40)); map(10, 3) == -126
+    _CCCL_ASSERT(__required_span_size_is_representable(__ext),
+                 "layout_left::mapping extents ctor: product of extents must be representable as index_type.");
+  }
+
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
+                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherExtents, extents_type))
+  _CCCL_API constexpr mapping(const mapping<_OtherExtents>& __other) noexcept
+      : __base(__other.extents())
+  {
+    // not catching this could lead to out-of-bounds access later when used inside mdspan
+    // mapping<dextents<char, 2>> map(mapping<dextents<int, 2>>(dextents<int, 2>(40,40))); map(10, 3) == -126
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+  }
+
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
+                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherExtents, extents_type)))
+  _CCCL_API explicit constexpr mapping(const mapping<_OtherExtents>& __other) noexcept
+      : __base(__other.extents())
+  {
+    // not catching this could lead to out-of-bounds access later when used inside mdspan
+    // mapping<dextents<char, 2>> map(mapping<dextents<int, 2>>(dextents<int, 2>(40,40))); map(10, 3) == -126
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+  }
+
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND _CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
+                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherExtents, extents_type))
+  _CCCL_API constexpr mapping(const layout_right::mapping<_OtherExtents>& __other) noexcept
+      : __base(__other.extents())
+  {
+    // not catching this could lead to out-of-bounds access later when used inside mdspan
+    // Note: since this is constraint to rank 1, extents itself would catch the invalid conversion first
+    //       and thus this assertion should never be triggered, but keeping it here for consistency
+    // layout_left::mapping<dextents<char, 1>> map(
+    //           layout_right::mapping<dextents<unsigned, 1>>(dextents<unsigned, 1>(200))); map.extents().extent(0) ==
+    //           -56
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+  }
+
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND _CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
+                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherExtents, extents_type)))
+  _CCCL_API explicit constexpr mapping(const layout_right::mapping<_OtherExtents>& __other) noexcept
+      : __base(__other.extents())
+  {
+    // not catching this could lead to out-of-bounds access later when used inside mdspan
+    // Note: since this is constraint to rank 1, extents itself would catch the invalid conversion first
+    //       and thus this assertion should never be triggered, but keeping it here for consistency
+    // layout_left::mapping<dextents<char, 1>> map(
+    //           layout_right::mapping<dextents<unsigned, 1>>(dextents<unsigned, 1>(200))); map.extents().extent(0) ==
+    //           -56
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+  }
+
+  template <class _OtherMappping>
+  [[nodiscard]] _CCCL_API constexpr bool __check_strides(const _OtherMappping& __other) const noexcept
+  {
+    // avoid warning when comparing signed and unsigner integers and pick the wider of two types
+    using _CommonType = common_type_t<index_type, typename _OtherMappping::index_type>;
+    for (rank_type __r = 0; __r != extents_type::rank(); __r++)
+    {
+      if (static_cast<_CommonType>(stride(__r)) != static_cast<_CommonType>(__other.stride(__r)))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents) _CCCL_AND(extents_type::rank() > 0))
+  _CCCL_API explicit constexpr mapping(const layout_stride::mapping<_OtherExtents>& __other) noexcept
+      : __base(__other.extents())
+  {
+    _CCCL_ASSERT(__check_strides(__other),
+                 "layout_left::mapping from layout_stride ctor: strides are not compatible with layout_left.");
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_left::mapping from layout_stride ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+  }
+
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents) _CCCL_AND(extents_type::rank() == 0))
+  _CCCL_API constexpr mapping(const layout_stride::mapping<_OtherExtents>& __other) noexcept
+      : __base(__other.extents())
+  {}
+
+  _CCCL_HIDE_FROM_ABI constexpr mapping& operator=(const mapping&) noexcept = default;
+
+  // [mdspan.layout.left.obs], observers
+  [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
+  {
+    return this->template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
+  {
+    index_type __size = 1;
+    if constexpr (extents_type::rank() != 0)
+    {
+      for (size_t __r = 0; __r != extents_type::rank(); __r++)
+      {
+        __size *= extents().extent(__r);
+      }
+    }
+    return __size;
+  }
+
+  template <size_t... _Pos>
+  [[nodiscard]] _CCCL_API constexpr index_type
+  __op_index(const array<index_type, _Extents::rank()>& __idx_a, index_sequence<_Pos...>) const noexcept
+  {
+    index_type __res = 0;
+    ((__res = __idx_a[extents_type::rank() - 1 - _Pos] + extents().extent(extents_type::rank() - 1 - _Pos) * __res),
+     ...);
+    return __res;
+  }
+  [[nodiscard]] _CCCL_API constexpr index_type
+  __op_index(const array<index_type, extents_type::rank()>&, index_sequence<>) const noexcept
   {
     return 0;
   }
 
-public:
-  //--------------------------------------------------------------------------------
-
-  _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
-  _CCCL_HIDE_FROM_ABI constexpr mapping(mapping const&) noexcept = default;
-
-  _CCCL_HOST_DEVICE constexpr mapping(extents_type const& __exts) noexcept
-      : __extents(__exts)
-  {}
-
-  _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
-  __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
-                                                                                                   // to comma
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
-    mapping<_OtherExtents> const& __other) noexcept // NOLINT(google-explicit-constructor)
-      : __extents(__other.extents())
-  {
-    /*
-     * TODO: check precondition
-     * __other.required_span_size() is a representable value of type index_type
-     */
-  }
-
-  _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
-                   _CCCL_AND(extents_type::rank() <= 1))
-  __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
-                                                                                                   // to comma
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
-    layout_right::mapping<_OtherExtents> const& __other) noexcept // NOLINT(google-explicit-constructor)
-      : __extents(__other.extents())
-  {
-    /*
-     * TODO: check precondition
-     * __other.required_span_size() is a representable value of type index_type
-     */
-  }
-
-  _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
-  __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
-    layout_stride::mapping<_OtherExtents> const& __other) // NOLINT(google-explicit-constructor)
-      : __extents(__other.extents())
-  {
-    /*
-     * TODO: check precondition
-     * __other.required_span_size() is a representable value of type index_type
-     */
-    NV_IF_TARGET(NV_IS_HOST, (size_t __stride = 1; for (rank_type __r = 0; __r < __extents.rank(); __r++) {
-                   _LIBCUDACXX_THROW_RUNTIME_ERROR(__stride == static_cast<size_t>(__other.stride(__r)),
-                                                   "Assigning layout_stride to layout_left with invalid strides.");
-                   __stride *= __extents.extent(__r);
-                 }))
-  }
-
-  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
-  {
-    return __extents;
-  }
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
-  {
-    index_type __value = 1;
-    for (rank_type __r = 0; __r != extents_type::rank(); __r++)
-    {
-      __value *= __extents.extent(__r);
-    }
-    return __value;
-  }
-
-  //--------------------------------------------------------------------------------
-
   _CCCL_TEMPLATE(class... _Indices)
   _CCCL_REQUIRES((sizeof...(_Indices) == extents_type::rank())
-                   _CCCL_AND __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type)...> //
-                     _CCCL_AND __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices)...>)
-  _CCCL_HOST_DEVICE constexpr index_type operator()(_Indices... __idxs) const noexcept
+                   _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
+  [[nodiscard]] _CCCL_API constexpr index_type operator()(_Indices... __idx) const noexcept
   {
-    // Immediately cast incoming indices to `index_type`
-    return __compute_offset(__rank_count<0, extents_type::rank()>(), static_cast<index_type>(__idxs)...);
+    // Mappings are generally meant to be used for accessing allocations and are meant to guarantee to never
+    // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
+    // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
+    // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
+    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
+                 "layout_left::mapping: out of bounds indexing");
+
+    const array<index_type, extents_type::rank()> __idx_a{static_cast<index_type>(__idx)...};
+    return __op_index(__idx_a, make_index_sequence<sizeof...(_Indices)>());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
   {
     return true;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool is_always_exhaustive() noexcept
   {
     return true;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
-  {
-    return true;
-  }
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept
-  {
-    return true;
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
-  {
-    return true;
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool is_always_strided() noexcept
   {
     return true;
   }
 
-  _CCCL_TEMPLATE(class _Ext = _Extents)
-  _CCCL_REQUIRES((_Ext::rank() > 0))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __i) const noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool is_unique() noexcept
   {
-    index_type __value = 1;
-    for (rank_type __r = 0; __r < __i; __r++)
+    return true;
+  }
+  [[nodiscard]] _CCCL_API static constexpr bool is_exhaustive() noexcept
+  {
+    return true;
+  }
+  [[nodiscard]] _CCCL_API static constexpr bool is_strided() noexcept
+  {
+    return true;
+  }
+
+  _CCCL_TEMPLATE(class _Extents2 = _Extents)
+  _CCCL_REQUIRES((_Extents2::rank() > 0))
+  [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const noexcept
+  {
+    // While it would be caught by extents itself too, using a too large __r
+    // is functionally an out of bounds access on the stored information needed to compute strides
+    _CCCL_ASSERT(__r < extents_type::rank(), "layout_left::mapping::stride(): invalid rank index");
+    index_type __s = 1;
+    for (rank_type __i = 0; __i < __r; __i++)
     {
-      __value *= __extents.extent(__r);
+      __s *= extents().extent(__i);
     }
-    return __value;
+    return __s;
   }
 
-  template <class _OtherExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
+  template <class _OtherExtents, class _Extents2 = _Extents>
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
     return __lhs.extents() == __rhs.extents();
   }
 
-  // In C++ 20 the not equal exists if equal is found
-#  if !(__MDSPAN_HAS_CXX_20)
-  template <class _OtherExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
+#if _CCCL_STD_VER <= 2017
+  template <class _OtherExtents, class _Extents2 = _Extents>
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
     return __lhs.extents() != __rhs.extents();
   }
-#  endif
-
-  // Not really public, but currently needed to implement fully constexpr usable submdspan:
-  template <size_t _Np, class _SizeType, size_t... _Ep, size_t... _Idx>
-  _CCCL_HOST_DEVICE constexpr index_type
-  __get_stride(_CUDA_VSTD::extents<_SizeType, _Ep...>, _CUDA_VSTD::integer_sequence<size_t, _Idx...>) const
-  {
-    return __MDSPAN_FOLD_TIMES_RIGHT((_Idx < _Np ? __extents.template __extent<_Idx>() : 1), 1);
-  }
-  template <size_t _Np>
-  _CCCL_HOST_DEVICE constexpr index_type stride() const noexcept
-  {
-    return __get_stride<_Np>(__extents, _CUDA_VSTD::make_index_sequence<extents_type::rank()>());
-  }
-
-private:
-  _CCCL_NO_UNIQUE_ADDRESS extents_type __extents{};
+#endif // _CCCL_STD_VER <= 2017
 };
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_HPP
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_H

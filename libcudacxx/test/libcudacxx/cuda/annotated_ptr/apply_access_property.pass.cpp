@@ -8,11 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
-// UNSUPPORTED: c++98, c++03
-
 #include "utils.h"
 
 constexpr size_t array_size = 128;

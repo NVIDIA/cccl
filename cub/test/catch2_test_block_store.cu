@@ -27,7 +27,6 @@
 
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
@@ -58,7 +57,7 @@ template <typename InputIteratorT,
           cub::BlockStoreAlgorithm StoreAlgorithm>
 __global__ void kernel(std::integral_constant<bool, true>, InputIteratorT input, OutputIteratorT output, int num_items)
 {
-  using input_t       = cub::detail::value_t<InputIteratorT>;
+  using input_t       = cub::detail::it_value_t<InputIteratorT>;
   using block_store_t = cub::BlockStore<input_t, ThreadsInBlock, ItemsPerThread, StoreAlgorithm>;
   using storage_t     = typename block_store_t::TempStorage;
 
@@ -112,7 +111,7 @@ template <int ItemsPerThread,
           typename OutputIteratorT>
 void block_store(InputIteratorT input, OutputIteratorT output, int num_items)
 {
-  using input_t                       = cub::detail::value_t<InputIteratorT>;
+  using input_t                       = cub::detail::it_value_t<InputIteratorT>;
   using block_store_t                 = cub::BlockStore<input_t, ThreadsInBlock, ItemsPerThread, StoreAlgorithm>;
   using storage_t                     = typename block_store_t::TempStorage;
   constexpr bool sufficient_resources = sizeof(storage_t) <= cub::detail::max_smem_per_block;
@@ -207,6 +206,8 @@ C2H_TEST("Block store works with even odd sizes",
   REQUIRE(d_input == d_output);
 }
 
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
 C2H_TEST("Block store works with even vector types",
          "[store][block]",
          vec_types,
@@ -229,6 +230,7 @@ C2H_TEST("Block store works with even vector types",
 
   REQUIRE(d_input == d_output);
 }
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
 
 C2H_TEST("Block store works with custom types", "[store][block]", items_per_thread, store_algorithm)
 {
@@ -271,3 +273,34 @@ C2H_TEST("Block store works with caching iterators", "[store][block]", items_per
 
   REQUIRE(d_input == d_output);
 }
+
+#if IPT == 1
+C2H_TEST("Vectorized block store with different alignment cases", "[store][block]", c2h::enum_type_list<int, 1, 4, 7>)
+{
+  using type                     = int;
+  constexpr int items_per_thread = c2h::get<0, TestType>::value;
+  ;
+  constexpr int threads_in_block                            = 64;
+  constexpr int tile_size                                   = items_per_thread * threads_in_block;
+  static constexpr cub::BlockStoreAlgorithm store_algorithm = cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE;
+  const int offset_for_elements                             = GENERATE_COPY(0, 1, 2, 3, 4);
+
+  c2h::device_vector<type> d_input(tile_size);
+  c2h::gen(C2H_SEED(2), d_input);
+
+  CAPTURE(offset_for_elements, tile_size);
+  c2h::device_vector<type> d_input_ref(tile_size + offset_for_elements);
+  thrust::copy_n(d_input.begin(), tile_size, d_input_ref.begin() + offset_for_elements);
+  thrust::fill_n(d_input_ref.begin(), offset_for_elements, 0);
+
+  c2h::device_vector<type> d_output(d_input.size() + offset_for_elements);
+  thrust::fill_n(d_output.begin(), offset_for_elements, 0);
+
+  block_store<items_per_thread, threads_in_block, store_algorithm>(
+    thrust::raw_pointer_cast(d_input.data()),
+    thrust::raw_pointer_cast(d_output.data()) + offset_for_elements,
+    static_cast<int>(d_input.size()));
+
+  REQUIRE(d_input_ref == d_output);
+}
+#endif

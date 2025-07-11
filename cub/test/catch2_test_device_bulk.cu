@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_for.cuh>
 
@@ -52,7 +51,7 @@ struct incrementer_t
   template <class OffsetT>
   __device__ void operator()(OffsetT i)
   {
-    static_assert(cuda::std::is_same<T, OffsetT>::value, "T and OffsetT must be the same type");
+    static_assert(cuda::std::is_same_v<T, OffsetT>, "T and OffsetT must be the same type");
     atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
   }
 };

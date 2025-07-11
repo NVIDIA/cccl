@@ -28,7 +28,7 @@ struct is_odd
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     const int ia[] = {2, 4, 6, 8, 10};
@@ -93,9 +93,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

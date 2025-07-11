@@ -30,8 +30,10 @@
 
 #include <limits>
 
-#include <catch2/catch.hpp>
 #include <nvbench_helper.cuh>
+
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/generators/catch_generators_all.hpp>
 
 using types =
   nvbench::type_list<int8_t,

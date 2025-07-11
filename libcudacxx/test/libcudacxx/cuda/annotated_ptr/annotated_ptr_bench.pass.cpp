@@ -8,11 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
-// UNSUPPORTED: c++98, c++03
-
 #include "utils.h"
 
 __device__ void annotated_ptr_timing_dev(int* in, int* out)
@@ -153,6 +148,6 @@ __device__ __host__ __noinline__ void bench()
 
 int main(int argc, char** argv)
 {
-  bench();
+  NV_IF_TARGET(NV_IS_DEVICE, (bench();))
   return 0;
 }

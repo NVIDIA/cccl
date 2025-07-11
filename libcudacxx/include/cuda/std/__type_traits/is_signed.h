@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
 
@@ -31,45 +33,33 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, _CCCL_BUILTIN_IS_SIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public bool_constant<_CCCL_BUILTIN_IS_SIGNED(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
 
 #else
 
-template <class _Tp, bool = is_integral<_Tp>::value>
-struct __cccl_is_signed_impl : public bool_constant<(_Tp(-1) < _Tp(0))>
-{};
+template <class _Tp, bool = is_integral_v<_Tp>>
+inline constexpr bool __cccl_is_signed_helper_v = true;
 
 template <class _Tp>
-struct __cccl_is_signed_impl<_Tp, false> : public true_type
-{}; // floating point
-
-template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __cccl_is_signed : public __cccl_is_signed_impl<_Tp>
-{};
+inline constexpr bool __cccl_is_signed_helper_v<_Tp, true> = _Tp(-1) < _Tp(0);
 
 template <class _Tp>
-struct __cccl_is_signed<_Tp, false> : public false_type
-{};
+inline constexpr bool is_signed_v = is_arithmetic_v<_Tp> && __cccl_is_signed_helper_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public __cccl_is_signed<_Tp>
+struct is_signed : public bool_constant<is_signed_v<_Tp>>
 {};
-
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SIGNED_H

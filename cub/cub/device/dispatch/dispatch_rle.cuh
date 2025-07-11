@@ -54,8 +54,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdio>
-#include <iterator>
+#include <cuda/std/__algorithm_>
 
 #include <nv/target>
 
@@ -64,6 +63,9 @@ CUB_NAMESPACE_BEGIN
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
+
+namespace detail::rle
+{
 
 /**
  * Select kernel entry point (multi-block)
@@ -152,6 +154,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
   AgentRleT(temp_storage, d_in, d_offsets_out, d_lengths_out, equality_op, num_items)
     .ConsumeRange(num_tiles, tile_status, d_num_runs_out);
 }
+} // namespace detail::rle
 
 /******************************************************************************
  * Dispatch
@@ -190,7 +193,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename PolicyHub =
             detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                      cub::detail::value_t<InputIteratorT>>>
+                                                      cub::detail::it_value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
@@ -326,7 +329,7 @@ struct DeviceRleDispatch
       // the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (error != cudaSuccess)
       {
         break;
@@ -347,17 +350,17 @@ struct DeviceRleDispatch
       }
 
       // Log device_scan_init_kernel configuration
-      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_tiles, int{INIT_KERNEL_THREADS}));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
               init_grid_size,
               INIT_KERNEL_THREADS,
               (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(device_scan_init_kernel, tile_status, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
@@ -374,8 +377,8 @@ struct DeviceRleDispatch
         break;
       }
 
-      // Return if empty problem
-      if (num_items == 0)
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in device_scan_init_kernel above
+      if (num_items <= 1)
       {
         break;
       }
@@ -402,10 +405,10 @@ struct DeviceRleDispatch
       dim3 scan_grid_size;
       scan_grid_size.z = 1;
       scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-      scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
+      scan_grid_size.x = _CUDA_VSTD::min(num_tiles, max_dim_x);
 
 // Log device_rle_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_rle_sweep_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d items per "
               "thread, %d SM occupancy\n",
               scan_grid_size.x,
@@ -415,10 +418,10 @@ struct DeviceRleDispatch
               (long long) stream,
               items_per_thread,
               device_rle_kernel_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
         .doit(device_rle_sweep_kernel,
               d_in,
               d_offsets_out,
@@ -451,15 +454,16 @@ struct DeviceRleDispatch
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceRleSweepKernel<typename PolicyHub::MaxPolicy,
-                           InputIteratorT,
-                           OffsetsOutputIteratorT,
-                           LengthsOutputIteratorT,
-                           NumRunsOutputIteratorT,
-                           ScanTileStateT,
-                           EqualityOpT,
-                           OffsetT>);
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::rle::DeviceRleSweepKernel<
+        typename PolicyHub::MaxPolicy,
+        InputIteratorT,
+        OffsetsOutputIteratorT,
+        LengthsOutputIteratorT,
+        NumRunsOutputIteratorT,
+        ScanTileStateT,
+        EqualityOpT,
+        OffsetT>);
   }
 
   /**
@@ -539,35 +543,6 @@ struct DeviceRleDispatch
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OffsetsOutputIteratorT d_offsets_out,
-    LengthsOutputIteratorT d_lengths_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_offsets_out,
-      d_lengths_out,
-      d_num_runs_out,
-      equality_op,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

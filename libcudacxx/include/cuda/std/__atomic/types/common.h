@@ -25,7 +25,9 @@
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -78,9 +80,7 @@ _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rh
     NV_IS_DEVICE,
     (unsigned char const* __lhs_c; unsigned char const* __rhs_c;
      // NVCC recommended laundering through inline asm to compare padding bytes.
-     asm("mov.b64 %0, %2;\n mov.b64 %1, %3;"
-         : "=l"(__lhs_c), "=l"(__rhs_c)
-         : "l"(__lhs), "l"(__rhs));
+     asm("mov.b64 %0, %2;\n mov.b64 %1, %3;" : "=l"(__lhs_c), "=l"(__rhs_c) : "l"(__lhs), "l"(__rhs));
      while (__count--) {
        auto const __lhs_v = *__lhs_c++;
        auto const __rhs_v = *__rhs_c++;
@@ -94,9 +94,12 @@ _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rh
        }
      } return 0;),
     NV_IS_HOST,
-    (return memcmp(__lhs, __rhs, __count);))
+    (return _CUDA_VSTD::memcmp(__lhs, __rhs, __count);))
+  _CCCL_UNREACHABLE();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_TYPES_COMMON_H

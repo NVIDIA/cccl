@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
+__host__ __device__ constexpr void test_constexpr()
 {
   {
     constexpr cuda::std::complex<T> c;
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_nonconstexpr()
+__host__ __device__ constexpr void test_nonconstexpr()
 {
   {
     const cuda::std::complex<T> c;
@@ -77,14 +77,15 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-// CUDA treats long double as double
-//  test<long double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_nonconstexpr<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_nonconstexpr<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

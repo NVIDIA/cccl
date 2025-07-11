@@ -54,7 +54,7 @@
 
 struct device_rle_policy_hub
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using RleSweepPolicyT =
       cub::AgentRlePolicy<TUNE_THREADS,
@@ -66,7 +66,7 @@ struct device_rle_policy_hub
                           delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 
@@ -150,7 +150,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       d_temp_storage,
       temp_storage_bytes,

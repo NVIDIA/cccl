@@ -94,7 +94,7 @@ public:
 
     reserved::KeyValue* base_ptr;
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // Fallback to a synchronous method
       cuda_safe_call(cudaStreamSynchronize(stream));
@@ -121,7 +121,7 @@ public:
     cudaStream_t stream) override
   {
     hashtable& local_desc = this->instance(instance_id);
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // Fallback to a synchronous method
       cuda_safe_call(cudaStreamSynchronize(stream));

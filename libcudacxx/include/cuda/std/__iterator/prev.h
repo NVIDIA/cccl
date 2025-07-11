@@ -27,10 +27,13 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
+_CCCL_TEMPLATE(class _InputIter)
+_CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
+[[nodiscard]] _CCCL_API constexpr _InputIter
 prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
   _CCCL_ASSERT(__n <= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
@@ -41,33 +44,34 @@ prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
-
 // [range.iter.op.prev]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__prev)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x) const
   {
     --__x;
     return __x;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
     _CUDA_VRANGES::advance(__x, -__n);
     return __x;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
+  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
   {
     _CUDA_VRANGES::advance(__x, -__n, __bound_iter);
     return __x;
@@ -79,8 +83,9 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
 } // namespace __cpo
+
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_PREV_H

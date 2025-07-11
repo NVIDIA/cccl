@@ -40,7 +40,6 @@
 #include <thrust/system/cuda/config.h>
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
-#include <thrust/detail/dependencies_aware_execution_policy.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/version.h>
@@ -64,14 +63,13 @@ struct execution_policy<tag> : thrust::execution_policy<tag>
 struct tag
     : execution_policy<tag>
     , thrust::detail::allocator_aware_execution_policy<cuda_cub::execution_policy>
-    , thrust::detail::dependencies_aware_execution_policy<cuda_cub::execution_policy>
 {};
 
 template <class Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
   using tag_type = tag;
-  operator tag() const
+  _CCCL_HOST_DEVICE operator tag() const
   {
     return tag();
   }

@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
@@ -30,10 +32,8 @@ template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
 // is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
@@ -57,12 +57,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : public true_type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_same_v = false;
+inline constexpr bool is_same_v = false;
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_same_v<_Tp, _Tp> = true;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_same_v<_Tp, _Tp> = true;
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
 // is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
@@ -80,5 +78,7 @@ using _IsNotSame = bool_constant<!_CCCL_TRAIT(is_same, _Tp, _Up)>;
 #endif // defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H

@@ -23,18 +23,22 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Ep, size_t _Sp = 0>
 struct __make_tuple_indices
 {
   static_assert(_Sp <= _Ep, "__make_tuple_indices input error");
-  typedef __make_indices_imp<_Ep, _Sp> type;
+  using type = __make_indices_imp<_Ep, _Sp>;
 };
 
 template <size_t _Ep, size_t _Sp = 0>
 using __make_tuple_indices_t = typename __make_tuple_indices<_Ep, _Sp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H

@@ -49,17 +49,17 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, DerivedPolicy> temp(exec, first, last);
 
   // count the size of the true partition
-  typename thrust::iterator_difference<ForwardIterator>::type num_true = thrust::count_if(exec, first, last, pred);
+  thrust::detail::it_difference_t<ForwardIterator> num_true = thrust::count_if(exec, first, last, pred);
 
   // point to the beginning of the false partition
   ForwardIterator out_false = first;
-  thrust::advance(out_false, num_true);
+  ::cuda::std::advance(out_false, num_true);
 
   return thrust::stable_partition_copy(exec, temp.begin(), temp.end(), first, out_false, pred).first;
 } // end stable_partition()
@@ -72,20 +72,19 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   InputIterator stencil,
   Predicate pred)
 {
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, DerivedPolicy> temp(exec, first, last);
 
   // count the size of the true partition
   InputIterator stencil_last = stencil;
-  thrust::advance(stencil_last, temp.size());
-  typename thrust::iterator_difference<InputIterator>::type num_true =
-    thrust::count_if(exec, stencil, stencil_last, pred);
+  ::cuda::std::advance(stencil_last, temp.size());
+  thrust::detail::it_difference_t<InputIterator> num_true = thrust::count_if(exec, stencil, stencil_last, pred);
 
   // point to the beginning of the false partition
   ForwardIterator out_false = first;
-  thrust::advance(out_false, num_true);
+  ::cuda::std::advance(out_false, num_true);
 
   return thrust::stable_partition_copy(exec, temp.begin(), temp.end(), stencil, first, out_false, pred).first;
 } // end stable_partition()
@@ -103,7 +102,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   OutputIterator2 out_false,
   Predicate pred)
 {
-  auto not_pred = thrust::not_fn(pred);
+  auto not_pred = ::cuda::std::not_fn(pred);
 
   // remove_copy_if the true partition to out_true
   OutputIterator1 end_of_true_partition = thrust::remove_copy_if(exec, first, last, out_true, not_pred);
@@ -129,7 +128,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   OutputIterator2 out_false,
   Predicate pred)
 {
-  auto not_pred = thrust::not_fn(pred);
+  auto not_pred = ::cuda::std::not_fn(pred);
 
   // remove_copy_if the true partition to out_true
   OutputIterator1 end_of_true_partition = thrust::remove_copy_if(exec, first, last, stencil, out_true, not_pred);
@@ -204,8 +203,8 @@ _CCCL_HOST_DEVICE bool
 is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::is_sorted(exec,
-                           thrust::make_transform_iterator(first, thrust::not_fn(pred)),
-                           thrust::make_transform_iterator(last, thrust::not_fn(pred)));
+                           thrust::make_transform_iterator(first, ::cuda::std::not_fn(pred)),
+                           thrust::make_transform_iterator(last, ::cuda::std::not_fn(pred)));
 } // end is_partitioned()
 
 } // end namespace generic

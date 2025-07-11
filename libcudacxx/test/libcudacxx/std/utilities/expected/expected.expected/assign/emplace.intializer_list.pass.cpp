@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class U, class... Args>
 //   constexpr T& emplace(initializer_list<U> il, Args&&... args) noexcept;
 // Constraints: is_nothrow_constructible_v<T, initializer_list<U>&, Args...> is true.
@@ -33,9 +31,8 @@
 #include "test_macros.h"
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(CanEmplace_, requires(T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...))));
-template <class T, class... Args>
-constexpr bool CanEmplace = _CCCL_FRAGMENT(CanEmplace_, T, Args...);
+_CCCL_CONCEPT CanEmplace =
+  _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...)));
 
 static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
 
@@ -48,16 +45,12 @@ struct CtorFromInitalizerList
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>,
               "");
-#ifndef TEST_COMPILER_ICC
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&>,
               "");
-#endif // TEST_COMPILER_ICC
 static_assert(
   CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&, int>, "");
-#ifndef TEST_COMPILER_ICC
 static_assert(
   !CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&, int>, "");
-#endif // TEST_COMPILER_ICC
 
 struct Data
 {

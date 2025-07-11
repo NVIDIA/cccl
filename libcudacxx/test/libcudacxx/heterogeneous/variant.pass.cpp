@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -58,9 +57,7 @@ void kernel_invoker()
 
 int main(int arg, char** argv)
 {
-#ifndef __CUDA_ARCH__
-  kernel_invoker();
-#endif
+  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
 
   return 0;
 }

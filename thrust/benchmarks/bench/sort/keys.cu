@@ -46,12 +46,13 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync, [&](nvbench::launch& launch, auto& timer) {
-    vec = input;
-    timer.start();
-    thrust::sort(policy(alloc, launch), vec.begin(), vec.end());
-    timer.stop();
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::timer | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch, auto& timer) {
+               vec = input;
+               timer.start();
+               thrust::sort(policy(alloc, launch), vec.begin(), vec.end());
+               timer.stop();
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

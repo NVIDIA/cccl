@@ -37,18 +37,18 @@ __host__ __device__ void test_assignment()
 
 __host__ __device__ void test()
 {
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test_assignment<__half, float>();
   test_assignment<__half, double>();
   test_assignment<float, __half>();
   test_assignment<double, __half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_assignment<__nv_bfloat16, float>();
   test_assignment<__nv_bfloat16, double>();
   test_assignment<float, __nv_bfloat16>();
   test_assignment<double, __nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 }
 
 int main(int arg, char** argv)

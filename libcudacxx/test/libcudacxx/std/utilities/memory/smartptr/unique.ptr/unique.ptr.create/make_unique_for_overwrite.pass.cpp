@@ -7,7 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 //   constexpr unique_ptr<T> make_unique_for_overwrite(); // T is not array
@@ -27,11 +26,8 @@
 #include "test_macros.h"
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(
-  HasMakeUniqueForOverwrite_,
-  requires(Args&&... args)((cuda::std::make_unique_for_overwrite<T>(cuda::std::forward<Args>(args)...))));
-template <class T, class... Args>
-constexpr bool HasMakeUniqueForOverwrite = _CCCL_FRAGMENT(HasMakeUniqueForOverwrite_, T, Args...);
+_CCCL_CONCEPT HasMakeUniqueForOverwrite = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (cuda::std::make_unique_for_overwrite<T>(cuda::std::forward<Args>(args)...)));
 
 struct Foo
 {
@@ -116,8 +112,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 // The standard specifically says to use `new (p) T`, which means that we should pick up any
 // custom in-class operator new if there is one.
 
-STATIC_TEST_GLOBAL_VAR bool WithCustomNew_customNewCalled    = false;
-STATIC_TEST_GLOBAL_VAR bool WithCustomNew_customNewArrCalled = false;
+TEST_GLOBAL_VARIABLE bool WithCustomNew_customNewCalled    = false;
+TEST_GLOBAL_VARIABLE bool WithCustomNew_customNewArrCalled = false;
 
 struct WithCustomNew
 {

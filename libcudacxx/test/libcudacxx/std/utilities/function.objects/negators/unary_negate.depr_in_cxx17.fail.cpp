@@ -12,7 +12,6 @@
 //  deprecated in C++17
 
 // UNSUPPORTED: clang-4.0
-// UNSUPPORTED: c++98, c++03, c++11, c++14
 // REQUIRES: verify-support
 
 #include <cuda/std/functional>
@@ -30,8 +29,8 @@ struct Predicate
 
 int main(int, char**)
 {
-  cuda::std::unary_negate<Predicate> f((Predicate())); // expected-error{{'unary_negate<Predicate>' is deprecated}}
-  (void) f;
+  [[maybe_unused]] cuda::std::unary_negate<Predicate> f((Predicate())); // expected-error{{'unary_negate<Predicate>' is
+                                                                        // deprecated}}
 
   return 0;
 }

@@ -37,15 +37,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
-#  include <thrust/distance.h>
-#  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
+
+#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -58,39 +58,29 @@ transform(execution_policy<Derived>& policy, InputIt first, InputIt last, Output
 namespace __copy
 {
 template <class Derived, class InputIt, class OutputIt>
-OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
-  execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::true_type)
-{
-  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
-  const auto n  = thrust::distance(first, last);
-  if (n > 0)
-  {
-    cudaError status;
-    status = trivial_copy_device_to_device(
-      policy,
-      reinterpret_cast<InputTy*>(thrust::raw_pointer_cast(&*result)),
-      reinterpret_cast<InputTy const*>(thrust::raw_pointer_cast(&*first)),
-      n);
-    cuda_cub::throw_on_error(status, "__copy:: D->D: failed");
-  }
-
-  return result + n;
-}
-
-template <class Derived, class InputIt, class OutputIt>
-OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
-  execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::false_type)
-{
-  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
-  return cuda_cub::transform(policy, first, last, result, thrust::identity<InputTy>());
-}
-
-template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  return device_to_device(
-    policy, first, last, result, typename is_indirectly_trivially_relocatable_to<InputIt, OutputIt>::type());
+  if constexpr (is_indirectly_trivially_relocatable_to<InputIt, OutputIt>::value)
+  {
+    using InputTy = thrust::detail::it_value_t<InputIt>;
+    const auto n  = ::cuda::std::distance(first, last);
+    if (n > 0)
+    {
+      const cudaError status = trivial_copy_device_to_device(
+        policy,
+        reinterpret_cast<InputTy*>(thrust::raw_pointer_cast(&*result)),
+        reinterpret_cast<InputTy const*>(thrust::raw_pointer_cast(&*first)),
+        n);
+      cuda_cub::throw_on_error(status, "__copy:: D->D: failed");
+    }
+
+    return result + n;
+  }
+  else
+  {
+    return cuda_cub::transform(policy, first, last, result, ::cuda::std::identity{});
+  }
 }
 } // namespace __copy
 

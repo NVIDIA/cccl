@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
@@ -33,13 +35,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT has_unique_object_representations
     : public integral_constant<bool, __has_unique_object_representations(remove_cv_t<remove_all_extents_t<_Tp>>)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
 
 #endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H

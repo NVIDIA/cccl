@@ -29,6 +29,8 @@
 
 #include <thrust/count.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -39,8 +41,6 @@
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
-
-constexpr bool keep_rejects = false;
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -60,14 +60,9 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
-
-    static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
-
     using SelectIfPolicyT =
       cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,
-                               ITEMS_PER_THREAD,
+                               TUNE_ITEMS_PER_THREAD,
                                TUNE_LOAD_ALGORITHM,
                                TUNE_LOAD_MODIFIER,
                                cub::BLOCK_SCAN_WARP_SCANS,
@@ -78,17 +73,18 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename T, typename OffsetT, typename MayAlias>
-void select(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
+template <typename T, typename OffsetT, typename InPlace>
+void select(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace>)
 {
-  using input_it_t         = const T*;
-  using flag_it_t          = const bool*;
-  using output_it_t        = T*;
-  using num_selected_it_t  = OffsetT*;
-  using select_op_t        = cub::NullType;
-  using equality_op_t      = cub::NullType;
-  using offset_t           = OffsetT;
-  constexpr bool may_alias = MayAlias::value;
+  using input_it_t        = const T*;
+  using flag_it_t         = const bool*;
+  using output_it_t       = T*;
+  using num_selected_it_t = OffsetT*;
+  using select_op_t       = cub::NullType;
+  using equality_op_t     = cub::NullType;
+  using offset_t          = OffsetT;
+  constexpr cub::SelectImpl selection_option =
+    InPlace::value ? cub::SelectImpl::SelectPotentiallyInPlace : cub::SelectImpl::Select;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<T>;
@@ -100,20 +96,18 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
     select_op_t,
     equality_op_t,
     offset_t,
-    keep_rejects,
-    may_alias,
+    selection_option,
     policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias>;
+  using dispatch_t =
+    cub::DispatchSelectIf<input_it_t,
+                          flag_it_t,
+                          output_it_t,
+                          num_selected_it_t,
+                          select_op_t,
+                          equality_op_t,
+                          offset_t,
+                          selection_option>;
 #endif // !TUNE_BASE
 
   // Retrieve axis parameters
@@ -148,7 +142,7 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,
@@ -165,18 +159,18 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
 
 using ::cuda::std::false_type;
 using ::cuda::std::true_type;
-#ifdef TUNE_MayAlias
-using may_alias = nvbench::type_list<TUNE_MayAlias>; // expands to "false_type" or "true_type"
-#else // !defined(TUNE_MayAlias)
-using may_alias = nvbench::type_list<false_type, true_type>;
-#endif // TUNE_MayAlias
+#ifdef TUNE_InPlace
+using is_in_place = nvbench::type_list<TUNE_InPlace>; // expands to "false_type" or "true_type"
+#else // !defined(TUNE_InPlace)
+using is_in_place = nvbench::type_list<false_type, true_type>;
+#endif // TUNE_InPlace
 
 // The implementation of DeviceSelect for 64-bit offset types uses a streaming approach, where it runs multiple passes
 // using a 32-bit offset type, so we only need to test one (to save time for tuning and the benchmark CI).
 using select_offset_types = nvbench::type_list<int64_t>;
 
-NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, select_offset_types, may_alias))
+NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, select_offset_types, is_in_place))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "MayAlias{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "InPlace{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});

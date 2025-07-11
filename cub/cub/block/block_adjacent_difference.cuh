@@ -122,7 +122,7 @@ CUB_NAMESPACE_BEGIN
 //! ``{ [4,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }``.
 //!
 //! @endrst
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1>
 class BlockAdjacentDifference
 {
 private:
@@ -184,7 +184,7 @@ private:
       T (&preds)[ITEMS_PER_THREAD],
       FlagOp flag_op)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < ITEMS_PER_THREAD; ++i)
       {
         preds[i] = input[i - 1];
@@ -203,7 +203,7 @@ private:
     static _CCCL_DEVICE _CCCL_FORCEINLINE void
     FlagTails(int linear_tid, FlagT (&flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD - 1; ++i)
       {
         flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, input[i], input[i + 1], (linear_tid * ITEMS_PER_THREAD) + i + 1);
@@ -309,9 +309,9 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
     {
       output[item] = difference_op(input[item], input[item - 1]);
@@ -408,9 +408,9 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
     {
       output[item] = difference_op(input[item], input[item - 1]);
@@ -499,11 +499,11 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if ((linear_tid + 1) * ITEMS_PER_THREAD <= valid_items)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
       {
         output[item] = difference_op(input[item], input[item - 1]);
@@ -511,7 +511,7 @@ public:
     }
     else
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
       {
         const int idx = linear_tid * ITEMS_PER_THREAD + item;
@@ -622,11 +622,11 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if ((linear_tid + 1) * ITEMS_PER_THREAD <= valid_items)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
       {
         output[item] = difference_op(input[item], input[item - 1]);
@@ -634,7 +634,7 @@ public:
     }
     else
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
       {
         const int idx = linear_tid * ITEMS_PER_THREAD + item;
@@ -736,9 +736,9 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD - 1; item++)
     {
       output[item] = difference_op(input[item], input[item + 1]);
@@ -837,14 +837,14 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1)
                        ? tile_successor_item // Last thread
                        : temp_storage.first_items[linear_tid + 1];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD - 1; item++)
     {
       output[item] = difference_op(input[item], input[item + 1]);
@@ -926,11 +926,11 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if ((linear_tid + 1) * ITEMS_PER_THREAD < valid_items)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ITEMS_PER_THREAD - 1; item++)
       {
         output[item] = difference_op(input[item], input[item + 1]);
@@ -941,7 +941,7 @@ public:
     }
     else
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ITEMS_PER_THREAD; item++)
       {
         const int idx = linear_tid * ITEMS_PER_THREAD + item;

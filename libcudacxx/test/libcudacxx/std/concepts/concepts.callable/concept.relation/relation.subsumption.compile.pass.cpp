@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 // UNSUPPORTED: gcc-8, gcc-9
 
 // template<class F, class... Args>

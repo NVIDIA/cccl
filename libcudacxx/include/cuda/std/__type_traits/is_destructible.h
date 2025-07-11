@@ -26,19 +26,19 @@
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_DESTRUCTIBLE vvv
 
@@ -52,18 +52,18 @@ _CCCL_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBL
 template <class>
 struct __is_destructible_apply
 {
-  typedef int type;
+  using type = int;
 };
 
 template <typename _Tp>
 struct __is_destructor_wellformed
 {
   template <typename _Tp1>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type
+  _CCCL_API inline static true_type
     __test(typename __is_destructible_apply<decltype(_CUDA_VSTD::declval<_Tp1&>().~_Tp1())>::type);
 
   template <typename _Tp1>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API inline static false_type __test(...);
 
   static const bool value = decltype(__test<_Tp>(12))::value;
 };
@@ -103,13 +103,13 @@ template <>
 struct is_destructible<void> : public false_type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_destructible_v = is_destructible<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_destructible_v = is_destructible<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_DESTRUCTIBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H

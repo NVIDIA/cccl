@@ -27,18 +27,18 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef __cuda_std__
-
-#  if _CCCL_STD_VER > 2014
 
 // default searcher
 template <class _ForwardIterator, class _BinaryPredicate = equal_to<>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT default_searcher
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
   default_searcher(_ForwardIterator __f, _ForwardIterator __l, _BinaryPredicate __p = _BinaryPredicate())
       : __first_(__f)
       , __last_(__l)
@@ -46,7 +46,7 @@ public:
   {}
 
   template <typename _ForwardIterator2>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pair<_ForwardIterator2, _ForwardIterator2>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pair<_ForwardIterator2, _ForwardIterator2>
   operator()(_ForwardIterator2 __f, _ForwardIterator2 __l) const
   {
     return _CUDA_VSTD::__search(
@@ -66,9 +66,10 @@ private:
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
 
-#  endif // _CCCL_STD_VER > 2014
 #endif // __cuda_std__
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_DEFAULT_SEARCHER_H

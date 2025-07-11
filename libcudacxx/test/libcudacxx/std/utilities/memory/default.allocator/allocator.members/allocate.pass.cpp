@@ -13,7 +13,7 @@
 // allocator:
 // constexpr T* allocate(size_t n);
 
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
@@ -22,28 +22,26 @@
 #include "count_new.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
-#ifdef TEST_HAS_NO_ALIGNED_ALLOCATION
-static const bool UsingAlignedNew = false;
-#else
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 static const bool UsingAlignedNew = true;
+#else
+static const bool UsingAlignedNew = false;
 #endif
 
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-STATIC_TEST_GLOBAL_VAR const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+TEST_GLOBAL_VARIABLE const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
 #else
-STATIC_TEST_GLOBAL_VAR const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
+TEST_GLOBAL_VARIABLE const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
 #endif
 
-STATIC_TEST_GLOBAL_VAR const cuda::std::size_t OverAligned = MaxAligned * 2;
+TEST_GLOBAL_VARIABLE const cuda::std::size_t OverAligned = MaxAligned * 2;
 
-STATIC_TEST_GLOBAL_VAR int AlignedType_constructed = 0;
+TEST_GLOBAL_VARIABLE int AlignedType_constructed = 0;
 
 template <cuda::std::size_t Align>
-struct TEST_ALIGNAS(Align) AlignedType
+struct alignas(Align) AlignedType
 {
   char data;
   __host__ __device__ AlignedType()
@@ -75,12 +73,11 @@ __host__ __device__ void test_aligned()
     globalMemCounter.last_new_size  = 0;
     globalMemCounter.last_new_align = 0;
     T* ap                           = a.allocate(3);
-#if !defined(TEST_COMPILER_NVCC) && !defined(TEST_COMPILER_NVRTC)
+#if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     DoNotOptimize(ap);
 #else
-    const auto meow = reinterpret_cast<uintptr_t>(ap) + 2;
-    (void) meow;
-#endif // !TEST_COMPILER_NVCC && !TEST_COMPILER_NVRTC
+    [[maybe_unused]] const auto meow = reinterpret_cast<uintptr_t>(ap) + 2;
+#endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     // assert(globalMemCounter.checkOutstandingNewEq(1));
     assert(globalMemCounter.checkNewCalledEq(1));
     assert(globalMemCounter.checkAlignedNewCalledEq(ExpectAligned));

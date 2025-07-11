@@ -49,9 +49,14 @@
 
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/bit>
+#include <cuda/functional>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -71,7 +76,7 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
-template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
+template <typename KeyT, bool IsFP = ::cuda::is_floating_point_v<KeyT>>
 struct BaseDigitExtractor
 {
   using TraitsT      = Traits<KeyT>;
@@ -84,7 +89,7 @@ struct BaseDigitExtractor
 };
 
 template <typename KeyT>
-struct BaseDigitExtractor<KeyT, FLOATING_POINT>
+struct BaseDigitExtractor<KeyT, true>
 {
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
@@ -116,7 +121,7 @@ struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
   {
-    return BFE(this->ProcessFloatMinusZero(key), bit_start, num_bits);
+    return ::cuda::bitfield_extract(this->ProcessFloatMinusZero(key), bit_start, num_bits);
   }
 };
 
@@ -174,8 +179,7 @@ template <class F, class... Ts, ::cuda::std::size_t... Is>
 _CCCL_HOST_DEVICE void
 for_each_member_impl_helper(F f, const ::cuda::std::tuple<Ts&...>& tpl, THRUST_NS_QUALIFIER::index_sequence<Is...>)
 {
-  auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
-  (void) sink;
+  [[maybe_unused]] auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
 }
 
 template <class F, class... Ts>
@@ -218,14 +222,15 @@ struct is_tuple_of_references_to_fundamental_types_t : ::cuda::std::false_type
 template <class... Ts>
 struct is_tuple_of_references_to_fundamental_types_t< //
   ::cuda::std::tuple<Ts&...>, //
-  typename ::cuda::std::enable_if< //
+  ::cuda::std::enable_if_t< //
     all_t<is_fundamental_type<Ts>::value...>::value //
-    >::type> //
+    >> //
     : ::cuda::std::true_type
 {};
 
 template <class KeyT, class DecomposerT>
-using decomposer_check_t = is_tuple_of_references_to_fundamental_types_t<invoke_result_t<DecomposerT, KeyT&>>;
+using decomposer_check_t =
+  is_tuple_of_references_to_fundamental_types_t<_CUDA_VSTD::invoke_result_t<DecomposerT, KeyT&>>;
 
 template <class T>
 struct bit_ordered_conversion_policy_t
@@ -295,7 +300,7 @@ struct min_raw_binary_key_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits                               = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using traits                               = traits_t<::cuda::std::remove_cv_t<T>>;
     using bit_ordered_type                     = typename traits::bit_ordered_type;
     reinterpret_cast<bit_ordered_type&>(field) = traits::min_raw_binary_key(detail::identity_decomposer_t{});
   }
@@ -315,7 +320,7 @@ struct max_raw_binary_key_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits                               = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using traits                               = traits_t<::cuda::std::remove_cv_t<T>>;
     using bit_ordered_type                     = typename traits::bit_ordered_type;
     reinterpret_cast<bit_ordered_type&>(field) = traits::max_raw_binary_key(detail::identity_decomposer_t{});
   }
@@ -335,7 +340,7 @@ struct to_bit_ordered_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits                 = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using traits                 = traits_t<::cuda::std::remove_cv_t<T>>;
     using bit_ordered_type       = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -358,7 +363,7 @@ struct from_bit_ordered_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits                 = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using traits                 = traits_t<::cuda::std::remove_cv_t<T>>;
     using bit_ordered_type       = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -381,7 +386,7 @@ struct inverse_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits           = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
     using bit_ordered_type = typename traits::bit_ordered_type;
 
     auto& ordered_field = reinterpret_cast<bit_ordered_type&>(field);
@@ -434,10 +439,10 @@ struct digit_f
     }
     else
     {
-      using traits           = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+      using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
       using bit_ordered_type = typename traits::bit_ordered_type;
 
-      const ::cuda::std::uint32_t bits_to_copy = min(src_size - src_bit_start, num_bits);
+      const ::cuda::std::uint32_t bits_to_copy = (::cuda::std::min) (src_size - src_bit_start, num_bits);
 
       if (bits_to_copy)
       {
@@ -583,7 +588,7 @@ public:
   In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
-    _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+    if constexpr (IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -595,7 +600,7 @@ public:
   bit_ordered_type
   Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
-    _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+    if constexpr (IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }

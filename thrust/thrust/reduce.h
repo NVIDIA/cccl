@@ -83,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
+_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -125,7 +125,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
 template <typename InputIterator>
-typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator first, InputIterator last);
+detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -242,11 +242,10 @@ T reduce(InputIterator first, InputIterator last, T init);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is
+ * convertible to \p BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p reduce to
  *  compute the maximum value of a sequence of integers using the \p thrust::host execution policy
@@ -261,7 +260,7 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  int result = thrust::reduce(thrust::host,
  *                              data, data + 6,
  *                              -1,
- *                              thrust::maximum<int>());
+ *                              ::cuda::maximum<int>());
  *  // result == 3
  *  \endcode
  *
@@ -298,11 +297,10 @@ _CCCL_HOST_DEVICE T reduce(
  *  \return The result of the reduction.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is
+ * convertible to \p BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p reduce to
  *  compute the maximum value of a sequence of integers.
@@ -314,7 +312,7 @@ _CCCL_HOST_DEVICE T reduce(
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *  int result = thrust::reduce(data, data + 6,
  *                              -1,
- *                              thrust::maximum<int>());
+ *                              ::cuda::maximum<int>());
  *  // result == 3
  *  \endcode
  *
@@ -323,6 +321,359 @@ _CCCL_HOST_DEVICE T reduce(
  */
 template <typename InputIterator, typename T, typename BinaryFunction>
 T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
+
+/*! \p reduce_into is a generalization of summation: it computes the sum (or some
+ *  other binary operation) of all the elements in the range <tt>[first,
+ *  last)</tt>. This version of \p reduce_into uses \c 0 as the initial value of the
+ *  reduction. \p reduce_into is similar to the C++ Standard Template Library's
+ *  <tt>std::accumulate</tt>. The primary difference between the two functions
+ *  is that <tt>std::accumulate</tt> guarantees the order of summation, while
+ *  \p reduce_into requires associativity of the binary operation to parallelize
+ *  the reduction.
+ *
+ *  Note that \p reduce_into also assumes that the binary reduction operator (in this
+ *  case operator+) is commutative. If the reduction operator is not commutative
+ *  then \p reduce_into should not be used. Instead, one could use \p inclusive_scan
+ *  (which does not require commutativity) and select the last element of the
+ *  output array.
+ *
+ *  Unlike \p reduce, \p reduce_into does not return the reduction result.
+ *  Instead, it is written to <tt>*output</tt>. Thus, when \p exec is
+ *  \p thrust::cuda::par_nosync, this algorithm does not wait for the work it
+ *  launches to complete. Additionally, you can use \p reduce_into to avoid
+ *  copying the reduction result from device memory to host memory.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param first The beginning of the sequence.
+ *  \param last The end of the sequence.
+ *  \param output The location the reduction will be written to.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
+ * is convertible to \p InputIterator's \c value_type. If \c T is \c InputIterator's \c value_type, then <tt>T(0)</tt>
+ * is defined.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is assignable from \c InputIterator's \c value_type.
+ *
+ *  The following code snippet demonstrates how to use \p reduce_into to compute
+ *  the sum of a sequence of integers using the \p thrust::device execution policy for parallelization:
+ *
+ *  \code
+ *  #include <thrust/reduce.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *
+ *  thrust::device_vector<int> data{1, 0, 2, 2, 1, 3};
+ *  thrust::device_vector<int> output(1);
+ *  thrust::reduce_into(thrust::device, data.begin(), data.end(), output.begin());
+ *  // output[0] == 9
+ *  \endcode
+ *
+ *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *  \see reduce
+ */
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE void reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output);
+
+/*! \p reduce_into is a generalization of summation: it computes the sum (or some
+ *  other binary operation) of all the elements in the range <tt>[first,
+ *  last)</tt>. This version of \p reduce_into uses \c 0 as the initial value of the
+ *  reduction. \p reduce_into is similar to the C++ Standard Template Library's
+ *  <tt>std::accumulate</tt>. The primary difference between the two functions
+ *  is that <tt>std::accumulate</tt> guarantees the order of summation, while
+ *  \p reduce_into requires associativity of the binary operation to parallelize
+ *  the reduction.
+ *
+ *  Note that \p reduce_into also assumes that the binary reduction operator (in this
+ *  case operator+) is commutative. If the reduction operator is not commutative
+ *  then \p reduce_into should not be used. Instead, one could use \p inclusive_scan
+ *  (which does not require commutativity) and select the last element of the
+ *  output array.
+ *
+ *  Unlike \p reduce, \p reduce_into does not return the reduction result.
+ *  Instead, it is written to <tt>*output</tt>. Thus, when \p exec is
+ *  \p thrust::cuda::par_nosync, this algorithm does not wait for the work it
+ *  launches to complete. Additionally, you can use \p reduce_into to avoid
+ *  copying the reduction result from device memory to host memory.
+ *
+ *  \param first The beginning of the sequence.
+ *  \param last The end of the sequence.
+ *  \param output The location the reduction will be written to.
+ *
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
+ * is convertible to \p InputIterator's \c value_type. If \c T is \c InputIterator's \c value_type, then <tt>T(0)</tt>
+ * is defined.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is assignable from \c InputIterator's \c value_type.
+ *
+ *  The following code snippet demonstrates how to use \p reduce_into to compute
+ *  the sum of a sequence of integers.
+ *
+ *  \code
+ *  #include <thrust/reduce.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *
+ *  thrust::device_vector<int> data{1, 0, 2, 2, 1, 3};
+ *  thrust::device_vector<int> output(1);
+ *  thrust::reduce_into(data.begin(), data.end(), output.begin());
+ *  // output[0] == 9
+ *  \endcode
+ *
+ *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *  \see reduce
+ */
+template <typename InputIterator, typename OutputIterator>
+void reduce_into(InputIterator first, InputIterator last, OutputIterator output);
+
+/*! \p reduce_into is a generalization of summation: it computes the sum (or some
+ *  other binary operation) of all the elements in the range <tt>[first,
+ *  last)</tt>. This version of \p reduce_into uses \p init as the initial value of the
+ *  reduction. \p reduce_into is similar to the C++ Standard Template Library's
+ *  <tt>std::accumulate</tt>. The primary difference between the two functions
+ *  is that <tt>std::accumulate</tt> guarantees the order of summation, while
+ *  \p reduce_into requires associativity of the binary operation to parallelize
+ *  the reduction.
+ *
+ *  Note that \p reduce_into also assumes that the binary reduction operator (in this
+ *  case operator+) is commutative. If the reduction operator is not commutative
+ *  then \p reduce_into should not be used. Instead, one could use \p inclusive_scan
+ *  (which does not require commutativity) and select the last element of the
+ *  output array.
+ *
+ *  Unlike \p reduce, \p reduce_into does not return the reduction result.
+ *  Instead, it is written to <tt>*output</tt>. Thus, when \p exec is
+ *  \p thrust::cuda::par_nosync, this algorithm does not wait for the work it
+ *  launches to complete. Additionally, you can use \p reduce_into to avoid
+ *  copying the reduction result from device memory to host memory.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param first The beginning of the input sequence.
+ *  \param last The end of the input sequence.
+ *  \param output The location the reduction will be written to.
+ *  \param init The initial value.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
+ * is convertible to \p T.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is assignable from \c T.
+ *  \tparam T is convertible to \p InputIterator's \c value_type.
+ *
+ *  The following code snippet demonstrates how to use \p reduce_into to compute
+ *  the sum of a sequence of integers including an initialization value using the
+ *  \p thrust::device execution policy for parallelization:
+ *
+ *  \code
+ *  #include <thrust/reduce.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *
+ *  thrust::device_vector<int> data{1, 0, 2, 2, 1, 3};
+ *  thrust::device_vector<int> output(1);
+ *  thrust::reduce_into(thrust::device, data.begin(), data.end(), output.begin(), 1);
+ *  // output[0] == 10
+ *  \endcode
+ *
+ *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *  \see reduce
+ */
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE void reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init);
+
+/*! \p reduce_into is a generalization of summation: it computes the sum (or some
+ *  other binary operation) of all the elements in the range <tt>[first,
+ *  last)</tt>. This version of \p reduce_into uses \p init as the initial value of the
+ *  reduction. \p reduce_into is similar to the C++ Standard Template Library's
+ *  <tt>std::accumulate</tt>. The primary difference between the two functions
+ *  is that <tt>std::accumulate</tt> guarantees the order of summation, while
+ *  \p reduce_into requires associativity of the binary operation to parallelize
+ *  the reduction.
+ *
+ *  Note that \p reduce_into also assumes that the binary reduction operator (in this
+ *  case operator+) is commutative. If the reduction operator is not commutative
+ *  then \p reduce_into should not be used. Instead, one could use \p inclusive_scan
+ *  (which does not require commutativity) and select the last element of the
+ *  output array.
+ *
+ *  Unlike \p reduce, \p reduce_into does not return the reduction result.
+ *  Instead, it is written to <tt>*output</tt>. Thus, when \p exec is
+ *  \p thrust::cuda::par_nosync, this algorithm does not wait for the work it
+ *  launches to complete. Additionally, you can use \p reduce_into to avoid
+ *  copying the reduction result from device memory to host memory.
+ *
+ *  \param first The beginning of the input sequence.
+ *  \param last The end of the input sequence.
+ *  \param output The location the reduction will be written to.
+ *  \param init The initial value.
+ *
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
+ * is convertible to \p T.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is assignable from \c T.
+ *  \tparam T is convertible to \p InputIterator's \c value_type.
+ *
+ *  The following code snippet demonstrates how to use \p reduce_into to compute
+ *  the sum of a sequence of integers including an initialization value.
+ *
+ *  \code
+ *  #include <thrust/reduce.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *
+ *  thrust::device_vector<int> data{1, 0, 2, 2, 1, 3};
+ *  thrust::device_vector<int> output(1);
+ *  thrust::reduce_into(data.begin(), data.end(), output.begin(), 1);
+ *  // output[0] == 10
+ *  \endcode
+ *
+ *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *  \see reduce
+ */
+template <typename InputIterator, typename OutputIterator, typename T>
+void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init);
+
+/*! \p reduce_into is a generalization of summation: it computes the sum (or some
+ *  other binary operation) of all the elements in the range <tt>[first,
+ *  last)</tt>. This version of \p reduce_into uses \p init as the initial value of the
+ *  reduction and \p binary_op as the binary function used for summation. \p reduce_into
+ *  is similar to the C++ Standard Template Library's <tt>std::accumulate</tt>.
+ *  The primary difference between the two functions is that <tt>std::accumulate</tt>
+ *  guarantees the order of summation, while \p reduce_into requires associativity of
+ *  \p binary_op to parallelize the reduction.
+ *
+ *  Note that \p reduce_into also assumes that the binary reduction operator (in this
+ *  case \p binary_op) is commutative. If the reduction operator is not commutative
+ *  then \p reduce_into should not be used. Instead, one could use \p inclusive_scan
+ *  (which does not require commutativity) and select the last element of the
+ *  output array.
+ *
+ *  Unlike \p reduce, \p reduce_into does not return the reduction result.
+ *  Instead, it is written to <tt>*output</tt>. Thus, when \p exec is
+ *  \p thrust::cuda::par_nosync, this algorithm does not wait for the work it
+ *  launches to complete. Additionally, you can use \p reduce_into to avoid
+ *  copying the reduction result from device memory to host memory.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param first The beginning of the input sequence.
+ *  \param last The end of the input sequence.
+ *  \param output The location the reduction will be written to.
+ *  \param init The initial value.
+ *  \param binary_op The binary function used to 'sum' values.
+ *  \return The result of the reduction.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is assignable from \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is
+ * convertible to \p BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
+ *
+ *  The following code snippet demonstrates how to use \p reduce_into to
+ *  compute the maximum value of a sequence of integers using the \p thrust::device
+ *  execution policy for parallelization:
+ *
+ *  \code
+ *  #include <cuda/functional>
+ *  #include <thrust/reduce.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *
+ *  thrust::device_vector<int> data{1, 0, 2, 2, 1, 3};
+ *  thrust::device_vector<int> output(1);
+ *  thrust::reduce_into(thrust::device,
+ *                      data.begin(), data.end(), output.begin(), -1,
+ *                      cuda::maximum{});
+ *  // output[0] == 3
+ *  \endcode
+ *
+ *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *  \see reduce
+ *  \see transform_reduce
+ *  \see transform_reduce_into
+ */
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE void reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init,
+  BinaryFunction binary_op);
+
+/*! \p reduce_into is a generalization of summation: it computes the sum (or some
+ *  other binary operation) of all the elements in the range <tt>[first,
+ *  last)</tt>. This version of \p reduce_into uses \p init as the initial value of the
+ *  reduction and \p binary_op as the binary function used for summation. \p reduce_into
+ *  is similar to the C++ Standard Template Library's <tt>std::accumulate</tt>.
+ *  The primary difference between the two functions is that <tt>std::accumulate</tt>
+ *  guarantees the order of summation, while \p reduce_into requires associativity of
+ *  \p binary_op to parallelize the reduction.
+ *
+ *  Note that \p reduce_into also assumes that the binary reduction operator (in this
+ *  case \p binary_op) is commutative.  If the reduction operator is not commutative
+ *  then \p thrust::reduce_into should not be used.  Instead, one could use
+ *  \p inclusive_scan (which does not require commutativity) and select the
+ *  last element of the output array.
+ *
+ *  \param first The beginning of the input sequence.
+ *  \param last The end of the input sequence.
+ *  \param init The initial value.
+ *  \param binary_op The binary function used to 'sum' values.
+ *  \return The result of the reduction.
+ *
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is assignable from \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is
+ * convertible to \p BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
+ *
+ *  The following code snippet demonstrates how to use \p reduce_into to
+ *  compute the maximum value of a sequence of integers.
+ *
+ *  \code
+ *  #include <cuda/functional>
+ *  #include <thrust/reduce.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *
+ *  thrust::device_vector<int> data{1, 0, 2, 2, 1, 3};
+ *  thrust::device_vector<int> output(1);
+ *  thrust::reduce_into(data.begin(), data.end(), output.begin(), -1,
+ *                      cuda::maximum{});
+ *  // output[0] == 3
+ *  \endcode
+ *
+ *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *  \see reduce
+ *  \see transform_reduce
+ *  \see transform_reduce_into
+ */
+template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op);
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -501,7 +852,7 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D, binary_pred);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -570,7 +921,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D, binary_pred);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -628,9 +979,8 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
  * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary
- * Function</a> and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
+ * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam BinaryFunction The function's return type must be convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -649,8 +999,8 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int> binary_op;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D, binary_pred, binary_op);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -708,9 +1058,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
  * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary
- * Function</a> and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
+ * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * \tparam BinaryFunction The function's return type must be convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -727,8 +1076,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int> binary_op;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D, binary_pred, binary_op);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.

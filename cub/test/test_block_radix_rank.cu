@@ -40,8 +40,9 @@
 #include <iostream>
 #include <memory>
 
-#include "test_util.h"
 #include <stdio.h>
+
+#include "test_util.h"
 
 bool g_verbose = false;
 cub::CachingDeviceAllocator g_allocator(true);
@@ -210,7 +211,7 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           cub::BlockScanAlgorithm ScanAlgorithm,
           int Descending,
           typename Key>
-void TestValid(cub::Int2Type<true> /*fits_smem_capacity*/)
+void TestValid(cuda::std::true_type /*fits_smem_capacity*/)
 {
   TestDriver<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(UNIFORM);
 
@@ -224,7 +225,7 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           cub::BlockScanAlgorithm ScanAlgorithm,
           int Descending,
           typename Key>
-void TestValid(cub::Int2Type<false> fits_smem_capacity)
+void TestValid(cuda::std::false_type fits_smem_capacity)
 {}
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -241,7 +242,7 @@ void Test()
     cub::detail::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
   using storage_t = typename block_radix_rank::TempStorage;
 
-  cub::Int2Type<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
+  cuda::std::bool_constant<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
 
   TestValid<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(fits_smem_capacity);
 }
@@ -291,7 +292,7 @@ void Test()
 }
 
 template <int BlockThreads>
-void Test(cub::Int2Type<true> /* multiple of hw warp */)
+void Test(cuda::std::true_type /* multiple of hw warp */)
 {
   Test<cub::RadixRankAlgorithm::RADIX_RANK_MATCH, BlockThreads>();
 
@@ -301,7 +302,7 @@ void Test(cub::Int2Type<true> /* multiple of hw warp */)
 }
 
 template <int BlockThreads>
-void Test(cub::Int2Type<false> /* multiple of hw warp */)
+void Test(cuda::std::false_type /* multiple of hw warp */)
 {}
 
 template <int BlockThreads>
@@ -310,7 +311,7 @@ void Test()
   Test<cub::RadixRankAlgorithm::RADIX_RANK_BASIC, BlockThreads>();
   Test<cub::RadixRankAlgorithm::RADIX_RANK_MEMOIZE, BlockThreads>();
 
-  Test<BlockThreads>(cub::Int2Type<(BlockThreads % 32) == 0>{});
+  Test<BlockThreads>(cuda::std::bool_constant < (BlockThreads % 32) == 0 > {});
 }
 
 int main(int argc, char** argv)

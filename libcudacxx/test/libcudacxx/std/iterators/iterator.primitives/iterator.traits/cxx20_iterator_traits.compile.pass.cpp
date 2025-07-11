@@ -7,14 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // struct iterator_traits;
-
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/array>
 #include <cuda/std/concepts>
@@ -26,11 +20,10 @@
 #include "test_macros.h"
 
 template <class Traits, class = void>
-_CCCL_INLINE_VAR constexpr bool has_iterator_concept_v = false;
+inline constexpr bool has_iterator_concept_v = false;
 
 template <class Traits>
-_CCCL_INLINE_VAR constexpr bool has_iterator_concept_v<Traits, cuda::std::void_t<typename Traits::iterator_concept>> =
-  true;
+inline constexpr bool has_iterator_concept_v<Traits, cuda::std::void_t<typename Traits::iterator_concept>> = true;
 
 template <class It, class Traits, cuda::std::enable_if_t<cuda::std::is_pointer_v<It>, int> = 0>
 __host__ __device__ constexpr void test_iter_concept()
@@ -279,7 +272,7 @@ struct MinusNotDeclaredIter
   struct value_type
   {};
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const MinusNotDeclaredIter&) const = default; // nvbug3908399
 #else
   __host__ __device__ friend bool operator==(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept
@@ -341,7 +334,7 @@ struct WrongSubscriptReturnType
   struct value_type
   {};
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const WrongSubscriptReturnType&) const = default; // nvbug3908399
 #else
   __host__ __device__ friend bool operator==(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept
@@ -437,7 +430,7 @@ struct LegacyRandomAccessSpaceship
     __host__ __device__ operator not_value_type&() const;
   };
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const LegacyRandomAccessSpaceship&) const = default; // nvbug3908399
 #else
   __host__ __device__ friend bool
@@ -574,7 +567,7 @@ struct LegacyRandomAccessSpecialized
   struct not_value_type
   {};
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const LegacyRandomAccessSpecialized&) const = default; // nvbug3908399
 #else
   __host__ __device__ friend bool

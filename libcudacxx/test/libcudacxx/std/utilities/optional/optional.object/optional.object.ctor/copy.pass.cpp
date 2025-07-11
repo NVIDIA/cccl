@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr optional(const optional<T>& rhs);
@@ -21,29 +20,45 @@
 
 using cuda::std::optional;
 
-template <class T, class... InitArgs>
-__host__ __device__ void test(InitArgs&&... args)
+template <class T>
+__host__ __device__ constexpr void test() noexcept
 {
-  const optional<T> rhs(cuda::std::forward<InitArgs>(args)...);
-  bool rhs_engaged = static_cast<bool>(rhs);
-  optional<T> lhs  = rhs;
-  assert(static_cast<bool>(lhs) == rhs_engaged);
-  if (rhs_engaged)
-  {
-    assert(*lhs == *rhs);
+  { // copy constructed from empty
+    const optional<T> input{};
+    optional<T> opt{input};
+    assert(!input.has_value());
+    assert(!opt.has_value());
+  }
+
+  { // copy constructed from empty
+    cuda::std::remove_reference_t<T> val{42};
+    const optional<T> input{val};
+    optional<T> opt{input};
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == val);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(cuda::std::addressof(val) == opt.operator->());
+    }
   }
 }
 
-template <class T, class... InitArgs>
-__host__ __device__ constexpr bool constexpr_test(InitArgs&&... args)
+__host__ __device__ constexpr bool test() noexcept
 {
-  static_assert(cuda::std::is_trivially_copy_constructible_v<T>, ""); // requirement
-  const optional<T> rhs(cuda::std::forward<InitArgs>(args)...);
-  optional<T> lhs = rhs;
-  return (lhs.has_value() == rhs.has_value()) && (lhs.has_value() ? *lhs == *rhs : true);
+  test<int>();
+  test<const int>();
+  test<ConstexprTestTypes::TestType>();
+  test<TrivialTestTypes::TestType>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct Z
 {
   Z()
@@ -74,73 +89,15 @@ void test_throwing_ctor()
     assert(i == 6);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
-
-template <class T, class... InitArgs>
-__host__ __device__ void test_ref(InitArgs&&... args)
-{
-  const optional<T> rhs(cuda::std::forward<InitArgs>(args)...);
-  bool rhs_engaged = static_cast<bool>(rhs);
-  optional<T> lhs  = rhs;
-  assert(static_cast<bool>(lhs) == rhs_engaged);
-  if (rhs_engaged)
-  {
-    assert(&(*lhs) == &(*rhs));
-  }
-}
-
-__host__ __device__ void test_reference_extension()
-{
-#if defined(_LIBCPP_VERSION) && 0 // FIXME these extensions are currently disabled.
-  using T = TestTypes::TestType;
-  T::reset();
-  {
-    T t;
-    T::reset_constructors();
-    test_ref<T&>();
-    test_ref<T&>(t);
-    assert(T::alive() == 1);
-    assert(T::constructed() == 0);
-    assert(T::assigned() == 0);
-    assert(T::destroyed() == 0);
-  }
-  assert(T::destroyed() == 1);
-  assert(T::alive() == 0);
-  {
-    T t;
-    const T& ct = t;
-    T::reset_constructors();
-    test_ref<T const&>();
-    test_ref<T const&>(t);
-    test_ref<T const&>(ct);
-    assert(T::alive() == 1);
-    assert(T::constructed() == 0);
-    assert(T::assigned() == 0);
-    assert(T::destroyed() == 0);
-  }
-  assert(T::alive() == 0);
-  assert(T::destroyed() == 1);
-  {
-    static_assert(!cuda::std::is_copy_constructible<cuda::std::optional<T&&>>::value, "");
-    static_assert(!cuda::std::is_copy_constructible<cuda::std::optional<T const&&>>::value, "");
-  }
-#endif
-}
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-  test<int>();
-  test<int>(3);
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(constexpr_test<int>(), "");
-  static_assert(constexpr_test<int>(3), "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  test();
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test(), "");
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
-  {
-    const optional<const int> o(42);
-    optional<const int> o2(o);
-    assert(*o2 == 42);
-  }
   {
     using T = TestTypes::TestType;
     T::reset();
@@ -163,32 +120,10 @@ int main(int, char**)
     assert(T::copy_constructed() == 1);
     assert(T::alive() == 2);
   }
-  TestTypes::TestType::reset();
-  {
-    using namespace ConstexprTestTypes;
-    test<TestType>();
-    test<TestType>(42);
-  }
-  {
-    using namespace TrivialTestTypes;
-    test<TestType>();
-    test<TestType>(42);
-  }
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    NV_IF_TARGET(NV_IS_HOST, (test_throwing_ctor();))
-  }
-#endif // !TEST_HAS_NO_EXCEPTIONS
-  {
-    test_reference_extension();
-  }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    constexpr cuda::std::optional<int> o1{4};
-    constexpr cuda::std::optional<int> o2 = o1;
-    static_assert(*o2 == 4, "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_throwing_ctor();))
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

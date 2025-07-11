@@ -30,17 +30,17 @@ protected:
 template <class Derived, bool Explicit = false>
 struct TestBase
 {
-  STATIC_MEMBER_VAR(alive, int);
-  STATIC_MEMBER_VAR(constructed, int);
-  STATIC_MEMBER_VAR(value_constructed, int);
-  STATIC_MEMBER_VAR(default_constructed, int);
-  STATIC_MEMBER_VAR(copy_constructed, int);
-  STATIC_MEMBER_VAR(move_constructed, int);
-  STATIC_MEMBER_VAR(assigned, int);
-  STATIC_MEMBER_VAR(value_assigned, int);
-  STATIC_MEMBER_VAR(copy_assigned, int);
-  STATIC_MEMBER_VAR(move_assigned, int);
-  STATIC_MEMBER_VAR(destroyed, int);
+  STATIC_MEMBER_VAR(alive, int)
+  STATIC_MEMBER_VAR(constructed, int)
+  STATIC_MEMBER_VAR(value_constructed, int)
+  STATIC_MEMBER_VAR(default_constructed, int)
+  STATIC_MEMBER_VAR(copy_constructed, int)
+  STATIC_MEMBER_VAR(move_constructed, int)
+  STATIC_MEMBER_VAR(assigned, int)
+  STATIC_MEMBER_VAR(value_assigned, int)
+  STATIC_MEMBER_VAR(copy_assigned, int)
+  STATIC_MEMBER_VAR(move_assigned, int)
+  STATIC_MEMBER_VAR(destroyed, int)
 
   __host__ __device__ static void reset()
   {
@@ -117,7 +117,7 @@ struct TestBase
     ++value_assigned();
     return *this;
   }
-#if !defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK) && !defined(TEST_COMPILER_NVRTC)
+#if !defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK) && !TEST_COMPILER(NVRTC)
 
 protected:
 #endif // !TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK
@@ -199,7 +199,7 @@ struct ValueBase
   __host__ __device__ constexpr ValueBase(std::initializer_list<int>& il, int = 0)
       : value(static_cast<int>(il.size()))
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ValueBase& operator=(int xvalue) noexcept
+  __host__ __device__ constexpr ValueBase& operator=(int xvalue) noexcept
   {
     value = xvalue;
     return *this;
@@ -212,25 +212,17 @@ protected:
 #endif // !TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK
   __host__ __device__ constexpr static int check_value(int const& val)
   {
-#if TEST_STD_VER < 2014
-    return val == -1 || val == 999 ? (TEST_THROW(42), 0) : val;
-#else
     assert(val != -1);
     assert(val != 999);
     return val;
-#endif
   }
   __host__ __device__ constexpr static int check_value(int& val, int val_cp = 0)
   {
-#if TEST_STD_VER < 2014
-    return val_cp = val, val = -1, (val_cp == -1 || val_cp == 999 ? (TEST_THROW(42), 0) : val_cp);
-#else
     assert(val != -1);
     assert(val != 999);
     val_cp = val;
     val    = -1;
     return val_cp;
-#endif
   }
   __host__ __device__ constexpr ValueBase() noexcept
       : value(0)
@@ -241,14 +233,14 @@ protected:
   __host__ __device__ constexpr ValueBase(ValueBase&& o) noexcept
       : value(check_value(o.value))
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ValueBase& operator=(ValueBase const& o) noexcept
+  __host__ __device__ constexpr ValueBase& operator=(ValueBase const& o) noexcept
   {
     assert(o.value != -1);
     assert(o.value != -999);
     value = o.value;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ValueBase& operator=(ValueBase&& o) noexcept
+  __host__ __device__ constexpr ValueBase& operator=(ValueBase&& o) noexcept
   {
     assert(o.value != -1);
     assert(o.value != -999);
@@ -343,7 +335,8 @@ namespace NonThrowingTypes
 namespace NonTrivialTypes
 {
 #define DEFINE_CTOR \
-  {}
+  {                 \
+  }
 #define DEFINE_CTOR_ANNOTATIONS __host__ __device__
 #define DEFINE_ASSIGN \
   {                   \

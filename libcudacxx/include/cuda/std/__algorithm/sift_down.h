@@ -24,10 +24,13 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __sift_down(
+_CCCL_API constexpr void __sift_down(
   _RandomAccessIterator __first,
   _Compare&& __comp,
   typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -35,8 +38,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __sift_down(
 {
   using _Ops = _IterOps<_AlgPolicy>;
 
-  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+  using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
+  using value_type      = typename iterator_traits<_RandomAccessIterator>::value_type;
   // left-child of __start is at 2 * __start + 1
   // right-child of __start is at 2 * __start + 2
   difference_type __child = __start - __first;
@@ -91,8 +94,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __sift_down(
   *__start = _CUDA_VSTD::move(__top);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __floyd_sift_down(
+_CCCL_API constexpr _RandomAccessIterator __floyd_sift_down(
   _RandomAccessIterator __first,
   _Compare&& __comp,
   typename iterator_traits<_RandomAccessIterator>::difference_type __len)
@@ -129,5 +133,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __floyd_si
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SIFT_DOWN_H

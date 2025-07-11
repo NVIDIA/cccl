@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class U>
@@ -20,19 +19,6 @@
 #include "test_macros.h"
 
 using cuda::std::optional;
-
-template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const optional<U>& rhs)
-{
-  static_assert(!(cuda::std::is_convertible<const optional<U>&, optional<T>>::value), "");
-  bool rhs_engaged = static_cast<bool>(rhs);
-  optional<T> lhs(rhs);
-  assert(static_cast<bool>(lhs) == rhs_engaged);
-  if (rhs_engaged)
-  {
-    assert(*lhs == T(*rhs));
-  }
-}
 
 class X
 {
@@ -53,6 +39,10 @@ public:
   {
     return x.i_ == y.i_;
   }
+  __host__ __device__ friend constexpr bool operator==(const X& x, const int& y)
+  {
+    return x.i_ == y;
+  }
 };
 
 class Y
@@ -68,19 +58,126 @@ public:
   {
     return x.i_ == y.i_;
   }
+
+  __host__ __device__ friend constexpr bool operator==(const Y& x, const int& y)
+  {
+    return x.i_ == y;
+  }
 };
 
-template <class T, class U>
-__host__ __device__ constexpr bool test_all()
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+template <class T>
+struct ConvertibleToReference
 {
+  T val_;
+
+  __host__ __device__ constexpr operator const T&() const noexcept
   {
-    optional<U> rhs;
-    test<T>(rhs);
+    return val_;
   }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
   {
-    optional<U> rhs(3);
-    test<T>(rhs);
+    return lhs == rhs.val_;
   }
+};
+
+template <class T>
+struct ExplicitlyConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ explicit constexpr operator const T&() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool
+  operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+
+template <class T>
+struct ConvertibleToValue
+{
+  T val_;
+
+  __host__ __device__ constexpr operator T() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+
+template <class T>
+struct ExplicitlyConvertibleToValue
+{
+  T val_;
+
+  __host__ __device__ explicit constexpr operator T() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ExplicitlyConvertibleToValue& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+template <class T, class U>
+__host__ __device__ constexpr void test()
+{
+  { // constructed from empty
+    const optional<U> input{};
+    optional<T> opt{input};
+    assert(!input.has_value());
+    assert(!opt.has_value());
+  }
+  { // constructed from non-empty
+    cuda::std::remove_reference_t<U> val{42};
+    const optional<U> input{val};
+    optional<T> opt{input};
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<X, int>();
+  test<Y, int>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int, int&>();
+  test<int, const int&>();
+
+  test<const int&, ConvertibleToReference<int>>();
+  test<const int&, ExplicitlyConvertibleToReference<int>>();
+
+  test<int, ConvertibleToReference<int>&>();
+  test<int, ExplicitlyConvertibleToReference<int>&>();
+
+  test<int, ConvertibleToValue<int>&>();
+  test<int, const ConvertibleToValue<int>&>();
+
+  test<int, ExplicitlyConvertibleToValue<int>&>();
+  test<int, const ExplicitlyConvertibleToValue<int>&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
   return true;
 }
 
@@ -100,19 +197,19 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
 
 public:
-  __host__ __device__ explicit Z(int i)
+  explicit Z(int i)
       : i_(i)
   {
     TEST_THROW(6);
   }
 
-  __host__ __device__ friend bool operator==(const Z& x, const Z& y)
+  friend bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_;
   }
@@ -140,26 +237,26 @@ void test_exceptions()
   optional<U> rhs(3);
   test_exception<T>(rhs);
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-  test_all<X, int>();
-  test_all<Y, int>();
+  test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test_all<X, int>());
-  static_assert(test_all<Y, int>());
-#endif
+  static_assert(test());
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   {
-    typedef TerminatesOnConstruction T;
-    typedef int U;
-    optional<U> rhs;
-    test<T>(rhs);
-    static_assert(!(cuda::std::is_convertible<const optional<U>&, optional<T>>::value), "");
+    using T = TerminatesOnConstruction;
+    const optional<int> rhs;
+    optional<T> lhs{rhs};
+    assert(!lhs.has_value());
+    assert(!rhs.has_value());
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

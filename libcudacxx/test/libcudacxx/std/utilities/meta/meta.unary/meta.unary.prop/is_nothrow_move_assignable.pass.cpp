@@ -18,18 +18,14 @@ template <class T>
 __host__ __device__ void test_has_nothrow_assign()
 {
   static_assert(cuda::std::is_nothrow_move_assignable<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_nothrow_move_assignable_v<T>, "");
-#endif
 }
 
 template <class T>
 __host__ __device__ void test_has_not_nothrow_assign()
 {
   static_assert(!cuda::std::is_nothrow_move_assignable<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_nothrow_move_assignable_v<T>, "");
-#endif
 }
 
 class Empty
@@ -66,9 +62,9 @@ int main(int, char**)
   test_has_nothrow_assign<bit_zero>();
 
   test_has_not_nothrow_assign<void>();
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   test_has_not_nothrow_assign<A>();
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 
   return 0;
 }

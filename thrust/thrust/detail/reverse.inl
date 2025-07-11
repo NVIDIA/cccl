@@ -39,6 +39,7 @@ _CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<Deriv
                                BidirectionalIterator first,
                                BidirectionalIterator last)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reverse");
   using thrust::system::detail::generic::reverse;
   return reverse(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end reverse()
@@ -51,6 +52,7 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
   BidirectionalIterator last,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reverse_copy");
   using thrust::system::detail::generic::reverse_copy;
   return reverse_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end reverse_copy()
@@ -58,6 +60,7 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
 template <typename BidirectionalIterator>
 void reverse(BidirectionalIterator first, BidirectionalIterator last)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reverse");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<BidirectionalIterator>::type;
@@ -70,6 +73,7 @@ void reverse(BidirectionalIterator first, BidirectionalIterator last)
 template <typename BidirectionalIterator, typename OutputIterator>
 OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::reverse_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<BidirectionalIterator>::type;

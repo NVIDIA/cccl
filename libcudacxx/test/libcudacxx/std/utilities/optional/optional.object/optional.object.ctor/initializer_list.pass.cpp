@@ -7,19 +7,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class U, class... Args>
 //     constexpr
 //     explicit optional(in_place_t, initializer_list<U> il, Args&&... args);
 
+#include <cuda/std/cassert>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
-#ifdef _LIBCUDACXX_HAS_VECTOR
-#  include <cuda/std/vector>
-#endif
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -75,27 +72,27 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
   int j_ = 0;
 
 public:
-  __host__ __device__ Z()
+  Z()
       : i_(0)
   {}
-  __host__ __device__ Z(int i)
+  Z(int i)
       : i_(i)
   {}
-  __host__ __device__ Z(cuda::std::initializer_list<int> il)
+  Z(cuda::std::initializer_list<int> il)
       : i_(il.begin()[0])
       , j_(il.begin()[1])
   {
     TEST_THROW(6);
   }
 
-  __host__ __device__ friend bool operator==(const Z& x, const Z& y)
+  friend bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -114,7 +111,7 @@ void test_exceptions()
     assert(i == 6);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -122,20 +119,12 @@ int main(int, char**)
     static_assert(!cuda::std::is_constructible<X, cuda::std::initializer_list<int>&>::value, "");
     static_assert(!cuda::std::is_constructible<optional<X>, cuda::std::initializer_list<int>&>::value, "");
   }
-#ifdef _LIBCUDACXX_HAS_VECTOR
   {
-    optional<cuda::std::vector<int>> opt(in_place, {3, 1});
+    optional<cuda::std::inplace_vector<int, 3>> opt(in_place, {3, 1});
     assert(static_cast<bool>(opt) == true);
-    assert((*opt == cuda::std::vector<int>{3, 1}));
+    assert((*opt == cuda::std::inplace_vector<int, 3>{3, 1}));
     assert(opt->size() == 2);
   }
-  {
-    optional<cuda::std::vector<int>> opt(in_place, {3, 1}, cuda::std::allocator<int>());
-    assert(static_cast<bool>(opt) == true);
-    assert((*opt == cuda::std::vector<int>{3, 1}));
-    assert(opt->size() == 2);
-  }
-#endif
   {
     static_assert(cuda::std::is_constructible<optional<Y>, cuda::std::initializer_list<int>&>::value, "");
 
@@ -144,13 +133,12 @@ int main(int, char**)
       assert(static_cast<bool>(opt) == true);
       assert((*opt == Y{3, 1}));
     }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
     {
       constexpr optional<Y> opt(in_place, {3, 1});
       static_assert(static_cast<bool>(opt) == true, "");
       static_assert(*opt == Y{3, 1}, "");
     }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
     struct test_constexpr_ctor : public optional<Y>
     {
@@ -159,9 +147,9 @@ int main(int, char**)
       {}
     };
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

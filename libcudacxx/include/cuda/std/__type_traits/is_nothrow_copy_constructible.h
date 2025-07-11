@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -31,11 +33,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_constructible
     : public is_nothrow_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_COPY_CONSTRUCTIBLE_H

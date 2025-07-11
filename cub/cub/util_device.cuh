@@ -26,14 +26,8 @@
  *
  ******************************************************************************/
 
-/**
- * \file
- * Properties of a given CUDA device and the corresponding PTX bundle.
- *
- * \note
- * This file contains __host__ only functions and utilities, and should not be
- * included in code paths that could be online-compiled (ex: using NVRTC).
- */
+//! \file
+//! Properties of a given CUDA device and the corresponding PTX bundle.
 
 #pragma once
 
@@ -47,19 +41,31 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh>
+#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+#include <cuda/std/array>
+#include <cuda/std/atomic>
+#include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <array>
-#include <atomic>
-#include <cassert>
+#if !_CCCL_COMPILER(NVRTC)
+#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#    include <format>
+#    include <string_view>
+
+#    include <nlohmann/json.hpp>
+#  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/detail/ptx-json/json.h>
+#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>
 
@@ -70,28 +76,17 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 /**
- * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
- * configurations of a given policy.
- */
-// TODO(bgruber): this should be called something like "override_policy"
-template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
-struct policy_wrapper_t : PolicyT
-{
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
-  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
-};
-} // namespace detail
-
-/**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
+} // namespace detail
+
 #endif // _CCCL_DOXYGEN_INVOKED
 
+#if !_CCCL_COMPILER(NVRTC)
 /**
  * \brief Returns the current device or -1 if an error occurred.
  */
@@ -105,13 +100,13 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
   return device;
 }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
 using SwitchDevice = ::cuda::__ensure_current_device;
 
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -129,24 +124,6 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
   }
   return count;
 }
-
-/**
- * \brief Cache for an arbitrary value produced by a nullary function.
- * deprecated [Since 2.6.0]
- */
-template <typename T, T (*Function)()>
-struct CCCL_DEPRECATED ValueCache
-{
-  T const value;
-
-  /**
-   * \brief Call the nullary function to produce the value and construct the
-   *        cache.
-   */
-  _CCCL_HOST inline ValueCache()
-      : value(Function())
-  {}
-};
 
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
 _CCCL_HOST inline int DeviceCountCachedValue()
@@ -171,7 +148,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -197,12 +174,12 @@ struct PerDeviceAttributeCache
 
   struct DeviceEntry
   {
-    std::atomic<DeviceEntryStatus> flag;
+    ::cuda::std::atomic<DeviceEntryStatus> flag;
     DevicePayload payload;
   };
 
 private:
-  std::array<DeviceEntry, CUB_MAX_DEVICES> entries_;
+  ::cuda::std::array<DeviceEntry, detail::max_devices> entries_;
 
 public:
   /**
@@ -211,7 +188,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    assert(DeviceCount() <= CUB_MAX_DEVICES);
+    assert(DeviceCount() <= detail::max_devices);
   }
 
   /**
@@ -235,13 +212,13 @@ public:
     DeviceEntryStatus old_status = DeviceEntryEmpty;
 
     // First, check for the common case of the entry being ready.
-    if (flag.load(std::memory_order_acquire) != DeviceEntryReady)
+    if (flag.load(::cuda::std::memory_order_acquire) != DeviceEntryReady)
     {
       // Assume the entry is empty and attempt to lock it so we can fill
       // it by trying to set the state from `DeviceEntryReady` to
       // `DeviceEntryInitializing`.
       if (flag.compare_exchange_strong(
-            old_status, DeviceEntryInitializing, std::memory_order_acq_rel, std::memory_order_acquire))
+            old_status, DeviceEntryInitializing, ::cuda::std::memory_order_acq_rel, ::cuda::std::memory_order_acquire))
       {
         // We successfully set the state to `DeviceEntryInitializing`;
         // we have the lock and it's our job to initialize this entry
@@ -259,7 +236,7 @@ public:
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
-        flag.store(DeviceEntryReady, std::memory_order_release);
+        flag.store(DeviceEntryReady, ::cuda::std::memory_order_release);
       }
 
       // If the `compare_exchange_weak` failed, then `old_status` has
@@ -272,7 +249,7 @@ public:
         // observe the entry status as `DeviceEntryReady`.
         do
         {
-          old_status = flag.load(std::memory_order_acquire);
+          old_status = flag.load(::cuda::std::memory_order_acquire);
         } while (old_status != DeviceEntryReady);
         // FIXME: Use `atomic::wait` instead when we have access to
         // host-side C++20 atomics. We could use libcu++, but it only
@@ -286,7 +263,7 @@ public:
     return entry.payload;
   }
 };
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -295,22 +272,18 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  using EmptyKernelPtr        = void (*)();
-  EmptyKernelPtr empty_kernel = EmptyKernel<void>;
-
-  // This is necessary for unused variable warnings in host compilers. The
-  // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.
-  (void) reinterpret_cast<void*>(empty_kernel);
+  using EmptyKernelPtr                         = void (*)();
+  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
 
   // Define a temporary macro that expands to the current target ptx version
   // in device code.
   // <nv/target> may provide an abstraction for this eventually. For now,
   // we have to keep this usage of __CUDA_ARCH__.
-#if defined(_NVHPC_CUDA)
-#  define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#else
-#  define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#endif
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+#    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#    define CUB_TEMP_GET_PTX _CCCL_PTX_ARCH()
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(
@@ -330,7 +303,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 
       ptx_version = CUB_TEMP_GET_PTX;));
 
-#undef CUB_TEMP_GET_PTX
+#  undef CUB_TEMP_GET_PTX
 
   return result;
 }
@@ -340,8 +313,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
  */
 _CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
-  SwitchDevice sd(device);
-  (void) sd;
+  [[maybe_unused]] SwitchDevice sd(device);
   return PtxVersionUncached(ptx_version);
 }
 
@@ -455,72 +427,25 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
   return result;
 }
 
-/**
- * Synchronize the specified \p stream.
- */
-CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream(cudaStream_t stream)
+//! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
+CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
-  cudaError_t result = cudaErrorNotSupported;
-
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = CubDebug(cudaStreamSynchronize(stream));),
-               ((void) stream; result = CubDebug(cub::detail::device_synchronize());));
-
-  return result;
+  NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
 namespace detail
 {
-
-/**
- * Same as SyncStream, but intended for use with the debug_synchronous flags
- * in device algorithms. This should not be used if synchronization is required
- * for correctness.
- *
- * If `debug_synchronous` is false, this function will immediately return
- * cudaSuccess. If true, one of the following will occur:
- *
- * If synchronization is supported by the current compilation target and
- * settings, the sync is performed and the sync result is returned.
- *
- * If syncs are not supported then no sync is performed, but a message is logged
- * via _CubLog and cudaSuccess is returned.
- */
-CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
+//! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
+//! sync result is returned. Otherwise, does nothing.
+CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
-#ifndef CUB_DETAIL_DEBUG_ENABLE_SYNC
-
-  (void) stream;
+#  ifdef CUB_DEBUG_SYNC
+  NV_IF_TARGET(NV_IS_HOST,
+               (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+               (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+#  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
-
-#else // CUB_DETAIL_DEBUG_ENABLE_SYNC:
-
-#  define CUB_TMP_SYNC_AVAILABLE         \
-    _CubLog("%s\n", "Synchronizing..."); \
-    return SyncStream(stream)
-
-#  define CUB_TMP_DEVICE_SYNC_UNAVAILABLE                                        \
-    (void) stream;                                                               \
-    _CubLog("WARNING: Skipping CUB `debug_synchronous` synchronization (%s).\n", \
-            "device-side sync requires <sm_90, RDC, and CDPv1");                 \
-    return cudaSuccess
-
-#  ifdef CUB_DETAIL_CDPv1
-
-  // Can sync everywhere but SM_90+
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;), (CUB_TMP_SYNC_AVAILABLE;));
-
-#  else // CDPv2 or no CDP:
-
-  // Can only sync on host
-  NV_IF_TARGET(NV_IS_HOST, (CUB_TMP_SYNC_AVAILABLE;), (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;));
-
-#  endif // CDP version
-
-#  undef CUB_TMP_DEVICE_SYNC_UNAVAILABLE
-#  undef CUB_TMP_SYNC_AVAILABLE
-
-#endif // CUB_DETAIL_DEBUG_ENABLE_SYNC
+#  endif // ^^^ !CUB_DEBUG_SYNC ^^^
 }
 
 /** \brief Gets whether the current device supports unified addressing */
@@ -597,76 +522,166 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
     cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_sm_occupancy, kernel_ptr, block_threads, dynamic_smem_bytes));
 }
 
+#endif // !_CCCL_COMPILER(NVRTC)
+
 /******************************************************************************
  * Policy management
  ******************************************************************************/
-
-template <typename PolicyT, typename = void>
-struct PolicyWrapper : PolicyT
-{
-  CUB_RUNTIME_FUNCTION PolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct PolicyWrapper<
-  StaticPolicyT,
-  _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS), decltype(StaticPolicyT::ITEMS_PER_THREAD)>> : StaticPolicyT
-{
-  CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
-  {
-    return StaticPolicyT::BLOCK_THREADS;
-  }
-
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread()
-  {
-    return StaticPolicyT::ITEMS_PER_THREAD;
-  }
-};
-
-template <typename PolicyT>
-CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
-{
-  return PolicyWrapper<PolicyT>{policy};
-}
+// PolicyWrapper
 
 namespace detail
 {
-struct TripleChevronFactory;
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  if !_CCCL_HAS_CONCEPTS()
+#    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
+#  endif // !_CCCL_HAS_CONCEPTS()
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
+#define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
+#define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
+
+#define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                   \
+  __host__ __device__ static constexpr auto _CCCL_PP_SECOND field() \
+  {                                                                 \
+    return StaticPolicyT::_CCCL_PP_FIRST field;                     \
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD(field) \
+    key<_CCCL_TO_STRING(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
+
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)                                     \
+    _CCCL_DEVICE static constexpr auto EncodedPolicy()                                      \
+    {                                                                                       \
+      using namespace ptx_json;                                                             \
+      return object<_CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__) \
+                      key<"__dummy">() = value<0>()>();                                     \
+    }
+#else
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)
+#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  define CUB_DETAIL_POLICY_WRAPPER_FIELD(field)                       \
+    _CCCL_PP_THIRD field _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field); \
+    _CCCL_PP_THIRD field _CCCL_PP_SECOND field() const                 \
+    {                                                                  \
+      return _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field);             \
+    }
+
+#  define CUB_DETAIL_POLICY_WRAPPER_GET_FIELD(field)  \
+    ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
+      static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
+
+#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING(field) \
+    _CCCL_TO_STRING(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
+
+#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE(field) , (int) ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field)
+
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                                    \
+    struct Runtime##concept_name                                                                                       \
+    {                                                                                                                  \
+      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                                  \
+      static std::pair<Runtime##concept_name, std::string>                                                             \
+      from_json(const nlohmann::json& json, std::string_view subpolicy_name)                                           \
+      {                                                                                                                \
+        auto subpolicy = json[subpolicy_name];                                                                         \
+        assert(subpolicy);                                                                                             \
+        Runtime##concept_name ap;                                                                                      \
+        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                            \
+        return std::make_pair(                                                                                         \
+          ap,                                                                                                          \
+          std::format("struct {} {{\n" _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING, __VA_ARGS__) "}};\n", \
+                      subpolicy_name _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE, __VA_ARGS__)));          \
+      }                                                                                                                \
+    };
+#else
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
+
+template <typename T>
+_CCCL_CONCEPT always_true = true;
+
+#define CUB_DETAIL_POLICY_WRAPPER_DEFINE(concept_name, refines, ...)                                                   \
+  template <typename StaticPolicyT>                                                                                    \
+  _CCCL_CONCEPT concept_name = _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT, _CCCL_PP_EXPAND refines)    \
+    _CCCL_REQUIRES_EXPR((StaticPolicyT))(true _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST, __VA_ARGS__)); \
+  template <typename StaticPolicyT>                                                                                    \
+  struct concept_name##Wrapper : StaticPolicyT                                                                         \
+  {                                                                                                                    \
+    __host__ __device__ constexpr concept_name##Wrapper(StaticPolicyT base)                                            \
+        : StaticPolicyT(base)                                                                                          \
+    {}                                                                                                                 \
+    _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
+    CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(__VA_ARGS__)                                                              \
+  };                                                                                                                   \
+  _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
+  _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \
+  __host__ __device__ constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)           \
+  {                                                                                                                    \
+    return concept_name##Wrapper{policy};                                                                              \
+  }                                                                                                                    \
+  CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, __VA_ARGS__)
+
+// Generic agent policy
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
+
+_CCCL_TEMPLATE(typename PolicyT)
+_CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) )
+__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
+{
+  return policy;
 }
+
+} // namespace detail
+
+//----------------------------------------------------------------------------------------------------------------------
+// ChainedPolicy
+
+#if !_CCCL_COMPILER(NVRTC)
+
+namespace detail
+{
+
+// Forward declaration of the default kernel launcher factory
+struct TripleChevronFactory;
+
+// By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
+// The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
+// in CUB tests. This allows us to:
+//   1. retrieve kernel pointers on the usage side of the API, and
+//   2. validate use of specified CUDA stream by accelerated algorithms.
+#  ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY
+#    define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY cub::detail::TripleChevronFactory
+#  endif
 
 /**
  * Kernel dispatch configuration
  */
 struct KernelConfig
 {
-  int block_threads;
-  int items_per_thread;
-  int tile_size;
-  int sm_occupancy;
+  int block_threads{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE KernelConfig()
-      : block_threads(0)
-      , items_per_thread(0)
-      , tile_size(0)
-      , sm_occupancy(0)
-  {}
-
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
-    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+
+} // namespace detail
+#endif // !_CCCL_COMPILER(NVRTC)
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
@@ -675,30 +690,33 @@ struct ChainedPolicy
   /// The policy for the active compiler pass
   using ActivePolicy = ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
 
+#if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
     // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
-#ifdef __CUDA_ARCH_LIST__
+#  ifdef __CUDA_ARCH_LIST__
     return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
     // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
-#elif defined(NV_TARGET_SM_INTEGER_LIST)
+#  elif defined(NV_TARGET_SM_INTEGER_LIST)
     return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
-#else
+#  else
     if (device_ptx_version < PolicyPtxVersion)
     {
       return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
-#endif
+#  endif
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 private:
   template <int, typename, typename>
   friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
 
+#if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
   {
@@ -707,51 +725,24 @@ private:
     // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
     // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
     // is set and different TUs are compiled for different sets of architecture.
-    cudaError_t e             = cudaErrorInvalidDeviceFunction;
-    const cudaError_t dummy[] = {
-      (device_ptx_version == (CudaArches * ArchMult)
-         ? (e = invoke_static<(CudaArches * ArchMult)>(op, ::cuda::std::true_type{}))
-         : cudaSuccess)...};
-    (void) dummy;
+    cudaError_t e = cudaErrorInvalidDeviceFunction;
+    (..., (device_ptx_version == CudaArches * ArchMult ? (e = invoke_static<CudaArches * ArchMult>(op)) : cudaSuccess));
     return e;
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op, ::cuda::std::true_type)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
   {
-    // TODO(bgruber): drop diagnostic suppression in C++17
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4127) // suppress Conditional Expression is Constant
-    _CCCL_IF_CONSTEXPR (DevicePtxVersion < PolicyPtxVersion)
+    if constexpr (DevicePtxVersion < PolicyPtxVersion)
     {
-      // TODO(bgruber): drop boolean tag dispatches in C++17, since _CCCL_IF_CONSTEXPR will discard this branch properly
-      return PrevPolicyT::template invoke_static<DevicePtxVersion>(
-        op, ::cuda::std::bool_constant<(DevicePtxVersion < PolicyPtxVersion)>{});
+      return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
     }
     else
     {
-      return do_invoke(op, ::cuda::std::bool_constant<DevicePtxVersion >= PolicyPtxVersion>{});
+      return op.template Invoke<PolicyT>();
     }
-    _CCCL_DIAG_POP
   }
-
-  template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
-  {
-    _CCCL_UNREACHABLE();
-  }
-
-  template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT& op, ::cuda::std::true_type)
-  {
-    return op.template Invoke<PolicyT>();
-  }
-
-  template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT&, ::cuda::std::false_type)
-  {
-    _CCCL_UNREACHABLE();
-  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 /// Helper for dispatching into a policy chain (end-of-chain specialization)
@@ -764,6 +755,7 @@ struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
   /// The policy for the active compiler pass
   using ActivePolicy = PolicyT;
 
+#if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int /*ptx_version*/, FunctorT& op)
@@ -773,18 +765,15 @@ struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
 
 private:
   template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op, ::cuda::std::true_type)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
   {
     return op.template Invoke<PolicyT>();
   }
-
-  template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
-  {
-    _CCCL_UNREACHABLE();
-  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END
 
-#include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)
+#  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#endif // _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)

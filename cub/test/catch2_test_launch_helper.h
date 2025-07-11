@@ -71,7 +71,7 @@
 //! If the wrapped API contains default parameters before stream, you'd want to explicitly
 //! specify those at all invocations.
 //!
-//! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
+//! Consult with `test/catch2_test_launch_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
@@ -89,17 +89,16 @@
     }                                                                                           \
   }
 
-#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                                  \
-  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                                        \
-  _CCCL_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                               \
-  {                                                                                                    \
-    template <class... As>                                                                             \
-    void operator()(As... args) const                                                                  \
-    {                                                                                                  \
-      launch(WRAPPED_API_NAME##_invocable_t{}, args...);                                               \
-    }                                                                                                  \
-  } WRAPPED_API_NAME; /* TODO(bgruber): mark with [[maybe_unused]] in C++17. Below is a workaround: */ \
-  static_assert(((void) WRAPPED_API_NAME, true), "")
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)           \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                 \
+  [[maybe_unused]] inline constexpr struct WRAPPED_API_NAME##_t \
+  {                                                             \
+    template <class... As>                                      \
+    void operator()(As... args) const                           \
+    {                                                           \
+      launch(WRAPPED_API_NAME##_invocable_t{}, args...);        \
+    }                                                           \
+  } WRAPPED_API_NAME
 
 #define ESCAPE_LIST(...) __VA_ARGS__
 

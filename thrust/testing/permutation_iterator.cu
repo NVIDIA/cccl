@@ -8,6 +8,34 @@
 
 #include <unittest/unittest.h>
 
+// ensure that we properly support thrust::permutation_iterator from cuda::std
+void TestPermutationIteratorTraits()
+{
+  using base_it = thrust::host_vector<int>::iterator;
+
+  using it       = thrust::permutation_iterator<base_it, base_it>;
+  using traits   = cuda::std::iterator_traits<it>;
+  using category = ::cuda::std::random_access_iterator_tag;
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, int>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, int&>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
+
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(cuda::std::output_iterator<it, int>);
+  static_assert(cuda::std::input_iterator<it>);
+  static_assert(cuda::std::forward_iterator<it>);
+  static_assert(cuda::std::bidirectional_iterator<it>);
+  static_assert(cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
+}
+DECLARE_UNITTEST(TestPermutationIteratorTraits);
+
 template <class Vector>
 void TestPermutationIteratorSimple()
 {
@@ -133,9 +161,9 @@ void TestPermutationIteratorReduce()
   T result2 = thrust::transform_reduce(
     thrust::make_permutation_iterator(source.begin(), indices.begin()),
     thrust::make_permutation_iterator(source.begin(), indices.begin()) + 4,
-    thrust::negate<T>(),
+    ::cuda::std::negate<T>(),
     T(0),
-    thrust::plus<T>());
+    ::cuda::std::plus<T>());
   ASSERT_EQUAL(result2, -19);
 };
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorReduce);
@@ -242,7 +270,7 @@ void TestPermutationIteratorWithCountingIterator()
     thrust::transform(thrust::make_permutation_iterator(input, index),
                       thrust::make_permutation_iterator(input, index + 4),
                       output.begin(),
-                      thrust::identity<T>());
+                      ::cuda::std::identity{});
 
     Vector ref{0, 1, 2, 3};
     ASSERT_EQUAL(output, ref);

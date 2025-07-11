@@ -28,7 +28,7 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc")
   set(LIBCUDACXX_CUDA_COMPILER_ARG1 "")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "True")
-  set(LIBCUDACXX_FORCE_INCLUDE "-include '${libcudacxx_SOURCE_DIR}/test/support/nvrtc_limit_macros.h'")
+  set(LIBCUDACXX_FORCE_INCLUDE "")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS "-I'${CUDA_INCLUDE_DIR}'")
   # Use the NVRTCC utility to run the built test outputs
   set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
@@ -42,28 +42,25 @@ endif()
 # enable exceptions and assertions in tests
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
 
+# enable optional<T&>
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
+
 # Disable dialect deprecation
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
 
-# sccache cannot handle the -Fd option generationg pdb files
 if (MSVC)
+  # sccache cannot handle the -Fd option generationg pdb files
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
-endif()
 
-# Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --compiler-options=-fno-fast-math")
-endif()
-
-if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
-endif()
-if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
+  # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
+  if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  endif()
 endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
@@ -84,7 +81,8 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${LIBCUDACXX_FORCE_INCLUDE}"
-    " ${LIBCUDACXX_WARNING_LEVEL}")
+    " ${LIBCUDACXX_WARNING_LEVEL}"
+    " -Wno-deprecated-gpu-targets")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " -stdpar")
@@ -146,6 +144,41 @@ add_test(NAME libcudacxx.test.lit COMMAND
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 6400
+  TIMEOUT 10800 # 3hr, some CI machines are slow
   RUN_SERIAL TRUE
 )
+
+# Add c2h tests:
+cccl_get_c2h()
+
+file(GLOB_RECURSE test_srcs
+  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+  CONFIGURE_DEPENDS
+  *.cu
+)
+
+set(c2h_all_target "libcudacxx.test.c2h_all")
+add_custom_target(${c2h_all_target})
+
+function(libcudacxx_add_test target_name_var source)
+  string(REPLACE "/" "." target_name "${source}")
+  string(PREPEND target_name "libcudacxx.test.")
+  string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
+  set(${target_name_var} ${target_name} PARENT_SCOPE)
+
+  add_executable(${target_name} "${source}")
+  cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+  target_link_libraries(${target_name} PRIVATE
+    libcudacxx::libcudacxx
+    cccl.c2h.main
+    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+  )
+
+  add_dependencies(${c2h_all_target} ${target_name})
+
+  add_test(NAME ${target_name} COMMAND ${target_name})
+endfunction()
+
+foreach (test_src IN LISTS test_srcs)
+  libcudacxx_add_test(test_target "${test_src}")
+endforeach()

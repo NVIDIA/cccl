@@ -30,7 +30,7 @@ struct count_equal
   {}
 
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) const noexcept
+  __host__ __device__ constexpr bool operator()(const T& x, const T& y) const noexcept
   {
     ++count_;
     return x == y;
@@ -38,7 +38,7 @@ struct count_equal
 };
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   unsigned count_equal_count = 0;
 
@@ -103,7 +103,6 @@ int main(int, char**)
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
-#if TEST_STD_VER > 2011
   static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>(), "");
   static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
   static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>(), "");
@@ -113,7 +112,6 @@ int main(int, char**)
   static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>(), "");
   static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
   static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>(), "");
-#endif
 
   return 0;
 }

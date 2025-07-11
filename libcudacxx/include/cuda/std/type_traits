@@ -36,6 +36,7 @@
 #include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/aligned_union.h>
 #include <cuda/std/__type_traits/alignment_of.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/can_extract_key.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -71,6 +72,7 @@
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_core_convertible.h>
+#include <cuda/std/__type_traits/is_corresponding_member.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_destructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -81,7 +83,9 @@
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_fundamental.h>
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_layout_compatible.h>
 #include <cuda/std/__type_traits/is_literal_type.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/is_member_object_pointer.h>
@@ -99,8 +103,11 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_object.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_pod.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_pointer_interconvertible_base_of.h>
+#include <cuda/std/__type_traits/is_pointer_interconvertible_with_class.h>
 #include <cuda/std/__type_traits/is_polymorphic.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/is_reference.h>
@@ -131,15 +138,18 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/lazy.h>
-#include <cuda/std/__type_traits/make_32_64_or_128_bit.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/nat.h>
 #include <cuda/std/__type_traits/negation.h>
+#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/__type_traits/rank.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
+#include <cuda/std/__type_traits/reference_converts_from_temporary.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_const_ref.h>

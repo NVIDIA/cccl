@@ -18,8 +18,7 @@
 int main(int, char**)
 {
   typedef cuda::std::chrono::system_clock C;
-  cuda::std::time_t t1 = C::to_time_t(C::now());
-  ((void) t1);
+  [[maybe_unused]] cuda::std::time_t t1 = C::to_time_t(C::now());
 
   return 0;
 }

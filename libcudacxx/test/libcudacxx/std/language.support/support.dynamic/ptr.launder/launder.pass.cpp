@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-11.1
-
 // <new>
 
 // template <class T> constexpr T* launder(T* p) noexcept;
@@ -17,10 +15,10 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int gi   = 5;
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL float gf = 8.f;
+TEST_GLOBAL_VARIABLE constexpr int gi   = 5;
+TEST_GLOBAL_VARIABLE constexpr float gf = 8.f;
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   assert(cuda::std::launder(&gi) == &gi);
   assert(cuda::std::launder(&gf) == &gf);
@@ -39,9 +37,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_LAUNDER)
+#if defined(_CCCL_BUILTIN_LAUNDER)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && _CCCL_BUILTIN_LAUNDER
+#endif // _CCCL_BUILTIN_LAUNDER
 
   return 0;
 }

@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: msvc
 
 // <cuda/std/tuple>
@@ -98,10 +97,8 @@ int main(int, char**)
   }
   */
   {
-    cuda::std::tuple<A&&> t(cuda::std::forward_as_tuple(A{}));
-    ((void) t);
-    cuda::std::tuple<ExplicitA&&> t2(cuda::std::forward_as_tuple(ExplicitA{}));
-    ((void) t2);
+    [[maybe_unused]] cuda::std::tuple<A&&> t(cuda::std::forward_as_tuple(A{}));
+    [[maybe_unused]] cuda::std::tuple<ExplicitA&&> t2(cuda::std::forward_as_tuple(ExplicitA{}));
   }
 
   return 0;

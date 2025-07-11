@@ -248,7 +248,7 @@ double JacobiMethodGpu(
     bool converged;
     // Check if sum is smaller than the threshold and halt the loop if this is true
     auto t_host = ctx.task(sum_handle.read());
-    t_host.on(exec_place::host);
+    t_host.on(exec_place::host());
     t_host.set_symbol("check_converged");
     t_host->*[&](cudaStream_t stream, auto sum2) {
       cuda_try(cudaStreamSynchronize(stream));
@@ -276,7 +276,7 @@ double JacobiMethodGpu(
   };
 
   auto t_display = ctx.task(sum_handle.read());
-  t_display.on(exec_place::host);
+  t_display.on(exec_place::host());
   t_display.set_symbol("finalError");
   t_display->*[&](cudaStream_t stream, auto /*unused*/) {
     cuda_try(cudaStreamSynchronize(stream));

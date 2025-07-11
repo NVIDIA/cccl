@@ -13,7 +13,6 @@
 // Test the SFINAE required by LWG Issue #2367.
 // is_default_constructible<pair>
 
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: msvc
 
 #include <cuda/std/cassert>
@@ -126,21 +125,21 @@ __host__ __device__ void test_illformed_default()
   {
     typedef cuda::std::pair<IllFormedDefault, int> P;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, int>::value), "");
-    TEST_CONSTEXPR_CXX14 P p(IllFormedDefault(42), -5);
-    STATIC_ASSERT_CXX14(p.first.value == 42 && p.second == -5);
+    constexpr P p(IllFormedDefault(42), -5);
+    static_assert(p.first.value == 42 && p.second == -5);
   }
   {
     typedef cuda::std::pair<int, IllFormedDefault> P;
     static_assert((cuda::std::is_constructible<P, int, IllFormedDefault>::value), "");
-    TEST_CONSTEXPR_CXX14 IllFormedDefault dd(-5);
-    TEST_CONSTEXPR_CXX14 P p(42, dd);
-    STATIC_ASSERT_CXX14(p.first == 42 && p.second.value == -5);
+    constexpr IllFormedDefault dd(-5);
+    constexpr P p(42, dd);
+    static_assert(p.first == 42 && p.second.value == -5);
   }
   {
     typedef cuda::std::pair<IllFormedDefault, IllFormedDefault> P;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, IllFormedDefault>::value), "");
-    TEST_CONSTEXPR_CXX14 P p(IllFormedDefault(42), IllFormedDefault(-5));
-    STATIC_ASSERT_CXX14(p.first.value == 42 && p.second.value == -5);
+    constexpr P p(IllFormedDefault(42), IllFormedDefault(-5));
+    static_assert(p.first.value == 42 && p.second.value == -5);
   }
 }
 

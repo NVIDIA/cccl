@@ -49,7 +49,7 @@ void writeVTKFile(context& ctx,
 
   for (size_t b = 0; b < parts.size(); b++)
   {
-    ctx.task(exec_place::host, parts[b].read())->*[&](cudaStream_t s, slice<body> p) {
+    ctx.task(exec_place::host(), parts[b].read())->*[&](cudaStream_t s, slice<const body> p) {
       cuda_safe_call(cudaStreamSynchronize(s));
       for (size_t i = 0; i < p.size(); i++)
       {
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t start;
   cuda_safe_call(cudaEventCreate(&start));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   for (size_t iter = 0; iter < NITER; iter++)
   {
@@ -210,7 +210,7 @@ int main(int argc, char** argv)
       {
         ctx.launch(exec_place::device(b % ngpus), parts[b].read(), parts[b_other].read(), acc_parts[b].rw())
             //.set_symbol("compute_acc")
-            ->*[=] _CCCL_DEVICE(auto t, slice<body> p, slice<body> p_other, slice<double, 2> acc) {
+            ->*[=] _CCCL_DEVICE(auto t, slice<const body> p, slice<const body> p_other, slice<double, 2> acc) {
                   for (size_t i = t.rank(); i < p.extent(0); i += t.size())
                   {
                     for (size_t j = 0; j < p_other.extent(0); j++)
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
       // Update velocity and positions
       ctx.launch(exec_place::device(b % ngpus), parts[b].rw(), acc_parts[b].read())
           //.set_symbol("update")
-          ->*[=] _CCCL_DEVICE(auto t, slice<body> p, slice<double, 2> acc) {
+          ->*[=] _CCCL_DEVICE(auto t, slice<body> p, slice<const double, 2> acc) {
                 for (size_t i = t.rank(); i < p.extent(0); i += t.size())
                 {
                   for (size_t k = 0; k < 3; k++)
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

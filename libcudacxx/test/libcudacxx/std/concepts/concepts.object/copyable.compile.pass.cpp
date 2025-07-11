@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept copyable = see below;
 
@@ -38,25 +36,25 @@ static_assert(copyable<int (S::*)() noexcept>, "");
 static_assert(copyable<int (S::*)() &>, "");
 static_assert(copyable<int (S::*)() & noexcept>, "");
 static_assert(copyable<int (S::*)() &&>, "");
-static_assert(copyable < int(S::*)() && noexcept >, "");
+static_assert(copyable < int (S::*)() && noexcept >, "");
 static_assert(copyable<int (S::*)() const>, "");
 static_assert(copyable<int (S::*)() const noexcept>, "");
 static_assert(copyable<int (S::*)() const&>, "");
 static_assert(copyable<int (S::*)() const & noexcept>, "");
 static_assert(copyable<int (S::*)() const&&>, "");
-static_assert(copyable < int(S::*)() const&& noexcept >, "");
+static_assert(copyable < int (S::*)() const&& noexcept >, "");
 static_assert(copyable<int (S::*)() volatile>, "");
 static_assert(copyable<int (S::*)() volatile noexcept>, "");
 static_assert(copyable<int (S::*)() volatile&>, "");
 static_assert(copyable<int (S::*)() volatile & noexcept>, "");
 static_assert(copyable<int (S::*)() volatile&&>, "");
-static_assert(copyable < int(S::*)() volatile && noexcept >, "");
+static_assert(copyable < int (S::*)() volatile && noexcept >, "");
 static_assert(copyable<int (S::*)() const volatile>, "");
 static_assert(copyable<int (S::*)() const volatile noexcept>, "");
 static_assert(copyable<int (S::*)() const volatile&>, "");
 static_assert(copyable<int (S::*)() const volatile & noexcept>, "");
 static_assert(copyable<int (S::*)() const volatile&&>, "");
-static_assert(copyable < int(S::*)() const volatile&& noexcept >, "");
+static_assert(copyable < int (S::*)() const volatile&& noexcept >, "");
 
 static_assert(copyable<has_volatile_member>, "");
 static_assert(copyable<has_array_member>, "");
@@ -85,10 +83,11 @@ static_assert(copyable<cv_copy_assignment const volatile>, "");
 static_assert(!copyable<no_copy_constructor>, "");
 static_assert(!copyable<no_copy_assignment>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
+                                                // of SMF
 static_assert(cuda::std::is_copy_assignable_v<no_copy_assignment_mutable>, "");
 static_assert(!copyable<no_copy_assignment_mutable>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!copyable<derived_from_noncopyable>, "");
 static_assert(!copyable<has_noncopyable>, "");
 static_assert(!copyable<has_const_member>, "");

@@ -17,10 +17,8 @@
 template <class T, class U>
 __host__ __device__ void test_add_cv_imp()
 {
-  ASSERT_SAME_TYPE(const volatile U, typename cuda::std::add_cv<T>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(const volatile U, cuda::std::add_cv_t<T>);
-#endif
+  static_assert(cuda::std::is_same_v<const volatile U, typename cuda::std::add_cv<T>::type>);
+  static_assert(cuda::std::is_same_v<const volatile U, cuda::std::add_cv_t<T>>);
 }
 
 template <class T>

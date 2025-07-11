@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class...>
@@ -55,11 +57,11 @@ template <class _Arg, class... _Args>
 struct conjunction<_Arg, _Args...> : _If<!bool(_Arg::value), _Arg, conjunction<_Args...>>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
-_CCCL_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool conjunction_v = conjunction<_Args...>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_CONJUNCTION_H

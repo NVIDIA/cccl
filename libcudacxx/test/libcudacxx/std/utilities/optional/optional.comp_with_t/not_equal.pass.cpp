@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class T, class U> constexpr bool operator!=(const optional<T>& x, const U& v);
@@ -34,41 +33,52 @@ __host__ __device__ constexpr bool operator!=(const X& lhs, const X& rhs)
   return lhs.i_ != rhs.i_;
 }
 
-__host__ __device__ constexpr bool test()
+template <class T>
+__host__ __device__ constexpr void test()
 {
   {
-    typedef X T;
-    typedef optional<T> O;
+    using O = optional<X>;
 
-    constexpr T val(2);
-    O o1; // disengaged
+    X val(2);
+    O o1{}; // disengaged
     O o2{1}; // engaged
     O o3{val}; // engaged
 
-    assert((o1 != T(1)));
-    assert(!(o2 != T(1)));
-    assert((o3 != T(1)));
-    assert(!(o3 != T(2)));
+    assert((o1 != X(1)));
+    assert(!(o2 != X(1)));
+    assert((o3 != X(1)));
+    assert(!(o3 != X(2)));
     assert(!(o3 != val));
 
-    assert((T(1) != o1));
-    assert(!(T(1) != o2));
-    assert((T(1) != o3));
-    assert(!(T(2) != o3));
+    assert((X(1) != o1));
+    assert(!(X(1) != o2));
+    assert((X(1) != o3));
+    assert(!(X(2) != o3));
     assert(!(val != o3));
   }
+
+  cuda::std::remove_reference_t<T> val1{42};
+  cuda::std::remove_reference_t<T> val2{101};
   {
-    using O = optional<int>;
-    O o1(42);
-    assert(o1 != 101l);
-    assert(!(42l != o1));
+    using O = optional<T>;
+    O o1(val1);
+    assert(o1 != val2);
+    assert(!(val1 != o1));
   }
   {
-    using O = optional<const int>;
-    O o1(42);
-    assert(o1 != 101);
-    assert(!(42 != o1));
+    using O = optional<const T>;
+    O o1(val1);
+    assert(o1 != val2);
+    assert(!(val1 != o1));
   }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
@@ -76,11 +86,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2017
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif
 
   return 0;
 }

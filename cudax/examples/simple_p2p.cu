@@ -30,11 +30,10 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/algorithm.cuh>
-#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/device.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
@@ -70,9 +69,9 @@ void print_peer_accessibility()
       {
         bool can_access_peer = dev_i.has_peer_access_to(dev_j);
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
-               dev_i.get_name().c_str(),
+               dev_i.name().c_str(),
                dev_i.get(),
-               dev_j.get_name().c_str(),
+               dev_j.name().c_str(),
                dev_j.get(),
                can_access_peer ? "Yes" : "No");
       }
@@ -101,7 +100,7 @@ void benchmark_cross_device_ping_pong_copy(
   }
 
   auto end_event = dev1_stream.record_timed_event();
-  dev1_stream.wait();
+  dev1_stream.sync();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
          dev0_stream.device().get(),
@@ -113,15 +112,15 @@ template <typename BufferType>
 void test_cross_device_access_from_kernel(
   cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
-  cudax::device_ref dev0 = dev0_stream.device().get();
-  cudax::device_ref dev1 = dev1_stream.device().get();
+  cudax::device_ref dev0 = dev0_stream.device();
+  cudax::device_ref dev1 = dev1_stream.device();
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and copy to GPU%d...\n", dev0.get());
 
   // This will be a pinned memory vector once available
   cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(
-    cudax::pinned_memory_resource(), dev0_buffer.size());
+    cudax::legacy_pinned_memory_resource(), dev0_buffer.size());
   std::generate(host_buffer.begin(), host_buffer.end(), []() {
     static int i = 0;
     return static_cast<float>((i++) % 4096);
@@ -153,7 +152,7 @@ void test_cross_device_access_from_kernel(
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", dev0.get());
   cudax::copy_bytes(dev0_stream, dev0_buffer, host_buffer);
-  dev0_stream.wait();
+  dev0_stream.sync();
 
   int error_count = 0;
   for (size_t i = 0; i < host_buffer.size(); i++)
@@ -201,7 +200,7 @@ try
   std::vector<cudax::device_ref> peers;
   for (auto& dev : cudax::devices)
   {
-    peers = dev.get_peers();
+    peers = dev.peer_devices();
     if (peers.size() != 0)
     {
       peers.insert(peers.begin(), dev);
@@ -220,9 +219,9 @@ try
 
   printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
   cudax::device_memory_resource dev0_resource(peers[0]);
-  dev0_resource.enable_peer_access_from(peers[1]);
+  dev0_resource.enable_access_from(peers[1]);
   cudax::device_memory_resource dev1_resource(peers[1]);
-  dev1_resource.enable_peer_access_from(peers[0]);
+  dev1_resource.enable_access_from(peers[0]);
 
   // Allocate buffers
   constexpr size_t buf_cnt = 1024 * 1024 * 16;
@@ -240,8 +239,8 @@ try
 
   // Disable peer access
   printf("Disabling peer access...\n");
-  dev0_resource.disable_peer_access_from(peers[1]);
-  dev1_resource.disable_peer_access_from(peers[0]);
+  dev0_resource.disable_access_from(peers[1]);
+  dev1_resource.disable_access_from(peers[0]);
 
   // No cleanup needed
   printf("Test passed\n");

@@ -27,7 +27,7 @@
 #endif // no system header
 #include <thrust/detail/allocator/tagged_allocator.h>
 
-#include <limits>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -67,7 +67,7 @@ tagged_allocator<T, Tag, Pointer>::address(const_reference x) const
 template <typename T, typename Tag, typename Pointer>
 typename tagged_allocator<T, Tag, Pointer>::size_type tagged_allocator<T, Tag, Pointer>::max_size() const
 {
-  return (std::numeric_limits<size_type>::max)() / sizeof(T);
+  return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
 }
 
 template <typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>

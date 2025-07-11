@@ -25,33 +25,32 @@
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public integral_constant<bool, _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_fundamental_v = _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_fundamental_v = _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_FUNDAMENTAL ^^^ / vvv !_CCCL_BUILTIN_IS_FUNDAMENTAL vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental
-    : public integral_constant<bool, is_void<_Tp>::value || __is_nullptr_t<_Tp>::value || is_arithmetic<_Tp>::value>
-{};
+inline constexpr bool is_fundamental_v = is_void_v<_Tp> || is_null_pointer_v<_Tp> || is_arithmetic_v<_Tp>;
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_fundamental_v = is_fundamental<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<is_fundamental_v<_Tp>>
+{};
 
 #endif // !_CCCL_BUILTIN_IS_FUNDAMENTAL
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_FUNDAMENTAL_H

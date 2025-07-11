@@ -24,12 +24,12 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class _IterMaybeQualified>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __get_iterator_concept()
+_CCCL_API constexpr auto __get_iterator_concept()
 {
   using _Iter = remove_cvref_t<_IterMaybeQualified>;
 
@@ -60,6 +60,6 @@ using __iterator_concept = decltype(__get_iterator_concept<_Iter>());
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_RANGES_ITERATOR_CONCEPT_H

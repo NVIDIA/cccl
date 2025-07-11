@@ -25,13 +25,15 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct __align_type
 {
   static const size_t value = _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp);
-  typedef _Tp type;
+  using type                = _Tp;
 };
 
 struct __struct_double
@@ -43,17 +45,17 @@ struct __struct_double4
   double __lx[4];
 };
 
-typedef __type_list<__align_type<unsigned char>,
-                    __align_type<unsigned short>,
-                    __align_type<unsigned int>,
-                    __align_type<unsigned long>,
-                    __align_type<unsigned long long>,
-                    __align_type<double>,
-                    __align_type<long double>,
-                    __align_type<__struct_double>,
-                    __align_type<__struct_double4>,
-                    __align_type<int*>>
-  __all_types;
+using __all_types =
+  __type_list<__align_type<unsigned char>,
+              __align_type<unsigned short>,
+              __align_type<unsigned int>,
+              __align_type<unsigned long>,
+              __align_type<unsigned long long>,
+              __align_type<double>,
+              __align_type<long double>,
+              __align_type<__struct_double>,
+              __align_type<__struct_double4>,
+              __align_type<int*>>;
 
 template <size_t _Align>
 struct _CCCL_ALIGNAS(_Align) __fallback_overaligned
@@ -98,7 +100,7 @@ struct __find_max_align : public __type_fold_left<_TL, integral_constant<size_t,
 template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT aligned_storage
 {
-  typedef typename __find_pod<__all_types, _Align>::type _Aligner;
+  using _Aligner = typename __find_pod<__all_types, _Align>::type;
   union type
   {
     _Aligner __align;
@@ -141,5 +143,7 @@ _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x4000);
 #undef _CREATE_ALIGNED_STORAGE_SPECIALIZATION
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ALIGNED_STORAGE_H

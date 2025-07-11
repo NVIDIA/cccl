@@ -46,9 +46,9 @@ int main(int argc, char** argv)
   // if (argc > 2) {
   //     switch (atoi(argv[2])) {
   //     case 0: cdp = data_place::composite(blocked_partition(), all_devs); break;
-  //     case 1: cdp = data_place::managed; break;
+  //     case 1: cdp = data_place::managed(); break;
   //     case 2: cdp = data_place::device(0); break;
-  //     case 3: cdp = data_place::host; break;
+  //     case 3: cdp = data_place::host(); break;
   //     default: abort();
   //     }
   // } else {
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   fprintf(stderr, "data place: %s\n", cdp.to_string().c_str());
 
   // data_place cdp = data_place::device(0);
-  // data_place cdp = data_place::managed;
+  // data_place cdp = data_place::managed();
 
   auto data_logical = ctx.logical_data<int>(N);
   // initialize centroids
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 
   const char* const method = argc >= 2 ? argv[1] : "launch-partition";
 
-  stopwatch sw(stopwatch::autostart, ctx.task_fence());
+  stopwatch sw(stopwatch::autostart, ctx.fence());
 
   if (strcmp(method, "launch-partition") == 0)
   {
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  sw.stop(ctx.task_fence());
+  sw.stop(ctx.fence());
 
   ctx.finalize();
 

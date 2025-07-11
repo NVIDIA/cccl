@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -47,6 +47,10 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/cmath>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 // Legacy include; this functionality used to be defined in here.
 #include <cub/detail/detect_cuda_runtime.cuh>
 
@@ -57,85 +61,107 @@ CUB_NAMESPACE_BEGIN
 /// In device code, CUB_PTX_ARCH expands to the PTX version for which we are
 /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
 #  ifndef CUB_PTX_ARCH
-#    if defined(_NVHPC_CUDA)
+// deprecated in 3.1
+#    if _CCCL_CUDA_COMPILER(NVHPC)
 // __NVCOMPILER_CUDA_ARCH__ is the target PTX version, and is defined
 // when compiling both host code and device code. Currently, only one
 // PTX version can be targeted.
 #      define CUB_PTX_ARCH __NVCOMPILER_CUDA_ARCH__
-#    elif !defined(__CUDA_ARCH__)
-#      define CUB_PTX_ARCH 0
-#    else
-#      define CUB_PTX_ARCH __CUDA_ARCH__
-#    endif
+#    else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#      define CUB_PTX_ARCH _CCCL_PTX_ARCH()
+#    endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 #  endif
 
 /// Maximum number of devices supported.
 #  ifndef CUB_MAX_DEVICES
+//! Deprecated [Since 3.0]
 #    define CUB_MAX_DEVICES (128)
 #  endif
-
 static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 
 /// Number of threads per warp
 #  ifndef CUB_LOG_WARP_THREADS
+//! Deprecated [Since 3.0]
 #    define CUB_LOG_WARP_THREADS(unused) (5)
-#    define CUB_WARP_THREADS(unused)     (1 << CUB_LOG_WARP_THREADS(0))
+//! Deprecated [Since 3.0]
+#    define CUB_WARP_THREADS(unused) (1 << CUB_LOG_WARP_THREADS(0))
 
-#    define CUB_PTX_WARP_THREADS     CUB_WARP_THREADS(0)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_WARP_THREADS CUB_WARP_THREADS(0)
+//! Deprecated [Since 3.0]
 #    define CUB_PTX_LOG_WARP_THREADS CUB_LOG_WARP_THREADS(0)
 #  endif
 
 /// Number of smem banks
 #  ifndef CUB_LOG_SMEM_BANKS
+//! Deprecated [Since 3.0]
 #    define CUB_LOG_SMEM_BANKS(unused) (5)
-#    define CUB_SMEM_BANKS(unused)     (1 << CUB_LOG_SMEM_BANKS(0))
+//! Deprecated [Since 3.0]
+#    define CUB_SMEM_BANKS(unused) (1 << CUB_LOG_SMEM_BANKS(0))
 
+//! Deprecated [Since 3.0]
 #    define CUB_PTX_LOG_SMEM_BANKS CUB_LOG_SMEM_BANKS(0)
-#    define CUB_PTX_SMEM_BANKS     CUB_SMEM_BANKS
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_SMEM_BANKS CUB_SMEM_BANKS
 #  endif
 
 /// Oversubscription factor
 #  ifndef CUB_SUBSCRIPTION_FACTOR
+//! Deprecated [Since 3.0]
 #    define CUB_SUBSCRIPTION_FACTOR(unused) (5)
-#    define CUB_PTX_SUBSCRIPTION_FACTOR     CUB_SUBSCRIPTION_FACTOR(0)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_SUBSCRIPTION_FACTOR CUB_SUBSCRIPTION_FACTOR(0)
 #  endif
 
 /// Prefer padding overhead vs X-way conflicts greater than this threshold
 #  ifndef CUB_PREFER_CONFLICT_OVER_PADDING
+//! Deprecated [Since 3.0]
 #    define CUB_PREFER_CONFLICT_OVER_PADDING(unused) (1)
-#    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING     CUB_PREFER_CONFLICT_OVER_PADDING(0)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING CUB_PREFER_CONFLICT_OVER_PADDING(0)
 #  endif
 
 namespace detail
 {
+
+inline constexpr int max_devices       = CUB_MAX_DEVICES;
+inline constexpr int warp_threads      = CUB_PTX_WARP_THREADS;
+inline constexpr int log2_warp_threads = CUB_PTX_LOG_WARP_THREADS;
+inline constexpr int smem_banks        = CUB_SMEM_BANKS(0);
+inline constexpr int log2_smem_banks   = CUB_PTX_LOG_SMEM_BANKS;
+
+inline constexpr int subscription_factor           = CUB_PTX_SUBSCRIPTION_FACTOR;
+inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVER_PADDING;
+
 // The maximum amount of static shared memory available per thread block
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
-} // namespace detail
 
-template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
-  enum
-  {
-    ITEMS_PER_THREAD = CUB_MAX(1, NOMINAL_4B_ITEMS_PER_THREAD * 4 / CUB_MAX(4, sizeof(T))),
-    BLOCK_THREADS    = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
-                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
-  };
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::max) (1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max) (4, int{sizeof(T)}));
+  static constexpr int BLOCK_THREADS =
+    (::cuda::std::min) (Nominal4ByteBlockThreads,
+                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
+                          * 32);
 };
 
-template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  enum
-  {
-    ITEMS_PER_THREAD =
-      CUB_MAX(1, CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(T), NOMINAL_4B_ITEMS_PER_THREAD * 2)),
-    BLOCK_THREADS = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
-                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
-  };
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::max) (1,
+                        (::cuda::std::min) (Nominal4ByteItemsPerThread * 4 / int{sizeof(T)},
+                                            Nominal4ByteItemsPerThread * 2));
+  static constexpr int BLOCK_THREADS =
+    (::cuda::std::min) (Nominal4ByteBlockThreads,
+                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
+                          * 32);
 };
 
+} // namespace detail
 #endif // Do not document
 
 CUB_NAMESPACE_END

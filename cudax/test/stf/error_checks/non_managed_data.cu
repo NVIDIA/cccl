@@ -44,8 +44,7 @@ int main()
 #  if _CCCL_COMPILER(MSVC)
   signal(SIGABRT, &cleanupRoutine);
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action
-  {};
+  struct sigaction sigabrt_action{};
   memset(&sigabrt_action, 0, sizeof(sigabrt_action));
   sigabrt_action.sa_handler = &cleanupRoutine;
 
@@ -63,7 +62,7 @@ int main()
   should_abort = true;
 
   int X[128];
-  lX = ctx.logical_data(X, data_place::managed);
+  lX = ctx.logical_data(X, data_place::managed());
 
   assert(0 && "This should not be reached");
   return EXIT_FAILURE;

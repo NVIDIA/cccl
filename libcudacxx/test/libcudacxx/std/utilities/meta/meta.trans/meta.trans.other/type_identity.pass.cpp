@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // type_traits
 
@@ -18,8 +17,8 @@
 template <class T>
 __host__ __device__ void test_type_identity()
 {
-  ASSERT_SAME_TYPE(T, typename cuda::std::type_identity<T>::type);
-  ASSERT_SAME_TYPE(T, cuda::std::type_identity_t<T>);
+  static_assert(cuda::std::is_same_v<T, typename cuda::std::type_identity<T>::type>);
+  static_assert(cuda::std::is_same_v<T, cuda::std::type_identity_t<T>>);
 }
 
 int main(int, char**)
@@ -34,7 +33,7 @@ int main(int, char**)
   test_type_identity<void (*)()>();
   test_type_identity<int(int) const>();
   test_type_identity<int(int) volatile>();
-  test_type_identity<int(int)&>();
+  test_type_identity<int(int) &>();
   test_type_identity<int(int) &&>();
 
   return 0;

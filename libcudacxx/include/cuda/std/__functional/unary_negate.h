@@ -23,6 +23,8 @@
 
 #include <cuda/std/__functional/unary_function.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
@@ -30,35 +32,34 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Predicate>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
 {
   _Predicate __pred_;
 
 public:
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI explicit unary_negate(const _Predicate& __pred)
+  constexpr _CCCL_API inline explicit unary_negate(const _Predicate& __pred)
       : __pred_(__pred)
   {}
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI bool operator()(const typename _Predicate::argument_type& __x) const
+  constexpr _CCCL_API inline bool operator()(const typename _Predicate::argument_type& __x) const
   {
     return !__pred_(__x);
   }
 };
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 unary_negate<_Predicate>
-not1(const _Predicate& __pred)
+_LIBCUDACXX_DEPRECATED _CCCL_API constexpr unary_negate<_Predicate> not1(const _Predicate& __pred)
 {
   return unary_negate<_Predicate>(__pred);
 }
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H

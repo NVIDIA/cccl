@@ -46,10 +46,16 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_element_count(needles);
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::binary_search(
-      policy(alloc, launch), data.begin(), data.begin() + elements, data.begin() + elements, data.end(), result.begin());
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::binary_search(
+                 policy(alloc, launch),
+                 data.begin(),
+                 data.begin() + elements,
+                 data.begin() + elements,
+                 data.end(),
+                 result.begin());
+             });
 }
 
 using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;

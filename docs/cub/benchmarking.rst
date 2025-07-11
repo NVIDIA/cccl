@@ -54,6 +54,8 @@ We also provide a target to build all benchmarks:
     ninja cub.all.benches
 
 
+.. _cub-benchmarking-running:
+
 Running a benchmark
 --------------------------------------------------------------------------------
 
@@ -110,6 +112,8 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
+
+.. _cub-benchmarking-comparing:
 
 Comparing benchmark results
 --------------------------------------------------------------------------------
@@ -226,7 +230,7 @@ Contrary to running a benchmark directly,
 the tuning infrastructure will just ignore an axis value if a benchmark does not support,
 run the benchmark regardless, and continue.
 
-The tuning infrastructure stores results in an SQLite database called `cccl_meta_bench.db` in the build directory.
+The tuning infrastructure stores results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
@@ -242,11 +246,17 @@ Benchmark results captured in different tuning databases can be compared as well
 
 This will print a Markdown report showing the runtime differences and noise for each variant.
 
-Furthermore, you can plot the results from one or more tuning databases as a bar chart or a box plot (add `--box`):
+Furthermore, you can plot the results, which requires additional python packages:
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/sol.py -o cccl_meta_bench.db ...
+    pip install fpzip pandas matplotlib seaborn tabulate PyQt5 colorama
+
+You can plot one or more tuning databases as a bar chart or a box plot (add `--box`):
+
+.. code-block:: bash
+
+    ../benchmarks/scripts/sol.py cccl_meta_bench.db ...
 
 This is useful to display the current performance of CUB as captured in a single tuning database,
 or visually compare the performance of CUB across different tuning databases

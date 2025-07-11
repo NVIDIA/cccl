@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year;
@@ -27,9 +26,9 @@ int main(int, char**)
 {
   using year = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(year{});
-  ASSERT_NOEXCEPT(year(0U));
-  ASSERT_NOEXCEPT(static_cast<int>(year(0U)));
+  static_assert(noexcept(year{}));
+  static_assert(noexcept(year(0U)));
+  static_assert(noexcept(static_cast<int>(year(0U))));
 
   constexpr year y0{};
   static_assert(static_cast<int>(y0) == 0, "");

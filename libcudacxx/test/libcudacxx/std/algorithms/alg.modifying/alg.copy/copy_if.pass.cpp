@@ -37,7 +37,7 @@ struct PredEqual6
 };
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   {
     constexpr unsigned N = 1000;
@@ -75,7 +75,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+constexpr __host__ __device__ bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
@@ -118,10 +118,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

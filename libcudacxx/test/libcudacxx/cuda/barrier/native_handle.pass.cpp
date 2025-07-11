@@ -24,9 +24,8 @@ __device__ void test()
   shared_memory_selector<cuda::barrier<cuda::thread_scope_block>, constructor_initializer> sel;
   b = sel.construct(2);
 
-  uint64_t token;
+  [[maybe_unused]] uint64_t token;
   asm volatile("mbarrier.arrive.b64 %0, [%1];" : "=l"(token) : "l"(cuda::device::barrier_native_handle(*b)) : "memory");
-  (void) token;
 
   b->arrive_and_wait();
 }

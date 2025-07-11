@@ -64,24 +64,10 @@ public:
       , redux_op(mv(redux_op))
   {}
 
-  // dependency without an explicit data_place : using data_place::affine
+  // dependency without an explicit data_place : using data_place::affine()
   task_dep_untyped(
     const logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(d, m, data_place::affine, mv(redux_op))
-  {}
-
-  // These constructors take no access_mode, which is a way to identify that
-  // they are using read-only access mode.
-  // TODO : That was the only way to dispatch at compile time which constructor
-  // is used. We might use a tag_type or a std::true_type to do this static
-  // dispatch in a better way.
-  task_dep_untyped(
-    const logical_data_untyped& d, data_place dplace, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(const_cast<logical_data_untyped&>(d), access_mode::read, mv(dplace), mv(redux_op))
-  {}
-
-  task_dep_untyped(const logical_data_untyped& d, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(const_cast<logical_data_untyped&>(d), access_mode::read, mv(redux_op))
+      : task_dep_untyped(d, m, data_place::affine(), mv(redux_op))
   {}
 
   logical_data_untyped get_data() const;
@@ -256,7 +242,7 @@ public:
 
   template <typename... Args>
   task_dep(Args&&... args)
-      : base(std::forward<Args>(args)...)
+      : base(::std::forward<Args>(args)...)
   {}
 };
 

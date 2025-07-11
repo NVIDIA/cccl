@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // iterator, const_iterator, reverse_iterator, const_reverse_iterator
 
 #include <cuda/std/array>

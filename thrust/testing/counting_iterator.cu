@@ -3,32 +3,74 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include <complex>
 #include <cstdint>
+#include <numeric>
 
 #include <unittest/unittest.h>
+
+template <typename ValueType, typename DifferenceType>
+inline constexpr bool diff_type_is =
+  ::cuda::std::is_same_v<typename thrust::counting_iterator<ValueType>::difference_type, DifferenceType>;
+
+static_assert(diff_type_is<int8_t, int>);
+static_assert(diff_type_is<uint8_t, int>);
+static_assert(diff_type_is<int16_t, int>);
+static_assert(diff_type_is<uint16_t, int>);
+static_assert(diff_type_is<int32_t, ptrdiff_t>);
+static_assert(diff_type_is<uint32_t, ptrdiff_t>);
+static_assert(diff_type_is<int64_t, ptrdiff_t>);
+static_assert(diff_type_is<uint64_t, ptrdiff_t>);
+#if _CCCL_HAS_INT128()
+static_assert(diff_type_is<__int128_t, ptrdiff_t>);
+static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
+#endif
+static_assert(diff_type_is<float, ptrdiff_t>);
+static_assert(diff_type_is<double, ptrdiff_t>);
+
+struct custom_int
+{
+  _CCCL_HOST_DEVICE custom_int(int) {}
+  _CCCL_HOST_DEVICE operator int() const;
+};
+static_assert(thrust::detail::is_numeric<custom_int>::value);
+
+static_assert(diff_type_is<custom_int, ptrdiff_t>);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 // ensure that we properly support thrust::counting_iterator from cuda::std
-void test_iterator_traits()
+void TestCountingIteratorTraits()
 {
-  using It       = cuda::std::iterator_traits<thrust::counting_iterator<int>>;
-  using category = thrust::detail::iterator_category_with_system_and_traversal<std::random_access_iterator_tag,
+  using it       = thrust::counting_iterator<int>;
+  using traits   = cuda::std::iterator_traits<it>;
+  using category = thrust::detail::iterator_category_with_system_and_traversal<::cuda::std::random_access_iterator_tag,
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
 
-  static_assert(cuda::std::is_same<It::difference_type, ptrdiff_t>::value, "");
-  static_assert(cuda::std::is_same<It::value_type, int>::value, "");
-  static_assert(cuda::std::is_same<It::pointer, void>::value, "");
-  static_assert(cuda::std::is_same<It::reference, signed int>::value, "");
-  static_assert(cuda::std::is_same<It::iterator_category, category>::value, "");
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, int>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, signed int>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<thrust::counting_iterator<int>>::value, "");
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(!cuda::std::output_iterator<it, int>);
+  static_assert(cuda::std::input_iterator<it>);
+  static_assert(cuda::std::forward_iterator<it>);
+  static_assert(cuda::std::bidirectional_iterator<it>);
+  static_assert(cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
 }
+DECLARE_UNITTEST(TestCountingIteratorTraits);
 
 template <typename T>
 void TestCountingDefaultConstructor()
@@ -178,15 +220,15 @@ void TestCountingIteratorDistance()
   thrust::counting_iterator<int> iter1(0);
   thrust::counting_iterator<int> iter2(5);
 
-  ASSERT_EQUAL(thrust::distance(iter1, iter2), 5);
+  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 5);
 
   iter1++;
 
-  ASSERT_EQUAL(thrust::distance(iter1, iter2), 4);
+  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 4);
 
   iter2 += 100;
 
-  ASSERT_EQUAL(thrust::distance(iter1, iter2), 104);
+  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 104);
 }
 DECLARE_UNITTEST(TestCountingIteratorDistance);
 
@@ -235,7 +277,7 @@ DECLARE_UNITTEST(TestCountingIteratorLowerBound);
 void TestCountingIteratorDifference()
 {
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
-  using Difference = thrust::iterator_difference<Iterator>::type;
+  using Difference = thrust::detail::it_difference_t<Iterator>;
 
   Difference diff = std::numeric_limits<std::uint32_t>::max() + 1;
 
@@ -245,5 +287,66 @@ void TestCountingIteratorDifference()
   ASSERT_EQUAL(diff, last - first);
 }
 DECLARE_UNITTEST(TestCountingIteratorDifference);
+
+void TestCountingIteratorDynamicStride()
+{
+  auto iter = thrust::make_counting_iterator(0, 2);
+  static_assert(sizeof(iter) == 2 * sizeof(int));
+
+  ASSERT_EQUAL(*iter, 0);
+  iter++;
+  ASSERT_EQUAL(*iter, 2);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, 6);
+  iter += 5;
+  ASSERT_EQUAL(*iter, 16);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, -4);
+}
+DECLARE_UNITTEST(TestCountingIteratorDynamicStride);
+
+void TestCountingIteratorStaticStride()
+{
+  auto iter = thrust::make_counting_iterator<2>(0);
+  static_assert(sizeof(decltype(iter)) == sizeof(int));
+
+  ASSERT_EQUAL(*iter, 0);
+  iter++;
+  ASSERT_EQUAL(*iter, 2);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, 6);
+  iter += 5;
+  ASSERT_EQUAL(*iter, 16);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, -4);
+}
+DECLARE_UNITTEST(TestCountingIteratorStaticStride);
+
+void TestCountingIteratorPointer()
+{
+  int arr[11];
+  std::iota(arr, arr + 11, 0);
+
+  auto iter = thrust::make_counting_iterator(&arr[2]);
+
+  ASSERT_EQUAL(*iter, &arr[2]);
+  ASSERT_EQUAL(**iter, 2);
+  iter++;
+  ASSERT_EQUAL(*iter, &arr[3]);
+  ASSERT_EQUAL(**iter, 3);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, &arr[5]);
+  ASSERT_EQUAL(**iter, 5);
+  iter += 5;
+  ASSERT_EQUAL(*iter, &arr[10]);
+  ASSERT_EQUAL(**iter, 10);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, &arr[0]);
+  ASSERT_EQUAL(**iter, 0);
+}
+DECLARE_UNITTEST(TestCountingIteratorPointer);
 
 _CCCL_DIAG_POP

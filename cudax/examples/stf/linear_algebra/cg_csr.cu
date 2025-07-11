@@ -51,7 +51,7 @@ public:
   static void copy_vector(const vector& from, vector& to)
   {
     to.ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read()).set_symbol("copy_vector")
-        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
+        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<const double> dfrom) {
               dto(i) = dfrom(i);
             };
   }
@@ -100,12 +100,27 @@ public:
     };
   }
 
+  // Assign constructor
+  scalar& operator=(scalar const& rhs)
+  {
+    ctx    = rhs.ctx;
+    handle = ctx.logical_data(rhs.handle.shape());
+    return *this;
+  }
+
   // Copy constructor
   scalar(const scalar& a)
   {
     handle = ctx.logical_data(a.handle.shape());
     ctx    = a.ctx;
     copy_scalar(a, *this);
+  }
+
+  scalar& operator=(scalar&& a)
+  {
+    handle = mv(a.handle);
+    ctx    = mv(a.ctx);
+    return *this;
   }
 
   scalar operator/(scalar const& rhs) const

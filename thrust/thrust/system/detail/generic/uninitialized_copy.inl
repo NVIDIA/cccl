@@ -68,16 +68,16 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   using IteratorTuple = thrust::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(first, result));
+  ZipIterator begin = thrust::make_zip_iterator(first, result);
   ZipIterator end   = begin;
 
   // get a zip_iterator pointing to the end
-  const typename thrust::iterator_difference<InputIterator>::type n = thrust::distance(first, last);
-  thrust::advance(end, n);
+  const thrust::detail::it_difference_t<InputIterator> n = ::cuda::std::distance(first, last);
+  ::cuda::std::advance(end, n);
 
   // create a functor
-  using InputType  = typename iterator_traits<InputIterator>::value_type;
-  using OutputType = typename iterator_traits<ForwardIterator>::value_type;
+  using InputType  = thrust::detail::it_value_t<InputIterator>;
+  using OutputType = thrust::detail::it_value_t<ForwardIterator>;
 
   detail::uninitialized_copy_functor<InputType, OutputType> f;
 
@@ -113,11 +113,11 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   using IteratorTuple = thrust::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(thrust::make_tuple(first, result));
+  ZipIterator zipped_first = thrust::make_zip_iterator(first, result);
 
   // create a functor
-  using InputType  = typename iterator_traits<InputIterator>::value_type;
-  using OutputType = typename iterator_traits<ForwardIterator>::value_type;
+  using InputType  = thrust::detail::it_value_t<InputIterator>;
+  using OutputType = thrust::detail::it_value_t<ForwardIterator>;
 
   detail::uninitialized_copy_functor<InputType, OutputType> f;
 
@@ -146,7 +146,7 @@ template <typename ExecutionPolicy, typename InputIterator, typename ForwardIter
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, ForwardIterator result)
 {
-  using ResultType = typename iterator_traits<ForwardIterator>::value_type;
+  using ResultType = thrust::detail::it_value_t<ForwardIterator>;
 
   using ResultTypeHasTrivialCopyConstructor = typename ::cuda::std::is_trivially_copy_constructible<ResultType>::type;
 
@@ -158,7 +158,7 @@ template <typename ExecutionPolicy, typename InputIterator, typename Size, typen
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Size n, ForwardIterator result)
 {
-  using ResultType = typename iterator_traits<ForwardIterator>::value_type;
+  using ResultType = thrust::detail::it_value_t<ForwardIterator>;
 
   using ResultTypeHasTrivialCopyConstructor = typename ::cuda::std::is_trivially_copy_constructible<ResultType>::type;
 

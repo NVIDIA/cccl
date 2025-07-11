@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // cuda::std::ranges::data
 
 #include <cuda/std/cassert>
@@ -21,17 +19,17 @@
 using RangeDataT  = decltype(cuda::std::ranges::data);
 using RangeCDataT = decltype(cuda::std::ranges::cdata);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[2] = {};
+TEST_GLOBAL_VARIABLE int globalBuff[2] = {};
 
 struct Incomplete;
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1923)
+#if !TEST_COMPILER(MSVC, <, 19, 23)
 // old MSVC has a bug where it doesn't properly handle rvalue arrays
 static_assert(!cuda::std::is_invocable_v<RangeDataT, int[1]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeDataT, int (&&)[1]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCDataT, int[1]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCDataT, int (&&)[1]>, "");
-#endif
+#endif // !TEST_COMPILER(MSVC, <, 19, 23)
 
 static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete (&&)[2]>, "");
@@ -78,35 +76,35 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int* x[2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(x)), int**);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(x)), int* const*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int**>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), int* const*>);
   }
   {
     int x[2][2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(x)), int(*)[2]);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(x)), const int(*)[2]);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int (*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int (*)[2]>);
   }
   {
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, D&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<const D&>())), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<const D&>())), short*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, const D&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<D&>())), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<D&>())), short*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, D&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<const D&>())), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<const D&>())), short*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, const D&&>, "");
   }
   {
     static_assert(!cuda::std::ranges::contiguous_range<NC>, "");
     static_assert(cuda::std::ranges::contiguous_range<const NC>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<NC&>())), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<NC&>())), int*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, NC&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<const NC&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<const NC&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, const NC&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<NC&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<NC&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, NC&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<const NC&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<const NC&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, const NC&&>, "");
   }
   return true;
@@ -162,7 +160,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<EnabledBorrowingDataMember> = true;
+inline constexpr bool enable_borrowed_range<EnabledBorrowingDataMember> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -293,7 +291,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BeginMemberBorrowingEnabled> = true;
+inline constexpr bool enable_borrowed_range<BeginMemberBorrowingEnabled> = true;
 }
 } // namespace std
 } // namespace cuda

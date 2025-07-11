@@ -28,10 +28,13 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_CCCL_API constexpr void
 __sift_up(_RandomAccessIterator __first,
           _RandomAccessIterator __last,
           _Compare&& __comp,
@@ -64,18 +67,18 @@ __sift_up(_RandomAccessIterator __first,
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-__push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare& __comp)
+_CCCL_API constexpr void __push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare& __comp)
 {
   typename iterator_traits<_RandomAccessIterator>::difference_type __len = __last - __first;
   _CUDA_VSTD::__sift_up<_AlgPolicy, __comp_ref_type<_Compare>>(
     _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __len);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+_CCCL_API constexpr void push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value,
                 "Iterators must be copy constructible.");
@@ -84,13 +87,15 @@ push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare 
   _CUDA_VSTD::__push_heap<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_CCCL_API constexpr void push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::push_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_PUSH_HEAP_H

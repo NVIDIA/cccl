@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
+__host__ __device__ constexpr void signed_test()
 {
   constexpr T zero{0};
   constexpr T one{1};
@@ -29,8 +29,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
   constexpr T three{3};
   constexpr T four{4};
 
-  ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(T(), T())), T);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint(T(), T())), T>);
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
   using limits = cuda::std::numeric_limits<T>;
 
   assert(cuda::std::midpoint(one, three) == two);
@@ -70,7 +70,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
 }
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
+__host__ __device__ constexpr void unsigned_test()
 {
   constexpr T zero{0};
   constexpr T one{1};
@@ -78,8 +78,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
   constexpr T three{3};
   constexpr T four{4};
 
-  ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(T(), T())), T);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint(T(), T())), T>);
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
   using limits     = cuda::std::numeric_limits<T>;
   const T half_way = (limits::max() - limits::min()) / 2;
 
@@ -105,7 +105,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
   assert(cuda::std::midpoint(T(6), limits::max()) == half_way + 3);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   signed_test<signed char>();
   signed_test<short>();
@@ -129,10 +129,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   unsigned_test<cuda::std::uint32_t>();
   unsigned_test<cuda::std::uint64_t>();
 
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
   unsigned_test<__uint128_t>();
   signed_test<__int128_t>();
-#endif // !TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
 
   //     int_test<char>();
   signed_test<cuda::std::ptrdiff_t>();
@@ -144,8 +144,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

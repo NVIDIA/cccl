@@ -186,7 +186,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                    TEST_CHECK_NO_THROW / TEST_CHECK_THROW
 ////////////////////////////////////////////////////////////////////////////////
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 
 #  define TEST_CHECK_NO_THROW(...)                        \
     do                                                    \
@@ -257,7 +257,7 @@
     } while (false)
 #
 
-#else // TEST_HAS_NO_EXCEPTIONS
+#else // TEST_HAS_EXCEPTIONS()
 
 #  define TEST_CHECK_NO_THROW(...)                  \
     do                                              \
@@ -278,12 +278,12 @@
 #  define TEST_CHECK_THROW(Except, ...)                 ((void) 0)
 #  define TEST_CHECK_THROW_RESULT(Except, Checker, ...) ((void) 0)
 
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 ////////////////////////////////////////////////////////////////////////////////
 //                    TEST_REQUIRE_NO_THROW / TEST_REQUIRE_THROWs
 ////////////////////////////////////////////////////////////////////////////////
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 
 #  define TEST_REQUIRE_NO_THROW(...)                        \
     do                                                      \
@@ -338,7 +338,7 @@
     } while (false)
 #
 
-#else // TEST_HAS_NO_EXCEPTIONS
+#else // TEST_HAS_EXCEPTIONS()
 
 #  define TEST_REQUIRE_NO_THROW(...)                \
     do                                              \
@@ -358,12 +358,12 @@
 
 #  define TEST_REQUIRE_THROW(Except, ...) ((void) 0)
 
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 ////////////////////////////////////////////////////////////////////////////////
 //                    TEST_ASSERT_NO_THROW / TEST_ASSERT_THROW
 ////////////////////////////////////////////////////////////////////////////////
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 
 #  define TEST_ASSERT_NO_THROW(...)                         \
     do                                                      \
@@ -418,7 +418,7 @@
     } while (false)
 #
 
-#else // TEST_HAS_NO_EXCEPTIONS
+#else // TEST_HAS_EXCEPTIONS()
 
 #  define TEST_ASSERT_NO_THROW(...)                 \
     do                                              \
@@ -438,7 +438,7 @@
 
 #  define TEST_ASSERT_THROW(Except, ...) ((void) 0)
 
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -952,12 +952,12 @@ public:
       test_case const& tc = *b;
       set_checkpoint(tc.file, tc.func, tc.line);
       get_reporter().test_case_begin();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
       try
       {
 #endif
         tc.invoke();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
       }
       catch (...)
       {

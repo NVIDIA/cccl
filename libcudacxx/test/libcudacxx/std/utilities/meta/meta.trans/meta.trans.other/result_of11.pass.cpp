@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: c++98, c++03
 //
 // TODO: Triage and fix.
 // XFAIL: msvc-19.0
@@ -16,7 +15,7 @@
 // result_of<Fn(ArgTypes...)>
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/type_traits>
 #ifdef _LIBCUDACXX_HAS_MEMORY
@@ -27,9 +26,7 @@
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
-#ifdef TEST_COMPILER_CLANG_CUDA
-#  pragma clang diagnostic ignored "-Wdeprecated-volatile"
-#endif // TEST_COMPILER_CLANG_CUDA
+TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
 
 struct wat
 {
@@ -45,7 +42,6 @@ struct F
 struct FD : public F
 {};
 
-#if TEST_STD_VER > 2011
 template <typename T, typename U>
 struct test_invoke_result;
 
@@ -56,28 +52,23 @@ struct test_invoke_result<Fn(Args...), Ret>
   {
     static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
     static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
-    ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn, Args...>::type);
-    ASSERT_SAME_TYPE(Ret, cuda::std::invoke_result_t<Fn, Args...>);
+    static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
+    static_assert(cuda::std::is_same_v<Ret, cuda::std::invoke_result_t<Fn, Args...>>);
   }
 };
-#endif
 
 template <class T, class U>
 __host__ __device__ void test_result_of_imp()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(U, cuda::std::result_of_t<T>);
-#endif
-#if TEST_STD_VER > 2011
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::result_of_t<T>>);
   test_invoke_result<T, U>::call();
-#endif
 }
 
 int main(int, char**)
 {
   {
-    typedef char F::*PMD;
+    typedef char F::* PMD;
     test_result_of_imp<PMD(F&), char&>();
     test_result_of_imp<PMD(F const&), char const&>();
     test_result_of_imp<PMD(F volatile&), char volatile&>();
@@ -121,7 +112,7 @@ int main(int, char**)
     test_result_of_imp<PMD(cuda::std::reference_wrapper<FD const>), const char&>();
   }
   {
-    test_result_of_imp<int (F::*(F&) )()&, int>();
+    test_result_of_imp<int (F::*(F&) )() &, int>();
     test_result_of_imp<int (F::*(F&) )() const&, int>();
     test_result_of_imp<int (F::*(F&) )() volatile&, int>();
     test_result_of_imp<int (F::*(F&) )() const volatile&, int>();
@@ -131,7 +122,7 @@ int main(int, char**)
     test_result_of_imp<int (F::*(F volatile&) )() const volatile&, int>();
     test_result_of_imp<int (F::*(F const volatile&) )() const volatile&, int>();
 
-    test_result_of_imp<int (F::*(F&&) )()&&, int>();
+    test_result_of_imp<int (F::*(F&&) )() &&, int>();
     test_result_of_imp<int (F::*(F&&) )() const&&, int>();
     test_result_of_imp<int (F::*(F&&) )() volatile&&, int>();
     test_result_of_imp<int (F::*(F&&) )() const volatile&&, int>();
@@ -141,7 +132,7 @@ int main(int, char**)
     test_result_of_imp<int (F::*(F volatile&&) )() const volatile&&, int>();
     test_result_of_imp<int (F::*(F const volatile&&) )() const volatile&&, int>();
 
-    test_result_of_imp<int (F::*(F))()&&, int>();
+    test_result_of_imp<int (F::*(F))() &&, int>();
     test_result_of_imp<int (F::*(F))() const&&, int>();
     test_result_of_imp<int (F::*(F))() volatile&&, int>();
     test_result_of_imp<int (F::*(F))() const volatile&&, int>();
@@ -152,7 +143,7 @@ int main(int, char**)
     test_result_of_imp<int (F::*(F const volatile))() const volatile&&, int>();
   }
   {
-    test_result_of_imp<int (F::*(FD&) )()&, int>();
+    test_result_of_imp<int (F::*(FD&) )() &, int>();
     test_result_of_imp<int (F::*(FD&) )() const&, int>();
     test_result_of_imp<int (F::*(FD&) )() volatile&, int>();
     test_result_of_imp<int (F::*(FD&) )() const volatile&, int>();
@@ -162,7 +153,7 @@ int main(int, char**)
     test_result_of_imp<int (F::*(FD volatile&) )() const volatile&, int>();
     test_result_of_imp<int (F::*(FD const volatile&) )() const volatile&, int>();
 
-    test_result_of_imp<int (F::*(FD&&) )()&&, int>();
+    test_result_of_imp<int (F::*(FD&&) )() &&, int>();
     test_result_of_imp<int (F::*(FD&&) )() const&&, int>();
     test_result_of_imp<int (F::*(FD&&) )() volatile&&, int>();
     test_result_of_imp<int (F::*(FD&&) )() const volatile&&, int>();
@@ -172,7 +163,7 @@ int main(int, char**)
     test_result_of_imp<int (F::*(FD volatile&&) )() const volatile&&, int>();
     test_result_of_imp<int (F::*(FD const volatile&&) )() const volatile&&, int>();
 
-    test_result_of_imp<int (F::*(FD))()&&, int>();
+    test_result_of_imp<int (F::*(FD))() &&, int>();
     test_result_of_imp<int (F::*(FD))() const&&, int>();
     test_result_of_imp<int (F::*(FD))() volatile&&, int>();
     test_result_of_imp<int (F::*(FD))() const volatile&&, int>();

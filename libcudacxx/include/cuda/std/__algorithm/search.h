@@ -30,10 +30,13 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator1, _ForwardIterator1> __search(
+[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -83,18 +86,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIte
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_RandomAccessIterator1, _RandomAccessIterator1>
-__search(_RandomAccessIterator1 __first1,
-         _RandomAccessIterator1 __last1,
-         _RandomAccessIterator2 __first2,
-         _RandomAccessIterator2 __last2,
-         _BinaryPredicate __pred,
-         random_access_iterator_tag,
-         random_access_iterator_tag)
+[[nodiscard]] _CCCL_API constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
+  _RandomAccessIterator1 __first1,
+  _RandomAccessIterator1 __last1,
+  _RandomAccessIterator2 __first2,
+  _RandomAccessIterator2 __last2,
+  _BinaryPredicate __pred,
+  random_access_iterator_tag,
+  random_access_iterator_tag)
 {
-  typedef typename iterator_traits<_RandomAccessIterator1>::difference_type _Diff1;
-  typedef typename iterator_traits<_RandomAccessIterator2>::difference_type _Diff2;
+  using _Diff1 = typename iterator_traits<_RandomAccessIterator1>::difference_type;
+  using _Diff2 = typename iterator_traits<_RandomAccessIterator2>::difference_type;
   // Take advantage of knowing source and pattern lengths.  Stop short when source is smaller than pattern
   const _Diff2 __len2 = __last2 - __first2;
   if (__len2 == 0)
@@ -142,12 +146,12 @@ __search(_RandomAccessIterator1 __first1,
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1 search(
-  _ForwardIterator1 __first1,
-  _ForwardIterator1 __last1,
-  _ForwardIterator2 __first2,
-  _ForwardIterator2 __last2,
-  _BinaryPredicate __pred)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
+search(_ForwardIterator1 __first1,
+       _ForwardIterator1 __last1,
+       _ForwardIterator2 __first2,
+       _ForwardIterator2 __last2,
+       _BinaryPredicate __pred)
 {
   return _CUDA_VSTD::__search<add_lvalue_reference_t<_BinaryPredicate>>(
            __first1,
@@ -161,21 +165,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
 search(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return _CUDA_VSTD::search(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
-#if _CCCL_STD_VER > 2014
 template <class _ForwardIterator, class _Searcher>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 search(_ForwardIterator __f, _ForwardIterator __l, const _Searcher& __s)
 {
   return __s(__f, __l).first;
 }
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SEARCH_H

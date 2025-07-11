@@ -13,9 +13,9 @@
 
 #include "host_device_comparison.h"
 
-#ifndef _LIBCUDACXX_HAS_NVFP16
+#if !_LIBCUDACXX_HAS_NVFP16()
 static_assert(false);
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // !_LIBCUDACXX_HAS_NVFP16()
 
 struct func
 {

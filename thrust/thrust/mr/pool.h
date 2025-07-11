@@ -38,7 +38,8 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
-#include <cassert>
+#include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -255,10 +256,10 @@ public:
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  _CCCL_NODISCARD virtual void_ptr
+  [[nodiscard]] virtual void_ptr
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    bytes = (std::max)(bytes, m_options.smallest_block_size);
+    bytes = (std::max) (bytes, m_options.smallest_block_size);
     assert(detail::is_power_of_2(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -402,7 +403,7 @@ public:
         }
       }
 
-      std::size_t descriptor_size = (std::max)(sizeof(block_descriptor), m_options.alignment);
+      std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);
       std::size_t block_size      = bytes + descriptor_size;
       block_size += m_options.alignment - block_size % m_options.alignment;
       std::size_t chunk_size = block_size * n;
@@ -437,11 +438,11 @@ public:
 
   virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max)(n, m_options.smallest_block_size);
+    n = (std::max) (n, m_options.smallest_block_size);
     assert(detail::is_power_of_2(alignment));
 
     // verify that the pointer is at least as aligned as claimed
-    assert(reinterpret_cast<detail::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
+    assert(reinterpret_cast<::cuda::std::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
 
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)

@@ -22,10 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator transform_exclusive_scan(
+_CCCL_API constexpr _OutputIterator transform_exclusive_scan(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init, _BinaryOp __b, _UnaryOp __u)
 {
   if (__first != __last)
@@ -43,5 +45,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator transform_exclus
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H

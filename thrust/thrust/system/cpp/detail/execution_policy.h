@@ -64,7 +64,7 @@ template <typename Derived>
 struct execution_policy : thrust::system::detail::sequential::execution_policy<Derived>
 {
   using tag_type = tag;
-  operator tag() const
+  _CCCL_HOST_DEVICE operator tag() const
   {
     return tag();
   }

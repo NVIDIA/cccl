@@ -26,10 +26,12 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp* launder(_Tp* __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* launder(_Tp* __p) noexcept
 {
   static_assert(!_CCCL_TRAIT(is_function, _Tp), "can't launder functions");
   static_assert(!_CCCL_TRAIT(is_same, void, remove_cv_t<_Tp>), "can't launder cv-void");
@@ -41,5 +43,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp* launder(_Tp
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NEW_LAUNDER_H

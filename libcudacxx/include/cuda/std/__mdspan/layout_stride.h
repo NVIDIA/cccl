@@ -1,48 +1,22 @@
-/*
-//@HEADER
-// ************************************************************************
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
 //
-//                        Kokkos v. 2.0
-//              Copyright (2019) Sandia Corporation
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
-// Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
+//                        Kokkos v. 4.0
+//       Copyright (2022) National Technology & Engineering
+//               Solutions of Sandia, LLC (NTESS).
+//
+// Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// 1. Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-// notice, this list of conditions and the following disclaimer in the
-// documentation and/or other materials provided with the distribution.
-//
-// 3. Neither the name of the Corporation nor the names of the
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY SANDIA CORPORATION "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL SANDIA CORPORATION OR THE
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
-//
-// ************************************************************************
-//@HEADER
-*/
+//===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_HPP
-#define _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_HPP
+#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
+#define _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
 
 #include <cuda/std/detail/__config>
 
@@ -54,478 +28,578 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__mdspan/compressed_pair.h>
+#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/macros.h>
-#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#  include <cuda/std/__mdspan/no_unique_address.h>
-#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include <cuda/std/__mdspan/static_array.h>
-#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/array>
-#include <cuda/std/numeric>
-#if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
-#  include <cuda/std/concepts>
-#endif // __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
-#include <cuda/std/span>
+#include <cuda/std/cstddef>
+#include <cuda/std/limits>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
-struct layout_left
+namespace __layout_stride_detail
 {
-  template <class _Extents>
-  class mapping;
+
+template <class _StridedLayoutMapping, class _Extents>
+_CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Extents))(
+  requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
+  requires(_StridedLayoutMapping::is_always_unique()),
+  requires(_StridedLayoutMapping::is_always_strided()),
+  requires(_CCCL_TRAIT(is_constructible, _Extents, typename _StridedLayoutMapping::extents_type)));
+
+struct __constraints
+{
+  template <class _StridedLayoutMapping, class _Extents>
+  static constexpr bool __converts_implicit =
+    _CCCL_TRAIT(is_convertible, typename _StridedLayoutMapping::extents_type, _Extents)
+    && (__mdspan_detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
+        || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
+        || __mdspan_detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>);
 };
-struct layout_right
-{
-  template <class _Extents>
-  class mapping;
-};
 
-namespace __detail
-{
-template <class _Layout, class _Mapping>
-_CCCL_INLINE_VAR constexpr bool __is_mapping_of =
-  is_same<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>::value;
+} // namespace __layout_stride_detail
 
-#  if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
-template <class _Mp>
-concept __layout_mapping_alike = requires {
-  requires __is_extents<typename _Mp::extents_type>::value;
-  { _Mp::is_always_strided() } -> same_as<bool>;
-  { _Mp::is_always_exhaustive() } -> same_as<bool>;
-  { _Mp::is_always_unique() } -> same_as<bool>;
-  bool_constant<_Mp::is_always_strided()>::value;
-  bool_constant<_Mp::is_always_exhaustive()>::value;
-  bool_constant<_Mp::is_always_unique()>::value;
-};
-#  endif
-} // namespace __detail
-
-struct layout_stride
+template <class _Extents>
+class layout_stride::mapping
+    : private __mdspan_ebco<_Extents,
+                            __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
-  template <class _Extents>
-  class mapping
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      : private __detail::__no_unique_address_emulation<
-          __detail::__compressed_pair<_Extents, _CUDA_VSTD::array<typename _Extents::index_type, _Extents::rank()>>>
-#  endif
+public:
+  static_assert(__mdspan_detail::__is_extents<_Extents>::value,
+                "layout_stride::mapping template argument must be a specialization of extents.");
+
+  using extents_type = _Extents;
+  using index_type   = typename extents_type::index_type;
+  using size_type    = typename extents_type::size_type;
+  using rank_type    = typename extents_type::rank_type;
+  using layout_type  = layout_stride;
+  using __base = __mdspan_ebco<_Extents, __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
+
+  template <class, class, class, class>
+  friend class mdspan;
+
+private:
+  static constexpr rank_type __rank_    = extents_type::rank();
+  static constexpr auto __rank_sequence = _CUDA_VSTD::make_index_sequence<extents_type::rank()>();
+
+  using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
+
+  // Used for default construction check and mandates
+  [[nodiscard]] _CCCL_API static constexpr bool
+  __mul_overflow(index_type __x, index_type __y, index_type* __res) noexcept
   {
-  public:
-    using extents_type = _Extents;
-    using index_type   = typename extents_type::index_type;
-    using size_type    = typename extents_type::size_type;
-    using rank_type    = typename extents_type::rank_type;
-    using layout_type  = layout_stride;
+    *__res = __x * __y;
+    return __x && ((*__res / __x) != __y);
+  }
+  [[nodiscard]] _CCCL_API static constexpr bool
+  __add_overflow(index_type __x, index_type __y, index_type* __res) noexcept
+  {
+    *__res = __x + __y;
+    return *__res < __y;
+  }
 
-    // This could be a `requires`, but I think it's better and clearer as a `static_assert`.
-    static_assert(__detail::__is_extents_v<_Extents>,
-                  "layout_stride::mapping must be instantiated with a specialization of _CUDA_VSTD::extents.");
-
-  private:
-    //----------------------------------------------------------------------------
-
-    using __strides_storage_t = _CUDA_VSTD::array<index_type, extents_type::rank()>; //_CUDA_VSTD::dextents<index_type,
-                                                                                     // extents_type::rank()>;
-    using __member_pair_t = __detail::__compressed_pair<extents_type, __strides_storage_t>;
-
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-    _CCCL_NO_UNIQUE_ADDRESS __member_pair_t __members;
-#  else
-    using __base_t = __detail::__no_unique_address_emulation<__member_pair_t>;
-#  endif
-
-    __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t const& __strides_storage() const noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(const extents_type& __ext) noexcept
+  {
+    if constexpr (extents_type::rank() != 0)
     {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      return __members.__second();
-#  else
-      return this->__base_t::__ref().__second();
-#  endif
-    }
-    __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t& __strides_storage() noexcept
-    {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      return __members.__second();
-#  else
-      return this->__base_t::__ref().__second();
-#  endif
-    }
-
-    template <class _SizeType, size_t... _Ep, size_t... _Idx>
-    _CCCL_HOST_DEVICE constexpr index_type
-    __get_size(_CUDA_VSTD::extents<_SizeType, _Ep...>, _CUDA_VSTD::integer_sequence<size_t, _Idx...>) const
-    {
-      return __MDSPAN_FOLD_TIMES_RIGHT(static_cast<index_type>(extents().extent(_Idx)), 1);
-    }
-
-    //----------------------------------------------------------------------------
-
-    template <class>
-    friend class mapping;
-
-    //----------------------------------------------------------------------------
-
-    // Workaround for non-deducibility of the index sequence template parameter if it's given at the top level
-    template <class>
-    struct __deduction_workaround;
-
-    template <size_t... _Idxs>
-    struct __deduction_workaround<_CUDA_VSTD::index_sequence<_Idxs...>>
-    {
-      template <class _OtherExtents>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
-      _eq_impl(mapping const& __self, mapping<_OtherExtents> const& __other) noexcept
+      index_type __prod = __ext.extent(0);
+      for (rank_type __r = 1; __r < extents_type::rank(); __r++)
       {
-        return __MDSPAN_FOLD_AND((__self.stride(_Idxs) == __other.stride(_Idxs)) /* && ... */)
-            && __MDSPAN_FOLD_AND((__self.extents().extent(_Idxs) == __other.extents().extent(_Idxs)) /* || ... */);
-      }
-      template <class _OtherExtents>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
-      _not_eq_impl(mapping const& __self, mapping<_OtherExtents> const& __other) noexcept
-      {
-        return __MDSPAN_FOLD_OR((__self.stride(_Idxs) != __other.stride(_Idxs)) /* || ... */)
-            || __MDSPAN_FOLD_OR((__self.extents().extent(_Idxs) != __other.extents().extent(_Idxs)) /* || ... */);
-      }
-
-      template <class... _Integral>
-      __MDSPAN_FORCE_INLINE_FUNCTION static constexpr size_t
-      _call_op_impl(mapping const& __self, _Integral... __idxs) noexcept
-      {
-        return __MDSPAN_FOLD_PLUS_RIGHT((__idxs * __self.stride(_Idxs)), /* + ... + */ 0);
-      }
-
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t _req_span_size_impl(mapping const& __self) noexcept
-      {
-        // assumes no negative strides; not sure if I'm allowed to assume that or not
-        return __impl::_call_op_impl(__self, (__self.extents().template __extent<_Idxs>() - 1)...) + 1;
-      }
-
-      template <class _OtherMapping>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t fill_strides(const _OtherMapping& __map)
-      {
-        return __strides_storage_t{static_cast<index_type>(__map.stride(_Idxs))...};
-      }
-
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t& fill_strides(const __strides_storage_t& __s)
-      {
-        return __s;
-      }
-
-      template <class _IntegralType>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t
-      fill_strides(const _CUDA_VSTD::array<_IntegralType, extents_type::rank()>& __s)
-      {
-        return __strides_storage_t{static_cast<index_type>(__s[_Idxs])...};
-      }
-
-      template <class _IntegralType>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t
-      fill_strides(const _CUDA_VSTD::span<_IntegralType, extents_type::rank()>& __s)
-      {
-        return __strides_storage_t{static_cast<index_type>(__s[_Idxs])...};
-      }
-
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t fill_strides(
-        __detail::__extents_to_partially_static_sizes_t<_CUDA_VSTD::dextents<index_type, extents_type::rank()>>&& __s)
-      {
-        return __strides_storage_t{static_cast<index_type>(__s.template __get_n<_Idxs>())...};
-      }
-
-      template <size_t K>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __return_zero()
-      {
-        return 0;
-      }
-
-      template <class _Mapping>
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr typename _Mapping::index_type __OFFSET(const _Mapping& m)
-      {
-        return m(__return_zero<_Idxs>()...);
-      }
-    };
-
-    // Can't use defaulted parameter in the __deduction_workaround template because of a bug in MSVC warning C4348.
-    using __impl = __deduction_workaround<_CUDA_VSTD::make_index_sequence<_Extents::rank()>>;
-
-    //----------------------------------------------------------------------------
-
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(__member_pair_t&& __m)
-        : __members(_CUDA_VSTD::move(__m))
-    {}
-#  else
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(__base_t&& __b)
-        : __base_t(_CUDA_VSTD::move(__b))
-    {}
-#  endif
-
-  public: // but not really
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr mapping __make_mapping(
-      __detail::__extents_to_partially_static_sizes_t<_Extents>&& __exts,
-      __detail::__extents_to_partially_static_sizes_t<_CUDA_VSTD::dextents<index_type, _Extents::rank()>>&&
-        __strs) noexcept
-    {
-      // call the private constructor we created for this purpose
-      return mapping(
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        __base_t{
-#  endif
-          __member_pair_t(extents_type::__make_extents_impl(_CUDA_VSTD::move(__exts)),
-                          __strides_storage_t{__impl::fill_strides(_CUDA_VSTD::move(__strs))})
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#  endif
-      );
-    }
-    //----------------------------------------------------------------------------
-
-  public:
-    //--------------------------------------------------------------------------------
-
-    _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
-    _CCCL_HIDE_FROM_ABI constexpr mapping(mapping const&) noexcept = default;
-
-    // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
-    template <
-      class _IntegralTypes,
-      enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
-      enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
-      extents_type const& __e, _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        : __members{
-#  else
-        : __base_t(__base_t{__member_pair_t(
-#  endif
-            __e, __strides_storage_t(__impl::fill_strides(__s))
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-          }
-#  else
-              )})
-#  endif
-    {
-      /*
-       * TODO: check preconditions
-       * - __s[i] > 0 is true for all i in the range [0, rank_ ).
-       * - REQUIRED-SPAN-SIZE(__e, __s) is a representable value of type index_type ([basic.fundamental]).
-       * - If rank_ is greater than 0, then there exists a permutation P of the integers in the
-       *   range [0, rank_), such that __s[ pi ] >= __s[ pi − 1 ] * __e.extent( pi − 1 ) is true for
-       *   all i in the range [1, rank_ ), where pi is the ith element of P.
-       */
-    }
-
-    // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
-    template <
-      class _IntegralTypes,
-      enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
-      enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
-      extents_type const& __e, _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        : __members{
-#  else
-        : __base_t(__base_t{__member_pair_t(
-#  endif
-            __e, __strides_storage_t(__impl::fill_strides(__s))
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-          }
-#  else
-              )})
-#  endif
-    {
-      /*
-       * TODO: check preconditions
-       * - __s[i] > 0 is true for all i in the range [0, rank_ ).
-       * - REQUIRED-SPAN-SIZE(__e, __s) is a representable value of type index_type ([basic.fundamental]).
-       * - If rank_ is greater than 0, then there exists a permutation P of the integers in the
-       *   range [0, rank_), such that __s[ pi ] >= __s[ pi − 1 ] * __e.extent( pi − 1 ) is true for
-       *   all i in the range [1, rank_ ), where pi is the ith element of P.
-       */
-    }
-
-#  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
-    _CCCL_TEMPLATE(class _StridedLayoutMapping)
-    _CCCL_REQUIRES(
-      _CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
-        _CCCL_AND __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-          _CCCL_AND(_StridedLayoutMapping::is_always_unique()) _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
-#  else
-    template <class _StridedLayoutMapping>
-      requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
-               && _CCCL_TRAIT(is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
-               && _StridedLayoutMapping::is_always_unique() && _StridedLayoutMapping::is_always_strided())
-#  endif
-    __MDSPAN_CONDITIONAL_EXPLICIT(
-      (!is_convertible<typename _StridedLayoutMapping::extents_type, extents_type>::value)
-      && (__detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
-          || __detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
-          || __detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>) ) // needs two () due to comma
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
-      _StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        : __members{
-#  else
-        : __base_t(__base_t{__member_pair_t(
-#  endif
-            __other.extents(), __strides_storage_t(__impl::fill_strides(__other))
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-          }
-#  else
-              )})
-#  endif
-    {
-      /*
-       * TODO: check preconditions
-       * - __other.stride(i) > 0 is true for all i in the range [0, rank_ ).
-       * - __other.required_span_size() is a representable value of type index_type ([basic.fundamental]).
-       * - OFFSET(__other) == 0
-       */
-    }
-
-    //--------------------------------------------------------------------------------
-
-    _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
-
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
-    {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      return __members.__first();
-#  else
-      return this->__base_t::__ref().__first();
-#  endif
-    };
-
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<index_type, extents_type::rank()> strides() const noexcept
-    {
-      return __strides_storage();
-    }
-
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
-    {
-      index_type __span_size = 1;
-      for (rank_type __r = 0; __r != extents_type::rank(); __r++)
-      {
-        // Return early if any of the extents are zero
-        if (extents().extent(__r) == 0)
+        if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
         {
-          return 0;
+          return false;
         }
-        __span_size += (static_cast<index_type>(extents().extent(__r) - 1) * __strides_storage()[__r]);
       }
-      return __span_size;
     }
+    return true;
+  }
 
-    _CCCL_TEMPLATE(class... _Indices)
-    _CCCL_REQUIRES((sizeof...(_Indices) == _Extents::rank())
-                     _CCCL_AND __fold_and_v<_CCCL_TRAIT(is_convertible, _Indices, index_type)...> //
-                       _CCCL_AND __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _Indices)...>)
-    __MDSPAN_FORCE_INLINE_FUNCTION
-    constexpr index_type operator()(_Indices... __idxs) const noexcept
+  template <class _OtherIndexType>
+  [[nodiscard]] _CCCL_API static constexpr bool
+  __conversion_may_overflow([[maybe_unused]] _OtherIndexType __stride) noexcept
+  {
+    // nvcc believes stride is unused here
+    if constexpr (_CCCL_TRAIT(is_integral, _OtherIndexType))
     {
-      // Should the op_impl operate in terms of `index_type` rather than `size_t`?
-      // Casting `size_t` to `index_type` here.
-      return static_cast<index_type>(__impl::_call_op_impl(*this, static_cast<index_type>(__idxs)...));
+      using _CommonType = common_type_t<index_type, _OtherIndexType>;
+      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>((numeric_limits<index_type>::max)());
     }
-
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
-    {
-      return true;
-    }
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+    else
     {
       return false;
     }
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
-    {
-      return true;
-    }
+    _CCCL_UNREACHABLE();
+  }
 
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_unique() noexcept
+  template <class _OtherIndexType>
+  [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(
+    const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
+  {
+    // nvcc believes strides is unused here
+    if constexpr (extents_type::rank() != 0)
     {
-      return true;
-    }
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
-    {
-      return required_span_size() == __get_size(extents(), _CUDA_VSTD::make_index_sequence<extents_type::rank()>());
-    }
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_strided() noexcept
-    {
-      return true;
-    }
-
-    _CCCL_TEMPLATE(class _Ext = _Extents)
-    _CCCL_REQUIRES((_Ext::rank() > 0))
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const noexcept
-    {
-      return __strides_storage()[__r];
-    }
-
-#  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
-    _CCCL_TEMPLATE(class _StridedLayoutMapping)
-    _CCCL_REQUIRES(__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-                     _CCCL_AND(extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-                       _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
-#  else
-    template <class _StridedLayoutMapping>
-      requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
-               && (extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-               && _StridedLayoutMapping::is_always_strided())
-#  endif
-    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator==(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
-    {
-      bool __strides_match = true;
+      index_type __size = 1;
       for (rank_type __r = 0; __r != extents_type::rank(); __r++)
       {
-        __strides_match = __strides_match && (__x.stride(__r) == __y.stride(__r));
+        // We can only check correct conversion of _OtherIndexType if it is an integral
+        if (__conversion_may_overflow(__strides[__r]))
+        {
+          return false;
+        }
+        if (__ext.extent(__r) == index_type{0})
+        {
+          return true;
+        }
+
+        index_type __prod = (__ext.extent(__r) - 1);
+        if (__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
+        {
+          return false;
+        }
+        if (__add_overflow(__size, __prod, &__size))
+        {
+          return false;
+        }
       }
-      return (__x.extents() == __y.extents())
-          && (__impl::__OFFSET(__y) == static_cast<typename _StridedLayoutMapping::index_type>(0)) && __strides_match;
     }
 
-    // This one is not technically part of the proposal. Just here to make implementation a bit more optimal hopefully
-    _CCCL_TEMPLATE(class _OtherExtents)
-    _CCCL_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
-    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
-    {
-      return __impl::_eq_impl(__lhs, __rhs);
-    }
+    return true;
+  }
 
-#  if !__MDSPAN_HAS_CXX_20
-    _CCCL_TEMPLATE(class _StridedLayoutMapping)
-    _CCCL_REQUIRES(__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-                     _CCCL_AND(extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-                       _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
-    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator!=(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
-    {
-      return not(__x == __y);
-    }
+  // compute offset of a strided layout mapping
+  template <class _StridedMapping, size_t... _Pos>
+  [[nodiscard]] _CCCL_API static constexpr auto
+  __offset(const _StridedMapping& __mapping, index_sequence<_Pos...>) noexcept
+  {
+    return static_cast<typename _StridedMapping::index_type>(__mapping((_Pos ? 0 : 0)...));
+  }
 
-    _CCCL_TEMPLATE(class _OtherExtents)
-    _CCCL_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
-    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-    operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
+  template <class _StridedMapping>
+  [[nodiscard]] _CCCL_API static constexpr index_type __offset(const _StridedMapping& __mapping)
+  {
+    using _StridedExtents = typename _StridedMapping::extents_type;
+    if constexpr (_StridedExtents::rank() != 0)
     {
-      return __impl::_not_eq_impl(__lhs, __rhs);
+      if (__mapping.required_span_size() == typename _StridedMapping::index_type{0})
+      {
+        return index_type{0};
+      }
+      return static_cast<index_type>(__offset(__mapping, __rank_sequence));
     }
-#  endif
-  };
+    else
+    {
+      return static_cast<index_type>(__mapping());
+    }
+    _CCCL_UNREACHABLE();
+  }
+
+  static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
+                "layout_stride::mapping product of static extents must be representable as index_type.");
+
+public:
+  // [mdspan.layout.stride.cons], constructors
+  _CCCL_API constexpr mapping() noexcept
+      : __base(extents_type())
+  {
+    if constexpr (extents_type::rank() > 0)
+    {
+      index_type __stride = 1;
+      for (rank_type __r = __rank_ - 1; __r > rank_type{0}; __r--)
+      {
+        __strides()[__r] = __stride;
+        __stride *= extents().extent(__r);
+      }
+      __strides()[0] = __stride;
+    }
+  }
+
+  _CCCL_HIDE_FROM_ABI constexpr mapping(const mapping&) noexcept = default;
+
+  template <class _OtherIndexType, size_t... _Pos>
+  [[nodiscard]] _CCCL_API static constexpr auto __to_strides_array(
+    [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
+  {
+    // nvcc believes strides is unused here
+    return __stride_array{static_cast<index_type>(_CUDA_VSTD::as_const(__strides[_Pos]))...};
+  }
+
+  template <class _OtherIndexType, size_t... _Pos>
+  [[nodiscard]] _CCCL_API static constexpr auto __check_strides(
+    [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
+  {
+    // nvcc believes strides is unused here
+    if constexpr (_CCCL_TRAIT(is_integral, _OtherIndexType))
+    {
+      return ((__strides[_Pos] > _OtherIndexType{0}) && ... && true);
+    }
+    else
+    {
+      return ((static_cast<index_type>(__strides[_Pos]) > index_type{0}) && ... && true);
+    }
+    _CCCL_UNREACHABLE();
+  }
+
+  // compute the permutation for sorting the stride array
+  // we never actually sort the stride array
+  _CCCL_API constexpr void __bubble_sort_by_strides(array<rank_type, extents_type::rank()>& __permute) const noexcept
+  {
+    for (rank_type __i = __rank_ - 1; __i > 0; __i--)
+    {
+      for (rank_type __r = 0; __r < __i; __r++)
+      {
+        if (__strides()[__permute[__r]] > __strides()[__permute[__r + 1]])
+        {
+          swap(__permute[__r], __permute[__r + 1]);
+        }
+        else
+        {
+          // if two strides are the same then one of the associated extents must be 1 or 0
+          // both could be, but you can't have one larger than 1 come first
+          if ((__strides()[__permute[__r]] == __strides()[__permute[__r + 1]])
+              && (extents().extent(__permute[__r]) > index_type{1}))
+          {
+            swap(__permute[__r], __permute[__r + 1]);
+          }
+        }
+      }
+    }
+  }
+
+  template <size_t... _Pos>
+  [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<_Pos...>) const noexcept
+  {
+    // basically sort the dimensions based on strides and extents, sorting is represented in permute array
+    array<rank_type, extents_type::rank()> __permute{_Pos...};
+    __bubble_sort_by_strides(__permute);
+
+    // check that this permutations represents a growing set
+    for (rank_type __i = 1; __i < __rank_; __i++)
+    {
+      if (static_cast<index_type>(__strides()[__permute[__i]])
+          < static_cast<index_type>(__strides()[__permute[__i - 1]]) * extents().extent(__permute[__i - 1]))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+  [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<>) const noexcept
+  {
+    return true;
+  }
+
+  // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
+  template <class _OtherIndexType,
+            enable_if_t<_CCCL_TRAIT(is_constructible, index_type, const _OtherIndexType&), int> = 0,
+            enable_if_t<_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type), int>   = 0>
+  _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept
+      : __base(__ext, __to_strides_array(__strides, __rank_sequence))
+  {
+    _CCCL_ASSERT(__check_strides(__strides, __rank_sequence),
+                 "layout_stride::mapping ctor: all strides must be greater than 0");
+    _CCCL_ASSERT(__required_span_size_is_representable(__ext, __strides),
+                 "layout_stride::mapping ctor: required span size is not representable as index_type.");
+    _CCCL_ASSERT(__check_unique_mapping(__rank_sequence),
+                 "layout_stride::mapping ctor: the provided extents and strides lead to a non-unique mapping");
+  }
+
+  // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
+  template <class _OtherIndexType,
+            enable_if_t<_CCCL_TRAIT(is_constructible, index_type, const _OtherIndexType&), int> = 0,
+            enable_if_t<_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type), int>   = 0>
+  _CCCL_API constexpr mapping(const extents_type& __ext,
+                              const array<_OtherIndexType, extents_type::rank()>& __strides) noexcept
+      : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))
+  {}
+
+  template <class _StridedLayoutMapping, size_t... _Pos>
+  [[nodiscard]] _CCCL_API static constexpr auto
+  __to_strides_array(const _StridedLayoutMapping& __other, index_sequence<_Pos...>) noexcept
+  {
+    return __stride_array{static_cast<index_type>(__other.stride(_Pos))...};
+  }
+
+  // stride() only compiles for rank > 0
+  template <class _StridedLayoutMapping, size_t... _Pos>
+  [[nodiscard]] _CCCL_API static constexpr auto
+  __check_mapped_strides(const _StridedLayoutMapping& __other, index_sequence<_Pos...>) noexcept
+  {
+    return ((static_cast<index_type>(__other.stride(_Pos)) > index_type{0}) && ... && true);
+  }
+  template <class _StridedLayoutMapping>
+  [[nodiscard]] _CCCL_API static constexpr auto
+  __check_mapped_strides(const _StridedLayoutMapping&, index_sequence<>) noexcept
+  {
+    return true;
+  }
+
+  _CCCL_TEMPLATE(class _StridedLayoutMapping)
+  _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
+                   __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
+  _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
+      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+  {
+    _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
+                 "layout_stride::mapping converting ctor: all strides must be greater than 0");
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_stride::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+    _CCCL_ASSERT(index_type{0} == __offset(__other),
+                 "layout_stride::mapping converting ctor: base offset of mapping must be zero.");
+  }
+  _CCCL_TEMPLATE(class _StridedLayoutMapping)
+  _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
+    !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>))
+  _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
+      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+  {
+    _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
+                 "layout_stride::mapping converting ctor: all strides must be greater than 0");
+    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_stride::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+    _CCCL_ASSERT(index_type{0} == __offset(__other),
+                 "layout_stride::mapping converting ctor: base offset of mapping must be zero.");
+  }
+
+  _CCCL_HIDE_FROM_ABI constexpr mapping& operator=(const mapping&) noexcept = default;
+
+  // [mdspan.layout.stride.obs], observers
+  [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
+  {
+    return this->template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __stride_array& __strides() noexcept
+  {
+    return this->template __get<1>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const __stride_array& __strides() const noexcept
+  {
+    return this->template __get<1>();
+  }
+
+  template <size_t... _Pos>
+  _CCCL_API constexpr array<index_type, extents_type::rank()> __to_strides(index_sequence<_Pos...>) const noexcept
+  {
+    return array<index_type, extents_type::rank()>{__strides()[_Pos]...};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr array<index_type, extents_type::rank()> strides() const noexcept
+  {
+    return __to_strides(__rank_sequence);
+  }
+
+  template <size_t... _Pos>
+  [[nodiscard]] _CCCL_API constexpr index_type __required_span_size(index_sequence<_Pos...>) const noexcept
+  {
+    const index_type __product = (index_type{1} * ... * extents().extent(_Pos));
+    if (__product == index_type{0})
+    {
+      return index_type{0};
+    }
+    else
+    {
+      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
+    }
+  }
+
+  [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
+  {
+    if constexpr (extents_type::rank() == 0)
+    {
+      return index_type{1};
+    }
+    else
+    {
+      return __required_span_size(__rank_sequence);
+    }
+  }
+
+  template <size_t... _Pos, class... _Indices>
+  [[nodiscard]] _CCCL_API static constexpr index_type
+  __op_index(const __stride_array& __strides, index_sequence<_Pos...>, _Indices... __idx) noexcept
+  {
+    return (index_type{0} + ... + (static_cast<index_type>(__idx) * __strides[_Pos]));
+  }
+
+  _CCCL_TEMPLATE(class... _Indices)
+  _CCCL_REQUIRES((sizeof...(_Indices) == extents_type::rank())
+                   _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
+  [[nodiscard]] _CCCL_API constexpr index_type operator()(_Indices... __idx) const noexcept
+  {
+    // Mappings are generally meant to be used for accessing allocations and are meant to guarantee to never
+    // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
+    // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
+    // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
+    //_CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
+    //             "layout_stride::mapping: out of bounds indexing");
+    return __op_index(__strides(), _CUDA_VSTD::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
+  {
+    return true;
+  }
+  [[nodiscard]] _CCCL_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return false;
+  }
+  [[nodiscard]] _CCCL_API static constexpr bool is_always_strided() noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr bool is_unique() noexcept
+  {
+    return true;
+  }
+
+  // The answer of this function is fairly complex in the case where one or more
+  // extents are zero.
+  // Technically it is meaningless to query is_exhaustive() in that case, but unfortunately
+  // the way the standard defines this function, we can't give a simple true or false then.
+  template <size_t... _Pos>
+  [[nodiscard]] _CCCL_API constexpr index_type __to_total_size(index_sequence<_Pos...>) const noexcept
+  {
+    return (index_type{1} * ... * (extents().extent(_Pos)));
+  }
+
+  [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const noexcept
+  {
+    if constexpr (extents_type::rank() == 0)
+    {
+      return true;
+    }
+    else
+    {
+      const index_type __span_size = required_span_size();
+      if (__span_size == index_type{0})
+      {
+        if constexpr (extents_type::rank() == 1)
+        {
+          return __strides()[0] == 1;
+        }
+        else
+        {
+          rank_type __r_largest = 0;
+          for (rank_type __r = 1; __r < __rank_; __r++)
+          {
+            if (__strides()[__r] > __strides()[__r_largest])
+            {
+              __r_largest = __r;
+            }
+          }
+          for (rank_type __r = 0; __r != __rank_; __r++)
+          {
+            if (extents().extent(__r) == 0 && __r != __r_largest)
+            {
+              return false;
+            }
+          }
+          return true;
+        }
+      }
+      else
+      {
+        const index_type __total_size = __to_total_size(__rank_sequence);
+        return __span_size == __total_size;
+      }
+    }
+    _CCCL_UNREACHABLE();
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr bool is_strided() noexcept
+  {
+    return true;
+  }
+
+  // according to the standard layout_stride does not have a constraint on stride(r) for rank>0
+  // it still has the precondition though
+  [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const noexcept
+  {
+    _CCCL_ASSERT(__r < __rank_, "layout_stride::mapping::stride(): invalid rank index");
+    return __strides()[__r];
+  }
+
+  template <class _OtherMapping, size_t... _Pos>
+  [[nodiscard]] _CCCL_API static constexpr bool
+  __op_eq(const mapping& __lhs, const _OtherMapping& __rhs, index_sequence<_Pos...>) noexcept
+  {
+    // avoid warning when comparing signed and unsigner integers and pick the wider of two types
+    using _CommonType = common_type_t<index_type, typename _OtherMapping::index_type>;
+    return ((static_cast<_CommonType>(__lhs.stride(_Pos)) == static_cast<_CommonType>(__rhs.stride(_Pos))) && ...
+            && true);
+  }
+
+  template <class _OtherMapping>
+  [[nodiscard]] _CCCL_API static constexpr bool __op_eq(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
+  {
+    if constexpr (extents_type::rank() > 0)
+    {
+      if (__offset(__rhs))
+      {
+        return false;
+      }
+      return __lhs.extents() == __rhs.extents() && __op_eq(__lhs, __rhs, __rank_sequence);
+    }
+    else
+    {
+      return (!__offset(__rhs));
+    }
+    _CCCL_UNREACHABLE();
+  }
+
+  template <class _OtherMapping, class _OtherExtents = typename _OtherMapping::extents_type>
+  static constexpr bool __can_compare =
+    __mdspan_detail::__layout_mapping_alike<_OtherMapping> && (_OtherExtents::rank() == _Extents::rank())
+    && _OtherMapping::is_always_strided();
+
+  template <class _OtherMapping>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator==(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)(__can_compare<_OtherMapping>)
+  {
+    return __op_eq(__lhs, __rhs);
+  }
+
+#if _CCCL_STD_VER <= 2017
+  template <class _OtherMapping>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator==(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)((!__mdspan_detail::__is_mapping_of<layout_stride, _OtherMapping>)
+                                  && __can_compare<_OtherMapping>)
+  {
+    return __op_eq(__rhs, __lhs);
+  }
+  template <class _OtherMapping, class _Extents2 = _Extents>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)(__can_compare<_OtherMapping>)
+  {
+    return !__op_eq(__lhs, __rhs);
+  }
+  template <class _OtherMapping, class _Extents2 = _Extents>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)((!__mdspan_detail::__is_mapping_of<layout_stride, _OtherMapping>)
+                                  && __can_compare<_OtherMapping>)
+  {
+    return __op_eq(__rhs, __lhs);
+  }
+#endif // _CCCL_STD_VER <= 2017
 };
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_HPP
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H

@@ -145,7 +145,7 @@ void sort(RandomAccessIterator first, RandomAccessIterator last);
  *  \tparam RandomAccessIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator is mutable, and \p RandomAccessIterator's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam StrictWeakOrdering is a model of <a
+ * StrictWeakOrdering's first argument type and second argument type. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code demonstrates how to sort integers in descending order
@@ -158,7 +158,7 @@ void sort(RandomAccessIterator first, RandomAccessIterator last);
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(thrust::host, A, A + N, thrust::greater<int>());
+ *  thrust::sort(thrust::host, A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -191,7 +191,7 @@ sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \tparam RandomAccessIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator is mutable, and \p RandomAccessIterator's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam StrictWeakOrdering is a model of <a
+ * StrictWeakOrdering's first argument type and second argument type. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code demonstrates how to sort integers in descending order
@@ -203,7 +203,7 @@ sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(A, A + N, thrust::greater<int>());
+ *  thrust::sort(A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -333,7 +333,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
  *  \tparam RandomAccessIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator is mutable, and \p RandomAccessIterator's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam StrictWeakOrdering is a model of <a
+ * StrictWeakOrdering's first argument type and second argument type. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code demonstrates how to sort integers in descending order
@@ -346,7 +346,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(A, A + N, thrust::greater<int>());
+ *  thrust::sort(A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -383,7 +383,7 @@ _CCCL_HOST_DEVICE void stable_sort(
  *  \tparam RandomAccessIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator is mutable, and \p RandomAccessIterator's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam StrictWeakOrdering is a model of <a
+ * StrictWeakOrdering's first argument type and second argument type. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code demonstrates how to sort integers in descending order
@@ -395,7 +395,7 @@ _CCCL_HOST_DEVICE void stable_sort(
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(A, A + N, thrust::greater<int>());
+ *  thrust::sort(A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -555,7 +555,7 @@ void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_la
  *  \tparam RandomAccessIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator1 is mutable, and \p RandomAccessIterator1's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam RandomAccessIterator2 is a model of
+ * StrictWeakOrdering's first argument type and second argument type. \tparam RandomAccessIterator2 is a model of
  * <a href="https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator">Random Access Iterator</a>, and \p
  * RandomAccessIterator2 is mutable. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -574,7 +574,7 @@ void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_la
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::sort_by_key(thrust::host, keys, keys + N, values, thrust::greater<int>());
+ *  thrust::sort_by_key(thrust::host, keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -619,7 +619,7 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  \tparam RandomAccessIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator1 is mutable, and \p RandomAccessIterator1's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam RandomAccessIterator2 is a model of
+ * StrictWeakOrdering's first argument type and second argument type. \tparam RandomAccessIterator2 is a model of
  * <a href="https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator">Random Access Iterator</a>, and \p
  * RandomAccessIterator2 is mutable. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -637,7 +637,7 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::sort_by_key(keys, keys + N, values, thrust::greater<int>());
+ *  thrust::sort_by_key(keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -804,7 +804,7 @@ void stable_sort_by_key(
  *  \tparam RandomAccessIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator1 is mutable, and \p RandomAccessIterator1's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam RandomAccessIterator2 is a model of
+ * StrictWeakOrdering's first argument type and second argument type. \tparam RandomAccessIterator2 is a model of
  * <a href="https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator">Random Access Iterator</a>, and \p
  * RandomAccessIterator2 is mutable. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -823,7 +823,7 @@ void stable_sort_by_key(
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::stable_sort_by_key(thrust::host, keys, keys + N, values, thrust::greater<int>());
+ *  thrust::stable_sort_by_key(thrust::host, keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -871,7 +871,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  \tparam RandomAccessIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access Iterator</a>, \p
  * RandomAccessIterator1 is mutable, and \p RandomAccessIterator1's \c value_type is convertible to \p
- * StrictWeakOrdering's \c first_argument_type and \c second_argument_type. \tparam RandomAccessIterator2 is a model of
+ * StrictWeakOrdering's first argument type and second argument type. \tparam RandomAccessIterator2 is a model of
  * <a href="https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator">Random Access Iterator</a>, and \p
  * RandomAccessIterator2 is mutable. \tparam StrictWeakOrdering is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -889,7 +889,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::stable_sort_by_key(keys, keys + N, values, thrust::greater<int>());
+ *  thrust::stable_sort_by_key(keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -1043,8 +1043,8 @@ bool is_sorted(ForwardIterator first, ForwardIterator last);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \c StrictWeakOrdering's \c
- * first_argument_type and \c second_argument_type. \tparam Compare is a model of <a
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \c StrictWeakOrdering's first and second
+ * argument type. \tparam Compare is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code snippet demonstrates how to use \p is_sorted to test whether the
@@ -1065,7 +1065,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last);
  *  v[4] = 5;
  *  v[5] = 7;
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  bool result = thrust::is_sorted(thrust::device, v.begin(), v.end(), comp);
  *
  *  // result == false
@@ -1100,8 +1100,9 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \return \c true, if the sequence is sorted according to comp; \c false, otherwise.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \c StrictWeakOrdering's \c
- * first_argument_type and \c second_argument_type. \tparam Compare is a model of <a
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \c StrictWeakOrdering's first and second
+ * argument type.
+ *  \tparam Compare is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code snippet demonstrates how to use \p is_sorted to test whether the
@@ -1120,7 +1121,7 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  v[4] = 5;
  *  v[5] = 7;
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  bool result = thrust::is_sorted(v.begin(), v.end(), comp);
  *
  *  // result == false
@@ -1234,7 +1235,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a> and \p ForwardIterator's \c value_type is convertible to \p Compare's \c argument_type. \tparam Compare
+ * Iterator</a> and \p ForwardIterator's \c value_type is convertible to \p Compare's argument type. \tparam Compare
  * is a model of <a href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code snippet demonstrates how to use \p is_sorted_until to find the first position
@@ -1250,7 +1251,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
  *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  int * B = thrust::is_sorted_until(thrust::host, A, A + 8, comp);
  *
  *  // B - A is 4
@@ -1280,7 +1281,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *  \return The last iterator in the input range for which it is sorted.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a> and \p ForwardIterator's \c value_type is convertible to \p Compare's \c argument_type. \tparam Compare
+ * Iterator</a> and \p ForwardIterator's \c value_type is convertible to \p Compare's argument type. \tparam Compare
  * is a model of <a href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
  *
  *  The following code snippet demonstrates how to use \p is_sorted_until to find the first position
@@ -1294,7 +1295,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  int * B = thrust::is_sorted_until(A, A + 8, comp);
  *
  *  // B - A is 4

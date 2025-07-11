@@ -44,7 +44,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     thrust::adjacent_difference(policy(alloc, launch), input.cbegin(), input.cend(), output.begin());
   });
 }

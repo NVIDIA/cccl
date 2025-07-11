@@ -65,8 +65,8 @@ static std::string get_device_for_kernel_name()
   return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_for_build(
-  cccl_device_for_build_result_t* build,
+CUresult cccl_device_for_build(
+  cccl_device_for_build_result_t* build_ptr,
   cccl_iterator_t d_data,
   cccl_op_t op,
   int cc_major,
@@ -74,13 +74,13 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
   try
   {
-    if (d_data.type == cccl_iterator_kind_t::iterator)
+    if (d_data.type == cccl_iterator_kind_t::CCCL_ITERATOR)
     {
       throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
     }
@@ -94,8 +94,9 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -103,33 +104,33 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
     std::string lowered_name;
 
     auto cl =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{device_for_kernel, name})
-        .add_expression({for_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({for_kernel_name, lowered_name})
-        .cleanup_program()
-        .add_link({op.ltoir, op.ltoir_size});
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{device_for_kernel, name})
+        ->add_expression({for_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({for_kernel_name, lowered_name})
+        ->link_program()
+        ->add_link({op.ltoir, op.ltoir_size});
 
-    nvrtc_cubin result{};
+    nvrtc_link_result result{};
 
-    if (cccl_iterator_kind_t::iterator == d_data.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
     {
-      result = cl.add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
-                 .add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
-                 .finalize_program(num_lto_args, lopts);
+      result = cl->add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
+                 ->add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
+                 ->finalize_program();
     }
     else
     {
-      result = cl.finalize_program(num_lto_args, lopts);
+      result = cl->finalize_program();
     }
 
-    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->static_kernel, build->library, lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.cubin.release();
-    build->cubin_size = result.size;
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
   }
   catch (...)
   {
@@ -138,20 +139,17 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_for(
-  cccl_device_for_build_result_t build,
-  cccl_iterator_t d_data,
-  int64_t num_items,
-  cccl_op_t op,
-  CUstream stream) noexcept
+CUresult cccl_device_for(
+  cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
 
   try
   {
-    pushed = try_push_context();
-    Invoke(d_data, num_items, op, build.cc, (CUfunction) build.static_kernel, stream);
+    pushed           = try_push_context();
+    auto exec_status = Invoke(d_data, num_items, op, build.cc, (CUfunction) build.static_kernel, stream);
+    error            = static_cast<CUresult>(exec_status);
   }
   catch (...)
   {
@@ -167,17 +165,17 @@ extern "C" CCCL_C_API CUresult cccl_device_for(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr)
+CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (...)
   {

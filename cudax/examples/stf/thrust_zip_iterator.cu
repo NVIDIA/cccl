@@ -47,7 +47,7 @@ void thrust_algorithm(context& ctx, ZippedIt& first, ZippedIt& last, OutIt& outp
   /*
    * Interpret Thrust data structures as logical data
    */
-  size_t num_elements = thrust::distance(first, last);
+  size_t num_elements = cuda::std::distance(first, last);
 
   // Extract underlying iterators from the zip iterator
   auto itA = thrust::get<0>(first.get_iterator_tuple());
@@ -117,7 +117,7 @@ int main()
   auto hfirst = thrust::make_zip_iterator(thrust::make_tuple(hA.begin(), hB.begin()));
   auto hlast  = thrust::make_zip_iterator(thrust::make_tuple(hA.end(), hB.end()));
 
-  thrust_algorithm(ctx, hfirst, hlast, hC, data_place::host);
+  thrust_algorithm(ctx, hfirst, hlast, hC, data_place::host());
 
   /* Before this, we cannot assume that the Thrust algorithms have been
    * performed and/or that the results have been written back to their original

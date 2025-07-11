@@ -8,35 +8,15 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 
+#include <cuda/functional>
 #include <cuda/std/array>
 
 #include <unittest/unittest.h>
-
-template <typename T>
-struct max_functor
-{
-  _CCCL_HOST_DEVICE T operator()(T rhs, T lhs) const
-  {
-    return thrust::max(rhs, lhs);
-  }
-};
 
 template <class Vector>
 void TestScanSimple()
 {
   using T = typename Vector::value_type;
-
-  // icc miscompiles the intermediate sum updates for custom_numeric.
-  // The issue doesn't happen with opts disabled, or on other compilers.
-  // Printing the intermediate sum each iteration "fixes" the issue,
-  // so likely a bad optimization.
-#if _CCCL_COMPILER(ICC)
-  if (std::is_same<T, custom_numeric>::value)
-  {
-    return;
-  }
-#endif
-
   typename Vector::iterator iter;
 
   Vector input(5);
@@ -68,21 +48,21 @@ void TestScanSimple()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with op
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), thrust::plus<T>());
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), ::cuda::std::plus<T>());
   result = {1, 4, 2, 6, 1};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with init and op
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(-1), thrust::multiplies<T>());
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(-1), ::cuda::std::multiplies<T>());
   result = {-1, -3, 6, 24, -120};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
 
   // exclusive scan with init and op
-  iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3), thrust::plus<T>());
+  iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3), ::cuda::std::plus<T>());
   result = {3, 4, 7, 5, 9};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
@@ -97,7 +77,7 @@ void TestScanSimple()
 
   // inplace inclusive scan with init and op
   input  = input_copy;
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3), thrust::plus<T>());
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3), ::cuda::std::plus<T>());
   result = {4, 7, 5, 9, 4};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
@@ -244,7 +224,7 @@ void TestScanMixedTypes()
   ASSERT_EQUAL(int_output[3], 12); // in: 4.5 accum: 12.f out: 12
 
   // float -> float with plus<int> operator (float accumulator)
-  thrust::inclusive_scan(float_input.begin(), float_input.end(), float_output.begin(), thrust::plus<int>());
+  thrust::inclusive_scan(float_input.begin(), float_input.end(), float_output.begin(), ::cuda::std::plus<int>());
   ASSERT_EQUAL(float_output[0], 1.5f); // in: 1.5 accum: 1.5f out: 1.5f
   ASSERT_EQUAL(float_output[1], 3.0f); // in: 2.5 accum: 3.0f out: 3.0f
   ASSERT_EQUAL(float_output[2], 6.0f); // in: 3.5 accum: 6.0f out: 6.0f
@@ -301,12 +281,12 @@ struct TestScanWithOperator
     thrust::host_vector<T> h_output(n);
     thrust::device_vector<T> d_output(n);
 
-    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), max_functor<T>());
-    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), max_functor<T>());
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), cuda::maximum<T>{});
+    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), cuda::maximum<T>{});
     ASSERT_EQUAL(d_output, h_output);
 
-    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), T(13), max_functor<T>());
-    thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), T(13), max_functor<T>());
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), T(13), cuda::maximum<T>{});
+    thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), T(13), cuda::maximum<T>{});
     ASSERT_EQUAL(d_output, h_output);
   }
 };
@@ -323,19 +303,19 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::discard_iterator<> reference(n);
 
     thrust::discard_iterator<> h_result =
-      thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), max_functor<T>());
+      thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
 
     thrust::discard_iterator<> d_result =
-      thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), max_functor<T>());
+      thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
 
-    h_result =
-      thrust::exclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), max_functor<T>());
+    h_result = thrust::exclusive_scan(
+      h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
 
-    d_result =
-      thrust::exclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), T(13), max_functor<T>());
+    d_result = thrust::exclusive_scan(
+      d_input.begin(), d_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -585,20 +565,33 @@ struct only_set_when_expected_it
   }
 };
 
-THRUST_NAMESPACE_BEGIN
+namespace std
+{
 template <>
 struct iterator_traits<only_set_when_expected_it>
 {
-  using value_type = long long;
-  using reference  = only_set_when_expected_it;
+  using value_type      = long long;
+  using reference       = only_set_when_expected_it;
+  using difference_type = ::cuda::std::ptrdiff_t;
 };
-THRUST_NAMESPACE_END
+} // namespace std
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+struct iterator_traits<only_set_when_expected_it>
+{
+  using value_type        = long long;
+  using reference         = only_set_when_expected_it;
+  using iterator_category = thrust::random_access_device_iterator_tag;
+  using difference_type   = ::cuda::std::ptrdiff_t;
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
   thrust::constant_iterator<long long> begin(1);
   thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                         = false;
@@ -629,7 +622,7 @@ void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
   thrust::constant_iterator<long long> begin(1);
   thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                         = false;

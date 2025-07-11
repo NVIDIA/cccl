@@ -17,10 +17,6 @@
 #include "test_macros.h"
 #include "type_id.h"
 
-#if TEST_STD_VER <= 2011
-#  error This file requires C++14
-#endif
-
 // FIXME: Currently the variant<T&> tests are disabled using this macro.
 #define TEST_VARIANT_HAS_NO_REFERENCES
 #ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
@@ -33,7 +29,7 @@ constexpr bool VariantAllowsNarrowingConversions = true;
 constexpr bool VariantAllowsNarrowingConversions = false;
 #endif
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct CopyThrows
 {
   CopyThrows() = default;
@@ -126,7 +122,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 enum CallType : unsigned
 {
@@ -196,8 +192,8 @@ struct ForwardingCallObject
     return 0;
   }
 
-  STATIC_MEMBER_VAR(last_call_type, CallType);
-  STATIC_MEMBER_VAR(last_call_args, const TypeID*);
+  STATIC_MEMBER_VAR(last_call_type, CallType)
+  STATIC_MEMBER_VAR(last_call_args, const TypeID*)
 };
 
 struct ReturnFirst

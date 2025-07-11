@@ -24,20 +24,20 @@ struct Deleter
   {};
 };
 
-#if !defined(TEST_COMPILER_GCC) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
 struct D2
 {
 private:
   typedef void pointer;
 };
-#endif // !TEST_COMPILER_GCC && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
 
-#ifndef TEST_COMPILER_NVRTC // A class static data member with non-const type is considered a host variable
+#if !TEST_COMPILER(NVRTC) // A class static data member with non-const type is considered a host variable
 struct D3
 {
   static long pointer;
 };
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
@@ -51,18 +51,18 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     typedef cuda::std::unique_ptr<VT, Deleter> P;
     static_assert((cuda::std::is_same<typename P::pointer, Deleter::pointer>::value), "");
   }
-#if !defined(TEST_COMPILER_GCC) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
   {
     typedef cuda::std::unique_ptr<VT, D2> P;
     static_assert(cuda::std::is_same<typename P::pointer, int*>::value, "");
   }
-#endif // !TEST_COMPILER_GCC && !TEST_COMPILER_MSVC
-#ifndef TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(NVRTC)
   {
     typedef cuda::std::unique_ptr<VT, D3> P;
     static_assert(cuda::std::is_same<typename P::pointer, int*>::value, "");
   }
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()

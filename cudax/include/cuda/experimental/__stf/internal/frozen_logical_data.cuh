@@ -89,8 +89,8 @@ private:
 
       /* Use the ID of the fake task to identify "get" events. This makes
        * it possible to automatically synchronize with these events when calling
-       * task_fence. */
-      bctx.get_stack().add_pending_freeze(fake_task, result.second);
+       * fence. */
+      bctx.get_state().add_pending_freeze(fake_task, result.second);
 
       return mv(result);
     }
@@ -116,8 +116,8 @@ private:
         }
       }
 
-      // There is no need to automatically synchronize with the get() operation in task_fence now
-      bctx.get_stack().remove_pending_freeze(fake_task);
+      // There is no need to automatically synchronize with the get() operation in fence now
+      bctx.get_state().remove_pending_freeze(fake_task);
 
       fake_task.merge_event_list(prereqs);
       ld.unfreeze(fake_task, mv(prereqs));
@@ -134,6 +134,11 @@ private:
     void set_automatic_unfreeze(bool flag = true)
     {
       ld.set_automatic_unfreeze(fake_task, flag);
+    }
+
+    access_mode get_access_mode() const
+    {
+      return m;
     }
 
   private:
@@ -197,6 +202,12 @@ public:
     assert(pimpl);
     pimpl->set_automatic_unfreeze(flag);
     return *this;
+  }
+
+  access_mode get_access_mode() const
+  {
+    assert(pimpl);
+    return pimpl->get_access_mode();
   }
 
 private:

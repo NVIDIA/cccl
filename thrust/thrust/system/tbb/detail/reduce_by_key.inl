@@ -25,20 +25,20 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/minmax.h>
 #include <thrust/detail/range/tail_flags.h>
 #include <thrust/detail/seq.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cassert>
 
-#include <cassert>
 #include <thread>
 
 #include <tbb/blocked_range.h>
@@ -63,12 +63,12 @@ inline L divide_ri(const L x, const R y)
 template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
 {
-  using type = thrust::iterator_value_t<InputIterator>;
+  using type = thrust::detail::it_value_t<InputIterator>;
 };
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
 thrust::pair<InputIterator1,
-             thrust::pair<thrust::iterator_value_t<InputIterator1>,
+             thrust::pair<thrust::detail::it_value_t<InputIterator1>,
                           typename partial_sum_type<InputIterator2, BinaryFunction>::type>>
 reduce_last_segment_backward(
   InputIterator1 keys_first,
@@ -77,14 +77,14 @@ reduce_last_segment_backward(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  typename thrust::iterator_difference<InputIterator1>::type n = keys_last - keys_first;
+  thrust::detail::it_difference_t<InputIterator1> n = keys_last - keys_first;
 
   // reverse the ranges and consume from the end
   thrust::reverse_iterator<InputIterator1> keys_first_r(keys_last);
   thrust::reverse_iterator<InputIterator1> keys_last_r(keys_first);
   thrust::reverse_iterator<InputIterator2> values_first_r(values_first + n);
 
-  thrust::iterator_value_t<InputIterator1> result_key                          = *keys_first_r;
+  thrust::detail::it_value_t<InputIterator1> result_key                        = *keys_first_r;
   typename partial_sum_type<InputIterator2, BinaryFunction>::type result_value = *values_first_r;
 
   // consume the entirety of the first key's sequence
@@ -105,7 +105,7 @@ template <typename InputIterator1,
           typename BinaryFunction>
 thrust::tuple<OutputIterator1,
               OutputIterator2,
-              thrust::iterator_value_t<InputIterator1>,
+              thrust::detail::it_value_t<InputIterator1>,
               typename partial_sum_type<InputIterator2, BinaryFunction>::type>
 reduce_by_key_with_carry(
   InputIterator1 keys_first,
@@ -118,7 +118,8 @@ reduce_by_key_with_carry(
 {
   // first, consume the last sequence to produce the carry
   // XXX is there an elegant way to pose this such that we don't need to default construct carry?
-  thrust::pair<thrust::iterator_value_t<InputIterator1>, typename partial_sum_type<InputIterator2, BinaryFunction>::type>
+  thrust::pair<thrust::detail::it_value_t<InputIterator1>,
+               typename partial_sum_type<InputIterator2, BinaryFunction>::type>
     carry;
 
   thrust::tie(keys_last, carry) =
@@ -149,7 +150,7 @@ template <typename Iterator1,
           typename BinaryFunction>
 struct serial_reduce_by_key_body
 {
-  using size_type = typename thrust::iterator_difference<Iterator1>::type;
+  using size_type = thrust::detail::it_difference_t<Iterator1>;
 
   Iterator1 keys_first;
   Iterator2 values_first;
@@ -197,7 +198,7 @@ struct serial_reduce_by_key_body
     const size_type interval_idx = r.begin();
 
     const size_type offset_to_first = interval_size * interval_idx;
-    const size_type offset_to_last  = (thrust::min)(n, offset_to_first + interval_size);
+    const size_type offset_to_last  = ::cuda::std::min(n, offset_to_first + interval_size);
 
     Iterator1 my_keys_first    = keys_first + offset_to_first;
     Iterator1 my_keys_last     = keys_first + offset_to_last;
@@ -208,7 +209,7 @@ struct serial_reduce_by_key_body
     Iterator6 my_carry_result  = carry_result + interval_idx;
 
     // consume the rest of the interval with reduce_by_key
-    using key_type   = thrust::iterator_value_t<Iterator1>;
+    using key_type   = thrust::detail::it_value_t<Iterator1>;
     using value_type = typename partial_sum_type<Iterator2, BinaryFunction>::type;
 
     // XXX is there a way to pose this so that we don't require default construction of carry?
@@ -254,7 +255,7 @@ make_serial_reduce_by_key_body(
   Iterator4 keys_result,
   Iterator5 values_result,
   Iterator6 carry_result,
-  typename thrust::iterator_difference<Iterator1>::type n,
+  thrust::detail::it_difference_t<Iterator1> n,
   size_t interval_size,
   size_t num_intervals,
   BinaryPredicate binary_pred,
@@ -301,7 +302,7 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  using difference_type = typename thrust::iterator_difference<Iterator1>::type;
+  using difference_type = thrust::detail::it_difference_t<Iterator1>;
   difference_type n     = keys_last - keys_first;
   if (n == 0)
   {
@@ -319,13 +320,13 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
   }
 
   // count the number of processors
-  const unsigned int p = thrust::max<unsigned int>(1u, std::thread::hardware_concurrency());
+  const unsigned int p = ::cuda::std::max<unsigned int>(1u, std::thread::hardware_concurrency());
 
   // generate O(P) intervals of sequential work
   // XXX oversubscribing is a tuning opportunity
   const unsigned int subscription_rate = 1;
-  difference_type interval_size =
-    thrust::min<difference_type>(parallelism_threshold, thrust::max<difference_type>(n, n / (subscription_rate * p)));
+  difference_type interval_size        = ::cuda::std::min<difference_type>(
+    parallelism_threshold, ::cuda::std::max<difference_type>(n, n / (subscription_rate * p)));
   difference_type num_intervals = reduce_by_key_detail::divide_ri(n, interval_size);
 
   // decompose the input into intervals of size N / num_intervals
@@ -341,7 +342,7 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
     tail_flags.end(),
     interval_size,
     interval_output_offsets.begin() + 1,
-    thrust::plus<size_t>());
+    ::cuda::std::plus<size_t>());
   interval_output_offsets[0] = 0;
 
   // scan the counts to get each body's output offset

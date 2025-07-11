@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // constexpr const T& optional<T>::value() const &;
@@ -34,7 +32,7 @@ struct X
 int main(int, char**)
 {
   {
-    constexpr optional<X> opt;
+    constexpr optional<X> opt{};
     static_assert(opt.value().test() == 3, "");
   }
 

@@ -13,6 +13,8 @@
 #include <cooperative_groups.h>
 #include <host_device.cuh>
 
+#include "testing.cuh"
+
 namespace cg = cooperative_groups;
 
 struct basic_test_single_dim
@@ -161,7 +163,7 @@ struct basic_test_mixed
   }
 };
 
-TEST_CASE("Basic", "[hierarchy]")
+C2H_TEST("Basic", "[hierarchy]")
 {
   basic_test_single_dim().run();
   basic_test_multi_dim().run();
@@ -214,12 +216,12 @@ struct basic_test_cluster
   }
 };
 
-TEST_CASE("Cluster dims", "[hierarchy]")
+C2H_TEST("Cluster dims", "[hierarchy]")
 {
   basic_test_cluster().run();
 }
 
-TEST_CASE("Different constructions", "[hierarchy]")
+C2H_TEST("Different constructions", "[hierarchy]")
 {
   const auto block_size  = 512;
   const auto cluster_cnt = 8;
@@ -261,7 +263,7 @@ TEST_CASE("Different constructions", "[hierarchy]")
   static_assert(!cudax::has_level<cudax::thread_level, decltype(config.dims)>);
 }
 
-TEST_CASE("Replace level", "[hierarchy]")
+C2H_TEST("Replace level", "[hierarchy]")
 {
   const auto dimensions =
     cudax::make_hierarchy(cudax::block_dims<512>(), cudax::cluster_dims<8>(), cudax::grid_dims(256));
@@ -329,7 +331,7 @@ __global__ void kernel(Config config)
   CUDAX_REQUIRE(config.dims.rank() == grid.thread_rank());
 }
 
-TEST_CASE("Dims queries indexing and ambient hierarchy", "[hierarchy]")
+C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
 {
   const auto configs = cuda::std::make_tuple(
     cudax::block_dims(dim3(64, 4, 2)) & cudax::grid_dims(dim3(12, 6, 3)),
@@ -374,17 +376,17 @@ __global__ void rank_kernel_cg(Config config, unsigned int* out)
 }
 
 // Testcase mostly for generated code comparison
-TEST_CASE("On device rank calculation", "[hierarchy]")
+C2H_TEST("On device rank calculation", "[hierarchy]")
 {
   unsigned int* ptr;
   CUDART(cudaMalloc((void**) &ptr, 2 * 1024 * sizeof(unsigned int)));
 
   const auto config_static = cudax::block_dims<256>() & cudax::grid_dims(dim3(2, 2, 2));
-  rank_kernel<<<256, dim3(2, 2, 2)>>>(config_static, ptr);
+  rank_kernel<<<dim3(2, 2, 2), 256>>>(config_static, ptr);
   CUDART(cudaDeviceSynchronize());
-  rank_kernel_cg<<<256, dim3(2, 2, 2)>>>(config_static, ptr);
+  rank_kernel_cg<<<dim3(2, 2, 2), 256>>>(config_static, ptr);
   CUDART(cudaDeviceSynchronize());
-  rank_kernel_optimized<<<256, dim3(2, 2, 2)>>>(config_static, ptr);
+  rank_kernel_optimized<<<dim3(2, 2, 2), 256>>>(config_static, ptr);
   CUDART(cudaDeviceSynchronize());
   CUDART(cudaFree(ptr));
 }
@@ -443,7 +445,7 @@ __global__ void examples_kernel(Config config)
 }
 
 // Test examples from the inline rst documentation
-TEST_CASE("Examples", "[hierarchy]")
+C2H_TEST("Examples", "[hierarchy]")
 {
   using namespace cuda::experimental;
 
@@ -477,9 +479,9 @@ TEST_CASE("Examples", "[hierarchy]")
     static_assert(decltype(hierarchy.level(cluster).dims)::static_extent(0) == 4);
   }
   {
-    auto partial1                    = make_hierarchy_fragment<block_level>(grid_dims(256), cluster_dims<4>());
+    auto partial1                    = make_hierarchy<block_level>(grid_dims(256), cluster_dims<4>());
     [[maybe_unused]] auto hierarchy1 = hierarchy_add_level(partial1, block_dims<8, 8, 8>());
-    auto partial2                    = make_hierarchy_fragment<thread_level>(block_dims<8, 8, 8>(), cluster_dims<4>());
+    auto partial2                    = make_hierarchy<thread_level>(block_dims<8, 8, 8>(), cluster_dims<4>());
     [[maybe_unused]] auto hierarchy2 = hierarchy_add_level(partial2, grid_dims(256));
     static_assert(cuda::std::is_same_v<decltype(hierarchy1), decltype(hierarchy2)>);
   }
@@ -506,7 +508,7 @@ TEST_CASE("Examples", "[hierarchy]")
   }
 }
 
-TEST_CASE("Trivially constructable", "[hierarchy]")
+C2H_TEST("Trivially constructable", "[hierarchy]")
 {
   // static_assert(std::is_trivial_v<decltype(cudax::block_dims(256))>);
   // static_assert(std::is_trivial_v<decltype(cudax::block_dims<256>())>);
@@ -518,7 +520,7 @@ TEST_CASE("Trivially constructable", "[hierarchy]")
   // cudax::grid_dims<256>()))>);
 }
 
-TEST_CASE("cudax::distribute", "[hierarchy]")
+C2H_TEST("cudax::distribute", "[hierarchy]")
 {
   int numElements               = 50000;
   constexpr int threadsPerBlock = 256;
@@ -528,12 +530,12 @@ TEST_CASE("cudax::distribute", "[hierarchy]")
   CUDAX_REQUIRE(config.dims.count(cudax::block, cudax::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
 }
 
-TEST_CASE("hierarchy merge", "[hierarchy]")
+C2H_TEST("hierarchy merge", "[hierarchy]")
 {
   SECTION("Non overlapping")
   {
-    auto h1       = cudax::make_hierarchy_fragment<cudax::block_level>(cudax::grid_dims<2>());
-    auto h2       = cudax::make_hierarchy_fragment<cudax::thread_level>(cudax::block_dims<3>());
+    auto h1       = cudax::make_hierarchy<cudax::block_level>(cudax::grid_dims<2>());
+    auto h2       = cudax::make_hierarchy<cudax::thread_level>(cudax::block_dims<3>());
     auto combined = h1.combine(h2);
     static_assert(combined.count(cudax::thread) == 6);
     static_assert(combined.count(cudax::thread, cudax::block) == 3);
@@ -548,8 +550,8 @@ TEST_CASE("hierarchy merge", "[hierarchy]")
   }
   SECTION("Overlapping")
   {
-    auto h1 = cudax::make_hierarchy_fragment<cudax::block_level>(cudax::grid_dims<2>(), cudax::cluster_dims<3>());
-    auto h2 = cudax::make_hierarchy_fragment<cudax::thread_level>(cudax::block_dims<4>(), cudax::cluster_dims<5>());
+    auto h1       = cudax::make_hierarchy<cudax::block_level>(cudax::grid_dims<2>(), cudax::cluster_dims<3>());
+    auto h2       = cudax::make_hierarchy<cudax::thread_level>(cudax::block_dims<4>(), cudax::cluster_dims<5>());
     auto combined = h1.combine(h2);
     static_assert(combined.count(cudax::thread) == 24);
     static_assert(combined.count(cudax::thread, cudax::block) == 4);
@@ -565,13 +567,13 @@ TEST_CASE("hierarchy merge", "[hierarchy]")
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(ultimate_combination)>);
     static_assert(ultimate_combination.count(cudax::thread) == 24);
 
-    auto block_level_replacement = cudax::make_hierarchy_fragment<cudax::thread_level>(cudax::block_dims<6>());
+    auto block_level_replacement = cudax::make_hierarchy<cudax::thread_level>(cudax::block_dims<6>());
     auto with_block_replaced     = block_level_replacement.combine(combined);
     static_assert(with_block_replaced.count(cudax::thread) == 36);
     static_assert(with_block_replaced.count(cudax::thread, cudax::block) == 6);
 
     auto grid_cluster_level_replacement =
-      cudax::make_hierarchy_fragment<cudax::block_level>(cudax::grid_dims<7>(), cudax::cluster_dims<8>());
+      cudax::make_hierarchy<cudax::block_level>(cudax::grid_dims<7>(), cudax::cluster_dims<8>());
     auto with_grid_cluster_replaced = grid_cluster_level_replacement.combine(combined);
     static_assert(with_grid_cluster_replaced.count(cudax::thread) == 7 * 8 * 4);
     static_assert(with_grid_cluster_replaced.count(cudax::block, cudax::cluster) == 8);

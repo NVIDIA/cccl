@@ -22,11 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
+_CCCL_API constexpr void iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
 {
   for (; __first != __last; ++__first, (void) ++__value_)
   {
@@ -35,5 +36,7 @@ iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_IOTA_H

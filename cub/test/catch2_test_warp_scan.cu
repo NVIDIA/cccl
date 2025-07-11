@@ -25,8 +25,11 @@
  *
  ******************************************************************************/
 
+#include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
+
+#include <cuda/cmath>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -112,7 +115,7 @@ struct sum_op_t
   template <class WarpScanT, class T>
   __device__ void operator()(WarpScanT& scan, T& thread_data) const
   {
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data);
     }
@@ -134,7 +137,7 @@ struct sum_aggregate_op_t
   {
     T warp_aggregate{};
 
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data, warp_aggregate);
     }
@@ -158,7 +161,7 @@ struct min_op_t
   template <class T, class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data) const
   {
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
     }
@@ -180,7 +183,7 @@ struct min_aggregate_op_t
   {
     T warp_aggregate{};
 
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, warp_aggregate);
     }
@@ -205,7 +208,7 @@ struct min_init_value_op_t
   template <class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data) const
   {
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
     }
@@ -228,7 +231,7 @@ struct min_init_value_aggregate_op_t
   {
     T warp_aggregate{};
 
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, warp_aggregate);
     }
@@ -278,7 +281,7 @@ c2h::host_vector<T> compute_host_reference(
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.
-  int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(result.size()), logical_warp_threads);
+  int num_warps = cuda::ceil_div(static_cast<int>(result.size()), logical_warp_threads);
   c2h::host_vector<T> warp_accumulator(num_warps);
   if (mode == scan_mode::exclusive)
   {
@@ -324,7 +327,14 @@ using types                = c2h::type_list<std::uint8_t, std::uint16_t, std::in
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
 using modes                = c2h::enum_type_list<scan_mode, scan_mode::exclusive, scan_mode::inclusive>;
 
-using vec_types = c2h::type_list<ulonglong4, uchar3, short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  uchar3,
+  short2>;
 
 using warp_combine_type = int;
 
@@ -333,7 +343,7 @@ struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == CUB_WARP_THREADS(0));
+  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
   static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
@@ -459,7 +469,7 @@ C2H_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -469,7 +479,7 @@ C2H_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
   // When comparing device output, the corresponding undefined data points need
   // to be fixed
 
-  _CCCL_IF_CONSTEXPR (params::mode == scan_mode::exclusive)
+  if constexpr (params::mode == scan_mode::exclusive)
   {
     for (size_t i = 0; i < h_out.size(); i += params::logical_warp_threads)
     {
@@ -505,7 +515,7 @@ C2H_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", typ
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -515,7 +525,7 @@ C2H_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", typ
   // When comparing device output, the corresponding undefined data points need
   // to be fixed
 
-  _CCCL_IF_CONSTEXPR (params::mode == scan_mode::exclusive)
+  if constexpr (params::mode == scan_mode::exclusive)
   {
     for (size_t i = 0; i < h_out.size(); i += params::logical_warp_threads)
     {
@@ -615,7 +625,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   compute_host_reference(
     scan_mode::inclusive,
@@ -624,7 +634,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   // According to WarpScan::Scan documentation -
   // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is

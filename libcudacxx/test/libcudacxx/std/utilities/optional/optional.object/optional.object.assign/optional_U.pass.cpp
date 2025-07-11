@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // From LWG2451:
@@ -47,7 +46,12 @@ struct Y2
 
 struct B
 {
-  virtual ~B() = default;
+  int val_;
+
+  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  {
+    return other == val_;
+  }
 };
 class D : public B
 {};
@@ -55,10 +59,10 @@ class D : public B
 template <class T>
 struct AssignableFrom
 {
-  STATIC_MEMBER_VAR(type_constructed, int);
-  STATIC_MEMBER_VAR(type_assigned, int);
-  STATIC_MEMBER_VAR(int_constructed, int);
-  STATIC_MEMBER_VAR(int_assigned, int);
+  STATIC_MEMBER_VAR(type_constructed, int)
+  STATIC_MEMBER_VAR(type_assigned, int)
+  STATIC_MEMBER_VAR(int_constructed, int)
+  STATIC_MEMBER_VAR(int_assigned, int)
 
   __host__ __device__ static void reset()
   {
@@ -99,7 +103,7 @@ __host__ __device__ void test_with_test_type()
   T::reset();
   { // non-empty to empty
     T::reset_constructors();
-    optional<T> opt;
+    optional<T> opt{};
     optional<int> other(42);
     opt = cuda::std::move(other);
     assert(T::alive() == 1);
@@ -143,7 +147,7 @@ __host__ __device__ void test_with_test_type()
   }
   assert(T::alive() == 0);
   { // empty to empty
-    optional<T> opt;
+    optional<T> opt{};
     optional<int> other;
     T::reset_constructors();
     opt = cuda::std::move(other);
@@ -210,40 +214,63 @@ __host__ __device__ void test_ambiguous_assign()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+template <class T, class U>
+__host__ __device__ constexpr bool test()
 {
-  {
-    optional<int> opt;
-    optional<short> opt2;
-    opt = cuda::std::move(opt2);
-    assert(static_cast<bool>(opt2) == false);
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
+  { // empty assigned to empty
+    optional<T> opt{};
+    optional<U> input{};
+    opt = cuda::std::move(input);
+    assert(!input.has_value());
+    assert(!opt.has_value());
   }
-  {
-    optional<int> opt;
-    optional<short> opt2(short{2});
-    opt = cuda::std::move(opt2);
-    assert(static_cast<bool>(opt2) == true);
-    assert(*opt2 == 2);
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
-    assert(*opt == *opt2);
+  { // non-empty assigned to empty
+    cuda::std::remove_reference_t<U> val{42};
+    optional<T> opt{};
+    optional<U> input{val};
+    opt = cuda::std::move(input);
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
   }
-  {
-    optional<int> opt(3);
-    optional<short> opt2;
-    opt = cuda::std::move(opt2);
-    assert(static_cast<bool>(opt2) == false);
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
+  { // empty assigned to non-empty
+    cuda::std::remove_reference_t<T> val{42};
+    optional<T> opt{val};
+    optional<U> input{};
+    opt = cuda::std::move(input);
+    assert(!input.has_value());
+    assert(!opt.has_value());
   }
-  {
-    optional<int> opt(3);
-    optional<short> opt2(short{2});
-    opt = cuda::std::move(opt2);
-    assert(static_cast<bool>(opt2) == true);
-    assert(*opt2 == 2);
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
-    assert(*opt == *opt2);
+  { // non-empty assigned to non-empty
+    cuda::std::remove_reference_t<U> val{42};
+    cuda::std::remove_reference_t<T> other_val{1337};
+    optional<T> opt{other_val};
+    optional<U> input{val};
+    opt = cuda::std::move(input);
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
   }
+
+  return true;
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int, short>();
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<B&, D&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
 
   enum class state_t
   {
@@ -312,10 +339,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct X
 {
-  STATIC_MEMBER_VAR(throw_now, bool);
+  STATIC_MEMBER_VAR(throw_now, bool)
 
   X() = default;
   X(int&&)
@@ -329,7 +356,7 @@ struct X
 
 void test_exceptions()
 {
-  optional<X> opt;
+  optional<X> opt{};
   optional<int> opt2(42);
   assert(static_cast<bool>(opt2) == true);
   try
@@ -344,19 +371,21 @@ void test_exceptions()
     assert(static_cast<bool>(opt) == false);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
+  test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test());
-#endif
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   test_with_test_type();
   test_ambiguous_assign();
-  test();
+
 #ifdef _LIBCUDACXX_HAS_MEMORY
   {
-    optional<cuda::std::unique_ptr<B>> opt;
+    optional<cuda::std::unique_ptr<B>> opt{};
     optional<cuda::std::unique_ptr<D>> other(new D());
     opt = cuda::std::move(other);
     assert(static_cast<bool>(opt) == true);
@@ -366,8 +395,8 @@ int main(int, char**)
   }
 #endif // _LIBCUDACXX_HAS_MEMORY
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

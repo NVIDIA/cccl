@@ -16,6 +16,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/limits>
 
 template <class T>
 using testcases_t = cuda::std::complex<T>[152];
@@ -105,32 +106,32 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(1.e-2, 0),
     cuda::std::complex<T>(1.e+2, 0),
 
-    cuda::std::complex<T>(NAN, NAN),
-    cuda::std::complex<T>(-INFINITY, NAN),
-    cuda::std::complex<T>(-2, NAN),
-    cuda::std::complex<T>(-1, NAN),
-    cuda::std::complex<T>(-0.5, NAN),
-    cuda::std::complex<T>(-0., NAN),
-    cuda::std::complex<T>(+0., NAN),
-    cuda::std::complex<T>(0.5, NAN),
-    cuda::std::complex<T>(1, NAN),
-    cuda::std::complex<T>(2, NAN),
-    cuda::std::complex<T>(INFINITY, NAN),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(-2, cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(-1, cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(-0.5, cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(-0., cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(+0., cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(0.5, cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(1, cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(2, cuda::std::numeric_limits<T>::quiet_NaN()),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::quiet_NaN()),
 
-    cuda::std::complex<T>(NAN, -INFINITY),
-    cuda::std::complex<T>(-INFINITY, -INFINITY),
-    cuda::std::complex<T>(-2, -INFINITY),
-    cuda::std::complex<T>(-1, -INFINITY),
-    cuda::std::complex<T>(-0.5, -INFINITY),
-    cuda::std::complex<T>(-0., -INFINITY),
-    cuda::std::complex<T>(+0., -INFINITY),
-    cuda::std::complex<T>(0.5, -INFINITY),
-    cuda::std::complex<T>(1, -INFINITY),
-    cuda::std::complex<T>(2, -INFINITY),
-    cuda::std::complex<T>(INFINITY, -INFINITY),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-2, -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-1, -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-0.5, -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-0., -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(+0., -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(0.5, -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(1, -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(2, -cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), -cuda::std::numeric_limits<T>::infinity()),
 
-    cuda::std::complex<T>(NAN, -2),
-    cuda::std::complex<T>(-INFINITY, -2),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), -2),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), -2),
     cuda::std::complex<T>(-2, -2),
     cuda::std::complex<T>(-1, -2),
     cuda::std::complex<T>(-0.5, -2),
@@ -139,10 +140,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, -2),
     cuda::std::complex<T>(1, -2),
     cuda::std::complex<T>(2, -2),
-    cuda::std::complex<T>(INFINITY, -2),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), -2),
 
-    cuda::std::complex<T>(NAN, -1),
-    cuda::std::complex<T>(-INFINITY, -1),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), -1),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), -1),
     cuda::std::complex<T>(-2, -1),
     cuda::std::complex<T>(-1, -1),
     cuda::std::complex<T>(-0.5, -1),
@@ -151,10 +152,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, -1),
     cuda::std::complex<T>(1, -1),
     cuda::std::complex<T>(2, -1),
-    cuda::std::complex<T>(INFINITY, -1),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), -1),
 
-    cuda::std::complex<T>(NAN, -0.5),
-    cuda::std::complex<T>(-INFINITY, -0.5),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), -0.5),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), -0.5),
     cuda::std::complex<T>(-2, -0.5),
     cuda::std::complex<T>(-1, -0.5),
     cuda::std::complex<T>(-0.5, -0.5),
@@ -163,10 +164,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, -0.5),
     cuda::std::complex<T>(1, -0.5),
     cuda::std::complex<T>(2, -0.5),
-    cuda::std::complex<T>(INFINITY, -0.5),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), -0.5),
 
-    cuda::std::complex<T>(NAN, -0.),
-    cuda::std::complex<T>(-INFINITY, -0.),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), -0.),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), -0.),
     cuda::std::complex<T>(-2, -0.),
     cuda::std::complex<T>(-1, -0.),
     cuda::std::complex<T>(-0.5, -0.),
@@ -175,10 +176,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, -0.),
     cuda::std::complex<T>(1, -0.),
     cuda::std::complex<T>(2, -0.),
-    cuda::std::complex<T>(INFINITY, -0.),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), -0.),
 
-    cuda::std::complex<T>(NAN, +0.),
-    cuda::std::complex<T>(-INFINITY, +0.),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), +0.),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), +0.),
     cuda::std::complex<T>(-2, +0.),
     cuda::std::complex<T>(-1, +0.),
     cuda::std::complex<T>(-0.5, +0.),
@@ -187,10 +188,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, +0.),
     cuda::std::complex<T>(1, +0.),
     cuda::std::complex<T>(2, +0.),
-    cuda::std::complex<T>(INFINITY, +0.),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), +0.),
 
-    cuda::std::complex<T>(NAN, 0.5),
-    cuda::std::complex<T>(-INFINITY, 0.5),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), 0.5),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), 0.5),
     cuda::std::complex<T>(-2, 0.5),
     cuda::std::complex<T>(-1, 0.5),
     cuda::std::complex<T>(-0.5, 0.5),
@@ -199,10 +200,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, 0.5),
     cuda::std::complex<T>(1, 0.5),
     cuda::std::complex<T>(2, 0.5),
-    cuda::std::complex<T>(INFINITY, 0.5),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 0.5),
 
-    cuda::std::complex<T>(NAN, 1),
-    cuda::std::complex<T>(-INFINITY, 1),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), 1),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), 1),
     cuda::std::complex<T>(-2, 1),
     cuda::std::complex<T>(-1, 1),
     cuda::std::complex<T>(-0.5, 1),
@@ -211,10 +212,10 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, 1),
     cuda::std::complex<T>(1, 1),
     cuda::std::complex<T>(2, 1),
-    cuda::std::complex<T>(INFINITY, 1),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 1),
 
-    cuda::std::complex<T>(NAN, 2),
-    cuda::std::complex<T>(-INFINITY, 2),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), 2),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), 2),
     cuda::std::complex<T>(-2, 2),
     cuda::std::complex<T>(-1, 2),
     cuda::std::complex<T>(-0.5, 2),
@@ -223,19 +224,19 @@ __host__ __device__ _testcases<T> get_testcases()
     cuda::std::complex<T>(0.5, 2),
     cuda::std::complex<T>(1, 2),
     cuda::std::complex<T>(2, 2),
-    cuda::std::complex<T>(INFINITY, 2),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 2),
 
-    cuda::std::complex<T>(NAN, INFINITY),
-    cuda::std::complex<T>(-INFINITY, INFINITY),
-    cuda::std::complex<T>(-2, INFINITY),
-    cuda::std::complex<T>(-1, INFINITY),
-    cuda::std::complex<T>(-0.5, INFINITY),
-    cuda::std::complex<T>(-0., INFINITY),
-    cuda::std::complex<T>(+0., INFINITY),
-    cuda::std::complex<T>(0.5, INFINITY),
-    cuda::std::complex<T>(1, INFINITY),
-    cuda::std::complex<T>(2, INFINITY),
-    cuda::std::complex<T>(INFINITY, INFINITY)};
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-2, cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-1, cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-0.5, cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(-0., cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(+0., cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(0.5, cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(1, cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(2, cuda::std::numeric_limits<T>::infinity()),
+    cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::infinity())};
 
   return tc;
 }
@@ -311,26 +312,25 @@ __host__ __device__ void is_about(double x, double y)
   assert(cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 
-// CUDA treats long double as double
-/*
+#if _CCCL_HAS_LONG_DOUBLE()
 __host__ __device__ void is_about(long double x, long double y)
 {
-    assert(cuda::std::abs((x-y)/(x+y)) < 1.e-14);
+  assert(cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
-*/
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
 __host__ __device__ void is_about(__half x, __half y)
 {
   assert(cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 __host__ __device__ void is_about(__nv_bfloat16 x, __nv_bfloat16 y)
 {
   assert(cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #endif // CASES_H

@@ -46,17 +46,92 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdio>
-#include <iterator>
+#include <cuda/std/__algorithm_>
 
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::three_way_partition
+{
+// Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
+// partition
+using per_partition_offset_t = ::cuda::std::int32_t;
+
+template <typename TotalNumItemsT>
+class streaming_context_t
+{
+private:
+  bool first_partition = true;
+  bool last_partition  = false;
+  TotalNumItemsT total_previous_num_items{};
+
+  // We use a double-buffer for keeping track of the number of previously selected items
+  TotalNumItemsT* d_num_selected_in  = nullptr;
+  TotalNumItemsT* d_num_selected_out = nullptr;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  streaming_context_t(TotalNumItemsT* d_num_selected_in, TotalNumItemsT* d_num_selected_out, bool is_last_partition)
+      : last_partition(is_last_partition)
+      , d_num_selected_in(d_num_selected_in)
+      , d_num_selected_out(d_num_selected_out)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
+  {
+    ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
+    first_partition = false;
+    last_partition  = next_partition_is_the_last;
+    total_previous_num_items += num_items;
+  };
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  {
+    return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
+  {
+    return first_partition ? TotalNumItemsT{0} : d_num_selected_in[0];
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
+  {
+    return first_partition ? TotalNumItemsT{0} : d_num_selected_in[1];
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  {
+    return first_partition ? TotalNumItemsT{0} : d_num_selected_in[2];
+    ;
+  };
+
+  template <typename NumSelectedIteratorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void update_num_selected(
+    NumSelectedIteratorT user_num_selected_out_it,
+    TotalNumItemsT num_selected_first,
+    TotalNumItemsT num_selected_second,
+    TotalNumItemsT num_items_in_partition) const
+  {
+    if (last_partition)
+    {
+      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
+      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+    }
+    else
+    {
+      d_num_selected_out[0] = num_previously_selected_first() + num_selected_first;
+      d_num_selected_out[1] = num_previously_selected_second() + num_selected_second;
+      d_num_selected_out[2] =
+        num_previously_rejected() + (num_items_in_partition - num_selected_second - num_selected_first);
+    }
+  }
+};
+
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-
 template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename FirstOutputIteratorT,
@@ -66,7 +141,8 @@ template <typename ChainedPolicyT,
           typename ScanTileStateT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
-          typename OffsetT>
+          typename OffsetT,
+          typename StreamingContextT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     InputIteratorT d_in,
@@ -78,7 +154,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
     OffsetT num_items,
-    int num_tiles)
+    int num_tiles,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
 
@@ -91,7 +168,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
     UnselectedOutputIteratorT,
     SelectFirstPartOp,
     SelectSecondPartOp,
-    OffsetT>;
+    OffsetT,
+    StreamingContextT>;
 
   // Shared memory for AgentThreeWayPartition
   __shared__ typename AgentThreeWayPartitionT::TempStorage temp_storage;
@@ -105,7 +183,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
     d_unselected_out,
     select_first_part_op,
     select_second_part_op,
-    num_items)
+    num_items,
+    streaming_context)
     .ConsumeRange(num_tiles, tile_status, d_num_selected_out);
 }
 
@@ -147,6 +226,7 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
     }
   }
 }
+} // namespace detail::three_way_partition
 
 /******************************************************************************
  * Dispatch
@@ -160,21 +240,30 @@ template <typename InputIteratorT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
           typename OffsetT,
-          typename PolicyHub = detail::three_way_partition::policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
+          typename PolicyHub = detail::three_way_partition::
+            policy_hub<cub::detail::it_value_t<InputIteratorT>, detail::three_way_partition::per_partition_offset_t>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
    * Types and constants
    ****************************************************************************/
 
-  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  // Offset type used to instantiate the three-way partition-kernel and agent to index the items within one partition
+  using per_partition_offset_t = detail::three_way_partition::per_partition_offset_t;
+
+  // Type used to provide streaming information about each partition's context
+  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+
+  using streaming_context_t = detail::three_way_partition::streaming_context_t<OffsetT>;
+
+  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
   using AccumPackT       = typename AccumPackHelperT::pack_t;
   using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 
   static constexpr int INIT_KERNEL_THREADS = 256;
 
   void* d_temp_storage;
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
   InputIteratorT d_in;
   FirstOutputIteratorT d_first_part_out;
   SecondOutputIteratorT d_second_part_out;
@@ -187,7 +276,7 @@ struct DispatchThreeWayPartitionIf
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchThreeWayPartitionIf(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
     SecondOutputIteratorT d_second_part_out,
@@ -222,106 +311,112 @@ struct DispatchThreeWayPartitionIf
 
     constexpr int block_threads    = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
     constexpr int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
+    constexpr int tile_size        = block_threads * items_per_thread;
 
-    do
+    // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
+    auto const max_partition_size = static_cast<OffsetT>(
+      (::cuda::std::min) (static_cast<uint64_t>(num_items), static_cast<uint64_t>(partition_size)));
+
+    // The number of partitions required to "iterate" over the total input
+    auto const num_partitions =
+      (max_partition_size == 0) ? OffsetT{1} : ::cuda::ceil_div(num_items, max_partition_size);
+
+    // The maximum number of tiles for which we will ever invoke the kernel
+    auto const max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
+
+    // For streaming invocations, we need two sets (for double-buffering) of three counters each
+    constexpr ::cuda::std::size_t num_counters_per_pass  = 3;
+    constexpr ::cuda::std::size_t num_streaming_counters = 2 * num_counters_per_pass;
+    ::cuda::std::size_t streaming_selection_storage_bytes =
+      (num_partitions > 1) ? num_streaming_counters * sizeof(OffsetT) : ::cuda::std::size_t{0};
+
+    // Specify temporary storage allocation requirements
+    size_t allocation_sizes[2] = {0ULL, streaming_selection_storage_bytes};
+
+    error =
+      CubDebug(ScanTileStateT::AllocationSize(static_cast<int>(max_num_tiles_per_invocation), allocation_sizes[0]));
+    if (cudaSuccess != error)
     {
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Number of input tiles
-      int tile_size = block_threads * items_per_thread;
-      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+    // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
+    void* allocations[2] = {};
 
-      // Specify temporary storage allocation requirements
-      size_t allocation_sizes[1]; // bytes needed for tile status descriptors
+    error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    if (d_temp_storage == nullptr)
+    {
+      // Return if the caller is simply requesting the size of the storage
+      // allocation
+      return cudaSuccess;
+    }
 
-      // Compute allocation pointers into the single storage blob (or compute
-      // the necessary size of the blob)
-      void* allocations[1] = {};
+    // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
+    // and the total number (across all partitions) of items
+    OffsetT* tmp_num_selected_out = static_cast<OffsetT*>(allocations[1]);
+    streaming_context_t streaming_context{
+      tmp_num_selected_out, (tmp_num_selected_out + num_counters_per_pass), (num_partitions <= 1)};
 
-      error = CubDebug(cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Iterate over the partitions until all input is processed
+    for (OffsetT partition_idx = 0; partition_idx < num_partitions; partition_idx++)
+    {
+      OffsetT current_partition_offset = partition_idx * max_partition_size;
+      OffsetT current_num_items =
+        (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : max_partition_size;
 
-      if (d_temp_storage == nullptr)
-      {
-        // Return if the caller is simply requesting the size of the storage
-        // allocation
-        break;
-      }
-
-      // Return if empty problem
-      if (num_items == 0)
-      {
-        break;
-      }
+      // Construct the tile status interface
+      const auto current_num_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
 
       // Construct the tile status interface
       ScanTileStateT tile_status;
-
-      error = CubDebug(tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]));
+      error = CubDebug(tile_status.Init(current_num_tiles, allocations[0], allocation_sizes[0]));
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
 
       // Log three_way_partition_init_kernel configuration
-      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
               init_grid_size,
               INIT_KERNEL_THREADS,
               reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-        .doit(three_way_partition_init_kernel, tile_status, num_tiles, d_num_selected_out);
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+        .doit(three_way_partition_init_kernel, tile_status, current_num_tiles, d_num_selected_out);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
 
       // Sync the stream if specified to flush runtime errors
       error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
 
-      // Get max x-dimension of grid
-      int max_dim_x;
-      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
-      if (cudaSuccess != error)
+      // No more items to process (note, we do not want to return early for num_items==0, because we need to make sure
+      // that `three_way_partition_init_kernel` has written '0' to d_num_selected_out)
+      if (current_num_items == 0)
       {
-        break;
+        return cudaSuccess;
       }
-
-      // Get grid size for scanning tiles
-      dim3 scan_grid_size;
-      scan_grid_size.z = 1;
-      scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-      scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
 // Log select_if_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
@@ -330,23 +425,21 @@ struct DispatchThreeWayPartitionIf
                                         block_threads));
         if (cudaSuccess != error)
         {
-          break;
+          return error;
         }
 
-        _CubLog("Invoking three_way_partition_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d "
+        _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
                 "items per thread, %d SM occupancy\n",
-                scan_grid_size.x,
-                scan_grid_size.y,
-                scan_grid_size.z,
+                current_num_tiles,
                 block_threads,
                 reinterpret_cast<long long>(stream),
                 items_per_thread,
                 range_select_sm_occupancy);
       }
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, block_threads, 0, stream)
         .doit(three_way_partition_kernel,
               d_in,
               d_first_part_out,
@@ -356,23 +449,27 @@ struct DispatchThreeWayPartitionIf
               tile_status,
               select_first_part_op,
               select_second_part_op,
-              num_items,
-              num_tiles);
+              static_cast<per_partition_offset_t>(current_num_items),
+              current_num_tiles,
+              streaming_context);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
 
       // Sync the stream if specified to flush runtime errors
       error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
-    } while (0);
+
+      // Prepare streaming context for next partition (swap double buffers, advance number of processed items, etc.)
+      streaming_context.advance(current_num_items, (partition_idx + OffsetT{2} == num_partitions));
+    }
 
     return error;
   }
@@ -382,8 +479,8 @@ struct DispatchThreeWayPartitionIf
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return Invoke<ActivePolicyT>(
-      DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceThreeWayPartitionKernel<
+      detail::three_way_partition::DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::three_way_partition::DeviceThreeWayPartitionKernel<
         MaxPolicyT,
         InputIteratorT,
         FirstOutputIteratorT,
@@ -393,7 +490,8 @@ struct DispatchThreeWayPartitionIf
         ScanTileStateT,
         SelectFirstPartOp,
         SelectSecondPartOp,
-        OffsetT>);
+        per_partition_offset_t,
+        streaming_context_t>);
   }
 
   /**
@@ -401,7 +499,7 @@ struct DispatchThreeWayPartitionIf
    */
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
     SecondOutputIteratorT d_second_part_out,
@@ -449,39 +547,6 @@ struct DispatchThreeWayPartitionIf
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
-    SelectFirstPartOp select_first_part_op,
-    SelectSecondPartOp select_second_part_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_first_part_out,
-      d_second_part_out,
-      d_unselected_out,
-      d_num_selected_out,
-      select_first_part_op,
-      select_second_part_op,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

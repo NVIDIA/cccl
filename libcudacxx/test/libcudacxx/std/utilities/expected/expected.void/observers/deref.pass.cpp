@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr void operator*() const & noexcept;
 
 #include <cuda/std/cassert>
@@ -43,8 +41,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   return 0;
 }

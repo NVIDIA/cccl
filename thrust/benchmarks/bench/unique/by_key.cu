@@ -49,17 +49,18 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   const auto [new_key_end, new_val_end] = thrust::unique_by_key_copy(
     policy(alloc), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
 
-  const std::size_t unique_elements = thrust::distance(out_keys.begin(), new_key_end);
+  const std::size_t unique_elements = ::cuda::std::distance(out_keys.begin(), new_key_end);
   state.add_element_count(elements);
   state.add_global_memory_reads<KeyT>(elements);
   state.add_global_memory_writes<KeyT>(unique_elements);
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(unique_elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::unique_by_key_copy(
-      policy(alloc, launch), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
-  });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      thrust::unique_by_key_copy(
+        policy(alloc, launch), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
+    });
 }
 
 using key_types =

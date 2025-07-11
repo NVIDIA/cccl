@@ -1,10 +1,12 @@
-
 Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(20)]
-    [int]$CXX_STANDARD = 20
+    [int]$CXX_STANDARD = 20,
+    [Parameter(Mandatory = $false)]
+    [Alias("arch")]
+    [string]$CUDA_ARCH = ""
 )
 
 $CURRENT_PATH = Split-Path $pwd -leaf
@@ -14,7 +16,7 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 Remove-Module -Name build_common
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
 
 $PRESET = "cudax-cpp$CXX_STANDARD"
 $CMAKE_OPTIONS = ""

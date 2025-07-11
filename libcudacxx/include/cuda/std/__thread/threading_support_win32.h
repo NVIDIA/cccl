@@ -20,59 +20,57 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#if defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
 
 #  include <cuda/std/chrono>
 
 #  include <process.h>
 #  include <windows.h>
 
-_CCCL_PUSH_MACROS
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Mutex
-typedef void* __cccl_mutex_t;
+using __cccl_mutex_t = void*;
 #  define _LIBCUDACXX_MUTEX_INITIALIZER 0
 
-#  if defined(_M_IX86) || defined(__i386__) || defined(_M_ARM) || defined(__arm__)
-typedef void* __cccl_recursive_mutex_t[6];
-#  elif defined(_M_AMD64) || defined(__x86_64__) || defined(_M_ARM64) || defined(__aarch64__)
-typedef void* __cccl_recursive_mutex_t[5];
+#  if _CCCL_ARCH(ARM64) || _CCCL_ARCH(X86_64)
+using __cccl_recursive_mutex_t = void* [5];
 #  else
 #    error Unsupported architecture
 #  endif
 
 // Condition Variable
-typedef void* __cccl_condvar_t;
+using __cccl_condvar_t = void*;
 #  define _LIBCUDACXX_CONDVAR_INITIALIZER 0
 
 // Semaphore
-typedef void* __cccl_semaphore_t;
+using __cccl_semaphore_t = void*;
 
 // Execute Once
-typedef void* __cccl_exec_once_flag;
+using __cccl_exec_once_flag = void*;
 #  define _LIBCUDACXX_EXEC_ONCE_INITIALIZER 0
 
 // Thread ID
-typedef long __cccl_thread_id;
+using __cccl_thread_id = long;
 
 // Thread
 #  define _LIBCUDACXX_NULL_THREAD 0U
 
-typedef void* __cccl_thread_t;
+using __cccl_thread_t = void*;
 
 // Thread Local Storage
-typedef long __cccl_tls_key;
+using __cccl_tls_key = long;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC __stdcall
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield()
+_CCCL_API inline void __cccl_thread_yield()
 {
   SwitchToThread();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
+_CCCL_API inline void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
 {
   using namespace chrono;
   // round-up to the nearest millisecond
@@ -82,8 +80,8 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_LIBCUDACXX_HAS_NO_THREADS && _LIBCUDACXX_HAS_THREAD_API_WIN32
+#endif // _LIBCUDACXX_HAS_THREAD_API_WIN32
 
 #endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H

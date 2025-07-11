@@ -20,29 +20,28 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
 
 #  include <cuda/std/chrono>
 #  include <cuda/std/climits>
 
-_CCCL_PUSH_MACROS
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield() {}
+_CCCL_API inline void __cccl_thread_yield() {}
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns)
+_CCCL_API inline void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns)
 {
   NV_IF_TARGET(NV_IS_DEVICE,
                (auto const __step = __ns.count(); assert(__step < numeric_limits<unsigned>::max());
-                asm volatile("nanosleep.u32 %0;" ::"r"((unsigned) __step)
-                             :);))
+                asm volatile("nanosleep.u32 %0;" ::"r"((unsigned) __step) :);))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_LIBCUDACXX_HAS_NO_THREADS && _LIBCUDACXX_HAS_THREAD_API_CUDA
+#endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
 
 #endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H

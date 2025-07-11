@@ -9,8 +9,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
-// UNSUPPORTED: nvcc-11
-
 // <cuda/ptx>
 
 #include <cuda/ptx>

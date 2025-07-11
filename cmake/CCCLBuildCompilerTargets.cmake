@@ -23,10 +23,41 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
-option(CCCL_SUPPRESS_ICC_DEPRECATION_WARNING "Suppress Intel Compiler deprecation warnings" OFF)
-option(CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING "Suppress Visual Studio 2017 deprecation warnings" OFF)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
+  # We test to see if C++ compiler options exist using try-compiles in the CXX lang, and then reuse those flags as
+  # -Xcompiler flags for CUDA targets. This requires that the CXX compiler and CUDA_HOST compilers are the same when
+  # using nvcc.
+  if (CCCL_TOPLEVEL_PROJECT AND CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
+    set(cuda_host_matches_cxx_compiler FALSE)
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+      set(host_info "${CMAKE_CUDA_HOST_COMPILER} (${CMAKE_CUDA_HOST_COMPILER_ID} ${CMAKE_CUDA_HOST_COMPILER_VERSION})")
+      set(cxx_info "${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
+      if (CMAKE_CUDA_HOST_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID AND
+          CMAKE_CUDA_HOST_COMPILER_VERSION VERSION_EQUAL CMAKE_CXX_COMPILER_VERSION)
+        set(cuda_host_matches_cxx_compiler TRUE)
+      endif()
+    else() # CMake < 3.31 doesn't have the CMAKE_CUDA_HOST_COMPILER_ID/VERSION variables
+      set(host_info "${CMAKE_CUDA_HOST_COMPILER}")
+      set(cxx_info "${CMAKE_CXX_COMPILER}")
+      if (CMAKE_CUDA_HOST_COMPILER STREQUAL CMAKE_CXX_COMPILER)
+        set(cuda_host_matches_cxx_compiler TRUE)
+      endif()
+    endif()
+
+    if (NOT cuda_host_matches_cxx_compiler)
+      message(FATAL_ERROR
+        "CCCL developer builds require that CMAKE_CUDA_HOST_COMPILER matches "
+        "CMAKE_CXX_COMPILER when using nvcc:\n"
+        "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}\n"
+        "CMAKE_CUDA_HOST_COMPILER: ${host_info}\n"
+        "CMAKE_CXX_COMPILER: ${cxx_info}\n"
+        "Rerun cmake with \"-DCMAKE_CUDA_HOST_COMPILER=${CMAKE_CXX_COMPILER}\".\n"
+        "Alternatively, configure the CUDAHOSTCXX and CXX environment variables to match.\n"
+      )
+    endif()
+  endif()
+
   add_library(${interface_target} INTERFACE)
 
   foreach (cuda_option IN LISTS cuda_compile_options)
@@ -67,14 +98,6 @@ function(cccl_build_compiler_targets)
 
   if (NOT CCCL_ENABLE_RTTI)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
-  endif()
-
-  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
-  endif()
-
-  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
   endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
@@ -160,16 +183,6 @@ function(cccl_build_compiler_targets)
     endif()
   endif()
 
-  if ("Intel" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # Do not flush denormal floats to zero
-    append_option_if_available("-no-ftz" cxx_compile_options)
-    # Disable warning that inlining is inhibited by compiler thresholds.
-    append_option_if_available("-diag-disable=11074" cxx_compile_options)
-    append_option_if_available("-diag-disable=11076" cxx_compile_options)
-    # Disable warning about deprecated classic compiler
-    append_option_if_available("-diag-disable=10441" cxx_compile_options)
-  endif()
-
   cccl_build_compiler_interface(cccl.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
@@ -181,20 +194,6 @@ function(cccl_build_compiler_targets)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
     target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
   endforeach()
-
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # C4127: conditional expression is constant
-    # Disable this MSVC warning for C++11/C++14. In C++17+, we can use
-    # _CCCL_IF_CONSTEXPR to address these warnings.
-    target_compile_options(cccl.compiler_interface_cpp11 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-    target_compile_options(cccl.compiler_interface_cpp14 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-  endif()
 
   # Some of our unit tests unconditionally throw exceptions, and compilers will
   # detect that the following instructions are unreachable. This is intentional

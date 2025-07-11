@@ -13,6 +13,11 @@ fence
 
 .. include:: generated/fence.rst
 
+fence.sync_restrict
+-------------------
+
+.. include:: generated/fence_sync_restrict.rst
+
 fence.mbarrier_init
 -------------------
 
@@ -28,6 +33,11 @@ fence.proxy.async
 
 
 .. include:: generated/fence_proxy_async.rst
+
+fence.proxy.async.sync_restrict
+-------------------------------
+
+.. include:: generated/fence_proxy_async_generic_sync_restrict.rst
 
 fence.proxy.tensormap
 ---------------------

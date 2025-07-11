@@ -29,29 +29,20 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // a type which may be assigned any other type
 struct any_assign
 {
-  inline _CCCL_HOST_DEVICE any_assign() {}
+  any_assign() = default;
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE any_assign(T)
+  _CCCL_HOST_DEVICE any_assign(T)
   {}
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE any_assign& operator=(T)
+  _CCCL_HOST_DEVICE any_assign& operator=(T)
   {
-    if (0)
-    {
-      // trick the compiler into silencing "warning: this expression has no effect"
-      int* x = 0;
-      *x     = 13;
-    } // end if
-
     return *this;
   }
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END

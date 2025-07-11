@@ -53,21 +53,22 @@ int main()
     }
   };
 
-  ctx.parallel_for(exec_place::host, ly.shape(), ly.read())->*[=] __host__(size_t i, size_t j, slice<double, 2> sy) {
-    double expected = y0(i, j);
-    for (size_t ii = 0; ii < 2; ii++)
-    {
-      for (size_t jj = 0; jj < 2; jj++)
-      {
-        expected += x0(2 * i + ii, 2 * j + jj);
-      }
-    }
+  ctx.parallel_for(exec_place::host(), ly.shape(), ly.read())
+      ->*[=] __host__(size_t i, size_t j, slice<const double, 2> sy) {
+            double expected = y0(i, j);
+            for (size_t ii = 0; ii < 2; ii++)
+            {
+              for (size_t jj = 0; jj < 2; jj++)
+              {
+                expected += x0(2 * i + ii, 2 * j + jj);
+              }
+            }
 
-    if (fabs(sy(i, j) - expected) > 0.001)
-    {
-      printf("sy(%zu, %zu) %f expect %f\n", i, j, sy(i, j), expected);
-    }
-  };
+            if (fabs(sy(i, j) - expected) > 0.001)
+            {
+              printf("sy(%zu, %zu) %f expect %f\n", i, j, sy(i, j), expected);
+            }
+          };
 
   ctx.finalize();
 }

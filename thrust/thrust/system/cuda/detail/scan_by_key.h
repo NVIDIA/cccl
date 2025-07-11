@@ -36,14 +36,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #  include <cub/util_type.cuh>
 
-#  include <thrust/detail/minmax.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -54,8 +53,9 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
   using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
   using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
-  using AccumT            = typename thrust::iterator_traits<ValuesInUnwrapIt>::value_type;
+  using AccumT            = thrust::detail::it_value_t<ValuesInUnwrapIt>;
 
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
@@ -304,7 +304,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
   ValOutputIt ret = value_result;
   THRUST_CDP_DISPATCH(
     (ret = thrust::cuda_cub::detail::inclusive_scan_by_key_n(
-       policy, key_first, value_first, value_result, thrust::distance(key_first, key_last), binary_pred, scan_op);),
+       policy, key_first, value_first, value_result, ::cuda::std::distance(key_first, key_last), binary_pred, scan_op);),
     (ret = thrust::inclusive_scan_by_key(
        cvt_to_seq(derived_cast(policy)), key_first, key_last, value_first, value_result, binary_pred, scan_op);));
 
@@ -321,7 +321,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
   BinaryPred binary_pred)
 {
   return cuda_cub::inclusive_scan_by_key(
-    policy, key_first, key_last, value_first, value_result, binary_pred, thrust::plus<>());
+    policy, key_first, key_last, value_first, value_result, binary_pred, ::cuda::std::plus<>());
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt>
@@ -332,7 +332,8 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
   ValInputIt value_first,
   ValOutputIt value_result)
 {
-  return cuda_cub::inclusive_scan_by_key(policy, key_first, key_last, value_first, value_result, thrust::equal_to<>());
+  return cuda_cub::inclusive_scan_by_key(
+    policy, key_first, key_last, value_first, value_result, ::cuda::std::equal_to<>());
 }
 
 //---------------------------
@@ -354,7 +355,14 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
   ValOutputIt ret = value_result;
   THRUST_CDP_DISPATCH(
     (ret = thrust::cuda_cub::detail::exclusive_scan_by_key_n(
-       policy, key_first, value_first, value_result, thrust::distance(key_first, key_last), init, binary_pred, scan_op);),
+       policy,
+       key_first,
+       value_first,
+       value_result,
+       ::cuda::std::distance(key_first, key_last),
+       init,
+       binary_pred,
+       scan_op);),
     (ret = thrust::exclusive_scan_by_key(
        cvt_to_seq(derived_cast(policy)), key_first, key_last, value_first, value_result, init, binary_pred, scan_op);));
   return ret;
@@ -371,7 +379,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
   BinaryPred binary_pred)
 {
   return cuda_cub::exclusive_scan_by_key(
-    policy, key_first, key_last, value_first, value_result, init, binary_pred, thrust::plus<>());
+    policy, key_first, key_last, value_first, value_result, init, binary_pred, ::cuda::std::plus<>());
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init>
@@ -384,7 +392,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
   Init init)
 {
   return cuda_cub::exclusive_scan_by_key(
-    policy, key_first, key_last, value_first, value_result, init, thrust::equal_to<>());
+    policy, key_first, key_last, value_first, value_result, init, ::cuda::std::equal_to<>());
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt>
@@ -395,7 +403,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
   ValInputIt value_first,
   ValOutputIt value_result)
 {
-  using value_type = typename thrust::iterator_traits<ValInputIt>::value_type;
+  using value_type = thrust::detail::it_value_t<ValInputIt>;
   return cuda_cub::exclusive_scan_by_key(policy, key_first, key_last, value_first, value_result, value_type{});
 }
 

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +12,7 @@
 #define __CCCL_BUILTIN_H
 
 #include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -21,6 +22,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__cccl/attributes.h>
+#include <cuda/std/__cccl/extended_data_types.h>
 
 //! This file consolidates all compiler builtin detection for CCCL.
 //!
@@ -86,59 +90,87 @@
 #  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__array_extent)
 
-#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
-
-// NVCC below 11.2 treats this as a host only function
-#if _CCCL_CUDACC_BELOW(11, 2)
-#  undef _CCCL_BUILTIN_ASSUME_ALIGNED
-#endif // _CCCL_CUDACC_BELOW(11, 2)
-
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
 
-#if _CCCL_CHECK_BUILTIN(builtin_assume)
+#if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif _CCCL_COMPILER(GCC, >=, 13)
+#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
+#else
+#  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
-// NVCC prior to 11.2 cannot handle __builtin_assume
-#if _CCCL_CUDACC_BELOW(11, 2)
-#  undef _CCCL_BUILTIN_ASSUME
-#endif // _CCCL_CUDACC_BELOW(11, 2)
-
-// NVCC prior to 11.2 does not understand __builtin_assume
-#if _CCCL_CUDACC_BELOW(11, 2)
-#  undef _CCCL_BUILTIN_ASSUME
-#endif // _CCCL_CUDACC_BELOW(11, 2)
+#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
 // MSVC supports __builtin_bit_cast from 19.25 on
 #if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)
 #  define _CCCL_BUILTIN_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bit_cast)
 
-// clang prior to clang-10 supports __builtin_bit_cast but it is not a constant expression
-// NVCC prior to 11.7 cannot parse __builtin_bit_cast
-#if _CCCL_COMPILER(CLANG, <, 10) || _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_BIT_CAST
-#endif // clang < 10 || nvcc < 11.7
+#if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
+  || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_POPCOUNT(...)   __builtin_popcount(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
 
-#if _CCCL_CHECK_BUILTIN(builtin_bswap16)
+#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
+#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
+
+// nvcc cannot handle __builtin_popcountg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_POPCOUNTG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
+#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_clzg)
+#  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
+
+// nvcc cannot handle __builtin_clzg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_CLZG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CTZLL(...) __builtin_ctzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ctzg)
+#  define _CCCL_BUITLIN_CTZG(...) __builtin_ctzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ctzg)
+
+// nvcc cannot handle __builtin_ctzg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUITLIN_CTZG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap16) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
 
-#if _CCCL_CHECK_BUILTIN(builtin_bswap32)
+#if _CCCL_CHECK_BUILTIN(builtin_bswap32) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
 
-#if _CCCL_CHECK_BUILTIN(builtin_bswap64)
+#if _CCCL_CHECK_BUILTIN(builtin_bswap64) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_BSWAP64(...) __builtin_bswap64(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap64)
 
-#if _CCCL_CHECK_BUILTIN(builtin_bswap128)
+#if _CCCL_CHECK_BUILTIN(builtin_bswap128) // Only available in GCC >= 11 which supports __has_builtin
 #  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
 
@@ -150,51 +182,35 @@
 #  undef _CCCL_BUILTIN_BSWAP128
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse8) && !_CCCL_HAS_CUDA_COMPILER()
+#  define _CCCL_BUILTIN_BITREVERSE8(...) __builtin_bitreverse8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse16) && !_CCCL_HAS_CUDA_COMPILER()
+#  define _CCCL_BUILTIN_BITREVERSE16(...) __builtin_bitreverse16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32) && !_CCCL_HAS_CUDA_COMPILER()
+#  define _CCCL_BUILTIN_BITREVERSE32(...) __builtin_bitreverse32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse64) && !_CCCL_HAS_CUDA_COMPILER()
+#  define _CCCL_BUILTIN_BITREVERSE64(...) __builtin_bitreverse64(__VA_ARGS__)
+#endif
+
 #if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_COLUMN) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_COLUMN) vvv
 #  define _CCCL_BUILTIN_COLUMN() 0
 #endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
 
-// NVCC below 11.3 cannot handle __builtin_COLUMN
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_COLUMN
-#  define _CCCL_BUILTIN_COLUMN() 0
-#endif // _CCCL_CUDACC_BELOW(11, 3)
-
-#if _CCCL_CHECK_BUILTIN(builtin_contant_p) || _CCCL_COMPILER(GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
+#endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
-
-#if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMAXL(...) __builtin_fmaxl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_FMAXF
-#  undef _CCCL_BUILTIN_FMAX
-#  undef _CCCL_BUILTIN_FMAXL
-#endif // _CCCL_CUDACC_BELOW(11, 7)
-
-#if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_FMINF(...) __builtin_fminf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMIN(...)  __builtin_fmin(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_FMINF
-#  undef _CCCL_BUILTIN_FMIN
-#  undef _CCCL_BUILTIN_FMINL
-#endif // _CCCL_CUDACC_BELOW(11, 7)
 
 #if _CCCL_HAS_BUILTIN(__builtin_FILE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FILE() __builtin_FILE()
@@ -202,79 +218,64 @@
 #  define _CCCL_BUILTIN_FILE() __FILE__
 #endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
-// NVCC below 11.3 cannot handle __builtin_FILE
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_FILE
-#  define _CCCL_BUILTIN_FILE() __FILE__
-#endif // _CCCL_CUDACC_BELOW(11, 3)
-
-#if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_FPCLASSIFY(...) __builtin_fpclassify(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_fpclassify)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_FPCLASSIFY
-#endif // _CCCL_CUDACC_BELOW(11, 7)
-
 #if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
 #  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
 #endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
 
-// NVCC below 11.3 cannot handle __builtin_FUNCTION
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_FUNCTION
-#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
-#endif // _CCCL_CUDACC_BELOW(11, 3)
+#if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
+#endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf)
 
-#if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
-  || (_CCCL_COMPILER(MSVC, >, 19, 24) && _CCCL_CUDACC_AT_LEAST(11, 3))
+#if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
+#endif // _CCCL_CHECK_BUILTIN(builtin_huge_val)
+
+#if _CCCL_CHECK_BUILTIN(builtin_huge_vall) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VALL() __builtin_huge_vall()
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
+#endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
+#  endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+
+// nvcc does not implement __builtin_huge_valf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_HUGE_VALF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
+
+#if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
-// NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if _CCCL_STD_VER < 2014 && (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC))
-#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-#endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER(NVCC)
+#if _CCCL_CHECK_BUILTIN(builtin_is_corresponding_member)
+#  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
+    __builtin_is_corresponding_member(_MPtr1, _MPtr2)
+#elif _CCCL_COMPILER(MSVC, >=, 19, 29)
+// using __is_corresponding_member with msvc outside of constexpr context causes linker errors, see
+// https://developercommunity.visualstudio.com/t/Using-compiler-builtins-causes-linking-n/10888080
+// #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) __is_corresponding_member(_C1, _C2, _MPtr1,
+// _MPtr2)
+#endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
-#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isfinite)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_ISFINITE
-#endif // _CCCL_CUDACC_BELOW(11, 7)
-
-#if _CCCL_CHECK_BUILTIN(builtin_isinf) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isinf)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_ISINF
-#endif // _CCCL_CUDACC_BELOW(11, 7)
-
-#if _CCCL_CHECK_BUILTIN(builtin_isnan) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isnan)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_ISNAN
-#endif // _CCCL_CUDACC_BELOW(11, 7)
+#if _CCCL_CHECK_BUILTIN(builtin_is_pointer_interconvertible_with_class)
+#  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr) \
+    __builtin_is_pointer_interconvertible_with_class(_MPtr)
+#elif _CCCL_COMPILER(MSVC, >=, 19, 29)
+// using __is_pointer_interconvertible_with_class with msvc outside of constexpr context causes linker errors, see
+// https://developercommunity.visualstudio.com/t/Using-compiler-builtins-causes-linking-n/10888080
+// #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr)
+// __is_pointer_interconvertible_with_class(_S, _MPtr)
+#endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7)
 #  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_launder) && gcc >= 7
-
-// NVCC prior to 11.3 and clang prior to clang-10 accept __builtin_launder but break with a compiler error about an
-// invalid return type
-#if _CCCL_COMPILER(CLANG, <, 10) || _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_LAUNDER
-#endif // clang < 10 || nvcc < 11.3
 
 #if _CCCL_HAS_BUILTIN(__builtin_LINE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_LINE() __builtin_LINE()
@@ -282,95 +283,71 @@
 #  define _CCCL_BUILTIN_LINE() __LINE__
 #endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
-// NVCC below 11.3 cannot handle __builtin_LINE
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_LINE
-#  define _CCCL_BUILTIN_LINE() __LINE__
-#endif // _CCCL_CUDACC_BELOW(11, 3)
+#if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nanf)
 
-#if _CCCL_CHECK_BUILTIN(builtin_log) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LOGF(...) __builtin_logf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG(...)  __builtin_log(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOGL(...) __builtin_logl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log)
+#if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NAN(...) __builtin_nan(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nan)
 
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOGF
-#  undef _CCCL_BUILTIN_LOG
-#  undef _CCCL_BUILTIN_LOGL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CHECK_BUILTIN(builtin_nanl) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANL(...) __builtin_nanl(__VA_ARGS__)
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_NANL(...) static_cast<long double>(__builtin_nan(__VA_ARGS__))
+#endif // _CCCL_CHECK_BUILTIN(builtin_nanl)
 
-#if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG10(...)  __builtin_log10(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG10L(...) __builtin_log10l(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANF128(...) __builtin_nanf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
 
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOG10F
-#  undef _CCCL_BUILTIN_LOG10
-#  undef _CCCL_BUILTIN_LOG10L
-#endif // _CCCL_CUDACC_BELOW(11, 7)
+// nvcc does not implement __builtin_nanf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_NANF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
 
-#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+#if _CCCL_CHECK_BUILTIN(builtin_nansf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANSF(...) __builtin_nansf(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nansf)
 
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_ILOGBF
-#  undef _CCCL_BUILTIN_ILOGB
-#  undef _CCCL_BUILTIN_ILOGBL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CHECK_BUILTIN(builtin_nans) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANS(...) __builtin_nans(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_nans)
 
-#if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG1P(...)  __builtin_log1p(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG1PL(...) __builtin_log1pl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log1p)
+#if _CCCL_CHECK_BUILTIN(builtin_nansl) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANSL(...) __builtin_nansl(__VA_ARGS__)
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_NANSL(...) static_cast<long double>(__builtin_nans(__VA_ARGS__))
+#endif // _CCCL_CHECK_BUILTIN(builtin_nansl)
 
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOG1PF
-#  undef _CCCL_BUILTIN_LOG1P
-#  undef _CCCL_BUILTIN_LOG1PL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANSF128(...) __builtin_nansf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
 
-#if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+// nvcc does not implement __builtin_nansf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_NANSF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
 
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOG2F
-#  undef _CCCL_BUILTIN_LOG2
-#  undef _CCCL_BUILTIN_LOG2L
-#endif // _CCCL_CUDACC_BELOW(11, 7)
+#if _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
+#  define _CCCL_BUILTIN_MEMCMP(...) __builtin_memcmp(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
 
-#if _CCCL_CHECK_BUILTIN(builtin_logb) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_MEMCMP
+#endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
 
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOGBF
-#  undef _CCCL_BUILTIN_LOGB
-#  undef _CCCL_BUILTIN_LOGBL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_MEMMOVE(...) __builtin_memmove(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
+
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_MEMMOVE
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
@@ -378,14 +355,15 @@
 #  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete)
 
+#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
+#else
+#  define _CCCL_BUILTIN_PREFETCH(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
+
 #if _CCCL_CHECK_BUILTIN(builtin_signbit) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
-#  undef _CCCL_BUILTIN_SIGNBIT
-#endif // _CCCL_CUDACC_BELOW(11, 7)
 
 #if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
@@ -416,7 +394,7 @@
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_trivial_destructor) && gcc >= 4.3
 
-#if _CCCL_CHECK_BUILTIN(has_unique_object_representations) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_CHECK_BUILTIN(has_unique_object_representations) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_unique_object_representations) && gcc >= 7.0
 
@@ -428,6 +406,8 @@
 #if _CCCL_HAS_BUILTIN(__integer_pack)
 #  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__integer_pack)
+
+#define _CCCL_BUILTIN_IS_ABSTRACT(...) __is_abstract(__VA_ARGS__)
 
 #if _CCCL_CHECK_BUILTIN(is_aggregate) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC, >, 19, 14) \
   || _CCCL_COMPILER(NVRTC)
@@ -510,6 +490,10 @@
 #  define _CCCL_BUILTIN_IS_INTEGRAL(...) __is_integral(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_integral)
 
+#if _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
+#  define _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(...) __is_layout_compatible(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
+
 #if _CCCL_CHECK_BUILTIN(is_literal_type) || _CCCL_COMPILER(GCC, >=, 4, 6) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
@@ -518,11 +502,6 @@
 #if _CCCL_CHECK_BUILTIN(is_lvalue_reference)
 #  define _CCCL_BUILTIN_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_lvalue_reference)
-
-// NVCC prior to 11.3 cannot parse __is_lvalue_reference
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_IS_LVALUE_REFERENCE
-#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_HAS_BUILTIN(__is_member_function_pointer)
 #  define _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(...) __is_member_function_pointer(__VA_ARGS__)
@@ -552,11 +531,6 @@
 #  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_object)
 
-// NVCC prior to 11.3 cannot parse __is_object
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_IS_OBJECT
-#endif // _CCCL_CUDACC_BELOW(11, 3)
-
 #if _CCCL_CHECK_BUILTIN(is_pod) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_POD(...) __is_pod(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_pod) && gcc >= 4.3
@@ -565,6 +539,10 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
 #  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_pointer)
+
+#if _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
+#  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF(...) __is_pointer_interconvertible_base_of(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 
 #if _CCCL_CHECK_BUILTIN(is_polymorphic) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)
@@ -635,11 +613,6 @@
 #  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_unsigned)
 
-// NVCC prior to 11.3 cannot parse __is_unsigned
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  undef _CCCL_BUILTIN_IS_UNSIGNED
-#endif // _CCCL_CUDACC_BELOW(11, 3)
-
 // Disabled due to libstdc++ conflict
 #if 0 // _CCCL_HAS_BUILTIN(__is_void)
 #  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
@@ -664,6 +637,14 @@
 #  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__make_unsigned)
 
+#if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+#  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+
+#if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+#  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+
 #if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_all_extents)
@@ -680,6 +661,10 @@
 #  define _CCCL_BUILTIN_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_cvref)
 
+#if _CCCL_COMPILER(NVRTC, <, 12, 4) // NVRTC below 12.4 fails to properly compile that builtin
+#  undef _CCCL_BUILTIN_REMOVE_CVREF
+#endif // _CCCL_COMPILER(NVRTC, <, 12, 4)
+
 #if _CCCL_HAS_BUILTIN(__remove_extent) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_extent)
@@ -693,6 +678,10 @@
 #elif _CCCL_HAS_BUILTIN(__remove_reference_t) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_reference_t)
+
+#if _CCCL_COMPILER(NVRTC, <, 12, 4) // NVRTC below 12.4 fails to properly compile cuda::std::move with that
+#  undef _CCCL_BUILTIN_REMOVE_REFERENCE_T
+#endif // _CCCL_COMPILER(NVRTC, <, 12, 4)
 
 #if _CCCL_HAS_BUILTIN(__remove_volatile) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
@@ -712,8 +701,7 @@
 #  define _CCCL_BUILTIN_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
-#if _CCCL_COMPILER(MSVC)
-#  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
+#if _CCCL_COMPILER(MSVC) // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
 #  if _CCCL_COMPILER(MSVC, >=, 19, 35) && _CCCL_CUDACC_AT_LEAST(12, 3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 35) ^^^ / vvv _CCCL_COMPILER(MSVC, <, 19, 35) vvv
@@ -725,10 +713,75 @@
 #endif // !_CCCL_COMPILER(MSVC)
 
 // GCC's builtin_strlen isn't reliable at constexpr time
-// MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC) && !(_CCCL_COMPILER(MSVC) && _CCCL_STD_VER < 2017)
+#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
+#endif
+
+// Some compilers provide std::move/std::forward/etc as builtins
+#if defined(__cplusplus)
+// Bring in the feature test macros (needed for std::forward_like)
+#  if _CCCL_HAS_INCLUDE(<version>) // <version> should be the smallest include possible
+#    include <version>
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <ciso646> // otherwise go for the smallest possible header
+#  endif // !_CCCL_COMPILER(NVRTC)
+
+// Bring in the bits of the STL we need
+#  if defined(_GLIBCXX_VERSION)
+#    include <bits/move.h> // for move, forward, forward_like, and addressof
+#  elif defined(_LIBCXX_VERSION)
+#    include <__memory/addressof.h>
+#    include <__utility/as_const.h>
+#    include <__utility/forward.h>
+#    include <__utility/forward_like.h>
+#    include <__utility/move.h>
+#  endif
+
+#  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION)
+// std::move builtin
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
+#      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
+#    endif
+
+// std::forward builtin
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
+#      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
+#    endif
+
+// std::addressof builtin
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
+#      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
+#    endif
+
+// std::as_const builtin
+#    if _CCCL_COMPILER(CLANG, >=, 15)
+#      define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
+#    endif
+
+// std::forward_like builtin
+// Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
+#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && defined(__cpp_lib_forward_like) \
+      && (__cpp_lib_forward_like >= 202217L)
+#      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
+#    endif
+#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
+#endif // defined(__cplusplus)
+
+#ifndef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_AS_CONST
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif
 
 #endif // __CCCL_BUILTIN_H

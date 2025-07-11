@@ -29,64 +29,29 @@
 
 #include <thrust/detail/config/device_system.h>
 
-#include <limits>
+#include <cuda/std/limits>
 
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 #    include <cuda_fp16.h>
-#  endif // _CCCL_HAS_NVFP16
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #    include <cuda_bf16.h>
 _CCCL_DIAG_POP
-
-#    if _CCCL_CUDACC_AT_LEAST(11, 8)
-// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
-_CCCL_DIAG_PUSH
-#      include <cuda_fp8.h>
-_CCCL_DIAG_POP
-#    endif // _CCCL_CUDACC_AT_LEAST(11, 8)
 #  endif // _CCCL_HAS_NVBF16
 
-#  if defined(__CUDA_FP8_TYPES_EXIST__)
-namespace std
-{
-template <>
-class numeric_limits<__nv_fp8_e4m3>
-{
-public:
-  static __nv_fp8_e4m3 max()
-  {
-    return cub::Traits<__nv_fp8_e4m3>::Max();
-  }
-
-  static __nv_fp8_e4m3 lowest()
-  {
-    return cub::Traits<__nv_fp8_e4m3>::Lowest();
-  }
-};
-
-template <>
-class numeric_limits<__nv_fp8_e5m2>
-{
-public:
-  static __nv_fp8_e5m2 max()
-  {
-    return cub::Traits<__nv_fp8_e5m2>::Max();
-  }
-
-  static __nv_fp8_e5m2 lowest()
-  {
-    return cub::Traits<__nv_fp8_e5m2>::Lowest();
-  }
-};
-} // namespace std
-#  endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#  if _CCCL_HAS_NVFP8()
+// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+_CCCL_DIAG_PUSH
+#    include <cuda_fp8.h>
+_CCCL_DIAG_POP
+#  endif // _CCCL_HAS_NVFP8()
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 namespace c2h
@@ -157,11 +122,11 @@ void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT*
 template <template <typename> class... Ps>
 void gen(seed_t seed,
          c2h::device_vector<c2h::custom_type_t<Ps...>>& data,
-         c2h::custom_type_t<Ps...> min = std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
-         c2h::custom_type_t<Ps...> max = std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
+         c2h::custom_type_t<Ps...> min = ::cuda::std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
+         c2h::custom_type_t<Ps...> max = ::cuda::std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
 {
   detail::gen(seed,
-              reinterpret_cast<char*>(thrust::raw_pointer_cast(data.data())),
+              reinterpret_cast<char*>(THRUST_NS_QUALIFIER::raw_pointer_cast(data.data())),
               min,
               max,
               data.size(),
@@ -171,8 +136,8 @@ void gen(seed_t seed,
 template <typename T>
 void gen(seed_t seed,
          c2h::device_vector<T>& data,
-         T min = std::numeric_limits<T>::lowest(),
-         T max = std::numeric_limits<T>::max());
+         T min = ::cuda::std::numeric_limits<T>::lowest(),
+         T max = ::cuda::std::numeric_limits<T>::max());
 
 template <typename T>
 void gen(modulo_t mod, c2h::device_vector<T>& data);
@@ -194,16 +159,17 @@ c2h::device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_s
 template <typename OffsetT, typename KeyT>
 void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, c2h::device_vector<KeyT>& keys_out)
 {
-  detail::init_key_segments(segment_offsets, thrust::raw_pointer_cast(keys_out.data()), sizeof(KeyT));
+  detail::init_key_segments(segment_offsets, THRUST_NS_QUALIFIER::raw_pointer_cast(keys_out.data()), sizeof(KeyT));
 }
 
 template <typename OffsetT, template <typename> class... Ps>
 void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets,
                        c2h::device_vector<custom_type_t<Ps...>>& keys_out)
 {
-  detail::init_key_segments(segment_offsets,
-                            reinterpret_cast<custom_type_state_t*>(thrust::raw_pointer_cast(keys_out.data())),
-                            sizeof(custom_type_t<Ps...>));
+  detail::init_key_segments(
+    segment_offsets,
+    reinterpret_cast<custom_type_state_t*>(THRUST_NS_QUALIFIER::raw_pointer_cast(keys_out.data())),
+    sizeof(custom_type_t<Ps...>));
 }
 
 } // namespace c2h

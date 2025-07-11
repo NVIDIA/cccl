@@ -21,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER > 2014
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct default_sentinel_t
 {};
 inline constexpr default_sentinel_t default_sentinel{};
 
-#endif // _CCCL_STD_VER > 2014
-
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_DEFAULT_SENTINEL_H

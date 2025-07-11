@@ -10,7 +10,7 @@
 
 // not_equal_to
 
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -41,7 +41,7 @@ int main(int, char**)
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
   static_assert((cuda::std::is_same<bool, F::result_type>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert(!f(36, 36));
   assert(f(36, 6));
 
@@ -53,13 +53,11 @@ int main(int, char**)
   assert(f2(36.0, 6));
   assert(!f2(36.0, 36));
   assert(!f2(36, 36.0));
-#if TEST_STD_VER > 2011
   constexpr bool foo = cuda::std::not_equal_to<int>()(36, 36);
   static_assert(!foo, "");
 
   constexpr bool bar = cuda::std::not_equal_to<>()(36.0, 36);
   static_assert(!bar, "");
-#endif
 
   return 0;
 }

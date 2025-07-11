@@ -16,11 +16,12 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include <cmpxchg_loop.h>
-#if !defined(TEST_COMPILER_MSVC)
+
+#include "test_macros.h"
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
@@ -32,8 +33,7 @@ __host__ __device__ __noinline__ void do_test()
   assert(val == T(0));
   A obj(val);
   assert(obj.load() == T(0));
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   obj.store(T(0));
   assert(obj.load() == T(0));
   assert(obj == T(0));
@@ -84,8 +84,7 @@ __host__ __device__ __noinline__ void test()
 
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
-          template <typename, typename>
-          class Selector>
+          template <typename, typename> class Selector>
 __host__ __device__ void test_for_all_types()
 {
   test<Atomic<float, Scope>, float, Selector>();

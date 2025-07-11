@@ -104,8 +104,6 @@ void TestFunctionalPlaceholdersSemiRegular()
   expr3 = expr; // copy-assignable
   ASSERT_EQUAL(expr3(2, 3), 13);
 
-#if _CCCL_STD_VER >= 2014
   static_assert(::cuda::std::semiregular<Expr>, "");
-#endif // _CCCL_STD_VER >= 2014
 }
 DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);

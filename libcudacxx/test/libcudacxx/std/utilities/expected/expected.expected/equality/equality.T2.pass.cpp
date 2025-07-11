@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T2> friend constexpr bool operator==(const expected& x, const T2& v);
 
 #include <cuda/std/cassert>

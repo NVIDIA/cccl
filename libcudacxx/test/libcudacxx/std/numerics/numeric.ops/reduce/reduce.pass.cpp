@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, T x)
+__host__ __device__ constexpr void test(Iter first, Iter last, T x)
 {
   static_assert(cuda::std::is_same<typename cuda::std::iterator_traits<decltype(first)>::value_type,
                                    decltype(cuda::std::reduce(first, last))>::value,
@@ -29,7 +29,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, T x)
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]    = {1, 2, 3, 4, 5, 6};
   unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -40,14 +40,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_return_type()
+__host__ __device__ constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
   static_assert(cuda::std::is_same<T, decltype(cuda::std::reduce(p, p))>::value, "");
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_return_type<char>();
   test_return_type<int>();
@@ -67,8 +67,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

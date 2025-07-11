@@ -8,10 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
-// UNSUPPORTED: c++98, c++03
+#include <cuda/discard_memory>
 
 #include "utils.h"
 #define ARR_SZ 128

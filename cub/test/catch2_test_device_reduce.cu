@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -46,8 +45,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-_CCCL_NV_DIAG_SUPPRESS(1444)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
@@ -68,19 +65,26 @@ using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::in
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_pair<uchar3>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
 type_pair<custom_t>
-#if TEST_HALF_T
-, type_pair<half_t> // testing half
-#endif
-#if TEST_BF_T
-, type_pair<bfloat16_t> // testing bf16
-
+#if TEST_HALF_T()
+, type_pair<half_t>
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+, type_pair<bfloat16_t>
+#endif // TEST_BF_T()
 >;
-#endif
 // clang-format on
 #elif TEST_TYPES == 4
 // DPX SIMD instructions
@@ -150,7 +154,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_t{});
 
     // Verify result

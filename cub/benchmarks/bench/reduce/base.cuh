@@ -25,6 +25,8 @@
  *
  ******************************************************************************/
 
+#pragma once
+
 #include <cub/device/device_reduce.cuh>
 
 #ifndef TUNE_BASE
@@ -69,15 +71,22 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t    = cub::detail::choose_offset_t<OffsetT>;
   using output_t    = T;
   using init_t      = T;
+  using dispatch_t  = cub::DispatchReduce<
+     input_it_t,
+     output_it_t,
+     offset_t,
+     op_t,
+     init_t,
+     accum_t
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t, offset_t>;
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t, policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t>;
+    ,
+    policy_hub_t<accum_t, offset_t>
 #endif // TUNE_BASE
+    >;
 
   // Retrieve axis parameters
-  const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
 
@@ -97,13 +106,13 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init_t{}, launch.get_stream());
   });
 }
 
-NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(all_types, offset_types))
+NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

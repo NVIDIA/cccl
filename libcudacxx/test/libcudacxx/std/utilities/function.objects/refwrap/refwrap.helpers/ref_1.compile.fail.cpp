@@ -28,8 +28,7 @@ __host__ __device__ const A source()
 
 int main(int, char**)
 {
-  cuda::std::reference_wrapper<const A> r = cuda::std::ref(source());
-  (void) r;
+  [[maybe_unused]] cuda::std::reference_wrapper<const A> r = cuda::std::ref(source());
 
   return 0;
 }

@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/__utility/declval.h>
 
-#  if _CCCL_STD_VER >= 2014
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -114,15 +114,14 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void get_property(const _Derived&, _Property) noexcept {}
+  _CCCL_API friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
   _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
                    __has_upstream_resource<_Derived2, _Upstream>)
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __property_value_t<_Property>
-  get_property(const _Derived& __res, _Property __prop)
+  _CCCL_API friend constexpr __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
   {
     return get_property(__res.upstream_resource(), __prop);
   }
@@ -151,8 +150,8 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  endif // _CCCL_STD_VER >= 2014
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_PROPERTY_H

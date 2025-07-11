@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class From, class To>
 // concept common_reference_with;
 
@@ -57,7 +55,7 @@ static_assert(common_reference_with<void, void>, "");
 static_assert(CheckCommonReferenceWith<int, int>(), "");
 static_assert(CheckCommonReferenceWith<int, long>(), "");
 static_assert(CheckCommonReferenceWith<int, unsigned char>(), "");
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
 static_assert(CheckCommonReferenceWith<int, __int128_t>(), "");
 #endif
 static_assert(CheckCommonReferenceWith<int, double>(), "");
@@ -84,29 +82,29 @@ static_assert(CheckCommonReferenceWith<const volatile int*, volatile void*>(), "
 static_assert(CheckCommonReferenceWith<const volatile int*, const volatile void*>(), "");
 
 static_assert(CheckCommonReferenceWith<int (*)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (*)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 struct S
 {};
 static_assert(CheckCommonReferenceWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonReferenceWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)()>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)() noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const, int (S::*)() const>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const volatile, int (S::*)() const volatile>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const volatile, int (S::*)() const volatile noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 
 // nonsense
 static_assert(!common_reference_with<double, float*>, "");
@@ -267,13 +265,11 @@ struct convertible_with_const_s2
 };
 static_assert(common_reference_with<convertible_with_const_s2 const&, s2 const&>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 struct convertible_with_volatile_s2
 {
   __host__ __device__ operator s2 volatile&() volatile;
 };
 static_assert(common_reference_with<convertible_with_volatile_s2 volatile&, s2 volatile&>, "");
-#endif // !TEST_COMPILER_MSVC_2017
 
 struct BadBasicCommonReference
 {

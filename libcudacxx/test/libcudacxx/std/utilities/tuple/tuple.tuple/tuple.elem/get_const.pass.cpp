@@ -14,8 +14,6 @@
 //   typename tuple_element<I, tuple<Types...> >::type const&
 //   get(const tuple<Types...>& t);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 // cuda::std::string not supported
 // #include <cuda/std/string>
@@ -42,7 +40,6 @@ int main(int, char**)
       assert(cuda::std::get<1>(t) == 5);
   }
   */
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::tuple<double, int> T;
     constexpr T t(2.718, 5);
@@ -52,10 +49,8 @@ int main(int, char**)
   {
     typedef cuda::std::tuple<Empty> T;
     constexpr T t{Empty()};
-    constexpr Empty e = cuda::std::get<0>(t);
-    ((void) e); // Prevent unused warning
+    [[maybe_unused]] constexpr Empty e = cuda::std::get<0>(t);
   }
-#endif
   // cuda::std::string not supported
   /*
   {

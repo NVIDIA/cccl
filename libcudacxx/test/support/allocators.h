@@ -20,7 +20,9 @@ class A1
   int id_;
 
 public:
-  __device__ __host__ explicit A1(int id = 0) TEST_NOEXCEPT : id_(id) {}
+  __device__ __host__ explicit A1(int id = 0) noexcept
+      : id_(id)
+  {}
 
   typedef T value_type;
 
@@ -29,9 +31,9 @@ public:
     return id_;
   }
 
-  STATIC_MEMBER_VAR(copy_called, bool);
-  STATIC_MEMBER_VAR(move_called, bool);
-  STATIC_MEMBER_VAR(allocate_called, bool);
+  STATIC_MEMBER_VAR(copy_called, bool)
+  STATIC_MEMBER_VAR(move_called, bool)
+  STATIC_MEMBER_VAR(allocate_called, bool)
 
   __device__ __host__ static cuda::std::pair<T*, cuda::std::size_t>& deallocate_called()
   {
@@ -40,21 +42,23 @@ public:
                       (static cuda::std::pair<T*, cuda::std::size_t> v = 0; return v;))
   }
 
-  __device__ __host__ A1(const A1& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A1(const A1& a) noexcept
+      : id_(a.id())
   {
     copy_called() = true;
   }
-  __device__ __host__ A1(A1&& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A1(A1&& a) noexcept
+      : id_(a.id())
   {
     move_called() = true;
   }
-  __device__ __host__ A1& operator=(const A1& a) TEST_NOEXCEPT
+  __device__ __host__ A1& operator=(const A1& a) noexcept
   {
     id_           = a.id();
     copy_called() = true;
     return *this;
   }
-  __device__ __host__ A1& operator=(A1&& a) TEST_NOEXCEPT
+  __device__ __host__ A1& operator=(A1&& a) noexcept
   {
     id_           = a.id();
     move_called() = true;
@@ -62,12 +66,14 @@ public:
   }
 
   template <class U>
-  __device__ __host__ A1(const A1<U>& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A1(const A1<U>& a) noexcept
+      : id_(a.id())
   {
     copy_called() = true;
   }
   template <class U>
-  __device__ __host__ A1(A1<U>&& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A1(A1<U>&& a) noexcept
+      : id_(a.id())
   {
     move_called() = true;
   }
@@ -107,7 +113,9 @@ class A2
   int id_;
 
 public:
-  __device__ __host__ explicit A2(int id = 0) TEST_NOEXCEPT : id_(id) {}
+  __device__ __host__ explicit A2(int id = 0) noexcept
+      : id_(id)
+  {}
 
   typedef T value_type;
 
@@ -121,25 +129,27 @@ public:
     return id_;
   }
 
-  STATIC_MEMBER_VAR(copy_called, bool);
-  STATIC_MEMBER_VAR(move_called, bool);
-  STATIC_MEMBER_VAR(allocate_called, bool);
+  STATIC_MEMBER_VAR(copy_called, bool)
+  STATIC_MEMBER_VAR(move_called, bool)
+  STATIC_MEMBER_VAR(allocate_called, bool)
 
-  __device__ __host__ A2(const A2& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A2(const A2& a) noexcept
+      : id_(a.id())
   {
     copy_called() = true;
   }
-  __device__ __host__ A2(A2&& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A2(A2&& a) noexcept
+      : id_(a.id())
   {
     move_called() = true;
   }
-  __device__ __host__ A2& operator=(const A2& a) TEST_NOEXCEPT
+  __device__ __host__ A2& operator=(const A2& a) noexcept
   {
     id_           = a.id();
     copy_called() = true;
     return *this;
   }
-  __device__ __host__ A2& operator=(A2&& a) TEST_NOEXCEPT
+  __device__ __host__ A2& operator=(A2&& a) noexcept
   {
     id_           = a.id();
     move_called() = true;
@@ -171,7 +181,9 @@ class A3
   int id_;
 
 public:
-  __device__ __host__ explicit A3(int id = 0) TEST_NOEXCEPT : id_(id) {}
+  __device__ __host__ explicit A3(int id = 0) noexcept
+      : id_(id)
+  {}
 
   typedef T value_type;
 
@@ -183,26 +195,28 @@ public:
     return id_;
   }
 
-  STATIC_MEMBER_VAR(copy_called, bool);
-  STATIC_MEMBER_VAR(move_called, bool);
-  STATIC_MEMBER_VAR(constructed, bool);
-  STATIC_MEMBER_VAR(destroy_called, bool);
+  STATIC_MEMBER_VAR(copy_called, bool)
+  STATIC_MEMBER_VAR(move_called, bool)
+  STATIC_MEMBER_VAR(constructed, bool)
+  STATIC_MEMBER_VAR(destroy_called, bool)
 
-  __device__ __host__ A3(const A3& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A3(const A3& a) noexcept
+      : id_(a.id())
   {
     copy_called() = true;
   }
-  __device__ __host__ A3(A3&& a) TEST_NOEXCEPT : id_(a.id())
+  __device__ __host__ A3(A3&& a) noexcept
+      : id_(a.id())
   {
     move_called() = true;
   }
-  __device__ __host__ A3& operator=(const A3& a) TEST_NOEXCEPT
+  __device__ __host__ A3& operator=(const A3& a) noexcept
   {
     id_           = a.id();
     copy_called() = true;
     return *this;
   }
-  __device__ __host__ A3& operator=(A3&& a) TEST_NOEXCEPT
+  __device__ __host__ A3& operator=(A3&& a) noexcept
   {
     id_           = a.id();
     move_called() = true;

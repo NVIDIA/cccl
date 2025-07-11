@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class In>
 // concept indirectly_readable;
 
@@ -223,19 +221,19 @@ static_assert(!cuda::std::indirectly_readable<int (S::*)() noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() &>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() & noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() &&>, "");
-static_assert(!cuda::std::indirectly_readable < int(S::*)() && noexcept >, "");
+static_assert(!cuda::std::indirectly_readable < int (S::*)() && noexcept >, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const&>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const & noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const&&>, "");
-static_assert(!cuda::std::indirectly_readable < int(S::*)() const&& noexcept >, "");
+static_assert(!cuda::std::indirectly_readable < int (S::*)() const&& noexcept >, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile&>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile & noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile&&>, "");
-static_assert(!cuda::std::indirectly_readable < int(S::*)() volatile && noexcept >, "");
+static_assert(!cuda::std::indirectly_readable < int (S::*)() volatile && noexcept >, "");
 
 int main(int, char**)
 {

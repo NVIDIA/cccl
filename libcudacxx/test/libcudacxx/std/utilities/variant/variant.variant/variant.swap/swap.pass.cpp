@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -66,7 +65,7 @@ __host__ __device__ void do_throw()
 template <>
 __host__ __device__ void do_throw<true>()
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw 42;), (cuda::std::terminate();))
 #else
   cuda::std::terminate();
@@ -76,9 +75,9 @@ __host__ __device__ void do_throw<true>()
 template <bool NT_Copy, bool NT_Move, bool NT_CopyAssign, bool NT_MoveAssign, bool NT_Swap, bool EnableSwap = true>
 struct NothrowTypeImp
 {
-  STATIC_MEMBER_VAR(move_called, int);
-  STATIC_MEMBER_VAR(move_assign_called, int);
-  STATIC_MEMBER_VAR(swap_called, int);
+  STATIC_MEMBER_VAR(move_called, int)
+  STATIC_MEMBER_VAR(move_assign_called, int)
+  STATIC_MEMBER_VAR(swap_called, int)
   __host__ __device__ static void reset()
   {
     move_called() = move_assign_called() = swap_called() = 0;
@@ -145,7 +144,7 @@ using ThrowingMoveAssignNothrowMoveCtor = NothrowTypeImp<false, true, false, fal
 
 struct NonThrowingNonNoexceptType
 {
-  STATIC_MEMBER_VAR(move_called, int);
+  STATIC_MEMBER_VAR(move_called, int)
   __host__ __device__ static void reset()
   {
     move_called() = 0;
@@ -168,7 +167,7 @@ struct NonThrowingNonNoexceptType
   int value;
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct ThrowsOnSecondMove
 {
   int value;
@@ -240,7 +239,7 @@ void test_swap_valueless_by_exception()
     }
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_swap_same_alternative()
 {
@@ -281,7 +280,7 @@ __host__ __device__ void test_swap_same_alternative()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions_same_alternative()
 {
   {
@@ -340,7 +339,7 @@ void test_exceptions_same_alternative()
     assert(cuda::std::get<0>(v2).value == 100);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_swap_different_alternatives()
 {
@@ -354,7 +353,7 @@ __host__ __device__ void test_swap_different_alternatives()
     assert(T::swap_called() == 0);
     // The libc++ implementation double copies the argument, and not
     // the variant swap is called on.
-    LIBCPP_ASSERT(T::move_called() == 1);
+    assert(T::move_called() == 1);
     assert(T::move_called() <= 2);
     assert(T::move_assign_called() == 0);
     assert(cuda::std::get<1>(v1) == 100);
@@ -362,7 +361,7 @@ __host__ __device__ void test_swap_different_alternatives()
     T::reset();
     swap(v1, v2);
     assert(T::swap_called() == 0);
-    LIBCPP_ASSERT(T::move_called() == 2);
+    assert(T::move_called() == 2);
     assert(T::move_called() <= 2);
     assert(T::move_assign_called() == 0);
     assert(cuda::std::get<0>(v1).value == 42);
@@ -370,7 +369,7 @@ __host__ __device__ void test_swap_different_alternatives()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions_different_alternatives()
 {
   {
@@ -392,7 +391,7 @@ void test_exceptions_different_alternatives()
     assert(T1::move_called() == 1); // throws
     assert(T1::move_assign_called() == 0);
     // FIXME: libc++ shouldn't move from T2 here.
-    LIBCPP_ASSERT(T2::move_called() == 1);
+    assert(T2::move_called() == 1);
     assert(T2::move_called() <= 1);
     assert(cuda::std::get<0>(v1).value == 42);
     if (T2::move_called() != 0)
@@ -419,7 +418,7 @@ void test_exceptions_different_alternatives()
     }
     catch (int)
     {}
-    LIBCPP_ASSERT(T1::move_called() == 0);
+    assert(T1::move_called() == 0);
     assert(T1::move_called() <= 1);
     assert(T2::swap_called() == 0);
     assert(T2::move_called() == 1); // throws
@@ -469,11 +468,11 @@ void test_exceptions_different_alternatives()
   }
 #  endif // _LIBCUDACXX_VERSION
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class Var>
-__host__ __device__ constexpr auto
-has_swap_member_imp(int) -> decltype(cuda::std::declval<Var&>().swap(cuda::std::declval<Var&>()), true)
+__host__ __device__ constexpr auto has_swap_member_imp(int)
+  -> decltype(cuda::std::declval<Var&>().swap(cuda::std::declval<Var&>()), true)
 {
   return true;
 }
@@ -497,22 +496,22 @@ __host__ __device__ void test_swap_sfinae()
     // but is still swappable via the generic swap algorithm, since the
     // variant is move constructible and move assignable.
     using V = cuda::std::variant<int, NotSwappable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(cuda::std::is_swappable_v<V>, "");
   }
   {
     using V = cuda::std::variant<int, NotCopyable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(!cuda::std::is_swappable_v<V>, "");
   }
   {
     using V = cuda::std::variant<int, NotCopyableWithSwap>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(!cuda::std::is_swappable_v<V>, "");
   }
   {
     using V = cuda::std::variant<int, NotMoveAssignable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(!cuda::std::is_swappable_v<V>, "");
   }
 }
@@ -531,9 +530,7 @@ __host__ __device__ void test_swap_noexcept()
   {
     using V = cuda::std::variant<int, NothrowMoveCtor>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-#if !defined(TEST_COMPILER_ICC)
     static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
-#endif // !TEST_COMPILER_ICC
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -542,9 +539,7 @@ __host__ __device__ void test_swap_noexcept()
   {
     using V = cuda::std::variant<int, ThrowingTypeWithNothrowSwap>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-#if !defined(TEST_COMPILER_ICC)
     static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
-#endif // !TEST_COMPILER_ICC
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -553,9 +548,7 @@ __host__ __device__ void test_swap_noexcept()
   {
     using V = cuda::std::variant<int, ThrowingMoveAssignNothrowMoveCtor>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-#if !defined(TEST_COMPILER_ICC)
     static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
-#endif // !TEST_COMPILER_ICC
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -584,7 +577,7 @@ __host__ __device__ void test_swap_noexcept()
     // but is still swappable via the generic swap algorithm, since the
     // variant is move constructible and move assignable.
     using V = cuda::std::variant<int, NotSwappable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(cuda::std::is_swappable_v<V>, "");
     static_assert(cuda::std::is_nothrow_swappable_v<V>, "");
     V v1, v2;
@@ -604,11 +597,11 @@ int main(int, char**)
   test_swap_sfinae();
   test_swap_noexcept();
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_swap_valueless_by_exception();))
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions_same_alternative();))
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions_different_alternatives();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

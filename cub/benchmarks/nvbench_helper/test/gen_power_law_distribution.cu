@@ -31,10 +31,12 @@
 #include <algorithm>
 #include <cmath>
 
+#include <nvbench_helper.cuh>
+
 #include <boost/math/statistics/anderson_darling.hpp>
 #include <boost/math/statistics/univariate_statistics.hpp>
-#include <catch2/catch.hpp>
-#include <nvbench_helper.cuh>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 bool is_normal(thrust::host_vector<double> data)
 {

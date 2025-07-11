@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -45,14 +43,14 @@ __host__ __device__ void test()
                   == cuda::std::numeric_limits<cuda::std::uint16_t>::max() + 1 + sizeof(cuda::std::uint32_t),
                 "");
 
-#if !defined(TEST_COMPILER_MSVC) // too large array
+#if !TEST_COMPILER(MSVC) // too large array
   // There is an overflow issue when using cuda::std::numeric_limits<cuda::std::uint32_t>::max() directly
   constexpr size_t uint32_t_max = cuda::std::numeric_limits<cuda::std::uint32_t>::max();
   static_assert(sizeof(cuda::std::inplace_vector<char, uint32_t_max>) == uint32_t_max + 1 + sizeof(cuda::std::uint32_t),
                 "");
   static_assert(
     sizeof(cuda::std::inplace_vector<char, uint32_t_max + 1>) == uint32_t_max + 1 + sizeof(cuda::std::uint64_t), "");
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 
   // Check the type aliases
   using inplace_vector = cuda::std::inplace_vector<int, 42>;
@@ -71,9 +69,7 @@ __host__ __device__ void test()
     cuda::std::is_same<cuda::std::reverse_iterator<const int*>, typename inplace_vector::const_reverse_iterator>::value,
     "");
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(cuda::std::ranges::contiguous_range<inplace_vector>);
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 
   // Ensure we uphoold the guarantees about triviality in [inplace.vector.overview]
   // * If is_trivially_copy_constructible_v<T> is true, then IV has a trivial copy constructor.

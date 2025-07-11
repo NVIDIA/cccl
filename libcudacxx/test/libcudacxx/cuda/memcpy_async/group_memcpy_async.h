@@ -12,8 +12,9 @@
 
 #include <cuda/barrier>
 
-#include "cuda_space_selector.h"
 #include <cooperative_groups.h>
+
+#include "cuda_space_selector.h"
 
 namespace cg = cooperative_groups;
 
@@ -63,7 +64,7 @@ struct storage
   T data[size];
 };
 
-#if !defined(TEST_COMPILER_NVRTC) && (!defined(__GNUC__) || __GNUC__ >= 5 || defined(__clang__))
+#if !TEST_COMPILER(NVRTC) && !TEST_COMPILER(CLANG)
 static_assert(std::is_trivially_copy_constructible<storage<int8_t>>::value, "");
 static_assert(std::is_trivially_copy_constructible<storage<uint16_t>>::value, "");
 static_assert(std::is_trivially_copy_constructible<storage<int32_t>>::value, "");
@@ -71,12 +72,9 @@ static_assert(std::is_trivially_copy_constructible<storage<uint64_t>>::value, ""
 #endif
 
 template <class T,
-          template <typename, typename>
-          class SourceSelector,
-          template <typename, typename>
-          class DestSelector,
-          template <typename, typename>
-          class BarrierSelector,
+          template <typename, typename> class SourceSelector,
+          template <typename, typename> class DestSelector,
+          template <typename, typename> class BarrierSelector,
           cuda::thread_scope BarrierScope,
           typename... CompletionF>
 __device__ __noinline__ void test_fully_specialized()
@@ -123,12 +121,9 @@ struct completion
 };
 
 template <class T,
-          template <typename, typename>
-          class SourceSelector,
-          template <typename, typename>
-          class DestSelector,
-          template <typename, typename>
-          class BarrierSelector>
+          template <typename, typename> class SourceSelector,
+          template <typename, typename> class DestSelector,
+          template <typename, typename> class BarrierSelector>
 __host__ __device__ __noinline__ void test_select_scope()
 {
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_system>();

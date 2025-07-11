@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_day_last;
@@ -27,8 +26,9 @@ int main(int, char**)
   using local_days          = cuda::std::chrono::local_days;
   using days                = cuda::std::chrono::days;
 
-  ASSERT_NOEXCEPT(static_cast<local_days>(cuda::std::declval<const year_month_day_last>()));
-  ASSERT_SAME_TYPE(local_days, decltype(static_cast<local_days>(cuda::std::declval<const year_month_day_last>())));
+  static_assert(noexcept(static_cast<local_days>(cuda::std::declval<const year_month_day_last>())));
+  static_assert(
+    cuda::std::is_same_v<local_days, decltype(static_cast<local_days>(cuda::std::declval<const year_month_day_last>()))>);
 
   { // Last day in Jan 1970 was the 31st
     constexpr year_month_day_last ymdl{year{1970}, month_day_last{cuda::std::chrono::January}};

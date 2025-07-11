@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class In, class Out>
 // concept indirectly_movable_storable;
 
@@ -30,12 +28,12 @@ static_assert(cuda::std::indirectly_movable_storable<int*, int*>, "");
 static_assert(cuda::std::indirectly_movable_storable<const int*, int*>, "");
 static_assert(!cuda::std::indirectly_movable_storable<int*, const int*>, "");
 static_assert(!cuda::std::indirectly_movable_storable<const int*, const int*>, "");
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(cuda::std::indirectly_movable_storable<int*, int[2]>, "");
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(!cuda::std::indirectly_movable_storable<int[2], int*>, "");
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
 static_assert(cuda::std::indirectly_movable_storable<MoveOnly*, MoveOnly*>, "");
 static_assert(cuda::std::indirectly_movable_storable<PointerTo<MoveOnly>, PointerTo<MoveOnly>>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 // The dereference operator returns a different type from `value_type` and the reference type cannot be assigned from a
 // `ValueType`.

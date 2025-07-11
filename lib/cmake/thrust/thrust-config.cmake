@@ -237,34 +237,8 @@ function(thrust_create_target target_name)
     target_compile_definitions(${target_name} INTERFACE "THRUST_FORCE_64_BIT_OFFSET_TYPE")
   endif()
 
-  # This would be nice to enforce, but breaks when using old cmake + new
-  # compiler, since cmake doesn't know what features the new compiler version
-  # supports.
-  # Leaving this here as a reminder not to add it back. Just let the
-  # compile-time checks in thrust/detail/config/cpp_dialect.h handle it.
-  #
-  #  if (NOT TCT_IGNORE_DEPRECATED_CPP_DIALECT)
-  #    if (TCT_IGNORE_DEPRECATED_CPP_11)
-  #      target_compile_features(${target_name} INTERFACE cxx_std_11)
-  #    else()
-  #      target_compile_features(${target_name} INTERFACE cxx_std_14)
-  #    endif()
-  #  endif()
-
-  if (TCT_IGNORE_DEPRECATED_CPP_DIALECT OR CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
-    target_compile_definitions(${target_name} INTERFACE "CCCL_IGNORE_DEPRECATED_CPP_DIALECT")
-  endif()
-
   if (TCT_IGNORE_DEPRECATED_API OR CCCL_IGNORE_DEPRECATED_API)
     target_compile_definitions(${target_name} INTERFACE "CCCL_IGNORE_DEPRECATED_API")
-  endif()
-
-  if (TCT_IGNORE_DEPRECATED_CPP_11 OR CCCL_IGNORE_DEPRECATED_CPP_11)
-    target_compile_definitions(${target_name} INTERFACE "CCCL_IGNORE_DEPRECATED_CPP_11")
-  endif()
-
-  if (TCT_IGNORE_DEPRECATED_CPP_14 OR CCCL_IGNORE_DEPRECATED_CPP_14)
-    target_compile_definitions(${target_name} INTERFACE "CCCL_IGNORE_DEPRECATED_CPP_14")
   endif()
 
   if (TCT_IGNORE_DEPRECATED_COMPILER OR CCCL_IGNORE_DEPRECATED_COMPILER)
@@ -658,11 +632,11 @@ endmacro()
 function(thrust_fixup_omp_target omp_target)
   get_target_property(opts ${omp_target} INTERFACE_COMPILE_OPTIONS)
   foreach (opt IN LISTS opts)
-    if (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:SHELL:([^>]*)>")
+    if (opt MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:SHELL:([^>]*)>")
       target_compile_options(${omp_target} INTERFACE
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:SHELL:-Xcompiler=${CMAKE_MATCH_1}>
       )
-    elseif (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:([^>]*)>")
+    elseif (opt MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:([^>]*)>")
       target_compile_options(${omp_target} INTERFACE
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${CMAKE_MATCH_1}>
       )

@@ -28,7 +28,7 @@
 #include <thrust/system/cpp/detail/malloc_and_free.h>
 #include <thrust/system/cpp/memory.h>
 
-#include <limits>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system

@@ -22,13 +22,13 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, T init, T x)
+__host__ __device__ constexpr void test(Iter first, Iter last, T init, T x)
 {
   assert(cuda::std::accumulate(first, last, init) == x);
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]    = {1, 2, 3, 4, 5, 6};
   unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test(Iter(ia), Iter(ia + sa), 10, 31);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>>();
   test<forward_iterator<const int*>>();
@@ -56,8 +56,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

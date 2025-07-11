@@ -25,10 +25,12 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_CCCL_API constexpr _OutputIterator
 exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init, _BinaryOp __b)
 {
   if (__first != __last)
@@ -51,12 +53,14 @@ exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 }
 
 template <class _InputIterator, class _OutputIterator, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_CCCL_API constexpr _OutputIterator
 exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init)
 {
   return _CUDA_VSTD::exclusive_scan(__first, __last, __result, __init, _CUDA_VSTD::plus<>());
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_EXCLUSIVE_SCAN_H

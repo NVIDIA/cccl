@@ -14,10 +14,6 @@
 
 #include "test_iterators.h"
 
-#if TEST_STD_VER < 2014
-#  error "test/support/test_range.h" can only be included in builds supporting ranges
-#endif
-
 struct sentinel
 {
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
@@ -97,7 +93,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
+inline constexpr bool enable_borrowed_range<BorrowedRange> = true;
 } // namespace ranges
 } // namespace std
 } // namespace cuda
@@ -105,7 +101,6 @@ _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
 static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
 
-#if _LIBCUDACXX_HAS_RANGES
 using BorrowedView = cuda::std::ranges::empty_view<int>;
 static_assert(cuda::std::ranges::view<BorrowedView>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
@@ -113,6 +108,11 @@ static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
 static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
 static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");
-#endif // _LIBCUDACXX_HAS_RANGES
+
+template <class Range>
+inline constexpr bool simple_view =
+  cuda::std::ranges::view<Range> && cuda::std::ranges::range<const Range>
+  && cuda::std::same_as<cuda::std::ranges::iterator_t<Range>, cuda::std::ranges::iterator_t<const Range>>
+  && cuda::std::same_as<cuda::std::ranges::sentinel_t<Range>, cuda::std::ranges::sentinel_t<const Range>>;
 
 #endif // LIBCXX_TEST_SUPPORT_TEST_RANGE_H

@@ -77,8 +77,9 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-  // CUDA treats long double as double
-  //  test<long double>();
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   // Also test conversions
   test<float, int>();
@@ -86,14 +87,14 @@ int main(int, char**)
 
   test_edges<double>();
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

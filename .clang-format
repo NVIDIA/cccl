@@ -25,39 +25,29 @@ AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
                   '_CCCL_ALIGNAS_TYPE',
                   '_CCCL_ALIGNAS',
-                  '_CCCL_CONSTEXPR_CXX14',
-                  '_CCCL_CONSTEXPR_CXX17',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
+                  '_CCCL_DECLSPEC_EMPTY_BASES',
                   '_CCCL_DEVICE',
-                  '_CCCL_FALLTHROUGH',
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HIDE_FROM_ABI',
                   '_CCCL_HOST_DEVICE',
                   '_CCCL_HOST',
                   '_CCCL_NO_UNIQUE_ADDRESS',
-                  '_CCCL_NODISCARD_FRIEND',
-                  '_CCCL_NODISCARD',
-                  '_CCCL_NORETURN',
                   '_CCCL_TYPE_VISIBILITY_DEFAULT',
                   '_CCCL_VISIBILITY_HIDDEN',
                   'CUB_RUNTIME_FUNCTION',
                   'CUB_DETAIL_KERNEL_ATTRIBUTES',
                   'THRUST_RUNTIME_FUNCTION',
                   'THRUST_DETAIL_KERNEL_ATTRIBUTES',
-                  '_LIBCUDACXX_ALIGNOF',
-                  '_LIBCUDACXX_DEPRECATED_IN_CXX11',
-                  '_LIBCUDACXX_DEPRECATED_IN_CXX14',
-                  '_LIBCUDACXX_DEPRECATED_IN_CXX17',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
-                  '_LIBCUDACXX_HIDE_FROM_ABI',
-                  '_CUDAX_API',
-                  '_CUDAX_HOST_API',
-                  '_CUDAX_DEVICE_API',
-                  '_CUDAX_TRIVIAL_API',
-                  '_CUDAX_TRIVIAL_HOST_API',
-                  '_CUDAX_TRIVIAL_DEVICE_API',
+                  '_CCCL_API',
+                  '_CCCL_HOST_API',
+                  '_CCCL_DEVICE_API',
+                  '_CCCL_TRIVIAL_API',
+                  '_CCCL_TRIVIAL_HOST_API',
+                  '_CCCL_TRIVIAL_DEVICE_API',
                  ]
 BinPackArguments: false
 BinPackParameters: false
@@ -88,14 +78,24 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IfMacros: [
-  '_CCCL_IF_CONSTEXPR'
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C',
+  '_CCCL_CATCH'
 ]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<cuda/experimental/__async/sender/prologue.cuh>'
+  - Regex:           '^<cuda/std/__cccl/prologue.h>'
     Priority:            0x7FFFFFFF
     SortPriority:        0x7FFFFFFF
+  - Regex:           '^<cuda/std/__cccl/epilogue.h>'
+    Priority:            -0x7FFFFFFF
+    SortPriority:        -0x7FFFFFFF
+  - Regex:           '^<cuda/experimental/__execution/prologue.cuh>'
+    Priority:            0x7FFFFFFF
+    SortPriority:        0x7FFFFFFF
+  - Regex:           '^"insert_nested_NVTX_range_guard.h"'
+    Priority:            -1
+    SortPriority:        -1
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0
@@ -111,9 +111,15 @@ IncludeCategories:
   - Regex:           '^<cuda/'
     Priority:            4
     SortPriority:        3
-  - Regex:           '^<[a-z_]*>$'
+  - Regex:           '^<nv/'
     Priority:            6
     SortPriority:        5
+  - Regex:           '^<[a-z_]*>$'
+    Priority:            7
+    SortPriority:        6
+  - Regex:           '^<[a-z_]*\.[a-z]+>$'
+    Priority:            8
+    SortPriority:        7
   - Regex:           '^<cuda'
     Priority:            0
     SortPriority:        0
@@ -129,6 +135,7 @@ MaxEmptyLinesToKeep: 1
 Macros:
 - _CCCL_TEMPLATE(...)=template<...>
 - _CCCL_REQUIRES(...)=requires (...)
+- _CUDAX_SEMI_PRIVATE=private
 WhitespaceSensitiveMacros:
 - _CCCL_HAS_INCLUDE
 NamespaceIndentation: None

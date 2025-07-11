@@ -28,48 +28,33 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public integral_constant<bool, _CCCL_BUILTIN_IS_SCALAR(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public bool_constant<_CCCL_BUILTIN_IS_SCALAR(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_scalar_v = _CCCL_BUILTIN_IS_SCALAR(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_scalar_v = _CCCL_BUILTIN_IS_SCALAR(_Tp);
 
 #else
 
 template <class _Tp>
-struct __is_block : false_type
-{};
-#  if defined(_LIBCUDACXX_HAS_EXTENSION_BLOCKS)
-template <class _Rp, class... _Args>
-struct __is_block<_Rp (^)(_Args...)> : true_type
-{};
-#  endif
+inline constexpr bool is_scalar_v =
+  is_arithmetic_v<_Tp> || is_member_pointer_v<_Tp> || is_pointer_v<_Tp> || is_null_pointer_v<_Tp> || is_enum_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar
-    : public integral_constant<bool,
-                               is_arithmetic<_Tp>::value || is_member_pointer<_Tp>::value || is_pointer<_Tp>::value
-                                 || __is_nullptr_t<_Tp>::value || __is_block<_Tp>::value || is_enum<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public bool_constant<is_scalar_v<_Tp>>
 {};
-
-template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar<nullptr_t> : public true_type
-{};
-
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SCALAR_H

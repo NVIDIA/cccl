@@ -12,8 +12,6 @@
 
 // tuple(const tuple& u) = default;
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 

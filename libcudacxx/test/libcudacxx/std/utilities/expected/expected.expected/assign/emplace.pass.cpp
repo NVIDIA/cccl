@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // template<class... Args>
@@ -34,9 +32,8 @@
 #include "test_macros.h"
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(CanEmplace_, requires(T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...))));
-template <class T, class... Args>
-constexpr bool CanEmplace = _CCCL_FRAGMENT(CanEmplace_, T, Args...);
+_CCCL_CONCEPT CanEmplace =
+  _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...)));
 
 static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
 
@@ -49,10 +46,8 @@ struct CtorFromInt
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int>, "");
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int, int>, "");
-#ifndef TEST_COMPILER_ICC
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int>, "");
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int, int>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

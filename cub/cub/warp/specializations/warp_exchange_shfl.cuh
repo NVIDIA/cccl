@@ -40,12 +40,14 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
 
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
+template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeShfl
 {
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
@@ -54,7 +56,7 @@ class WarpExchangeShfl
                 "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
                 "LOGICAL_WARP_THREADS");
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
 
   // concrete recursion class
   template <typename OutputT, int IDX, int SIZE>
@@ -216,15 +218,15 @@ class WarpExchangeShfl
     }
 
     // terminate recursion
-    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, Int2Type<0>) {}
+    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, constant_t<0>) {}
 
     template <int NUM_ENTRIES>
-    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, Int2Type<NUM_ENTRIES>)
+    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, constant_t<NUM_ENTRIES>)
     {
       const bool xor_bit_set = lane_id & NUM_ENTRIES;
       Foreach<NUM_ENTRIES>(xor_bit_set, mask);
 
-      TransposeImpl(lane_id, mask, Int2Type<NUM_ENTRIES / 2>());
+      TransposeImpl(lane_id, mask, constant_v<NUM_ENTRIES / 2>);
     }
 
   public:
@@ -241,7 +243,7 @@ class WarpExchangeShfl
 
     _CCCL_DEVICE void Transpose(const unsigned int lane_id, const unsigned int mask)
     {
-      TransposeImpl(lane_id, mask, Int2Type<ITEMS_PER_THREAD / 2>());
+      TransposeImpl(lane_id, mask, constant_v<ITEMS_PER_THREAD / 2>);
     }
   };
 
@@ -273,8 +275,8 @@ public:
   WarpExchangeShfl() = delete;
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&)
-      : lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
+      : lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 

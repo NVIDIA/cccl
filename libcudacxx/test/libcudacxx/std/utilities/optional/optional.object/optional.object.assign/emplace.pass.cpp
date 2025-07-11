@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class... Args> T& optional<T>::emplace(Args&&... args);
@@ -21,10 +20,59 @@
 
 using cuda::std::optional;
 
+#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
+struct ConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ constexpr operator T&() noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ constexpr operator const T&() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+
+template <class T>
+struct ExplicitlyConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ explicit constexpr operator T&() noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ explicit constexpr operator const T&() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool
+  operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+template <class T, class U = T>
 __host__ __device__ constexpr bool test_one_arg()
 {
   using Opt = cuda::std::optional<T>;
+
+  cuda::std::remove_reference_t<U> val{1};
+  cuda::std::remove_reference_t<U> other_val{42};
+  if constexpr (!cuda::std::is_reference_v<cuda::std::remove_const_t<T>>)
   {
     Opt opt;
     auto& v = opt.emplace();
@@ -35,14 +83,16 @@ __host__ __device__ constexpr bool test_one_arg()
   }
   {
     Opt opt;
-    auto& v = opt.emplace(1);
+    auto& v = opt.emplace(val);
     static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
     assert(static_cast<bool>(opt) == true);
-    assert(*opt == T(1));
+    assert(*opt == val);
     assert(&v == &*opt);
   }
+
+  if constexpr (!cuda::std::is_reference_v<cuda::std::remove_const_t<T>>)
   {
-    Opt opt(2);
+    Opt opt(other_val);
     auto& v = opt.emplace();
     static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
     assert(static_cast<bool>(opt) == true);
@@ -50,11 +100,11 @@ __host__ __device__ constexpr bool test_one_arg()
     assert(&v == &*opt);
   }
   {
-    Opt opt(2);
-    auto& v = opt.emplace(1);
+    Opt opt(other_val);
+    auto& v = opt.emplace(val);
     static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
     assert(static_cast<bool>(opt) == true);
-    assert(*opt == T(1));
+    assert(*opt == val);
     assert(&v == &*opt);
   }
   return true;
@@ -64,6 +114,7 @@ template <class T>
 __host__ __device__ constexpr bool test_multi_arg()
 {
   test_one_arg<T>();
+
   using Opt = cuda::std::optional<T>;
   {
     Opt opt;
@@ -96,7 +147,7 @@ template <class T>
 __host__ __device__ void test_on_test_type()
 {
   T::reset();
-  optional<T> opt;
+  optional<T> opt{};
   assert(T::alive() == 0);
   {
     T::reset_constructors();
@@ -184,21 +235,10 @@ __host__ __device__ void test_on_test_type()
   }
 }
 
-__host__ __device__ constexpr bool test_empty_emplace()
-{
-  optional<const int> opt;
-  auto& v = opt.emplace(42);
-  static_assert(cuda::std::is_same_v<const int&, decltype(v)>, "");
-  assert(*opt == 42);
-  assert(v == 42);
-  opt.emplace();
-  assert(*opt == 0);
-  return true;
-}
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct Y
 {
-  STATIC_MEMBER_VAR(dtor_called, bool);
+  STATIC_MEMBER_VAR(dtor_called, bool)
   Y() = default;
   Y(int)
   {
@@ -212,14 +252,14 @@ struct Y
 
 void test_exceptions()
 {
-  Y::dtor_called() = true;
+  Y::dtor_called() = false;
   Y y;
   optional<Y> opt(y);
   try
   {
     assert(static_cast<bool>(opt) == true);
     assert(Y::dtor_called() == false);
-    auto& v = opt.emplace(1);
+    [[maybe_unused]] auto& v = opt.emplace(1);
     static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
     assert(false);
   }
@@ -230,57 +270,46 @@ void test_exceptions()
     assert(Y::dtor_called() == true);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
+
+__host__ __device__ constexpr bool test()
+{
+  test_one_arg<int>();
+  test_one_arg<const int>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test_one_arg<int&>();
+  test_one_arg<const int&>();
+
+  test_one_arg<int&, ConvertibleToReference<int>>();
+  test_one_arg<const int&, ConvertibleToReference<int>>();
+  test_one_arg<int&, ExplicitlyConvertibleToReference<int>>();
+  test_one_arg<const int&, ExplicitlyConvertibleToReference<int>>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  test_multi_arg<ConstexprTestTypes::TestType>();
+  test_multi_arg<ExplicitConstexprTestTypes::TestType>();
+
+  test_multi_arg<TrivialTestTypes::TestType>();
+  test_multi_arg<ExplicitTrivialTestTypes::TestType>();
+
+  return true;
+}
 
 int main(int, char**)
 {
+  test();
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test(), "");
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   {
     test_on_test_type<TestTypes::TestType>();
     test_on_test_type<ExplicitTestTypes::TestType>();
   }
-  {
-    using T = int;
-    test_one_arg<T>();
-    test_one_arg<const T>();
-#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(test_one_arg<T>());
-    static_assert(test_one_arg<const T>());
-#endif
-  }
-  {
-    using T = ConstexprTestTypes::TestType;
-    test_multi_arg<T>();
-#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(test_multi_arg<T>());
-#endif
-  }
-  {
-    using T = ExplicitConstexprTestTypes::TestType;
-    test_multi_arg<T>();
-#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(test_multi_arg<T>());
-#endif
-  }
-  {
-    using T = TrivialTestTypes::TestType;
-    test_multi_arg<T>();
-#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(test_multi_arg<T>());
-#endif
-  }
-  {
-    using T = ExplicitTrivialTestTypes::TestType;
-    test_multi_arg<T>();
-#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(test_multi_arg<T>());
-#endif
-  }
-  {
-    test_empty_emplace();
-#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(test_empty_emplace());
-#endif
-  }
 
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

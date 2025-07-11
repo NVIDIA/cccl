@@ -9,6 +9,36 @@
 
 #include <unittest/unittest.h>
 
+// ensure that we properly support thrust::reverse_iterator from cuda::std
+void TestTransformOutputIteratorTraits()
+{
+  using func    = ::cuda::std::negate<int>;
+  using base_it = thrust::host_vector<int>::iterator;
+
+  using it        = thrust::transform_output_iterator<func, base_it>;
+  using traits    = cuda::std::iterator_traits<it>;
+  using reference = thrust::detail::transform_output_iterator_proxy<func, base_it>;
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, int>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, reference>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, ::cuda::std::random_access_iterator_tag>);
+
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(!cuda::std::output_iterator<it, int>);
+  // FIXME(bgruber): all up to and including random access should be true
+  static_assert(!cuda::std::input_iterator<it>);
+  static_assert(!cuda::std::forward_iterator<it>);
+  static_assert(!cuda::std::bidirectional_iterator<it>);
+  static_assert(!cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
+}
+DECLARE_UNITTEST(TestTransformOutputIteratorTraits);
+
 template <class Vector>
 void TestTransformOutputIterator()
 {
@@ -66,12 +96,12 @@ struct TestTransformOutputIteratorScan
     thrust::device_vector<T> d_result(n);
 
     // run on host
-    thrust::inclusive_scan(thrust::make_transform_iterator(h_data.begin(), thrust::negate<T>()),
-                           thrust::make_transform_iterator(h_data.end(), thrust::negate<T>()),
+    thrust::inclusive_scan(thrust::make_transform_iterator(h_data.begin(), ::cuda::std::negate<T>()),
+                           thrust::make_transform_iterator(h_data.end(), ::cuda::std::negate<T>()),
                            h_result.begin());
     // run on device
     thrust::inclusive_scan(
-      d_data.begin(), d_data.end(), thrust::make_transform_output_iterator(d_result.begin(), thrust::negate<T>()));
+      d_data.begin(), d_data.end(), thrust::make_transform_output_iterator(d_result.begin(), ::cuda::std::negate<T>()));
 
     ASSERT_EQUAL(h_result, d_result);
   }

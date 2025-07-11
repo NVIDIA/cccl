@@ -74,29 +74,45 @@ public:
   data_place() = default;
 
   /**
-   * @brief Constant representing an invalid `data_place` object.
+   * @brief Represents an invalid `data_place` object.
    */
-  static const data_place invalid;
+  static data_place invalid()
+  {
+    return data_place(invalid_devid);
+  }
 
   /**
-   * @brief Constant representing the host CPU as the `data_place`.
+   * @brief Represents the host CPU as the `data_place` (pinned host memory, or
+   * memory which should be pinned by CUDASTF).
    */
-  static const data_place host;
+  static data_place host()
+  {
+    return data_place(host_devid);
+  }
 
   /**
-   * @brief Constant representing a managed memory location as the `data_place`.
+   * @brief Represents a managed memory location as the `data_place`.
    */
-  static const data_place managed;
+  static data_place managed()
+  {
+    return data_place(managed_devid);
+  }
 
   /// This actually does not define a data_place, but means that we should use
   /// the data place affine to the execution place
-  static const data_place affine;
+  static data_place affine()
+  {
+    return data_place(affine_devid);
+  }
 
   /**
    * @brief Constant representing a placeholder that lets the library automatically select a GPU device as the
    * `data_place`.
    */
-  static const data_place device_auto;
+  static data_place device_auto()
+  {
+    return data_place(device_auto_devid);
+  }
 
   /** @brief Data is placed on device with index dev_id. Two relaxations are allowed: -1 can be passed to create a
    * placeholder for the host, and -2 can be used to create a placeholder for a managed device.
@@ -141,40 +157,71 @@ public:
   /// checks if this data place is a composite data place
   bool is_composite() const
   {
-    return (composite_desc != nullptr);
+    // If the devid indicates composite_devid then we must have a descriptor
+    _CCCL_ASSERT(devid != composite_devid || composite_desc != nullptr, "invalid state");
+    return (devid == composite_devid);
   }
 
   /// checks if this data place is a green context data place
   bool is_green_ctx() const
   {
 #if CUDA_VERSION >= 12040
-    return gc_view != nullptr;
+    // If the devid indicates green_ctx_devid then we must have a descriptor
+    _CCCL_ASSERT(devid != green_ctx_devid || gc_view != nullptr, "invalid state");
+
+    return (devid == green_ctx_devid);
 #else
     return false;
 #endif
   }
 
+  bool is_invalid() const
+  {
+    return devid == invalid_devid;
+  }
+
+  bool is_host() const
+  {
+    return devid == host_devid;
+  }
+
+  bool is_managed() const
+  {
+    return devid == managed_devid;
+  }
+
+  bool is_affine() const
+  {
+    return devid == affine_devid;
+  }
+
   /// checks if this data place corresponds to a specific device
   bool is_device() const
   {
-    return !is_composite() && !is_green_ctx() && (devid >= 0);
+    // All other type of data places have a specific negative devid value.
+    return (devid >= 0);
+  }
+
+  bool is_device_auto() const
+  {
+    return devid == device_auto_devid;
   }
 
   ::std::string to_string() const
   {
-    if (*this == host)
+    if (devid == host_devid)
     {
       return "host";
     }
-    if (*this == managed)
+    if (devid == managed_devid)
     {
       return "managed";
     }
-    if (*this == device_auto)
+    if (devid == device_auto_devid)
     {
       return "auto";
     }
-    if (*this == invalid)
+    if (devid == invalid_devid)
     {
       return "invalid";
     }
@@ -194,7 +241,7 @@ public:
 
   /**
    * @brief Returns an index guaranteed to be >= 0 (0 for managed CPU, 1 for pinned CPU,  2 for device 0, 3 for device
-   * 1, ...). Requires that `p` is initialized and different from `data_place::invalid`.
+   * 1, ...). Requires that `p` is initialized and different from `data_place::invalid()`.
    */
   friend inline size_t to_index(const data_place& p)
   {
@@ -252,22 +299,18 @@ public:
   //} state
 
 private:
-  /* Constants to implement data_place::invalid, data_place::host, etc. */
+  /* Constants to implement data_place::invalid(), data_place::host(), etc. */
   enum devid : int
   {
     invalid_devid     = ::std::numeric_limits<int>::min(),
+    green_ctx_devid   = -6,
+    composite_devid   = -5,
     device_auto_devid = -4,
     affine_devid      = -3,
     managed_devid     = -2,
     host_devid        = -1,
   };
 };
-
-inline const data_place data_place::invalid(invalid_devid);
-inline const data_place data_place::host(host_devid);
-inline const data_place data_place::managed(managed_devid);
-inline const data_place data_place::device_auto(device_auto_devid);
-inline const data_place data_place::affine(affine_devid);
 
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
@@ -323,7 +366,7 @@ public:
       }
     }
 
-    virtual const data_place& affine_data_place() const
+    virtual const data_place affine_data_place() const
     {
       return affine;
     }
@@ -331,6 +374,11 @@ public:
     virtual ::std::string to_string() const
     {
       return "exec(" + affine.to_string() + ")";
+    }
+
+    virtual bool is_host() const
+    {
+      return affine.is_host();
     }
 
     virtual bool is_device() const
@@ -351,7 +399,7 @@ public:
     virtual void set_affine_data_place(data_place place)
     {
       affine = mv(place);
-    };
+    }
 
     virtual bool operator==(const impl& rhs) const
     {
@@ -386,14 +434,15 @@ public:
     explicit impl(int devid)
         : affine(data_place::device(devid))
     {}
-    data_place affine = data_place::invalid;
+    data_place affine = data_place::invalid();
   };
 
   exec_place() = default;
   exec_place(const data_place& affine)
       : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : ::std::make_shared<impl>(affine))
   {
-    EXPECT(pimpl->affine != data_place::host, "To create an execution place for the host, use exec_place::host.");
+    _CCCL_ASSERT(pimpl->affine != data_place::host(),
+                 "To create an execution place for the host, use exec_place::host().");
   }
 
   bool operator==(const exec_place& rhs) const
@@ -403,6 +452,12 @@ public:
   bool operator!=(const exec_place& rhs) const
   {
     return !(*this == rhs);
+  }
+
+  // To use in a ::std::map indexed by exec_place
+  bool operator<(const exec_place& rhs) const
+  {
+    return pimpl < rhs.pimpl;
   }
 
   /**
@@ -463,7 +518,7 @@ public:
   /**
    * @brief Returns the `data_place` naturally associated with this execution place.
    */
-  const data_place& affine_data_place() const
+  const data_place affine_data_place() const
   {
     return pimpl->affine_data_place();
   }
@@ -471,7 +526,7 @@ public:
   void set_affine_data_place(data_place place)
   {
     pimpl->set_affine_data_place(mv(place));
-  };
+  }
 
   stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
   {
@@ -509,6 +564,11 @@ public:
     pimpl->deactivate(state, p);
   }
 
+  bool is_host() const
+  {
+    return pimpl->is_host();
+  }
+
   bool is_device() const
   {
     return pimpl->is_device();
@@ -536,8 +596,9 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static const exec_place_host host;
-  static const exec_place device_auto;
+  static exec_place_host host();
+  static exec_place device_auto();
+
   static exec_place device(int devid);
 
 // Green contexts are only supported since CUDA 12.4
@@ -635,7 +696,7 @@ public:
   {
   public:
     impl()
-        : exec_place::impl(data_place::host)
+        : exec_place::impl(data_place::host())
     {}
     exec_place activate(backend_ctx_untyped&) const override
     {
@@ -643,11 +704,11 @@ public:
     } // no-op
     void deactivate(backend_ctx_untyped&, const exec_place& p) const override
     {
-      EXPECT(!p.get_impl());
+      _CCCL_ASSERT(!p.get_impl(), "");
     } // no-op
-    virtual const data_place& affine_data_place() const override
+    virtual const data_place affine_data_place() const override
     {
-      return data_place::host;
+      return data_place::host();
     }
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
     {
@@ -676,13 +737,20 @@ private:
   }
 };
 
-inline const exec_place_host exec_place::host{};
-inline const exec_place exec_place::device_auto{data_place::device_auto};
+inline exec_place_host exec_place::host()
+{
+  return exec_place_host();
+}
+
+inline exec_place exec_place::device_auto()
+{
+  return exec_place(data_place::device_auto());
+}
 
 UNITTEST("exec_place_host::operator->*")
 {
   bool witness = false;
-  exec_place::host->*[&] {
+  exec_place::host()->*[&] {
     witness = true;
   };
   EXPECT(witness);
@@ -736,7 +804,7 @@ UNITTEST("exec_place assignments")
   {
     e = exec_place::device(1);
   }
-  e = exec_place::host;
+  e = exec_place::host();
 };
 
 UNITTEST("exec_place movable")
@@ -767,9 +835,9 @@ public:
         : dims(static_cast<int>(_places.size()), 1, 1, 1)
         , places(mv(_places))
     {
-      assert(!places.empty());
-      assert(dims.x > 0);
-      assert(affine == data_place::invalid);
+      _CCCL_ASSERT(!places.empty(), "");
+      _CCCL_ASSERT(dims.x > 0, "");
+      _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
     // With a "dim4 shape"
@@ -777,8 +845,8 @@ public:
         : dims(_dims)
         , places(mv(_places))
     {
-      assert(dims.x > 0);
-      assert(affine == data_place::invalid);
+      _CCCL_ASSERT(dims.x > 0, "");
+      _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
     // TODO improve with a better description
@@ -1264,6 +1332,9 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
 {
   data_place result;
 
+  // Flags this is a composite data place
+  result.devid = composite_devid;
+
   // Save the state that is specific to a composite data place into the
   // data_place object.
   result.composite_desc = ::std::make_shared<composite_state>(grid, f);
@@ -1275,6 +1346,7 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
 inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 {
   data_place result;
+  result.devid   = green_ctx_devid;
   result.gc_view = ::std::make_shared<green_ctx_view>(gc_view);
   return result;
 }
@@ -1290,17 +1362,17 @@ data_place data_place::composite(partitioner_t, const exec_place_grid& g)
 inline exec_place data_place::get_affine_exec_place() const
 {
   //    EXPECT(*this != affine);
-  //    EXPECT(*this != data_place::invalid);
+  //    EXPECT(*this != data_place::invalid());
 
-  if (*this == host)
+  if (is_host())
   {
-    return exec_place::host;
+    return exec_place::host();
   }
 
   // This is debatable !
-  if (*this == managed)
+  if (is_managed())
   {
-    return exec_place::host;
+    return exec_place::host();
   }
 
   if (is_composite())
@@ -1355,7 +1427,8 @@ inline bool data_place::operator==(const data_place& rhs) const
   if (is_green_ctx())
   {
 #if CUDA_VERSION >= 12040
-    return *gc_view == *rhs.gc_view;
+    _CCCL_ASSERT(devid == green_ctx_devid, "");
+    return (rhs.devid == green_ctx_devid && *gc_view == *rhs.gc_view);
 #else
     assert(0);
 #endif
@@ -1367,8 +1440,8 @@ inline bool data_place::operator==(const data_place& rhs) const
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
 {
-  EXPECT(data_place::managed == data_place::managed);
-  EXPECT(data_place::managed != data_place::host);
+  EXPECT(data_place::managed() == data_place::managed());
+  EXPECT(data_place::managed() != data_place::host());
 };
 #endif // UNITTESTED_FILE
 
@@ -1385,9 +1458,9 @@ enum class instance_id_t : size_t
 #ifdef UNITTESTED_FILE
 UNITTEST("places to_symbol")
 {
-  EXPECT(data_place::host.to_string() == ::std::string("host"));
+  EXPECT(data_place::host().to_string() == ::std::string("host"));
   EXPECT(exec_place::current_device().to_string() == ::std::string("exec(dev0)"));
-  EXPECT(exec_place::host.to_string() == ::std::string("exec(host)"));
+  EXPECT(exec_place::host().to_string() == ::std::string("exec(host)"));
 };
 
 UNITTEST("exec place equality")
@@ -1398,7 +1471,7 @@ UNITTEST("exec place equality")
   auto c2 = exec_place::current_device();
   EXPECT(c1 == c2);
 
-  EXPECT(exec_place::host != exec_place::current_device());
+  EXPECT(exec_place::host() != exec_place::current_device());
 
   cuda_safe_call(cudaSetDevice(0)); // just in case the environment was somehow messed up
   EXPECT(exec_place::device(0) == exec_place::current_device());
@@ -1492,7 +1565,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 {
   constexpr size_t pdepth = sizeof...(spec) / 2;
 
-  if (where == exec_place::host)
+  if (where == exec_place::host())
   {
     // XXX this may not match the type of the spec if we are not using the default spec ...
     for (size_t d = 0; d < pdepth; d++)

@@ -38,6 +38,8 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool... _Preds>
@@ -118,7 +120,7 @@ struct __tuple_assignable<_Tp, _Up, true, true>
 template <size_t _Ip, class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
 {
-  typedef _CCCL_NODEBUG_ALIAS __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
+  using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
 };
 
 template <bool _IsTuple, class _SizeTrait, size_t _Expected>
@@ -228,5 +230,7 @@ struct __must_synthesize_assignment
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H

@@ -22,10 +22,13 @@
 
 #include <cuda/std/__algorithm/comp.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
   if (__first != __last)
@@ -44,12 +47,13 @@ adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicat
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-adjacent_find(_ForwardIterator __first, _ForwardIterator __last)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator adjacent_find(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::adjacent_find(__first, __last, __equal_to{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_ADJACENT_FIND_H

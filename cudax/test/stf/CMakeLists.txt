@@ -8,6 +8,8 @@ set(stf_test_sources
   dot/basic.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
+  dot/sections_2.cu
+  dot/section_movable.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
@@ -25,12 +27,17 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/get_cache_stats.cu
+  graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
+  interface/cuda_kernel_chain-add_deps.cu
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/threads_multiple_graphs.cu
+  places/affinity_gc.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -60,13 +67,14 @@ set(stf_test_sources
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
   utility/timing_with_fences.cu
+  utility/source_location_map.cu
 )
 
 set(stf_test_codegen_sources
-  algorithm/algorithm_with_read.cu
-  algorithm/graph_algorithms.cu
-  algorithm/in_graph_ctx.cu
-  algorithm/nested.cu
+  # algorithm/algorithm_with_read.cu
+  # algorithm/graph_algorithms.cu
+  # algorithm/in_graph_ctx.cu
+  # algorithm/nested.cu
   allocators/adapter.cu
   allocators/cap_tmp_buffers.cu
   cpp/read_const.cu
@@ -76,18 +84,19 @@ set(stf_test_codegen_sources
   error_checks/unsatisfiable_spec.cu
   examples/01-axpy-launch-ranges-cg.cu
   examples/01-axpy-places.cu
-  examples/09-nbody-algorithm.cu
+  # examples/09-nbody-algorithm.cu
   examples/09-nbody-blocked.cu
   examples/09-nbody.cu
   freeze/constant_logical_data.cu
   freeze/freeze.cu
   freeze/freeze_rw.cu
   freeze/task_fence.cu
+  freeze/token.cu
   graph/epoch.cu
-  graph/for_each_batched.cu
-  graph/for_each_batched_write.cu
+  # graph/for_each_batched.cu
+  # graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
-  graph/graph_composition.cu
+  # graph/graph_composition.cu
   graph/graph_tmp_data.cu
   graph/many.cu
   graph/multiple_graph_ctx.cu
@@ -120,7 +129,6 @@ set(stf_test_codegen_sources
   parallel_for/parallel_for_box.cu
   parallel_for/parallel_for_repeat.cu
   parallel_for/test2_parallel_for_context.cu
-  parallel_for/test_parallel_for.cu
   parallel_for/tiled_loops.cu
   parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
@@ -133,6 +141,8 @@ set(stf_test_codegen_sources
   stress/launch_vs_parallelfor.cu
   stress/parallel_for_overhead.cu
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
+  threads/axpy-threads-graph.cu
+  threads/axpy-threads-graph-capture.cu
   tools/auto_dump/auto_dump.cu
 )
 
@@ -152,10 +162,10 @@ set(stf_test_mathlib_sources
 )
 
 set(stf_unittested_headers
-  cuda/experimental/stf.cuh
   cuda/experimental/__stf/allocators/buddy_allocator.cuh
   cuda/experimental/__stf/graph/graph_ctx.cuh
   cuda/experimental/__stf/internal/async_resources_handle.cuh
+  cuda/experimental/__stf/internal/context.cuh
   cuda/experimental/__stf/internal/execution_policy.cuh
   cuda/experimental/__stf/internal/interpreted_execution_policy.cuh
   cuda/experimental/__stf/internal/logical_data.cuh
@@ -238,6 +248,10 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
   string(REPLACE "cuda/experimental/" "" test_label "${relative_path}/${filename}")
   string(REPLACE "/" "." test_label "${test_label}")
   set(test_target "${config_prefix}.test.stf.unittest_headers.${test_label}")
+
+  # Pass the full path to configure_file (this is configured from cudax/tests/stf/
+  get_filename_component(source_full_path ../../../cudax/include/${source} ABSOLUTE)
+  set(source ${source_full_path})
 
   set(ut_template "${cudax_SOURCE_DIR}/cmake/stf_header_unittest.in.cu")
   set(ut_source "${cudax_BINARY_DIR}/unittest_headers/${test_target}.cu")

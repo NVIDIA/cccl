@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11, c++14
 
 // gcc does not support deduction guides until gcc-7 and that is buggy
 // UNSUPPORTED: gcc-6, gcc-7
@@ -41,13 +40,13 @@ __host__ __device__ void test_iterator_sentinel()
   int arr[] = {1, 2, 3};
   {
     cuda::std::span s{cuda::std::begin(arr), cuda::std::end(arr)};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<int>>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
   {
     cuda::std::span s{cuda::std::begin(arr), 3};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<int>>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
@@ -55,7 +54,7 @@ __host__ __device__ void test_iterator_sentinel()
   // P3029R1: deduction from `integral_constant`
   {
     cuda::std::span s{cuda::std::begin(arr), cuda::std::integral_constant<size_t, 3>{}};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int, 3>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<int, 3>>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
@@ -66,7 +65,7 @@ __host__ __device__ void test_c_array()
   {
     int arr[] = {1, 2, 3};
     cuda::std::span s{arr};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int, 3>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<int, 3>>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
@@ -74,7 +73,7 @@ __host__ __device__ void test_c_array()
   {
     const int arr[] = {1, 2, 3};
     cuda::std::span s{arr};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<const int, 3>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<const int, 3>>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
@@ -85,7 +84,7 @@ __host__ __device__ void test_std_array()
   {
     cuda::std::array<double, 4> arr = {1.0, 2.0, 3.0, 4.0};
     cuda::std::span s{arr};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<double, 4>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<double, 4>>);
     assert(s.size() == arr.size());
     assert(s.data() == arr.data());
   }
@@ -93,7 +92,7 @@ __host__ __device__ void test_std_array()
   {
     const cuda::std::array<long, 5> arr = {4, 5, 6, 7, 8};
     cuda::std::span s{arr};
-    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<const long, 5>);
+    static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<const long, 5>>);
     assert(s.size() == arr.size());
     assert(s.data() == arr.data());
   }

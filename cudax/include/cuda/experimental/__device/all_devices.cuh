@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,14 +24,17 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__device/device.cuh>
 
 #include <vector>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
-namespace detail
+namespace __detail
 {
 //! @brief A random-access range of all available CUDA devices
 class all_devices
@@ -43,15 +46,15 @@ public:
 
   all_devices() = default;
 
-  _CCCL_NODISCARD const device& operator[](size_type __i) const noexcept;
+  [[nodiscard]] const device& operator[](size_type __i) const;
 
-  _CCCL_NODISCARD const device& at(size_type __i) const;
+  [[nodiscard]] size_type size() const;
 
-  _CCCL_NODISCARD size_type size() const;
+  [[nodiscard]] iterator begin() const noexcept;
 
-  _CCCL_NODISCARD iterator begin() const noexcept;
+  [[nodiscard]] iterator end() const noexcept;
 
-  _CCCL_NODISCARD iterator end() const noexcept;
+  operator ::cuda::std::span<const device_ref>() const;
 
 private:
   struct __initializer_iterator;
@@ -109,34 +112,42 @@ struct all_devices::__initializer_iterator
   }
 };
 
-_CCCL_NODISCARD inline const device& all_devices::operator[](size_type __id_) const noexcept
-{
-  _CCCL_ASSERT(__id_ < size(), "cuda::experimental::all_devices::subscript device index out of range");
-  return __devices()[__id_];
-}
-
-_CCCL_NODISCARD inline const device& all_devices::at(size_type __id_) const
+[[nodiscard]] inline const device& all_devices::operator[](size_type __id_) const
 {
   if (__id_ >= size())
   {
-    _CUDA_VSTD::__throw_out_of_range("device index out of range");
+    if (size() == 0)
+    {
+      _CUDA_VSTD::__throw_out_of_range("device was requested but no CUDA devices found");
+    }
+    else
+    {
+      _CUDA_VSTD::__throw_out_of_range(
+        (::std::string("device index out of range: ") + ::std::to_string(__id_)).c_str());
+    }
   }
   return __devices()[__id_];
 }
 
-_CCCL_NODISCARD inline all_devices::size_type all_devices::size() const
+[[nodiscard]] inline all_devices::size_type all_devices::size() const
 {
   return __devices().size();
 }
 
-_CCCL_NODISCARD inline all_devices::iterator all_devices::begin() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::begin() const noexcept
 {
   return __devices().begin();
 }
 
-_CCCL_NODISCARD inline all_devices::iterator all_devices::end() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::end() const noexcept
 {
   return __devices().end();
+}
+
+inline all_devices::operator ::cuda::std::span<const device_ref>() const
+{
+  static const ::std::vector<device_ref> __refs(begin(), end());
+  return ::cuda::std::span<const device_ref>(__refs);
 }
 
 inline const ::std::vector<device>& all_devices::__devices()
@@ -148,7 +159,7 @@ inline const ::std::vector<device>& all_devices::__devices()
   }();
   return __devices;
 }
-} // namespace detail
+} // namespace __detail
 
 //! @brief A range of all available CUDA devices
 //!
@@ -187,14 +198,14 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! @sa
 //! * device
 //! * device_ref
-inline constexpr detail::all_devices devices{};
+inline constexpr __detail::all_devices devices{};
 
 inline const arch_traits_t& device_ref::arch_traits() const
 {
   return devices[get()].arch_traits();
 }
 
-_CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
+[[nodiscard]] inline ::std::vector<device_ref> device_ref::peer_devices() const
 {
   ::std::vector<device_ref> __result;
   __result.reserve(devices.size());
@@ -222,5 +233,7 @@ _CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_ALL_DEVICES
