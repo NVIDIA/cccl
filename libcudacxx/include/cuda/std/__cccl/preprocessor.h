@@ -15,9 +15,10 @@
 #if defined(_MSC_VER) && !defined(__clang__)
 #  if (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1) \
     && !defined(CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING)
-_CCCL_WARNING("MSVC/cl.exe with traditional preprocessor is used. This may lead unexpected compilation errors. Please "
-              "switch to the standard conforming preprocessor by passing `/Zc:preprocessor` to cl.exe. You can define "
-              "CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.");
+#    pragma message(                                                                                                   \
+      "MSVC/cl.exe with traditional preprocessor is used. This may lead unexpected compilation errors. Please switch " \
+      "to the standard conforming preprocessor by passing `/Zc:preprocessor` to cl.exe. You can define "               \
+      "CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.")
 #  endif // !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1
 #endif // defined(_MSC_VER) && !defined(__clang__)
 
