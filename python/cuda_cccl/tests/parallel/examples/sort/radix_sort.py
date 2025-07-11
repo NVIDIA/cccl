@@ -25,22 +25,14 @@ def basic_radix_sort_example():
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    # Instantiate radix_sort for the given keys, items, and operator
-    radix_sort = parallel.radix_sort(
-        d_in_keys, d_out_keys, d_in_values, d_out_values, parallel.SortOrder.ASCENDING
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = radix_sort(
-        None, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run radix_sort
-    radix_sort(
-        d_temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
+    # Run radix_sort with automatic temp storage allocation
+    parallel.radix_sort(
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        parallel.SortOrder.ASCENDING,
+        d_in_keys.size,
     )
 
     # Check the result is correct
@@ -64,21 +56,10 @@ def keys_only_radix_sort_example():
     d_in_keys = cp.asarray(h_in_keys)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    # Instantiate radix_sort for keys only
-    radix_sort = parallel.radix_sort(
-        d_in_keys, d_out_keys, None, None, parallel.SortOrder.ASCENDING
+    # Run radix_sort with automatic temp storage allocation
+    parallel.radix_sort(
+        d_in_keys, d_out_keys, None, None, parallel.SortOrder.ASCENDING, d_in_keys.size
     )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = radix_sort(
-        None, d_in_keys, d_out_keys, None, None, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run radix_sort
-    radix_sort(d_temp_storage, d_in_keys, d_out_keys, None, None, d_in_keys.size)
 
     # Check the result is correct
     h_out_keys = cp.asnumpy(d_out_keys)
@@ -95,21 +76,10 @@ def descending_radix_sort_example():
     d_in_keys = cp.asarray(h_in_keys)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    # Instantiate radix_sort for descending order
-    radix_sort = parallel.radix_sort(
-        d_in_keys, d_out_keys, None, None, parallel.SortOrder.DESCENDING
+    # Run radix_sort with automatic temp storage allocation
+    parallel.radix_sort(
+        d_in_keys, d_out_keys, None, None, parallel.SortOrder.DESCENDING, d_in_keys.size
     )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = radix_sort(
-        None, d_in_keys, d_out_keys, None, None, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run radix_sort
-    radix_sort(d_temp_storage, d_in_keys, d_out_keys, None, None, d_in_keys.size)
 
     # Check the result is correct
     h_out_keys = cp.asnumpy(d_out_keys)

@@ -150,7 +150,7 @@ def make_cache_key(
 
 
 @cache_with_key(make_cache_key)
-def segmented_reduce(
+def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
     start_offsets_in: DeviceArrayLike | IteratorBase,
@@ -181,3 +181,42 @@ def segmented_reduce(
         A callable object that can be used to perform the reduction
     """
     return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
+
+
+def segmented_reduce(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    start_offsets_in: DeviceArrayLike | IteratorBase,
+    end_offsets_in: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray | GpuStruct,
+    num_segments: int,
+    stream=None,
+):
+    import numpy as np
+    from numba.cuda import device_array
+
+    reducer = make_segmented_reduce(
+        d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
+    )
+    tmp_storage_bytes = reducer(
+        None,
+        d_in,
+        d_out,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
+        stream,
+    )
+    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    reducer(
+        tmp_storage,
+        d_in,
+        d_out,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
+        stream,
+    )

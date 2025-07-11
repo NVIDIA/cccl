@@ -22,17 +22,8 @@ def inclusive_scan_example():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    # Instantiate scan for the given operator and initial value
-    scanner = parallel.inclusive_scan(d_output, d_output, add_op, h_init)
-
-    # Determine temporary device storage requirements
-    temp_storage_size = scanner(None, d_input, d_output, d_input.size, h_init)
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run scan
-    scanner(d_temp_storage, d_input, d_output, d_input.size, h_init)
+    # Run inclusive scan with automatic temp storage allocation
+    parallel.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
 
     # Check the result is correct
     expected = np.asarray([-5, -5, -3, -6, -4, 0, 0, -1, 1, 9])
@@ -51,17 +42,8 @@ def exclusive_scan_example():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    # Instantiate scan for the given operator and initial value
-    scanner = parallel.exclusive_scan(d_output, d_output, max_op, h_init)
-
-    # Determine temporary device storage requirements
-    temp_storage_size = scanner(None, d_input, d_output, d_input.size, h_init)
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run scan
-    scanner(d_temp_storage, d_input, d_output, d_input.size, h_init)
+    # Run exclusive scan with automatic temp storage allocation
+    parallel.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
 
     # Check the result is correct
     expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
@@ -80,17 +62,8 @@ def prefix_sum_example():
     d_input = cp.array([1, 2, 3, 4, 5], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    # Instantiate scan
-    scanner = parallel.inclusive_scan(d_output, d_output, add_op, h_init)
-
-    # Determine temporary device storage requirements
-    temp_storage_size = scanner(None, d_input, d_output, d_input.size, h_init)
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run scan
-    scanner(d_temp_storage, d_input, d_output, d_input.size, h_init)
+    # Run inclusive scan with automatic temp storage allocation
+    parallel.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
 
     # Check the result is correct (1, 3, 6, 10, 15)
     expected = np.asarray([1, 3, 6, 10, 15])
