@@ -77,17 +77,22 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " ${CMAKE_CUDA_FLAGS}"
     " -L${CUDAToolkit_LIBRARY_DIR}"
     " -lcuda"
-    " -lcudart")
+    " -lcudart"
+    " -lcufilt")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${LIBCUDACXX_FORCE_INCLUDE}"
     " ${LIBCUDACXX_WARNING_LEVEL}"
     " -Wno-deprecated-gpu-targets")
+
+  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " -lcufilt")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " -stdpar")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
-    " -stdpar")
+    " -stdpar"
+    " -lcufilt")
 endif()
 
 set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
