@@ -288,6 +288,7 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CUDA_ARCHITECTURES": "native",
         "CCCL_ENABLE_BENCHMARKS": true,
         "CCCL_ENABLE_CUB": true,
         "CCCL_ENABLE_THRUST": false,
