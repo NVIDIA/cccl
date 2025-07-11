@@ -9,9 +9,7 @@ import numba.types
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
-from cuda.cccl.parallel.experimental.struct import gpu_struct
+import cuda.cccl.parallel.experimental as parallel
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
@@ -31,14 +29,10 @@ def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
 
 def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, stream=None):
     scan_algorithm = (
-        algorithms.inclusive_scan if force_inclusive else algorithms.exclusive_scan
+        parallel.inclusive_scan if force_inclusive else parallel.exclusive_scan
     )
-    scan = scan_algorithm(d_input, d_output, op, h_init)
-    temp_storage_size = scan(None, d_input, d_output, num_items, h_init, stream=stream)
-    d_temp_storage = numba.cuda.device_array(
-        temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
-    )
-    scan(d_temp_storage, d_input, d_output, num_items, h_init, stream=stream)
+    # Call single-phase API directly with all parameters including num_items
+    scan_algorithm(d_input, d_output, op, h_init, num_items, stream)
 
 
 @pytest.mark.parametrize(
@@ -88,7 +82,7 @@ def test_scan_iterator_input(force_inclusive):
     def op(a, b):
         return a + b
 
-    d_input = iterators.CountingIterator(np.int32(1))
+    d_input = parallel.CountingIterator(np.int32(1))
     num_items = 1024
     dtype = np.dtype("int32")
     h_init = np.array([42], dtype=dtype)
@@ -113,8 +107,8 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = iterators.ReverseInputIterator(
-        iterators.CountingIterator(np.int32(num_items))
+    d_input = parallel.ReverseInputIterator(
+        parallel.CountingIterator(np.int32(num_items))
     )
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
@@ -136,7 +130,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
 )
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_scan_struct_type(force_inclusive):
-    @gpu_struct
+    @parallel.gpu_struct
     class XY:
         x: np.int32
         y: np.int32
