@@ -326,15 +326,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 
-  // UBLKCP is disabled on sm120 for now
-  struct policy1200 : ChainedPolicy<1200, policy1200, policy1000>
-  {
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(1200);
-    static constexpr auto algorithm = Algorithm::prefetch;
-    using algo_policy               = prefetch_policy_t<256>;
-  };
-
-  using max_policy = policy1200;
+  using max_policy = policy1000;
 };
 
 } // namespace detail::transform
