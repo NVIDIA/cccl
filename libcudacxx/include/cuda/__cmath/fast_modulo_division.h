@@ -41,8 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  **********************************************************************************************************************/
 
 template <typename _Tp, typename _Up>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _Up>
-__multiply_extract_higher_bits(_Tp __x, _Up __y)
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_Tp, _Up> __multiply_extract_higher_bits(_Tp __x, _Up __y)
 {
   using namespace _CUDA_VSTD;
   static_assert(__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= 8, "unsupported type");
@@ -66,14 +65,7 @@ __multiply_extract_higher_bits(_Tp __x, _Up __y)
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
 
-template <typename _Tp>
-struct div_t
-{
-  _Tp quotient;
-  _Tp remainder;
-};
-
-template <typename _Tp>
+template <typename _Tp, bool _DivisorIsNotOne = false>
 class fast_mod_div
 {
   static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= 8, "unsupported type");
@@ -83,91 +75,57 @@ class fast_mod_div
 public:
   fast_mod_div() = delete;
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI explicit fast_mod_div(_Tp __divisor1) noexcept
+  _CCCL_API explicit fast_mod_div(_Tp __divisor1) noexcept
       : __divisor{__divisor1}
-      , __shift_right{::cuda::ceil_ilog2(__divisor)}
+      , __shift{::cuda::ilog2(__divisor1) - 1}
   {
     using namespace _CUDA_VSTD;
     using __larger_t = __make_nbit_uint_t<__num_bits_v<_Tp> * 2>;
-    auto __exp       = __num_bits_v<_Tp> + __shift_right;
-    __multiplier     = static_cast<_Tp>(::cuda::ceil_div(__larger_t{1} << __exp, __divisor));
-    //_CCCL_ASSERT(__shift_right < __num_bits_v<__common_t>, "wrong __shift_right");
+    auto __exp       = __num_bits_v<_Tp> + __shift;
+    __multiplier     = static_cast<__unsigned_t>(::cuda::ceil_div(__larger_t{1} << __exp, __divisor));
   }
 
-  fast_mod_div(const fast_mod_div&) noexcept = default;
-
-  fast_mod_div(fast_mod_div&&) noexcept = default;
-
   template <typename _Up>
-  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE div_t<_CUDA_VSTD::common_type_t<_Tp, _Up>>
-  __divide(_Up __dividend) const noexcept
+  [[nodiscard]] _CCCL_API friend _CUDA_VSTD::common_type_t<_Tp, _Up>
+  operator/(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
   {
     using namespace _CUDA_VSTD;
     static_assert(__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= 8, "unsupported type");
-    using __common_t = common_type_t<_Tp, _Up>;
-    using __result_t = div_t<__common_t>;
     if constexpr (is_signed_v<_Up>)
     {
       _CCCL_ASSERT(__dividend >= 0, "dividend must be non-negative");
     }
-    // using __unsigned_Tp_t = make_unsigned_t<_Tp>;
-    // using __unsigned_Up_t = make_unsigned_t<_Up>;
-    // auto __divisor1       = static_cast<__unsigned_Tp_t>(__divisor);
-    // auto __multiplier1    = static_cast<__unsigned_Tp_t>(__multiplier);
-    // auto __dividend1      = static_cast<__unsigned_Up_t>(__dividend);
-    //  we don't need to check if divided >= 2^N-1 if it is signed or it is a smaller type
-    if (is_unsigned_v<_Tp> && sizeof(_Up) >= sizeof(_Tp) && __dividend >= numeric_limits<_Tp>::max() / 2)
+    if (!_DivisorIsNotOne && __divisor.__divisor == 1)
     {
-      auto __quotient = (__dividend >= __divisor);
-      auto __reminder = __quotient ? __dividend - __divisor : __dividend; // or __dividend - (__quotient * __divisor)
-      return __result_t{static_cast<__common_t>(__quotient), static_cast<__common_t>(__reminder)};
+      return __dividend;
     }
-    // auto __higher_bits =
-    //   (__multiplier == 0) ? __dividend : ::cuda::__multiply_extract_higher_bits(__dividend, __multiplier);
-    auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__dividend, __multiplier);
-    auto __quotient    = __higher_bits >> __shift_right;
-    auto __remainder   = __dividend - (__quotient * __divisor);
-    _CCCL_ASSERT(__quotient == __dividend / __divisor, "wrong __quotient");
-    _CCCL_ASSERT(__remainder == __dividend % __divisor, "wrong __remainder");
-    return __result_t{static_cast<__common_t>(__quotient), static_cast<__common_t>(__remainder)};
+    using __common_t   = _CUDA_VSTD::common_type_t<_Tp, _Up>;
+    auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__dividend, __divisor.__multiplier);
+    auto __quotient    = static_cast<__common_t>(__higher_bits >> __divisor.__shift);
+    _CCCL_ASSERT(__quotient == __dividend / __divisor.__divisor, "wrong __quotient");
+    return __quotient;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI operator _Tp() const noexcept
+  template <typename _Up>
+  [[nodiscard]] _CCCL_API friend _CUDA_VSTD::common_type_t<_Tp, _Up>
+  operator%(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
+  {
+    return __dividend - (__dividend / __divisor) * __divisor.__divisor;
+  }
+
+  [[nodiscard]] _CCCL_API operator _Tp() const noexcept
   {
     return static_cast<_Tp>(__divisor);
   }
 
 private:
-  _Tp __divisor          = 1;
-  _Tp __multiplier       = 0;
-  uint32_t __shift_right = 0;
+  _Tp __divisor             = 1;
+  __unsigned_t __multiplier = 0;
+  int __shift               = 0;
 };
 
-/***********************************************************************************************************************
- * Non-member functions
- **********************************************************************************************************************/
-
-template <typename _Tp, typename _Up>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI div_t<_CUDA_VSTD::common_type_t<_Tp, _Up>>
-div(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
-{
-  return __divisor.__divide(__dividend);
-}
-
-template <typename _Tp, typename _Up>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::common_type_t<_Tp, _Up>
-operator/(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
-{
-  return __divisor.__divide(__dividend).__quotient;
-}
-
-template <typename _Tp, typename _Up>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::common_type_t<_Tp, _Up>
-operator%(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
-{
-  return __divisor.__divide(__dividend).__remainder;
-}
-
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
