@@ -23,6 +23,7 @@
 
 #include <cuda/__barrier/aligned_size.h> // cannot include <cuda/barrier> directly on CUDA_ARCH < 700
 #include <cuda/cmath>
+#include <cuda/memory>
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
@@ -643,7 +644,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // 565.57.01 on RTX 2080 when cub::DeviceTransform is called from another kernel via CDP. See
   // thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1). This will lead to slightly reduced performance of bulk copy, but
   // correctness is maintained.
-  //_CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "");
+  _CCCL_ASSERT(::cuda::is_aligned(smem_base, bulk_copy_alignment), "");
 
   namespace ptx = ::cuda::ptx;
 
