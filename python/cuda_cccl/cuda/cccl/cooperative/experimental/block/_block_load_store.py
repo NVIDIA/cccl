@@ -136,14 +136,6 @@ class BaseLoadStore(BasePrimitive):
             algorithm=self.specialization,
         )
 
-
-class load(BaseLoadStore):
-    default_algorithm = BlockLoadAlgorithm.DIRECT
-    struct_name = "BlockLoad"
-    method_name = "Load"
-    c_name = "block_load"
-    includes = ["cub/block/block_load.cuh"]
-
     @classmethod
     def create(
         cls,
@@ -164,9 +156,42 @@ class load(BaseLoadStore):
         )
 
 
+
+class load(BaseLoadStore):
+    default_algorithm = BlockLoadAlgorithm.DIRECT
+    struct_name = "BlockLoad"
+    method_name = "Load"
+    c_name = "block_load"
+    includes = ["cub/block/block_load.cuh"]
+
+
+def BlockLoad(
+    dtype: DtypeType,
+    threads_per_block: DimType,
+    items_per_thread: int,
+    algorithm=None,
+):
+    """
+    Creates a block-wide load operation.
+    """
+    return load.create(dtype, threads_per_block, items_per_thread, algorithm)
+
+
 class store(BaseLoadStore):
     default_algorithm = BlockStoreAlgorithm.DIRECT
     struct_name = "BlockStore"
     method_name = "Store"
     c_name = "block_store"
     includes = ["cub/block/block_store.cuh"]
+
+
+def BlockStore(
+    dtype: DtypeType,
+    threads_per_block: DimType,
+    items_per_thread: int,
+    algorithm=None,
+):
+    """
+    Creates a block-wide store operation.
+    """
+    return store.create(dtype, threads_per_block, items_per_thread, algorithm)

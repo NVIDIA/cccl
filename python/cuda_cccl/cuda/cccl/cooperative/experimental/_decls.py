@@ -618,6 +618,183 @@ def type_block_store_instance_call(context):
     decl = block_store_instance_type.decl
     return decl.generic()
 
+# =============================================================================
+# Histogram
+# =================================================================================
+
+class CoopHistogramInitTemplate(CallableTemplate):
+    unsafe_casting = False
+    exact_match_required = True
+    prefer_literal = True
+
+    def generic(self):
+        def typer(array):
+
+            # template<CounterT>
+            # InitHistogram(CounterT histogram[BINS])
+
+            if not isinstance(array, types.Array):
+                raise errors.TypingError(
+                    "array must be a device array, got "
+                    f"{type(array).__name__}"
+                )
+
+            if not isinstance(bins, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    "bins must be an integer or integer literal, "
+                    f"got {type(bins).__name__}"
+                )
+
+            if array.ndim != 1:
+                raise errors.TypingError(
+                    "array must be a one-dimensional device array, "
+                    f"got {array.ndim} dimensions"
+                )
+
+            if array.layout != "C":
+                raise errors.TypingError(
+                    "array must be a C-contiguous device array, "
+                    f"got {array.layout!r}"
+                )
+
+            if array.dtype != types.uint32:
+                raise errors.TypingError(
+                    "array must have dtype uint32, "
+                    f"got {array.dtype!r}"
+                )
+
+            # The array size must be 256.
+            if array.shape[0] != 256:
+                raise errors.TypingError(
+                    "array must have exactly 256 elements, "
+                    f"got {array.shape[0]} elements"
+                )
+
+            return types.void
+
+        return typer
+
+class CoopHistogramCompositeTemplate(CallableTemplate):
+    unsafe_casting = False
+    exact_match_required = True
+    prefer_literal = True
+
+    def generic(self):
+        def typer(thread_samples, histogram_bins):
+
+            if not isinstance(thread_samples, types.Array):
+                raise errors.TypingError(
+                    "thread_samples must be a device array, "
+                    f"got: {type(thread_samples).__name__}"
+                )
+
+            if not isinstance(histogram_bins, types.Array):
+                raise errors.TypingError(
+                    "histogram_bins must be a device array, "
+                    f"got: {type(histogram_bins).__name__}"
+                )
+
+            if thread_samples.ndim != 1:
+                raise errors.TypingError(
+                    "thread_samples must be a one-dimensional array; "
+                    f"got: {thread_samples.ndim} dimensions"
+                )
+
+            if histogram_bins.ndim != 1:
+                raise errors.TypingError(
+                    "histogram_bins must be a one-dimensional array; "
+                    f"got: {histogram_bins.ndim} dimensions"
+                )
+
+            if thread_samples.layout != "C":
+                raise errors.TypingError(
+                    "thread_samples must be a C-contiguous array; "
+                    f"got: {thread_samples.layout!r}"
+                )
+
+            if histogram_bins.layout != "C":
+                raise errors.TypingError(
+                    "histogram_bins must be a C-contiguous array; "
+                    f"got: {histogram_bins.layout!r}"
+                )
+
+            return types.void
+
+        return typer
+
+
+class CoopBlockHistogramType(types.Type, CoopInstanceTypeMixin):
+    def __init__(self):
+        super().__init__(name="coop.block.histogram")
+        CoopInstanceTypeMixin.__init__(self)
+
+block_histogram_instance_type = CoopBlockHistogramType()
+
+@typeof_impl.register(coop.block.histogram)
+def typeof_block_histogram_instance(*args, **kwargs):
+    return block_histogram_instance_type
+
+@type_callable(block_histogram_instance_type)
+def type_block_histogram_instance_call(context):
+    """
+    Type callable for the coop.block.histogram instance type.
+    """
+    def typer(item_dtype, counter_dtype, dim, items_per_thread, algorithm=None, bins=None):
+        if not isinstance(item_dtype, types.Type):
+            raise errors.TypingError("item_dtype must be a type")
+        if not isinstance(counter_dtype, types.Type):
+            raise errors.TypingError("counter_dtype must be a type")
+        if not isinstance(dim, types.Type):
+            raise errors.TypingError("dim must be a type")
+        if not isinstance(items_per_thread, (types.Integer, types.IntegerLiteral)):
+            raise errors.TypingError("items_per_thread must be an integer or integer literal")
+        if algorithm is not None and not isinstance(algorithm, types.EnumMember):
+            raise errors.TypingError("algorithm must be an enum member")
+        if bins is not None and not isinstance(bins, (types.Integer, types.IntegerLiteral)):
+            raise errors.TypingError("bins must be an integer or integer literal")
+
+        return block_histogram_instance_type
+
+    return typer
+
+class CoopBlockHistogramAttrsTemplate(AttributeTemplate):
+    key = coop.block.histogram
+
+    def resolve_init(self, instance):
+        return types.BoundFunction(CoopHistogramInitTemplate, instance)
+
+    def resolve_composite(self, instance):
+        return types.BoundFunction(CoopHistogramCompositeTemplate, instance)
+
+register_attr(CoopBlockHistogramAttrsTemplate)
+
+block_histogram_attrs_template = CoopBlockHistogramAttrsTemplate()
+
+# Data models
+
+@register_model(BlockHistogram)
+class BlockHistogramModel(models.StructModel):
+    def __init__(self, dmm, fe_type):
+        members = [
+            ("item_dtype", types.Type(fe_type.item_dtype)),
+            ("counter_dtype", types.Type(fe_type.counter_dtype)),
+            ("dim", types.Type(fe_type.dim)),
+            ("items_per_thread", types.Integer(fe_type.items_per_thread)),
+            ("algorithm", fe_type.algorithm_enum),
+            ("bins", types.Integer(fe_type.bins)),
+        ]
+        super().__init__(dmm, fe_type, members)
+
+make_attribute_wrapper(CoopBlockHistogramType, "item_dtype", "item_dtype")
+make_attribute_wrapper(CoopBlockHistogramType, "counter_dtype", "counter_dtype")
+make_attribute_wrapper(CoopBlockHistogramType, "dim", "dim")
+make_attribute_wrapper(CoopBlockHistogramType, "items_per_thread",
+                       "items_per_thread")
+make_attribute_wrapper(CoopBlockHistogramType, "algorithm", "algorithm")
+make_attribute_wrapper(CoopBlockHistogramType, "bins", "bins")
+make_attribute_wrapper(CoopBlockHistogramType, "init", "init")
+make_attribute_wrapper(CoopBlockHistogramType, "composite", "composite")
+
 
 # =============================================================================
 # Module Template
@@ -675,6 +852,9 @@ class CoopModuleTemplate(AttributeTemplate):
 
     def resolve_WarpStoreAlgorithm(self, mod):
         return types.Module(coop.WarpStoreAlgorithm)
+
+    def resolve_BlockHistogramAlgorithm(self, mod):
+        return types.Module(coop.BlockHistogramAlgorithm)
 
 
 register_global(coop, types.Module(coop))

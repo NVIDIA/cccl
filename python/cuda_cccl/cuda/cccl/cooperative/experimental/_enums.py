@@ -63,3 +63,7 @@ class WarpStoreAlgorithm(BaseAlgorithmEnum):
     STRIPED = auto()
     VECTORIZE = auto()
     TRANSPOSE = auto()
+
+class BlockHistogramAlgorithm(BaseAlgorithmEnum):
+    BLOCK_HISTO_SORT = auto()
+    BLOCK_HISTO_ATOMIC = auto()
