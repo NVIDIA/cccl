@@ -1,15 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_ITERATOR_TRAITS_H
-#define _LIBCUDACXX___FWD_ITERATOR_TRAITS_H
+#ifndef _LIBCUDACXX___FORMAT_BUFFER_H
+#define _LIBCUDACXX___FORMAT_BUFFER_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,20 +20,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/format.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_HAS_CONCEPTS()
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS()
-template <class, class = void>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+// todo: implement __fmt_output_buffer
+
+template <class _CharT>
+class __fmt_output_buffer
+{
+public:
+  using value_type = _CharT;
+
+  _CCCL_API void push_back(_CharT __c)
+  {
+    _CCCL_ASSERT(false, "unimplemented __fmt_output_buffer push_back method called");
+    (void) __c;
+  }
+};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_ITERATOR_TRAITS_H
+#endif // _LIBCUDACXX___FORMAT_BUFFER_H
