@@ -33,7 +33,7 @@ template <typename VectorT, typename = void>
 struct scalar_to_vec_t
 {
   template <typename T>
-  __host__ __device__ __forceinline__ auto operator()(T scalar) -> VectorT
+  __host__ __device__ __forceinline__ auto operator()(T scalar) const -> VectorT
   {
     return static_cast<VectorT>(scalar);
   }
@@ -43,7 +43,7 @@ template <typename VectorT>
 struct scalar_to_vec_t<VectorT, ::cuda::std::void_t<decltype(VectorT::x)>>
 {
   template <typename T>
-  __host__ __device__ __forceinline__ auto operator()(T scalar) -> VectorT
+  __host__ __device__ __forceinline__ auto operator()(T scalar) const -> VectorT
   {
     const auto c = static_cast<decltype(VectorT::x)>(scalar);
     VectorT r;

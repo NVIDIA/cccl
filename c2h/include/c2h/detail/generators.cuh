@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#define C2H_EXPORTS
-
 #include <c2h/generators.h>
 #include <c2h/vector.h>
 
@@ -12,38 +10,31 @@
 #  include <thrust/random.h>
 #endif
 
-namespace c2h
+namespace c2h::detail
 {
 
 class generator_t
 {
-private:
-  generator_t();
-
 public:
-  static generator_t& instance();
-  ~generator_t();
-
-  template <typename T>
-  void operator()(seed_t seed,
-                  c2h::device_vector<T>& data,
-                  T min = std::numeric_limits<T>::min(),
-                  T max = std::numeric_limits<T>::max());
-
-  template <typename T>
-  void operator()(modulo_t modulo, c2h::device_vector<T>& data);
-
-  float* distribution();
-
-#if C2H_HAS_CURAND
-  curandGenerator_t& gen()
+  generator_t()
   {
-    return m_gen;
+#if C2H_HAS_CURAND
+    curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
+#endif
   }
-#endif // C2H_HAS_CURAND
 
+  ~generator_t()
+  {
+#if C2H_HAS_CURAND
+    curandDestroyGenerator(m_gen);
+#endif
+  }
+
+  // sets the seed and resizes the distribution vector, fills it by calling generate(), and returns a pointer the start
+  // of the data
   float* prepare_random_generator(seed_t seed, std::size_t num_items);
 
+  // re-fills the currently held distribution vector with new random values
   void generate();
 
 private:
@@ -54,6 +45,8 @@ private:
 #endif
   c2h::device_vector<float> m_distribution;
 };
+
+inline generator_t generator;
 
 template <typename T, bool = ::cuda::is_floating_point_v<T>>
 struct random_to_item_t
@@ -90,4 +83,4 @@ struct random_to_item_t<T, true>
   }
 };
 
-} // namespace c2h
+} // namespace c2h::detail
