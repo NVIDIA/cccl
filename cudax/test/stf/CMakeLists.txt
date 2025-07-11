@@ -39,6 +39,7 @@ set(stf_test_sources
   jit/axpy_cuda_kernel.cu
   jit/axpy_pfor.cu
   jit/heat.cu
+  jit/cub-reduce.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
