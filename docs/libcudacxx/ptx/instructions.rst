@@ -427,8 +427,6 @@ Instructions by section
      - CCCL 2.5.0 / CUDA Future
    * - `mbarrier.inval <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval>`__
      - No
-   * - `mbarrier.expect_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx>`__
-     - No
    * - `mbarrier.complete_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx>`__
      - No
    * - :ref:`mbarrier.arrive <libcudacxx-ptx-instructions-mbarrier-arrive>`
