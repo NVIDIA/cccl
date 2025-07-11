@@ -657,5 +657,5 @@ private:
 } // end namespace cuda::experimental::stf
 
 #define JITABLE(name, ...) \
-  __VA_ARGS__ \
+  __VA_ARGS__              \
   const char constexpr name[] = #__VA_ARGS__;
