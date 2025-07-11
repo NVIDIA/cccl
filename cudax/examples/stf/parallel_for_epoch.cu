@@ -75,4 +75,8 @@ int main()
     assert(fabs(X[i] - X0(i)) < 0.0001);
     assert(fabs(Z[i] - (Y0(i) + Y0(i) + alpha * X0(i) + beta * X0(i))) < 0.0001);
   }
+
+  cuda_safe_call(cudaFree(X));
+  cuda_safe_call(cudaFree(Y));
+  cuda_safe_call(cudaFree(Z));
 }
