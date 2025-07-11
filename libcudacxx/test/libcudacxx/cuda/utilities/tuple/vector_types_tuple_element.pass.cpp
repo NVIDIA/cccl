@@ -81,30 +81,16 @@ __host__ __device__ constexpr bool test()
   test<__nv_bfloat162, __nv_bfloat16, 2>();
 #endif // _CCCL_HAS_NVBF16()
 
-  return true;
-}
-
-__host__ __device__
-#if !TEST_COMPILER(MSVC)
-  constexpr
-#endif // !TEST_COMPILER(MSVC)
-  bool
-  test_dim3()
-{
   test<dim3, unsigned int, 3, 0>();
   test<dim3, unsigned int, 3, 1>();
   test<dim3, unsigned int, 3, 2>();
+
   return true;
 }
 
 int main(int arg, char** argv)
 {
   test();
-  test_dim3();
-  static_assert(test(), "");
-#if !TEST_COMPILER(MSVC)
-  static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER(MSVC)
-
+  static_assert(test());
   return 0;
 }

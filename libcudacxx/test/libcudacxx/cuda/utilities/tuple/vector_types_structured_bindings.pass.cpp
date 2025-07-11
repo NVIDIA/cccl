@@ -322,9 +322,7 @@ __host__ __device__ constexpr bool test_constexpr()
   test<double, void, void, void, double4_32a>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-#if !TEST_COMPILER(MSVC)
   test<unsigned, void, void, dim3, void>();
-#endif // !TEST_COMPILER(MSVC)
 
   return true;
 }
@@ -339,10 +337,6 @@ __host__ __device__ bool test()
 #if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, void, __nv_bfloat162, void, void>();
 #endif // _CCCL_HAS_NVBF16()
-
-#if TEST_COMPILER(MSVC)
-  test<unsigned, void, void, dim3, void>();
-#endif // TEST_COMPILER(MSVC)
 
   return true;
 }
