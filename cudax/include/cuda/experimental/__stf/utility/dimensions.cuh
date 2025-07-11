@@ -476,6 +476,7 @@ private:
 };
 
 #ifndef __CUDACC_RTC__
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // Deduction guides
 template <typename... Int>
 box(Int...) -> box<sizeof...(Int)>;
@@ -483,6 +484,7 @@ template <typename... E>
 box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
 template <typename E, size_t dimensions>
 box(::std::array<E, dimensions>) -> box<dimensions>;
+#endif // !_CCCL_DOXYGEN_INVOKED
 #endif // !__CUDACC_RTC__
 
 #ifdef UNITTESTED_FILE
