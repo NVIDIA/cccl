@@ -32,7 +32,7 @@
 
 namespace cuda::experimental
 {
-class device;
+class physical_device;
 struct arch_traits_t;
 
 namespace __detail
@@ -44,7 +44,7 @@ struct __dev_attr;
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
-  friend class device;
+  friend class physical_device;
 
   int __id_ = 0;
 

@@ -82,7 +82,7 @@ public:
   // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
   //!
   //! Constructing a logical_device for a given device has a side effect of initializing that device
-  logical_device(const ::cuda::experimental::device& __dev)
+  logical_device(const ::cuda::experimental::physical_device& __dev)
       : __dev_id(__dev.get())
       , __kind(kinds::device)
       , __ctx(__dev.primary_context())
