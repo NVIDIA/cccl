@@ -85,8 +85,8 @@ int main()
       axpy_kernel_template,
       get_nvrtc_flags(),
       header_template,
-      jdX.caller_side_t_name(),
-      jdY.caller_side_t_name(),
+      jdX.kernel_param_t_name(),
+      jdY.kernel_param_t_name(),
       jdX.kernel_side_t_name(),
       jdY.kernel_side_t_name(),
       alpha);

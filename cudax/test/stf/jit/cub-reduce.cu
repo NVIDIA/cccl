@@ -22,7 +22,6 @@ using namespace cuda::experimental::stf;
 
 const char* kernel_template = R"(
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
-//#include <cub/cub.cuh>
 #include <cub/block/block_reduce.cuh>
 
 extern "C"
@@ -90,8 +89,8 @@ void run()
       kernel_template,
       get_nvrtc_flags(),
       "",
-      jvalues.caller_side_t_name(),
-      jpartials.caller_side_t_name(),
+      jvalues.kernel_param_t_name(),
+      jpartials.kernel_param_t_name(),
       BLOCK_SIZE,
       jvalues.kernel_side_t_name(),
       jpartials.kernel_side_t_name());
@@ -100,8 +99,8 @@ void run()
       kernel_template,
       get_nvrtc_flags(),
       "",
-      jpartials.caller_side_t_name(),
-      jresult.caller_side_t_name(),
+      jpartials.kernel_param_t_name(),
+      jresult.kernel_param_t_name(),
       BLOCK_SIZE,
       jpartials.kernel_side_t_name(),
       jresult.kernel_side_t_name());
