@@ -141,7 +141,7 @@ class _MergeSort:
 
 
 @cache_with_key(make_cache_key)
-def merge_sort(
+def make_merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
     d_out_keys: DeviceArrayLike,
@@ -170,3 +170,25 @@ def merge_sort(
         A callable object that can be used to perform the merge sort
     """
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
+
+
+def merge_sort(
+    d_in_keys: DeviceArrayLike | IteratorBase,
+    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_out_keys: DeviceArrayLike,
+    d_out_items: DeviceArrayLike | None,
+    op: Callable,
+    num_items: int,
+    stream=None,
+):
+    import numpy as np
+    from numba.cuda import device_array
+
+    sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
+    tmp_storage_bytes = sorter(
+        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+    )
+    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    sorter(
+        tmp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+    )

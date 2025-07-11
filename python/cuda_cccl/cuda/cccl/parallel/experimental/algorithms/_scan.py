@@ -118,7 +118,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def exclusive_scan(
+def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
@@ -147,10 +147,26 @@ def exclusive_scan(
     return _Scan(d_in, d_out, op, h_init, False)
 
 
+def exclusive_scan(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray | GpuStruct,
+    num_items: int,
+    stream=None,
+):
+    from numba.cuda import device_array
+
+    scanner = make_exclusive_scan(d_in, d_out, op, h_init)
+    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
+
+
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def inclusive_scan(
+def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
@@ -177,3 +193,19 @@ def inclusive_scan(
         A callable object that can be used to perform the scan
     """
     return _Scan(d_in, d_out, op, h_init, True)
+
+
+def inclusive_scan(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray | GpuStruct,
+    num_items: int,
+    stream=None,
+):
+    from numba.cuda import device_array
+
+    scanner = make_inclusive_scan(d_in, d_out, op, h_init)
+    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)

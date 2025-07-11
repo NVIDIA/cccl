@@ -143,7 +143,7 @@ class _UniqueByKey:
 
 
 @cache_with_key(make_cache_key)
-def unique_by_key(
+def make_unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,
     d_out_keys: DeviceArrayLike | IteratorBase,
@@ -176,4 +176,58 @@ def unique_by_key(
 
     return _UniqueByKey(
         d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+    )
+
+
+def unique_by_key(
+    d_in_keys: DeviceArrayLike | IteratorBase,
+    d_in_items: DeviceArrayLike | IteratorBase,
+    d_out_keys: DeviceArrayLike | IteratorBase,
+    d_out_items: DeviceArrayLike | IteratorBase,
+    d_out_num_selected: DeviceArrayLike,
+    op: Callable,
+    num_items: int,
+    stream=None,
+):
+    """
+    Performs device-wide unique by key operation using the single-phase API.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in_keys: Device array or iterator containing the input sequence of keys
+        d_in_items: Device array or iterator that contains each key's corresponding item
+        d_out_keys: Device array or iterator to store the outputted keys
+        d_out_items: Device array or iterator to store each outputted key's item
+        d_out_num_selected: Device array to store how many items were selected
+        op: Callable representing the equality operator
+        num_items: Number of items to process
+        stream: CUDA stream for the operation (optional)
+    """
+    import numpy as np
+    from numba.cuda import device_array
+
+    uniquer = make_unique_by_key(
+        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+    )
+    tmp_storage_bytes = uniquer(
+        None,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        num_items,
+        stream,
+    )
+    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    uniquer(
+        tmp_storage,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        num_items,
+        stream,
     )

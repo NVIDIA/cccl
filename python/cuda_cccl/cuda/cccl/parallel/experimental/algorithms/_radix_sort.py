@@ -205,7 +205,7 @@ class _RadixSort:
 
 
 @cache_with_key(make_cache_key)
-def radix_sort(
+def make_radix_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
@@ -242,3 +242,43 @@ def radix_sort(
         A callable object that can be used to perform the merge sort
     """
     return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+
+
+def radix_sort(
+    d_in_keys: DeviceArrayLike | DoubleBuffer,
+    d_out_keys: DeviceArrayLike | None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None,
+    d_out_values: DeviceArrayLike | None,
+    order: SortOrder,
+    num_items: int,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    stream=None,
+):
+    import numpy as np
+    from numba.cuda import device_array
+
+    sorter = make_radix_sort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+    tmp_storage_bytes = sorter(
+        None,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        begin_bit,
+        end_bit,
+        stream,
+    )
+    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    sorter(
+        tmp_storage,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        begin_bit,
+        end_bit,
+        stream,
+    )
