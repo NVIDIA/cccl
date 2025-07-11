@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/agent/agent_reduce_nondeterministic.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
@@ -516,6 +517,65 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   if (threadIdx.x == 0)
   {
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
+  }
+}
+
+#define TUSE_USE_GRID_EVEN_SHARE 1
+
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT,
+          typename AccumT,
+          typename TransformOpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  ChainedPolicyT::ActivePolicy::ReduceAtomicPolicy::
+    BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
+                                                                  OutputIteratorT d_out,
+                                                                  OffsetT num_items,
+#if TUNE_USE_GRID_EVEN_SHARE
+                                                                  GridEvenShare<OffsetT> even_share,
+#endif
+                                                                  ReductionOpT reduction_op,
+                                                                  InitT init,
+                                                                  TransformOpT transform_op)
+{
+  // Thread block type for reducing input tiles
+  using AgentReduceT = detail::nondeterministic_reduce::AgentReduce<
+    typename ChainedPolicyT::ActivePolicy::ReduceAtomicPolicy,
+    InputIteratorT,
+    AccumT*,
+    OffsetT,
+    ReductionOpT,
+    AccumT,
+    TransformOpT>;
+
+  // Shared memory storage
+  __shared__ typename AgentReduceT::TempStorage temp_storage;
+
+#if TUNE_USE_GRID_EVEN_SHARE
+  // Consume input tiles
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
+#else
+  AccumT block_aggregate =
+    AgentReduceT(temp_storage, d_in, reduction_op, transform_op)
+      .ConsumeRange(blockIdx.x * AgentReduceT::TILE_ITEMS,
+                    _CUDA_VSTD::min(static_cast<OffsetT>((blockIdx.x + 1) * AgentReduceT::TILE_ITEMS), num_items));
+#endif
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    // ony thread 0 has valid value in block aggregate
+    // detail::uninitialized_copy_single(d_block_reductions + blockIdx.x, block_aggregate);
+    if (blockIdx.x == 0)
+    {
+      atomicAdd(d_out, init);
+    }
+
+    atomicAdd(d_out, block_aggregate);
   }
 }
 

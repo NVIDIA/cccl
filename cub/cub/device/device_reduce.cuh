@@ -257,9 +257,19 @@ private:
     using transform_t     = ::cuda::std::identity;
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
-    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-    using dispatch_t =
-      DispatchReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
+    using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t = DispatchReduceNondeterministic<
+      InputIteratorT,
+      OutputIteratorT,
+      offset_t,
+      ReductionOpT,
+      T,
+      accum_t,
+      transform_t,
+      policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), reduction_op, init, stream);
   }
 
 public:

@@ -47,7 +47,7 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/dispatch_advance_iterators.cuh>
-#include <cub/device/dispatch/kernels/nondeterministic_reduce.cuh>
+#include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_nondeterministic_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
