@@ -119,7 +119,7 @@ __host__ __device__ void test_expm1(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_frexp(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_frexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::frexp(T{}, nullptr)), ret>, "");
@@ -187,7 +187,7 @@ __host__ __device__ void test_frexp(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_ldexp(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_ldexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ldexp(T{}, int{})), ret>, "");
@@ -279,7 +279,7 @@ __host__ __device__ void test_scalbln(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_scalbn(T val)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_scalbn(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::scalbn(T{}, int{})), ret>, "");
@@ -426,9 +426,40 @@ __global__ void test_global_kernel(float* val)
   test(*val);
 }
 
+template <class T>
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_constexpr(T value)
+{
+  test_frexp<T>(value);
+  test_scalbn<T>(value);
+  test_ldexp<T>(value);
+}
+
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float value)
+{
+  test_constexpr<float>(value);
+  test_constexpr<double>(value);
+#if _CCCL_HAS_LONG_DOUBLE()
+  test_constexpr<long double>(value);
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
+  test_constexpr<unsigned short>(static_cast<unsigned short>(value));
+  test_constexpr<int>(static_cast<int>(value));
+  test_constexpr<unsigned int>(static_cast<unsigned int>(value));
+  test_constexpr<long>(static_cast<long>(value));
+  test_constexpr<unsigned long>(static_cast<unsigned long>(value));
+  test_constexpr<long long>(static_cast<long long>(value));
+  test_constexpr<unsigned long long>(static_cast<unsigned long long>(value));
+
+  return true;
+}
+
 int main(int, char**)
 {
   volatile float val = 1.0f;
   test(val);
+
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
+  static_assert(test_constexpr(1.0f));
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return 0;
 }
