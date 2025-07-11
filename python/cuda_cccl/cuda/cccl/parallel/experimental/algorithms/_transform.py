@@ -156,14 +156,17 @@ def make_binary_transform_cache_key(
 
 
 @cache_with_key(make_unary_transform_cache_key)
-def unary_transform(
+def make_unary_transform(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
 ):
     """
-    Apply a transformation to each element of the input according to the
-    unary operation ``op``.
+    Create a unary transform object that can be called to apply a transformation
+    to each element of the input according to the unary operation ``op``.
+
+    This is the object-oriented API that allows explicit control over temporary
+    storage allocation. For simpler usage, consider using :func:`unary_transform`.
 
     Example:
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
@@ -178,21 +181,24 @@ def unary_transform(
         op: Unary operation to apply to each element of the input.
 
     Returns:
-        A callable that performs the transformation.
+        A callable object that performs the transformation.
     """
     return _UnaryTransform(d_in, d_out, op)
 
 
 @cache_with_key(make_binary_transform_cache_key)
-def binary_transform(
+def make_binary_transform(
     d_in1: DeviceArrayLike | IteratorBase,
     d_in2: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
 ):
     """
-    Apply a transformation to the given pair of input sequences according to the
-    binary operation ``op``.
+    Create a binary transform object that can be called to apply a transformation
+    to the given pair of input sequences according to the binary operation ``op``.
+
+    This is the object-oriented API that allows explicit control over temporary
+    storage allocation. For simpler usage, consider using :func:`binary_transform`.
 
     Example:
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
@@ -208,6 +214,70 @@ def binary_transform(
         op: Binary operation to apply to each pair of items from the input sequences.
 
     Returns:
-        A callable that performs the transformation.
+        A callable object that performs the transformation.
     """
     return _BinaryTransform(d_in1, d_in2, d_out, op)
+
+
+def unary_transform(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    num_items: int,
+    stream=None,
+):
+    """
+    Create a unary transform object that can be called to apply a transformation
+    to each element of the input according to the unary operation ``op``.
+
+    This is the two-phase API that returns a transform object for execution.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
+           :language: python
+           :dedent:
+           :start-after: example-begin transform-unary
+           :end-before: example-end transform-unary
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items.
+        d_out: Device array or iterator to store the result of the transformation.
+        op: Unary operation to apply to each element of the input.
+        num_items: Number of items to transform.
+        stream: CUDA stream to use for the operation.
+    """
+    transformer = make_unary_transform(d_in, d_out, op)
+    transformer(d_in, d_out, num_items, stream)
+
+
+def binary_transform(
+    d_in1: DeviceArrayLike | IteratorBase,
+    d_in2: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    num_items: int,
+    stream=None,
+):
+    """
+    Create a binary transform object that can be called to apply a transformation
+    to the given pair of input sequences according to the binary operation ``op``.
+
+    This is the two-phase API that returns a transform object for execution.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
+           :language: python
+           :dedent:
+           :start-after: example-begin transform-binary
+           :end-before: example-end transform-binary
+
+    Args:
+        d_in1: Device array or iterator containing the first input sequence of data items.
+        d_in2: Device array or iterator containing the second input sequence of data items.
+        d_out: Device array or iterator to store the result of the transformation.
+        op: Binary operation to apply to each pair of items from the input sequences.
+        num_items: Number of items to transform.
+        stream: CUDA stream to use for the operation.
+    """
+    transformer = make_binary_transform(d_in1, d_in2, d_out, op)
+    transformer(d_in1, d_in2, d_out, num_items, stream)

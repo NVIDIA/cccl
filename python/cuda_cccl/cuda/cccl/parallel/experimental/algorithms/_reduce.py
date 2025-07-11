@@ -9,6 +9,7 @@ from typing import Callable
 
 import numba
 import numpy as np
+from numba.cuda import device_array
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -107,7 +108,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def reduce_into(
+def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
     op: Callable,
@@ -134,3 +135,17 @@ def reduce_into(
         A callable object that can be used to perform the reduction
     """
     return _Reduce(d_in, d_out, op, h_init)
+
+
+def reduce_into(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    num_items: int,
+    h_init: np.ndarray | GpuStruct,
+    stream=None,
+):
+    reducer = make_reduce_into(d_in, d_out, op, h_init)
+    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = device_array(tmp_storage_bytes, dtype=np.uint8)
+    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
