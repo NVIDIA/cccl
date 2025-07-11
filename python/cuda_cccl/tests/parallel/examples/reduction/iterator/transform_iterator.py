@@ -32,13 +32,8 @@ def transform_iterator_example():
     h_init = np.array([0], dtype=np.int64)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int64)  # Storage for output
 
-    # Instantiate reduction, determine storage requirements, and allocate storage
-    reduce_into = parallel.reduce_into(transform_it, d_output, add_op, h_init)
-    temp_storage_size = reduce_into(None, transform_it, d_output, num_items, h_init)
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, transform_it, d_output, num_items, h_init)
+    parallel.reduce_into(transform_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(
         lambda a, b: a + b,
