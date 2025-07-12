@@ -122,7 +122,7 @@ public:
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    __detail::driver::getName(__name.data(), __max_name_length, get());
+    __detail::driver::__getName(__name.data(), __max_name_length, get());
     return __name;
   }
 

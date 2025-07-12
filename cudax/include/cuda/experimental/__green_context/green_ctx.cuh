@@ -44,9 +44,9 @@ struct green_context
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
-    auto __dev_handle = __detail::driver::deviceGet(__dev_id);
-    __green_ctx       = __detail::driver::greenCtxCreate(__dev_handle);
-    __transformed     = __detail::driver::ctxFromGreenCtx(__green_ctx);
+    auto __dev_handle = __detail::driver::__deviceGet(__dev_id);
+    __green_ctx       = __detail::driver::__greenCtxCreate(__dev_handle);
+    __transformed     = __detail::driver::__ctxFromGreenCtx(__green_ctx);
   }
 
   green_context(const green_context&)            = delete;
@@ -56,10 +56,10 @@ struct green_context
   [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
     int __id;
-    CUcontext __transformed = __detail::driver::ctxFromGreenCtx(__gctx);
-    __detail::driver::ctxPush(__transformed);
+    CUcontext __transformed = __detail::driver::__ctxFromGreenCtx(__gctx);
+    __detail::driver::__ctxPush(__transformed);
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to get device ordinal from a green context", &__id);
-    __detail::driver::ctxPop();
+    __detail::driver::__ctxPop();
     return green_context(__id, __gctx, __transformed);
   }
 
@@ -74,7 +74,7 @@ struct green_context
   {
     if (__green_ctx)
     {
-      [[maybe_unused]] cudaError_t __status = __detail::driver::greenCtxDestroy(__green_ctx);
+      [[maybe_unused]] cudaError_t __status = __detail::driver::__greenCtxDestroy(__green_ctx);
     }
   }
 
