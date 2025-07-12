@@ -48,7 +48,7 @@ private:
   class impl
   {
   public:
-    impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_)
+    impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_, bool user_freeze)
         : ld(mv(ld_))
         , m(m_)
         , place(mv(place_))
@@ -60,12 +60,14 @@ private:
       // tasks (or frozen data) depending on the unfreeze operation might
       // depend on something. No task is launch, and we simply use it for
       // this purpose.
-      fake_task.set_symbol("FREEZE\n" + ld.get_symbol() + "(" + access_mode_string(m) + ")");
+      freeze_fake_task.set_symbol("FREEZE\n" + ld.get_symbol() + "(" + access_mode_string(m) + ")");
+      unfreeze_fake_task.set_symbol("UNFREEZE\n" + ld.get_symbol() + "(" + access_mode_string(m) + ")");
 
       auto& dot = bctx.get_dot();
       if (dot->is_tracing())
       {
-        dot->template add_vertex<task, logical_data_untyped>(fake_task);
+        // Add a vertices for the freeze and unfreeze steps (and an edge is this is a freeze from the user)
+        dot->template add_freeze_vertices<task, logical_data_untyped>(freeze_fake_task, unfreeze_fake_task, user_freeze);
       }
     }
 
@@ -75,22 +77,22 @@ private:
      */
     ::std::pair<T, event_list> get(data_place place_)
     {
-      auto result = ld.template get_frozen<T>(fake_task, mv(place_), m);
+      auto result = ld.template get_frozen<T>(freeze_fake_task, mv(place_), m);
 
       auto& dot = bctx.get_dot();
       if (dot->is_tracing_prereqs())
       {
         for (auto& e : result.second)
         {
-          int fake_task_id = fake_task.get_unique_id();
-          dot->add_edge(e->unique_prereq_id, fake_task_id, 1);
+          int freeze_fake_task_id = freeze_fake_task.get_unique_id();
+          dot->add_edge(e->unique_prereq_id, freeze_fake_task_id, reserved::edge_type::prereqs);
         }
       }
 
       /* Use the ID of the fake task to identify "get" events. This makes
        * it possible to automatically synchronize with these events when calling
        * fence. */
-      bctx.get_state().add_pending_freeze(fake_task, result.second);
+      bctx.get_state().add_pending_freeze(freeze_fake_task, result.second);
 
       return mv(result);
     }
@@ -109,36 +111,50 @@ private:
       auto& dot = bctx.get_dot();
       if (dot->is_tracing_prereqs())
       {
-        int fake_task_id = fake_task.get_unique_id();
+        int unfreeze_fake_task_id = unfreeze_fake_task.get_unique_id();
         for (const auto& out_e : prereqs)
         {
-          dot->add_edge(fake_task_id, out_e->unique_prereq_id, 1);
+          dot->add_edge(unfreeze_fake_task_id, out_e->unique_prereq_id, reserved::edge_type::prereqs);
         }
       }
 
       // There is no need to automatically synchronize with the get() operation in fence now
-      bctx.get_state().remove_pending_freeze(fake_task);
+      bctx.get_state().remove_pending_freeze(freeze_fake_task);
 
-      fake_task.merge_event_list(prereqs);
-      ld.unfreeze(fake_task, mv(prereqs));
+      // This sets the "done prereqs" of the unfreeze fake task, so that other tasks can wait for its completion
+      freeze_fake_task.merge_event_list(prereqs);
+      unfreeze_fake_task.merge_event_list(prereqs);
+
+      ld.unfreeze(unfreeze_fake_task, mv(prereqs));
+
+      freeze_fake_task.clear();
+      unfreeze_fake_task.clear();
     }
 
     void unfreeze(cudaStream_t stream)
     {
       event_list prereqs = bctx.stream_to_event_list(stream, "unfreeze");
       unfreeze(mv(prereqs));
-
-      fake_task.clear();
     }
 
     void set_automatic_unfreeze(bool flag = true)
     {
-      ld.set_automatic_unfreeze(fake_task, flag);
+      ld.set_automatic_unfreeze(unfreeze_fake_task, flag);
     }
 
     access_mode get_access_mode() const
     {
       return m;
+    }
+
+    int freeze_fake_task_id() const
+    {
+      return freeze_fake_task.get_unique_id();
+    }
+
+    int unfreeze_fake_task_id() const
+    {
+      return unfreeze_fake_task.get_unique_id();
     }
 
   private:
@@ -150,12 +166,13 @@ private:
     // This is used internally to keep track of the dependencies of the
     // unfreeze operations, so that future operations on the logical data
     // may depend on them
-    task fake_task;
+    task freeze_fake_task;
+    task unfreeze_fake_task;
   };
 
 public:
-  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place)
-      : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place)))
+  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place, bool user_freeze)
+      : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place), user_freeze))
   {}
 
   // So that we can have a frozen data variable that is populated later
@@ -208,6 +225,18 @@ public:
   {
     assert(pimpl);
     return pimpl->get_access_mode();
+  }
+
+  int freeze_fake_task_id() const
+  {
+    assert(pimpl);
+    return pimpl->freeze_fake_task_id();
+  }
+
+  int unfreeze_fake_task_id() const
+  {
+    assert(pimpl);
+    return pimpl->unfreeze_fake_task_id();
   }
 
 private:
