@@ -246,17 +246,17 @@ public:
   }
 
   template <typename T, typename... Others>
-  auto remove_first_tuple_element(const ::std::tuple<T, Others...>& t)
+  auto remove_first_tuple_element(const ::cuda::std::tuple<T, Others...>& t)
   {
-    return ::std::make_tuple(::std::get<Others>(t)...);
+    return ::cuda::std::make_tuple(::cuda::std::get<Others>(t)...);
   }
 
   template <typename shape_t, typename P, typename... sub_partitions>
-  _CCCL_HOST_DEVICE auto apply_partition(const shape_t& s, const ::std::tuple<P, sub_partitions...>& t) const
+  _CCCL_HOST_DEVICE auto apply_partition(const shape_t& s, const ::cuda::std::tuple<P, sub_partitions...>& t) const
   {
     auto s0         = P::apply(s, pos4(rank(0)), dim4(size(0)));
     auto sans_first = make_tuple_indexwise<sizeof...(sub_partitions)>([&](auto index) {
-      return ::std::get<index + 1>(t);
+      return ::cuda::std::get<index + 1>(t);
     });
     if constexpr (sizeof...(sub_partitions))
     {
