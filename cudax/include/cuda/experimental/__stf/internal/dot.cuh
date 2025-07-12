@@ -19,6 +19,7 @@
  * CUDASTF_DOT_REMOVE_DATA_DEPS
  * CUDASTF_DOT_TIMING
  * CUDASTF_DOT_MAX_DEPTH
+ * CUDASTF_DOT_SHOW_FENCE
  */
 
 #pragma once
@@ -49,6 +50,11 @@
 #include <sstream>
 #include <stack>
 #include <unordered_set>
+
+/**
+ * @file
+ * @brief Generation of the DOT file to visualize task DAGs
+ */
 
 namespace cuda::experimental::stf::reserved
 {
@@ -107,7 +113,7 @@ public:
 
   void add_fence_vertex(int unique_id)
   {
-    if (getenv("CUDASTF_DOT_NO_FENCE"))
+    if (!getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
