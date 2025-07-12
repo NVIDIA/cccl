@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
@@ -68,7 +69,7 @@ template <typename _Tp, typename _Up>
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
 
-template <typename _Tp, bool IsDivisorNotOne = false>
+template <typename _Tp, bool _IsDivisorNotOne = false>
 class fast_mod_div
 {
   static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= 8, "unsupported type");
@@ -82,6 +83,7 @@ public:
   {
     using namespace _CUDA_VSTD;
     using __larger_t = __make_nbit_uint_t<__num_bits_v<_Tp> * 2>;
+    _CCCL_ASSERT(!_IsDivisorNotOne || __divisor1 != 1, "divisor must not be one");
     if constexpr (is_signed_v<_Tp>)
     {
       __shift      = ::cuda::ceil_ilog2(__divisor1) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
@@ -118,19 +120,19 @@ public:
     using __common_t    = common_type_t<_Tp, _Up>;
     const auto __div    = __divisor1.__divisor; // cannot use structure binding because of clang-14
     const auto __mul    = __divisor1.__multiplier;
-    const auto __add_   = __divisor1.__add; // cannot use __add for shadowing warning with clang-cuda
+    const auto __add_   = __divisor1.__add; // cannot use __add because of shadowing warning with clang-cuda
     const auto __shift_ = __divisor1.__shift;
-    if (!IsDivisorNotOne && __div == 1)
+    if (!_IsDivisorNotOne && __div == 1)
     {
       return __dividend;
     }
     if constexpr (is_unsigned_v<_Tp>)
     {
-      if (__mul == 0)
+      if (__mul == 0) // divisor is a power of two
       {
         return static_cast<__common_t>(__dividend >> __shift_);
       }
-      if (__dividend != numeric_limits<_Up>::max())
+      if (__dividend != numeric_limits<_Up>::max()) // avoid overflow
       {
         __dividend += __add_;
       }
