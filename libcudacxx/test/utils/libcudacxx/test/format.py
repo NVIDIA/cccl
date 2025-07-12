@@ -59,6 +59,7 @@ class LibcxxTestFormat(object):
             IntegratedTestKeywordParser(
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
             ),
+            IntegratedTestKeywordParser("CONSTEXPR_STEPS:", ParserKind.INTEGER),
         ]
 
     @staticmethod
@@ -177,6 +178,25 @@ class LibcxxTestFormat(object):
                     contents = f.read()
                 if b"#define _CCCL_ASSERT" in contents:
                     test_cxx.useModules(False)
+
+        constexpr_steps = self._get_parser("CONSTEXPR_STEPS:", parsers).getValue()
+        if constexpr_steps is not None:
+            constexpr_steps = constexpr_steps[0]
+            if test_cxx.host_cxx.type == "msvc":
+                constexpr_steps_opt = f"/constexpr:steps{constexpr_steps}"
+            elif test_cxx.host_cxx.type == "clang":
+                constexpr_steps_opt = f"-fconstexpr-steps={constexpr_steps}"
+            elif test_cxx.host_cxx.type == "gcc":
+                constexpr_steps_opt = f"-fconstexpr-ops-limit={constexpr_steps}"
+            elif test_cxx.host_cxx.type == "nvhpc":
+                constexpr_steps_opt = f"-Wc,--max_cost_constexpr_call={constexpr_steps}"
+            else:
+                constexpr_steps_opt = None
+            if constexpr_steps_opt is not None:
+                if test_cxx.type == "nvcc":
+                    test_cxx.compile_flags += ["-Xcompiler", constexpr_steps_opt]
+                else:
+                    test_cxx.compile_flags += [constexpr_steps_opt]
 
         # Dispatch the test based on its suffix.
         if is_sh_test:
