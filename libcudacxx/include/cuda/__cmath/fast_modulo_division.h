@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -49,10 +50,12 @@ template <typename _Tp, typename _Up>
   if constexpr (is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__x >= 0, "__x must be non-negative");
+    _CCCL_ASSUME(__x >= 0);
   }
   if constexpr (is_signed_v<_Up>)
   {
     _CCCL_ASSERT(__y >= 0, "__y must be non-negative");
+    _CCCL_ASSUME(__y >= 0);
   }
   constexpr auto __mul_bits = ::cuda::next_power_of_two(__num_bits_v<_Tp> + __num_bits_v<_Up>);
   using __larger_t          = __make_nbit_uint_t<__mul_bits>;
@@ -65,11 +68,10 @@ template <typename _Tp, typename _Up>
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
 
-template <typename _Tp, bool _DivisorIsNotOne = false>
+template <typename _Tp, bool IsDivisorNotOne = false>
 class fast_mod_div
 {
   static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= 8, "unsupported type");
-
   using __unsigned_t = _CUDA_VSTD::make_unsigned_t<_Tp>;
 
 public:
@@ -77,40 +79,73 @@ public:
 
   _CCCL_API explicit fast_mod_div(_Tp __divisor1) noexcept
       : __divisor{__divisor1}
-      , __shift{::cuda::ilog2(__divisor1) - 1}
   {
     using namespace _CUDA_VSTD;
     using __larger_t = __make_nbit_uint_t<__num_bits_v<_Tp> * 2>;
-    auto __exp       = __num_bits_v<_Tp> + __shift;
-    __multiplier     = static_cast<__unsigned_t>(::cuda::ceil_div(__larger_t{1} << __exp, __divisor));
+    if constexpr (is_signed_v<_Tp>)
+    {
+      __shift      = ::cuda::ceil_ilog2(__divisor1) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
+      auto __k     = __num_bits_v<_Tp> + __shift;
+      __multiplier = ::cuda::ceil_div(__larger_t{1} << __k, __divisor);
+    }
+    else
+    {
+      __shift = ::cuda::ilog2(__divisor1);
+      if (::cuda::is_power_of_two(__divisor))
+      {
+        __multiplier = 0;
+        return;
+      }
+      auto __k              = __num_bits_v<_Tp> + __shift;
+      __multiplier          = ((__larger_t{1} << __k) + (__larger_t{1} << __shift)) / __divisor;
+      auto __multiplier_low = (__larger_t{1} << __k) / __divisor;
+      __add                 = (__multiplier_low == __multiplier);
+    }
   }
 
   template <typename _Up>
   [[nodiscard]] _CCCL_API friend _CUDA_VSTD::common_type_t<_Tp, _Up>
-  operator/(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
+  operator/(_Up __dividend, fast_mod_div<_Tp> __divisor1) noexcept
   {
     using namespace _CUDA_VSTD;
-    static_assert(__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= 8, "unsupported type");
+    static_assert(__cccl_is_integer_v<_Up> && sizeof(_Up) <= 8, "unsupported type");
+    static_assert(sizeof(_Up) <= sizeof(_Tp), "dividend type must be not larger than the divisor type");
+    static_assert(!(is_unsigned_v<_Up> && is_signed_v<_Tp>), "unsupported types");
     if constexpr (is_signed_v<_Up>)
     {
       _CCCL_ASSERT(__dividend >= 0, "dividend must be non-negative");
     }
-    if (!_DivisorIsNotOne && __divisor.__divisor == 1)
+    using __common_t    = common_type_t<_Tp, _Up>;
+    const auto __div    = __divisor1.__divisor; // cannot use structure binding because of clang-14
+    const auto __mul    = __divisor1.__multiplier;
+    const auto __add_   = __divisor1.__add; // cannot use __add for shadowing warning with clang-cuda
+    const auto __shift_ = __divisor1.__shift;
+    if (!IsDivisorNotOne && __div == 1)
     {
       return __dividend;
     }
-    using __common_t   = _CUDA_VSTD::common_type_t<_Tp, _Up>;
-    auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__dividend, __divisor.__multiplier);
-    auto __quotient    = static_cast<__common_t>(__higher_bits >> __divisor.__shift);
-    _CCCL_ASSERT(__quotient == __dividend / __divisor.__divisor, "wrong __quotient");
-    return __quotient;
+    if constexpr (is_unsigned_v<_Tp>)
+    {
+      if (__mul == 0)
+      {
+        return static_cast<__common_t>(__dividend >> __shift_);
+      }
+      if (__dividend != numeric_limits<_Up>::max())
+      {
+        __dividend += __add_;
+      }
+    }
+    auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__dividend, __mul);
+    auto __quotient    = __higher_bits >> __shift_;
+    _CCCL_ASSERT(__quotient == (static_cast<__unsigned_t>(__dividend) - __add_) / __div, "wrong __quotient");
+    return static_cast<__common_t>(__quotient);
   }
 
   template <typename _Up>
   [[nodiscard]] _CCCL_API friend _CUDA_VSTD::common_type_t<_Tp, _Up>
-  operator%(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
+  operator%(_Up __dividend, fast_mod_div<_Tp> __divisor1) noexcept
   {
-    return __dividend - (__dividend / __divisor) * __divisor.__divisor;
+    return __dividend - (__dividend / __divisor1) * __divisor1.__divisor;
   }
 
   [[nodiscard]] _CCCL_API operator _Tp() const noexcept
@@ -121,8 +156,21 @@ public:
 private:
   _Tp __divisor             = 1;
   __unsigned_t __multiplier = 0;
+  int __add                 = 0;
   int __shift               = 0;
 };
+
+/***********************************************************************************************************************
+ * Non-member functions
+ **********************************************************************************************************************/
+
+template <typename _Tp, typename _Up>
+[[nodiscard]] _CCCL_API _CUDA_VSTD::pair<_Tp, _Up> div(_Tp __dividend, fast_mod_div<_Up> __divisor) noexcept
+{
+  auto __quotient  = __dividend / __divisor;
+  auto __remainder = __dividend - __quotient * __divisor;
+  return {__quotient, __remainder};
+}
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
