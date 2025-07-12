@@ -20,10 +20,39 @@
 
 using namespace cuda::experimental::stf;
 
-const char* kernel_template = R"(
+const char* kernel_impl = R"(
+
 #include <cuda/experimental/__stf/nvrtc/slice.cuh>
 #include <cub/block/block_reduce.cuh>
 
+)" JITABLE_CODE(
+  template <int BLOCK_THREADS, typename P0, typename P1> __device__ void kernel(P0 values, P1 partials, size_t nelems) {
+    using T = int;
+
+    using namespace cub;
+    typedef BlockReduce<T, BLOCK_THREADS> BlockReduceT;
+
+    auto thread_id = BLOCK_THREADS * blockIdx.x + threadIdx.x;
+
+    // Local reduction
+    T local_sum = 0;
+    for (size_t ind = thread_id; ind < nelems; ind += blockDim.x * gridDim.x)
+    {
+      local_sum += values(ind);
+    }
+
+    __shared__ typename BlockReduceT::TempStorage temp_storage;
+
+    // Per-thread tile data
+    T result = BlockReduceT(temp_storage).Sum(local_sum);
+
+    if (threadIdx.x == 0)
+    {
+      partials(blockIdx.x) = result;
+    }
+  });
+
+const char* kernel_template = R"(
 extern "C"
 __global__ void %KERNEL_NAME%(%s dyn_values, %s dyn_partials, size_t nelems)
 {
@@ -32,27 +61,7 @@ __global__ void %KERNEL_NAME%(%s dyn_values, %s dyn_partials, size_t nelems)
   %s values{dyn_values};
   %s partials{dyn_partials};
 
-  using namespace cub;
-  typedef BlockReduce<T, BLOCK_THREADS> BlockReduceT;
-
-  auto thread_id = BLOCK_THREADS * blockIdx.x + threadIdx.x;
-
-  // Local reduction
-  T local_sum = 0;
-  for (size_t ind = thread_id; ind < nelems; ind += blockDim.x * gridDim.x)
-  {
-    local_sum += values(ind);
-  }
-
-  __shared__ typename BlockReduceT::TempStorage temp_storage;
-
-  // Per-thread tile data
-  T result = BlockReduceT(temp_storage).Sum(local_sum);
-
-  if (threadIdx.x == 0)
-  {
-    partials(blockIdx.x) = result;
-  }
+  kernel<BLOCK_THREADS>(values, partials, nelems);
 }
 )";
 
@@ -85,8 +94,10 @@ void run()
     jit_adapter jpartials{partials};
     jit_adapter jresult{result};
 
+    auto full_kernel_template = ::std::string(kernel_impl) + kernel_template;
+
     CUfunction reduce_kernel_1 = lazy_jit(
-      kernel_template,
+      full_kernel_template.c_str(),
       get_nvrtc_flags(),
       "",
       jvalues.kernel_param_t_name(),
@@ -96,7 +107,7 @@ void run()
       jpartials.kernel_side_t_name());
 
     CUfunction reduce_kernel_2 = lazy_jit(
-      kernel_template,
+      full_kernel_template.c_str(),
       get_nvrtc_flags(),
       "",
       jpartials.kernel_param_t_name(),

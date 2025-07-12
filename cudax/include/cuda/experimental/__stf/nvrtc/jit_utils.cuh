@@ -524,7 +524,7 @@ template <typename shape_t, typename... Args>
   // Note that we do not need the dynamic version of the shape at all
 
   oss
-    << "#include <cuda/experimental/__stf/nvrtc/jit_loop.cuh>\n"
+    << "\n#include <cuda/experimental/__stf/nvrtc/jit_loop.cuh>\n"
     << "extern \"C\"\n"
     << "__global__ void %KERNEL_NAME%(" << types_and_params_list.str() << ")\n"
     << "{\n"

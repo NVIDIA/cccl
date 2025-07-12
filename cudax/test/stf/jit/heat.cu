@@ -51,31 +51,6 @@ const char* header_template = R"(
 using namespace cuda::experimental::stf;
 )";
 
-const char* heat_kernel_template = R"(
-const double c = %a;
-const double dx2 = %a;
-const double dy2 = %a;
-
-extern "C"
-__global__ void %KERNEL_NAME%(slice<const double, 2> dyn_U, slice<double, 2> dyn_U1)
-{
-  %s U{dyn_U};
-  %s U1{dyn_U1};
-
-  int tidx = blockIdx.x * blockDim.x + threadIdx.x;
-  int tidy = blockIdx.y * blockDim.y + threadIdx.y;
-  int dimx = blockDim.x * gridDim.x;
-  int dimy = blockDim.y * gridDim.y;
-
-  for (size_t i = tidx + 1; i < U.extent(0)-1; i+= dimx)
-    for (size_t j = tidy + 1; j < U.extent(1)-1; j += dimy)
-    {
-      U1(i, j) = U(i, j) + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
-    }
-}
-
-)";
-
 int main()
 {
   context ctx;
