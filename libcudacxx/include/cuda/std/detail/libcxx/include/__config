@@ -69,17 +69,6 @@ extern "C++" {
 #    else
 #      error Supported values for _LIBCUDACXX_DEBUG are 0 and 1
 #    endif
-#    if !defined(_LIBCUDACXX_BUILDING_LIBRARY)
-#      define _LIBCUDACXX_EXTERN_TEMPLATE(...)
-#    endif
-#  endif
-
-#  ifdef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
-#    define _LIBCUDACXX_EXTERN_TEMPLATE(...)
-#  endif
-
-#  ifndef _LIBCUDACXX_EXTERN_TEMPLATE
-#    define _LIBCUDACXX_EXTERN_TEMPLATE(...) extern template __VA_ARGS__;
 #  endif
 
 // Deprecation macros.
