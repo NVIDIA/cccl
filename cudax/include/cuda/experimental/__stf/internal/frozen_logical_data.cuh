@@ -83,7 +83,7 @@ private:
         for (auto& e : result.second)
         {
           int fake_task_id = fake_task.get_unique_id();
-          dot->add_edge(e->unique_prereq_id, fake_task_id, 1);
+          dot->add_edge(e->unique_prereq_id, fake_task_id, reserved::edge_type::prereqs);
         }
       }
 
@@ -112,7 +112,7 @@ private:
         int fake_task_id = fake_task.get_unique_id();
         for (const auto& out_e : prereqs)
         {
-          dot->add_edge(fake_task_id, out_e->unique_prereq_id, 1);
+          dot->add_edge(fake_task_id, out_e->unique_prereq_id, reserved::edge_type::prereqs);
         }
       }
 
