@@ -22,8 +22,11 @@ from numba.core.typing.templates import (
     signature,
 )
 from numba.extending import (
+    make_attribute_wrapper,
+    models,
     type_callable,
     typeof_impl,
+    register_model,
 )
 
 import cuda.cccl.cooperative.experimental as coop
@@ -639,12 +642,6 @@ class CoopHistogramInitTemplate(CallableTemplate):
                     f"{type(array).__name__}"
                 )
 
-            if not isinstance(bins, (types.Integer, types.IntegerLiteral)):
-                raise errors.TypingError(
-                    "bins must be an integer or integer literal, "
-                    f"got {type(bins).__name__}"
-                )
-
             if array.ndim != 1:
                 raise errors.TypingError(
                     "array must be a one-dimensional device array, "
@@ -722,10 +719,48 @@ class CoopHistogramCompositeTemplate(CallableTemplate):
 
         return typer
 
+class CoopBlockHistogramTemplate(CallableTemplate, CoopDeclMixin):
+    key = coop.block.histogram
+    primitive_name = "coop.block.histogram"
+    algorithm_enum = coop.BlockHistogramAlgorithm
+    default_algorithm = coop.BlockHistogramAlgorithm.BLOCK_HISTO_ATOMIC
+
+    def __init__(self, context=None):
+        super().__init__(context=context)
+
+    def generic(self):
+        def typer(
+            item_dtype,
+            counter_dtype,
+            dim,
+            items_per_thread,
+            algorithm=None,
+            bins=None,
+        ):
+            if not isinstance(item_dtype, types.Type):
+                raise errors.TypingError("item_dtype must be a type")
+            if not isinstance(counter_dtype, types.Type):
+                raise errors.TypingError("counter_dtype must be a type")
+            if not isinstance(dim, types.Type):
+                raise errors.TypingError("dim must be a type")
+            if not isinstance(items_per_thread, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    "items_per_thread must be an integer or integer literal"
+                )
+            if algorithm is not None and not isinstance(algorithm, types.EnumMember):
+                raise errors.TypingError("algorithm must be an enum member")
+            if bins is not None and not isinstance(bins, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError("bins must be an integer or integer literal")
+
+            return block_histogram_instance_type
 
 class CoopBlockHistogramType(types.Type, CoopInstanceTypeMixin):
+    decl_class = CoopBlockHistogramTemplate
     def __init__(self):
         super().__init__(name="coop.block.histogram")
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
 block_histogram_instance_type = CoopBlockHistogramType()
@@ -768,32 +803,33 @@ class CoopBlockHistogramAttrsTemplate(AttributeTemplate):
 
 register_attr(CoopBlockHistogramAttrsTemplate)
 
-block_histogram_attrs_template = CoopBlockHistogramAttrsTemplate()
+block_histogram_attrs_template = CoopBlockHistogramAttrsTemplate(None)
 
 # Data models
 
-@register_model(BlockHistogram)
-class BlockHistogramModel(models.StructModel):
-    def __init__(self, dmm, fe_type):
-        members = [
-            ("item_dtype", types.Type(fe_type.item_dtype)),
-            ("counter_dtype", types.Type(fe_type.counter_dtype)),
-            ("dim", types.Type(fe_type.dim)),
-            ("items_per_thread", types.Integer(fe_type.items_per_thread)),
-            ("algorithm", fe_type.algorithm_enum),
-            ("bins", types.Integer(fe_type.bins)),
-        ]
-        super().__init__(dmm, fe_type, members)
+if False:
+    @register_model(BlockHistogram)
+    class BlockHistogramModel(models.StructModel):
+        def __init__(self, dmm, fe_type):
+            members = [
+                ("item_dtype", types.Type(fe_type.item_dtype)),
+                ("counter_dtype", types.Type(fe_type.counter_dtype)),
+                ("dim", types.Type(fe_type.dim)),
+                ("items_per_thread", types.Integer(fe_type.items_per_thread)),
+                ("algorithm", fe_type.algorithm_enum),
+                ("bins", types.Integer(fe_type.bins)),
+            ]
+            super().__init__(dmm, fe_type, members)
 
-make_attribute_wrapper(CoopBlockHistogramType, "item_dtype", "item_dtype")
-make_attribute_wrapper(CoopBlockHistogramType, "counter_dtype", "counter_dtype")
-make_attribute_wrapper(CoopBlockHistogramType, "dim", "dim")
-make_attribute_wrapper(CoopBlockHistogramType, "items_per_thread",
-                       "items_per_thread")
-make_attribute_wrapper(CoopBlockHistogramType, "algorithm", "algorithm")
-make_attribute_wrapper(CoopBlockHistogramType, "bins", "bins")
-make_attribute_wrapper(CoopBlockHistogramType, "init", "init")
-make_attribute_wrapper(CoopBlockHistogramType, "composite", "composite")
+    make_attribute_wrapper(CoopBlockHistogramType, "item_dtype", "item_dtype")
+    make_attribute_wrapper(CoopBlockHistogramType, "counter_dtype", "counter_dtype")
+    make_attribute_wrapper(CoopBlockHistogramType, "dim", "dim")
+    make_attribute_wrapper(CoopBlockHistogramType, "items_per_thread",
+                           "items_per_thread")
+    make_attribute_wrapper(CoopBlockHistogramType, "algorithm", "algorithm")
+    make_attribute_wrapper(CoopBlockHistogramType, "bins", "bins")
+    make_attribute_wrapper(CoopBlockHistogramType, "init", "init")
+    make_attribute_wrapper(CoopBlockHistogramType, "composite", "composite")
 
 
 # =============================================================================

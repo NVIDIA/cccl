@@ -9,6 +9,7 @@ from .block._block_load_store import (
 )
 from ._array import local, shared
 from ._enums import (
+    BlockHistogramAlgorithm,
     BlockLoadAlgorithm,
     BlockStoreAlgorithm,
     WarpLoadAlgorithm,

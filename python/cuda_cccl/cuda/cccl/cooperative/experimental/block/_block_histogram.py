@@ -157,3 +157,6 @@ class BlockHistogram:
             histogram_bins,
             temp_storage=temp_storage,
         )
+
+class histogram(BlockHistogram):
+    pass

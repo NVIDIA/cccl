@@ -1049,6 +1049,16 @@ class CoopLocalArrayNode(CoopArrayNode, CoopNodeMixin):
     primitive_name = "coop.local.array"
 
 
+class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.histogram"
+
+    def refine_match(self, rewriter):
+        pass
+
+    def rewrite(self, rewriter):
+        return ()
+
+
 @lru_cache(maxsize=None)
 def get_coop_class_and_instance_maps():
     from cuda.cccl.cooperative.experimental._decls import (
@@ -1270,14 +1280,14 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     # Verify target name is unique.
                     assert target_name not in two_phases_by_name, (
                         target_name,
-                        two_phases[target_name],
+                        two_phases_by_name[target_name],
                         value,
                         value_type,
                     )
                     # Verify we haven't already seen this instance.
                     assert value not in two_phases_by_value, (
                         target_name,
-                        two_phases[target_name],
+                        two_phases_by_value[value],
                         value,
                         value_type,
                     )
