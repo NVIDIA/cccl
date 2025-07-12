@@ -186,7 +186,7 @@ class LibcxxTestFormat(object):
                 constexpr_steps_opt = f"/constexpr:steps{constexpr_steps}"
             elif test_cxx.host_cxx.type == "clang":
                 constexpr_steps_opt = f"-fconstexpr-steps={constexpr_steps}"
-            elif test_cxx.host_cxx.type == "gcc":
+            elif test_cxx.host_cxx.type == "gcc" and test_cxx.host_cxx.version[0] >= 9:
                 constexpr_steps_opt = f"-fconstexpr-ops-limit={constexpr_steps}"
             elif test_cxx.host_cxx.type == "nvhpc":
                 constexpr_steps_opt = f"-Wc,--max_cost_constexpr_call={constexpr_steps}"
