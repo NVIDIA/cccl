@@ -25,10 +25,10 @@ sudo sh cuda_12.9.1_575.57.08_linux.run
 ```
 
 > **Tip:** On the [official CUDA Toolkit page](https://developer.nvidia.com/cuda-downloads), choose:
-> - **Operating System:** Linux  
-> - **Architecture:** x86_64  
-> - **Distribution:** WSL-Ubuntu  
-> - **Version:** 2.0 (latest)  
+> - **Operating System:** Linux
+> - **Architecture:** x86_64
+> - **Distribution:** WSL-Ubuntu
+> - **Version:** 2.0 (latest)
 > - **Installer Type:** runfile (local)
 
 ---
@@ -95,5 +95,5 @@ This example demonstrates how to use CCCL’s parallel tools to compute the alte
 
 > **Sum:** `1 - 2 + 3 - 4 + ... ± N`
 
-🔗 [Blog Article](https://go.nvidianews.com/MTU2LU9GTi03NDIAAAGblPIog3GxgqJI2nCWFj2_xv1LfEG5RFX-R2TlZZURSTmDVBUd-z9wBrHkhZ7amS4Pkx4_2WI=)  
+🔗 [Blog Article](https://go.nvidianews.com/MTU2LU9GTi03NDIAAAGblPIog3GxgqJI2nCWFj2_xv1LfEG5RFX-R2TlZZURSTmDVBUd-z9wBrHkhZ7amS4Pkx4_2WI=)
 📄 [Script on GitHub](https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/reduction/iterator/transform_iterator.py)
