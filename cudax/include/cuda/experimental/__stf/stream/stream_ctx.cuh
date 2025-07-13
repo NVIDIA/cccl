@@ -46,11 +46,6 @@ namespace cuda::experimental::stf
 template <typename T>
 struct streamed_interface_of;
 
-#if 0
-static size_t current_alloc   = 0;
-static size_t footprint_alloc = 0;
-#endif
-
 /**
  * @brief Uncached allocator (used as a basis for other allocators)
  *
@@ -112,28 +107,13 @@ public:
         op.set_symbol("cudaMallocAsync");
       }
       cuda_safe_call(cudaMallocAsync(&result, s, dstream.stream));
-
-#if 0
-      current_alloc += s;
-      footprint_alloc = ::std::max(footprint_alloc, current_alloc);
-      fprintf(stderr,
-              "[uncached] cudaMallocAsync(s = %s, total %s, footprint %s)\n",
-              pretty_print_bytes(s).c_str(),
-              pretty_print_bytes(current_alloc).c_str(),
-              pretty_print_bytes(footprint_alloc).c_str());
-      //      if (footprint_alloc > 6*1024*1024*1024ULL) abort();
-#endif
-
       prereqs = op.end(ctx);
     }
     return result;
   }
 
-  void deallocate(backend_ctx_untyped& ctx,
-                  const data_place& memory_node,
-                  event_list& prereqs,
-                  void* ptr,
-                  [[maybe_unused]] size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /* sz */) override
   {
     auto dstream = memory_node.getDataStream(ctx.async_resources());
     auto op      = stream_async_op(ctx, dstream, prereqs);
@@ -172,15 +152,6 @@ public:
 
       // Assuming device memory
       cuda_safe_call(cudaFreeAsync(ptr, dstream.stream));
-
-#if 0
-      current_alloc -= sz;
-      fprintf(stderr,
-              "[uncached] cudaFreeAsync(s = %s, total %s, footprint %s)\n",
-              pretty_print_bytes(sz).c_str(),
-              pretty_print_bytes(current_alloc).c_str(),
-              pretty_print_bytes(footprint_alloc).c_str());
-#endif
     }
 
     prereqs = op.end(ctx);
