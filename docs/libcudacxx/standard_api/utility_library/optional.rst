@@ -10,10 +10,7 @@ Extensions
 
 - All features are available from C++14 onwards.
 - All features are available at compile time if the value type supports it.
-
-- An implementation of `P2988 optional\<T&\> <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p2988r9.pdf>`_ is available by
-  defining ``CCCL_ENABLE_OPTIONAL_REF``
-
+- The implementation of ``optional<T&>`` is available in C++17 and later.
 Restrictions
 ------------
 

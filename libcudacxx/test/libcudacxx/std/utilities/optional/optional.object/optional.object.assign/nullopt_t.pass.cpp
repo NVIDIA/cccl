@@ -57,7 +57,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     opt = nullopt;
     assert(static_cast<bool>(opt) == false);
   }
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   {
     optional<int&> opt{};
     static_assert(noexcept(opt = nullopt) == true, "");
@@ -70,7 +69,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     opt = nullopt;
     assert(static_cast<bool>(opt) == false);
   }
-#endif // CCCL_ENABLE_OPTIONAL_REF
   {
     optional<StateTracker> opt{};
     opt = nullopt;

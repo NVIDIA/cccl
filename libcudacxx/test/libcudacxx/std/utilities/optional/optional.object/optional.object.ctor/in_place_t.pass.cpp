@@ -108,9 +108,7 @@ __host__ __device__ constexpr bool test()
   test<Y>(42);
   test<Y>(42, 1337);
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>(42);
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }

@@ -46,9 +46,7 @@ __host__ __device__ constexpr bool test()
   test<ConstexprTestTypes::TestType>();
   test<ExplicitConstexprTestTypes::TestType>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<const int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
