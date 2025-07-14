@@ -3,11 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from . import block, warp
-from .block._block_load_store import (
-    BlockLoad,
-    BlockStore,
-)
 from ._array import local, shared
+from ._dataclass import gpu_dataclass
 from ._enums import (
     BlockHistogramAlgorithm,
     BlockLoadAlgorithm,
@@ -21,14 +18,20 @@ from ._types import (
     TempStorage,
     ThreadData,
 )
+from .block._block_load_store import (
+    BlockLoad,
+    BlockStore,
+)
 
 __all__ = [
     "_init_extension",
     "block",
+    "BlockHistogramAlgorithm",
     "BlockLoad",
     "BlockLoadAlgorithm",
     "BlockStoreAlgorithm",
     "BlockStore",
+    "gpu_dataclass",
     "local",
     "shared",
     "StatefulFunction",

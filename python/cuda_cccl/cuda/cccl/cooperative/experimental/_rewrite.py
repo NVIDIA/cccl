@@ -95,6 +95,19 @@ def get_kernel_param_value_safe(name: str, launch_config: "LaunchConfig") -> Any
         return None
 
 
+def register_kernel_extension(kernel, instance):
+    """
+    Register a kernel extension for the given instance.
+    This is used to ensure that the kernel can handle the instance properly.
+    """
+    extensions = kernel.extensions
+    if instance in extensions:
+        msg = f"Instance {instance!r} already registered in kernel extensions."
+        raise RuntimeError(msg)
+
+    extensions.append(instance)
+
+
 class Granularity(IntEnum):
     """
     Enum for the granularity of the cooperative operation.
@@ -195,14 +208,7 @@ class CoopNode:
             self.launch_config.pre_launch_callbacks.append(self.pre_launch_callback)
 
     def pre_launch_callback(self, kernel, launch_config):
-        # Add our prepare_args to the kernel's extensions.
-        extensions = kernel.extensions
-        extensions_set = set(extensions)
-        assert self.prepare_args not in extensions_set, (
-            self.prepare_args,
-            extensions_set,
-        )
-        extensions.append(self)
+        register_kernel_extension(kernel, self)
 
     def prepare_args(self, ty, val, *args, **kwargs):
         # N.B. This routine is only invoked for two-phase instances.
@@ -220,13 +226,9 @@ class CoopNode:
 
         # We don't actually access the primitive instance via kernel arguments
         # directly during lowering, so we just need to returning *something*
-        # sane here that'll pacify _Kernel._prepare_args().  CPointer was
-        # picked because it appears early in said routine's big if-elif block
-        # and it's relatively sane to think of a function pointer address as
-        # the value to return--even if it is never used (i.e. might be helpful
-        # for debugging).
+        # sane here that'll pacify _Kernel._prepare_args().
         addr = id(val)
-        return (types.CPointer(addr), addr)
+        return (types.uint64, addr)
 
     @property
     def is_two_phase(self):
@@ -1107,6 +1109,46 @@ class BaseCooperativeNodeRewriter(Rewrite):
             "numba.cuda", numba.cuda, scope, loc, new_nodes
         )
 
+    def handle_new_kernel_traits_struct(
+        self, struct: Any, name: str, launch_config: "LaunchConfig"
+    ):
+        # N.B. See the comment in the `match()` method for more details about
+        #      the purpose of this method and the `CustomPrepareArgs` class.
+        needs_custom = not hasattr(struct, "prepare_args") or not hasattr(
+            struct, "pre_launch_callback"
+        )
+        if not needs_custom:
+            # Use the struct directly.
+            custom = struct
+        else:
+            # Synthesize a custom prepare_args handler for the struct.
+            class CustomPrepareArgs:
+                """
+                Custom prepare_args handler for the struct-like object.
+                This will be added to the kernel's extensions list.
+                """
+
+                def __init__(self, struct: Any, name: str):
+                    self.struct = struct
+                    self.name = name
+
+                def pre_launch_callback(self, kernel, launch_config):
+                    register_kernel_extension(kernel, self)
+
+                def prepare_args(self, ty, val, *args, **kwds):
+                    if val is not self.struct:
+                        return (ty, val)
+
+                    # The values we return here just need to pacify _Kernel's
+                    # _parse_args() routines--we never actually use the kernel
+                    # parameters by way of the arguments provided at kernel launch.
+                    addr = id(val)
+                    return (types.uint64, addr)
+
+            custom = CustomPrepareArgs(struct, name)
+
+        launch_config.pre_launch_callbacks.append(custom.pre_launch_callback)
+
     def match(self, func_ir, block, typemap, calltypes, **kw):
         # If there are no calls in this block, we can immediately skip it.
         num_calltypes = len(calltypes)
@@ -1124,6 +1166,78 @@ class BaseCooperativeNodeRewriter(Rewrite):
         type_instances = self._instances
         launch_config = ensure_current_launch_config()
         interesting_modules = self.interesting_modules
+
+        # Advanced C++ CUDA kernels will often leverage a templated struct
+        # for specialized CUB primitives, e.g.
+        #   template <T, int items_per_thread>
+        #   struct KernelTraits {
+        #       using BlockLoadT = cub::BlockLoad<T, items_per_thread>;
+        #       ...
+        #   };
+        #   ...
+        #   template <typename KernelTraitsT>
+        #   __global__ void kernel(...) {
+        #       constexpr auto items_per_thread =
+        #           KernelTraitsT::items_per_thread;
+        #       extern __shared__ char smem[];
+        #       auto& smem_load = reinterpret_cast<
+        #           typename KernelTraitsT::BlockLoadT::TempStorage&>(smem);
+        #       ...
+        #   }
+        #
+        # The equivalent Pythonic cuda.coop equivalent of the above (sans
+        # kernel implementation) would be something along the lines of:
+        #
+        #   def make_kernel_traits(dtype, dim, items_per_thread):
+        #       @dataclass
+        #       class KernelTraits:
+        #           items_per_thread: int
+        #           block_load = coop.block.load(
+        #               dtype, dim, items_per_thread,
+        #           )
+        #       return KernelTraits(dtype, dim, items_per_thread)
+        #
+        #   @cuda.jit
+        #   def kernel(d_in, d_out, traits: KernelTraits):
+        #       ...
+        #       traits.block_load(d_in, d_out)
+        #       ...
+        #
+        #   traits = make_kernel_traits(np.float32, 128, 4)
+        #   kernel[blocks_per_grid, threads_per_block](d_in, d_out, traits)
+        #
+        # In order to support this pattern, we need to track instances of
+        # kernel arguments for which we saw a function call of a coop primitive
+        # where the primitive was an attribute of a struct-like object--i.e.
+        # the `traits.block_load` in the example above.
+        #
+        # We generically refer to these container struct-like objects in this
+        # routine as "structs", and we track the names of ones we've seen in
+        # the set named `seen_structs`.
+        #
+        # When we encounter a new "struct", we synthesize a new class that
+        # defines a `prepare_args(self, ty, val, *args, **kwds)` method to
+        # pacify numba's _Kernel._parse_args() routine when it processes the
+        # `traits` argument in the example above prior to kernel launch.  (See
+        # `self.handle_new_kernel_traits_struct()` for more details.)
+        #
+        # This would normally be handled by supplying an appropriate "extension"
+        # (i.e. an instance with a `prepare_args()` method) to the @cuda.jit
+        # decorator's `extensions` kwarg, e.g.:
+        #   @cuda.jit(extensions=[custom_prepare_args, ...])`
+        #
+        # That is not particularly user-friendly though, and becomes unwieldy
+        # with non-trivial kernel trait "structs" that have multiple coop
+        # primitive members (e.g. block load, scan, reduce, scan, etc.).
+        #
+        # So, to remove the requirement for the user to furnish all these
+        # extension handlers up-front to the @cuda.jit decorator, we need to
+        # add our synthesized class with a `prepare_args()` method to the
+        # kernel's list of extensions prior to kernel launch.  We achieve
+        # this by obtaining the launch configuration and appending to the
+        # `pre_launch_callbacks` list, providing another synthesized routine
+        # that, when invoked, will update the kernel's extensions list.
+        seen_structs = set()
 
         for i, instr in enumerate(block.body):
             # XXX Do we ever encounter nodes other than Assign, Del, or
@@ -1254,12 +1368,25 @@ class BaseCooperativeNodeRewriter(Rewrite):
                         if isinstance(obj_instr, (ir.Global, ir.FreeVar)):
                             two_phase_instance = obj_instr.value
                         elif isinstance(obj_instr, ir.Arg):
+                            # Assume we're dealing with a kernel traits "struct"
+                            # (see earlier long comment for details).
                             arg_value = get_kernel_param_value(
                                 obj_instr.name,
                                 launch_config,
                             )
+                            if obj.name not in seen_structs:
+                                # If we haven't seen this struct before, we
+                                # need to create a new class for it.
+                                self.handle_new_kernel_traits_struct(
+                                    arg_value, obj.name, launch_config
+                                )
+                                seen_structs.add(obj.name)
                             two_phase_instance = getattr(arg_value, def_instr.attr)
-                            needs_pre_launch_callback = True
+
+                            # N.B. We don't need to set `needs_pre_launch_callback`
+                            #      here; that's only required when the primitive
+                            #      instance has been provided directly as a
+                            #      kernel argument.
                     else:
                         msg = f"Unexpected expression op: {def_instr!r}"
                         raise RuntimeError(msg)

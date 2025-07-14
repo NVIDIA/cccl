@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from dataclasses import dataclass
+
 import numba
 import numpy as np
 from numba import cuda
@@ -133,3 +135,52 @@ def test_block_load_store_two_phase_kernel_param():
     h_output = d_output.copy_to_host()
 
     np.testing.assert_allclose(h_output, h_input)
+
+
+def test_block_load_store_two_phase_gpu_dataclass():
+    # XXX: this only seems to pass when *debugged* in VS Code/Cursor.  Running
+    # it any other way results in a seg fault.
+    dtype = np.int32
+    dim = 128
+    items_per_thread = 16
+
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread, kp):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        kp.block_load(d_in, thread_data)
+        coop.block.store(d_out, thread_data, items_per_thread)
+
+    def make_kernel_params(dtype, dim, items_per_thread):
+        block_load = coop.block.load(dtype, dim, items_per_thread)
+        block_store = coop.block.store(dtype, dim, items_per_thread)
+
+        @dataclass
+        class KernelParams:
+            items_per_thread: int
+            block_load: coop.block.load
+            block_store: coop.block.store
+
+        kp = KernelParams(
+            items_per_thread=items_per_thread,
+            block_load=block_load,
+            block_store=block_store,
+        )
+
+        kp = coop.gpu_dataclass(kp)
+        return kp
+
+    h_input = np.random.randint(0, 42, dim * items_per_thread, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    k = kernel[1, dim]
+    kp = make_kernel_params(dtype, dim, items_per_thread)
+
+    assert kp.temp_storage_bytes_max == 1
+    assert kp.temp_storage_bytes_sum == 2
+    assert kp.temp_storage_alignment == 1
+    assert kp.items_per_thread == items_per_thread
+
+    k(d_input, d_output, items_per_thread, kp)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_array_equal(h_output, h_input)
