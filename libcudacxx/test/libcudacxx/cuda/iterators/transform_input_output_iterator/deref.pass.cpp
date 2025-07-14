@@ -27,13 +27,14 @@ __host__ __device__ constexpr void test()
     cuda::transform_input_output_iterator iter{buffer, input_func, output_func};
     for (int i = 0; i < 8; ++i, ++iter)
     {
-      assert(*iter == input_func(i));
-      assert(*iter = i);
+      assert(*iter == input_func(buffer[i]));
+      *iter = i;
       assert(buffer[i] == output_func(i));
     }
     static_assert(noexcept(*iter));
     static_assert(noexcept(*iter = 2) == !cuda::std::is_same_v<OutputFn, PlusOneMayThrow>);
     static_assert(!cuda::std::is_same_v<decltype(*iter), int>);
+    static_assert(cuda::std::is_convertible_v<decltype(*iter), int>);
   }
 
   {
@@ -44,6 +45,7 @@ __host__ __device__ constexpr void test()
     static_assert(noexcept(*iter));
     static_assert(noexcept(*iter = 2) == !cuda::std::is_same_v<OutputFn, PlusOneMayThrow>);
     static_assert(!cuda::std::is_same_v<decltype(*iter), int>);
+    static_assert(cuda::std::is_convertible_v<decltype(*iter), int>);
   }
 }
 
@@ -52,6 +54,7 @@ __host__ __device__ constexpr bool test()
   test<TimesTwo, PlusOne>();
   test<TimesTwo, PlusOneMutable>();
   test<TimesTwo, PlusOneMayThrow>();
+  test<TimesTwoMayThrow, PlusOne>();
   NV_IF_ELSE_TARGET(NV_IS_HOST, (test<TimesTwo, PlusOneHost>();), (test<TimesTwo, PlusOneDevice>();))
 
   return true;

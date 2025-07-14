@@ -33,7 +33,7 @@ struct PlusOneMutable
 
 struct PlusOneMayThrow
 {
-  __host__ __device__ constexpr int operator()(int x)
+  __host__ __device__ constexpr int operator()(int x) const
   {
     return x + 1;
   }
@@ -64,7 +64,7 @@ struct PlusOneDevice
 struct NotDefaultConstructiblePlusOne
 {
   __host__ __device__ constexpr NotDefaultConstructiblePlusOne(int) noexcept {}
-  __host__ __device__ constexpr int operator()(int x) const
+  __host__ __device__ constexpr int operator()(int x) const noexcept
   {
     return x + 1;
   }
@@ -73,6 +73,14 @@ struct NotDefaultConstructiblePlusOne
 struct TimesTwo
 {
   __host__ __device__ constexpr int operator()(int x) const noexcept
+  {
+    return x * 2;
+  }
+};
+
+struct TimesTwoMayThrow
+{
+  __host__ __device__ constexpr int operator()(int x) const
   {
     return x * 2;
   }

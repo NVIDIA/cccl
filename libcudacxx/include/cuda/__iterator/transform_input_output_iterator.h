@@ -129,7 +129,7 @@ public:
 //!    // Write 1.0f, 2.0f, 3.0f, 4.0f to vector
 //!    thrust::sequence(v.begin(), v.end(), 1);
 //!
-//!    // Iterator that returns negated values and writes squared values
+//!    // Iterator that negates read values and writes squared values
 //!    auto iter = cuda::make_transform_input_output_iterator(v.begin(),
 //!        ::cuda::std::negate<float>{}, thrust::square<float>{});
 //!
@@ -223,7 +223,8 @@ public:
     return _CUDA_VSTD::move(__current_);
   }
 
-  //! @brief Returns a proxy that transforms the input upon assignment
+  //! @brief Returns a proxy that transforms read values via \tparam _InputFn upon converting to \c value_type and
+  //! transforms assigned values via \tparam _OutputFn before writing
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr auto operator*() const noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>)
   {
@@ -231,14 +232,16 @@ public:
       __current_, const_cast<_InputFn&>(*__input_func_), const_cast<_OutputFn&>(*__output_func_)};
   }
 
-  //! @brief Returns a proxy that transforms the input upon assignment
+  //! @brief Returns a proxy that transforms read values via \tparam _InputFn upon converting to \c value_type and
+  //! transforms assigned values via \tparam _OutputFn before writing
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr auto operator*() noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>)
   {
     return __transform_input_output_proxy{__current_, *__input_func_, *__output_func_};
   }
 
-  //! @brief Returns a proxy that transforms the input upon assignment storing the current iterator advanced by \p __n
+  //! @brief Returns a proxy storing the current iterator advanced by \p __n that transforms read values via \tparam
+  //! _InputFn upon converting to \c value_type and transforms assigned values via \tparam _OutputFn before writing
   //! @param __n The additional offset
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
@@ -250,7 +253,8 @@ public:
       __current_ + __n, const_cast<_InputFn&>(*__input_func_), const_cast<_OutputFn&>(*__output_func_)};
   }
 
-  //! @brief Returns a proxy that transforms the input upon assignment storing the current iterator advanced by \p __n
+  //! @brief Returns a proxy storing the current iterator advanced by \p __n that transforms read values via \tparam
+  //! _InputFn upon converting to \c value_type and transforms assigned values via \tparam _OutputFn before writing
   //! @param __n The additional offset
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)

@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool test()
     assert(base(iter.base()) == buffer + 2);
     assert(*iter == input_func(buffer[2]));
     *iter = 3;
-    assert(buffer[2] == 3 * 2);
+    assert(buffer[2] == output_func(3));
     buffer[2] = 2;
 
     // The test iterators are not `is_nothrow_move_constructible`
@@ -42,14 +42,13 @@ __host__ __device__ constexpr bool test()
       cuda::std::is_same_v<decltype(iter),
                            cuda::transform_input_output_iterator<random_access_iterator<int*>, InputFn, OutputFn>>);
   }
-  buffer[2] = 2;
 
   { // CTAD
     cuda::transform_input_output_iterator iter{buffer + 2, input_func, output_func};
     assert(iter.base() == buffer + 2);
     assert(*iter == input_func(buffer[2]));
     *iter = 3;
-    assert(buffer[2] == 3 * 2);
+    assert(buffer[2] == output_func(3));
     buffer[2] = 2;
 
     static_assert(noexcept(cuda::transform_input_output_iterator{buffer + 2, input_func, output_func}));
@@ -62,7 +61,7 @@ __host__ __device__ constexpr bool test()
     assert(base(iter.base()) == buffer + 2);
     assert(*iter == input_func(buffer[2]));
     *iter = 3;
-    assert(buffer[2] == 3 * 2);
+    assert(buffer[2] == output_func(3));
     buffer[2] = 2;
 
 #if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
@@ -77,8 +76,7 @@ __host__ __device__ constexpr bool test()
     assert(iter.base() == buffer + 2);
     assert(*iter == input_func(buffer[2]));
     *iter = 3;
-    assert(buffer[2] == 3 * 2);
-    buffer[2] = 2;
+    assert(buffer[2] == output_func(3));
 
     static_assert(
       noexcept(cuda::transform_input_output_iterator<int*, InputFn, OutputFn>{buffer + 2, input_func, output_func}));
