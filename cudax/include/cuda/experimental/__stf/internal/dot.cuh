@@ -19,6 +19,7 @@
  * CUDASTF_DOT_REMOVE_DATA_DEPS
  * CUDASTF_DOT_TIMING
  * CUDASTF_DOT_MAX_DEPTH
+ * CUDASTF_DOT_SHOW_FENCE
  */
 
 #pragma once
@@ -50,6 +51,11 @@
 #include <stack>
 #include <unordered_set>
 
+/**
+ * @file
+ * @brief Generation of the DOT file to visualize task DAGs
+ */
+
 namespace cuda::experimental::stf::reserved
 {
 
@@ -59,6 +65,17 @@ namespace cuda::experimental::stf::reserved
 using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimental::stf::hash<::std::pair<int, int>>>;
 
 class dot;
+
+// edge represent dependencies, but we sometimes want to visualize differently
+// dependencies which are related to actual task dependencies, and "internal"
+// dependencies between asynchronous operations (eg. a task depends on an
+// allocation) which are not necessarily useful to visualize.
+enum edge_type
+{
+  plain   = 0,
+  prereqs = 1,
+  fence   = 2
+};
 
 // Information for every task, so that we can eventually generate a node for the task
 struct per_task_info
@@ -96,7 +113,7 @@ public:
 
   void add_fence_vertex(int unique_id)
   {
-    if (getenv("CUDASTF_DOT_NO_FENCE"))
+    if (!getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
@@ -130,13 +147,19 @@ public:
   //
   // style = 0 => plain
   // style = 1 => dashed
+  // style = 2 => dashed to fence
   //
   // Note that while tasks are topologically ordered, when we generate graphs
   // which includes internal async events, we may have (prereq) nodes which
   // are not ordered, so we cannot expect "id_from < id_to"
-  void add_edge(int id_from, int id_to, int style = 0)
+  void add_edge(int id_from, int id_to, edge_type style = edge_type::plain)
   {
     if (!is_tracing())
+    {
+      return;
+    }
+
+    if (!tracing_enabled)
     {
       return;
     }
@@ -148,7 +171,7 @@ public:
       return;
     }
 
-    if (style == 1 && getenv("CUDASTF_DOT_NO_FENCE"))
+    if (style == edge_type::fence && !getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
