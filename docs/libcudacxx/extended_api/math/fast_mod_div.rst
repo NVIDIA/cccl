@@ -7,7 +7,7 @@ Defined in ``<cuda/cmath>`` header.
 
 .. code:: cpp
 
-    template <typename T, bool IsDivisorNotOne = false>
+    template <typename T, bool DivisorIsNeverOne = false>
     class fast_mod_div {
     public:
         fast_mod_div() = delete;
@@ -40,7 +40,7 @@ The class ``fast_mod_div`` is used to pre-compute the modulo and division of an 
 
 - ``divisor``:  The divisor.
 - ``dividend``: The dividend.
-- ``IsDivisorNotOne``: Indicates that ``divisor != 1`` and skips one comparison in the second stage.
+- ``DivisorIsNeverOne``: Indicates that ``divisor != 1`` and skips one comparison in the second stage.
 
 **Constraints**
 
@@ -51,14 +51,14 @@ The class ``fast_mod_div`` is used to pre-compute the modulo and division of an 
 
 - ``divisor > 0``.
 - ``dividend >= 0``.
-- ``divisor > 1`` if ``IsDivisorNotOne == true``.
+- ``divisor > 1`` if ``DivisorIsNeverOne == true``.
 
 **Performance considerations**
 
-- ``fast_mod_div`` needs to be initialized on the host and executed on the device.
+- ``fast_mod_div`` needs to be initialized on the host and executed on the device for optimal performance.
 - ``T`` signed type ensures the best performance. ``T == int`` translates to ``SEL``, ``IMAD``, and x2 ``SHF`` instructions.
 - 64-bit types are in general slower than 32-bit types.
-- ``IsDivisorNotOne == true`` can be used to skip one comparison.
+- ``DivisorIsNeverOne == true`` can be used to skip one comparison.
 - ``__builtin_assume(dividend != cuda::std::numeric_limits<U>::max())`` can be used to skip one comparison with unsigned values.
 
 Example
