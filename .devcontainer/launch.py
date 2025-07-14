@@ -128,8 +128,8 @@ def quote_ary(ary, quote=r'"'):
     if len(ary) == 0:
         ary = ""
     else:
-        ary = f'{quote} {quote}'.join(ary)
-        ary = f'{quote}{ary}{quote}'
+        ary = f"{quote} {quote}".join(ary)
+        ary = f"{quote}{ary}{quote}"
     return ary
 
 
