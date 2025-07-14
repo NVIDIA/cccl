@@ -146,13 +146,13 @@ public:
     _CCCL_ASSERT(!_DivisorIsNeverOne || __divisor1 != 1, "cuda::fast_mod_div: divisor must not be one");
     if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
     {
-      __shift      = ::cuda::ceil_ilog2(__divisor1) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
-      auto __k     = __num_bits_v<_Tp> + __shift;
-      __multiplier = ::cuda::ceil_div(__larger_t{1} << __k, __divisor);
+      __shift      = ::cuda::ceil_ilog2(__divisor) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
+      auto __k     = __num_bits_v<_Tp> + __shift; // k: [N, 2*N-2]
+      __multiplier = ::cuda::ceil_div(__larger_t{1} << __k, __divisor); // ceil(2^k / divisor)
     }
     else
     {
-      __shift = ::cuda::ilog2(__divisor1);
+      __shift = ::cuda::ilog2(__divisor);
       if (::cuda::is_power_of_two(__divisor))
       {
         __multiplier = 0;
@@ -188,10 +188,6 @@ public:
     const auto __add_   = __divisor1.__add; // cannot use __add because of shadowing warning with clang-cuda
     const auto __shift_ = __divisor1.__shift;
     auto __udividend    = static_cast<_Up>(__dividend);
-    if (!_DivisorIsNeverOne && __div == 1)
-    {
-      return static_cast<__common_t>(__dividend);
-    }
     if constexpr (is_unsigned_v<_Tp>)
     {
       if (__mul == 0) // divisor is a power of two
@@ -203,6 +199,10 @@ public:
       {
         __udividend += __add_;
       }
+    }
+    else if (!_DivisorIsNeverOne && __div == 1)
+    {
+      return static_cast<__common_t>(__dividend);
     }
     auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__udividend, __mul);
     auto __quotient    = static_cast<__common_t>(__higher_bits >> __shift_);
