@@ -275,7 +275,7 @@ struct dispatch_t<StableAddress,
     const int ipt =
       spread_out_items_per_thread(ActivePolicy{}, config->items_per_thread, config->sm_count, config->max_occupancy);
     const int tile_size = block_threads * ipt;
-    const int smem_size = smem_for_tile_size(tile_size, alignment);
+    const int smem_size = smem_for_tile_size(tile_size, block_threads, alignment);
     _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
