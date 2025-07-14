@@ -40,7 +40,7 @@ struct green_context
   CUgreenCtx __green_ctx  = nullptr;
   CUcontext __transformed = nullptr;
 
-  explicit green_context(const device& __device)
+  explicit green_context(device_ref __device)
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
