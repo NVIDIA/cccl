@@ -397,8 +397,8 @@ try
   using offset_type     = typename c2h::get<0, TestType>;
   using run_length_type = offset_type;
 
-  offset_type random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
-  const auto num_items     = detail::make_large_offset<offset_type>(random_range);
+  ::cuda::std::size_t random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
+  const auto num_items             = detail::make_large_offset<offset_type>(random_range);
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
 
   auto counting_it = thrust::make_counting_iterator(offset_type{0});
