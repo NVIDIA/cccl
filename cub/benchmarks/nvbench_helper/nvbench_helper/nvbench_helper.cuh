@@ -511,7 +511,7 @@ struct less_then_t
 {
   T m_val;
 
-  __device__ bool operator()(const T& val) const
+  [[nodiscard]] __device__ bool operator()(const T& val) const noexcept
   {
     return val < m_val;
   }
