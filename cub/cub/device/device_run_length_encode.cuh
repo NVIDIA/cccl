@@ -356,14 +356,14 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       equality_op,
       offset_t>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_in,
-                         d_offsets_out,
-                         d_lengths_out,
-                         d_num_runs_out,
-                         equality_op{},
-                         num_items,
-                         stream);
+                          temp_storage_bytes,
+                          d_in,
+                          d_offsets_out,
+                          d_lengths_out,
+                          d_num_runs_out,
+                          equality_op{},
+                          num_items,
+                          stream);
   }
 };
 
