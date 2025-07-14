@@ -206,7 +206,7 @@ public:
     }
     auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__udividend, __mul);
     auto __quotient    = static_cast<__common_t>(__higher_bits >> __shift_);
-    _CCCL_ASSERT(__quotient == static_cast<__common_t>((__udividend - __add_) / __div), "wrong __quotient");
+    _CCCL_ASSERT(__quotient == static_cast<__common_t>(__dividend / __div), "wrong __quotient");
     return __quotient;
   }
 
