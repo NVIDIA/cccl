@@ -1,9 +1,9 @@
-.. _libcudacxx-extended-api-memory-access-shapes-aligned-size:
+.. _libcudacxx-extended-api-memory-aligned-size:
 
 ``cuda::aligned_size_t``
 ========================
 
-Defined in headers ``<cuda/barrier>`` and ``<cuda/pipeline>``:
+Defined in headers ``<cuda/memory>``, ``<cuda/barrier>`` and ``<cuda/pipeline>``:
 
 .. code:: cuda
 
