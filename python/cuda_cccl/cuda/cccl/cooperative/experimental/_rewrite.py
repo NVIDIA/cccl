@@ -18,25 +18,25 @@ from types import SimpleNamespace
 from typing import Any, Optional
 
 from numba.core import ir, ir_utils, types
-from numba.core.extending import overload
+from numba.core.imputils import lower_constant
 from numba.core.rewrites import Rewrite, register_rewrite
 from numba.core.typing.templates import (
     AbstractTemplate,
     Signature,
 )
-from numba.extending import lower_builtin
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
-from numba.cuda.launchconfig import current_launch_config
-from numba.core.imputils import lower_constant
+from numba.cuda.launchconfig import ensure_current_launch_config
+from numba.extending import (
+    lower_builtin,
+    models,
+    register_model,
+)
 
-if False:
-    from numba.core import config
-
-    config.DEBUG = True
-    config.DEBUG_JIT = True
-    config.DUMP_IR = True
-    # config.CUDA_ENABLE_PYNVJITLINK = True
+from ._decls import (
+    CoopBlockLoadInstanceType,
+    CoopBlockStoreInstanceType,
+)
 
 
 def get_element_count(shape):
@@ -45,13 +45,6 @@ def get_element_count(shape):
     if isinstance(shape, (tuple, list)):
         return reduce(mul, shape, 1)
     raise TypeError(f"Invalid shape type: {type(shape)}")
-
-
-def ensure_current_launch_config():
-    launch_config = current_launch_config()
-    if not launch_config:
-        raise RuntimeError("Internal invariant failure: no launch config found.")
-    return launch_config
 
 
 def param_index(code, name: str, *, include_kwonly=True):
@@ -131,6 +124,7 @@ class CoopNode:
     typemap: Any
     func_ir: Any
     typingctx: Any
+    launch_config: Any
 
     # Non-None for instance of instance types (i.e. when calling an invocable
     # obtained via two-phase creation of the primitive outside the kernel).
@@ -139,6 +133,9 @@ class CoopNode:
     # Non-None for two-phase instances (i.e. when calling an invocable
     # obtained via two-phase creation of the primitive outside the kernel).
     two_phase_instance: Optional[Any]
+
+    # Non-None for two-phase instances furnished via kernel parameters.
+    two_phase_instance_arg: Optional[ir.Arg] = None
 
     # Defaults.
     implicit_temp_storage: bool = True
@@ -162,11 +159,64 @@ class CoopNode:
     instance: Any = None
     codegens: list = None
 
+    def __post_init__(self):
+        # If we're handling a two-phase invocation via a primitive that was
+        # passed as a kernel parameter, resolve the underlying instance now.
+        obtain_two_phase_instance = (
+            self.type_instance is not None
+            and self.two_phase_instance is None
+            and self.two_phase_instance_arg is not None
+        )
+        if obtain_two_phase_instance:
+            arg = self.two_phase_instance_arg
+            self.two_phase_instance = self.get_kernel_param_value(arg)
+            self.two_phase_instance.node = self
+            # Register a pre-launch kernel callback so that we can append
+            # ourselves to the kernel's extensions just before launch, which
+            # is necessary in order for numba not to balk in the _Kernel's
+            # _prepare_args() method when it doesn't know how to handle one
+            # of our two-phase primitive instances.
+            self.launch_config.pre_launch_callbacks.append(self.pre_launch_callback)
+
+    def pre_launch_callback(self, kernel, launch_config):
+        # Add our prepare_args to the kernel's extensions.
+        extensions = kernel.extensions
+        extensions_set = set(extensions)
+        assert self.prepare_args not in extensions_set, (
+            self.prepare_args,
+            extensions_set,
+        )
+        extensions.append(self.prepare_args)
+
+    def prepare_args(self, ty, val, *args, **kwargs):
+        # N.B. This routine is only invoked for two-phase instances.
+
+        if not isinstance(val, self.impl_class):
+            # We can ignore everything that isn't an instance of our two-phase
+            # implementation class.
+            return (ty, val)
+
+        # Example values at this point for e.g. block load:
+        # > ty
+        # coop.block.load
+        # > val
+        # <cuda.cccl.cooperative.experimental.block._block_load_store.load object at 0x7fe37a823190>
+
+        # We don't actually access the primitive instance via kernel arguments
+        # directly during lowering, so we just need to returning *something*
+        # sane here that'll pacify _Kernel._prepare_args().  CPointer was
+        # picked because it appears early in said routine's big if-elif block
+        # and it's relatively sane to think of a function pointer address as
+        # the value to return--even if it is never used (i.e. might be helpful
+        # for debugging).
+        addr = id(val)
+        return (types.CPointer(addr), addr)
+
     @property
     def is_two_phase(self):
         return self.type_instance is not None
 
-    def get_arg_value_safe(self, arg_name: str, launch_config) -> Any:
+    def get_arg_value_safe(self, arg_name: str) -> Any:
         """
         Get the value of an argument by name from the expression arguments.
         """
@@ -193,10 +243,9 @@ class CoopNode:
             # If the argument is a dtype, return the dtype itself.
             return arg_ty.dtype
 
-        # See if the argument is a parameter of the invoked kernel.
-        arg_idx = param_index_safe(launch_config.dispatcher.func_code, arg_var.name)
-        if arg_idx is not None:
-            return launch_config.args[arg_idx]
+        kernel_param = self.get_kernel_param_value(arg_var)
+        if kernel_param is not None:
+            return kernel_param
 
         # Try consts.
         const_val = ir_utils.guard(ir_utils.find_const, self.func_ir, arg_var)
@@ -208,15 +257,24 @@ class CoopNode:
         if outer_val is not None:
             return outer_val
 
-    def get_arg_value(self, arg_name: str, launch_config) -> Any:
+    def get_arg_value(self, arg_name: str) -> Any:
         """
         Get the value of an argument by name from the expression arguments.
         Raises an error if the argument is not found.
         """
-        value = self.get_arg_value_safe(arg_name, launch_config)
+        value = self.get_arg_value_safe(arg_name)
         if value is None:
             raise RuntimeError(f"Argument {arg_name!r} not found in {self!r}")
         return value
+
+    def get_kernel_param_value(self, arg_var: ir.Arg) -> Any:
+        launch_config = self.launch_config
+        arg_idx = param_index_safe(
+            launch_config.dispatcher.func_code,
+            arg_var.name,
+        )
+        if arg_idx is not None:
+            return launch_config.args[arg_idx]
 
     @cached_property
     def decl_typer(self):
@@ -352,8 +410,7 @@ class CoopLoadStoreNode(CoopNode):
         arguments and types.
         """
 
-        launch_config = ensure_current_launch_config()
-
+        launch_config = self.launch_config
         self.threads_per_block = launch_config.blockdim
 
         expr = self.expr
@@ -391,10 +448,10 @@ class CoopLoadStoreNode(CoopNode):
             getter = self.get_arg_value_safe
         else:
             getter = self.get_arg_value
-        items_per_thread = getter("items_per_thread", launch_config)
+        items_per_thread = getter("items_per_thread")
 
         # algorithm is always optional.
-        algorithm_id = self.get_arg_value_safe("algorithm", launch_config)
+        algorithm_id = self.get_arg_value_safe("algorithm")
 
         if algorithm_id is None:
             algorithm_id = int(self.impl_class.default_algorithm)
@@ -606,8 +663,6 @@ class CoopLoadStoreNode(CoopNode):
 
         self.calltypes[new_call] = sig
 
-        call_name = self.call_var_name
-
         @register_global(wrapper_func)
         class ImplDecl(AbstractTemplate):
             key = wrapper_func
@@ -646,6 +701,7 @@ class CoopLoadStoreNode(CoopNode):
 
         return (g_assign, new_assign)
 
+
 class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.load"
 
@@ -675,11 +731,9 @@ class CoopArrayNode(CoopNode):
         return get_element_count(self.shape)
 
     def refine_match(self, rewriter):
-        launch_config = ensure_current_launch_config()
-
-        self.shape = self.get_arg_value("shape", launch_config)
-        self.dtype = self.get_arg_value("dtype", launch_config)
-        self.alignment = self.get_arg_value_safe("alignment", launch_config)
+        self.shape = self.get_arg_value("shape")
+        self.dtype = self.get_arg_value("dtype")
+        self.alignment = self.get_arg_value_safe("alignment")
         rewriter.need_global_cuda_module_instr = True
 
     def rewrite(self, rewriter):
@@ -1027,7 +1081,8 @@ class BaseCooperativeNodeRewriter(Rewrite):
     def get_or_create_global_numba_cuda_module_instr(self, scope, loc, new_nodes):
         import numba.cuda
 
-        return self._get_or_create_global_module( "numba.cuda", numba.cuda, scope, loc, new_nodes
+        return self._get_or_create_global_module(
+            "numba.cuda", numba.cuda, scope, loc, new_nodes
         )
 
     def match(self, func_ir, block, typemap, calltypes, **kw):
@@ -1040,28 +1095,16 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
         first = True
         found = False
+        launch_config = None
 
         decl_classes = self._decl_classes
         node_classes = self._node_classes
         type_instances = self._instances
-        template_classes = {value: key for (key, value) in decl_classes.items()}
+        launch_config = ensure_current_launch_config()
         interesting_modules = self.interesting_modules
 
-        allvars = {}
-        argvars = {}
-        freevars = {}
-        globalvars = {}
-        two_phases_by_name = {}
-        two_phases_by_value = {}
-
-        py_func = func_ir.func_id.func
-        code_obj = py_func.__code__
-        cells = py_func.__closure__
-
-        #import ipdb
-
         for i, instr in enumerate(block.body):
-            # Temp: do we ever encounter nodes other than Assign, Del, or
+            # XXX Do we ever encounter nodes other than Assign, Del, or
             # Return?
             if not isinstance(instr, (ir.Assign, ir.Del, ir.Return)):
                 raise RuntimeError(f"Unexpected instruction type: {instr!r}")
@@ -1077,35 +1120,22 @@ class BaseCooperativeNodeRewriter(Rewrite):
             target = instr.target
             target_name = target.name
 
-            is_variable_kind = (
-                isinstance(rhs, (
+            is_variable_kind = isinstance(
+                rhs,
+                (
                     ir.Arg,
                     ir.Var,
                     ir.Global,
                     ir.FreeVar,
-                ))
+                ),
             )
             if is_variable_kind:
                 value = None
                 if isinstance(rhs, ir.Arg):
-                    arg = rhs
-                    arg_name = arg.name
-                    arg_type = typemap[arg_name]
-                    if arg_type in type_instances:
-                        # We don't support two-phase primitive instances being
-                        # passed as kernel parameters (yet?).
-                        msg = (
-                            f"Cannot pass an instance of {arg_type!r} as a "
-                            "kernel parameter."
-                        )
-                        raise ValueError(msg)
+                    pass
                 elif isinstance(rhs, ir.Var):
-                    #print(f'Found ir.Var: {rhs}')
-                    #ipdb.set_trace()
-                    #print(rhs)
                     pass
                 else:
-                    #print(f'Found {rhs.__class__.__name__}: {rhs}')
                     value = rhs.value
 
                 if value is None:
@@ -1120,41 +1150,12 @@ class BaseCooperativeNodeRewriter(Rewrite):
                         if module_name not in self._modules:
                             self._modules[module_name] = instr
 
-                # If the type of the rhs value is in our type instances map,
-                # the value is an instance of a two-phase primitive created
-                # outside of the kernel.
-                value_type = typemap[target_name]
-                if value_type in type_instances:
-                    # Verify target name is unique.
-                    assert target_name not in two_phases_by_name, (
-                        target_name,
-                        two_phases_by_name[target_name],
-                        value,
-                        value_type,
-                    )
-                    # Verify we haven't already seen this instance.
-                    assert value not in two_phases_by_value, (
-                        target_name,
-                        two_phases_by_value[value],
-                        value,
-                        value_type,
-                    )
-
-                    #ipdb.set_trace()
-                    two_phases_by_name[target_name] = value
-                    two_phases_by_value[value] = instr
-
             if not isinstance(rhs, ir.Expr):
                 continue
 
             expr = rhs
 
-            if expr.op == "getitem":
-                ipdb.set_trace()
-                import debugpy
-                debugpy.breakpoint()
-                print(expr)
-
+            # We can ignore nodes that aren't function calls herein.
             if expr.op != "call":
                 continue
 
@@ -1165,51 +1166,91 @@ class BaseCooperativeNodeRewriter(Rewrite):
             impl_class = None
             node_class = None
             type_instance = None
+            primitive_name = None
             two_phase_instance = None
+            two_phase_instance_arg = None
 
             # Attempt to obtain the implementation class based on whether we're
-            # dealing with an instance or a declaration/template.
+            # dealing with an instance or a declaration/template.  Specifically,
+            # we want to obtain the implementation class (`impl_class`) and node
+            # rewriting class for this function call.
+            #
+            # For example, if we're dealing with a block load operation, the
+            # `impl_class` will be `coop.block.load` and the `node_class` will
+            # be `CoopBlockLoadNode`.
+            #
+            # If we're dealing with a single-phase primitive instance, we go
+            # via the function's templates, looking for the first template that
+            # has an implementation class registered.
+            #
+            # If we're dealing with a two-phase primitive instance, `func` will
+            # be in our `type_instances` map, and we can obtain the definition
+            # by way of the `func_ir.get_definition(func_name)` call.
+            #
+            # If neither of these conditions are met, we've hit an unexpected
+            # code path, and we raise an error.
             if hasattr(func, "templates"):
                 templates = func.templates
-                # I don't yet understand the implications of multiple templates
-                # matching here, so, for now, just return the first match.
+                # N.B. I don't yet understand the implications of multiple
+                #      templates matching here, so, for now, just return the
+                #      first match.  (I don't *think* we'll ever have more
+                #      than one template here anyway, based on how we wire
+                #      everything up.)
                 for template in templates:
                     impl_class = decl_classes.get(template, None)
                     if impl_class:
                         break
 
                 if not impl_class:
+                    # If there's no matching implementation class, we can
+                    # ignore this function call, as it's not one of our
+                    # primitives.
                     continue
 
-                node_class = node_classes[template.primitive_name]
+                primitive_name = template.primitive_name
 
             elif func in type_instances:
-                # Get the instance from the two phase map.
-                #ipdb.set_trace()
-                value = two_phases_by_name[func_name]
+                # We're dealing with a two-phase primitive instance.
+                type_instance = func
+                def_instr = func_ir.get_definition(func_name)
+                if isinstance(def_instr, ir.Arg):
+                    two_phase_instance_arg = def_instr
+                else:
+                    two_phase_instance = def_instr.value
                 value_type = typemap[func_name]
                 primitive_name = repr(value_type)
-                # Sanity check the primitive name via the decl.
+                # Example values at this point for e.g. block load:
+                # > two_phase_instance
+                # <cuda.cccl.cooperative.experimental.block._block_load_store.load object at 0x757ed7f44f70>
+                # > value_type
+                # coop.block.load
+                # > type(value_type)
+                # <class 'cuda.cccl.cooperative.experimental._decls.CoopBlockLoadInstanceType'>
+                # > primitive_name
+                # 'coop.block.load'
+
                 decl = value_type.decl
+                template = decl.__class__
+                impl_class = decl_classes.get(template, None)
+                if not impl_class:
+                    msg = (
+                        f"Could not find declaration class for decl: {decl!r}"
+                        f" (template: {template!r}, primitive_name: "
+                        f"{primitive_name!r})"
+                    )
+                    raise RuntimeError(msg)
+
+                # We've derived everything we need for the two-phase invocation;
+                # the remaining code simply verifies various invariants.
+
+                # Sanity check the primitive name via the decl.
                 assert primitive_name == decl.primitive_name, (
                     primitive_name,
                     decl.primitive_name,
-                    decl
+                    decl,
                 )
-                node_class = node_classes[primitive_name]
-
-                # Sanity check the class of the instance matches our impl
-                # class expectations.
-                template = decl.__class__
-                impl_class = decl_classes.get(template, None)
-
-                if not impl_class:
-                    raise RuntimeError(
-                        f"Could not find declaration class for {instance.decl!r}"
-                    )
 
                 # Sanity-check names are correct.
-                type_instance = func
                 assert type_instance.name == decl.primitive_name, (
                     type_instance.name,
                     decl.primitive_name,
@@ -1219,16 +1260,57 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     decl.key.__name__,
                 )
 
-                two_phase_instance = value
-
             else:
                 raise RuntimeError(f"Unexpected code path; {func!r}")
 
-            # If we reach here, impl_class, node_class, and template should
-            # all be non-None.
+            # We can now obtain the node rewriting class from the primitive
+            # name.
+            node_class = node_classes[primitive_name]
+
+            # If we reach here, impl_class and template should be non-None.
             assert impl_class is not None
-            assert node_class is not None
             assert template is not None
+
+            # Invariant checks: if we have a type instance, that implies we
+            # must either have a two-phase instance or a two-phase argument,
+            # but not both.  Otherwise, we should have neither.
+            if type_instance is not None:
+                have_both = (
+                    two_phase_instance is not None
+                    and two_phase_instance_arg is not None
+                )
+                have_neither = (
+                    two_phase_instance is None and two_phase_instance_arg is None
+                )
+                if have_both:
+                    msg = (
+                        "Invariant check failed: only two_phase_instance or "
+                        "two_phase_instance_arg must be set, not both; "
+                        f"{type_instance!r} ({primitive_name!r})"
+                    )
+                    raise RuntimeError(msg)
+                elif have_neither:
+                    msg = (
+                        "Invariant check failed: either two_phase_instance or "
+                        "two_phase_instance_arg must be set, not neither; "
+                        f"{type_instance!r} ({primitive_name!r})"
+                    )
+                    raise RuntimeError(msg)
+            else:
+                have_any = (
+                    two_phase_instance is not None or two_phase_instance_arg is not None
+                )
+                if have_any:
+                    msg = (
+                        "Invariant check failed: two_phase_instance and "
+                        "two_phase_instance_arg must be None when not "
+                        "dealing with a two-phase primitive instance; "
+                        f"two_phase_instance: {two_phase_instance!r}, "
+                        f"two_phase_instance_arg: {two_phase_instance_arg!r}, "
+                        f"type_instance: {type_instance!r}, "
+                        f"primitive_name: {primitive_name!r}."
+                    )
+                    raise RuntimeError(msg)
 
             # Small performance optimization: only store attributes once,
             # upon first match.
@@ -1255,8 +1337,10 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 typemap=typemap,
                 func_ir=func_ir,
                 typingctx=self._state.typingctx,
+                launch_config=launch_config,
                 type_instance=type_instance,
                 two_phase_instance=two_phase_instance,
+                two_phase_instance_arg=two_phase_instance_arg,
             )
 
             if two_phase_instance is not None:
@@ -1294,68 +1378,53 @@ class BaseCooperativeNodeRewriter(Rewrite):
         return new_block
 
 
-# Register data models for two-phase instance types
-from ._decls import (
-    CoopBlockLoadInstanceType,
-    CoopBlockStoreInstanceType,
-)
-from numba.core.extending import models, register_model
-from numba.core import types
-
 @register_model(CoopBlockLoadInstanceType)
 class CoopBlockLoadInstanceModel(models.OpaqueModel):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
-        msg = (
-            'CoopBlockLoadInstanceModel.__init__('
-            f'{args!r}, {kwds!r}) called'
-        )
+        msg = f"CoopBlockLoadInstanceModel.__init__({args!r}, {kwds!r}) called"
         print(msg)
+
 
 @register_model(CoopBlockStoreInstanceType)
 class CoopBlockStoreInstanceModel(models.OpaqueModel):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
-        msg = (
-            'CoopBlockStoreInstanceModel.__init__('
-            f'{args!r}, {kwds!r}) called'
-        )
+        msg = f"CoopBlockStoreInstanceModel.__init__({args!r}, {kwds!r}) called"
         print(msg)
+
 
 @lower_constant(CoopBlockLoadInstanceType)
 def lower_constant_block_load_instance_type(context, builder, typ, value):
     return context.get_dummy_value()
 
-@lower_builtin(CoopBlockLoadInstanceType,
-               types.VarArg(types.Any))
+
+@lower_builtin(CoopBlockLoadInstanceType, types.VarArg(types.Any))
 def codegen_block_load(context, builder, sig, args):
-    print(f'codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})')
-    inst_val, d_in_val, tmp_val = args          # inst_val == dummy
+    print(f"codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})")
+    inst_val, d_in_val, tmp_val = args  # inst_val == dummy
 
     # Grab the per-instance data you saved in phase-1
     inst_typ = sig.args[0]
-    spec     = inst_typ.specialization          # or .layout, .dtype…
+    spec = inst_typ.specialization  # or .layout, .dtype…
 
     # Dispatch to your existing generator
     cg = spec.create_codegens()
     return cg.emit_load(context, builder, sig, (d_in_val, tmp_val))
 
-@lower_builtin('call',
-               CoopBlockLoadInstanceType,
-               types.Array,
-               types.Array)
+
+@lower_builtin("call", CoopBlockLoadInstanceType, types.Array, types.Array)
 def codegen_block_load_2(context, builder, sig, args):
-    print(f'codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})')
-    inst_val, d_in_val, tmp_val = args          # inst_val == dummy
+    print(f"codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})")
+    inst_val, d_in_val, tmp_val = args  # inst_val == dummy
 
     # Grab the per-instance data you saved in phase-1
     inst_typ = sig.args[0]
-    spec     = inst_typ.specialization          # or .layout, .dtype…
+    spec = inst_typ.specialization  # or .layout, .dtype…
 
     # Dispatch to your existing generator
     cg = spec.create_codegens()
     return cg.emit_load(context, builder, sig, (d_in_val, tmp_val))
-
 
 
 @lower_constant(CoopBlockStoreInstanceType)
@@ -1363,18 +1432,19 @@ def lower_constant_block_store_instance_type(context, builder, typ, value):
     # For two-phase instances, return a dummy opaque value since the actual
     # lowering will be handled by the registered function lowering
     msg = (
-        'lower_constant_block_store_instance_type('
-        f'{context!r}, {builder!r}, {typ!r}, {value!r}) called'
+        "lower_constant_block_store_instance_type("
+        f"{context!r}, {builder!r}, {typ!r}, {value!r}) called"
     )
     print(msg)
     return context.get_dummy_value()
 
+
 # Note: Function call lowering for two-phase instances is now handled
 # by creating wrapper functions in the rewrite_two_phase method
+
 
 def _init_rewriter():
     # Dummy function that allows us to do the following in `_init_extension`:
     # from ._rewrite import _init_rewriter
     # _init_rewriter()
     pass
-
