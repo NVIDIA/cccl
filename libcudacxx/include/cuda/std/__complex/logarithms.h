@@ -88,12 +88,11 @@ template <class _Tp>
 {
   // Uint of the same size as our fp type.
   // Shouldn't need make_unsigned, but just in case:
-  using _UINT_T   = make_unsigned_t<__fp_storage_of_t<_Tp>>;
-  using _CONST_TP = const _Tp;
+  using __uint_t = make_unsigned_t<__fp_storage_of_t<_Tp>>;
 
   // Some needed constants:
-  constexpr _UINT_T __mant_mask = __fp_mant_mask_of_v<_Tp>;
-  constexpr _UINT_T __exp_mask  = __fp_exp_mask_of_v<_Tp>;
+  constexpr __uint_t __mant_mask = __fp_mant_mask_of_v<_Tp>;
+  constexpr __uint_t __exp_mask  = __fp_exp_mask_of_v<_Tp>;
 
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
@@ -101,10 +100,10 @@ template <class _Tp>
   // Cut off the hi and low bit of __exp_mask.
   // 0x3F000000 for fp32,
   // 0x3FE0000000000000 for fp64 etc
-  constexpr _UINT_T __exp_mask_of_half = ((__exp_mask >> (__mant_nbits + 2)) << (__mant_nbits + 1));
+  constexpr __uint_t __exp_mask_of_half = ((__exp_mask >> (__mant_nbits + 2)) << (__mant_nbits + 1));
 
-  _CONST_TP __real_abs = _CUDA_VSTD::fabs(__x.real());
-  _CONST_TP __imag_abs = _CUDA_VSTD::fabs(__x.imag());
+  const _Tp __real_abs = _CUDA_VSTD::fabs(__x.real());
+  const _Tp __imag_abs = _CUDA_VSTD::fabs(__x.imag());
 
   _Tp __max = (__real_abs > __imag_abs) ? __real_abs : __imag_abs;
   _Tp __min = (__real_abs > __imag_abs) ? __imag_abs : __real_abs;
@@ -115,15 +114,15 @@ template <class _Tp>
   //    _Tp __min_reduced = _CUDA_VSTD::ldexpf(__min, -__exp);
 
   // Unbiased exponent of 2.0*__max
-  int32_t __exp = static_cast<int32_t>(reinterpret_cast<_UINT_T&>(__max) >> __mant_nbits) - __exp_bias + 1;
+  int32_t __exp = static_cast<int32_t>(_CUDA_VSTD::bit_cast<__uint_t>(__max) >> __mant_nbits) - __exp_bias + 1;
 
   // Quick frexp:
-  _UINT_T __max_reduced_as_uint = (reinterpret_cast<_UINT_T&>(__max) & __mant_mask) | __exp_mask_of_half;
-  _Tp __max_reduced             = reinterpret_cast<_Tp&>(__max_reduced_as_uint);
+  __uint_t __max_reduced_as_uint = (_CUDA_VSTD::bit_cast<__uint_t>(__max) & __mant_mask) | __exp_mask_of_half;
+  _Tp __max_reduced              = _CUDA_VSTD::bit_cast<_Tp>(__max_reduced_as_uint);
 
   // Create an exponent for an inline ldexp(__min, -__exp)
-  _UINT_T __exp_neg_as_uint = (static_cast<_UINT_T>(__exp_bias - __exp) << __mant_nbits);
-  _Tp __exp_neg             = reinterpret_cast<_Tp&>(__exp_neg_as_uint);
+  __uint_t __exp_neg_as_uint = (static_cast<__uint_t>(__exp_bias - __exp) << __mant_nbits);
+  _Tp __exp_neg              = _CUDA_VSTD::bit_cast<_Tp>(__exp_neg_as_uint);
 
   _Tp __min_reduced = __min * __exp_neg;
 
@@ -146,28 +145,28 @@ template <class _Tp>
         // and split it into two separate multiplications.
         // Inlined version of this code:
         //   __min_reduced = _CUDA_VSTD::ldexp(__min, -__exp);
-        _UINT_T __ldexp_factor_2_uint = (static_cast<_UINT_T>(__exp_bias + __mant_nbits - __exp) << __mant_nbits);
-        _UINT_T __two_m_mant_bits     = static_cast<_UINT_T>(-__mant_nbits + __exp_bias) << __mant_nbits;
+        __uint_t __ldexp_factor_2_uint = (static_cast<__uint_t>(__exp_bias + __mant_nbits - __exp) << __mant_nbits);
+        __uint_t __two_m_mant_bits     = static_cast<__uint_t>(-__mant_nbits + __exp_bias) << __mant_nbits;
 
-        _Tp __ldexp_factor_1 = reinterpret_cast<_Tp&>(__two_m_mant_bits); // 2^(-__mant_nbits)
-        _Tp __ldexp_factor_2 = reinterpret_cast<_Tp&>(__ldexp_factor_2_uint);
+        _Tp __ldexp_factor_1 = _CUDA_VSTD::bit_cast<_Tp>(__two_m_mant_bits); // 2^(-__mant_nbits)
+        _Tp __ldexp_factor_2 = _CUDA_VSTD::bit_cast<_Tp>(__ldexp_factor_2_uint);
         __min_reduced        = (__min * __ldexp_factor_1) * __ldexp_factor_2;
       }
       else
       {
         // __max is denormal (so __min is also denormal or 0.0)
         // Scale things up by 2^__mant_nbits then do the fast ldexp.
-        _UINT_T __two_mant_bits = static_cast<_UINT_T>(__mant_nbits + __exp_bias) << __mant_nbits;
-        _Tp __ldexp_factor      = reinterpret_cast<_Tp&>(__two_mant_bits);
-        __max_reduced           = __max * __ldexp_factor; // 2^__mant_nbits
-        __min_reduced           = __min * __ldexp_factor; // 2^__mant_nbits;
+        __uint_t __two_mant_bits = static_cast<__uint_t>(__mant_nbits + __exp_bias) << __mant_nbits;
+        _Tp __ldexp_factor       = _CUDA_VSTD::bit_cast<_Tp>(__two_mant_bits);
+        __max_reduced            = __max * __ldexp_factor; // 2^__mant_nbits
+        __min_reduced            = __min * __ldexp_factor; // 2^__mant_nbits;
 
         int32_t __exp_no_denorm_bias =
-          static_cast<int32_t>(reinterpret_cast<_UINT_T&>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
-        _UINT_T ldexp_factor_no_denorm_bias = static_cast<_UINT_T>(__exp_bias - __exp_no_denorm_bias) << __mant_nbits;
+          static_cast<int32_t>(_CUDA_VSTD::bit_cast<__uint_t>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
+        __uint_t ldexp_factor_no_denorm_bias = static_cast<__uint_t>(__exp_bias - __exp_no_denorm_bias) << __mant_nbits;
 
-        __max_reduced *= reinterpret_cast<_Tp&>(ldexp_factor_no_denorm_bias);
-        __min_reduced *= reinterpret_cast<_Tp&>(ldexp_factor_no_denorm_bias);
+        __max_reduced *= _CUDA_VSTD::bit_cast<_Tp>(ldexp_factor_no_denorm_bias);
+        __min_reduced *= _CUDA_VSTD::bit_cast<_Tp>(ldexp_factor_no_denorm_bias);
 
         __exp = __exp_no_denorm_bias - __mant_nbits;
       }
