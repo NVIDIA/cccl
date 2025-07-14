@@ -446,7 +446,7 @@ void generator_t::generate(
           span.data() + span.size(),
           tmp.data(),
           span.data(),
-          ::cuda::proclaim_copyable_arguments(and_t{})); // TODO issue
+          ::cuda::proclaim_copyable_arguments(and_t{}));
       }
       return;
     }
