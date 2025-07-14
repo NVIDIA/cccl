@@ -116,9 +116,6 @@ private:
                 "instantiation of optional with in_place_t is ill-formed");
   static_assert(!_CCCL_TRAIT(is_same, remove_cvref_t<value_type>, nullopt_t),
                 "instantiation of optional with nullopt_t is ill-formed");
-  static_assert(!_CCCL_TRAIT(is_reference, value_type),
-                "instantiation of optional with a reference type is ill-formed. Define "
-                "CCCL_ENABLE_OPTIONAL_REF to enable it as a non-standard extension");
   static_assert(_CCCL_TRAIT(is_destructible, value_type),
                 "instantiation of optional with a non-destructible type is ill-formed");
   static_assert(!_CCCL_TRAIT(is_array, value_type), "instantiation of optional with an array type is ill-formed");
@@ -168,7 +165,6 @@ public:
     this->__construct_from(__v);
   }
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, bool) || __opt_is_constructible_from_opt<_Tp, _Up>)
                    _CCCL_AND __opt_is_implictly_constructible<_Tp, const _Up&>)
@@ -200,21 +196,6 @@ public:
   {
     this->__construct_from(_CUDA_VSTD::move(__v));
   }
-#else // ^^^ CCCL_ENABLE_OPTIONAL_REF ^^^ / vvv !CCCL_ENABLE_OPTIONAL_REF vvv
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
-  _CCCL_API constexpr optional(optional<_Up>&& __v)
-  {
-    this->__construct_from(_CUDA_VSTD::move(__v));
-  }
-
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
-  _CCCL_API constexpr explicit optional(optional<_Up>&& __v)
-  {
-    this->__construct_from(_CUDA_VSTD::move(__v));
-  }
-#endif // !CCCL_ENABLE_OPTIONAL_REF
 
 private:
   template <class _Fp, class... _Args>
@@ -249,7 +230,6 @@ public:
     return *this;
   }
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_reference, _Up))
                    _CCCL_AND __opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, const _Up&>)
@@ -267,15 +247,6 @@ public:
     this->__assign_from(__v);
     return *this;
   }
-#else // ^^^ CCCL_ENABLE_OPTIONAL_REF ^^^ / vvv !CCCL_ENABLE_OPTIONAL_REF vvv
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, const _Up&>)
-  _CCCL_API constexpr optional& operator=(const optional<_Up>& __v)
-  {
-    this->__assign_from(__v);
-    return *this;
-  }
-#endif // !CCCL_ENABLE_OPTIONAL_REF
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, _Up>)
@@ -883,10 +854,7 @@ operator>=(const _Tp& __v, const optional<_Up>& __x)
 
 template <class _Tp>
 _CCCL_API constexpr enable_if_t<
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-  _CCCL_TRAIT(is_reference, _Tp) ||
-#endif // CCCL_ENABLE_OPTIONAL_REF
-    (_CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_swappable, _Tp)),
+  _CCCL_TRAIT(is_reference, _Tp) || (_CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_swappable, _Tp)),
   void>
 swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))
 {

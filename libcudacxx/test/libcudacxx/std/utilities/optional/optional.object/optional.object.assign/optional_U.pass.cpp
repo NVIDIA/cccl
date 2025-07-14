@@ -268,9 +268,7 @@ __host__ __device__ constexpr bool test()
 __host__ __device__ constexpr bool test()
 {
   test<int, short>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<B&, D&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   enum class state_t
   {

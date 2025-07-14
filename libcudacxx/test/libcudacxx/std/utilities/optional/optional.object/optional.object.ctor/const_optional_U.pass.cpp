@@ -68,7 +68,6 @@ struct B
 class D : public B
 {};
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
 struct ConvertibleToReference
 {
@@ -95,7 +94,6 @@ struct ConvertibleToValue
     return lhs == rhs.val_;
   }
 };
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U>
 __host__ __device__ constexpr void test()
@@ -127,14 +125,12 @@ __host__ __device__ constexpr bool test()
   test<X, int>();
   test<Y, int>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<B&, D&>();
   test<const int&, ConvertibleToReference<int>>();
 
   test<int, ConvertibleToReference<int>&>();
   test<int, ConvertibleToValue<int>&>();
   test<int, const ConvertibleToValue<int>&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }

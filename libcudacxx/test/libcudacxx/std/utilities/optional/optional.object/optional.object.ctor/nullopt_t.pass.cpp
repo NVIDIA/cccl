@@ -48,9 +48,7 @@ __host__ __device__ constexpr bool test()
   test<NonTrivialTypes::NoCtors>();
   test<NonConstexprTypes::NoCtors>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }

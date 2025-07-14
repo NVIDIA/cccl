@@ -36,7 +36,6 @@ function(libcudacxx_add_std_header_test header)
   target_compile_options(headertest_std_${header_name} PRIVATE ${headertest_warning_levels_host})
   target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
   target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
-  target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_ENABLE_OPTIONAL_REF)
 
   # We want to ensure that we can build headers within <cuda/> with a host compiler but we need cuda_runtime_api.h
   if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

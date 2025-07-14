@@ -33,7 +33,6 @@ struct ImplicitAny
   {}
 };
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
 struct ConvertibleToReference
 {
@@ -65,7 +64,6 @@ struct ExplicitlyConvertibleToReference
     return val_;
   }
 };
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class To>
 __host__ __device__ constexpr optional<To> implicit_conversion(optional<To>&& opt)
@@ -138,7 +136,6 @@ __host__ __device__ constexpr bool test()
   test<IsExplicit::Yes, ExplicitTrivialTestTypes::TestType>(42);
   test<IsExplicit::Yes, ExplicitConstexprTestTypes::TestType>(42);
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   {
     int val{42};
     test<IsExplicit::Yes, int&>(val);
@@ -164,7 +161,6 @@ __host__ __device__ constexpr bool test()
     test<IsExplicit::Yes, int&>(val);
     test<IsExplicit::Yes, const int&>(val);
   }
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }

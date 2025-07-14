@@ -50,7 +50,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class _Tp>
 class optional<_Tp&>
 {
@@ -79,13 +78,13 @@ private:
     return *__value_;
   }
 
-#  if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _Up>
   static constexpr bool __from_temporary = reference_constructs_from_temporary_v<_Tp&, _Up>;
-#  else
+#else
   template <class _Up>
   static constexpr bool __from_temporary = false;
-#  endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+#endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
   using value_type = __raw_type&;
@@ -314,8 +313,6 @@ public:
     __value_ = nullptr;
   }
 };
-
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -20,7 +20,6 @@
 
 using cuda::std::optional;
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
 struct ConvertibleToReference
 {
@@ -63,7 +62,6 @@ struct ExplicitlyConvertibleToReference
     return lhs == rhs.val_;
   }
 };
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U = T>
 __host__ __device__ constexpr bool test_one_arg()
@@ -277,7 +275,6 @@ __host__ __device__ constexpr bool test()
   test_one_arg<int>();
   test_one_arg<const int>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test_one_arg<int&>();
   test_one_arg<const int&>();
 
@@ -285,7 +282,6 @@ __host__ __device__ constexpr bool test()
   test_one_arg<const int&, ConvertibleToReference<int>>();
   test_one_arg<int&, ExplicitlyConvertibleToReference<int>>();
   test_one_arg<const int&, ExplicitlyConvertibleToReference<int>>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   test_multi_arg<ConstexprTestTypes::TestType>();
   test_multi_arg<ExplicitConstexprTestTypes::TestType>();

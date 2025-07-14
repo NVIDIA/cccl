@@ -136,9 +136,7 @@ __device__ void test()
 __device__ void test()
 {
   test<device_only_type>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<device_only_type&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 }
 
 int main(int arg, char** argv)
