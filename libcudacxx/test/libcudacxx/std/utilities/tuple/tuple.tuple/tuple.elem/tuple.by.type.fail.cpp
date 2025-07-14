@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__memory_>
 #include <cuda/std/string>
 #include <cuda/std/tuple>
 

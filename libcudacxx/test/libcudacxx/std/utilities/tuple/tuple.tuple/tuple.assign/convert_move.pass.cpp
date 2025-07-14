@@ -13,6 +13,7 @@
 // template <class... UTypes>
 //   tuple& operator=(tuple<UTypes...>&& u);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -87,18 +88,18 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == int('a'));
     assert(cuda::std::get<2>(t1).id_ == 2);
   }
-  // unique_ptr unsupported
-  /*
+
   {
-      typedef cuda::std::tuple<long, char, cuda::std::unique_ptr<D>> T0;
-      typedef cuda::std::tuple<long long, int, cuda::std::unique_ptr<B>> T1;
-      T0 t0(2, 'a', cuda::std::unique_ptr<D>(new D(3)));
-      T1 t1;
-      t1 = cuda::std::move(t0);
-      assert(cuda::std::get<0>(t1) == 2);
-      assert(cuda::std::get<1>(t1) == int('a'));
-      assert(cuda::std::get<2>(t1)->id_ == 3);
-  }*/
+    typedef cuda::std::tuple<long, char, cuda::std::unique_ptr<D>> T0;
+    typedef cuda::std::tuple<long long, int, cuda::std::unique_ptr<B>> T1;
+    T0 t0(2, 'a', cuda::std::unique_ptr<D>(new D(3)));
+    T1 t1;
+    t1 = cuda::std::move(t0);
+    assert(cuda::std::get<0>(t1) == 2);
+    assert(cuda::std::get<1>(t1) == int('a'));
+    assert(cuda::std::get<2>(t1)->id_ == 3);
+  }
+
   {
     // Test that tuple evaluates correctly applies an lvalue reference
     // before evaluating is_assignable (ie 'is_assignable<int&, int&&>')

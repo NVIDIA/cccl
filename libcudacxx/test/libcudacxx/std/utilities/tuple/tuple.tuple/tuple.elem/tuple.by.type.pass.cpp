@@ -6,40 +6,39 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__memory_>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
-// cuda::std::unique_ptr not supported
-// #include <cuda/std/memory>
-// cuda::std::string not supported
-// #include <cuda/std/string>
-// cuda::std::complex not supported
-// #include <cuda/std/complex>
+#ifdef _LIBCUDACXX_HAS_STRING
+#  include <cuda/std/string>
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-  // cuda::std::complex not supported
-  // cuda::std::string not supported
-  /*
-  typedef cuda::std::complex<float> cf;
+  using cf = cuda::std::complex<float>;
+
+#ifdef _LIBCUDACXX_HAS_STRING
   {
-  auto t1 = cuda::std::tuple<int, cuda::std::string, cf> { 42, "Hi", { 1,2 }};
-  assert ( cuda::std::get<int>(t1) == 42 ); // find at the beginning
-  assert ( cuda::std::get<cuda::std::string>(t1) == "Hi" ); // find in the middle
-  assert ( cuda::std::get<cf>(t1).real() == 1 ); // find at the end
-  assert ( cuda::std::get<cf>(t1).imag() == 2 );
+    auto t1 = cuda::std::tuple<int, cuda::std::string, cf>{42, "Hi", {1, 2}};
+    assert(cuda::std::get<int>(t1) == 42); // find at the beginning
+    assert(cuda::std::get<cuda::std::string>(t1) == "Hi"); // find in the middle
+    assert(cuda::std::get<cf>(t1).real() == 1); // find at the end
+    assert(cuda::std::get<cf>(t1).imag() == 2);
   }
 
   {
-  auto t2 = cuda::std::tuple<int, cuda::std::string, int, cf> { 42, "Hi", 23, { 1,2 }};
-//  get<int> would fail!
-  assert ( cuda::std::get<cuda::std::string>(t2) == "Hi" );
-  assert (( cuda::std::get<cf>(t2) == cf{ 1,2 } ));
+    auto t2 = cuda::std::tuple<int, cuda::std::string, int, cf>{42, "Hi", 23, {1, 2}};
+    //  get<int> would fail!
+    assert(cuda::std::get<cuda::std::string>(t2) == "Hi");
+    assert((cuda::std::get<cf>(t2) == cf{1, 2}));
   }
-  */
+#endif // _LIBCUDACXX_HAS_STRING
+
   {
     constexpr cuda::std::tuple<int, const int, double, double> p5{1, 2, 3.4, 5.6};
     static_assert(cuda::std::get<int>(p5) == 1, "");
@@ -54,24 +53,21 @@ int main(int, char**)
     assert(i2 == 2);
   }
 
-  // cuda::std::unique_ptr not supported
-  /*
   {
-  typedef cuda::std::unique_ptr<int> upint;
-  cuda::std::tuple<upint> t(upint(new int(4)));
-  upint p = cuda::std::get<upint>(cuda::std::move(t)); // get rvalue
-  assert(*p == 4);
-  assert(cuda::std::get<upint>(t) == nullptr); // has been moved from
+    using upint = cuda::std::unique_ptr<int>;
+    cuda::std::tuple<upint> t(upint(new int(4)));
+    upint p = cuda::std::get<upint>(cuda::std::move(t)); // get rvalue
+    assert(*p == 4);
+    assert(cuda::std::get<upint>(t) == nullptr); // has been moved from
   }
 
   {
-  typedef cuda::std::unique_ptr<int> upint;
-  const cuda::std::tuple<upint> t(upint(new int(4)));
-  const upint&& p = cuda::std::get<upint>(cuda::std::move(t)); // get const rvalue
-  assert(*p == 4);
-  assert(cuda::std::get<upint>(t) != nullptr);
+    using upint = cuda::std::unique_ptr<int>;
+    const cuda::std::tuple<upint> t(upint(new int(4)));
+    const upint&& p = cuda::std::get<upint>(cuda::std::move(t)); // get const rvalue
+    assert(*p == 4);
+    assert(cuda::std::get<upint>(t) != nullptr);
   }
-  */
 
   {
     int x = 42;

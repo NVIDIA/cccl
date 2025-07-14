@@ -12,6 +12,7 @@
 
 // tuple& operator=(const tuple& u);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -85,15 +86,14 @@ int main(int, char**)
     assert(cuda::std::get<1>(t) == y2);
     assert(&cuda::std::get<1>(t) == &y);
   }
-  // cuda::std::unique_ptr not supported
-  /*
+
   {
-      // test that the implicitly generated copy assignment operator
-      // is properly deleted
-      using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
-      static_assert(!cuda::std::is_copy_assignable<T>::value, "");
+    // test that the implicitly generated copy assignment operator
+    // is properly deleted
+    using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
+    static_assert(!cuda::std::is_copy_assignable<T>::value, "");
   }
-  */
+
   {
     using T = cuda::std::tuple<int, NonAssignable>;
     static_assert(!cuda::std::is_copy_assignable<T>::value, "");
