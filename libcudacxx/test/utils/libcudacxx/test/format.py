@@ -179,19 +179,22 @@ class LibcxxTestFormat(object):
                 if b"#define _CCCL_ASSERT" in contents:
                     test_cxx.useModules(False)
 
+        # Handle constexpr steps if specified
         constexpr_steps = self._get_parser("CONSTEXPR_STEPS:", parsers).getValue()
         if constexpr_steps is not None:
             constexpr_steps = constexpr_steps[0]
-            if test_cxx.host_cxx.type == "msvc":
+            cxx = test_cxx.host_cxx if test_cxx.type == "nvcc" else test_cxx
+            if cxx.type == "msvc":
                 constexpr_steps_opt = f"/constexpr:steps{constexpr_steps}"
-            elif test_cxx.host_cxx.type == "clang":
+            elif cxx.type == "clang":
                 constexpr_steps_opt = f"-fconstexpr-steps={constexpr_steps}"
-            elif test_cxx.host_cxx.type == "gcc" and test_cxx.host_cxx.version[0] >= 9:
+            elif cxx.type == "gcc" and cxx.version[0] >= 9:
                 constexpr_steps_opt = f"-fconstexpr-ops-limit={constexpr_steps}"
-            elif test_cxx.host_cxx.type == "nvhpc":
+            elif cxx.type == "nvhpc":
                 constexpr_steps_opt = f"-Wc,--max_cost_constexpr_call={constexpr_steps}"
             else:
                 constexpr_steps_opt = None
+
             if constexpr_steps_opt is not None:
                 if test_cxx.type == "nvcc":
                     test_cxx.compile_flags += ["-Xcompiler", constexpr_steps_opt]
