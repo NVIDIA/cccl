@@ -521,16 +521,21 @@ struct __tuple_variadic_constructor_tag
 
 // __tuple_impl
 
+template <class... _Tp>
+inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ... && true);
+
+template <class... _Tp>
+inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Tp> && ... && true);
+
 template <class _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl;
 
 template <size_t... _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
-    , public __sfinae_base<true,
-                           true,
-                           __all<_CCCL_TRAIT(is_copy_assignable, _Tp)...>::value,
-                           __all<_CCCL_TRAIT(is_move_assignable, _Tp)...>::value>
+    , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
+                                        __tuple_all_copy_assignable_v<_Tp...>,
+                                        __tuple_all_move_assignable_v<_Tp...>>
 {
   _CCCL_API constexpr __tuple_impl() noexcept(__all<_CCCL_TRAIT(is_nothrow_default_constructible, _Tp)...>::value)
       : __tuple_leaf<_Indx, _Tp>()...
