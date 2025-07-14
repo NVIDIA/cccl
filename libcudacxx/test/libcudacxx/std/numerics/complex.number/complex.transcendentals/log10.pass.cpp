@@ -39,7 +39,7 @@ __host__ __device__ void test_edges()
   for (unsigned i = 0; i < N; ++i)
   {
     cuda::std::complex<T> r = log10(testcases[i]);
-    cuda::std::complex<T> z = log(testcases[i]) / cuda::std::log(T(10.0));
+    cuda::std::complex<T> z = log(testcases[i]) * _CUDA_VSTD::numbers::log10e_v<T>;
     if (cuda::std::isnan(real(r)))
     {
       assert(cuda::std::isnan(real(z)));
