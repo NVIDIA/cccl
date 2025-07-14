@@ -117,15 +117,23 @@ public:
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
    * @param s The symbolic name to associate with this event.
    */
-  template <typename context_t>
-  void set_symbol(context_t& ctx, ::std::string s)
+  void set_symbol_with_dot(reserved::per_ctx_dot& dot, ::std::string s)
   {
-    symbol    = mv(s);
-    auto& dot = *ctx.get_dot();
+    symbol = mv(s);
     if (dot.is_tracing())
     {
       dot.add_prereq_vertex(symbol, unique_prereq_id);
     }
+  }
+
+  /**
+   * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param s The symbolic name to associate with this event.
+   */
+  template <typename context_t>
+  void set_symbol(context_t& ctx, ::std::string s)
+  {
+    set_symbol_with_dot(*ctx.get_dot(), mv(s));
   }
 
   /**

@@ -14,7 +14,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
 C2H_TEST("Green context", "[green_context]")
 {
   if (test::cuda_driver_version() < 12050)
@@ -60,10 +60,10 @@ C2H_TEST("Green context", "[green_context]")
     }
   }
 }
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
 // For some reason CI fails with empty test, add a dummy test case
 C2H_TEST("Dummy test case", "")
 {
   CUDAX_REQUIRE(1 == 1);
 }
-#endif // CUDART_VERSION >= 12050
+#endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^

@@ -28,10 +28,10 @@ void print_partition(async_resources_handle& handle, exec_place place, place_par
 
 int main()
 {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
   fprintf(stderr, "Green contexts are not supported by this version of CUDA: skipping test.\n");
   return 0;
-#else
+#else // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 4) vvv
   async_resources_handle handle;
 
   print_partition(handle, exec_place::all_devices(), place_partition_scope::cuda_device);
@@ -48,5 +48,5 @@ int main()
   print_partition(handle, exec_place::current_device(), place_partition_scope::cuda_device);
 
   print_partition(handle, exec_place::repeat(exec_place::current_device(), 4), place_partition_scope::cuda_stream);
-#endif
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^
 }
