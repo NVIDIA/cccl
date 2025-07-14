@@ -15,7 +15,7 @@ from operator import mul
 from textwrap import dedent
 from types import ModuleType as PyModuleType
 from types import SimpleNamespace
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from numba.core import ir, ir_utils, types
 from numba.core.imputils import lower_constant
@@ -38,6 +38,9 @@ from ._decls import (
     CoopBlockStoreInstanceType,
 )
 
+if TYPE_CHECKING:
+    from numba.cuda.launchconfig import LaunchConfig
+
 
 def get_element_count(shape):
     if isinstance(shape, int):
@@ -47,7 +50,7 @@ def get_element_count(shape):
     raise TypeError(f"Invalid shape type: {type(shape)}")
 
 
-def param_index(code, name: str, *, include_kwonly=True):
+def get_kernel_param_index(code, name: str, *, include_kwonly=True):
     """
     Return zero-based index of *name* in the function's parameter list.
     """
@@ -62,9 +65,31 @@ def param_index(code, name: str, *, include_kwonly=True):
         raise LookupError(f"{name!r} is not a parameter") from e
 
 
-def param_index_safe(code, name: str, *, include_kwonly=True):
+def get_kernel_param_index_safe(code, name: str, *, include_kwonly=True):
     try:
-        return param_index(code, name, include_kwonly=include_kwonly)
+        return get_kernel_param_index(code, name, include_kwonly=include_kwonly)
+    except LookupError:
+        # If the parameter is not found, return None.
+        return None
+
+
+def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
+    """
+    Return the value of the parameter *name* from the launch configuration.
+    """
+    args = launch_config.args
+    code = launch_config.dispatcher.func_code
+    idx = get_kernel_param_index_safe(code, name)
+    return args[idx]
+
+
+def get_kernel_param_value_safe(name: str, launch_config: "LaunchConfig") -> Any:
+    """
+    Return the value of the parameter *name* from the launch configuration.
+    Returns None if the parameter is not found.
+    """
+    try:
+        return get_kernel_param_value(name, launch_config)
     except LookupError:
         # If the parameter is not found, return None.
         return None
@@ -125,6 +150,7 @@ class CoopNode:
     func_ir: Any
     typingctx: Any
     launch_config: Any
+    needs_pre_launch_callback: bool
 
     # Non-None for instance of instance types (i.e. when calling an invocable
     # obtained via two-phase creation of the primitive outside the kernel).
@@ -133,9 +159,6 @@ class CoopNode:
     # Non-None for two-phase instances (i.e. when calling an invocable
     # obtained via two-phase creation of the primitive outside the kernel).
     two_phase_instance: Optional[Any]
-
-    # Non-None for two-phase instances furnished via kernel parameters.
-    two_phase_instance_arg: Optional[ir.Arg] = None
 
     # Defaults.
     implicit_temp_storage: bool = True
@@ -161,16 +184,9 @@ class CoopNode:
 
     def __post_init__(self):
         # If we're handling a two-phase invocation via a primitive that was
-        # passed as a kernel parameter, resolve the underlying instance now.
-        obtain_two_phase_instance = (
-            self.type_instance is not None
-            and self.two_phase_instance is None
-            and self.two_phase_instance_arg is not None
-        )
-        if obtain_two_phase_instance:
-            arg = self.two_phase_instance_arg
-            self.two_phase_instance = self.get_kernel_param_value(arg)
-            self.two_phase_instance.node = self
+        # passed as a kernel parameter, `needs_pre_launch_callback` will be
+        # set.
+        if self.needs_pre_launch_callback:
             # Register a pre-launch kernel callback so that we can append
             # ourselves to the kernel's extensions just before launch, which
             # is necessary in order for numba not to balk in the _Kernel's
@@ -186,7 +202,7 @@ class CoopNode:
             self.prepare_args,
             extensions_set,
         )
-        extensions.append(self.prepare_args)
+        extensions.append(self)
 
     def prepare_args(self, ty, val, *args, **kwargs):
         # N.B. This routine is only invoked for two-phase instances.
@@ -257,6 +273,9 @@ class CoopNode:
         if outer_val is not None:
             return outer_val
 
+        # If we reach here, the argument is not found.
+        return None
+
     def get_arg_value(self, arg_name: str) -> Any:
         """
         Get the value of an argument by name from the expression arguments.
@@ -268,13 +287,16 @@ class CoopNode:
         return value
 
     def get_kernel_param_value(self, arg_var: ir.Arg) -> Any:
-        launch_config = self.launch_config
-        arg_idx = param_index_safe(
-            launch_config.dispatcher.func_code,
+        return get_kernel_param_value(
             arg_var.name,
+            self.launch_config,
         )
-        if arg_idx is not None:
-            return launch_config.args[arg_idx]
+
+    def get_kernel_param_value_safe(self, arg_var: ir.Arg) -> Any:
+        return get_kernel_param_value_safe(
+            arg_var.name,
+            self.launch_config,
+        )
 
     @cached_property
     def decl_typer(self):
@@ -1168,7 +1190,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
             type_instance = None
             primitive_name = None
             two_phase_instance = None
-            two_phase_instance_arg = None
+            needs_pre_launch_callback = False
 
             # Attempt to obtain the implementation class based on whether we're
             # dealing with an instance or a declaration/template.  Specifically,
@@ -1213,12 +1235,37 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 # We're dealing with a two-phase primitive instance.
                 type_instance = func
                 def_instr = func_ir.get_definition(func_name)
-                if isinstance(def_instr, ir.Arg):
-                    two_phase_instance_arg = def_instr
-                elif isinstance(def_instr, (ir.Global, ir.FreeVar)):
+                if isinstance(def_instr, (ir.Global, ir.FreeVar)):
+                    # Globals and free variables are easy; we can get the
+                    # instance directly from the instruction's value.
                     two_phase_instance = def_instr.value
+                elif isinstance(def_instr, ir.Arg):
+                    # For arguments, we can get the instance from the launch
+                    # configuration arguments.
+                    two_phase_instance = get_kernel_param_value(
+                        def_instr.name,
+                        launch_config,
+                    )
+                    needs_pre_launch_callback = True
+                elif isinstance(def_instr, ir.Expr):
+                    if def_instr.op == "getattr":
+                        obj = def_instr.value
+                        obj_instr = func_ir.get_definition(obj.name)
+                        if isinstance(obj_instr, (ir.Global, ir.FreeVar)):
+                            two_phase_instance = obj_instr.value
+                        elif isinstance(obj_instr, ir.Arg):
+                            arg_value = get_kernel_param_value(
+                                obj_instr.name,
+                                launch_config,
+                            )
+                            two_phase_instance = getattr(arg_value, def_instr.attr)
+                            needs_pre_launch_callback = True
+                    else:
+                        msg = f"Unexpected expression op: {def_instr!r}"
+                        raise RuntimeError(msg)
                 else:
-                    raise RuntimeError(f"Unexpected instruction type: {def_instr!r}")
+                    msg = f"Unexpected instruction type: {def_instr!r}"
+                    raise RuntimeError(msg)
 
                 value_type = typemap[func_name]
                 primitive_name = repr(value_type)
@@ -1274,46 +1321,25 @@ class BaseCooperativeNodeRewriter(Rewrite):
             assert impl_class is not None
             assert template is not None
 
-            # Invariant checks: if we have a type instance, that implies we
-            # must either have a two-phase instance or a two-phase argument,
-            # but not both.  Otherwise, we should have neither.
+            # Invariant checks: if we have a type instance we must have a
+            # two-phase instance, and if we don't, we shouldn't.
             if type_instance is not None:
-                have_both = (
-                    two_phase_instance is not None
-                    and two_phase_instance_arg is not None
-                )
-                have_neither = (
-                    two_phase_instance is None and two_phase_instance_arg is None
-                )
-                if have_both:
+                if two_phase_instance is None:
+                    # If we have a type instance, we must have a two-phase
+                    # instance.
                     msg = (
-                        "Invariant check failed: only two_phase_instance or "
-                        "two_phase_instance_arg must be set, not both; "
+                        "Invariant check failed: type_instance is set, "
+                        "but two_phase_instance is None; "
                         f"{type_instance!r} ({primitive_name!r})"
                     )
                     raise RuntimeError(msg)
-                elif have_neither:
-                    msg = (
-                        "Invariant check failed: either two_phase_instance or "
-                        "two_phase_instance_arg must be set, not neither; "
-                        f"{type_instance!r} ({primitive_name!r})"
-                    )
-                    raise RuntimeError(msg)
-            else:
-                have_any = (
-                    two_phase_instance is not None or two_phase_instance_arg is not None
+            elif two_phase_instance is not None:
+                msg = (
+                    "Invariant check failed: two_phase_instance is set, "
+                    "but type_instance is None; "
+                    f"{two_phase_instance!r} ({primitive_name!r})"
                 )
-                if have_any:
-                    msg = (
-                        "Invariant check failed: two_phase_instance and "
-                        "two_phase_instance_arg must be None when not "
-                        "dealing with a two-phase primitive instance; "
-                        f"two_phase_instance: {two_phase_instance!r}, "
-                        f"two_phase_instance_arg: {two_phase_instance_arg!r}, "
-                        f"type_instance: {type_instance!r}, "
-                        f"primitive_name: {primitive_name!r}."
-                    )
-                    raise RuntimeError(msg)
+                raise RuntimeError(msg)
 
             # Small performance optimization: only store attributes once,
             # upon first match.
@@ -1341,9 +1367,9 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 func_ir=func_ir,
                 typingctx=self._state.typingctx,
                 launch_config=launch_config,
+                needs_pre_launch_callback=needs_pre_launch_callback,
                 type_instance=type_instance,
                 two_phase_instance=two_phase_instance,
-                two_phase_instance_arg=two_phase_instance_arg,
             )
 
             if two_phase_instance is not None:
