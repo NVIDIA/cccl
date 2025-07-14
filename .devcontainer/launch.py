@@ -124,32 +124,31 @@ def normalize_mount(mount):
     return mount
 
 
+def quote_ary(ary, quote=r'"'):
+    if len(ary) == 0:
+        ary = ""
+    else:
+        ary = f'{quote} {quote}'.join(ary)
+        ary = f'{quote}{ary}{quote}'
+    return ary
+
+
 def bash_str(name, string):
     return f'declare {name}="{inline_vars(string)}"'
 
 
 def bash_list(name, ary):
-    ary = [inline_vars(x) for x in ary]
-    if len(ary) == 0:
-        ary = ""
-    else:
-        ary = f'"{r'" "'.join(ary)}"'
-    return f"declare -a {name}=({ary})"
+    return f"declare -a {name}=({quote_ary([inline_vars(x) for x in ary])})"
 
 
 def bash_dict(name, ary):
-    ary = [inline_vars(x) for x in ary]
-    if len(ary) == 0:
-        ary = ""
-    else:
-        ary = f'"{r'" "'.join(ary)}"'
-    return f'declare -A {name}="({ary})"'
+    return f'declare -A {name}="({quote_ary([inline_vars(x) for x in ary])})"'
 
 
 def bash_list_of_commands(name, arys):
     # Wrap each initializeCommand in quotes so they're not all
     # expanded into elements of the bash array
-    return bash_list(name, [f"'{r"' '".join(xs)}'" for xs in arys])
+    return bash_list(name, [quote_ary(xs, "'") for xs in arys])
 
 
 # Load the devcontainer.json
