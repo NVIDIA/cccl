@@ -222,12 +222,9 @@ struct _TestSynthesizeAssignment
 };
 
 template <class _Tp>
-struct __must_synthesize_assignment
-    : integral_constant<
-        bool,
-        (_CCCL_TRAIT(is_copy_assignable, _Tp) && !_CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_Tp>))
-          || (_CCCL_TRAIT(is_move_assignable, _Tp) && !_CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_Tp>))>
-{};
+inline constexpr bool __must_synthesize_assignment_v =
+  (is_copy_assignable_v<_Tp> && !is_copy_assignable_v<_TestSynthesizeAssignment<_Tp>>)
+  || (is_move_assignable_v<_Tp> && !is_move_assignable_v<_TestSynthesizeAssignment<_Tp>>);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

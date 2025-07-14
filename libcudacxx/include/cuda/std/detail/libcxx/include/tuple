@@ -214,7 +214,7 @@ template <class _Tp>
 _CCCL_API constexpr __tuple_leaf_specialization __tuple_leaf_choose()
 {
   return _CCCL_TRAIT(is_empty, _Tp) && !_CCCL_TRAIT(is_final, _Tp) ? __tuple_leaf_specialization::__empty_non_final
-       : __must_synthesize_assignment<_Tp>::value
+       : __must_synthesize_assignment_v<_Tp>
          ? __tuple_leaf_specialization::__synthesize_assignment
          : __tuple_leaf_specialization::__default;
 }
