@@ -121,11 +121,11 @@ _CCCL_HOST_DEVICE inline cuda_expected<int> get_max_shared_memory()
   return max_smem;
 }
 
-struct elem_counts
+struct async_config
 {
-  int elem_per_thread;
-  int tile_size;
-  int smem_size;
+  int items_per_thread;
+  int max_occupancy;
+  int sm_count;
 };
 
 struct prefetch_config
@@ -177,6 +177,22 @@ struct dispatch_t<StableAddress,
   KernelSource kernel_source             = {};
   KernelLauncherFactory launcher_factory = {};
 
+  // Reduces the items_per_thread when necessary to generate enough blocks to reach the maximum occupancy.
+  template <typename ActivePolicy>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int
+  spread_out_items_per_thread(ActivePolicy active_policy, int items_per_thread, int sm_count, int max_occupancy)
+  {
+    auto wrapped_policy     = detail::transform::MakeTransformPolicyWrapper(active_policy);
+    const int block_threads = wrapped_policy.BlockThreads();
+
+    const int items_per_thread_evenly_spread = static_cast<int>(
+      (::cuda::std::min) (Offset{items_per_thread},
+                          ::cuda::ceil_div(num_items, sm_count * block_threads * max_occupancy)));
+    const int items_per_thread_clamped = ::cuda::std::clamp(
+      items_per_thread_evenly_spread, +wrapped_policy.MinItemsPerThread(), +wrapped_policy.MaxItemsPerThread());
+    return items_per_thread_clamped;
+  }
+
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
   configure_async_kernel(int alignment, SMemFunc smem_for_tile_size) -> cuda_expected<
@@ -188,54 +204,60 @@ struct dispatch_t<StableAddress,
     constexpr int block_threads = policy_t::block_threads;
     _CCCL_ASSERT(block_threads % alignment == 0,
                  "block_threads needs to be a multiple of the copy alignment"); // then tile_size is a multiple
-    auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
+    auto determine_element_counts = [&]() -> cuda_expected<async_config> {
       const auto max_smem = get_max_shared_memory();
       if (!max_smem)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(max_smem.error());
       }
 
-      elem_counts last_counts{};
-      // Increase the number of output elements per thread until we reach the required bytes in flight.
-      for (int elem_per_thread = +policy_t::min_items_per_thread; elem_per_thread <= +policy_t::max_items_per_thread;
-           ++elem_per_thread)
+      int sm_count = 0;
+      auto error   = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
+      if (error != cudaSuccess)
+      {
+        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
+      }
+
+      // Increase the number of output elements per thread until we reach the required bytes in flight. This computation
+      // MUST NOT depend on any runtime state of the current API invocation (like num_items), since the result will be
+      // cached.
+      async_config last_config{};
+      for (int items_per_thread = +policy_t::min_items_per_thread; items_per_thread <= +policy_t::max_items_per_thread;
+           ++items_per_thread)
       {
         // ensures the loop below runs at least once
         static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread);
 
-        const int tile_size = block_threads * elem_per_thread;
+        const int tile_size = block_threads * items_per_thread;
         const int smem_size = smem_for_tile_size(tile_size, alignment);
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
-          _CCCL_ASSERT(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
-          return last_counts;
-        }
-
-        if (tile_size >= num_items)
-        {
-          return elem_counts{elem_per_thread, tile_size, smem_size};
+          _CCCL_ASSERT(last_config.items_per_thread > 0, "min_items_per_thread exceeds available shared memory");
+          return last_config;
         }
 
         int max_occupancy = 0;
-        const auto error  = CubDebug(
+        error             = CubDebug(
           launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_threads, smem_size));
         if (error != cudaSuccess)
         {
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
         }
 
+        const auto config = async_config{items_per_thread, max_occupancy, sm_count};
+
         const int bytes_in_flight_SM = max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
         if (ActivePolicy::min_bif <= bytes_in_flight_SM)
         {
-          return elem_counts{elem_per_thread, tile_size, smem_size};
+          return config;
         }
 
-        last_counts = elem_counts{elem_per_thread, tile_size, smem_size};
+        last_config = config;
       }
-      return last_counts;
+      return last_config;
     };
-    cuda_expected<elem_counts> config = [&]() {
+    cuda_expected<async_config> config = [&]() {
       NV_IF_TARGET(NV_IS_HOST,
                    (static auto cached_config = determine_element_counts(); return cached_config;),
                    (
@@ -246,16 +268,19 @@ struct dispatch_t<StableAddress,
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(config.error());
     }
-    _CCCL_ASSERT(config->elem_per_thread > 0, "");
-    _CCCL_ASSERT(config->tile_size > 0, "");
-    _CCCL_ASSERT(config->tile_size % alignment == 0, "");
-    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
+    _CCCL_ASSERT(config->items_per_thread > 0, "");
+    _CCCL_ASSERT(config->items_per_thread > 0, "");
+    _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
 
-    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
+    const int ipt =
+      spread_out_items_per_thread(ActivePolicy{}, config->items_per_thread, config->sm_count, config->max_occupancy);
+    const int tile_size = block_threads * ipt;
+    const int smem_size = smem_for_tile_size(tile_size, alignment);
+    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
+
+    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return ::cuda::std::make_tuple(
-      launcher_factory(grid_dim, block_threads, config->smem_size, stream),
-      kernel_source.TransformKernel(),
-      config->elem_per_thread);
+      launcher_factory(grid_dim, block_threads, smem_size, stream), kernel_source.TransformKernel(), ipt);
   }
 
   template <typename ActivePolicy, typename SMemFunc, std::size_t... Is>
@@ -267,11 +292,11 @@ struct dispatch_t<StableAddress,
     {
       return ret.error();
     }
-    auto [launcher, kernel, elem_per_thread] = *ret;
+    auto [launcher, kernel, items_per_thread] = *ret;
     return launcher.doit(
       kernel,
       num_items,
-      elem_per_thread,
+      items_per_thread,
       false,
       op,
       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
@@ -295,7 +320,7 @@ struct dispatch_t<StableAddress,
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
       }
       int sm_count = 0;
-      error        = launcher_factory.MultiProcessorCount(sm_count);
+      error        = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
       if (error != cudaSuccess)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
@@ -354,7 +379,7 @@ struct dispatch_t<StableAddress,
           return wrapped_policy.ItemsPerThreadForVectorizedPath();
         }
       }
-      // otherwise, setup the prefetch kernel
+      // otherwise, set up the prefetch kernel
 
       auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
       // choose items per thread to reach minimum bytes in flight
@@ -363,14 +388,8 @@ struct dispatch_t<StableAddress,
           ? wrapped_policy.ItemsPerThreadNoInput()
           : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
-      // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
-      // elements
-      const int items_per_thread_evenly_spread = static_cast<int>(
-        (::cuda::std::min) (Offset{items_per_thread},
-                            num_items / (config->sm_count * block_threads * config->max_occupancy)));
-      const int items_per_thread_clamped = ::cuda::std::clamp(
-        items_per_thread_evenly_spread, +wrapped_policy.MinItemsPerThread(), +wrapped_policy.MaxItemsPerThread());
-      return items_per_thread_clamped;
+      // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
+      return spread_out_items_per_thread(active_policy, items_per_thread, config->sm_count, config->max_occupancy);
     }();
     const int tile_size = block_threads * ipt;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
