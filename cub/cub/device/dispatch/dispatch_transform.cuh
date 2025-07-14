@@ -307,7 +307,7 @@ struct dispatch_t<StableAddress,
     // config->smem_size is 16 bytes larger than needed for UBLKCP because it's the total SMEM size, but 16 bytes are
     // occupied by static shared memory and padding. But let's not complicate things.
     return ::cuda::std::make_tuple(
-      launcher_factory(grid_dim, block_threads, dyn_smem_size, stream), kernel_source.TransformKernel(), ipt);
+      launcher_factory(grid_dim, block_threads, dyn_smem_size, stream, true), kernel_source.TransformKernel(), ipt);
   }
 
   // Avoid unnecessarily parsing these definitions when not needed.
@@ -474,7 +474,7 @@ struct dispatch_t<StableAddress,
     const int tile_size = block_threads * ipt;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      launcher_factory(grid_dim, block_threads, 0, stream)
+      launcher_factory(grid_dim, block_threads, 0, stream, true)
         .doit(kernel_source.TransformKernel(),
               num_items,
               ipt,
