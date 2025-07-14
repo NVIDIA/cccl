@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__UTILITY_DRIVER_API
-#define _CUDAX__UTILITY_DRIVER_API
+#ifndef _CUDA__DRIVER_DRIVER_API
+#define _CUDA__DRIVER_DRIVER_API
 
 #include <cuda/std/__exception/cuda_error.h>
 
@@ -24,7 +24,7 @@
 #define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
   reinterpret_cast<decltype(versioned_fn_name)*>(__get_driver_entry_point(#function_name, major, minor))
 
-namespace cuda::experimental::__driver
+namespace cuda::__driver
 {
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
@@ -288,10 +288,10 @@ inline void __memsetAsync(void* __dst, ::uint8_t __value, size_t __count, ::CUst
     __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
 }
 
-} // namespace cuda::experimental::__driver
+} // namespace cuda::__driver
 
 #undef _CCCLRT_GET_DRIVER_FUNCTION
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif
+#endif // _CUDA__DRIVER_DRIVER_API

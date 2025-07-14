@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/driver_api.h>
+
 #include <cuda/experimental/__device/arch_traits.cuh>
 #include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
-#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cassert>
 #include <mutex>
@@ -94,8 +95,8 @@ public:
   CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
-      __device      = ::cuda::experimental::__driver::__deviceGet(__id_);
-      __primary_ctx = ::cuda::experimental::__driver::__primaryCtxRetain(__device);
+      __device      = ::cuda::__driver::__deviceGet(__id_);
+      __primary_ctx = ::cuda::__driver::__primaryCtxRetain(__device);
     });
     _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
     return __primary_ctx;
@@ -105,7 +106,7 @@ public:
   {
     if (__primary_ctx)
     {
-      ::cuda::experimental::__driver::__primaryCtxRelease(__device);
+      ::cuda::__driver::__primaryCtxRelease(__device);
     }
   }
 

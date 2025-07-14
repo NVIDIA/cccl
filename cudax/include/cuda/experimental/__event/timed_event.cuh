@@ -100,7 +100,7 @@ public:
   [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
-    ::cuda::experimental::__driver::__eventElapsedTime(__start.get(), __end.get(), &__ms);
+    ::cuda::__driver::__eventElapsedTime(__start.get(), __end.get(), &__ms);
     return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 

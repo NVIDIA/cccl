@@ -175,7 +175,7 @@ private:
 
     static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
-    ::cuda::experimental::__driver::__memcpyAsync(
+    ::cuda::__driver::__memcpyAsync(
       __dest, _CUDA_VSTD::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
 
@@ -638,7 +638,7 @@ template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
   __stream.wait(__from.stream());
-  ::cuda::experimental::__driver::__memcpyAsync(
+  ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),
     sizeof(typename _BufferTo::value_type) * __from.size(),
