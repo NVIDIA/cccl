@@ -46,9 +46,9 @@ function(libcudacxx_add_public_header_test header)
                          PRIVATE
                          ${headertest_warning_levels_device}
                          -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-  target_compile_definitions(headertest_${header_name} PRIVATE 
+  target_compile_definitions(headertest_${header_name} PRIVATE
     _CCCL_HEADER_TEST
-    CCCL_ENABLE_ASSERTIONS 
+    CCCL_ENABLE_ASSERTIONS
     CCCL_IGNORE_DEPRECATED_CPP_DIALECT
     CCCL_ENABLE_OPTIONAL_REF)
 
