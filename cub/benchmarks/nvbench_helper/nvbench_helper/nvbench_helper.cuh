@@ -204,7 +204,7 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
 
 // Creates an interpolated value of type T between min (at = 0.0) and max (at = 1.0).
 template <typename T>
-T lerp_min_max(double at)
+[[nodiscard]] T lerp_min_max(double at) noexcept
 {
   if (at == 1.0)
   {
