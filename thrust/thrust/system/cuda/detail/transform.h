@@ -41,7 +41,6 @@
 
 #  include <cub/device/device_transform.cuh>
 
-#  include <thrust/distance.h>
 #  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
@@ -50,6 +49,7 @@
 
 #  include <cuda/__functional/address_stability.h>
 #  include <cuda/std/__algorithm/transform.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
