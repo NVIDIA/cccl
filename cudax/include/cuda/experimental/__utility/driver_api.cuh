@@ -29,7 +29,8 @@ namespace cuda::experimental::__driver
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
 //! For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
-inline void* __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
+inline void*
+__get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
 {
   void* __fn;
   ::cudaDriverEntryPointQueryResult __result;
@@ -171,8 +172,8 @@ struct __ctx_from_stream
 inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
-  ::CUcontext __ctx         = nullptr;
-  ::CUgreenCtx __gctx       = nullptr;
+  ::CUcontext __ctx       = nullptr;
+  ::CUgreenCtx __gctx     = nullptr;
   __ctx_from_stream __result;
   __call_driver_fn(__driver_fn, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
   if (__gctx)
@@ -189,10 +190,10 @@ inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
 
-inline void __streamWaitEvent(::CUstream __stream, ::CUevent __event)
+inline void __streamWaitEvent(::CUstream __stream, ::CUevent __evnt)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamWaitEvent);
-  __call_driver_fn(__driver_fn, "Failed to make a stream wait for an event", __stream, __event, ::CU_EVENT_WAIT_DEFAULT);
+  __call_driver_fn(__driver_fn, "Failed to make a stream wait for an event", __stream, __evnt, ::CU_EVENT_WAIT_DEFAULT);
 }
 
 inline ::cudaError_t __streamQueryNoThrow(::CUstream __stream)
@@ -217,10 +218,10 @@ inline unsigned long long __streamGetId(::CUstream __stream)
   return __id;
 }
 
-inline void __eventRecord(::CUevent __event, ::CUstream __stream)
+inline void __eventRecord(::CUevent __evnt, ::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventRecord);
-  __call_driver_fn(__driver_fn, "Failed to record CUDA event", __event, __stream);
+  __call_driver_fn(__driver_fn, "Failed to record CUDA event", __evnt, __stream);
 }
 
 // Destroy calls return error codes to let the calling code decide if the error should be ignored
@@ -230,10 +231,10 @@ inline ::cudaError_t __streamDestroyNoThrow(::CUstream __stream)
   return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
-inline ::cudaError_t __eventDestroyNoThrow(::CUevent __event)
+inline ::cudaError_t __eventDestroyNoThrow(::CUevent __evnt)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventDestroy);
-  return static_cast<::cudaError_t>(__driver_fn(__event));
+  return static_cast<::cudaError_t>(__driver_fn(__evnt));
 }
 
 inline void __eventElapsedTime(::CUevent __start, ::CUevent __end, float* __ms)
