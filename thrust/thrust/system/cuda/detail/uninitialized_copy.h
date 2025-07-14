@@ -88,8 +88,7 @@ uninitialized_copy_n(execution_policy<Derived>& policy, InputIt first, Size coun
   if constexpr (::cuda::std::is_trivially_constructible_v<output_t, ctor_arg_t>
                 && thrust::is_trivially_relocatable_v<output_t>)
   {
-    // TODO(bgruber): converting it+count to it+it may be wasteful, since transform internally converts back
-    cuda_cub::transform(policy, first, first + count, result, ::cuda::std::identity{});
+    cuda_cub::transform_n(policy, first, count, result, ::cuda::std::identity{});
   }
   else
   {
