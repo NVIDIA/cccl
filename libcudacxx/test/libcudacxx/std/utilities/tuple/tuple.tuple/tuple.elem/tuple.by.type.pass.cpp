@@ -20,9 +20,8 @@
 
 int main(int, char**)
 {
-  using cf = cuda::std::complex<float>;
-
 #ifdef _LIBCUDACXX_HAS_STRING
+  using cf = cuda::std::complex<float>;
   {
     auto t1 = cuda::std::tuple<int, cuda::std::string, cf>{42, "Hi", {1, 2}};
     assert(cuda::std::get<int>(t1) == 42); // find at the beginning

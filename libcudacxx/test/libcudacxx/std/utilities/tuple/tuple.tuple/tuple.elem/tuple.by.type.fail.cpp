@@ -29,7 +29,7 @@ void test_bad_index()
 
 void test_bad_return_type()
 {
-  typedef cuda::std::unique_ptr<int> upint;
+  using upint = cuda::std::unique_ptr<int>;
   cuda::std::tuple<upint> t;
   upint p = cuda::std::get<upint>(t); // expected-error{{deleted copy constructor}}
 }

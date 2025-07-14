@@ -15,7 +15,7 @@ int main(int, char**)
 {
   static_assert(sizeof(cuda::std::pair<float, int>) == sizeof(float) + sizeof(int));
   static_assert(sizeof(cuda::std::pair<cuda::std::pair<float, int>, cuda::std::pair<float, int>>)
-                == sizeof(cuda::std::pair<cuda::std::pair<float, int>, cuda::std::pair<float, int>>));
+                == 2 * sizeof(cuda::std::pair<float, int>));
   static_assert(sizeof(cuda::std::pair<cuda::std::pair<float, int>, cuda::std::pair<float, int>>)
                 == sizeof(float) * 2 + sizeof(int) * 2);
 

@@ -39,8 +39,8 @@ struct D : B
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<long, cuda::std::unique_ptr<D>> T0;
-    typedef cuda::std::tuple<long long, cuda::std::unique_ptr<B>> T1;
+    using T0 = cuda::std::pair<long, cuda::std::unique_ptr<D>>;
+    using T1 = cuda::std::tuple<long long, cuda::std::unique_ptr<B>>;
     T0 t0(2, cuda::std::unique_ptr<D>(new D(3)));
     T1 t1 = cuda::std::move(t0);
     assert(cuda::std::get<0>(t1) == 2);

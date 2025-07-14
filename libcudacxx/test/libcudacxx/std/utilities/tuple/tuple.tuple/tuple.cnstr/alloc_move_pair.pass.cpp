@@ -43,8 +43,8 @@ struct D : B
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, cuda::std::unique_ptr<D>> T0;
-    typedef cuda::std::tuple<alloc_first, cuda::std::unique_ptr<B>> T1;
+    using T0 = cuda::std::pair<int, cuda::std::unique_ptr<D>>;
+    using T1 = cuda::std::tuple<alloc_first, cuda::std::unique_ptr<B>>;
     T0 t0(2, cuda::std::unique_ptr<D>(new D(3)));
     alloc_first::allocator_constructed() = false;
     T1 t1(cuda::std::allocator_arg, A1<int>(5), cuda::std::move(t0));

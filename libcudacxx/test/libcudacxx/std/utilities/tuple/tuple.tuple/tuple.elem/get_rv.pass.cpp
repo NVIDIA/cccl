@@ -25,7 +25,7 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<cuda::std::unique_ptr<int>> T;
+    using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
     T t(cuda::std::unique_ptr<int>(new int(3)));
     cuda::std::unique_ptr<int> p = cuda::std::get<0>(cuda::std::move(t));
     assert(*p == 3);
