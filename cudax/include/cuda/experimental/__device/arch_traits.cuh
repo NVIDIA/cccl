@@ -179,325 +179,284 @@ struct traits_t
   bool tma_supported;
 };
 
-// @brief Architecture type
-// This type is a template that represents an architecture. It also contains the traits for that architecture.
+// @brief Architecture traits
+// Template variable that contains the traits for an architecture with a given id.
 template <id _Id>
-struct type;
+_CCCL_HOST_DEVICE constexpr traits_t traits();
 
 template <>
-struct type<id::sm_60>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_60>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_60;
-    __traits.compute_capability_major             = 6;
-    __traits.compute_capability_minor             = 0;
-    __traits.compute_capability                   = 60;
-    __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 2048;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 0;
-    __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_60;
+  __traits.compute_capability_major             = 6;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 60;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 0;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = false;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = false;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = false;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = false;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_60 = type<id::sm_60>;
 
 template <>
-struct type<id::sm_61>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_61>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_61;
-    __traits.compute_capability_major             = 6;
-    __traits.compute_capability_minor             = 1;
-    __traits.compute_capability                   = 61;
-    __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 2048;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 0;
-    __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_61;
+  __traits.compute_capability_major             = 6;
+  __traits.compute_capability_minor             = 1;
+  __traits.compute_capability                   = 61;
+  __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 0;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = false;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = false;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = false;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = false;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_61 = type<id::sm_61>;
 
 template <>
-struct type<id::sm_70>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_70>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_70;
-    __traits.compute_capability_major             = 7;
-    __traits.compute_capability_minor             = 0;
-    __traits.compute_capability                   = 70;
-    __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 2048;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 0;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_70;
+  __traits.compute_capability_major             = 7;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 70;
+  __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 0;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = false;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = false;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = false;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = false;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_70 = type<id::sm_70>;
 
 template <>
-struct type<id::sm_75>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_75>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_75;
-    __traits.compute_capability_major             = 7;
-    __traits.compute_capability_minor             = 5;
-    __traits.compute_capability                   = 75;
-    __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 16;
-    __traits.max_threads_per_multiprocessor       = 1024;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 0;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_75;
+  __traits.compute_capability_major             = 7;
+  __traits.compute_capability_minor             = 5;
+  __traits.compute_capability                   = 75;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 16;
+  __traits.max_threads_per_multiprocessor       = 1024;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 0;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = false;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = false;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = false;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = false;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_75 = type<id::sm_75>;
 
 template <>
-struct type<id::sm_80>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_80>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_80;
-    __traits.compute_capability_major             = 8;
-    __traits.compute_capability_minor             = 0;
-    __traits.compute_capability                   = 80;
-    __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 2048;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 1024;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_80;
+  __traits.compute_capability_major             = 8;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 80;
+  __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = true;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = true;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_80 = type<id::sm_80>;
 
 template <>
-struct type<id::sm_86>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_86>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_86;
-    __traits.compute_capability_major             = 8;
-    __traits.compute_capability_minor             = 6;
-    __traits.compute_capability                   = 86;
-    __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 16;
-    __traits.max_threads_per_multiprocessor       = 1536;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 1024;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_86;
+  __traits.compute_capability_major             = 8;
+  __traits.compute_capability_minor             = 6;
+  __traits.compute_capability                   = 86;
+  __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 16;
+  __traits.max_threads_per_multiprocessor       = 1536;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = true;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = true;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_86 = type<id::sm_86>;
 
 template <>
-struct type<id::sm_89>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_89>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_89;
-    __traits.compute_capability_major             = 8;
-    __traits.compute_capability_minor             = 9;
-    __traits.compute_capability                   = 89;
-    __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 24;
-    __traits.max_threads_per_multiprocessor       = 1536;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 1024;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_89;
+  __traits.compute_capability_major             = 8;
+  __traits.compute_capability_minor             = 9;
+  __traits.compute_capability                   = 89;
+  __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 24;
+  __traits.max_threads_per_multiprocessor       = 1536;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    __traits.cluster_supported  = false;
-    __traits.redux_intrinisic   = true;
-    __traits.elect_intrinsic    = false;
-    __traits.cp_async_supported = true;
-    __traits.tma_supported      = false;
-    return __traits;
-  }
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = false;
+  return __traits;
 };
-using sm_89 = type<id::sm_89>;
 
 template <>
-struct type<id::sm_90>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_90>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_90;
-    __traits.compute_capability_major             = 9;
-    __traits.compute_capability_minor             = 0;
-    __traits.compute_capability                   = 90;
-    __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 2048;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 1024;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_90;
+  __traits.compute_capability_major             = 9;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 90;
+  __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    __traits.cluster_supported  = true;
-    __traits.redux_intrinisic   = true;
-    __traits.elect_intrinsic    = true;
-    __traits.cp_async_supported = true;
-    __traits.tma_supported      = true;
-    return __traits;
-  }
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+  return __traits;
 };
-using sm_90 = type<id::sm_90>;
 
 // No sm_90a specific fields for now.
 template <>
-struct type<id::sm_90a> : type<id::sm_90>
-{};
-using sm_90a = type<id::sm_90a>;
-
-template <>
-struct type<id::sm_100>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_90a>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_100;
-    __traits.compute_capability_major             = 10;
-    __traits.compute_capability_minor             = 0;
-    __traits.compute_capability                   = 100;
-    __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 2048;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 1024;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-    __traits.cluster_supported  = true;
-    __traits.redux_intrinisic   = true;
-    __traits.elect_intrinsic    = true;
-    __traits.cp_async_supported = true;
-    __traits.tma_supported      = true;
-    return __traits;
-  }
+  return traits<id::sm_90>();
 };
-using sm_100 = type<id::sm_100>;
 
 template <>
-struct type<id::sm_100a> : type<id::sm_100>
-{};
-using sm_100a = type<id::sm_100a>;
-
-template <>
-struct type<id::sm_103>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_100>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits                 = sm_100::traits();
-    __traits.id                       = id::sm_103;
-    __traits.compute_capability_major = 10;
-    __traits.compute_capability_minor = 3;
-    __traits.compute_capability       = 103;
+  traits_t __traits{};
+  __traits.id                                   = id::sm_100;
+  __traits.compute_capability_major             = 10;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 100;
+  __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
-    return __traits;
-  }
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+  return __traits;
 };
-using sm_103 = type<id::sm_103>;
 
 template <>
-struct type<id::sm_103a> : type<id::sm_103>
-{};
-using sm_103a = type<id::sm_103a>;
-
-template <>
-struct type<id::sm_120>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_100a>()
 {
-  _CCCL_API static constexpr traits_t traits()
-  {
-    traits_t __traits{};
-    __traits.id                                   = id::sm_120;
-    __traits.compute_capability_major             = 12;
-    __traits.compute_capability_minor             = 0;
-    __traits.compute_capability                   = 120;
-    __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 32;
-    __traits.max_threads_per_multiprocessor       = 1536;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = 1024;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-    __traits.cluster_supported  = true;
-    __traits.redux_intrinisic   = true;
-    __traits.elect_intrinsic    = true;
-    __traits.cp_async_supported = true;
-    __traits.tma_supported      = true;
-    return __traits;
-  }
+  return traits<id::sm_100>();
 };
-using sm_120 = type<id::sm_120>;
 
 template <>
-struct type<id::sm_120a> : type<id::sm_120>
-{};
-using sm_120a = type<id::sm_120a>;
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_103>()
+{
+  traits_t __traits                 = traits<id::sm_100>();
+  __traits.id                       = id::sm_103;
+  __traits.compute_capability_major = 10;
+  __traits.compute_capability_minor = 3;
+  __traits.compute_capability       = 103;
+  return __traits;
+};
+
+template <>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_103a>()
+{
+  return traits<id::sm_103>();
+};
+
+template <>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_120>()
+{
+  traits_t __traits{};
+  __traits.id                                   = id::sm_120;
+  __traits.compute_capability_major             = 12;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 120;
+  __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 1536;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.reserved_shared_memory_per_block     = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+  return __traits;
+};
+
+template <>
+_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_120a>()
+{
+  return traits<id::sm_120>();
+};
 
 inline constexpr int __highest_known_arch = 120;
 
@@ -506,37 +465,37 @@ _CCCL_API constexpr inline traits_t traits_for_id(id __id)
   switch (__id)
   {
     case id::sm_60:
-      return arch::sm_60::traits();
+      return arch::traits<id::sm_60>();
     case id::sm_61:
-      return arch::sm_61::traits();
+      return arch::traits<id::sm_61>();
     case id::sm_70:
-      return arch::sm_70::traits();
+      return arch::traits<id::sm_70>();
     case id::sm_75:
-      return arch::sm_75::traits();
+      return arch::traits<id::sm_75>();
     case id::sm_80:
-      return arch::sm_80::traits();
+      return arch::traits<id::sm_80>();
     case id::sm_86:
-      return arch::sm_86::traits();
+      return arch::traits<id::sm_86>();
     case id::sm_89:
-      return arch::sm_89::traits();
+      return arch::traits<id::sm_89>();
     case id::sm_90:
-      return arch::sm_90::traits();
+      return arch::traits<id::sm_90>();
     case id::sm_90a:
-      return arch::sm_90a::traits();
+      return arch::traits<id::sm_90a>();
     case id::sm_100:
-      return arch::sm_100::traits();
+      return arch::traits<id::sm_100>();
     case id::sm_100a:
-      return arch::sm_100a::traits();
+      return arch::traits<id::sm_100a>();
     case id::sm_103:
-      return arch::sm_103::traits();
+      return arch::traits<id::sm_103>();
     case id::sm_103a:
-      return arch::sm_103a::traits();
+      return arch::traits<id::sm_103a>();
     case id::sm_120:
-      return arch::sm_120::traits();
+      return arch::traits<id::sm_120>();
     case id::sm_120a:
-      return arch::sm_120a::traits();
+      return arch::traits<id::sm_120a>();
     default:
-      __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+      ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
   }
 }
@@ -545,14 +504,15 @@ _CCCL_API constexpr inline id id_for_compute_capability(int compute_capability)
 {
   if (compute_capability < 60 || compute_capability > __highest_known_arch)
   {
-    __throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
+    ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
   }
   return static_cast<id>(compute_capability);
 }
 
 _CCCL_API constexpr inline traits_t traits_for_compute_capability(int compute_capability)
 {
-  return traits_for_id(id_for_compute_capability(compute_capability));
+  return ::cuda::experimental::arch::traits_for_id(
+    ::cuda::experimental::arch::id_for_compute_capability(compute_capability));
 }
 
 _CCCL_API constexpr inline id __special_id_for_compute_capability(int value)
@@ -568,7 +528,7 @@ _CCCL_API constexpr inline id __special_id_for_compute_capability(int value)
     case 120:
       return id::sm_120a;
     default:
-      __throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
+      ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
       break;
   }
 }
@@ -594,20 +554,24 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 {
   if (__compute_capability <= arch::__highest_known_arch)
   {
-    return arch::traits_for_compute_capability(__compute_capability);
+    return ::cuda::experimental::arch::traits_for_compute_capability(__compute_capability);
   }
   else
   {
     // If the architecture is unknown, we need to craft the arch_traits from attributes
     arch::traits_t __traits{};
-    __traits.compute_capability_major             = __compute_capability / 10;
-    __traits.compute_capability_minor             = __compute_capability % 10;
-    __traits.compute_capability                   = __compute_capability;
-    __traits.max_shared_memory_per_multiprocessor = device_attributes::max_shared_memory_per_multiprocessor(__device);
-    __traits.max_blocks_per_multiprocessor        = device_attributes::max_blocks_per_multiprocessor(__device);
-    __traits.max_threads_per_multiprocessor       = device_attributes::max_threads_per_multiprocessor(__device);
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block     = device_attributes::reserved_shared_memory_per_block(__device);
+    __traits.compute_capability_major = __compute_capability / 10;
+    __traits.compute_capability_minor = __compute_capability % 10;
+    __traits.compute_capability       = __compute_capability;
+    __traits.max_shared_memory_per_multiprocessor =
+      ::cuda::experimental::device_attributes::max_shared_memory_per_multiprocessor(__device);
+    __traits.max_blocks_per_multiprocessor =
+      ::cuda::experimental::device_attributes::max_blocks_per_multiprocessor(__device);
+    __traits.max_threads_per_multiprocessor =
+      ::cuda::experimental::device_attributes::max_threads_per_multiprocessor(__device);
+    __traits.max_warps_per_multiprocessor = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+    __traits.reserved_shared_memory_per_block =
+      ::cuda::experimental::device_attributes::reserved_shared_memory_per_block(__device);
     __traits.max_shared_memory_per_block_optin =
       __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
