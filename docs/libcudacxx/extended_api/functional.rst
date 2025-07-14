@@ -8,8 +8,8 @@ Functional
    :maxdepth: 1
 
    functional/proclaim_return_type
-   memory/get_device_address
    functional/maximum_minimum
+   memory/get_device_address
 
 .. list-table::
    :widths: 25 45 30 30
