@@ -95,7 +95,7 @@ struct stream : stream_ref
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = __detail::driver::__streamDestroy(__stream);
+      [[maybe_unused]] auto status = ::cuda::experimental::__driver::__streamDestroyNoThrow(__stream);
     }
   }
 

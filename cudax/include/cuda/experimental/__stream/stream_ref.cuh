@@ -85,7 +85,7 @@ struct stream_ref : ::cuda::stream_ref
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] bool is_done() const
   {
-    const auto __result = __detail::driver::__streamQuery(__stream);
+    const auto __result = ::cuda::experimental::__driver::__streamQueryNoThrow(__stream);
     switch (__result)
     {
       case ::cudaErrorNotReady:
@@ -110,7 +110,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if the priority query fails
   [[nodiscard]] _CCCL_HOST_API int priority() const
   {
-    return __detail::driver::__streamGetPriority(__stream);
+    return ::cuda::experimental::__driver::__streamGetPriority(__stream);
   }
 
   //! @brief Get the unique ID of the stream
@@ -122,7 +122,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if the ID query fails
   [[nodiscard]] _CCCL_HOST_API stream_id id() const
   {
-    return stream_id{__detail::driver::__streamGetId(__stream)};
+    return stream_id{::cuda::experimental::__driver::__streamGetId(__stream)};
   }
 
   //! @brief Create a new event and record it into this stream
@@ -150,7 +150,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if synchronization fails
   _CCCL_HOST_API void sync() const
   {
-    __detail::driver::__streamSynchronize(__stream);
+    ::cuda::experimental::__driver::__streamSynchronize(__stream);
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of the specified event
@@ -162,7 +162,7 @@ struct stream_ref : ::cuda::stream_ref
   {
     _CCCL_ASSERT(__ev.get() != nullptr, "cuda::experimental::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
-    __detail::driver::__streamWaitEvent(get(), __ev.get());
+    ::cuda::experimental::__driver::__streamWaitEvent(get(), __ev.get());
   }
 
   //! @brief Returns a \c execution::sender that completes on this stream.
@@ -197,12 +197,12 @@ struct stream_ref : ::cuda::stream_ref
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if _CCCL_CTK_AT_LEAST(12, 5)
-    if (__detail::driver::__getVersion() >= 12050)
+    if (__driver::__getVersion() >= 12050)
     {
-      auto __ctx = __detail::driver::__streamGetCtx_v2(__stream);
-      if (__ctx.__ctx_kind == __detail::driver::__ctx_from_stream::__kind::__green)
+      auto __ctx = ::cuda::experimental::__driver::__streamGetCtx_v2(__stream);
+      if (__ctx.__ctx_kind == ::cuda::experimental::__driver::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = __detail::driver::__ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
+        __stream_ctx = ::cuda::experimental::__driver::__ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
@@ -214,7 +214,7 @@ struct stream_ref : ::cuda::stream_ref
     else
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
     {
-      __stream_ctx = __detail::driver::__streamGetCtx(__stream);
+      __stream_ctx = ::cuda::experimental::__driver::__streamGetCtx(__stream);
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
