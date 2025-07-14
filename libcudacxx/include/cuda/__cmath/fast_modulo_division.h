@@ -185,7 +185,6 @@ public:
     using _Up           = _CUDA_VSTD::make_unsigned_t<_Lhs>;
     const auto __div    = __divisor1.__divisor; // cannot use structure binding because of clang-14
     const auto __mul    = __divisor1.__multiplier;
-    const auto __add_   = __divisor1.__add; // cannot use __add because of shadowing warning with clang-cuda
     const auto __shift_ = __divisor1.__shift;
     auto __udividend    = static_cast<_Up>(__dividend);
     if constexpr (is_unsigned_v<_Tp>)
@@ -197,7 +196,7 @@ public:
       // if dividend is a signed type, overflow is not possible
       if (is_signed_v<_Lhs> || __udividend != _CUDA_VSTD::numeric_limits<_Up>::max()) // avoid overflow
       {
-        __udividend += __add_;
+        __udividend += __divisor1.__add;
       }
     }
     else if (!_DivisorIsNeverOne && __div == 1)
