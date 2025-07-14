@@ -1215,8 +1215,11 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 def_instr = func_ir.get_definition(func_name)
                 if isinstance(def_instr, ir.Arg):
                     two_phase_instance_arg = def_instr
-                else:
+                elif isinstance(def_instr, (ir.Global, ir.FreeVar)):
                     two_phase_instance = def_instr.value
+                else:
+                    raise RuntimeError(f"Unexpected instruction type: {def_instr!r}")
+
                 value_type = typemap[func_name]
                 primitive_name = repr(value_type)
                 # Example values at this point for e.g. block load:
