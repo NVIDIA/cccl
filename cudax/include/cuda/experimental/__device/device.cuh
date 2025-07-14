@@ -89,7 +89,7 @@ public:
     return __traits;
   }
 
-  CUcontext primary_context() const
+  ::CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
       __device      = __detail::driver::deviceGet(__id_);
@@ -114,8 +114,8 @@ private:
   friend class device_ref;
   friend struct __detail::__emplace_device;
 
-  mutable CUcontext __primary_ctx = nullptr;
-  mutable CUdevice __device{};
+  mutable ::CUcontext __primary_ctx = nullptr;
+  mutable ::CUdevice __device{};
   mutable ::std::once_flag __init_once;
 
   // TODO should this be a reference/pointer to the constexpr traits instances?
