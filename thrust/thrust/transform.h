@@ -157,7 +157,8 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //!
 //!  \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)
+_CCCL_HOST_DEVICE OutputIterator
+transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
   using thrust::system::detail::generic::select_system;
@@ -298,7 +299,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //!
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
-OutputIterator
+_CCCL_HOST_DEVICE OutputIterator
 transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
@@ -461,7 +462,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \see thrust::transform
  */
 template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
-ForwardIterator
+_CCCL_HOST_DEVICE ForwardIterator
 transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction op, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
@@ -624,7 +625,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-ForwardIterator transform_if(
+_CCCL_HOST_DEVICE ForwardIterator transform_if(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -815,7 +816,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename BinaryFunction,
           typename Predicate>
-ForwardIterator transform_if(
+_CCCL_HOST_DEVICE ForwardIterator transform_if(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -857,7 +858,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_n(
 
 //! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform_n(
+_CCCL_HOST_DEVICE OutputIterator transform_n(
   InputIterator first, ::cuda::std::iter_difference_t<InputIterator> count, OutputIterator result, UnaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
@@ -888,7 +889,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_n(
 
 //! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
-OutputIterator transform_n(
+_CCCL_HOST_DEVICE OutputIterator transform_n(
   InputIterator1 first1,
   ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,
@@ -924,7 +925,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
 
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
-ForwardIterator transform_if_n(
+_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
   InputIterator first,
   ::cuda::std::iter_difference_t<InputIterator> count,
   ForwardIterator result,
@@ -966,7 +967,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-ForwardIterator transform_if_n(
+_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
   InputIterator1 first,
   ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 stencil,
@@ -1020,7 +1021,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename BinaryFunction,
           typename Predicate>
-ForwardIterator transform_if_n(
+_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
   InputIterator1 first1,
   ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,
