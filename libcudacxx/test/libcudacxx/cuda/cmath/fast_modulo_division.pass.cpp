@@ -21,13 +21,14 @@ __host__ __device__ void test_power_of_2(value_t value)
   constexpr auto max_value   = cuda::std::numeric_limits<value_t>::max();
   auto range                 = cuda::ceil_div(max_divisor, divisor_t{2}); // 2^(N/2)
   using div_op               = cuda::fast_mod_div<divisor_t>;
+  using common_t             = cuda::std::common_type_t<value_t, divisor_t>;
   for (divisor_t i = 1; i < range; i *= 2)
   {
     assert(value / div_op{i} == value / i);
   }
   assert(value / div_op{range} == value / range);
   assert(value / div_op{max_divisor} == value / max_divisor);
-  assert(max_value / div_op(value) == max_value / value);
+  assert((max_value / div_op(value)) == (common_t) (max_value / value));
   assert(max_divisor / div_op{max_divisor} == 1);
   assert(max_value / div_op(max_value) == 1);
 }
