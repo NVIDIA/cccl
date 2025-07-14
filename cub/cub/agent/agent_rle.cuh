@@ -370,8 +370,8 @@ struct AgentRle
     StreamingContext streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
-      , d_offsets_out(d_offsets_out + streaming_context.num_uniques())
-      , d_lengths_out(d_lengths_out + streaming_context.num_uniques())
+      , d_offsets_out(d_offsets_out)
+      , d_lengths_out(d_lengths_out)
       , equality_op(equality_op)
       , scan_op(::cuda::std::plus<>{})
       , num_items(num_items)
@@ -618,12 +618,13 @@ struct AgentRle
         // Scatter offset
         if constexpr (is_streaming_invocation)
         {
-          d_offsets_out[item_offset] = (streaming_context.base_offset() + lengths_and_offsets[ITEM].key);
+          d_offsets_out[streaming_context.num_uniques() + item_offset] =
+            (streaming_context.base_offset() + lengths_and_offsets[ITEM].key);
 
           // Scatter length if not the first (global) length
           if (streaming_context.num_uniques() + item_offset > 0)
           {
-            d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
+            d_lengths_out[streaming_context.num_uniques() + item_offset - 1] = lengths_and_offsets[ITEM].value;
           }
         }
         else
@@ -685,11 +686,12 @@ struct AgentRle
         // Scatter offset
         if constexpr (is_streaming_invocation)
         {
-          d_offsets_out[item_offset] = (streaming_context.base_offset() + run_offsets[ITEM]);
+          d_offsets_out[streaming_context.num_uniques() + item_offset] =
+            (streaming_context.base_offset() + run_offsets[ITEM]);
           // Scatter length if not the first (global) length
           if ((ITEM != 0) || (streaming_context.num_uniques() + item_offset > 0))
           {
-            d_lengths_out[item_offset - 1] = run_lengths[ITEM];
+            d_lengths_out[streaming_context.num_uniques() + item_offset - 1] = run_lengths[ITEM];
           }
         }
         else
@@ -727,12 +729,13 @@ struct AgentRle
         if constexpr (is_streaming_invocation)
         {
           // For streaming invocations, we need to add the base offset of the partition
-          d_offsets_out[item_offset] = (streaming_context.base_offset() + lengths_and_offsets[ITEM].key);
+          d_offsets_out[streaming_context.num_uniques() + item_offset] =
+            (streaming_context.base_offset() + lengths_and_offsets[ITEM].key);
 
           // Scatter length if not the first (global) length
           if (streaming_context.num_uniques() + item_offset > 0)
           {
-            d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
+            d_lengths_out[streaming_context.num_uniques() + item_offset - 1] = lengths_and_offsets[ITEM].value;
           }
         }
         else
@@ -1104,7 +1107,7 @@ struct AgentRle
             // The inclusive prefix contains accumulated length reduction for the last run
             if (running_total.key + streaming_context.num_uniques() > 0)
             {
-              d_lengths_out[running_total.key - 1] = running_total.value;
+              d_lengths_out[streaming_context.num_uniques() + running_total.key - 1] = running_total.value;
             }
           }
 
