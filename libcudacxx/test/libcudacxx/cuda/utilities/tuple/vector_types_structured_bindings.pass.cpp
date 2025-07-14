@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
+// UNSUPPORTED: msvc-19.29
 
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
