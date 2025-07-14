@@ -423,7 +423,9 @@ try
   c2h::device_vector<offset_type> out_num_runs(1);
 
   // Run algorithm under test
-  run_length_encode(input_item_it, check_offset_out_it, check_run_length_out_it, out_num_runs.begin(), num_items);
+  // TODO (elstehle): Remove static_cast<int> in PR that adds support for large number of items
+  run_length_encode(
+    input_item_it, check_offset_out_it, check_run_length_out_it, out_num_runs.begin(), static_cast<int>(num_items));
 
   // Verify result
   REQUIRE(out_num_runs[0] == num_uniques);
@@ -466,12 +468,9 @@ try
   c2h::device_vector<offset_type> out_num_runs(1);
 
   // Run algorithm under test
+  // TODO (elstehle): Remove static_cast<int> in PR that adds support for large number of items
   run_length_encode(
-    input_item_it,
-    offsets_out.begin(),
-    run_lengths_out.begin(),
-    out_num_runs.begin(),
-    static_cast<offset_type>(num_items));
+    input_item_it, offsets_out.begin(), run_lengths_out.begin(), out_num_runs.begin(), static_cast<int>(num_items));
 
   // Expected results
   c2h::device_vector<offset_type> expected_uniques{offset_type{0}, static_cast<offset_type>(first_run_size)};
