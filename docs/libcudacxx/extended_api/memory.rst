@@ -10,6 +10,7 @@ Memory
    memory/align_down
    memory/align_up
    memory/aligned_size
+   memory/discard_memory
    memory/get_device_address
    memory/is_aligned
    memory/ptr_rebind
@@ -27,6 +28,11 @@ Memory
      - Defines an extent of bytes with a statically defined alignment.
      - libcu++ 1.2.0 / CCCL 2.0.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
      - CUDA 11.1
+
+   * - :ref:`cuda::discard_memory <libcudacxx-extended-api-memory-discard-memory>`
+     - Writes indeterminate values to memory
+     - libcu++ 1.6.0 / CCCL 2.0.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
+     - CUDA 11.5
 
    * - :ref:`get_device_address <libcudacxx-extended-api-memory-get-device-address>`
      - Returns a valid address to a device object

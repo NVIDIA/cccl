@@ -72,7 +72,7 @@ Example
 
 .. code:: cuda
 
-   #include <cuda/barrier>
+   #include <cuda/memory>
 
    __global__ void example_kernel(void* dst, void* src, size_t size) {
      cuda::barrier<cuda::thread_scope_system> bar;
