@@ -154,7 +154,7 @@ template <
   typename Predicate,
   typename TransformOp,
   typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes,
-                                  Predicate,
+                                  ::cuda::std::is_same_v<Predicate, always_true_predicate>,
                                   RandomAccessIteratorTupleIn,
                                   RandomAccessIteratorOut>,
   typename KernelSource =
@@ -469,8 +469,7 @@ struct dispatch_t<StableAddress,
           : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
-      ipt = spread_out_items_per_thread(active_policy, items_per_thread,
-                            config->sm_count, config->max_occupancy);
+      ipt = spread_out_items_per_thread(active_policy, items_per_thread, config->sm_count, config->max_occupancy);
     }
     const int tile_size = block_threads * ipt;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
