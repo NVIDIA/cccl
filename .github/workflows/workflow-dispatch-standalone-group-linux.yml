@@ -31,9 +31,10 @@ jobs:
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
-          id:      ${{ matrix.id }}
-          command: ${{ matrix.command }}
-          image:   ${{ matrix.image }}
-          runner:  ${{ matrix.runner }}
-          cuda:    ${{ matrix.cuda }}
-          host:    ${{ matrix.host }}
+          id:         "${{ matrix.id }}"
+          command:    "${{ matrix.command }}"
+          image:      "${{ matrix.image }}"
+          runner:     "${{ matrix.runner }}"
+          cuda:       "${{ matrix.cuda }}"
+          host:       "${{ matrix.host }}"
+          dist-token: "${{ secrets.SCCACHE_DIST_TOKEN }}"

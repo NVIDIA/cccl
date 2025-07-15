@@ -15,6 +15,7 @@ on:
 jobs:
   dispatch-pcs:
     name: ${{ matrix.id }}
+    secrets: inherit
     permissions:
       id-token: write
       contents: read

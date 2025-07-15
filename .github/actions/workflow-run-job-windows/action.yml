@@ -50,6 +50,7 @@ runs:
         docker run \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
+          `# --env "SCCACHE_RECACHE=1"` \
           --isolation=process \
           --env COMMAND='& ${{inputs.command}}' \
           ${{ inputs.image }} \
@@ -64,37 +65,64 @@ runs:
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
             git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
             Invoke-Expression \$env:COMMAND"
+
     - name: Prepare job artifacts
       shell: bash --noprofile --norc -euo pipefail {0}
       id: done
       run: |
         echo "SUCCESS=true" | tee -a "${GITHUB_OUTPUT}"
 
+    - if: ${{ always() }}
+      name: Create job artifact dir
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
         result_dir="jobs/${{inputs.id}}"
         mkdir -p "$result_dir"
+        echo "result_dir=$result_dir" >> "$GITHUB_ENV"
 
+    - if: ${{ success() }}
+      name: Record job success
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
         touch "$result_dir/success"
+
+    - if: ${{ always() }}
+      name: Prepare job artifacts
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "Prepare job artifacts"
+
+        # chmod all temp contents 777 so the runner can delete them
+        find "$RUNNER_TEMP/" -exec chmod 0777 {} \;
 
         # Finds a matching file in the repo directory and copies it to the results directory.
         find_and_copy() {
-          filename="$1"
-          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
+          pat="$1"
+          dir="${{github.event.repository.name}}"
+          filepath="$(find "$dir/" -type f -path "$dir/$pat" -print -quit)"
           if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
+            echo "File with pattern '$dir/$pat' does not exist in repo directory."
             return 1
           fi
           cp -v "$filepath" "$result_dir"
         }
 
-        find_and_copy "sccache_stats.json" || true # Ignore failures
+        # Ignore failures
+        find_and_copy "sccache.log" || true
+        find_and_copy "build/*/.ninja_log" || true
+        find_and_copy "build/*/build.ninja" || true
+        find_and_copy "build/*/rules.ninja" || true
+        find_and_copy "build/*/sccache_stats.json" || true
 
         echo "::group::Job artifacts"
-        find "$result_dir" # Tree not available in this image.
+        ls -l "$result_dir"
         echo "::endgroup::"
 
-    - name: Upload job artifacts
+    - if: ${{ always() }}
+      name: Upload job artifacts
       uses: actions/upload-artifact@v4
       with:
         name: jobs-${{inputs.id}}
         path: jobs
         compression-level: 0
+        include-hidden-files: true

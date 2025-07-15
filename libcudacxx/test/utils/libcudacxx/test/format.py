@@ -151,7 +151,7 @@ class LibcxxTestFormat(object):
         if test_cxx.type == "nvcc":
             for flag in extra_compile_options_host:
                 if test_cxx.host_cxx.addCompileFlagIfSupported(flag.strip()):
-                    test_cxx.warning_flags += ["-Xcompiler", flag.strip()]
+                    test_cxx.warning_flags += [f"-Xcompiler={flag.strip()}"]
 
             extra_compile_options_cuda = self._get_parser(
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", parsers
@@ -330,13 +330,11 @@ class LibcxxTestFormat(object):
             if any(test_str in contents for test_str in test_str_list):
                 if test_cxx.type != "nvc++":
                     test_cxx.flags += [
-                        "-Xcompiler",
-                        "-Werror",
-                        "-Xcompiler",
-                        "-Wunused",
+                        "-Xcompiler=-Werror",
+                        "-Xcompiler=-Wunused",
                     ]
                 else:
-                    test_cxx.flags += ["-Xcompiler", "-Werror=unused-result"]
+                    test_cxx.flags += ["-Xcompiler=-Werror=unused-result"]
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
 
         def check_rc(rc):

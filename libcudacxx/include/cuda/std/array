@@ -434,7 +434,7 @@ template <class _Tp, size_t _Size>
 }
 
 _CCCL_TEMPLATE(class _Tp, size_t _Size)
-_CCCL_REQUIRES((_Size == 0) || __is_swappable<_Tp>::value)
+_CCCL_REQUIRES((_Size == 0 || __is_swappable<_Tp>::value))
 _CCCL_API constexpr void swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
 {
   __x.swap(__y);
