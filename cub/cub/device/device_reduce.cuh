@@ -80,6 +80,12 @@ struct tuning
   }
 };
 
+struct default_by_key_tuning : tuning<default_by_key_tuning>
+{
+  template <class OpT, class AccumT, class KeyT>
+  using fn = detail::reduce_by_key::policy_hub<OpT, AccumT, KeyT>;
+};
+
 struct default_tuning : tuning<default_tuning>
 {
   template <class AccumT, class Offset, class OpT>
@@ -2615,6 +2621,204 @@ public:
                          reduction_op,
                          static_cast<OffsetT>(num_items),
                          stream);
+  }
+
+  //! @rst
+  //! Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.
+  //!
+  //! This operation computes segmented reductions within ``d_values_in`` using the specified binary ``reduction_op``
+  //! functor. The segments are identified by "runs" of corresponding keys in `d_keys_in`, where runs are maximal
+  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! the corresponding value aggregate of that run are written to ``d_unique_out[i]`` and ``d_aggregates_out[i]``,
+  //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   as the `env` parameter.
+  //!   "gpu-to-gpu" determinism is not supported for `ReduceByKey` at the moment.
+  //! - Let ``out`` be any of
+  //!   ``[d_unique_out, d_unique_out + *d_num_runs_out)``
+  //!   ``[d_aggregates_out, d_aggregates_out + *d_num_runs_out)``
+  //!   ``d_num_runs_out``. The ranges represented by ``out`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
+  //!   ``[d_values_in, d_values_in + num_items)`` nor ``out`` in any way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the segmented reduction of ``int`` values grouped by runs of
+  //! associated ``int`` keys.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin reduce-by-key-env-determinism
+  //!     :end-before: example-end reduce-by-key-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeysInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam UniqueOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing unique output keys @iterator
+  //!
+  //! @tparam ValuesInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam AggregatesOutputIterator
+  //!   **[inferred]** Random-access output iterator type for writing output value aggregates @iterator
+  //!
+  //! @tparam NumRunsOutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input sequence of keys
+  //!
+  //! @param[out] d_unique_out
+  //!   Pointer to the output sequence of unique keys (one key per run)
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of corresponding values
+  //!
+  //! @param[out] d_aggregates_out
+  //!   Pointer to the output sequence of value aggregates
+  //!   (one aggregate per run)
+  //!
+  //! @param[out] d_num_runs_out
+  //!   Pointer to total number of runs encountered
+  //!   (i.e., the length of `d_unique_out`)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] num_items
+  //!   Total number of associated key+value pairs
+  //!   (i.e., the length of `d_in_keys` and `d_in_values`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename KeysInputIteratorT,
+            typename UniqueOutputIteratorT,
+            typename ValuesInputIteratorT,
+            typename AggregatesOutputIteratorT,
+            typename NumRunsOutputIteratorT,
+            typename ReductionOpT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t ReduceByKey(
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    ReductionOpT reduction_op,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceByKey");
+
+    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+
+    // Query relevant properties from the environment
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    using OffsetT  = detail::choose_offset_t<NumItemsT>;
+    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+    using reduce_by_key_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<tuning_t, detail::reduce::get_tuning_query_t, detail::reduce::default_by_key_tuning>;
+    // Default == operator
+    using EqualityOp = ::cuda::std::equal_to<>;
+    using accum_t    = ::cuda::std::
+      __accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>, detail::it_value_t<ValuesInputIteratorT>>;
+    using policy_t = typename reduce_by_key_tuning_t::template fn<ReductionOpT, accum_t, KeysInputIteratorT>;
+
+    // Query the required temporary storage size
+    cudaError_t error = DispatchReduceByKey<
+      KeysInputIteratorT,
+      UniqueOutputIteratorT,
+      ValuesInputIteratorT,
+      AggregatesOutputIteratorT,
+      NumRunsOutputIteratorT,
+      EqualityOp,
+      ReductionOpT,
+      OffsetT,
+      accum_t,
+      policy_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_keys_in,
+                          d_unique_out,
+                          d_values_in,
+                          d_aggregates_out,
+                          d_num_runs_out,
+                          EqualityOp(),
+                          reduction_op,
+                          static_cast<OffsetT>(num_items),
+                          stream.get());
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    error = DispatchReduceByKey<
+      KeysInputIteratorT,
+      UniqueOutputIteratorT,
+      ValuesInputIteratorT,
+      AggregatesOutputIteratorT,
+      NumRunsOutputIteratorT,
+      EqualityOp,
+      ReductionOpT,
+      OffsetT,
+      accum_t,
+      policy_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_keys_in,
+                          d_unique_out,
+                          d_values_in,
+                          d_aggregates_out,
+                          d_num_runs_out,
+                          EqualityOp(),
+                          reduction_op,
+                          static_cast<OffsetT>(num_items),
+                          stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+
+    if (error != cudaSuccess)
+    {
+      // Reduction error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
   }
 };
 
