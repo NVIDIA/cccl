@@ -51,8 +51,10 @@ update_devcontainer() {
        --arg compiler_name "$compiler_name" \
        --arg compiler_exe "$compiler_exe" \
        --arg compiler_version "$compiler_version" \
+       --arg container_name "\${localEnv:USER:anon}-\${localWorkspaceFolderBasename}-${name}" \
        '.image = $image |
         .name = $name |
+        .runArgs = ["--init", "--rm", "--name", $container_name] |
         .containerEnv.DEVCONTAINER_NAME = $name |
         .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version |
