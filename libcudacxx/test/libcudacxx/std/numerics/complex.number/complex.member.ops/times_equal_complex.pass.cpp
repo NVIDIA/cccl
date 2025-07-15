@@ -62,7 +62,7 @@ int main(int, char**)
 #if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
-#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#if _CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
 #  if !TEST_COMPILER(GCC, <, 8) // GCC 7 does not support constexpr is_nan and friends
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
@@ -70,7 +70,7 @@ int main(int, char**)
   static_assert(test<long double>(), "");
 #    endif // _CCCL_HAS_LONG_DOUBLE()
 #  endif // !TEST_COMPILER(GCC, <, 8)
-#endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#endif // _CCCL_HAS_CONSTEXPR_CMATH_TRAITS()
 
   return 0;
 }

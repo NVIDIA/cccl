@@ -31,18 +31,14 @@
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
 #endif // !_CCCL_HAS_CUDA_COMPILER() && __cpp_aligned_new >= 201606
 
-// We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
-#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#elif _CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#elif _CCCL_COMPILER(MSVC)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#elif _CCCL_CUDA_COMPILER(CLANG)
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
-#else
-#  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 1
-#endif
+// We need `is_constant_evaluated` and `bit_cast` for all other compilers
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && defined(_CCCL_BUILTIN_BIT_CAST)
+#  define _CCCL_HAS_CONSTEXPR_CMATH_TRAITS() 1
+#  define _CCCL_CONSTEXPR_CMATH_TRAITS       constexpr
+#else // No constexpr cmath traits
+#  define _CCCL_HAS_CONSTEXPR_CMATH_TRAITS() 0
+#  define _CCCL_CONSTEXPR_CMATH_TRAITS
+#endif // No constexpr cmath traits
 
 #ifndef _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
