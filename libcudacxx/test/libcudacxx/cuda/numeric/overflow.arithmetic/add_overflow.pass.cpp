@@ -28,17 +28,6 @@ __host__ __device__ constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool over
     {
       assert(result.value == static_cast<Result>(static_cast<Result>(lhs) + static_cast<Result>(rhs)));
     }
-    if (result.overflow != overflow)
-    {
-      printf("%s: %lld %lld | %lld vs. %lld | %d vs. %d\n",
-             __PRETTY_FUNCTION__,
-             (long long) lhs,
-             (long long) rhs,
-             (long long) result.value,
-             (long long) static_cast<Result>(static_cast<Result>(lhs) + static_cast<Result>(rhs)),
-             result.overflow,
-             overflow);
-    }
     assert(result.overflow == overflow);
   }
   // test bool add_overflow(Lhs lhs, Rhs rhs, Result& result) overload

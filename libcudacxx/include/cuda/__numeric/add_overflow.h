@@ -44,13 +44,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_generic(_Tp __lhs, _Tp __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_generic_impl(_Tp __lhs, _Tp __rhs) noexcept
 {
-#if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
-  overflow_result<_Tp> __result;
-  __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
-  return __result;
-#else // ^^^ _CCCL_BUILTIN_ADD_OVERFLOW ^^^ / vvv !_CCCL_BUILTIN_ADD_OVERFLOW vvv
   using _Up  = _CUDA_VSTD::make_unsigned_t<_Tp>;
   auto __sum = static_cast<_Tp>(static_cast<_Up>(__lhs) + static_cast<_Up>(__rhs));
   if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
@@ -61,7 +56,46 @@ template <class _Tp>
   {
     return overflow_result<_Tp>{__sum, __sum < __lhs};
   }
-#endif // !_CCCL_BUILTIN_ADD_OVERFLOW
+}
+
+#if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_generic_builtin(_Tp __lhs, _Tp __rhs) noexcept
+{
+#  if !_CCCL_COMPILER(GCC)
+  overflow_result<_Tp> __result;
+  __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
+  return __result;
+#  else
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    overflow_result<_Tp> __result;
+    __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
+    return __result;
+  }
+  return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+#  endif // !_CCCL_COMPILER(GCC)
+}
+
+#endif // _CCCL_BUILTIN_ADD_OVERFLOW
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_generic(_Tp __lhs, _Tp __rhs) noexcept
+{
+#if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
+#  if !_CCCL_COMPILER(GCC)
+  return ::cuda::__add_overflow_generic_builtin(__lhs, __rhs);
+#  else
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__add_overflow_generic_builtin(__lhs, __rhs);))
+  }
+  return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+#  endif // !_CCCL_COMPILER(GCC)
+#else
+  return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+#endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW)
 }
 
 #if _CCCL_DEVICE_COMPILATION()
@@ -91,7 +125,7 @@ template <class _Tp>
   }
   else
   {
-    return ::cuda::__add_overflow_generic(__lhs, __rhs);
+    return ::cuda::__add_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
   }
 }
 
@@ -147,7 +181,7 @@ template <class _Tp>
     return __result;
   }
 #  else
-  return ::cuda::__add_overflow_generic(__lhs, __rhs);
+  return ::cuda::__add_overflow_generic(__lhs, __rhs); // try to use builtin functions
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) ^^^
 }
 
@@ -162,7 +196,7 @@ template <typename _Tp>
                  (return ::cuda::__add_overflow_device(__lhs, __rhs);),
                  (return ::cuda::__add_overflow_host(__lhs, __rhs);))
   }
-  return ::cuda::__add_overflow_generic(__lhs, __rhs);
+  return ::cuda::__add_overflow_generic(__lhs, __rhs); // try to use builtin functions
 }
 
 /***********************************************************************************************************************
