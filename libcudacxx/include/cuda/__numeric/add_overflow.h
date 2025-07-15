@@ -69,38 +69,25 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __add_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
-  if constexpr (sizeof(_Tp) == 4 || sizeof(_Tp) == 8)
+  if constexpr ((sizeof(_Tp) == 4 || sizeof(_Tp) == 8) && _CUDA_VSTD::is_unsigned_v<_Tp>)
   {
-    overflow_result<_Tp> __result;
-    if constexpr (_CUDA_VSTD::is_same_v<_Tp, int32_t>)
-    {
-      asm("add.cc.s32 %0, %2, %3;"
-          "addc.s32 %1, 0, 0;"
-          : "=r"(__result.value), "=r"(__result.overflow)
-          : "r"(__lhs), "r"(__rhs));
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint32_t>)
+    _Tp __result{};
+    int __overflow = 0;
+    if constexpr (sizeof(_Tp) == 4)
     {
       asm("add.cc.u32 %0, %2, %3;"
           "addc.u32 %1, 0, 0;"
-          : "=r"(__result.value), "=r"(__result.overflow)
+          : "=r"(__result), "=r"(__overflow)
           : "r"(__lhs), "r"(__rhs));
     }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, int64_t>)
-    {
-      asm("add.cc.s64 %0, %2, %3;"
-          "addc.s64 %1, 0, 0;"
-          : "=l"(__result.value), "=r"(__result.overflow)
-          : "l"(__lhs), "l"(__rhs));
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint64_t>)
+    else if constexpr (sizeof(_Tp) == 8)
     {
       asm("add.cc.u64 %0, %2, %3;"
-          "addc.u64 %1, 0, 0;"
-          : "=l"(__result.value), "=r"(__result.overflow)
+          "addc.u32 %1, 0, 0;"
+          : "=l"(__result), "=r"(__overflow)
           : "l"(__lhs), "l"(__rhs));
     }
-    return __result;
+    return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
   }
   else
   {
@@ -205,6 +192,11 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
   }
   else
   {
+    if (is_unsigned_v<_ActualResult>
+        && ((is_signed_v<_Lhs> && __lhs < 0) || (is_signed_v<_Rhs> && __rhs < 0))) // underflow
+    {
+      return overflow_result<_ActualResult>{static_cast<_ActualResult>(__lhs1 + __rhs1), true};
+    }
     if constexpr (is_unsigned_v<_Rhs>)
     {
       _CCCL_ASSUME(__rhs1 >= 0); // skip two comparisons
