@@ -113,15 +113,23 @@ public:
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
    * @param s The symbolic name to associate with this event.
    */
-  template <typename context_t>
-  void set_symbol(context_t& ctx, ::std::string s)
+  void set_symbol_with_dot(reserved::per_ctx_dot& dot, ::std::string s)
   {
-    symbol    = mv(s);
-    auto& dot = *ctx.get_dot();
+    symbol = mv(s);
     if (dot.is_tracing())
     {
       dot.add_prereq_vertex(symbol, unique_prereq_id);
     }
+  }
+
+  /**
+   * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param s The symbolic name to associate with this event.
+   */
+  template <typename context_t>
+  void set_symbol(context_t& ctx, ::std::string s)
+  {
+    set_symbol_with_dot(*ctx.get_dot(), mv(s));
   }
 
   /**
@@ -252,7 +260,7 @@ public:
   }
 
   // id_to can be the id of a task or another prereq
-  void dot_declare_prereqs(reserved::per_ctx_dot& dot, int id_to, int array_style = 0)
+  void dot_declare_prereqs(reserved::per_ctx_dot& dot, int id_to, reserved::edge_type style = reserved::edge_type::plain)
   {
     if (!dot.is_tracing_prereqs())
     {
@@ -261,12 +269,13 @@ public:
 
     for (auto& e : payload)
     {
-      dot.add_edge(e->unique_prereq_id, id_to, array_style);
+      dot.add_edge(e->unique_prereq_id, id_to, style);
     }
   }
 
   // id_from can be the id of a task or another prereq
-  void dot_declare_prereqs_from(reserved::per_ctx_dot& dot, int id_from, int array_style = 0) const
+  void dot_declare_prereqs_from(
+    reserved::per_ctx_dot& dot, int id_from, reserved::edge_type style = reserved::edge_type::plain) const
   {
     if (!dot.is_tracing_prereqs())
     {
@@ -275,7 +284,7 @@ public:
 
     for (auto& e : payload)
     {
-      dot.add_edge(id_from, e->unique_prereq_id, array_style);
+      dot.add_edge(id_from, e->unique_prereq_id, style);
     }
   }
 
@@ -474,7 +483,7 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
   auto& dot = *ctx.get_dot();
   if (dot.is_tracing_prereqs())
   {
-    prereq_in.dot_declare_prereqs(dot, to.unique_prereq_id, 1);
+    prereq_in.dot_declare_prereqs(dot, to.unique_prereq_id, reserved::edge_type::prereqs);
   }
 }
 

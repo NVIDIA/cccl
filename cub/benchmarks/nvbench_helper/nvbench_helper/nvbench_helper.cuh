@@ -5,7 +5,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/std/cmath>
 #include <cuda/std/complex>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
@@ -198,6 +200,19 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
   }
 
   throw std::runtime_error("Can't convert string to bit entropy");
+}
+
+// Creates an interpolated value of type T between min (at = 0.0) and max (at = 1.0).
+template <typename T>
+[[nodiscard]] T lerp_min_max(double at) noexcept
+{
+  if (at == 1.0)
+  {
+    return ::cuda::std::numeric_limits<T>::max();
+  }
+  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  return static_cast<T>(::cuda::std::lerp(min_val, max_val, at));
 }
 
 namespace detail
@@ -490,6 +505,21 @@ struct max_t
     return less(lhs, rhs) ? rhs : lhs;
   }
 };
+
+template <class T>
+struct less_then_t
+{
+  T m_val;
+
+  [[nodiscard]] __device__ bool operator()(const T& val) const noexcept
+  {
+    return val < m_val;
+  }
+};
+
+template <typename T>
+struct ::cuda::proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
+{};
 
 namespace
 {

@@ -129,9 +129,13 @@ The functions allow to exchange data of any data size, including raw arrays, poi
 
 **Preconditions**
 
-- ``lane_mask`` must be a subset of the active mask
-- The destination lane must be a member of the ``lane_mask``
-- ``delta`` and ``xor_mask`` must be less than ``Width``. Modulo behavior is allowed for ``src_lane``
+- The destination lane must be a member of the ``lane_mask``.
+- ``delta`` and ``xor_mask`` must be less than ``Width``. Modulo behavior is allowed for ``src_lane``.
+- ``lane_mask`` must be non-zero.
+
+**Undefined Behavior**
+
+- ``lane_mask`` must represent a subset of the active lanes, undefined behavior otherwise.
 - All lanes must have the same value for ``lane_mask``, ``delta`` and ``xor_mask``
 
 **Performance considerations**

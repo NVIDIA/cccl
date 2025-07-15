@@ -22,8 +22,8 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<long, char> T0;
-    typedef cuda::std::tuple<long long, short> T1;
+    using T0 = cuda::std::pair<long, char>;
+    using T1 = cuda::std::tuple<long long, short>;
     T0 t0(2, 'a');
     T1 t1;
     t1 = t0;

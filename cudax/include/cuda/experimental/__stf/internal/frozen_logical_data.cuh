@@ -83,13 +83,13 @@ private:
         for (auto& e : result.second)
         {
           int fake_task_id = fake_task.get_unique_id();
-          dot->add_edge(e->unique_prereq_id, fake_task_id, 1);
+          dot->add_edge(e->unique_prereq_id, fake_task_id, reserved::edge_type::prereqs);
         }
       }
 
       /* Use the ID of the fake task to identify "get" events. This makes
        * it possible to automatically synchronize with these events when calling
-       * task_fence. */
+       * fence. */
       bctx.get_state().add_pending_freeze(fake_task, result.second);
 
       return mv(result);
@@ -112,11 +112,11 @@ private:
         int fake_task_id = fake_task.get_unique_id();
         for (const auto& out_e : prereqs)
         {
-          dot->add_edge(fake_task_id, out_e->unique_prereq_id, 1);
+          dot->add_edge(fake_task_id, out_e->unique_prereq_id, reserved::edge_type::prereqs);
         }
       }
 
-      // There is no need to automatically synchronize with the get() operation in task_fence now
+      // There is no need to automatically synchronize with the get() operation in fence now
       bctx.get_state().remove_pending_freeze(fake_task);
 
       fake_task.merge_event_list(prereqs);
