@@ -143,6 +143,7 @@ public:
   {
     using _CUDA_VSTD::__num_bits_v;
     using __larger_t = _CUDA_VSTD::__make_nbit_uint_t<__num_bits_v<_Tp> * 2>;
+    _CCCL_ASSERT(__divisor > 0, "divisor must be positive");
     _CCCL_ASSERT(!_DivisorIsNeverOne || __divisor1 != 1, "cuda::fast_mod_div: divisor must not be one");
     if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
     {
@@ -197,7 +198,7 @@ public:
       // if dividend is a signed type, overflow is not possible
       if (is_signed_v<_Lhs> || __udividend != _CUDA_VSTD::numeric_limits<_Up>::max()) // avoid overflow
       {
-        __udividend += __divisor1.__add;
+        __udividend += static_cast<_Up>(__divisor1.__add);
       }
     }
     else if (!_DivisorIsNeverOne && __div == 1)
@@ -222,7 +223,7 @@ public:
     return static_cast<_Tp>(__divisor);
   }
 
-  // private:
+private:
   _Tp __divisor             = 1;
   __unsigned_t __multiplier = 0;
   unsigned __add            = 0;

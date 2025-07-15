@@ -65,12 +65,16 @@ __host__ __device__ void test()
   printf("%s: seed: %lld\n", (_CCCL_BUILTIN_PRETTY_FUNCTION()), (long long int) seed);
   cuda::std::uniform_int_distribution<value_t> distrib;
   cuda::std::uniform_int_distribution<divisor_t> distrib_div;
-  cuda::std::minstd_rand0 rng(seed);
+  cuda::std::minstd_rand0 rng(static_cast<uint32_t>(seed));
   value_t value = distrib(rng);
   test_power_of_2<value_t, divisor_t>(value);
   test_sequence<value_t, divisor_t>(value);
   test_random<value_t, divisor_t>(value, [&]() {
     auto divisor = distrib_div(rng);
+    if (divisor == cuda::std::numeric_limits<divisor_t>::min())
+    {
+      return divisor_t{1};
+    }
     return cuda::std::max(divisor_t{1}, static_cast<divisor_t>(cuda::uabs(divisor)));
   });
 }
