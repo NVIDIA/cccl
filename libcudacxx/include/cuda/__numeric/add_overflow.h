@@ -71,8 +71,8 @@ template <class _Tp>
 {
   if constexpr ((sizeof(_Tp) == 4 || sizeof(_Tp) == 8) && _CUDA_VSTD::is_unsigned_v<_Tp>)
   {
-    _Tp __result{};
-    int __overflow = 0;
+    _Tp __result;
+    int __overflow;
     if constexpr (sizeof(_Tp) == 4)
     {
       asm("add.cc.u32 %0, %2, %3;"
@@ -197,11 +197,11 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     {
       return overflow_result<_ActualResult>{static_cast<_ActualResult>(__lhs1 + __rhs1), true};
     }
-    if constexpr (is_unsigned_v<_Rhs>)
+    if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_ActualResult>)
     {
       _CCCL_ASSUME(__rhs1 >= 0); // skip two comparisons
     }
-    if constexpr (is_unsigned_v<_Lhs>)
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_ActualResult>)
     {
       _CCCL_ASSUME(__lhs1 >= 0);
       return ::cuda::__add_overflow_dispatch(__rhs1, __lhs1); // skip two comparisons
