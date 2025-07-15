@@ -29,11 +29,10 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <limits>
@@ -151,7 +150,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device
   c2h::device_vector<int> out_num_runs(1, -1);
 
   run_length_encode(
-    thrust::make_counting_iterator(type{}),
+    cuda::make_counting_iterator(type{}),
     static_cast<int*>(nullptr),
     static_cast<int*>(nullptr),
     out_num_runs.begin(),
@@ -233,7 +232,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device]
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
@@ -402,22 +401,22 @@ try
   const auto num_items             = detail::make_large_offset<offset_type>(random_range);
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
 
-  auto counting_it = thrust::make_counting_iterator(offset_type{0});
+  auto counting_it = cuda::make_counting_iterator(offset_type{0});
 
   // Input iterator: repeat odd numbers once and even numbers twice
-  auto input_item_it = thrust::make_transform_iterator(counting_it, index_to_item_op{});
+  auto input_item_it = cuda::make_transform_iterator(counting_it, index_to_item_op{});
   // Number of non-trivial runs is number of full(!) three-item (i.e., even, odd, odd) groups
   const auto num_uniques = num_items / 3;
 
   // Prepare helper to check the unique items being written: we expect the i-th item corresponding to value i
   auto check_offset_out_helper = detail::large_problem_test_helper(num_uniques);
-  auto expected_offsets_it     = thrust::make_transform_iterator(counting_it, run_index_to_offset_op{});
+  auto expected_offsets_it     = cuda::make_transform_iterator(counting_it, run_index_to_offset_op{});
   auto check_offset_out_it     = check_offset_out_helper.get_flagging_output_iterator(expected_offsets_it);
 
   // Prepare helper to check the run-lengths being written: i-th item corresponding to value i
   // We repeat each number once for the first num_small_runs number of items and all subsequent numbers twice
   auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
-  auto expected_run_lengths_it     = thrust::make_constant_iterator(run_length_type{2});
+  auto expected_run_lengths_it     = cuda::make_constant_iterator(run_length_type{2});
   auto check_run_length_out_it     = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
 
   // Allocate memory for the number of expected unique items
@@ -454,9 +453,9 @@ try
   const run_length_type second_run_size    = static_cast<run_length_type>(num_items) - first_run_size;
 
   // First run is a small run of equal items
-  auto small_segment_it = thrust::make_constant_iterator(item_t{3});
+  auto small_segment_it = cuda::make_constant_iterator(item_t{3});
   // Second run is a very large run of equal items
-  auto large_segment_it = thrust::make_constant_iterator(item_t{42});
+  auto large_segment_it = cuda::make_constant_iterator(item_t{42});
   auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
 
   // Allocate some memory for the results
