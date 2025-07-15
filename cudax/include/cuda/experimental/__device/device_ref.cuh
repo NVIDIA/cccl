@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/std/__cuda/api_wrapper.h>
-
-#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <string>
 #include <vector>
@@ -122,7 +121,7 @@ public:
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    ::cuda::experimental::__driver::__getName(__name.data(), __max_name_length, get());
+    _CUDA_DRIVER::__getName(__name.data(), __max_name_length, get());
     return __name;
   }
 
