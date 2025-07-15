@@ -12,20 +12,21 @@
 #define _CUDA__DRIVER_DRIVER_API
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__internal/namespaces.h>
 
 #include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_CTK()
 // Get the driver function by name using this macro
-#define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
-  reinterpret_cast<decltype(function_name)*>(__get_driver_entry_point(#function_name))
+#  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
+    reinterpret_cast<decltype(function_name)*>(__get_driver_entry_point(#function_name))
 
-#define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
-  reinterpret_cast<decltype(versioned_fn_name)*>(__get_driver_entry_point(#function_name, major, minor))
+#  define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
+    reinterpret_cast<decltype(versioned_fn_name)*>(__get_driver_entry_point(#function_name, major, minor))
 
-namespace cuda::__driver
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DRIVER
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
 //! For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
@@ -34,12 +35,12 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 {
   void* __fn;
   ::cudaDriverEntryPointQueryResult __result;
-#if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(12, 5)
   ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
-#else
+#  else
   // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
   ::cudaGetDriverEntryPoint(__name, &__fn, ::cudaEnableDefault, &__result);
-#endif
+#  endif
   if (__result != ::cudaDriverEntryPointSuccess)
   {
     if (__result == ::cudaDriverEntryPointVersionNotSufficent)
@@ -152,7 +153,7 @@ inline ::CUcontext __streamGetCtx(::CUstream __stream)
   return __result;
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(12, 5)
 struct __ctx_from_stream
 {
   enum class __kind
@@ -188,7 +189,7 @@ inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
   }
   return __result;
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 5)
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 inline void __streamWaitEvent(::CUstream __stream, ::CUevent __evnt)
 {
@@ -243,7 +244,7 @@ inline void __eventElapsedTime(::CUevent __start, ::CUevent __end, float* __ms)
   __call_driver_fn(__driver_fn, "Failed to get CUDA event elapsed time", __ms, __start, __end);
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(12, 5)
 // Add actual resource description input once exposure is ready
 inline ::CUgreenCtx __greenCtxCreate(::CUdevice __dev)
 {
@@ -267,7 +268,7 @@ inline ::CUcontext __ctxFromGreenCtx(::CUgreenCtx __green_ctx)
   __call_driver_fn(__driver_fn, "Failed to convert a green context", &__result, __green_ctx);
   return __result;
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 5)
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 inline void __memcpyAsync(void* __dst, const void* __src, size_t __count, ::CUstream __stream)
 {
@@ -288,10 +289,11 @@ inline void __memsetAsync(void* __dst, ::uint8_t __value, size_t __count, ::CUst
     __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
 }
 
-} // namespace cuda::__driver
+_LIBCUDACXX_END_NAMESPACE_CUDA_DRIVER
 
-#undef _CCCLRT_GET_DRIVER_FUNCTION
+#  undef _CCCLRT_GET_DRIVER_FUNCTION
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
+#endif // _CCCL_HAS_CTK()
 #endif // _CUDA__DRIVER_DRIVER_API

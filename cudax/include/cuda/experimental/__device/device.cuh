@@ -95,8 +95,8 @@ public:
   CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
-      __device      = ::cuda::__driver::__deviceGet(__id_);
-      __primary_ctx = ::cuda::__driver::__primaryCtxRetain(__device);
+      __device      = _CUDA_VDRIVER::__deviceGet(__id_);
+      __primary_ctx = _CUDA_VDRIVER::__primaryCtxRetain(__device);
     });
     _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
     return __primary_ctx;
@@ -106,7 +106,7 @@ public:
   {
     if (__primary_ctx)
     {
-      ::cuda::__driver::__primaryCtxRelease(__device);
+      _CUDA_VDRIVER::__primaryCtxRelease(__device);
     }
   }
 

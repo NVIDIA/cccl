@@ -99,11 +99,11 @@ namespace test
 {
 inline int count_driver_stack()
 {
-  if (cuda::__driver::__ctxGetCurrent() != nullptr)
+  if (_CUDA_VDRIVER::__ctxGetCurrent() != nullptr)
   {
-    auto ctx    = cuda::__driver::__ctxPop();
+    auto ctx    = _CUDA_VDRIVER::__ctxPop();
     auto result = 1 + count_driver_stack();
-    cuda::__driver::__ctxPush(ctx);
+    _CUDA_VDRIVER::__ctxPush(ctx);
     return result;
   }
   else
@@ -114,15 +114,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (cuda::__driver::__ctxGetCurrent() != nullptr)
+  while (_CUDA_VDRIVER::__ctxGetCurrent() != nullptr)
   {
-    cuda::__driver::__ctxPop();
+    _CUDA_VDRIVER::__ctxPop();
   }
 }
 
 inline int cuda_driver_version()
 {
-  return cuda::__driver::__getVersion();
+  return _CUDA_VDRIVER::__getVersion();
 }
 
 // Needs to be a template because we use template catch2 macro

@@ -12,9 +12,10 @@
 
 #include <testing.cuh>
 
+// This test is an exception and shouldn't use C2H_CCCLRT_TEST macro
 C2H_TEST("Call each driver api", "[utility]")
 {
-  namespace driver = cuda::__driver;
+  namespace driver = _CUDA_VDRIVER;
   cudaStream_t stream;
   // Assumes the ctx stack was empty or had one ctx, should be the case unless some other
   // test leaves 2+ ctxs on the stack

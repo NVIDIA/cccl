@@ -98,7 +98,7 @@ public:
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto __status = ::cuda::__driver::__eventDestroyNoThrow(__event_);
+      [[maybe_unused]] auto __status = _CUDA_VDRIVER::__eventDestroyNoThrow(__event_);
     }
   }
 
