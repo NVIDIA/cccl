@@ -146,9 +146,10 @@ public:
     _CCCL_ASSERT(!_DivisorIsNeverOne || __divisor1 != 1, "cuda::fast_mod_div: divisor must not be one");
     if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
     {
-      __shift      = ::cuda::ceil_ilog2(__divisor) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
-      auto __k     = __num_bits_v<_Tp> + __shift; // k: [N, 2*N-2]
-      __multiplier = ::cuda::ceil_div(__larger_t{1} << __k, __divisor); // ceil(2^k / divisor)
+      __shift            = ::cuda::ceil_ilog2(__divisor) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
+      auto __k           = __num_bits_v<_Tp> + __shift; // k: [N, 2*N-2]
+      auto __multiplier1 = ::cuda::ceil_div(__larger_t{1} << __k, __divisor); // ceil(2^k / divisor)
+      __multiplier       = static_cast<__unsigned_t>(__multiplier1);
     }
     else
     {
