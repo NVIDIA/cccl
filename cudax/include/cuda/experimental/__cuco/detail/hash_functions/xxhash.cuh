@@ -231,7 +231,7 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]] constexpr _CUDA_VSTD::uint32_t _CCCL_HOST_DEVICE
+  [[nodiscard]] _CCCL_API _CUDA_VSTD::uint32_t
   __compute_hash_span(_CUDA_VSTD::span<_Key> __keys) const noexcept
   {
     auto __bytes      = _CUDA_VSTD::as_bytes(__keys).data();
@@ -302,7 +302,7 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]] constexpr _CCCL_HOST_DEVICE _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
+  [[nodiscard]]  _CCCL_API constexpr _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
   {
     __h ^= __h >> 15;
     __h *= __prime2;
