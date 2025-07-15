@@ -17,7 +17,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_HAS_CTK()
-#include <cuda.h>
+#  include <cuda.h>
 
 // Get the driver function by name using this macro
 #  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
