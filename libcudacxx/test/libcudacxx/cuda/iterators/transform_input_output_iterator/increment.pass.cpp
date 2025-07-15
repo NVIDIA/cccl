@@ -26,10 +26,9 @@ __host__ __device__ constexpr bool test()
   cuda::transform_input_output_iterator iter1{buffer + 2, input_func, output_func};
   cuda::transform_input_output_iterator iter2{buffer + 2, input_func, output_func};
   assert(iter1 == iter2);
-  assert(++iter1 != iter2++);
+  assert((++iter1).base() == buffer + 3);
+  assert((iter2++).base() == buffer + 2);
   assert(iter1 == iter2);
-  assert(iter1.base() == buffer + 3);
-  assert(iter2.base() == buffer + 3);
 
   static_assert(noexcept(++iter2));
   static_assert(noexcept(iter2++));
