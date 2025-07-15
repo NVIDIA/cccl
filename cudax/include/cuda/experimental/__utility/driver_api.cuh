@@ -163,8 +163,8 @@ struct __ctx_from_stream
 inline __ctx_from_stream streamGetCtx_v2(CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12050);
-  CUcontext ctx;
-  CUgreenCtx gctx;
+  CUcontext ctx         = nullptr;
+  CUgreenCtx gctx       = nullptr;
   __ctx_from_stream __result;
   call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &ctx, &gctx);
   if (gctx)
