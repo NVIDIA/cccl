@@ -204,6 +204,7 @@ private:
 
     if constexpr (std::is_same_v<TransformOpT, ::cuda::std::identity>)
     {
+      (void) transform_op; // suppress unused variable warning
       using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
       using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
 
@@ -261,6 +262,7 @@ private:
 
     if constexpr (std::is_same_v<TransformOpT, ::cuda::std::identity>)
     {
+      (void) transform_op; // suppress unused variable warning
       using accum_t    = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
       using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
       using dispatch_t = detail::
