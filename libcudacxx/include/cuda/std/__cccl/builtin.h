@@ -365,6 +365,10 @@
 #  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
 
+#if _CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(__builtin_add_overflow)
+
 #if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
