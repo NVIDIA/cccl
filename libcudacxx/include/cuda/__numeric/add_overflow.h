@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/__numeric/overflow_result.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -63,19 +62,9 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_generic_builtin(_Tp __lhs, _Tp __rhs) noexcept
 {
-#  if !_CCCL_COMPILER(GCC)
   overflow_result<_Tp> __result;
   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
   return __result;
-#  else
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    overflow_result<_Tp> __result;
-    __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
-    return __result;
-  }
-  return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
-#  endif // !_CCCL_COMPILER(GCC)
 }
 
 #endif // _CCCL_BUILTIN_ADD_OVERFLOW
