@@ -48,27 +48,23 @@ struct policy_hub_t
 };
 #endif
 
-template <typename OffsetT,
-          typename... RandomAccessIteratorsIn,
-          typename RandomAccessIteratorOut,
-          typename TransformOp,
-          typename ExecTag = decltype(nvbench::exec_tag::no_batch)>
-void bench_transform(
-  nvbench::state& state,
-  ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-  RandomAccessIteratorOut output,
-  OffsetT num_items,
-  TransformOp transform_op,
-  ExecTag exec_tag = nvbench::exec_tag::no_batch)
+template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
+void bench_transform(nvbench::state& state,
+                     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+                     RandomAccessIteratorOut output,
+                     OffsetT num_items,
+                     TransformOp transform_op)
 {
-  state.exec(nvbench::exec_tag::gpu | exec_tag, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
-                                       OffsetT,
-                                       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                       RandomAccessIteratorOut,
-                                       TransformOp,
-                                       policy_hub_t<RandomAccessIteratorOut, RandomAccessIteratorsIn...>>::
-      dispatch(inputs, output, num_items, transform_op, launch.get_stream());
+  using dispatch_t = cub::detail::transform::dispatch_t<
+    cub::detail::transform::requires_stable_address::no,
+    OffsetT,
+    ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+    RandomAccessIteratorOut,
+    TransformOp,
+    policy_hub_t<RandomAccessIteratorOut, RandomAccessIteratorsIn...>>;
+  dispatch_t::dispatch(inputs, output, num_items, transform_op, 0);
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
+    dispatch_t::dispatch(inputs, output, num_items, transform_op, launch.get_stream());
   });
 }
 
