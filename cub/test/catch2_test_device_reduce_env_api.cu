@@ -52,6 +52,24 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
   REQUIRE(output == expected);
 }
 
+C2H_TEST("cub::DeviceReduce::Sum accepts determinism requirements", "[reduce][env]")
+{
+  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
+
+  // example-begin sum-env-determinism
+  auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
+
+  c2h::device_vector<float> expected{6.0f};
+  // example-end sum-env-determinism
+
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
 {
   // example-begin sum-env-stream
