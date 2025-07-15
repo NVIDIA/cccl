@@ -14,11 +14,11 @@
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__internal/namespaces.h>
 
-#include <cuda.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_HAS_CTK()
+#include <cuda.h>
+
 // Get the driver function by name using this macro
 #  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
     reinterpret_cast<decltype(function_name)*>(__get_driver_entry_point(#function_name))
