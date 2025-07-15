@@ -69,7 +69,7 @@ Example
     #include <cuda/cmath>
     #include <cuda/std/cassert>
 
-    __global__ void div_kernel(fast_mod_div<int> divisor) {
+    __global__ void div_kernel(cuda::fast_mod_div<int> divisor) {
         assert(45 / divisor == 2);
         assert(45 % divisor == 5);
         assert((cuda::div(45, divisor) == cuda::std::pair{2, 5}));
@@ -82,4 +82,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/PY76d97rf>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/Th5Wx5TY3>`_
