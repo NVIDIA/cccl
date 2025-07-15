@@ -156,7 +156,7 @@ TEST_CASE("transform_input_output_iterator", "[iterators]")
     auto iter = cuda::transform_input_output_iterator(vec.begin(), plus_one{}, plus_one{});
     thrust::copy(cuda::counting_iterator{3}, cuda::counting_iterator{8}, iter);
 
-    // Ensure we did wrote the right output, sequence starts at 3 + 1 == 4
+    // Ensure we did write the right output, sequence starts at 3 + 1 == 4
     thrust::device_vector<int> expected{4, 5, 6, 7, 8};
     CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
 
@@ -169,7 +169,7 @@ TEST_CASE("transform_input_output_iterator", "[iterators]")
     auto iter = cuda::transform_input_output_iterator(vec.begin(), plus_one{}, plus_one{});
     thrust::copy(cuda::counting_iterator{3}, cuda::counting_iterator{8}, iter);
 
-    // Ensure we did wrote the right output, sequence starts at 3 + 1 == 4
+    // Ensure we did write the right output, sequence starts at 3 + 1 == 4
     thrust::host_vector<int> expected{4, 5, 6, 7, 8};
     CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
 
@@ -182,7 +182,7 @@ TEST_CASE("transform_input_output_iterator", "[iterators]")
     auto iter = cuda::transform_input_output_iterator(vec.begin(), plus_one{}, plus_one{});
     thrust::copy(cuda::counting_iterator{3}, cuda::counting_iterator{8}, iter);
 
-    // Ensure we did wrote the right output, sequence starts at 3 + 1 == 4
+    // Ensure we did write the right output, sequence starts at 3 + 1 == 4
     std::vector<int> expected{4, 5, 6, 7, 8};
     CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
 
