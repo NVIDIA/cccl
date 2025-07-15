@@ -54,14 +54,14 @@ __host__ __device__ void test_edges()
         // Skip the __half and __nv_bfloat16 accuracy check for the moment, as the
         // functions themselves are too accurate to be compared to exp(y * log(x))
 #if _LIBCUDACXX_HAS_NVFP16()
-        if (cuda::std::is_same<T, __half>)
+        if (cuda::std::is_same<T, __half>::value)
         {
           continue;
         }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-        if (cuda::std::is_same<T, __nv_bfloat16>)
+        if (cuda::std::is_same<T, __nv_bfloat16>::value)
         {
           continue;
         }
