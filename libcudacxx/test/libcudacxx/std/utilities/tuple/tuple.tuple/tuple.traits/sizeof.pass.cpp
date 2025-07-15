@@ -8,23 +8,17 @@
 
 // <cuda/std/tuple>
 
-// template <class... Types> class tuple;
-
-// tuple& operator=(const tuple& u);
-
-#include <cuda/std/cassert>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
-#include "MoveOnly.h"
+#include "test_macros.h"
 
 int main(int, char**)
 {
-  {
-    using T = cuda::std::tuple<MoveOnly>;
-    T t0(MoveOnly(2));
-    T t;
-    t = t0;
-  }
+  static_assert(sizeof(cuda::std::tuple<float>) == sizeof(float));
+  static_assert(sizeof(cuda::std::tuple<cuda::std::tuple<float>, cuda::std::tuple<float>>)
+                == sizeof(cuda::std::tuple<float, float>));
+  static_assert(sizeof(cuda::std::tuple<cuda::std::tuple<float>, cuda::std::tuple<float>>) == sizeof(float) * 2);
 
   return 0;
 }
