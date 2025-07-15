@@ -95,7 +95,7 @@ C2H_TEST("cub::DeviceReduce::Min accepts determinism requirements", "[reduce][en
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
+  cub::DeviceReduce::Min(input.begin(), output.begin(), input.size(), env);
 
   c2h::device_vector<float> expected{0.0f};
   // example-end min-env-determinism
@@ -282,4 +282,69 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
   // example-end transform-reduce-env-stream
 
   REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceReduce::ReduceByKey accepts determinism requirements", "[reduce][env]")
+{
+  // example-begin reduce-by-key-env-determinism
+  auto keys_in     = c2h::device_vector<int>{1, 1, 2, 2, 2, 3, 3};
+  auto values_in   = c2h::device_vector<float>{10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f};
+  auto unique_keys = c2h::device_vector<int>(3);
+  auto aggregates  = c2h::device_vector<float>(3);
+  auto num_runs    = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  cub::DeviceReduce::ReduceByKey(
+    keys_in.begin(),
+    unique_keys.begin(),
+    values_in.begin(),
+    aggregates.begin(),
+    num_runs.begin(),
+    ::cuda::std::plus<float>{},
+    keys_in.size(),
+    env);
+
+  c2h::device_vector<int> expected_keys{1, 2, 3};
+  c2h::device_vector<float> expected_aggregates{30.0f, 120.0f, 130.0f};
+  c2h::device_vector<int> expected_num_runs{3};
+  // example-end reduce-by-key-env-determinism
+
+  REQUIRE(unique_keys == expected_keys);
+  REQUIRE(aggregates == expected_aggregates);
+  REQUIRE(num_runs == expected_num_runs);
+}
+
+C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
+{
+  // example-begin reduce-by-key-env-stream
+  auto keys_in     = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 2};
+  auto values_in   = c2h::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f};
+  auto unique_keys = c2h::device_vector<int>(3);
+  auto aggregates  = c2h::device_vector<float>(3);
+  auto num_runs    = c2h::device_vector<int>(1);
+
+  // cudaStream_t legacy_stream = 0;
+  // cuda::stream_ref stream_ref{legacy_stream};
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  cub::DeviceReduce::ReduceByKey(
+    keys_in.begin(),
+    unique_keys.begin(),
+    values_in.begin(),
+    aggregates.begin(),
+    num_runs.begin(),
+    ::cuda::std::plus<float>{},
+    keys_in.size(),
+    env);
+
+  c2h::device_vector<int> expected_keys{0, 1, 2};
+  c2h::device_vector<float> expected_aggregates{3.0f, 7.0f, 18.0f};
+  c2h::device_vector<int> expected_num_runs{3};
+  // example-end reduce-by-key-env-stream
+
+  REQUIRE(unique_keys == expected_keys);
+  REQUIRE(aggregates == expected_aggregates);
+  REQUIRE(num_runs == expected_num_runs);
 }
