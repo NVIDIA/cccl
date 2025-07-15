@@ -197,7 +197,7 @@ class LibcxxTestFormat(object):
 
             if constexpr_steps_opt is not None:
                 if test_cxx.type == "nvcc":
-                    test_cxx.compile_flags += ["-Xcompiler", constexpr_steps_opt]
+                    test_cxx.compile_flags += ["-Xcompiler", f'"{constexpr_steps_opt}"']
                 else:
                     test_cxx.compile_flags += [constexpr_steps_opt]
 
