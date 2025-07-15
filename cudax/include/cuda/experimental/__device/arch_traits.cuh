@@ -180,12 +180,12 @@ struct traits_t
 };
 
 // @brief Architecture traits
-// Template variable that contains the traits for an architecture with a given id.
+// Template function that returns the traits for an architecture with a given id.
 template <id _Id>
-_CCCL_HOST_DEVICE constexpr traits_t traits();
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr traits_t traits();
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_60>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_60>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_60;
@@ -208,7 +208,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_60>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_61>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_61>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_61;
@@ -231,7 +231,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_61>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_70>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_70>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_70;
@@ -255,7 +255,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_70>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_75>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_75>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_75;
@@ -279,7 +279,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_75>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_80>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_80>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_80;
@@ -303,7 +303,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_80>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_86>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_86>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_86;
@@ -327,7 +327,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_86>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_89>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_89>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_89;
@@ -351,7 +351,7 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_89>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_90>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_90;
@@ -376,13 +376,13 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_90>()
 
 // No sm_90a specific fields for now.
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_90a>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90a>()
 {
   return traits<id::sm_90>();
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_100>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_100;
@@ -406,13 +406,13 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_100>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_100a>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100a>()
 {
   return traits<id::sm_100>();
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_103>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103>()
 {
   traits_t __traits                 = traits<id::sm_100>();
   __traits.id                       = id::sm_103;
@@ -423,13 +423,13 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_103>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_103a>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103a>()
 {
   return traits<id::sm_103>();
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_120>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120>()
 {
   traits_t __traits{};
   __traits.id                                   = id::sm_120;
@@ -453,14 +453,14 @@ _CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_120>()
 };
 
 template <>
-_CCCL_HOST_DEVICE constexpr traits_t traits<id::sm_120a>()
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120a>()
 {
   return traits<id::sm_120>();
 };
 
 inline constexpr int __highest_known_arch = 120;
 
-_CCCL_API constexpr inline traits_t traits_for_id(id __id)
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits_for_id(id __id)
 {
   switch (__id)
   {
@@ -500,7 +500,7 @@ _CCCL_API constexpr inline traits_t traits_for_id(id __id)
   }
 }
 
-_CCCL_API constexpr inline id id_for_compute_capability(int compute_capability)
+[[nodiscard]] _CCCL_API inline constexpr id id_for_compute_capability(int compute_capability)
 {
   if (compute_capability < 60 || compute_capability > __highest_known_arch)
   {
@@ -509,13 +509,13 @@ _CCCL_API constexpr inline id id_for_compute_capability(int compute_capability)
   return static_cast<id>(compute_capability);
 }
 
-_CCCL_API constexpr inline traits_t traits_for_compute_capability(int compute_capability)
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits_for_compute_capability(int compute_capability)
 {
   return ::cuda::experimental::arch::traits_for_id(
     ::cuda::experimental::arch::id_for_compute_capability(compute_capability));
 }
 
-_CCCL_API constexpr inline id __special_id_for_compute_capability(int value)
+_CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
 {
   switch (value)
   {
@@ -534,7 +534,7 @@ _CCCL_API constexpr inline id __special_id_for_compute_capability(int value)
 }
 
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
-_CCCL_DEVICE constexpr arch::traits_t current_traits()
+[[nodiscard]] _CCCL_DEVICE inline constexpr arch::traits_t current_traits()
 {
   // fixme: this doesn't work with nvc++ -cuda
 #ifdef __CUDA_ARCH__
