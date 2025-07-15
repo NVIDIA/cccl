@@ -1703,6 +1703,7 @@ public:
       d_out,
       num_items,
       ::cuda::maximum<>{},
+      ::cuda::std::identity{},
       InitT{},
       determinism_t{},
       stream.get());
