@@ -115,4 +115,10 @@
 #include <cuda/__ptx/instructions/tensormap_replace.h>
 #include <cuda/__ptx/instructions/trap.h>
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+
+namespace ptx = _CUDA_VPTX;
+
+_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
 #endif // _CUDA_PTX
