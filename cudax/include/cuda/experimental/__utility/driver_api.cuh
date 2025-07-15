@@ -18,139 +18,138 @@
 #include <cuda/std/__cccl/prologue.h>
 
 // Get the driver function by name using this macro
-#define CUDAX_GET_DRIVER_FUNCTION(function_name) \
-  reinterpret_cast<decltype(function_name)*>(get_driver_entry_point(#function_name))
+#define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
+  reinterpret_cast<decltype(function_name)*>(__get_driver_entry_point(#function_name))
 
-#define CUDAX_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, version) \
-  reinterpret_cast<decltype(versioned_fn_name)*>(get_driver_entry_point(#function_name, version))
+#define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
+  reinterpret_cast<decltype(versioned_fn_name)*>(__get_driver_entry_point(#function_name, major, minor))
 
-namespace cuda::experimental::__detail::driver
+namespace cuda::experimental::__driver
 {
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
 //! For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
-inline void* get_driver_entry_point(const char* name, [[maybe_unused]] int version = 12000)
+inline void*
+__get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
 {
-  void* fn;
-  cudaDriverEntryPointQueryResult result;
-
+  void* __fn;
+  ::cudaDriverEntryPointQueryResult __result;
 #if _CCCL_CTK_AT_LEAST(12, 5)
-  cudaGetDriverEntryPointByVersion(name, &fn, version, cudaEnableDefault, &result);
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+  ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
+#else
   // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
-  cudaGetDriverEntryPoint(name, &fn, cudaEnableDefault, &result);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
-
-  if (result != cudaDriverEntryPointSuccess)
+  ::cudaGetDriverEntryPoint(__name, &__fn, ::cudaEnableDefault, &__result);
+#endif
+  if (__result != ::cudaDriverEntryPointSuccess)
   {
-    if (result == cudaDriverEntryPointVersionNotSufficent)
+    if (__result == ::cudaDriverEntryPointVersionNotSufficent)
     {
-      ::cuda::__throw_cuda_error(cudaErrorNotSupported, "Driver does not support this API");
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API");
     }
     else
     {
-      ::cuda::__throw_cuda_error(cudaErrorUnknown, "Failed to access driver API");
+      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API");
     }
   }
-  return fn;
+  return __fn;
 }
 
 template <typename Fn, typename... Args>
-inline void call_driver_fn(Fn fn, const char* err_msg, Args... args)
+inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args... __args)
 {
-  CUresult status = fn(args...);
-  if (status != CUDA_SUCCESS)
+  ::CUresult __status = __fn(__args...);
+  if (__status != ::CUDA_SUCCESS)
   {
-    ::cuda::__throw_cuda_error(static_cast<cudaError_t>(status), err_msg);
+    ::cuda::__throw_cuda_error(static_cast<::cudaError_t>(__status), __err_msg);
   }
 }
 
-inline int getVersion()
+inline int __getVersion()
 {
-  static int version = []() {
-    int v;
-    auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDriverGetVersion);
-    call_driver_fn(driver_fn, "Failed to check CUDA driver version", &v);
-    return v;
+  static int __version = []() {
+    int __v;
+    auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDriverGetVersion);
+    __call_driver_fn(__driver_fn, "Failed to check CUDA driver version", &__v);
+    return __v;
   }();
-  return version;
+  return __version;
 }
 
-inline void ctxPush(CUcontext ctx)
+inline void __ctxPush(::CUcontext __ctx)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPushCurrent);
-  call_driver_fn(driver_fn, "Failed to push context", ctx);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxPushCurrent);
+  __call_driver_fn(__driver_fn, "Failed to push context", __ctx);
 }
 
-inline CUcontext ctxPop()
+inline ::CUcontext __ctxPop()
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPopCurrent);
-  CUcontext result;
-  call_driver_fn(driver_fn, "Failed to pop context", &result);
-  return result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxPopCurrent);
+  ::CUcontext __result;
+  __call_driver_fn(__driver_fn, "Failed to pop context", &__result);
+  return __result;
 }
 
-inline CUcontext ctxGetCurrent()
+inline ::CUcontext __ctxGetCurrent()
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxGetCurrent);
-  CUcontext result;
-  call_driver_fn(driver_fn, "Failed to get current context", &result);
-  return result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxGetCurrent);
+  ::CUcontext __result;
+  __call_driver_fn(__driver_fn, "Failed to get current context", &__result);
+  return __result;
 }
 
-inline CUdevice deviceGet(int ordinal)
+inline ::CUdevice __deviceGet(int __ordinal)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDeviceGet);
-  CUdevice result;
-  call_driver_fn(driver_fn, "Failed to get device", &result, ordinal);
-  return result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGet);
+  ::CUdevice __result;
+  __call_driver_fn(__driver_fn, "Failed to get device", &__result, __ordinal);
+  return __result;
 }
 
-inline void getName(char* __name_out, int __len, int __ordinal)
+inline void __getName(char* __name_out, int __len, int __ordinal)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDeviceGetName);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetName);
 
   // TODO CUdevice is just an int, we probably could just cast, but for now do the safe thing
-  CUdevice __dev = deviceGet(__ordinal);
-  call_driver_fn(driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
+  ::CUdevice __dev = __deviceGet(__ordinal);
+  __call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
-inline CUcontext primaryCtxRetain(CUdevice dev)
+inline ::CUcontext __primaryCtxRetain(::CUdevice __dev)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRetain);
-  CUcontext result;
-  call_driver_fn(driver_fn, "Failed to retain context for a device", &result, dev);
-  return result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRetain);
+  ::CUcontext __result;
+  __call_driver_fn(__driver_fn, "Failed to retain context for a device", &__result, __dev);
+  return __result;
 }
 
-inline void primaryCtxRelease(CUdevice dev)
+inline void __primaryCtxRelease(::CUdevice __dev)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRelease);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRelease);
   // TODO we might need to ignore failure here
-  call_driver_fn(driver_fn, "Failed to release context for a device", dev);
+  __call_driver_fn(__driver_fn, "Failed to release context for a device", __dev);
 }
 
-inline bool isPrimaryCtxActive(CUdevice dev)
+inline bool __isPrimaryCtxActive(::CUdevice __dev)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxGetState);
-  int result;
-  unsigned int dummy;
-  call_driver_fn(driver_fn, "Failed to check the primary ctx state", dev, &dummy, &result);
-  return result == 1;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxGetState);
+  int __result;
+  unsigned int __dummy;
+  __call_driver_fn(__driver_fn, "Failed to check the primary ctx state", __dev, &__dummy, &__result);
+  return __result == 1;
 }
 
-inline void streamSynchronize(CUstream stream)
+inline void __streamSynchronize(::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamSynchronize);
-  call_driver_fn(driver_fn, "Failed to synchronize a stream", stream);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamSynchronize);
+  __call_driver_fn(__driver_fn, "Failed to synchronize a stream", __stream);
 }
 
-inline CUcontext streamGetCtx(CUstream stream)
+inline ::CUcontext __streamGetCtx(::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCtx);
-  CUcontext result;
-  call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &result);
-  return result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamGetCtx);
+  ::CUcontext __result;
+  __call_driver_fn(__driver_fn, "Failed to get context from a stream", __stream, &__result);
+  return __result;
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 5)
@@ -165,131 +164,133 @@ struct __ctx_from_stream
   __kind __ctx_kind;
   union
   {
-    CUcontext __device;
-    CUgreenCtx __green;
+    ::CUcontext __device;
+    ::CUgreenCtx __green;
   } __ctx_ptr;
 };
 
-inline __ctx_from_stream streamGetCtx_v2(CUstream stream)
+inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12050);
-  CUcontext ctx         = nullptr;
-  CUgreenCtx gctx       = nullptr;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
+  ::CUcontext __ctx       = nullptr;
+  ::CUgreenCtx __gctx     = nullptr;
   __ctx_from_stream __result;
-  call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &ctx, &gctx);
-  if (gctx)
+  __call_driver_fn(__driver_fn, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
+  if (__gctx)
   {
     __result.__ctx_kind        = __ctx_from_stream::__kind::__green;
-    __result.__ctx_ptr.__green = gctx;
+    __result.__ctx_ptr.__green = __gctx;
   }
   else
   {
     __result.__ctx_kind         = __ctx_from_stream::__kind::__device;
-    __result.__ctx_ptr.__device = ctx;
+    __result.__ctx_ptr.__device = __ctx;
   }
   return __result;
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
 
-inline void streamWaitEvent(CUstream stream, CUevent event)
+inline void __streamWaitEvent(::CUstream __stream, ::CUevent __evnt)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamWaitEvent);
-  call_driver_fn(driver_fn, "Failed to make a stream wait for an event", stream, event, CU_EVENT_WAIT_DEFAULT);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamWaitEvent);
+  __call_driver_fn(__driver_fn, "Failed to make a stream wait for an event", __stream, __evnt, ::CU_EVENT_WAIT_DEFAULT);
 }
 
-inline cudaError_t streamQuery(CUstream stream)
+inline ::cudaError_t __streamQueryNoThrow(::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamQuery);
-  return static_cast<cudaError_t>(driver_fn(stream));
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamQuery);
+  return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
-inline int streamGetPriority(CUstream stream)
+inline int __streamGetPriority(::CUstream __stream)
 {
   int __priority;
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetPriority);
-  call_driver_fn(driver_fn, "Failed to get the priority of a stream", stream, &__priority);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamGetPriority);
+  __call_driver_fn(__driver_fn, "Failed to get the priority of a stream", __stream, &__priority);
   return __priority;
 }
 
-inline unsigned long long streamGetId(CUstream stream)
+inline unsigned long long __streamGetId(::CUstream __stream)
 {
   unsigned long long __id;
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetId);
-  call_driver_fn(driver_fn, "Failed to get the ID of a stream", stream, &__id);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamGetId);
+  __call_driver_fn(__driver_fn, "Failed to get the ID of a stream", __stream, &__id);
   return __id;
 }
 
-inline void eventRecord(CUevent event, CUstream stream)
+inline void __eventRecord(::CUevent __evnt, ::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventRecord);
-  call_driver_fn(driver_fn, "Failed to record CUDA event", event, stream);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventRecord);
+  __call_driver_fn(__driver_fn, "Failed to record CUDA event", __evnt, __stream);
 }
 
 // Destroy calls return error codes to let the calling code decide if the error should be ignored
-inline cudaError_t streamDestroy(CUstream stream)
+inline ::cudaError_t __streamDestroyNoThrow(::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamDestroy);
-  return static_cast<cudaError_t>(driver_fn(stream));
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamDestroy);
+  return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
-inline cudaError_t eventDestroy(CUevent event)
+inline ::cudaError_t __eventDestroyNoThrow(::CUevent __evnt)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventDestroy);
-  return static_cast<cudaError_t>(driver_fn(event));
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventDestroy);
+  return static_cast<::cudaError_t>(__driver_fn(__evnt));
 }
 
-inline void eventElapsedTime(CUevent start, CUevent end, float* ms)
+inline void __eventElapsedTime(::CUevent __start, ::CUevent __end, float* __ms)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventElapsedTime);
-  call_driver_fn(driver_fn, "Failed to get CUDA event elapsed time", ms, start, end);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventElapsedTime);
+  __call_driver_fn(__driver_fn, "Failed to get CUDA event elapsed time", __ms, __start, __end);
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 5)
 // Add actual resource description input once exposure is ready
-inline CUgreenCtx greenCtxCreate(CUdevice dev)
+inline ::CUgreenCtx __greenCtxCreate(::CUdevice __dev)
 {
-  CUgreenCtx result;
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxCreate, cuGreenCtxCreate, 12050);
-  call_driver_fn(driver_fn, "Failed to create a green context", &result, nullptr, dev, CU_GREEN_CTX_DEFAULT_STREAM);
-  return result;
+  ::CUgreenCtx __result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxCreate, cuGreenCtxCreate, 12, 5);
+  __call_driver_fn(
+    __driver_fn, "Failed to create a green context", &__result, nullptr, __dev, ::CU_GREEN_CTX_DEFAULT_STREAM);
+  return __result;
 }
 
-inline cudaError_t greenCtxDestroy(CUgreenCtx green_ctx)
+inline ::cudaError_t __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxDestroy, cuGreenCtxDestroy, 12050);
-  return static_cast<cudaError_t>(driver_fn(green_ctx));
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxDestroy, cuGreenCtxDestroy, 12, 5);
+  return static_cast<::cudaError_t>(__driver_fn(__green_ctx));
 }
 
-inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
+inline ::CUcontext __ctxFromGreenCtx(::CUgreenCtx __green_ctx)
 {
-  CUcontext result;
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuCtxFromGreenCtx, cuCtxFromGreenCtx, 12050);
-  call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
-  return result;
+  ::CUcontext __result;
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuCtxFromGreenCtx, cuCtxFromGreenCtx, 12, 5);
+  __call_driver_fn(__driver_fn, "Failed to convert a green context", &__result, __green_ctx);
+  return __result;
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
 
-inline void memcpyAsync(void* dst, const void* src, size_t count, CUstream stream)
+inline void __memcpyAsync(void* __dst, const void* __src, size_t __count, ::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemcpyAsync);
-  call_driver_fn(
-    driver_fn,
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemcpyAsync);
+  __call_driver_fn(
+    __driver_fn,
     "Failed to perform a memcpy",
-    reinterpret_cast<CUdeviceptr>(dst),
-    reinterpret_cast<CUdeviceptr>(src),
-    count,
-    stream);
+    reinterpret_cast<::CUdeviceptr>(__dst),
+    reinterpret_cast<::CUdeviceptr>(__src),
+    __count,
+    __stream);
 }
 
-inline void memsetAsync(void* dst, uint8_t value, size_t count, CUstream stream)
+inline void __memsetAsync(void* __dst, ::uint8_t __value, size_t __count, ::CUstream __stream)
 {
-  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuMemsetD8Async);
-  call_driver_fn(driver_fn, "Failed to perform a memset", reinterpret_cast<CUdeviceptr>(dst), value, count, stream);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+  __call_driver_fn(
+    __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
 }
 
-} // namespace cuda::experimental::__detail::driver
+} // namespace cuda::experimental::__driver
 
-#undef CUDAX_GET_DRIVER_FUNCTION
+#undef _CCCLRT_GET_DRIVER_FUNCTION
 
 #include <cuda/std/__cccl/epilogue.h>
 
