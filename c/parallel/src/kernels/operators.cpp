@@ -52,7 +52,7 @@ constexpr std::string_view binary_op_template = R"XXX(
 constexpr std::string_view stateless_binary_op_template = R"XXX(
 extern "C" __device__ void OP_NAME(const void* lhs, const void* rhs, void* out);
 struct op_wrapper {{
-  __device__ {0} operator()(LHS_T lhs, RHS_T rhs) const {{
+  __device__ {0} operator()(const LHS_T& lhs, const RHS_T& rhs) const {{
     {0} ret;
     OP_NAME(&lhs, &rhs, &ret);
     return ret;
@@ -67,7 +67,7 @@ struct __align__(OP_ALIGNMENT) op_state {{
 extern "C" __device__ void OP_NAME(void* state, const void* lhs, const void* rhs, void* out);
 struct op_wrapper {{
   op_state state;
-  __device__ {0} operator()(LHS_T lhs, RHS_T rhs) {{
+  __device__ {0} operator()(const LHS_T& lhs, const RHS_T& rhs) {{
     {0} ret;
     OP_NAME(&state, &lhs, &rhs, &ret);
     return ret;
@@ -151,7 +151,7 @@ std::string make_kernel_user_unary_operator(std::string_view input_t, std::strin
   constexpr std::string_view stateless_op = R"XXX(
 extern "C" __device__  void OP_NAME(const void* val, void* result);
 struct op_wrapper {
-  __device__ OUTPUT_T operator()(INPUT_T val) const {
+  __device__ OUTPUT_T operator()(const INPUT_T& val) const {
     OUTPUT_T out;
     OP_NAME(&val, &out);
     return out;
@@ -167,7 +167,7 @@ extern "C" __device__ void OP_NAME(op_state* state, const void* val, void* resul
 struct op_wrapper
 {
   op_state state;
-  __device__ OUTPUT_T operator()(INPUT_T val)
+  __device__ OUTPUT_T operator()(const INPUT_T& val)
   {
     OUTPUT_T out;
     OP_NAME(&state, &val, &out);
