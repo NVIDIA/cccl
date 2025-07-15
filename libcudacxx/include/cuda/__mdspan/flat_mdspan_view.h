@@ -1,13 +1,18 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights
- * reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDA___MDSPAN_FLAT_MDSPAN_VIEW
 #define _CUDA___MDSPAN_FLAT_MDSPAN_VIEW
 
 #include <cuda/__mdspan/flat_mdspan_iterator.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>

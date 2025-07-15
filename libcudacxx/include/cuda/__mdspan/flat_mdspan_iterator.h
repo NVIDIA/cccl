@@ -1,21 +1,26 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights
- * reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDA___MDSPAN_FLAT_MDSPAN_ITERATOR
 #define _CUDA___MDSPAN_FLAT_MDSPAN_ITERATOR
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__utility/cmp.h>
+#include <cuda/std/__type_traits/add_pointer.h>
+#include <cuda/std/__type_traits/cmp.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_lvalue_reference.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/array>
+#include <cuda/std/iterator>
 #include <cuda/std/mdspan>
-
-#include <cstddef>
-#include <iterator>
-#include <memory>
-#include <type_traits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -44,19 +49,19 @@ class __flat_mdspan_iterator<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Acc
   };
 
 public:
-  using mdspan_type = ::cuda::std::mdspan<_Element, _Extent, _Layout, _Accessor>;
+  using mdspan_type = _CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>;
   using index_type  = typename mdspan_type::index_type;
   // The CCCL mdspan impls will fail to compile for 0-D, but in classic C++ fashion the
   // compiler error messages are inscrutable. So better to just guard against that mess with an
   // early static_assert()
   static_assert(mdspan_type::rank() >= 1, "Flat views over 0-D mdspans are not supported");
 
-  using value_type        = std::remove_const_t<_Element>;
+  using value_type        = _CUDA_VSTD::remove_const_t<_Element>;
   using reference         = typename mdspan_type::reference;
-  using difference_type   = std::ptrdiff_t;
+  using difference_type   = _CUDA_VSTD::ptrdiff_t;
   using iterator_category = std::random_access_iterator_tag;
-  using pointer =
-    std::conditional_t<std::is_lvalue_reference_v<reference>, std::add_pointer_t<reference>, __pointer_wrapper>;
+  using pointer           = _CUDA_VSTD::
+    conditional_t<_CUDA_VSTD::is_lvalue_reference_v<reference>, _CUDA_VSTD::add_pointer_t<reference>, __pointer_wrapper>;
 
   class __construct_key
   {
@@ -247,7 +252,7 @@ public:
   operator-(const __flat_mdspan_iterator& __self, const __flat_mdspan_iterator& __other) noexcept
   {
     using difference_type =
-      typename __flat_mdspan_iterator<::cuda::std::mdspan<_Element, _Extent, _Layout, _Accessor>>::difference_type;
+      typename __flat_mdspan_iterator<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>>::difference_type;
 
     _CCCL_ASSERT(__self.__span_ == __other.__span_);
     return static_cast<difference_type>(__self.__idx_) - static_cast<difference_type>(__other.__idx_);
