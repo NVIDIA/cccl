@@ -45,7 +45,7 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
     _CUDA_VSTD::__throw_invalid_argument("Copy destination is too small to fit the source data");
   }
 
-  _CUDA_VDRIVER::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
+  _CUDA_DRIVER::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
 }
 
 template <typename _SrcExtents, typename _DstExtents>

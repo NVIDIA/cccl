@@ -95,7 +95,7 @@ struct stream : stream_ref
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = _CUDA_VDRIVER::__streamDestroyNoThrow(__stream);
+      [[maybe_unused]] auto status = _CUDA_DRIVER::__streamDestroyNoThrow(__stream);
     }
   }
 

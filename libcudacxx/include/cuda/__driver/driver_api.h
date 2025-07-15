@@ -292,6 +292,7 @@ inline void __memsetAsync(void* __dst, ::uint8_t __value, size_t __count, ::CUst
 _LIBCUDACXX_END_NAMESPACE_CUDA_DRIVER
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
+#  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED
 
 #  include <cuda/std/__cccl/epilogue.h>
 

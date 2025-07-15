@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -99,11 +99,11 @@ namespace test
 {
 inline int count_driver_stack()
 {
-  if (_CUDA_VDRIVER::__ctxGetCurrent() != nullptr)
+  if (_CUDA_DRIVER::__ctxGetCurrent() != nullptr)
   {
-    auto ctx    = _CUDA_VDRIVER::__ctxPop();
+    auto ctx    = _CUDA_DRIVER::__ctxPop();
     auto result = 1 + count_driver_stack();
-    _CUDA_VDRIVER::__ctxPush(ctx);
+    _CUDA_DRIVER::__ctxPush(ctx);
     return result;
   }
   else
@@ -114,15 +114,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (_CUDA_VDRIVER::__ctxGetCurrent() != nullptr)
+  while (_CUDA_DRIVER::__ctxGetCurrent() != nullptr)
   {
-    _CUDA_VDRIVER::__ctxPop();
+    _CUDA_DRIVER::__ctxPop();
   }
 }
 
 inline int cuda_driver_version()
 {
-  return _CUDA_VDRIVER::__getVersion();
+  return _CUDA_DRIVER::__getVersion();
 }
 
 // Needs to be a template because we use template catch2 macro

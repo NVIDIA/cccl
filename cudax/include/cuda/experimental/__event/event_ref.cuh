@@ -78,7 +78,7 @@ public:
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
     _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
     // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-    _CUDA_VDRIVER::__eventRecord(__event_, __stream.get());
+    _CUDA_DRIVER::__eventRecord(__event_, __stream.get());
   }
 
   //! @brief Synchronizes the event

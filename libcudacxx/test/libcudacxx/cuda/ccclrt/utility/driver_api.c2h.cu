@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,7 +15,7 @@
 // This test is an exception and shouldn't use C2H_CCCLRT_TEST macro
 C2H_TEST("Call each driver api", "[utility]")
 {
-  namespace driver = _CUDA_VDRIVER;
+  namespace driver = _CUDA_DRIVER;
   cudaStream_t stream;
   // Assumes the ctx stack was empty or had one ctx, should be the case unless some other
   // test leaves 2+ ctxs on the stack
