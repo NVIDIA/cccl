@@ -250,7 +250,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
@@ -397,7 +397,7 @@ try
   using offset_type     = typename c2h::get<0, TestType>;
   using run_length_type = offset_type;
 
-  ::cuda::std::size_t random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
+  ::cuda::std::size_t random_range = GENERATE(take(1, random((1 << 20), (1 << 22))));
   const auto num_items             = detail::make_large_offset<offset_type>(random_range);
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
 
