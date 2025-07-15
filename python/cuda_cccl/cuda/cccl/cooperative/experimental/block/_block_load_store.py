@@ -76,22 +76,9 @@ class BaseLoadStore(BasePrimitive):
         self.dtype = normalize_dtype_param(dtype)
         self.dim = normalize_dim_param(dim)
         self.items_per_thread = items_per_thread
-        algorithm_enum = None
-        if algorithm is not None:
-            enum_class = self.default_algorithm.__class__
-            if isinstance(algorithm, str):
-                algorithm_cub = CUB_BLOCK_LOAD_ALGOS[algorithm]
-            elif isinstance(algorithm, int):
-                algorithm_enum = enum_class(algorithm)
-                algorithm_cub = str(algorithm_enum)
-            else:
-                enum_class = self.default_algorithm.__class__
-                if not isinstance(algorithm, enum_class):
-                    raise ValueError(f"Invalid algorithm: {algorithm}")
-                algorithm_cub = str(algorithm)
-        else:
-            algorithm_cub = str(self.default_algorithm)
-
+        (algorithm_cub, algorithm_enum) = self.resolve_cub_algorithm(
+            algorithm,
+        )
         self.algorithm = Algorithm(
             self.struct_name,
             self.method_name,
@@ -156,9 +143,9 @@ class BaseLoadStore(BasePrimitive):
         )
 
 
-
 class load(BaseLoadStore):
     default_algorithm = BlockLoadAlgorithm.DIRECT
+    cub_algorithm_map = CUB_BLOCK_LOAD_ALGOS
     struct_name = "BlockLoad"
     method_name = "Load"
     c_name = "block_load"
@@ -179,6 +166,7 @@ def BlockLoad(
 
 class store(BaseLoadStore):
     default_algorithm = BlockStoreAlgorithm.DIRECT
+    cub_algorithm_map = CUB_BLOCK_STORE_ALGOS
     struct_name = "BlockStore"
     method_name = "Store"
     c_name = "block_store"

@@ -9,6 +9,7 @@
 import operator
 
 from numba.core import errors, types
+from numba.core.imputils import lower_constant
 from numba.core.typing.npydecl import (
     parse_dtype,
     parse_shape,
@@ -22,11 +23,11 @@ from numba.core.typing.templates import (
     signature,
 )
 from numba.extending import (
-    make_attribute_wrapper,
+    lower_builtin,
     models,
+    register_model,
     type_callable,
     typeof_impl,
-    register_model,
 )
 
 import cuda.cccl.cooperative.experimental as coop
@@ -170,7 +171,7 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
             return None
 
         if not isinstance(temp_storage, TempStorageType):
-            msg = f"temp_storage must be a {TempStorageType}, " f"got {temp_storage}"
+            msg = f"temp_storage must be a {TempStorageType}, got {temp_storage}"
             raise errors.TypingError(msg)
 
         return signature(
@@ -286,6 +287,71 @@ class CoopLocalArrayDecl(CoopArrayBaseTemplate, CoopDeclMixin):
 
 
 # =============================================================================
+# Validation Helpers
+# =============================================================================
+
+
+def validate_positive_integer_literal(obj, value, param_name):
+    """
+    Validate that *value* is a positive integer literal and return it as
+    an IntegerLiteral type.  If the underlying literal value is less than
+    or equal to zero, raise a TypingError.  Otherwise, return None,
+    indicating that this type is not supported.
+    """
+    if isinstance(value, types.IntegerLiteral):
+        if value.literal_value <= 0:
+            raise errors.TypingError(
+                f"{obj.primitive_name} parameter '{param_name}' must be a "
+                f"positive integer; got {value.literal_value}"
+            )
+        return value
+    return None
+
+
+def validate_items_per_thread(obj, items_per_thread):
+    return validate_positive_integer_literal(
+        obj,
+        items_per_thread,
+        "items_per_thread",
+    )
+
+
+def validate_algorithm(obj, algorithm):
+    if algorithm is None:
+        return
+
+    enum_cls = obj.algorithm_enum
+    enum_name = enum_cls.__name__
+    user_facing_name = f"cuda.{enum_name}"
+
+    if not isinstance(algorithm, types.EnumMember):
+        msg = (
+            f"algorithm for {obj.primitive_name} must be a member "
+            f"of {user_facing_name}, got {algorithm}"
+        )
+        raise errors.TypingError(msg)
+
+    if algorithm.instance_class is not enum_cls:
+        name = algorithm.instance_class.__name__
+        msg = (
+            f"algorithm for {obj.primitive_name} must be a member "
+            f"of {user_facing_name}, got {name} "
+        )
+        raise errors.TypingError(msg)
+
+
+def validate_temp_storage(obj, temp_storage):
+    """
+    Validate that *temp_storage* is either None or a device array.
+    Raise TypingError if it is not.  Return None if the checks pass.
+    """
+    if temp_storage is not None and not isinstance(temp_storage, types.Array):
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires 'temp_storage' to be a device array or None"
+        )
+
+
+# =============================================================================
 # Load & Store (Single-phase)
 # =============================================================================
 
@@ -355,62 +421,6 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
                 f"same layout (got {src.layout!r} vs {dst.layout!r})"
             )
 
-    def _validate_positive_integer_literal(self, value, param_name):
-        """
-        Validate that *value* is a positive integer literal and return it as
-        an IntegerLiteral type.  If the underlying literal value is less than
-        or equal to zero, raise a TypingError.  Otherwise, return None,
-        indicating that this type is not supported.
-        """
-        if isinstance(value, types.IntegerLiteral):
-            if value.literal_value <= 0:
-                raise errors.TypingError(
-                    f"'{param_name}' must be a positive integer; "
-                    f"got {value.literal_value}"
-                )
-            return value
-        return None
-
-    def _validate_items_per_thread(self, items_per_thread):
-        return self._validate_positive_integer_literal(
-            items_per_thread,
-            "items_per_thread",
-        )
-
-    def _validate_algorithm(self, algorithm):
-        if algorithm is None:
-            return
-
-        enum_cls = self.algorithm_enum
-        enum_name = enum_cls.__name__
-        user_facing_name = f"cuda.{enum_name}"
-
-        if not isinstance(algorithm, types.EnumMember):
-            msg = (
-                f"algorithm for {self.primitive_name} must be a member "
-                f"of {user_facing_name}, got {algorithm}"
-            )
-            raise errors.TypingError(msg)
-
-        if algorithm.instance_class is not enum_cls:
-            name = algorithm.instance_class.__name__
-            msg = (
-                f"algorithm for {self.primitive_name} must be a member "
-                f"of {user_facing_name}, got {name} "
-            )
-            raise errors.TypingError(msg)
-
-    def _validate_temp_storage(self, temp_storage):
-        """
-        Validate that *temp_storage* is either None or a device array.
-        Raise TypingError if it is not.  Return None if the checks pass.
-        """
-        if temp_storage is not None and not isinstance(temp_storage, types.Array):
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'temp_storage' to be a "
-                "device array or None"
-            )
-
     def _validate_args_and_create_signature(
         self,
         src,
@@ -427,11 +437,11 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
         )
         if not using_thread_data:
             if not two_phase or items_per_thread is not None:
-                self._validate_items_per_thread(items_per_thread)
+                validate_items_per_thread(self, items_per_thread)
 
-        self._validate_algorithm(algorithm)
+        validate_algorithm(self, algorithm)
 
-        self._validate_temp_storage(temp_storage)
+        validate_temp_storage(self, temp_storage)
 
         # If we reach here, all arguments are valid.
         if self.src_first:
@@ -537,7 +547,7 @@ class CoopBlockStoreTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
 
 
 # =============================================================================
-# Instance-related Load & Store Scaffolding
+# Instance-related Load & Store Scaffolding (Two-Phase)
 # =============================================================================
 
 # The following scaffolding allows us to seamlessly handle calling invocables
@@ -603,6 +613,27 @@ def type_block_load_instance_call(context):
     return decl.generic()
 
 
+@register_model(CoopBlockLoadInstanceType)
+class CoopBlockLoadInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockLoadInstanceType)
+def lower_constant_block_load_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+@lower_builtin(CoopBlockLoadInstanceType, types.VarArg(types.Any))
+def codegen_block_load(context, builder, sig, args):
+    # This isn't actually ever called, but it needs to exist.
+    return context.get_dummy_value()
+
+
+@lower_builtin("call", CoopBlockLoadInstanceType, types.Array, types.Array)
+def codegen_block_load_call(context, builder, sig, args):
+    return context.get_dummy_value()
+
+
 # Store
 class CoopBlockStoreInstanceType(CoopLoadStoreInstanceBaseType, StoreMixin):
     decl_class = CoopBlockStoreDecl
@@ -621,25 +652,47 @@ def type_block_store_instance_call(context):
     decl = block_store_instance_type.decl
     return decl.generic()
 
+
+@register_model(CoopBlockStoreInstanceType)
+class CoopBlockStoreInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockStoreInstanceType)
+def lower_constant_block_store_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+@lower_builtin(CoopBlockStoreInstanceType, types.VarArg(types.Any))
+def codegen_block_store(context, builder, sig, args):
+    # This isn't actually ever called, but it needs to exist.
+    return context.get_dummy_value()
+
+
+@lower_builtin("call", CoopBlockStoreInstanceType, types.Array, types.Array)
+def codegen_block_store_call(context, builder, sig, args):
+    return context.get_dummy_value()
+
+
 # =============================================================================
 # Histogram
 # =================================================================================
 
-class CoopHistogramInitTemplate(CallableTemplate):
+
+class CoopBlockHistogramInitDecl(CallableTemplate):
+    key = "coop.block.histogram.init"
     unsafe_casting = False
     exact_match_required = True
     prefer_literal = True
 
     def generic(self):
         def typer(array):
-
             # template<CounterT>
             # InitHistogram(CounterT histogram[BINS])
 
             if not isinstance(array, types.Array):
                 raise errors.TypingError(
-                    "array must be a device array, got "
-                    f"{type(array).__name__}"
+                    f"array must be a device array, got {type(array).__name__}"
                 )
 
             if array.ndim != 1:
@@ -650,35 +703,28 @@ class CoopHistogramInitTemplate(CallableTemplate):
 
             if array.layout != "C":
                 raise errors.TypingError(
-                    "array must be a C-contiguous device array, "
-                    f"got {array.layout!r}"
+                    f"array must be a C-contiguous device array, got {array.layout!r}"
                 )
 
-            if array.dtype != types.uint32:
+            # Verify the array has an integer dtype.
+            if not isinstance(array.dtype, types.Integer):
                 raise errors.TypingError(
-                    "array must have dtype uint32, "
-                    f"got {array.dtype!r}"
-                )
-
-            # The array size must be 256.
-            if array.shape[0] != 256:
-                raise errors.TypingError(
-                    "array must have exactly 256 elements, "
-                    f"got {array.shape[0]} elements"
+                    f"array must have an integer dtype, got {array.dtype!r}"
                 )
 
             return types.void
 
         return typer
 
-class CoopHistogramCompositeTemplate(CallableTemplate):
+
+class CoopBlockHistogramCompositeDecl(CallableTemplate):
+    key = "coop.block.histogram.composite"
     unsafe_casting = False
     exact_match_required = True
     prefer_literal = True
 
     def generic(self):
         def typer(thread_samples, histogram_bins):
-
             if not isinstance(thread_samples, types.Array):
                 raise errors.TypingError(
                     "thread_samples must be a device array, "
@@ -719,11 +765,12 @@ class CoopHistogramCompositeTemplate(CallableTemplate):
 
         return typer
 
-class CoopBlockHistogramTemplate(CallableTemplate, CoopDeclMixin):
+
+class CoopBlockHistogramDecl(CallableTemplate, CoopDeclMixin):
     key = coop.block.histogram
     primitive_name = "coop.block.histogram"
     algorithm_enum = coop.BlockHistogramAlgorithm
-    default_algorithm = coop.BlockHistogramAlgorithm.BLOCK_HISTO_ATOMIC
+    default_algorithm = coop.BlockHistogramAlgorithm.ATOMIC
 
     def __init__(self, context=None):
         super().__init__(context=context)
@@ -731,105 +778,135 @@ class CoopBlockHistogramTemplate(CallableTemplate, CoopDeclMixin):
     def generic(self):
         def typer(
             item_dtype,
-            counter_dtype,
-            dim,
+            smem_histogram,
             items_per_thread,
             algorithm=None,
-            bins=None,
+            temp_storage=None,
         ):
             if not isinstance(item_dtype, types.Type):
                 raise errors.TypingError("item_dtype must be a type")
-            if not isinstance(counter_dtype, types.Type):
-                raise errors.TypingError("counter_dtype must be a type")
-            if not isinstance(dim, types.Type):
-                raise errors.TypingError("dim must be a type")
-            if not isinstance(items_per_thread, (types.Integer, types.IntegerLiteral)):
+            if not isinstance(smem_histogram, types.Array):
                 raise errors.TypingError(
-                    "items_per_thread must be an integer or integer literal"
+                    "smem_histogram must be a device array, "
+                    f"got {type(smem_histogram).__name__}"
                 )
-            if algorithm is not None and not isinstance(algorithm, types.EnumMember):
-                raise errors.TypingError("algorithm must be an enum member")
-            if bins is not None and not isinstance(bins, (types.Integer, types.IntegerLiteral)):
-                raise errors.TypingError("bins must be an integer or integer literal")
+            if smem_histogram.ndim != 1:
+                raise errors.TypingError(
+                    "smem_histogram must be a one-dimensional device array, "
+                    f"got {smem_histogram.ndim} dimensions"
+                )
+            if smem_histogram.layout != "C":
+                raise errors.TypingError(
+                    "smem_histogram must be a C-contiguous device array, "
+                    f"got {smem_histogram.layout!r}"
+                )
 
-            return block_histogram_instance_type
+            validate_items_per_thread(self, items_per_thread)
+            validate_algorithm(self, algorithm)
+            validate_temp_storage(self, temp_storage)
 
-class CoopBlockHistogramType(types.Type, CoopInstanceTypeMixin):
-    decl_class = CoopBlockHistogramTemplate
+            arglist = [
+                item_dtype,
+                smem_histogram,
+                items_per_thread,
+            ]
+
+            if algorithm is not None:
+                arglist.append(algorithm)
+
+            if temp_storage is not None:
+                arglist.append(temp_storage)
+
+            sig = signature(
+                block_histogram_instance_type,
+                *arglist,
+            )
+
+            return sig
+
+
+# =============================================================================
+# Instance-related Histogram Scaffolding
+# =============================================================================
+
+
+class CoopBlockHistogramInstanceType(types.Type, CoopInstanceTypeMixin):
+    """
+    This type represents an instance of a cooperative block histogram.
+    It is used to create a two-phase cooperative block histogram instance.
+    """
+
+    decl_class = CoopBlockHistogramDecl
+
     def __init__(self):
-        super().__init__(name="coop.block.histogram")
         self.decl = self.decl_class()
         name = self.decl_class.primitive_name
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
-block_histogram_instance_type = CoopBlockHistogramType()
+
+block_histogram_instance_type = CoopBlockHistogramInstanceType()
+
+
+@register_model(CoopBlockHistogramInstanceType)
+class CoopBlockHistogramInstanceModel(models.OpaqueModel):
+    pass
+
 
 @typeof_impl.register(coop.block.histogram)
 def typeof_block_histogram_instance(*args, **kwargs):
     return block_histogram_instance_type
 
+
 @type_callable(block_histogram_instance_type)
 def type_block_histogram_instance_call(context):
-    """
-    Type callable for the coop.block.histogram instance type.
-    """
-    def typer(item_dtype, counter_dtype, dim, items_per_thread, algorithm=None, bins=None):
-        if not isinstance(item_dtype, types.Type):
-            raise errors.TypingError("item_dtype must be a type")
-        if not isinstance(counter_dtype, types.Type):
-            raise errors.TypingError("counter_dtype must be a type")
-        if not isinstance(dim, types.Type):
-            raise errors.TypingError("dim must be a type")
-        if not isinstance(items_per_thread, (types.Integer, types.IntegerLiteral)):
-            raise errors.TypingError("items_per_thread must be an integer or integer literal")
-        if algorithm is not None and not isinstance(algorithm, types.EnumMember):
-            raise errors.TypingError("algorithm must be an enum member")
-        if bins is not None and not isinstance(bins, (types.Integer, types.IntegerLiteral)):
-            raise errors.TypingError("bins must be an integer or integer literal")
+    # decl = block_histogram_instance_type.decl
+    # return decl.generic()
 
+    def typer(temp_storage=None):
+        """
+        This function is called to infer the type of the coop.block.histogram
+        instance type. It checks that the parameters are of the expected types.
+        """
+        obj = block_histogram_instance_type.decl_class
+        validate_temp_storage(obj, temp_storage)
+
+        # Return the block histogram instance type.
         return block_histogram_instance_type
 
     return typer
 
+
 class CoopBlockHistogramAttrsTemplate(AttributeTemplate):
-    key = coop.block.histogram
+    key = block_histogram_instance_type
 
     def resolve_init(self, instance):
-        return types.BoundFunction(CoopHistogramInitTemplate, instance)
+        return types.BoundFunction(CoopBlockHistogramInitDecl, instance)
 
     def resolve_composite(self, instance):
-        return types.BoundFunction(CoopHistogramCompositeTemplate, instance)
+        return types.BoundFunction(CoopBlockHistogramCompositeDecl, instance)
+
 
 register_attr(CoopBlockHistogramAttrsTemplate)
 
 block_histogram_attrs_template = CoopBlockHistogramAttrsTemplate(None)
 
-# Data models
 
-if False:
-    @register_model(BlockHistogram)
-    class BlockHistogramModel(models.StructModel):
-        def __init__(self, dmm, fe_type):
-            members = [
-                ("item_dtype", types.Type(fe_type.item_dtype)),
-                ("counter_dtype", types.Type(fe_type.counter_dtype)),
-                ("dim", types.Type(fe_type.dim)),
-                ("items_per_thread", types.Integer(fe_type.items_per_thread)),
-                ("algorithm", fe_type.algorithm_enum),
-                ("bins", types.Integer(fe_type.bins)),
-            ]
-            super().__init__(dmm, fe_type, members)
+@lower_constant(CoopBlockHistogramInstanceType)
+def lower_constant_block_histogram_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
 
-    make_attribute_wrapper(CoopBlockHistogramType, "item_dtype", "item_dtype")
-    make_attribute_wrapper(CoopBlockHistogramType, "counter_dtype", "counter_dtype")
-    make_attribute_wrapper(CoopBlockHistogramType, "dim", "dim")
-    make_attribute_wrapper(CoopBlockHistogramType, "items_per_thread",
-                           "items_per_thread")
-    make_attribute_wrapper(CoopBlockHistogramType, "algorithm", "algorithm")
-    make_attribute_wrapper(CoopBlockHistogramType, "bins", "bins")
-    make_attribute_wrapper(CoopBlockHistogramType, "init", "init")
-    make_attribute_wrapper(CoopBlockHistogramType, "composite", "composite")
+
+@lower_builtin(CoopBlockHistogramInstanceType, types.VarArg(types.Any))
+def codegen_block_histogram(context, builder, sig, args):
+    # This isn't actually ever called, but it needs to exist.
+    return context.get_dummy_value()
+
+
+@lower_builtin("call", CoopBlockHistogramInstanceType, types.NoneType)
+@lower_builtin("call", CoopBlockHistogramInstanceType, types.Array)
+def codegen_block_histogram_call(context, builder, sig, args):
+    return context.get_dummy_value()
 
 
 # =============================================================================

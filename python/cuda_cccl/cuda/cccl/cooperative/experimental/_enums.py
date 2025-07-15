@@ -64,6 +64,13 @@ class WarpStoreAlgorithm(BaseAlgorithmEnum):
     VECTORIZE = auto()
     TRANSPOSE = auto()
 
-class BlockHistogramAlgorithm(BaseAlgorithmEnum):
-    BLOCK_HISTO_SORT = auto()
-    BLOCK_HISTO_ATOMIC = auto()
+
+class BlockHistogramAlgorithm(IntEnum):
+    SORT = auto()
+    ATOMIC = auto()
+
+    def __str__(self):
+        # BlockHistogramAlgorithm uses a slightly different naming convention
+        # (`BLOCK_HISTO_` prefix instead of `BLOCK_HISTOGRAM_`) so we can't
+        # use `cub_cpp_name()` here.
+        return f"::cub::BLOCK_HISTO_{self.name.upper()}"

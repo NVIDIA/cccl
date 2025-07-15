@@ -18,7 +18,6 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Optional
 
 from numba.core import ir, ir_utils, types
-from numba.core.imputils import lower_constant
 from numba.core.rewrites import Rewrite, register_rewrite
 from numba.core.typing.templates import (
     AbstractTemplate,
@@ -27,16 +26,6 @@ from numba.core.typing.templates import (
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import ensure_current_launch_config
-from numba.extending import (
-    lower_builtin,
-    models,
-    register_model,
-)
-
-from ._decls import (
-    CoopBlockLoadInstanceType,
-    CoopBlockStoreInstanceType,
-)
 
 if TYPE_CHECKING:
     from numba.cuda.launchconfig import LaunchConfig
@@ -979,9 +968,11 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram"
 
     def refine_match(self, rewriter):
+        print(self)
         pass
 
     def rewrite(self, rewriter):
+        print(self)
         return ()
 
 
@@ -1240,11 +1231,6 @@ class BaseCooperativeNodeRewriter(Rewrite):
         seen_structs = set()
 
         for i, instr in enumerate(block.body):
-            # XXX Do we ever encounter nodes other than Assign, Del, or
-            # Return?
-            if not isinstance(instr, (ir.Assign, ir.Del, ir.Return)):
-                raise RuntimeError(f"Unexpected instruction type: {instr!r}")
-
             # We're only interested in ir.Assign nodes.  Skip the rest.
             if not isinstance(instr, ir.Assign):
                 continue
@@ -1532,71 +1518,6 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 new_block.append(instr)
 
         return new_block
-
-
-@register_model(CoopBlockLoadInstanceType)
-class CoopBlockLoadInstanceModel(models.OpaqueModel):
-    def __init__(self, *args, **kwds):
-        super().__init__(*args, **kwds)
-        msg = f"CoopBlockLoadInstanceModel.__init__({args!r}, {kwds!r}) called"
-        print(msg)
-
-
-@register_model(CoopBlockStoreInstanceType)
-class CoopBlockStoreInstanceModel(models.OpaqueModel):
-    def __init__(self, *args, **kwds):
-        super().__init__(*args, **kwds)
-        msg = f"CoopBlockStoreInstanceModel.__init__({args!r}, {kwds!r}) called"
-        print(msg)
-
-
-@lower_constant(CoopBlockLoadInstanceType)
-def lower_constant_block_load_instance_type(context, builder, typ, value):
-    return context.get_dummy_value()
-
-
-@lower_builtin(CoopBlockLoadInstanceType, types.VarArg(types.Any))
-def codegen_block_load(context, builder, sig, args):
-    print(f"codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})")
-    inst_val, d_in_val, tmp_val = args  # inst_val == dummy
-
-    # Grab the per-instance data you saved in phase-1
-    inst_typ = sig.args[0]
-    spec = inst_typ.specialization  # or .layout, .dtype…
-
-    # Dispatch to your existing generator
-    cg = spec.create_codegens()
-    return cg.emit_load(context, builder, sig, (d_in_val, tmp_val))
-
-
-@lower_builtin("call", CoopBlockLoadInstanceType, types.Array, types.Array)
-def codegen_block_load_2(context, builder, sig, args):
-    print(f"codegen_block_load({context!r}, {builder!r}, {sig!r}, {args!r})")
-    inst_val, d_in_val, tmp_val = args  # inst_val == dummy
-
-    # Grab the per-instance data you saved in phase-1
-    inst_typ = sig.args[0]
-    spec = inst_typ.specialization  # or .layout, .dtype…
-
-    # Dispatch to your existing generator
-    cg = spec.create_codegens()
-    return cg.emit_load(context, builder, sig, (d_in_val, tmp_val))
-
-
-@lower_constant(CoopBlockStoreInstanceType)
-def lower_constant_block_store_instance_type(context, builder, typ, value):
-    # For two-phase instances, return a dummy opaque value since the actual
-    # lowering will be handled by the registered function lowering
-    msg = (
-        "lower_constant_block_store_instance_type("
-        f"{context!r}, {builder!r}, {typ!r}, {value!r}) called"
-    )
-    print(msg)
-    return context.get_dummy_value()
-
-
-# Note: Function call lowering for two-phase instances is now handled
-# by creating wrapper functions in the rewrite_two_phase method
 
 
 def _init_rewriter():

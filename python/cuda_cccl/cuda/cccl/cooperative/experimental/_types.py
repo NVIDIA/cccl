@@ -1072,6 +1072,45 @@ class BasePrimitive:
     def invocable(self):
         return Invocable()
 
+    def resolve_cub_algorithm(self, algorithm_arg):
+        """
+        Returns a tuple of (algorithm_cub, algorithm_enum), where the former
+        is a string reflecting the CUB C++ algorithm name, and the later is
+        the corresponding cuda.coop algorithm enum value.
+
+        The `algorithm_arg` can be a string, integer, or enum value.
+
+        Requires subclasses to define `cub_algorithm_map` (which maps the
+        friendly algorithm Python string names to C++ counterparts), and
+        `default_algorithm`, which is the default algorithm enum value to
+        use if `algorithm_arg` is None.
+        """
+        try:
+            cub_map = self.cub_algorithm_map
+        except AttributeError:
+            cub_map = None
+        algorithm_enum = None
+        if algorithm_arg is not None:
+            enum_class = self.default_algorithm.__class__
+            if isinstance(algorithm_arg, str):
+                if not cub_map:
+                    msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
+                    raise ValueError(msg)
+                algorithm_cub = cub_map[algorithm_arg]
+            elif isinstance(algorithm_arg, int):
+                algorithm_enum = enum_class(algorithm_arg)
+                algorithm_cub = str(algorithm_enum)
+            else:
+                enum_class = self.default_algorithm.__class__
+                if not isinstance(algorithm_arg, enum_class):
+                    msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
+                    raise ValueError(msg)
+                algorithm_cub = str(algorithm_arg)
+        else:
+            algorithm_cub = str(self.default_algorithm)
+
+        return (algorithm_cub, algorithm_enum)
+
 
 class TempStorage:
     def __init__(
