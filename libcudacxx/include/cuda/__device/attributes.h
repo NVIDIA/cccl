@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_ATTRIBUTES_
-#define _CUDAX__DEVICE_ATTRIBUTES_
+#ifndef _CUDA___DEVICE_ATTRIBUTES_H
+#define _CUDA___DEVICE_ATTRIBUTES_H
 
 #include <cuda/__cccl_config>
 
@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/attributes.h>
-#include <cuda/std/__cuda/api_wrapper.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/experimental/__device/device_ref.cuh>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/std/__cccl/attributes.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
@@ -223,13 +223,13 @@ struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
   static constexpr type posix_file_descriptor = ::cudaMemHandleTypePosixFileDescriptor;
   static constexpr type win32                 = ::cudaMemHandleTypeWin32;
   static constexpr type win32_kmt             = ::cudaMemHandleTypeWin32Kmt;
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#  if _CCCL_CTK_AT_LEAST(12, 4)
   static constexpr type fabric = ::cudaMemHandleTypeFabric;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
   static inline const type fabric = static_cast<::cudaMemAllocationHandleType>(0x8);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+#  endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
 };
-#if _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
 template <>
 struct __dev_attr<::cudaDevAttrNumaConfig> //
     : __dev_attr_impl<::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>
@@ -237,7 +237,7 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
   static constexpr type none      = ::cudaDeviceNumaConfigNone;
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
+#  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
 } // namespace __detail
 
@@ -689,7 +689,7 @@ static constexpr deferred_mapping_cuda_array_supported_t deferred_mapping_cuda_a
 using ipc_event_support_t = __detail::__dev_attr<::cudaDevAttrIpcEventSupport>;
 static constexpr ipc_event_support_t ipc_event_support{};
 
-#if _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
 // NUMA configuration of a device: value is of type cudaDeviceNumaConfig enum
 using numa_config_t = __detail::__dev_attr<::cudaDevAttrNumaConfig>;
 static constexpr numa_config_t numa_config{};
@@ -697,7 +697,7 @@ static constexpr numa_config_t numa_config{};
 // NUMA node ID of the GPU memory
 using numa_id_t = __detail::__dev_attr<::cudaDevAttrNumaId>;
 static constexpr numa_id_t numa_id{};
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
+#  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
 // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
 // capability in a single query
@@ -705,15 +705,17 @@ struct compute_capability_t
 {
   [[nodiscard]] int operator()(device_ref __dev_id) const
   {
-    return 10 * ::cuda::experimental::device_attributes::compute_capability_major(__dev_id)
-         + ::cuda::experimental::device_attributes::compute_capability_minor(__dev_id);
+    return 10 * ::cuda::device_attributes::compute_capability_major(__dev_id)
+         + ::cuda::device_attributes::compute_capability_minor(__dev_id);
   }
 };
 static constexpr compute_capability_t compute_capability{};
 } // namespace device_attributes
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_ATTRIBUTES_
+#endif // _CCCL_HAS_CTK()
+
+#endif // _CUDA___DEVICE_ATTRIBUTES_H

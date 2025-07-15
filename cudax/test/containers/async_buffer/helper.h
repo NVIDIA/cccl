@@ -39,7 +39,7 @@ bool equal_range(const Buffer& buf)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cudax::device_ref{0}};
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return buf.size() == cuda::std::size(device_data)
         && thrust::equal(
              thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
@@ -55,7 +55,7 @@ bool compare_value(const T& value, const T& expected)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cudax::device_ref{0}};
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     // copy the value to host
     T host_value;
     _CCCL_TRY_CUDA_API(
@@ -78,7 +78,7 @@ void assign_value(T& value, const T& input)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cudax::device_ref{0}};
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     // copy the input to device
     _CCCL_TRY_CUDA_API(
       ::cudaMemcpy,
@@ -113,7 +113,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cudax::device_ref{0}};
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return buf.size() == size
         && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
                          buf.begin(),
@@ -134,7 +134,7 @@ bool equal_range(const Range1& range1, const Range2& range2)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cudax::device_ref{0}};
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return range1.size() == range2.size()
         && thrust::equal(thrust::cuda::par.on(range1.stream().get()), range1.begin(), range1.end(), range2.begin());
   }
@@ -143,7 +143,7 @@ bool equal_range(const Range1& range1, const Range2& range2)
 struct dev0_device_memory_resource : cudax::device_memory_resource
 {
   dev0_device_memory_resource()
-      : cudax::device_memory_resource{cudax::device_ref{0}}
+      : cudax::device_memory_resource{cuda::device_ref{0}}
   {}
 
   using default_queries = cudax::properties_list<cuda::mr::device_accessible>;
