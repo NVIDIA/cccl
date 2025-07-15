@@ -69,6 +69,8 @@ public:
     friend __flat_mdspan_view<mdspan_type>;
   };
 
+  __flat_mdspan_iterator() = delete;
+
   /**
    * @brief Construct a flat mdspan iterator.
    *
