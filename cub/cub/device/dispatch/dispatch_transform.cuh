@@ -283,7 +283,7 @@ struct dispatch_t<StableAddress,
     _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
 
     const int ipt =
-      spread_out_items_per_thread(ActivePolicy{}, config->items_per_thread, config->sm_count, config->max_occupancy);
+      spread_out_items_per_thread(policy, config->items_per_thread, config->sm_count, config->max_occupancy);
     const int tile_size = block_threads * ipt;
     const int smem_size = smem_for_tile_size(tile_size, alignment);
     _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
