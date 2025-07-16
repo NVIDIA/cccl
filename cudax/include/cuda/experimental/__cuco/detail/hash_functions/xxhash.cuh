@@ -8,35 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
-
-#include <cuda/__cccl_config>
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/rotate.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
-#include <cuda/std/span>
-
-#include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
-
-#include <cuda/std/__cccl/prologue.h>
-
-namespace cuda::experimental::cuco::__detail
-{
-
-/**
- * @brief A `_XXHash_32` hash function to hash the given argument on host and device.
- *
+/*
  * _XXHash_32 implementation from
  * https://github.com/Cyan4973/xxHash
  * -----------------------------------------------------------------------------
@@ -68,9 +40,37 @@ namespace cuda::experimental::cuco::__detail
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * @tparam Key The type of the values to hash
  */
+
+#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/rotate.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/span>
+
+#include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental::cuco::__detail
+{
+
+//! @brief A `_XXHash_32` hash function to hash the given argument on host and device.
+//!
+//! @tparam Key The type of the values to hash
 template <typename _Key>
 struct _XXHash_32
 {
@@ -231,8 +231,7 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]] _CCCL_API _CUDA_VSTD::uint32_t
-  __compute_hash_span(_CUDA_VSTD::span<_Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_API _CUDA_VSTD::uint32_t __compute_hash_span(_CUDA_VSTD::span<_Key> __keys) const noexcept
   {
     auto __bytes      = _CUDA_VSTD::as_bytes(__keys).data();
     auto const __size = __keys.size_bytes();
@@ -302,7 +301,7 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]]  _CCCL_API constexpr _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
   {
     __h ^= __h >> 15;
     __h *= __prime2;
