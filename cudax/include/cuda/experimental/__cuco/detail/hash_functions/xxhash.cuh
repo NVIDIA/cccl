@@ -55,8 +55,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
@@ -178,28 +180,22 @@ private:
     // process data in 16-byte chunks
     if constexpr (_Holder::__num_chunks > 0)
     {
-      _CUDA_VSTD::uint32_t __v1 = __seed_ + __prime1 + __prime2;
-      _CUDA_VSTD::uint32_t __v2 = __seed_ + __prime2;
-      _CUDA_VSTD::uint32_t __v3 = __seed_;
-      _CUDA_VSTD::uint32_t __v4 = __seed_ - __prime1;
+      _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, 4> __v;
+      __v[0] = __seed_ + __prime1 + __prime2;
+      __v[1] = __seed_ + __prime2;
+      __v[2] = __seed_;
+      __v[3] = __seed_ - __prime1;
 
       for (size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
       {
-        __v1 += __holder.__blocks[__offset++] * __prime2;
-        __v1 = _CUDA_VSTD::rotl(__v1, 13);
-        __v1 *= __prime1;
-        __v2 += __holder.__blocks[__offset++] * __prime2;
-        __v2 = _CUDA_VSTD::rotl(__v2, 13);
-        __v2 *= __prime1;
-        __v3 += __holder.__blocks[__offset++] * __prime2;
-        __v3 = _CUDA_VSTD::rotl(__v3, 13);
-        __v3 *= __prime1;
-        __v4 += __holder.__blocks[__offset++] * __prime2;
-        __v4 = _CUDA_VSTD::rotl(__v4, 13);
-        __v4 *= __prime1;
+        cuda::static_for<4>([&](auto i) {
+          __v[i] += __holder.__blocks[__offset++] * __prime2;
+          __v[i] = _CUDA_VSTD::rotl(__v[i], 13);
+          __v[i] *= __prime1;
+        });
       }
-      __h32 = _CUDA_VSTD::rotl(__v1, 1) + _CUDA_VSTD::rotl(__v2, 7) + _CUDA_VSTD::rotl(__v3, 12)
-            + _CUDA_VSTD::rotl(__v4, 18);
+      __h32 = _CUDA_VSTD::rotl(__v[0], 1) + _CUDA_VSTD::rotl(__v[1], 7) + _CUDA_VSTD::rotl(__v[2], 12)
+            + _CUDA_VSTD::rotl(__v[3], 18);
     }
     else
     {
@@ -242,33 +238,27 @@ private:
     // data can be processed in 16-byte chunks
     if (__size >= 16)
     {
-      auto const __limit        = __size - 16;
-      _CUDA_VSTD::uint32_t __v1 = __seed_ + __prime1 + __prime2;
-      _CUDA_VSTD::uint32_t __v2 = __seed_ + __prime2;
-      _CUDA_VSTD::uint32_t __v3 = __seed_;
-      _CUDA_VSTD::uint32_t __v4 = __seed_ - __prime1;
+      auto const __limit = __size - 16;
+      _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, 4> __v;
 
-      do
+      __v[0] = __seed_ + __prime1 + __prime2;
+      __v[1] = __seed_ + __prime2;
+      __v[2] = __seed_;
+      __v[3] = __seed_ - __prime1;
+
+      for (; __offset <= __limit; __offset += 16)
       {
         // pipeline 4*4byte computations
         auto const __pipeline_offset = __offset / 4;
-        __v1 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 0) * __prime2;
-        __v1 = _CUDA_VSTD::rotl(__v1, 13);
-        __v1 *= __prime1;
-        __v2 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 1) * __prime2;
-        __v2 = _CUDA_VSTD::rotl(__v2, 13);
-        __v2 *= __prime1;
-        __v3 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 2) * __prime2;
-        __v3 = _CUDA_VSTD::rotl(__v3, 13);
-        __v3 *= __prime1;
-        __v4 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + 3) * __prime2;
-        __v4 = _CUDA_VSTD::rotl(__v4, 13);
-        __v4 *= __prime1;
-        __offset += 16;
-      } while (__offset <= __limit);
+        cuda::static_for<4>([&](auto i) {
+          __v[i] += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + i) * __prime2;
+          __v[i] = _CUDA_VSTD::rotl(__v[i], 13);
+          __v[i] *= __prime1;
+        });
+      }
 
-      __h32 = _CUDA_VSTD::rotl(__v1, 1) + _CUDA_VSTD::rotl(__v2, 7) + _CUDA_VSTD::rotl(__v3, 12)
-            + _CUDA_VSTD::rotl(__v4, 18);
+      __h32 = _CUDA_VSTD::rotl(__v[0], 1) + _CUDA_VSTD::rotl(__v[1], 7) + _CUDA_VSTD::rotl(__v[2], 12)
+            + _CUDA_VSTD::rotl(__v[3], 18);
     }
     else
     {
