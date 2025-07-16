@@ -12,6 +12,7 @@ Memory
    memory/aligned_size
    memory/discard_memory
    memory/get_device_address
+   memory/is_address_from
    memory/is_aligned
    memory/ptr_rebind
 
@@ -38,6 +39,11 @@ Memory
      - Returns a valid address to a device object
      - CCCL 2.8.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
      - CUDA 12.9
+
+   * - :ref:`is_address_from <libcudacxx-extended-api-memory-is_address_from>`
+     - Check if a pointer is from a specific address space
+     - CCCL 3.0.0
+     - CUDA 13.0
 
    * - :ref:`is_aligned <libcudacxx-extended-api-memory-is_aligned>`
      - Check if a pointer is aligned
