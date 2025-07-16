@@ -53,7 +53,7 @@ check_hash_result(Key const& key, std::uint32_t expected, HashConstructorArgs&&.
       && (h(cuda::std::span<Key>(thrust::raw_pointer_cast(arr_keys.data()), arr_keys.size())) == expected);
 }
 
-_CCCL_HOST_DEVICE bool test()
+_CCCL_HOST_DEVICE bool test_xxhash32()
 {
   return check_hash_result<cudax::cuco::Hash<char>>(static_cast<char>(0), 3479547966, 0)
       && check_hash_result<cudax::cuco::Hash<char>>(static_cast<char>(42), 3774771295, 0)
@@ -73,24 +73,23 @@ _CCCL_HOST_DEVICE bool test()
 }
 
 template <typename ResultIt>
-__global__ void test_on_device(ResultIt result)
+__global__ void test_xxhash32_on_device(ResultIt result)
 {
-  const bool res = test();
-  result[0]      = res;
+  result[0] = test_xxhash32();
 }
 
 TEST_CASE("Utility Hasher _XXHash_32 test", "")
 {
   SECTION("host-generated hash values match the reference implementation.")
   {
-    CHECK(test());
+    CUDAX_REQUIRE(test_xxhash32());
   }
 
   SECTION("device-generated hash values match the reference implementation.")
   {
     cuda::std::array<bool, 1> result{false};
-    test_on_device<<<1, 1>>>(result.begin());
-    CHECK(cudaDeviceSynchronize() == cudaSuccess);
-    CHECK(result[0]);
+    test_xxhash32_on_device<<<1, 1>>>(result.begin());
+    CUDAX_REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+    CUDAX_REQUIRE(result[0]);
   }
 }
