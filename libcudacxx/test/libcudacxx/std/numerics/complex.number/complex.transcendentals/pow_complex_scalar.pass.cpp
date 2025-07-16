@@ -44,7 +44,21 @@ __host__ __device__ void test_edges()
     for (unsigned j = 0; j < N; ++j)
     {
       cuda::std::complex<T> r = pow(testcases[i], real(testcases[j]));
-      cuda::std::complex<T> z = exp(cuda::std::complex<T>(real(testcases[j])) * log(testcases[i]));
+      cuda::std::complex<T> z =
+        cuda::std::exp(cuda::std::complex<T>(real(testcases[j])) * cuda::std::log(testcases[i]));
+
+      // The __half or __nv_float16 functions use fp32, we need to account for this
+      // as we are checking for floating-point equality:
+#if _LIBCUDACXX_HAS_NVFP16()
+      z = cuda::std::exp<float>(
+        cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
+#endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+      z = cuda::std::exp<float>(
+        cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
       if (cuda::std::isnan(real(r)))
       {
         assert(cuda::std::isnan(real(z)));

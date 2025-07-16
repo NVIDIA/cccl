@@ -44,29 +44,26 @@ __host__ __device__ void test_edges()
     for (unsigned j = 0; j < N; ++j)
     {
       cuda::std::complex<T> r = cuda::std::pow(testcases[i], testcases[j]);
-      cuda::std::complex<T> z = cuda::std::exp(testcases[j] * log(testcases[i]));
+      cuda::std::complex<T> z = cuda::std::exp(testcases[j] * cuda::std::log(testcases[i]));
+
+      // The __half or __nv_float16 functions use fp32, we need to account for this
+      // as we are checking for floating-point equality:
+#if _LIBCUDACXX_HAS_NVFP16()
+      z = cuda::std::exp<float>(
+        cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
+#endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+      z = cuda::std::exp<float>(
+        cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
       if (cuda::std::isnan(real(r)))
       {
         assert(cuda::std::isnan(real(z)));
       }
       else
       {
-        // Skip the __half and __nv_bfloat16 accuracy check for the moment, as the
-        // functions themselves are too accurate to be compared to exp(y * log(x))
-#if _LIBCUDACXX_HAS_NVFP16()
-        if (cuda::std::is_same<T, __half>::value)
-        {
-          continue;
-        }
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-        if (cuda::std::is_same<T, __nv_bfloat16>::value)
-        {
-          continue;
-        }
-#endif // _LIBCUDACXX_HAS_NVBf16()
-
         if (real(r) != real(z))
         {
           is_about(real(r), real(z));
@@ -79,21 +76,6 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        // Skip the __half and __nv_bfloat16 accuracy check for the moment, as the
-        // functions themselves are too accurate to be compared to exp(y * log(x))
-#if _LIBCUDACXX_HAS_NVFP16()
-        if (cuda::std::is_same<T, __half>::value)
-        {
-          continue;
-        }
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-        if (cuda::std::is_same<T, __nv_bfloat16>::value)
-        {
-          continue;
-        }
-#endif // _LIBCUDACXX_HAS_NVBf16()
         if (imag(r) != imag(z))
         {
           is_about(imag(r), imag(z));
