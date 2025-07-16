@@ -619,6 +619,7 @@ VEC_SPECIALIZATION(long, 4);
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(long, 4, _16a);
+VEC_SPECIALIZATION(long, 4, _32a);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // VEC_SPECIALIZATION(ulong, 2);
@@ -632,6 +633,7 @@ VEC_SPECIALIZATION(longlong, 4);
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(longlong, 4, _16a);
+VEC_SPECIALIZATION(longlong, 4, _32a);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 VEC_SPECIALIZATION(ulonglong, 2);
@@ -641,6 +643,7 @@ VEC_SPECIALIZATION(ulonglong, 4);
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(ulonglong, 4, _16a);
+VEC_SPECIALIZATION(ulonglong, 4, _32a);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 VEC_SPECIALIZATION(float, 2);
@@ -654,6 +657,7 @@ VEC_SPECIALIZATION(double, 4);
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(double, 4, _16a);
+VEC_SPECIALIZATION(double, 4, _32a);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename VecType, typename Type>
@@ -685,6 +689,7 @@ VEC_GEN_MOD_SPECIALIZATION(uchar3, unsigned char);
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_GEN_MOD_SPECIALIZATION(ulonglong4_16a, unsigned long long);
+VEC_GEN_MOD_SPECIALIZATION(ulonglong4_32a, unsigned long long);
 #  else
 VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
