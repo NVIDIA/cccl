@@ -272,12 +272,12 @@ public:
 
   void unfreeze(task& fake_task, event_list prereqs);
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
     automatic_unfreeze = flag;
 
     // Save for future use when destroying data
-    frozen_fake_task = fake_task;
+    unfreeze_fake_task = unfreeze_fake_task_;
   }
 
   // This needs the full definition of logical_data_untyped so the implementation is deferred
@@ -304,7 +304,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> frozen_fake_task;
+  ::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -1073,9 +1073,9 @@ public:
     pimpl->unfreeze(fake_task, mv(prereqs));
   }
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
-    pimpl->set_automatic_unfreeze(fake_task, flag);
+    pimpl->set_automatic_unfreeze(unfreeze_fake_task_, flag);
   }
 
   /**
@@ -1735,8 +1735,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Freeze data automatically : we assume all dependencies on that
     // frozen data are solved by other means (this is the requirement of
     // the set_automatic_unfreeze API)
-    assert(frozen_fake_task.has_value());
-    unfreeze(frozen_fake_task.value(), event_list());
+    assert(unfreeze_fake_task.has_value());
+    unfreeze(unfreeze_fake_task.value(), event_list());
   }
 
   auto& ctx_st = ctx.get_state();
