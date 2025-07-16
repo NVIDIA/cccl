@@ -38,7 +38,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
-#include <cub/agent/agent_reduce_nondeterministic.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
@@ -531,7 +530,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  ChainedPolicyT::ActivePolicy::ReduceAtomicPolicy::
+  ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy::
     BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
                                                                   OutputIteratorT d_out,
                                                                   OffsetT num_items,
@@ -543,8 +542,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::nondeterministic_reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::ReduceAtomicPolicy,
+  using AgentReduceT = detail::reduce::AgentReduce<
+    typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
     InputIteratorT,
     AccumT*,
     OffsetT,

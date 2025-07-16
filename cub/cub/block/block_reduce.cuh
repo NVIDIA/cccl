@@ -45,6 +45,7 @@
 #include <cub/block/specializations/block_reduce_raking.cuh>
 #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
+#include <cub/block/specializations/block_reduce_warp_reductions_nondeterministic.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -145,6 +146,36 @@ enum BlockReduceAlgorithm
   //!
   //! @endrst
   BLOCK_REDUCE_WARP_REDUCTIONS,
+
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! A quick "tiled warp-reductions" reduction algorithm that supports commutative
+  //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
+  //! operators. This variant is non-deterministic, meaning that the order of
+  //! reduction operations is not guaranteed to be the same across different
+  //! invocations of the same kernel.
+  //!
+  //! Execution is comprised of four phases:
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Each thread then places the partial reduction
+  //!      of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
+  //!      reduction within each warp.
+  //!   #. A propagation phase where the warp reduction outputs in each warp are
+  //!      updated with the aggregate from each preceding warp.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - This variant applies more reduction operators than BLOCK_REDUCE_RAKING
+  //!   or BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall
+  //!   throughput across the GPU. However turn-around latency may be lower and
+  //!   thus useful when the GPU is under-occupied.
+  //!
+  //! @endrst
+  BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
 
 //! @rst
@@ -248,7 +279,9 @@ private:
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
   };
 
-  using WarpReductions        = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpReductions = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpReductionsNondeterministic =
+    detail::BlockReduceWarpReductionsNondeterministic<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using Raking                = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
@@ -256,9 +289,11 @@ private:
   using InternalBlockReduce =
     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
                      WarpReductions,
-                     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                                      RakingCommutativeOnly,
-                                      Raking>>; // BlockReduceRaking
+                     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                                      WarpReductionsNondeterministic,
+                                      ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                                       RakingCommutativeOnly,
+                                                       Raking>>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
   using _TempStorage = typename InternalBlockReduce::TempStorage;

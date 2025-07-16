@@ -227,6 +227,14 @@ struct policy_hub
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
+
+    using ReduceNondeterministicPolicy =
+      AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
+                        ReducePolicy::ITEMS_PER_THREAD,
+                        AccumT,
+                        ReducePolicy::ITEMS_PER_VEC_LOAD,
+                        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                        ReducePolicy::LOAD_MODIFIER>;
   };
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
@@ -246,6 +254,14 @@ struct policy_hub
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
+
+    using ReduceNondeterministicPolicy =
+      AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
+                        ReducePolicy::ITEMS_PER_THREAD,
+                        AccumT,
+                        ReducePolicy::ITEMS_PER_VEC_LOAD,
+                        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                        ReducePolicy::LOAD_MODIFIER>;
   };
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy600>
@@ -272,6 +288,14 @@ struct policy_hub
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
+
+    using ReduceNondeterministicPolicy =
+      AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
+                        ReducePolicy::ITEMS_PER_THREAD,
+                        AccumT,
+                        ReducePolicy::ITEMS_PER_VEC_LOAD,
+                        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                        ReducePolicy::LOAD_MODIFIER>;
   };
 
   using MaxPolicy = Policy1000;
