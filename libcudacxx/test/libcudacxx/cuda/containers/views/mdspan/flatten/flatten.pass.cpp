@@ -183,6 +183,30 @@ __host__ __device__ void test_body()
     test_basic(md, data);
     test_iterators(md);
   }
+  {
+    T data[] = {T{1}, T{1}, T{1}};
+    auto md  = cuda::std::mdspan{data};
+
+    test_iter(md);
+    test_basic(md, data[0]);
+    test_iterators(md);
+  }
+  {
+    T data[] = {T{2}, T{2}, T{2}};
+    auto md  = cuda::std::mdspan{data, 3, 1};
+
+    test_iter(md);
+    test_basic(md, data[0]);
+    test_iterators(md);
+  }
+  {
+    T data[] = {T{3}, T{3}, T{3}, T{3}, T{3}, T{3}};
+    auto md  = cuda::std::mdspan{data, 3, 2};
+
+    test_iter(md);
+    test_basic(md, data[0]);
+    test_iterators(md);
+  }
 }
 
 template <typename T>
