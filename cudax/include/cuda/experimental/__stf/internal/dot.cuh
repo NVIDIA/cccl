@@ -494,7 +494,6 @@ public:
 
     task_metadata.label = task_oss.str();
     task_metadata.type  = type;
-
     task_metadata.original_id       = t.get_unique_id();
     task_metadata.representative_id = t.get_unique_id();
   }
