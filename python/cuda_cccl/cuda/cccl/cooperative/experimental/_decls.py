@@ -679,11 +679,9 @@ def codegen_block_store_call(context, builder, sig, args):
 # =================================================================================
 
 
-class CoopBlockHistogramInitDecl(CallableTemplate):
-    key = "coop.block.histogram.init"
-    unsafe_casting = False
-    exact_match_required = True
-    prefer_literal = True
+class CoopBlockHistogramInitDecl(CallableTemplate, CoopDeclMixin):
+    key = coop.block.histogram.init
+    primitive_name = "coop.block.histogram.init"
 
     def generic(self):
         def typer(array):
@@ -717,8 +715,10 @@ class CoopBlockHistogramInitDecl(CallableTemplate):
         return typer
 
 
-class CoopBlockHistogramCompositeDecl(CallableTemplate):
-    key = "coop.block.histogram.composite"
+class CoopBlockHistogramCompositeDecl(CallableTemplate, CoopDeclMixin):
+    key = coop.block.histogram.composite
+    primitive_name = "coop.block.histogram.composite"
+
     unsafe_casting = False
     exact_match_required = True
     prefer_literal = True
@@ -785,11 +785,13 @@ class CoopBlockHistogramDecl(CallableTemplate, CoopDeclMixin):
         ):
             if not isinstance(item_dtype, types.Type):
                 raise errors.TypingError("item_dtype must be a type")
+
             if not isinstance(smem_histogram, types.Array):
                 raise errors.TypingError(
                     "smem_histogram must be a device array, "
                     f"got {type(smem_histogram).__name__}"
                 )
+
             if smem_histogram.ndim != 1:
                 raise errors.TypingError(
                     "smem_histogram must be a one-dimensional device array, "

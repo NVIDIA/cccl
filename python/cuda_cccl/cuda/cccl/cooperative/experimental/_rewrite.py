@@ -15,7 +15,7 @@ from operator import mul
 from textwrap import dedent
 from types import ModuleType as PyModuleType
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from numba.core import ir, ir_utils, types
 from numba.core.rewrites import Rewrite, register_rewrite
@@ -29,6 +29,16 @@ from numba.cuda.launchconfig import ensure_current_launch_config
 
 if TYPE_CHECKING:
     from numba.cuda.launchconfig import LaunchConfig
+
+if False:
+    from numba.core import config
+
+    config.DEBUG = True
+    config.DEBUG_JIT = True
+    config.DUMP_IR = True
+    config.CUDA_LOG_API_ARGS = True
+    config.CUDA_LOG_LEVEL = "debug"
+    # config.CUDA_ENABLE_PYNVJITLINK = True
 
 
 def get_element_count(shape):
@@ -69,6 +79,14 @@ def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
     args = launch_config.args
     code = launch_config.dispatcher.func_code
     idx = get_kernel_param_index_safe(code, name)
+
+    if idx is None:
+        raise LookupError(f"{name!r} is not a parameter in the launch config")
+
+    # Invariant check: index should be within the bounds of args.
+    if idx >= len(args):
+        raise IndexError(f"Parameter {name!r} index {idx} out of range for args {args}")
+
     return args[idx]
 
 
@@ -95,6 +113,97 @@ def register_kernel_extension(kernel, instance):
         raise RuntimeError(msg)
 
     extensions.append(instance)
+
+
+VarType = Union[ir.Arg, ir.Const, ir.Expr, ir.FreeVar, ir.Global, ir.Var]
+RootVarType = Union[ir.Arg, ir.Const, ir.FreeVar, ir.Global]
+
+
+@dataclass
+class RootDefinition:
+    original_instr: VarType
+    root_instr: RootVarType
+    instance: Any
+    needs_pre_launch_callback: bool
+
+
+def get_root_definition(
+    func_ir: ir.FunctionIR,
+    instr: VarType,
+    launch_config: "LaunchConfig",
+) -> Optional[RootDefinition]:
+    """
+    Recursively find the root definition of an instruction in the function IR.
+    """
+    counter = 0
+    instance = None
+    root_instr = None
+    original_instr = instr
+    needs_pre_launch_callback = False
+
+    instructions = [instr]
+
+    while instructions:
+        counter += 1
+        instr = instructions.pop()
+
+        # The list should be empty at this point.
+        assert not instructions, (instr, instructions)
+
+        if isinstance(instr, (ir.Global, ir.FreeVar)):
+            # Globals and free variables are easy; we can get the
+            # instance directly from the instruction's value.
+            root_instr = instr
+            instance = instr.value
+            assert not instructions, (root_instr, instructions)
+            break
+        elif isinstance(instr, ir.Arg):
+            root_instr = instr
+            instance = get_kernel_param_value(
+                instr.name,
+                launch_config,
+            )
+            assert not instructions, (root_instr, instructions)
+            if counter == 1:
+                needs_pre_launch_callback = True
+            continue
+        elif isinstance(instr, ir.Var):
+            next_instr = func_ir.get_definition(instr.name)
+            instructions.append(next_instr)
+            continue
+        elif isinstance(instr, ir.Expr):
+            if instr.op == "getattr":
+                # If the instruction is a getattr, append it to our list of
+                # instructions and continue.  This handles arbitrarily-nested
+                # attributes.
+                obj = instr.value
+                next_instr = func_ir.get_definition(obj.name)
+                instructions.append(next_instr)
+                continue
+            elif instr.op == "call":
+                func = instr.func
+                next_instr = func_ir.get_definition(func.name)
+                instructions.append(next_instr)
+                continue
+            else:
+                msg = f"Unexpected expression op: {instr!r}"
+                raise RuntimeError(msg)
+        else:
+            msg = f"Unexpected instruction type: {instr!r}"
+            raise RuntimeError(msg)
+
+    if root_instr is None:
+        # If we didn't find a root instruction, return None.
+        return None
+
+    root_definition = RootDefinition(
+        original_instr=original_instr,
+        root_instr=root_instr,
+        instance=instance,
+        needs_pre_launch_callback=needs_pre_launch_callback,
+    )
+
+    return root_definition
 
 
 class Granularity(IntEnum):
@@ -161,6 +270,12 @@ class CoopNode:
     # Non-None for two-phase instances (i.e. when calling an invocable
     # obtained via two-phase creation of the primitive outside the kernel).
     two_phase_instance: Optional[Any]
+
+    # For primitives that have a struct with one or more callable methods,
+    # if this node is created for one of those methods, this will be set to
+    # the parent/containing struct.
+    parent_struct_instance_type: Optional[Any] = None
+    parent_node: Optional["CoopNode"] = None
 
     # Defaults.
     implicit_temp_storage: bool = True
@@ -250,7 +365,7 @@ class CoopNode:
             # If the argument is a dtype, return the dtype itself.
             return arg_ty.dtype
 
-        kernel_param = self.get_kernel_param_value(arg_var)
+        kernel_param = self.get_kernel_param_value_safe(arg_var)
         if kernel_param is not None:
             return kernel_param
 
@@ -976,6 +1091,30 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
         return ()
 
 
+class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.histogram.init"
+
+    def refine_match(self, rewriter):
+        print(self)
+        pass
+
+    def rewrite(self, rewriter):
+        print(self)
+        return ()
+
+
+class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.histogram.composite"
+
+    def refine_match(self, rewriter):
+        print(self)
+        pass
+
+    def rewrite(self, rewriter):
+        print(self)
+        return ()
+
+
 @lru_cache(maxsize=None)
 def get_coop_class_and_instance_maps():
     from cuda.cccl.cooperative.experimental._decls import (
@@ -1132,7 +1271,8 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
                     # The values we return here just need to pacify _Kernel's
                     # _parse_args() routines--we never actually use the kernel
-                    # parameters by way of the arguments provided at kernel launch.
+                    # parameters by way of the arguments provided at kernel
+                    # launch.
                     addr = id(val)
                     return (types.uint64, addr)
 
@@ -1157,6 +1297,23 @@ class BaseCooperativeNodeRewriter(Rewrite):
         type_instances = self._instances
         launch_config = ensure_current_launch_config()
         interesting_modules = self.interesting_modules
+
+        # Reverse the decl_classes map to get a mapping from templates (or,
+        # more specifically, the value of `CoopDeclMixin.key` class attribute,
+        # which might be a string for primitive functions associated with a
+        # parent struct (i.e. `init` of `coop.block.histogram`)).
+        # to the corresponding declaration class.
+        impl_to_decl_classes = {v: k for (k, v) in decl_classes.items()}
+        # Sanity check that the values in the decl_classes were unique.
+        if len(impl_to_decl_classes) != len(decl_classes):
+            raise RuntimeError(
+                f"Duplicates found in decl_classes.values(): {decl_classes.values()}"
+            )
+
+        # py_func = func_ir.func_id.func
+        # code_obj = py_func.__code__
+        # free_vars = code_obj.co_freevars
+        # cells = py_func.__closure__
 
         # Advanced C++ CUDA kernels will often leverage a templated struct
         # for specialized CUB primitives, e.g.
@@ -1257,6 +1414,12 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     pass
                 elif isinstance(rhs, ir.Var):
                     pass
+                elif isinstance(rhs, ir.FreeVar):
+                    if "bl0ck" in rhs.name:
+                        import debugpy
+
+                        debugpy.breakpoint()
+                        print(rhs)
                 else:
                     value = rhs.value
 
@@ -1284,12 +1447,18 @@ class BaseCooperativeNodeRewriter(Rewrite):
             func_name = expr.func.name
             func = typemap[func_name]
 
+            # Reset our per loop iteration local variables.
+            decl = None
             template = None
             impl_class = None
             node_class = None
+            # bound_func = None
+            value_type = None
             type_instance = None
+            parent_node = None
             primitive_name = None
             two_phase_instance = None
+            parent_struct_instance_type = None
             needs_pre_launch_callback = False
 
             # Attempt to obtain the implementation class based on whether we're
@@ -1380,17 +1549,30 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     msg = f"Unexpected instruction type: {def_instr!r}"
                     raise RuntimeError(msg)
 
+                root_def = get_root_definition(
+                    func_ir,
+                    def_instr,
+                    launch_config,
+                )
+                assert root_def.instance is two_phase_instance
+
                 value_type = typemap[func_name]
                 primitive_name = repr(value_type)
                 # Example values at this point for e.g. block load:
-                # > two_phase_instance
-                # <cuda.cccl.cooperative.experimental.block._block_load_store.load object at 0x757ed7f44f70>
-                # > value_type
-                # coop.block.load
-                # > type(value_type)
-                # <class 'cuda.cccl.cooperative.experimental._decls.CoopBlockLoadInstanceType'>
-                # > primitive_name
-                # 'coop.block.load'
+                #
+                #   >>> two_phase_instance
+                #   <cuda.cccl.cooperative.experimental.block.\
+                #       _block_load_store.load object at 0x757ed7f44f70>
+                #
+                #   >>> value_type
+                #   coop.block.load
+                #
+                #   >>> type(value_type)
+                #   <class 'cuda.cccl.cooperative.experimental.\
+                #       _decls.CoopBlockLoadInstanceType'>
+                #
+                #   >>> primitive_name
+                #   'coop.block.load'
 
                 decl = value_type.decl
                 template = decl.__class__
@@ -1422,6 +1604,110 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     type_instance.name,
                     decl.key.__name__,
                 )
+
+            elif isinstance(func, types.BoundFunction):
+                # BoundFunction is used for primitives that expose one or
+                # more methods against the containing parent struct, e.g.
+                # `histo.composite()`.  It'll look something like this:
+                #
+                #   >>> func
+                #   BoundFunction(coop.block.histogram.composite for \
+                #                 coop.block.histogram)
+                #
+                # It will be called against an instance of a prior primitive
+                # that should have already had a node created and registered
+                # in `self.nodes` by way of the target name.  We want to get
+                # this instance so it can be included in the new node
+                # construction below, so we first have to find the target name.
+                #
+                # How do we do that?  Let's start with what the simplified IR
+                # would have looked like up to this point:
+                #
+                #   1: block_histogram = freevar(block_histogram: <coop.block.hist...>
+                #   2: histo = call block_histogram()
+                #   3: histo_init = getattr(value=histo, attr=init)
+                #   4: call histo_init(smem_histogram, ...)
+                #   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                # The last call line is the instruction we're currently
+                # handling.  We get the definition of the `histo_init` variable
+                # being called, which will return us the instruction for the
+                # corresponding getattr() against the parent object; item 3
+                # above.
+                #
+                # We can then see that the getattr() is being called against
+                # the `histo` variable, so we look up the definition of that
+                # next, which returns us the instruction for item 2 above, when
+                # the `histo` instance was created/constructed.
+                #
+                # Thus, our parent's target name is 'histo', and we can get
+                # that directly from our `self.nodes` map.
+
+                # bound_func = func
+                type_instance = func
+                template = func.template
+                impl_class = func.key[0]
+                primitive_name = template.primitive_name
+                parent_struct_instance_type = func.key[1]
+
+                # Find the `histo_init` variable's definition, which will return
+                # the instruction for the getattr() call (item 3 above), e.g.:
+                # `getattr(value=histo, attr=init)`.
+                getattr_expr = func_ir.get_definition(func_name)
+
+                # Verify that we're dealing with a `getattr()` expression, and
+                # that the attribute being accessed matches the end of our
+                # primitive name (i.e. `init` for `coop.block.histogram.init`).
+                ignore_instruction = (
+                    not isinstance(getattr_expr, ir.Expr)
+                    or getattr_expr.op != "getattr"
+                    or not primitive_name.endswith(getattr_expr.attr)
+                )
+                if ignore_instruction:
+                    # Not one of our primitives, ignore and continue.
+                    continue
+
+                # The `getattr_expr.value` will be the parent object for which
+                # the `getattr()` was called, e.g. `histo` in the example.  We
+                # can then use that to find the parent node in our `self.nodes`.
+                parent_obj = getattr_expr.value
+                parent_target_name = parent_obj.name
+
+                # Get the root definition of the parent object.  We'll use this
+                # to verify the parent node from our `self.nodes` map has its
+                # `two_phase_instance` match the same instance we obtained on
+                # the root definition.
+                parent_root_def = get_root_definition(
+                    func_ir,
+                    parent_obj,
+                    launch_config,
+                )
+                if not parent_root_def:
+                    raise RuntimeError(
+                        f"Could not find root definition for {parent_target_name!r}"
+                    )
+
+                # Get the parent node via the target name we derived.
+                parent_node = self.nodes.get(parent_target_name, None)
+                if not parent_node:
+                    raise RuntimeError(
+                        "Could not find parent node for {parent_target_name!r}"
+                    )
+
+                # Invariant check: parent node's `two_phase_instance` must
+                # match the parent root definition's instance.
+                parent_two_phase_instance = parent_node.two_phase_instance
+                instance_mismatch = parent_two_phase_instance is None or (
+                    parent_root_def.instance is not parent_two_phase_instance
+                )
+                if instance_mismatch:
+                    raise RuntimeError(
+                        f"Parent node's two_phase_instance mismatch: "
+                        f"{parent_two_phase_instance!r} != "
+                        f"{parent_root_def.instance!r} "
+                        f"({parent_target_name!r})"
+                    )
+
+                two_phase_instance = parent_two_phase_instance
 
             else:
                 raise RuntimeError(f"Unexpected code path; {func!r}")
@@ -1483,12 +1769,15 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 needs_pre_launch_callback=needs_pre_launch_callback,
                 type_instance=type_instance,
                 two_phase_instance=two_phase_instance,
+                parent_struct_instance_type=parent_struct_instance_type,
+                parent_node=parent_node,
             )
 
             if two_phase_instance is not None:
-                # Register the node with the two-phase instance so we can
-                # access it during lowering.
-                two_phase_instance.node = node
+                if two_phase_instance.node is None:
+                    # Register the node with the two-phase instance so we can
+                    # access it during lowering.
+                    two_phase_instance.node = node
 
             target_name = node.target.name
             assert target_name not in self.nodes, target_name

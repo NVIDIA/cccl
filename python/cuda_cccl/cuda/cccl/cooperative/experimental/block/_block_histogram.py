@@ -68,6 +68,9 @@ class BlockHistogramInit(BasePrimitive):
         return algorithm
 
 
+init = BlockHistogramInit
+
+
 class BlockHistogramComposite(BasePrimitive):
     c_name = "composite"
     method_name = "Composite"
@@ -117,6 +120,9 @@ class BlockHistogramComposite(BasePrimitive):
         algorithm.temp_storage = temp_storage
 
         return algorithm
+
+
+composite = BlockHistogramComposite
 
 
 class BlockHistogram(BasePrimitive):
