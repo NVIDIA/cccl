@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__internal/ensure_current_context.h>
+#include <cuda/__runtime/ensure_current_context.h>
 
 #include <testing.cuh>
 
