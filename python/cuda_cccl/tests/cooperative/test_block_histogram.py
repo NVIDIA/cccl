@@ -92,12 +92,14 @@ def test_block_histogram_histo_sort_two_phase0():
         tid = cuda.grid(1)
 
         # Shared per-block histogram bin counts.
-        smem_histogram = coop.shared.array(bins, counter_dtype)
-        # smem_histogram = cuda.shared.array(bins, counter_dtype)
+        smem_histogram = coop.shared.array(bins, dtype=d_in.dtype)
+        # smem_histogram = cuda.shared.array(bins, dtype=counter_dtype)
+        # smem_histogram = cuda.shared.array(bins, dtype=counter_dtype)
         # temp_storage = coop.shared.array(temp_storage_bytes, np.uint8,
         #                                 alignment=temp_storage_alignment)
         # thread_samples = cuda.local.array(items_per_thread, item_dtype)
-        thread_samples = coop.local.array(items_per_thread, item_dtype)
+        thread_samples = coop.local.array(items_per_thread, dtype=item_dtype)
+        # thread_samples = coop.local.array(items_per_thread, item_dtype)
 
         # histo = block_histogram(temp_storage)
         histo = bl0ck_histogram()
@@ -109,7 +111,7 @@ def test_block_histogram_histo_sort_two_phase0():
         #       `bins` is inferred from the `smem_histogram.shape`.
         histo.init(smem_histogram)
 
-        block_load(d_in, thread_samples, items_per_thread)
+        block_load(d_in, thread_samples)
 
         histo.composite(thread_samples, smem_histogram)
 
@@ -124,7 +126,7 @@ def test_block_histogram_histo_sort_two_phase0():
     d_output = cuda.device_array(bins, dtype=counter_dtype)
     num_blocks = 1
     k = kernel[num_blocks, threads_per_block]
-    k(d_input, d_output, items_per_thread)
+    k(d_input, d_output)
 
     expected_histo = np.bincount(h_input, minlength=bins)
     # Sanity check sum of histo bins matches total items.

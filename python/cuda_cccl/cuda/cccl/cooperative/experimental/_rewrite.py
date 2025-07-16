@@ -27,6 +27,11 @@ from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import ensure_current_launch_config
 
+from ._common import (
+    normalize_dim_param,
+    normalize_dtype_param,
+)
+
 if TYPE_CHECKING:
     from numba.cuda.launchconfig import LaunchConfig
 
@@ -859,8 +864,8 @@ class CoopArrayNode(CoopNode):
         return get_element_count(self.shape)
 
     def refine_match(self, rewriter):
-        self.shape = self.get_arg_value("shape")
-        self.dtype = self.get_arg_value("dtype")
+        self.shape = normalize_dim_param(self.get_arg_value("shape"))
+        self.dtype = normalize_dtype_param(self.get_arg_value("dtype"))
         self.alignment = self.get_arg_value_safe("alignment")
         rewriter.need_global_cuda_module_instr = True
 
@@ -1399,6 +1404,10 @@ class BaseCooperativeNodeRewriter(Rewrite):
             target = instr.target
             target_name = target.name
 
+            # N.B. This code block used to have a lot more functionality, but
+            #      has shrunk considerably after hoisting out logic elsewhere.
+            #      It now looks ridiculous and will certainly get refactored
+            #      in the future.
             is_variable_kind = isinstance(
                 rhs,
                 (
@@ -1415,11 +1424,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 elif isinstance(rhs, ir.Var):
                     pass
                 elif isinstance(rhs, ir.FreeVar):
-                    if "bl0ck" in rhs.name:
-                        import debugpy
-
-                        debugpy.breakpoint()
-                        print(rhs)
+                    pass
                 else:
                     value = rhs.value
 
