@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// CONSTEXPR_STEPS: 15000000
+// CONSTEXPR_STEPS: 25000000
 
 #include <cuda/std/__charconv_>
 #include <cuda/std/array>
