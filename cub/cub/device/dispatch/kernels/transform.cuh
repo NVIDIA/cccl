@@ -21,7 +21,7 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/__memory/aligned_size.h> // cannot include <cuda/barrier> directly on CUDA_ARCH < 700
+#include <cuda/__memory/aligned_size.h>
 #include <cuda/cmath>
 #include <cuda/ptx>
 #include <cuda/std/bit>
