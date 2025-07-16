@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/driver_api.h>
+
 #include <cuda/experimental/__device/arch_traits.cuh>
 #include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
-#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cassert>
 #include <mutex>
@@ -43,39 +44,37 @@ struct __emplace_device
 {
   int __id_;
 
-  [[nodiscard]] operator device() const;
+  [[nodiscard]] operator physical_device() const;
 
   [[nodiscard]] constexpr const __emplace_device* operator->() const;
 };
 } // namespace __detail
 
+//! @brief For a given attribute, type of the attribute value.
+//!
+//! @par Example
+//! @code
+//! using threads_per_block_t = device::attr_result_t<device_attributes::max_threads_per_block>;
+//! static_assert(std::is_same_v<threads_per_block_t, int>);
+//! @endcode
+//!
+//! @sa device_attributes
+template <::cudaDeviceAttr _Attr>
+using device_attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
+
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
 //
 //! @brief An immovable "owning" representation of a CUDA device.
-class device : public device_ref
+class physical_device : public device_ref
 {
 public:
-  using attributes = __detail::__device_attrs;
-
-  //! @brief For a given attribute, returns the type of the attribute value.
-  //!
-  //! @par Example
-  //! @code
-  //! using threads_per_block_t = device::attr_result_t<device::attributes::max_threads_per_block>;
-  //! static_assert(std::is_same_v<threads_per_block_t, int>);
-  //! @endcode
-  //!
-  //! @sa device::attributes
-  template <::cudaDeviceAttr _Attr>
-  using attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
-  device(__detail::__emplace_device __ed)
-      : device(__ed.__id_)
+  physical_device(__detail::__emplace_device __ed)
+      : physical_device(__ed.__id_)
   {}
 #  endif
 #endif
@@ -91,21 +90,21 @@ public:
     return __traits;
   }
 
-  CUcontext primary_context() const
+  ::CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
-      __device      = ::cuda::experimental::__driver::__deviceGet(__id_);
-      __primary_ctx = ::cuda::experimental::__driver::__primaryCtxRetain(__device);
+      __device      = _CUDA_DRIVER::__deviceGet(__id_);
+      __primary_ctx = _CUDA_DRIVER::__primaryCtxRetain(__device);
     });
     _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
     return __primary_ctx;
   }
 
-  ~device()
+  ~physical_device()
   {
     if (__primary_ctx)
     {
-      ::cuda::experimental::__driver::__primaryCtxRelease(__device);
+      _CUDA_DRIVER::__primaryCtxRelease(__device);
     }
   }
 
@@ -116,8 +115,8 @@ private:
   friend class device_ref;
   friend struct __detail::__emplace_device;
 
-  mutable CUcontext __primary_ctx = nullptr;
-  mutable CUdevice __device{};
+  mutable ::CUcontext __primary_ctx = nullptr;
+  mutable ::CUdevice __device{};
   mutable ::std::once_flag __init_once;
 
   // TODO should this be a reference/pointer to the constexpr traits instances?
@@ -125,31 +124,31 @@ private:
   //  We should have some of the attributes just return from the arch traits
   arch_traits_t __traits;
 
-  explicit device(int __id)
+  explicit physical_device(int __id)
       : device_ref(__id)
-      , __traits(__detail::__arch_traits_might_be_unknown(__id, attributes::compute_capability(__id)))
+      , __traits(__detail::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
-  device(device&&)                 = delete;
-  device(const device&)            = delete;
-  device& operator=(device&&)      = delete;
-  device& operator=(const device&) = delete;
+  physical_device(physical_device&&)                 = delete;
+  physical_device(const physical_device&)            = delete;
+  physical_device& operator=(physical_device&&)      = delete;
+  physical_device& operator=(const physical_device&) = delete;
 
-  friend bool operator==(const device& __lhs, int __rhs) = delete;
-  friend bool operator==(int __lhs, const device& __rhs) = delete;
+  friend bool operator==(const physical_device& __lhs, int __rhs) = delete;
+  friend bool operator==(int __lhs, const physical_device& __rhs) = delete;
 
 #if _CCCL_STD_VER <= 2017
-  friend bool operator!=(const device& __lhs, int __rhs) = delete;
-  friend bool operator!=(int __lhs, const device& __rhs) = delete;
+  friend bool operator!=(const physical_device& __lhs, int __rhs) = delete;
+  friend bool operator!=(int __lhs, const physical_device& __rhs) = delete;
 #endif // _CCCL_STD_VER <= 2017
 };
 
 namespace __detail
 {
-[[nodiscard]] inline __emplace_device::operator device() const
+[[nodiscard]] inline __emplace_device::operator physical_device() const
 {
-  return device(__id_);
+  return physical_device(__id_);
 }
 
 [[nodiscard]] inline constexpr const __emplace_device* __emplace_device::operator->() const

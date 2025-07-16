@@ -6,30 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/tuple>
-
-// template <class... Types> class tuple;
-
-// template <class U1, class U2>
-//   tuple& operator=(const pair<U1, U2>& u);
-
-#include <cuda/std/cassert>
-#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-  {
-    using T0 = cuda::std::pair<long, char>;
-    using T1 = cuda::std::tuple<long long, short>;
-    T0 t0(2, 'a');
-    T1 t1;
-    t1 = t0;
-    assert(cuda::std::get<0>(t1) == 2);
-    assert(cuda::std::get<1>(t1) == short('a'));
-  }
+  static_assert(sizeof(cuda::std::pair<float, int>) == sizeof(float) + sizeof(int));
+  static_assert(sizeof(cuda::std::pair<cuda::std::pair<float, int>, cuda::std::pair<float, int>>)
+                == 2 * sizeof(cuda::std::pair<float, int>));
+  static_assert(sizeof(cuda::std::pair<cuda::std::pair<float, int>, cuda::std::pair<float, int>>)
+                == sizeof(float) * 2 + sizeof(int) * 2);
 
   return 0;
 }

@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __COMMON_TESTING_H__
-#define __COMMON_TESTING_H__
+#ifndef __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
+#define __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 
 #include <cuda/__cccl_config>
 #include <cuda/__driver/driver_api.h>
@@ -17,21 +17,13 @@
 #include <nv/target>
 
 #include <exception> // IWYU pragma: keep
-#include <iostream>
 #include <sstream>
 
 #include <c2h/catch2_test_helper.h>
 
-namespace cuda::experimental::execution
-{
-}
-
-namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
-namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-alias-decls
-
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-__device__ inline void cudax_require_impl(
+__device__ inline void ccclrt_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
@@ -54,22 +46,32 @@ __device__ inline void cudax_require_impl(
   }
 }
 
-#define CUDAX_REQUIRE(condition)                                                                           \
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                          \
-                    (cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                    (REQUIRE(condition);))
+// There is a problem with clang-cuda and nv/target, but we don't need the device side macros yet,
+// disable them for now
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  define CCCLRT_REQUIRE(condition)     REQUIRE(condition)
+#  define CCCLRT_CHECK(condition)       CHECK(condition)
+#  define CCCLRT_FAIL(message)          FAIL(message)
+#  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
 
-#define CUDAX_CHECK(condition)                                                                             \
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                          \
-                    (cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                    (CHECK(condition);))
+#else // _CCCL_CUDA_COMPILER(CLANG)
+#  define CCCLRT_REQUIRE(condition)                                                                           \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                           \
+                      (ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
+                      (REQUIRE(condition);))
 
-#define CUDAX_FAIL(message) /*                                                                   */ \
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, /*                                                             */ \
-                    (cudax_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                    (FAIL(message);))
+#  define CCCLRT_CHECK(condition)                                                                             \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                           \
+                      (ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
+                      (CHECK(condition);))
 
-#define CUDAX_CHECK_FALSE(condition) CUDAX_CHECK(!(condition))
+#  define CCCLRT_FAIL(message) /*                                                                   */ \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, /*                                                             */  \
+                      (ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
+                      (FAIL(message);))
+
+#  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
@@ -97,11 +99,11 @@ namespace test
 {
 inline int count_driver_stack()
 {
-  if (cuda::__driver::__ctxGetCurrent() != nullptr)
+  if (_CUDA_DRIVER::__ctxGetCurrent() != nullptr)
   {
-    auto ctx    = cuda::__driver::__ctxPop();
+    auto ctx    = _CUDA_DRIVER::__ctxPop();
     auto result = 1 + count_driver_stack();
-    cuda::__driver::__ctxPush(ctx);
+    _CUDA_DRIVER::__ctxPush(ctx);
     return result;
   }
   else
@@ -112,15 +114,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (cuda::__driver::__ctxGetCurrent() != nullptr)
+  while (_CUDA_DRIVER::__ctxGetCurrent() != nullptr)
   {
-    cuda::__driver::__ctxPop();
+    _CUDA_DRIVER::__ctxPop();
   }
 }
 
 inline int cuda_driver_version()
 {
-  return cuda::__driver::__getVersion();
+  return _CUDA_DRIVER::__getVersion();
 }
 
 // Needs to be a template because we use template catch2 macro
@@ -133,7 +135,7 @@ struct ccclrt_test_fixture
   }
   ~ccclrt_test_fixture()
   {
-    CUDAX_CHECK(count_driver_stack() == 0);
+    CCCLRT_CHECK(count_driver_stack() == 0);
   }
 };
 
@@ -147,4 +149,4 @@ struct ccclrt_test_fixture
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
-#endif // __COMMON_TESTING_H__
+#endif // __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__

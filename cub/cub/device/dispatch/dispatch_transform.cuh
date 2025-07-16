@@ -229,7 +229,7 @@ struct dispatch_t<StableAddress,
         static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread);
 
         const int tile_size = block_threads * items_per_thread;
-        const int smem_size = smem_for_tile_size(tile_size, alignment);
+        const int smem_size = smem_for_tile_size(tile_size, block_threads, alignment);
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -275,10 +275,12 @@ struct dispatch_t<StableAddress,
     const int ipt =
       spread_out_items_per_thread(ActivePolicy{}, config->items_per_thread, config->sm_count, config->max_occupancy);
     const int tile_size = block_threads * ipt;
-    const int smem_size = smem_for_tile_size(tile_size, alignment);
+    const int smem_size = smem_for_tile_size(tile_size, block_threads, alignment);
     _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
+    // config->smem_size is 16 bytes larger than needed for UBLKCP because it's the total SMEM size, but 16 bytes are
+    // occupied by static shared memory and padding. But let's not complicate things.
     return ::cuda::std::make_tuple(
       launcher_factory(grid_dim, block_threads, smem_size, stream), kernel_source.TransformKernel(), ipt);
   }
