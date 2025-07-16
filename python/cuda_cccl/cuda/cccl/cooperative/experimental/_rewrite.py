@@ -227,11 +227,25 @@ class Primitive(IntEnum):
     Enum for the primitive type of the cooperative operation.
     """
 
+    # N.B. We don't include the `Block` or `Warp` prefix in the primitive
+    #      name.  Additionally, double-underscores are used to delineate
+    #      between struct name and method instance name, where applicable.
+
     ARRAY = auto()
     LOAD = auto()
     STORE = auto()
     REDUCE = auto()
     SCAN = auto()
+    HISTOGRAM = auto()
+    HISTOGRAM__INIT = auto()
+    HISTOGRAM__COMPOSITE = auto()
+    # Run-length decode's struct name is `BlockRunLengthDecode`, and its
+    # method name is `RunLengthDecode`.  As we don't include the granularity
+    # in these primitive names (i.e. the `Block` part), we end up with the
+    # unsightly `RUN_LENGTH_DECODE__RUN_LENGTH_DECODE` primitive name for the
+    # method instance.
+    RUN_LENGTH_DECODE = auto()
+    RUN_LENGTH_DECODE__RUN_LENGTH_DECODE = auto()
 
 
 class CoopNodeMixin:
@@ -303,6 +317,7 @@ class CoopNode:
     invocable: Any = None
     instance: Any = None
     codegens: list = None
+    children: list = None
 
     def __post_init__(self):
         # If we're handling a two-phase invocation via a primitive that was
@@ -452,7 +467,7 @@ class CoopNode:
 
     @cached_property
     def c_name(self):
-        # Need to obtain the mangled name depending the template parameter
+        # Need to obtain the mangled name depending on the template parameter
         # match.
         name = self.instance.specialization.mangled_names_alloc[0]
         return name
@@ -486,7 +501,7 @@ class CoopNode:
         """
         Determine the primitive type of the cooperative operation.
         """
-        name = self.key_name
+        name = self.key_name.lower()
         if "array" in name:
             return Primitive.ARRAY
         elif "load" in name:
@@ -497,8 +512,26 @@ class CoopNode:
             return Primitive.SCAN
         elif "reduce" in name:
             return Primitive.REDUCE
-        else:
-            raise RuntimeError(f"Unknown primitive: {self!r}")
+        elif "histogram" in name:
+            if "init" in name:
+                return Primitive.HISTOGRAM__INIT
+            elif "composite" in name:
+                return Primitive.HISTOGRAM__COMPOSITE
+            elif name.endswith("histogram"):
+                return Primitive.HISTOGRAM
+        elif "run_length_decode" in name:
+            occurrences = name.count("run_length_decode")
+            if occurrences == 1:
+                return Primitive.RUN_LENGTH_DECODE
+            elif occurrences == 2:
+                return Primitive.RUN_LENGTH_DECODE__RUN_LENGTH_DECODE
+            else:
+                raise RuntimeError(
+                    "Unexpected number of 'run_length_decode' occurrences"
+                    f"in name: {name!r}"
+                )
+
+        raise RuntimeError(f"Unknown primitive: {self!r}")
 
     @property
     def is_array(self):
@@ -723,10 +756,10 @@ class CoopLoadStoreNode(CoopNode):
 
     def rewrite_two_phase(self, rewriter):
         # N.B. I tried valiantly to avoid duplicating the code from
-        # single-phase here; after all, we've already got an instance of the
-        # primitive created, so we should be able to reuse it.  However, try
-        # as I might, I couldn't get the lowering to kick in with all the
-        # other attempted variants.
+        #      single-phase here; after all, we've already got an instance
+        #      of the primitive created, so we should be able to reuse it.
+        #      However, try as I might, I couldn't get the lowering to kick
+        #      in with all the other attempted variants.
         instance = self.two_phase_instance
         algo = instance.specialization
 
@@ -1088,8 +1121,34 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram"
 
     def refine_match(self, rewriter):
-        print(self)
-        pass
+        expr = self.expr
+        expr_args = self.expr_args = list(expr.args)
+        if len(expr_args) not in (0, 1):
+            raise RuntimeError(
+                f"Invalid number of arguments for {self!r}: "
+                f"{expr_args}; expected 0 or 1."
+            )
+
+        if len(expr_args) == 1:
+            temp_storage = expr_args[0]
+            runtime_args = [temp_storage]
+            runtime_arg_types = (self.typemap[temp_storage.name],)
+            runtime_arg_names = ("temp_storage",)
+            self.implicit_temp_storage = False
+        else:
+            temp_storage = None
+            runtime_args = []
+            runtime_arg_types = ()
+            runtime_arg_names = ()
+            self.implicit_temp_storage = True
+
+        self.temp_storage = temp_storage
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+        # Initialize a list for our init and composite children.
+        self.children = []
 
     def rewrite(self, rewriter):
         print(self)
