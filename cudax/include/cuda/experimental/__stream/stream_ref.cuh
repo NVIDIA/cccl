@@ -200,14 +200,14 @@ struct stream_ref : ::cuda::stream_ref
     if (__driver::__getVersion() >= 12050)
     {
       auto __ctx = _CUDA_DRIVER::__streamGetCtx_v2(__stream);
-      if (__ctx.__ctx_kind == _CUDA_DRIVER::__ctx_from_stream::__kind::__green)
+      if (__ctx.__ctx_kind_ == _CUDA_DRIVER::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = _CUDA_DRIVER::__ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
+        __stream_ctx = _CUDA_DRIVER::__ctxFromGreenCtx(__ctx.__ctx_green_);
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
       {
-        __stream_ctx = __ctx.__ctx_ptr.__device;
+        __stream_ctx = __ctx.__ctx_device_;
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
       }
     }
