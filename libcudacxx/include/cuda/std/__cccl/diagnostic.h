@@ -61,7 +61,7 @@
 #endif
 
 // Enable us to selectively silence cuda compiler warnings
-#if _CCCL_CUDA_COMPILER(NVCC)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
 #  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(nv_diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(nv_diagnostic pop)
@@ -113,10 +113,13 @@
     _CCCL_DIAG_SUPPRESS_MSVC(4996)       \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
-#else // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) && !_CCCL_COMPILER(MSVC)
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_SUPPRESS_DEPRECATED_PUSH _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_POP  _CCCL_NV_DIAG_POP()
+#else // unknown compiler
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define _CCCL_SUPPRESS_DEPRECATED_POP
-#endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) && !_CCCL_COMPILER(MSVC)
+#endif // unknown compiler
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING
