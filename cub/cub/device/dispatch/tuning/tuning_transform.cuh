@@ -227,12 +227,14 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(
   _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
   _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
 
-  const int min_retained_alignment = ::cuda::std::min(
-    {(int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * block_threads)...,
-     2 << 30 /* largest alignment that can fit into int */});
-  const int max_alignment = ::cuda::std::max({int{alignof(it_value_t<RandomAccessIteratorsIn>)}..., 1});
+  int min_retained_alignment = 2 << 30; // largest alignment that can fit into int
+  int max_alignment          = 1;
+  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  {
+    min_retained_alignment = ::cuda::std::min(min_retained_alignment, static_cast<int>(vt_size) * block_threads);
+    max_alignment          = ::cuda::std::max(max_alignment, static_cast<int>(vt_alignment));
+  }
   const bool tile_sizes_retain_max_alignment = max_alignment <= min_retained_alignment;
-
   const int tile_padding =
     tile_sizes_retain_max_alignment ? ::cuda::std::max(bulk_copy_align, max_alignment) : bulk_copy_align;
 
@@ -240,16 +242,15 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(
   // So let's start at offset 16. This also hits the worst case scenario for types with alignment larger than 16,
   // needing the most padding before the first tile. From observation, dynamic shared memory starts at address 0x408
   // within the shared memory window of the current CTA.
-  int smem_size                    = ::cuda::round_up(int{sizeof(uint64_t)}, 16);
-  [[maybe_unused]] auto count_smem = [&](int vt_size, int vt_alignment) {
+  int smem_size = ::cuda::round_up(int{sizeof(uint64_t)}, 16);
+  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  {
     if (!tile_sizes_retain_max_alignment)
     {
-      smem_size = ::cuda::round_up(smem_size, vt_alignment);
+      smem_size = ::cuda::round_up(smem_size, static_cast<int>(vt_alignment));
     }
-    smem_size += tile_padding + vt_size * tile_size;
-  };
-  // left to right evaluation!
-  (..., count_smem(sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)));
+    smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;
+  }
   return smem_size;
 }
 

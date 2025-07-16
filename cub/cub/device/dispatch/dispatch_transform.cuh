@@ -176,14 +176,16 @@ struct dispatch_t<StableAddress,
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int
   spread_out_items_per_thread(ActivePolicy active_policy, int items_per_thread, int sm_count, int max_occupancy)
   {
-    auto wrapped_policy     = detail::transform::MakeTransformPolicyWrapper(active_policy);
-    const int block_threads = wrapped_policy.BlockThreads();
+    auto wrapped_policy     = transform::MakeTransformPolicyWrapper(active_policy);
+    const int block_threads = wrapped_policy.AlgorithmPolicy().BlockThreads();
 
     const int items_per_thread_evenly_spread = static_cast<int>(
       (::cuda::std::min) (Offset{items_per_thread},
                           ::cuda::ceil_div(num_items, sm_count * block_threads * max_occupancy)));
     const int items_per_thread_clamped = ::cuda::std::clamp(
-      items_per_thread_evenly_spread, +wrapped_policy.MinItemsPerThread(), +wrapped_policy.MaxItemsPerThread());
+      items_per_thread_evenly_spread,
+      +wrapped_policy.AlgorithmPolicy().MinItemsPerThread(),
+      +wrapped_policy.AlgorithmPolicy().MaxItemsPerThread());
     return items_per_thread_clamped;
   }
 
@@ -225,10 +227,10 @@ struct dispatch_t<StableAddress,
       // This computation MUST NOT depend on any runtime state of the current API invocation (like num_items), since the
       // result will be cached.
       async_config last_config{};
-      for (int elem_per_thread = +min_items_per_thread; elem_per_thread <= +max_items_per_thread; ++elem_per_thread)
+      for (int items_per_thread = +min_items_per_thread; items_per_thread <= +max_items_per_thread; ++items_per_thread)
       {
         const int tile_size = block_threads * items_per_thread;
-        const int smem_size = smem_for_tile_size(tile_size, block_threads, alignment);
+        const int smem_size = smem_for_tile_size(tile_size, alignment);
         if (smem_size > max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -282,7 +284,7 @@ struct dispatch_t<StableAddress,
     const int ipt =
       spread_out_items_per_thread(ActivePolicy{}, config->items_per_thread, config->sm_count, config->max_occupancy);
     const int tile_size = block_threads * ipt;
-    const int smem_size = smem_for_tile_size(tile_size, block_threads, alignment);
+    const int smem_size = smem_for_tile_size(tile_size, alignment);
     _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
@@ -483,14 +485,16 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
-    const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
+    auto wrapped_policy                        = transform::MakeTransformPolicyWrapper(active_policy);
+    CUB_DETAIL_CONSTEXPR_ISH int block_threads = wrapped_policy.AlgorithmPolicy().BlockThreads();
+    const auto seq                             = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
     {
       return invoke_async_algorithm(
         bulk_copy_align,
-        [this](int tile_size, int alignment) {
-          return bulk_copy_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
+        [this, block_threads](int tile_size, int alignment) {
+          return bulk_copy_smem_for_tile_size(
+            kernel_source.ItValueSizesAlignments(), tile_size, block_threads, alignment);
         },
         seq,
         active_policy);
@@ -499,8 +503,9 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         ldgsts_size_and_align,
-        [this](int tile_size, int alignment) {
-          return memcpy_async_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
+        [this, block_threads](int tile_size, int alignment) {
+          return memcpy_async_smem_for_tile_size(
+            kernel_source.ItValueSizesAlignments(), tile_size, block_threads, alignment);
         },
         seq,
         active_policy);
