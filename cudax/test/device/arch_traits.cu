@@ -72,7 +72,7 @@ void constexpr compare_static_and_dynamic()
     cudax::arch::traits<cudax::arch::id_for_compute_capability(ComputeCapability)>();
   constexpr cudax::arch::traits_t dynamic_traits = cudax::arch::traits_for_compute_capability(ComputeCapability);
 
-  static_assert(static_traits.id == dynamic_traits.id);
+  static_assert(static_traits.arch_id == dynamic_traits.arch_id);
   static_assert(static_traits.max_threads_per_block == dynamic_traits.max_threads_per_block);
   static_assert(static_traits.max_block_dim_x == dynamic_traits.max_block_dim_x);
   static_assert(static_traits.max_block_dim_y == dynamic_traits.max_block_dim_y);

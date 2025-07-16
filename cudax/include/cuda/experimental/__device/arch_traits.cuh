@@ -130,7 +130,7 @@ struct traits_t
   const int max_registers_per_thread = 255;
 
   // Identifier for the architecture
-  id id;
+  id arch_id;
 
   // Major compute capability version number
   int compute_capability_major;
@@ -188,7 +188,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_60>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_60;
+  __traits.arch_id                              = id::sm_60;
   __traits.compute_capability_major             = 6;
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 60;
@@ -211,7 +211,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_61>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_61;
+  __traits.arch_id                              = id::sm_61;
   __traits.compute_capability_major             = 6;
   __traits.compute_capability_minor             = 1;
   __traits.compute_capability                   = 61;
@@ -234,7 +234,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_70>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_70;
+  __traits.arch_id                              = id::sm_70;
   __traits.compute_capability_major             = 7;
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 70;
@@ -258,7 +258,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_75>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_75;
+  __traits.arch_id                              = id::sm_75;
   __traits.compute_capability_major             = 7;
   __traits.compute_capability_minor             = 5;
   __traits.compute_capability                   = 75;
@@ -282,7 +282,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_80>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_80;
+  __traits.arch_id                              = id::sm_80;
   __traits.compute_capability_major             = 8;
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 80;
@@ -306,7 +306,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_86>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_86;
+  __traits.arch_id                              = id::sm_86;
   __traits.compute_capability_major             = 8;
   __traits.compute_capability_minor             = 6;
   __traits.compute_capability                   = 86;
@@ -330,7 +330,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_89>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_89;
+  __traits.arch_id                              = id::sm_89;
   __traits.compute_capability_major             = 8;
   __traits.compute_capability_minor             = 9;
   __traits.compute_capability                   = 89;
@@ -354,7 +354,7 @@ template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_90;
+  __traits.arch_id                              = id::sm_90;
   __traits.compute_capability_major             = 9;
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 90;
@@ -378,14 +378,14 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90a>()
 {
-  return traits<id::sm_90>();
+  return ::cuda::experimental::arch::traits<id::sm_90>();
 };
 
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_100;
+  __traits.arch_id                              = id::sm_100;
   __traits.compute_capability_major             = 10;
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 100;
@@ -408,14 +408,14 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100a>()
 {
-  return traits<id::sm_100>();
+  return ::cuda::experimental::arch::traits<id::sm_100>();
 };
 
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103>()
 {
-  traits_t __traits                 = traits<id::sm_100>();
-  __traits.id                       = id::sm_103;
+  traits_t __traits                 = ::cuda::experimental::arch::traits<id::sm_100>();
+  __traits.arch_id                  = id::sm_103;
   __traits.compute_capability_major = 10;
   __traits.compute_capability_minor = 3;
   __traits.compute_capability       = 103;
@@ -425,14 +425,14 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103a>()
 {
-  return traits<id::sm_103>();
+  return ::cuda::experimental::arch::traits<id::sm_103>();
 };
 
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120>()
 {
   traits_t __traits{};
-  __traits.id                                   = id::sm_120;
+  __traits.arch_id                              = id::sm_120;
   __traits.compute_capability_major             = 12;
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 120;
@@ -455,7 +455,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120a>()
 {
-  return traits<id::sm_120>();
+  return ::cuda::experimental::arch::traits<id::sm_120>();
 };
 
 inline constexpr int __highest_known_arch = 120;
@@ -539,13 +539,14 @@ _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
   // fixme: this doesn't work with nvc++ -cuda
 #ifdef __CUDA_ARCH__
 #  ifdef __CUDA_ARCH_SPECIFIC__
-  return arch::traits_for_id(__special_id_for_compute_capability(__CUDA_ARCH_SPECIFIC__ / 10));
+  return ::cuda::experimental::arch::traits_for_id(
+    ::cuda::experimental::arch::__special_id_for_compute_capability(__CUDA_ARCH_SPECIFIC__ / 10));
 #  else
-  return arch::traits_for_compute_capability(__CUDA_ARCH__ / 10);
+  return ::cuda::experimental::arch::traits_for_compute_capability(__CUDA_ARCH__ / 10);
 #  endif // __CUDA_ARCH_SPECIFIC__
 #else // __CUDA_ARCH__
   // Should be unreachable in __device__ function
-  return arch::traits_t{};
+  return ::cuda::experimental::arch::traits_t{};
 #endif // __CUDA_ARCH__
 }
 
