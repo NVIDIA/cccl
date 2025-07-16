@@ -365,7 +365,7 @@
 #  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
 
-#if _CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
+#if (_CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(GCC)) && !_CCCL_DEVICE_COMPILATION()
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(__builtin_add_overflow)
 
