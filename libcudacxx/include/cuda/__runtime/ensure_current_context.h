@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___INTERNAL_ENSURE_CURRENT_CONTEXT_H
-#define _CUDA___INTERNAL_ENSURE_CURRENT_CONTEXT_H
+#ifndef _CUDA___RUNTIME_ENSURE_CURRENT_CONTEXT_H
+#define _CUDA___RUNTIME_ENSURE_CURRENT_CONTEXT_H
 
 #include <cuda/__cccl_config>
 
@@ -97,4 +97,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA___INTERNAL_ENSURE_CURRENT_CONTEXT_H
+#endif // _CUDA___RUNTIME_ENSURE_CURRENT_CONTEXT_H
