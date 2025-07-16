@@ -77,15 +77,36 @@ enum edge_type
   fence   = 2
 };
 
-// Information for every task, so that we can eventually generate a node for the task
-struct per_task_info
+// We have different types of nodes in the graph
+enum vertex_type
 {
+  task_vertex,
+  prereq_vertex,
+  fence_vertex,
+  section_vertex, // collapsed sections depicted as a single node
+  freeze_vertex, // freeze and unfreeze operations
+  cluster_proxy_vertex // start or end of clusters (invisible nodes)
+};
+
+// Information for every vertex (task, prereq, ...), so that we can eventually generate a node for the DAG
+struct per_vertex_info
+{
+  // This color can for example be computed according to the duration of the task, if measured
   ::std::string color;
   ::std::string label;
   ::std::optional<float> timing;
+  // is that a task, fence or prereq ?
+  vertex_type type;
+
   int dot_section_id;
 };
 
+/**
+ * @brief Store dot-related information per STF context.
+ *
+ * If multiple contexts are created, the specific state of each context is
+ * saved here, and common state is stored in the dot singleton class
+ */
 class per_ctx_dot
 {
 public:
@@ -186,8 +207,11 @@ public:
   // Used to avoid cyclic dependencies, defined later
   static int get_current_section_id();
 
+  // Save the ID of the task in the "vertices" vector, and associate this ID to
+  // the metadata of the task, so that we can generate a node for the task
+  // later.
   template <typename task_type, typename data_type>
-  void add_vertex(const task_type& t)
+  void add_vertex_internal(const task_type& t, vertex_type type)
   {
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
@@ -229,10 +253,35 @@ public:
     }
 
     task_metadata.label = task_oss.str();
+    task_metadata.type  = type;
+  }
+
+  // Save the ID of the task in the "vertices" vector, and associate this ID to
+  // the metadata of the task, so that we can generate a node for the task
+  // later.
+  template <typename task_type, typename data_type>
+  void add_vertex(const task_type& t)
+  {
+    add_vertex_internal<task_type, data_type>(t, task_vertex);
+  }
+
+  // internal freeze indicates if this is a freeze/unfreeze from the user or
+  // not and if we need to display an edge, or if it is unnecessary because
+  // other dependencies will imply that edge between freeze and unfreeze
+  template <typename task_type, typename data_type>
+  void add_freeze_vertices(const task_type& freeze_fake_task, const task_type& unfreeze_fake_task, bool user_freeze)
+  {
+    add_vertex_internal<task_type, data_type>(freeze_fake_task, freeze_vertex);
+    add_vertex_internal<task_type, data_type>(unfreeze_fake_task, freeze_vertex);
+
+    if (user_freeze)
+    {
+      add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), edge_type::plain);
+    }
   }
 
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
+  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
   {
     ::std::lock_guard<::std::mutex> guard(mtx);
 
@@ -352,7 +401,7 @@ public: // XXX protected, friend : dot
   mutable ::std::ostringstream oss;
   // strings of the previous stages
   mutable ::std::vector<::std::ostringstream> prev_oss;
-  ::std::unordered_map<int /* id */, per_task_info> metadata;
+  ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
 private:
   mutable ::std::string ctx_symbol;
@@ -831,12 +880,12 @@ private:
    */
   void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
   {
-    // ::std::unordered_map<int /* id */, per_task_info> metadata;
+    // ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
     // Get src_id from the map and remove it
     auto it = pc.metadata.find(src_id);
     assert(it != pc.metadata.end());
-    per_task_info src = mv(it->second);
+    per_vertex_info src = mv(it->second);
     pc.metadata.erase(it);
 
     // If there was some timing associated to either src or dst, update timing
