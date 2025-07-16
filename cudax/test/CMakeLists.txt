@@ -67,11 +67,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/configuration.cu
   )
 
-  cudax_add_catch2_test(test_target device ${cn_target}
-    device/device_smoke.cu
-    device/arch_traits.cu
-  )
-
   cudax_add_catch2_test(test_target event ${cn_target}
     event/event_smoke.cu
   )

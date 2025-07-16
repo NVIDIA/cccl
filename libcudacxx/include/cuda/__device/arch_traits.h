@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_ARCH_TRAITS
-#define _CUDAX__DEVICE_ARCH_TRAITS
+#ifndef _CUDA___DEVICE_ARCH_TRAITS_H
+#define _CUDA___DEVICE_ARCH_TRAITS_H
 
 #include <cuda/__cccl_config>
 
@@ -21,16 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/cuda_error.h>
-#include <cuda/std/limits>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/__device/attributes.h>
+#  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/limits>
 
-#include <cuda/experimental/__device/attributes.cuh>
+#  include <cuda/std/__cccl/prologue.h>
 
-#include <cuda/std/__cccl/prologue.h>
-
-namespace cuda::experimental
-{
-
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 namespace arch
 {
 
@@ -378,7 +376,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90a>()
 {
-  return ::cuda::experimental::arch::traits<id::sm_90>();
+  return ::cuda::arch::traits<id::sm_90>();
 };
 
 template <>
@@ -408,13 +406,13 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100a>()
 {
-  return ::cuda::experimental::arch::traits<id::sm_100>();
+  return ::cuda::arch::traits<id::sm_100>();
 };
 
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103>()
 {
-  traits_t __traits                 = ::cuda::experimental::arch::traits<id::sm_100>();
+  traits_t __traits                 = ::cuda::arch::traits<id::sm_100>();
   __traits.arch_id                  = id::sm_103;
   __traits.compute_capability_major = 10;
   __traits.compute_capability_minor = 3;
@@ -425,7 +423,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103a>()
 {
-  return ::cuda::experimental::arch::traits<id::sm_103>();
+  return ::cuda::arch::traits<id::sm_103>();
 };
 
 template <>
@@ -455,7 +453,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120a>()
 {
-  return ::cuda::experimental::arch::traits<id::sm_120>();
+  return ::cuda::arch::traits<id::sm_120>();
 };
 
 inline constexpr int __highest_known_arch = 120;
@@ -465,35 +463,35 @@ inline constexpr int __highest_known_arch = 120;
   switch (__id)
   {
     case id::sm_60:
-      return arch::traits<id::sm_60>();
+      return ::cuda::arch::traits<id::sm_60>();
     case id::sm_61:
-      return arch::traits<id::sm_61>();
+      return ::cuda::arch::traits<id::sm_61>();
     case id::sm_70:
-      return arch::traits<id::sm_70>();
+      return ::cuda::arch::traits<id::sm_70>();
     case id::sm_75:
-      return arch::traits<id::sm_75>();
+      return ::cuda::arch::traits<id::sm_75>();
     case id::sm_80:
-      return arch::traits<id::sm_80>();
+      return ::cuda::arch::traits<id::sm_80>();
     case id::sm_86:
-      return arch::traits<id::sm_86>();
+      return ::cuda::arch::traits<id::sm_86>();
     case id::sm_89:
-      return arch::traits<id::sm_89>();
+      return ::cuda::arch::traits<id::sm_89>();
     case id::sm_90:
-      return arch::traits<id::sm_90>();
+      return ::cuda::arch::traits<id::sm_90>();
     case id::sm_90a:
-      return arch::traits<id::sm_90a>();
+      return ::cuda::arch::traits<id::sm_90a>();
     case id::sm_100:
-      return arch::traits<id::sm_100>();
+      return ::cuda::arch::traits<id::sm_100>();
     case id::sm_100a:
-      return arch::traits<id::sm_100a>();
+      return ::cuda::arch::traits<id::sm_100a>();
     case id::sm_103:
-      return arch::traits<id::sm_103>();
+      return ::cuda::arch::traits<id::sm_103>();
     case id::sm_103a:
-      return arch::traits<id::sm_103a>();
+      return ::cuda::arch::traits<id::sm_103a>();
     case id::sm_120:
-      return arch::traits<id::sm_120>();
+      return ::cuda::arch::traits<id::sm_120>();
     case id::sm_120a:
-      return arch::traits<id::sm_120a>();
+      return ::cuda::arch::traits<id::sm_120a>();
     default:
       ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
@@ -511,8 +509,7 @@ inline constexpr int __highest_known_arch = 120;
 
 [[nodiscard]] _CCCL_API inline constexpr traits_t traits_for_compute_capability(int compute_capability)
 {
-  return ::cuda::experimental::arch::traits_for_id(
-    ::cuda::experimental::arch::id_for_compute_capability(compute_capability));
+  return ::cuda::arch::traits_for_id(::cuda::arch::id_for_compute_capability(compute_capability));
 }
 
 _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
@@ -537,17 +534,16 @@ _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
 [[nodiscard]] _CCCL_DEVICE inline constexpr arch::traits_t current_traits()
 {
   // fixme: this doesn't work with nvc++ -cuda
-#ifdef __CUDA_ARCH__
-#  ifdef __CUDA_ARCH_SPECIFIC__
-  return ::cuda::experimental::arch::traits_for_id(
-    ::cuda::experimental::arch::__special_id_for_compute_capability(__CUDA_ARCH_SPECIFIC__ / 10));
-#  else
-  return ::cuda::experimental::arch::traits_for_compute_capability(__CUDA_ARCH__ / 10);
-#  endif // __CUDA_ARCH_SPECIFIC__
-#else // __CUDA_ARCH__
+#  ifdef __CUDA_ARCH__
+#    ifdef __CUDA_ARCH_SPECIFIC__
+  return ::cuda::arch::traits_for_id(::cuda::arch::__special_id_for_compute_capability(__CUDA_ARCH_SPECIFIC__ / 10));
+#    else
+  return ::cuda::arch::traits_for_compute_capability(__CUDA_ARCH__ / 10);
+#    endif // __CUDA_ARCH_SPECIFIC__
+#  else // __CUDA_ARCH__
   // Should be unreachable in __device__ function
-  return ::cuda::experimental::arch::traits_t{};
-#endif // __CUDA_ARCH__
+  return ::cuda::arch::traits_t{};
+#  endif // __CUDA_ARCH__
 }
 
 [[nodiscard]] inline constexpr arch::traits_t
@@ -555,7 +551,7 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 {
   if (__compute_capability <= arch::__highest_known_arch)
   {
-    return ::cuda::experimental::arch::traits_for_compute_capability(__compute_capability);
+    return ::cuda::arch::traits_for_compute_capability(__compute_capability);
   }
   else
   {
@@ -565,14 +561,11 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
     __traits.compute_capability_minor = __compute_capability % 10;
     __traits.compute_capability       = __compute_capability;
     __traits.max_shared_memory_per_multiprocessor =
-      ::cuda::experimental::device_attributes::max_shared_memory_per_multiprocessor(__device);
-    __traits.max_blocks_per_multiprocessor =
-      ::cuda::experimental::device_attributes::max_blocks_per_multiprocessor(__device);
-    __traits.max_threads_per_multiprocessor =
-      ::cuda::experimental::device_attributes::max_threads_per_multiprocessor(__device);
-    __traits.max_warps_per_multiprocessor = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block =
-      ::cuda::experimental::device_attributes::reserved_shared_memory_per_block(__device);
+      ::cuda::device_attributes::max_shared_memory_per_multiprocessor(__device);
+    __traits.max_blocks_per_multiprocessor    = ::cuda::device_attributes::max_blocks_per_multiprocessor(__device);
+    __traits.max_threads_per_multiprocessor   = ::cuda::device_attributes::max_threads_per_multiprocessor(__device);
+    __traits.max_warps_per_multiprocessor     = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+    __traits.reserved_shared_memory_per_block = ::cuda::device_attributes::reserved_shared_memory_per_block(__device);
     __traits.max_shared_memory_per_block_optin =
       __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 
@@ -586,8 +579,10 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 }
 } // namespace arch
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_ARCH_TRAITS
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_ARCH_TRAITS_H

@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__device/all_devices.cuh>
+#include <cuda/__device/all_devices.h>
+
 #include <cuda/experimental/__green_context/green_ctx.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -82,7 +83,7 @@ public:
   // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
   //!
   //! Constructing a logical_device for a given device has a side effect of initializing that device
-  logical_device(const ::cuda::experimental::physical_device& __dev)
+  logical_device(const ::cuda::physical_device& __dev)
       : __dev_id(__dev.get())
       , __kind(kinds::device)
       , __ctx(__dev.primary_context())

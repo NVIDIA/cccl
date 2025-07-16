@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_DEVICE_REF
-#define _CUDAX__DEVICE_DEVICE_REF
+#ifndef _CUDA___DEVICE_DEVICE_REF_H
+#define _CUDA___DEVICE_DEVICE_REF_H
 
 #include <cuda/__cccl_config>
 
@@ -21,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/std/__cuda/api_wrapper.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
 
-#include <string>
-#include <vector>
+#  include <string>
+#  include <vector>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 class physical_device;
 namespace arch
 {
@@ -64,7 +64,7 @@ public:
     return __id_;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -78,7 +78,7 @@ public:
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#    if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -91,8 +91,8 @@ public:
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#  endif // _CCCL_STD_VER <= 2017
-#endif // _CCCL_DOXYGEN_INVOKED
+#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Retrieve the specified attribute for the device
   //!
@@ -169,8 +169,10 @@ public:
   ::std::vector<device_ref> peer_devices() const;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_DEVICE_REF
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_DEVICE_REF_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_ALL_DEVICES
-#define _CUDAX__DEVICE_ALL_DEVICES
+#ifndef _CUDA___DEVICE_ALL_DEVICES_H
+#define _CUDA___DEVICE_ALL_DEVICES_H
 
 #include <cuda/__cccl_config>
 
@@ -21,19 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/cassert>
-#include <cuda/std/detail/libcxx/include/stdexcept>
-#include <cuda/std/span>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/__device/physical_device.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/cassert>
+#  include <cuda/std/detail/libcxx/include/stdexcept>
+#  include <cuda/std/span>
 
-#include <cuda/experimental/__device/device.cuh>
+#  include <vector>
 
-#include <vector>
+#  include <cuda/std/__cccl/prologue.h>
 
-#include <cuda/std/__cccl/prologue.h>
-
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
 //! @brief A random-access range of all available CUDA devices
@@ -232,8 +231,10 @@ inline const arch::traits_t& device_ref::arch_traits() const
   return __result;
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_ALL_DEVICES
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_ALL_DEVICES_H
