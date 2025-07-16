@@ -84,6 +84,87 @@ __host__ __device__ void test_iter(MDSpan md)
   }
 }
 
+template <typename MDSpan>
+__host__ __device__ void test_iterators(MDSpan md)
+{
+  const auto do_test = [&](auto init) {
+    auto it = init;
+
+    const auto assert_ne_bigger = [&] {
+      assert(it != init);
+      assert(init != it);
+      assert(!(it == init));
+      assert(!(init == it));
+      assert(it > init);
+      assert(!(init > it));
+      assert(!(it < init));
+      assert(init < it);
+      assert(it >= init);
+      assert(!(init >= it));
+      assert(!(it <= init));
+      assert(init <= it);
+    };
+
+    const auto assert_eq = [&] {
+      assert(it == init);
+      assert(init == it);
+      assert(!(it != init));
+      assert(!(init != it));
+      assert(!(it > init));
+      assert(!(init > it));
+      assert(!(it < init));
+      assert(!(init < it));
+      assert(it >= init);
+      assert(init >= it);
+      assert(it <= init);
+      assert(init <= it);
+    };
+
+    assert_eq();
+
+    ++it;
+    assert_ne_bigger();
+
+    --it;
+    assert_eq();
+
+    it++;
+    assert_ne_bigger();
+
+    it--;
+    assert_eq();
+
+    it = it + 10;
+    assert_ne_bigger();
+
+    it = it - 10;
+    assert_eq();
+
+    it += 5;
+    assert_ne_bigger();
+
+    it -= 5;
+    assert_eq();
+
+    ++init;
+    ++it;
+    assert_eq();
+
+    --init;
+    --it;
+    assert_eq();
+
+    init = init + 10 - 5;
+    it   = init - 5 + 10;
+    assert_eq();
+  };
+
+  auto view = cuda::flatten(md);
+
+  do_test(view.begin());
+  do_test(view.end());
+}
+
 template <typename T>
 __host__ __device__ void test_body()
 {
@@ -92,6 +173,7 @@ __host__ __device__ void test_body()
 
     test_iter(md);
     test_basic(md, T{});
+    test_iterators(md);
   }
   {
     auto data = T{42};
@@ -99,6 +181,7 @@ __host__ __device__ void test_body()
 
     test_iter(md);
     test_basic(md, data);
+    test_iterators(md);
   }
 }
 
