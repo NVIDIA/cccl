@@ -28,7 +28,7 @@
 
 /**
  * @file
- * cub::BlockNondeterministicReduceWarpReductions provides variants of warp-reduction-based parallel reduction
+ * cub::BlockReduceWarpReductionsNondeterministic provides variants of warp-reduction-based parallel reduction
  * across a CUDA thread block. Supports non-commutative reduction operators.
  */
 
@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 /**
- * @brief BlockNondeterministicReduceWarpReductions provides variants of warp-reduction-based parallel reduction
+ * @brief BlockReduceWarpReductionsNondeterministic provides variants of warp-reduction-based parallel reduction
  *        across a CUDA thread block. Supports non-commutative reduction operators.
  * @tparam T
  *   Data type being reduced
@@ -69,7 +69,7 @@ namespace detail
  *   The thread block length in threads along the Z dimension
  */
 template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
-struct BlockNondeterministicReduceWarpReductions
+struct BlockReduceWarpReductionsNondeterministic
 {
   /// Constants
   enum
@@ -117,7 +117,7 @@ struct BlockNondeterministicReduceWarpReductions
   int lane_id;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockNondeterministicReduceWarpReductions(TempStorage& temp_storage)
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductionsNondeterministic(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
