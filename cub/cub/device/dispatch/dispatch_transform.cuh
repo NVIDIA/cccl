@@ -485,16 +485,18 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy                        = transform::MakeTransformPolicyWrapper(active_policy);
-    CUB_DETAIL_CONSTEXPR_ISH int block_threads = wrapped_policy.AlgorithmPolicy().BlockThreads();
-    const auto seq                             = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
+    auto wrapped_policy = transform::MakeTransformPolicyWrapper(active_policy);
+    const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
     {
       return invoke_async_algorithm(
         bulk_copy_align,
-        [this, block_threads](int tile_size, int alignment) {
+        [this, wrapped_policy](int tile_size, int alignment) {
           return bulk_copy_smem_for_tile_size(
-            kernel_source.ItValueSizesAlignments(), tile_size, block_threads, alignment);
+            kernel_source.ItValueSizesAlignments(),
+            tile_size,
+            wrapped_policy.AlgorithmPolicy().BlockThreads(),
+            alignment);
         },
         seq,
         active_policy);
@@ -503,9 +505,12 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         ldgsts_size_and_align,
-        [this, block_threads](int tile_size, int alignment) {
+        [this, wrapped_policy](int tile_size, int alignment) {
           return memcpy_async_smem_for_tile_size(
-            kernel_source.ItValueSizesAlignments(), tile_size, block_threads, alignment);
+            kernel_source.ItValueSizesAlignments(),
+            tile_size,
+            wrapped_policy.AlgorithmPolicy().BlockThreads(),
+            alignment);
         },
         seq,
         active_policy);
