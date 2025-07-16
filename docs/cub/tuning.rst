@@ -328,7 +328,7 @@ You can use the following command:
 
   $ mkdir build
   $ cd build
-  $ cmake .. --preset=cub-tune -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+  $ cmake .. --preset=cub-tune
 
 You can then run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:
 

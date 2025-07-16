@@ -38,18 +38,31 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
-#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
+#  include <thrust/system/cuda/detail/transform.h>
+#  include <thrust/type_traits/is_trivially_relocatable.h>
 
+#  include <cuda/functional>
 #  include <cuda/std/__algorithm_>
 #  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
-
 namespace cuda_cub
 {
-template <class ItemsIt1, class ItemsIt2>
 struct __swap_f
+{
+  template <typename T, typename U>
+  _CCCL_HOST_DEVICE auto operator()(T t, U u) const -> tuple<T, U>
+  {
+    using ::cuda::std::swap;
+    swap(t, u);
+    return tuple{t, u};
+  }
+};
+
+template <class ItemsIt1, class ItemsIt2>
+struct __swap_fallback_f
 {
   ItemsIt1 items1;
   ItemsIt2 items2;
@@ -62,14 +75,24 @@ struct __swap_f
 };
 
 template <class Derived, class ItemsIt1, class ItemsIt2>
-ItemsIt2 _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE ItemsIt2
 swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, ItemsIt2 first2)
 {
-  const auto num_items = ::cuda::std::distance(first1, last1);
-  cuda_cub::parallel_for(policy, __swap_f<ItemsIt1, ItemsIt2>{first1, first2}, num_items);
-  return first2 + num_items;
+  if constexpr (is_indirectly_trivially_relocate_to_v<ItemsIt1, ItemsIt2>
+                && is_indirectly_trivially_relocate_to_v<ItemsIt2, ItemsIt1>)
+  {
+    return get<1>(
+      cuda_cub::transform(
+        policy, first1, last1, first2, zip_iterator{first1, first2}, ::cuda::proclaim_copyable_arguments(__swap_f{}))
+        .get_iterator_tuple());
+  }
+  else
+  {
+    const auto num_items = ::cuda::std::distance(first1, last1);
+    cuda_cub::parallel_for(policy, __swap_fallback_f<ItemsIt1, ItemsIt2>{first1, first2}, num_items);
+    return first2 + num_items;
+  }
 }
 } // namespace cuda_cub
-
 THRUST_NAMESPACE_END
 #endif
