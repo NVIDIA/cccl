@@ -19,6 +19,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+namespace __mdspan_detail
+{
+
 template <typename _MDSpan>
 class __flat_mdspan_view;
 
@@ -39,8 +42,8 @@ public:
    *
    * @param span The span to view.
    */
-  constexpr explicit __flat_mdspan_view(mdspan_type __span) noexcept
-      : __span_{_CUDA_VSTD::move(__span)}
+  constexpr explicit __flat_mdspan_view(mdspan_type __md) noexcept
+      : __md_{_CUDA_VSTD::move(__md)}
   {}
 
   /**
@@ -56,7 +59,7 @@ public:
    */
   [[nodiscard]] constexpr iterator cbegin() const noexcept
   {
-    return iterator{{}, __span_, 0};
+    return iterator{{}, __md_, 0};
   }
 
   /**
@@ -72,15 +75,17 @@ public:
    */
   [[nodiscard]] constexpr iterator cend() const noexcept
   {
-    return iterator{{}, __span_, static_cast<typename mdspan_type::index_type>(__span_.size())};
+    return iterator{{}, __md_, static_cast<typename mdspan_type::index_type>(__md_.size())};
   }
 
 private:
-  mdspan_type __span_{};
+  mdspan_type __md_{};
 };
 
 template <typename _T>
 __flat_mdspan_view(_T) -> __flat_mdspan_view<_T>;
+
+} // namespace __mdspan_detail
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

@@ -61,15 +61,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * Defeats all known modern optimizing compilers. Therefore, unless this iterator is truly
  * required, the user is **strongly** encouraged to iterate over their mdspan normally.
  *
- * @param span The mdspan to flatten.
+ * @param md The mdspan to flatten.
  *
  * @return The flat view.
  */
 template <typename _Element, typename _Extent, typename _Layout, typename _Accessor>
 [[nodiscard]] constexpr __flat_mdspan_view<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>>
-flatten(_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor> span) noexcept
+flatten(_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor> md) noexcept
 {
-  return __flat_mdspan_view<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>>{_CUDA_VSTD::move(span)};
+  return __mdspan_detail::__flat_mdspan_view<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>>{
+    _CUDA_VSTD::move(md)};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

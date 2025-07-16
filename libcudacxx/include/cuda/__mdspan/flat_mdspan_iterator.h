@@ -26,6 +26,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+namespace __mdspan_detail
+{
+
 template <typename _MDSpan>
 class __flat_mdspan_view;
 
@@ -49,13 +52,8 @@ class __flat_mdspan_iterator<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Acc
   };
 
 public:
-  using mdspan_type = _CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>;
-  using index_type  = typename mdspan_type::index_type;
-  // The CCCL mdspan impls will fail to compile for 0-D, but in classic C++ fashion the
-  // compiler error messages are inscrutable. So better to just guard against that mess with an
-  // early static_assert()
-  static_assert(mdspan_type::rank() >= 1, "Flat views over 0-D mdspans are not supported");
-
+  using mdspan_type       = _CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>;
+  using index_type        = typename mdspan_type::index_type;
   using value_type        = _CUDA_VSTD::remove_const_t<_Element>;
   using reference         = typename mdspan_type::reference;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
@@ -77,8 +75,8 @@ public:
    * @param span The span to view.
    * @param idx The linear index of the iterator (`0` for begin, `span.size()` for end).
    */
-  constexpr explicit __flat_mdspan_iterator(__construct_key, const mdspan_type& __span, index_type __idx) noexcept
-      : __span_{_CUDA_VSTD::addressof(__span)}
+  constexpr explicit __flat_mdspan_iterator(__construct_key, const mdspan_type& __md, index_type __idx) noexcept
+      : __md_{_CUDA_VSTD::addressof(__md)}
       , __idx_{__idx}
   {}
 
@@ -96,7 +94,7 @@ public:
       //
       // So for 1D access we can skip it (there is no need to transform our offset) and can use
       // our `idx_` directly.
-      return (*__span_)(__idx_);
+      return (*__md_)(__idx_);
     }
     else
     {
@@ -131,11 +129,11 @@ public:
 
         for (auto __dim = __DIM; __dim-- > 0;)
         {
-          __md_idx[__dim] = __index_ % __span_->extent(__dim);
-          __index /= __span_->extent(__dim);
+          __md_idx[__dim] = __index_ % __md_->extent(__dim);
+          __index /= __md_->extent(__dim);
         }
       }
-      return (*__span_)(__md_idx);
+      return (*__md_)(__md_idx);
     }
   }
 
@@ -161,7 +159,7 @@ public:
    */
   constexpr __flat_mdspan_iterator& operator++() noexcept
   {
-    _CCCL_ASSERT(_CUDA_VSTD::cmp_less(__idx_, __span_->size()), "");
+    _CCCL_ASSERT(_CUDA_VSTD::cmp_less(__idx_, __md_->size()), "");
     ++__idx_;
     return *this;
   }
@@ -220,7 +218,7 @@ public:
     }
     else
     {
-      _CCCL_ASSERT(_CUDA_VSTD::cmp_less_equal(__idx_ + static_cast<index_type>(__n), __span_->size()));
+      _CCCL_ASSERT(_CUDA_VSTD::cmp_less_equal(__idx_ + static_cast<index_type>(__n), __md_->size()));
       __idx_ += static_cast<index_type>(__n);
     }
     return *this;
@@ -256,7 +254,7 @@ public:
     using difference_type =
       typename __flat_mdspan_iterator<_CUDA_VSTD::mdspan<_Element, _Extent, _Layout, _Accessor>>::difference_type;
 
-    _CCCL_ASSERT(__self.__span_ == __other.__span_);
+    _CCCL_ASSERT(__self.__md_ == __other.__md_);
     return static_cast<difference_type>(__self.__idx_) - static_cast<difference_type>(__other.__idx_);
   }
 
@@ -280,7 +278,7 @@ public:
 
   [[nodiscard]] friend bool operator==(const __flat_mdspan_iterator& __lhs, const __flat_mdspan_iterator& __rhs) noexcept
   {
-    _CCCL_ASSERT(__lhs.__span_ == __rhs.__span_, "");
+    _CCCL_ASSERT(__lhs.__md_ == __rhs.__md_, "");
     return __lhs.__idx_ == __rhs.__idx_;
   }
 
@@ -291,7 +289,7 @@ public:
 
   [[nodiscard]] friend bool operator<(const __flat_mdspan_iterator& __lhs, const __flat_mdspan_iterator& __rhs) noexcept
   {
-    _CCCL_ASSERT(__lhs.__span_ == __rhs.__span_, "");
+    _CCCL_ASSERT(__lhs.__md_ == __rhs.__md_, "");
     return __lhs.__idx_ < __rhs.__idx_;
   }
 
@@ -311,9 +309,11 @@ public:
   }
 
 private:
-  const mdspan_type* __span_{};
+  const mdspan_type* __md_{};
   index_type __idx_{};
 };
+
+} // namespace __mdspan_detail
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
