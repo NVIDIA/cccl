@@ -73,6 +73,12 @@ struct TripleChevronFactory
   {
     return cudaMemsetAsync(dst, value, num_elements * element_size, stream);
   }
+
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
+  MemcpyAsync(void* dst, const void* src, size_t num_bytes, cudaMemcpyKind kind, cudaStream_t stream) const
+  {
+    return cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
+  }
 };
 
 } // namespace detail

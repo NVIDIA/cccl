@@ -76,7 +76,7 @@ template <typename MaxPolicyT,
           typename InitT,
           typename AccumT,
           typename TransformOpT>
-struct DeviceReduceKernelSource
+struct DeviceReduceNondeterministicKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(
     AtomicKernel,
@@ -89,6 +89,11 @@ struct DeviceReduceKernelSource
       InitT,
       AccumT,
       TransformOpT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t InitSize()
+  {
+    return sizeof(InitT);
+  }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
@@ -125,7 +130,7 @@ template <typename InputIteratorT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::reduce::DeviceReduceKernelSource<
+          typename KernelSource = detail::reduce::DeviceReduceNondeterministicKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
             OutputIteratorT,
@@ -269,8 +274,8 @@ struct DispatchReduceNondeterministic
       int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
 #endif
 
-      error =
-        CubDebug(launcher_factory.MemsetAsync(unwrap_indirect_arg(&d_out), 0, 1, kernel_source.AccumSize(), stream));
+      error = CubDebug(launcher_factory.MemcpyAsync(
+        unwrap_indirect_arg(&d_out), &init, kernel_source.InitSize(), cudaMemcpyDefault, stream));
       if (cudaSuccess != error)
       {
         break;

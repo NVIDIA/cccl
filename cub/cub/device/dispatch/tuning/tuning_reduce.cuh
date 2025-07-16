@@ -68,14 +68,16 @@ struct ReducePolicyWrapper<StaticPolicyT,
   CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile)
   CUB_DEFINE_SUB_POLICY_GETTER(SegmentedReduce)
+  CUB_DEFINE_SUB_POLICY_GETTER(ReduceNondeterministic)
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {
     using namespace ptx_json;
-    return object<key<"ReducePolicy">()          = Reduce().EncodedPolicy(),
-                  key<"SingleTilePolicy">()      = SingleTile().EncodedPolicy(),
-                  key<"SegmentedReducePolicy">() = SegmentedReduce().EncodedPolicy()>();
+    return object<key<"ReducePolicy">()                 = Reduce().EncodedPolicy(),
+                  key<"SingleTilePolicy">()             = SingleTile().EncodedPolicy(),
+                  key<"SegmentedReducePolicy">()        = SegmentedReduce().EncodedPolicy(),
+                  key<"ReduceNondeterministicPolicy">() = ReduceNondeterministic().EncodedPolicy()>();
   }
 #endif
 };
@@ -232,7 +234,7 @@ struct policy_hub
       AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
                         ReducePolicy::ITEMS_PER_THREAD,
                         AccumT,
-                        ReducePolicy::ITEMS_PER_VEC_LOAD,
+                        ReducePolicy::VECTOR_LOAD_LENGTH,
                         BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                         ReducePolicy::LOAD_MODIFIER>;
   };
@@ -259,7 +261,7 @@ struct policy_hub
       AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
                         ReducePolicy::ITEMS_PER_THREAD,
                         AccumT,
-                        ReducePolicy::ITEMS_PER_VEC_LOAD,
+                        ReducePolicy::VECTOR_LOAD_LENGTH,
                         BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                         ReducePolicy::LOAD_MODIFIER>;
   };
@@ -293,7 +295,7 @@ struct policy_hub
       AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
                         ReducePolicy::ITEMS_PER_THREAD,
                         AccumT,
-                        ReducePolicy::ITEMS_PER_VEC_LOAD,
+                        ReducePolicy::VECTOR_LOAD_LENGTH,
                         BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                         ReducePolicy::LOAD_MODIFIER>;
   };

@@ -117,6 +117,13 @@ struct CudaDriverLauncherFactory
     return static_cast<cudaError_t>(cuMemsetD32Async(reinterpret_cast<CUdeviceptr>(dst), value, num_elements, stream));
   }
 
+  _CCCL_HIDE_FROM_ABI cudaError_t
+  MemcpyAsync(void* dst, const void* src, size_t num_bytes, cudaMemcpyKind /*kind*/, CUstream stream) const
+  {
+    return static_cast<cudaError_t>(
+      cuMemcpyAsync(reinterpret_cast<CUdeviceptr>(dst), reinterpret_cast<CUdeviceptr>(src), num_bytes, stream));
+  }
+
   CUdevice device;
   int cc;
 };

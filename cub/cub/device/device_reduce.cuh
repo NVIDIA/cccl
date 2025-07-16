@@ -246,7 +246,7 @@ private:
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
-    ReductionOpT,
+    ReductionOpT reduction_op,
     T init,
     ::cuda::execution::determinism::not_guaranteed_t,
     cudaStream_t stream)
