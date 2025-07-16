@@ -12,105 +12,117 @@
 
 #include <testing.cuh>
 
-template <typename Arch>
+#include "cuda/experimental/__device/arch_traits.cuh"
+
+__device__ int foo(const int& x)
+{
+  return x;
+}
+
+template <cudax::arch::id Arch>
 __global__ void arch_specific_kernel_mock_do_not_launch()
 {
   // I will try to pack something like this into an API
-  if constexpr (Arch::compute_capability != cudax::current_arch().compute_capability)
+  if constexpr (cudax::arch::traits<Arch>().compute_capability != cudax::arch::current_traits().compute_capability)
   {
     return;
   }
 
-  [[maybe_unused]] __shared__ int array[Arch::max_shared_memory_per_block / sizeof(int)];
+  [[maybe_unused]] __shared__ int array[cudax::arch::traits<Arch>().max_shared_memory_per_block / sizeof(int)];
 
   // constexpr is useless and I can't use intrinsics here :(
-  if constexpr (cudax::current_arch().cluster_supported)
+  if constexpr (cudax::arch::current_traits().cluster_supported)
   {
     [[maybe_unused]] int dummy;
     asm volatile("mov.u32 %0, %%cluster_ctarank;" : "=r"(dummy));
   }
-  if constexpr (cudax::current_arch().redux_intrinisic)
+  if constexpr (cudax::arch::current_traits().redux_intrinisic)
   {
     [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
     asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
   }
-  if constexpr (cudax::current_arch().cp_async_supported)
+  if constexpr (cudax::arch::current_traits().cp_async_supported)
   {
     asm volatile("cp.async.commit_group;");
   }
+
+  // Confirm trait value is defined device code and usable as a reference
+  foo(cudax::arch::traits<Arch>().compute_capability);
+  foo(cudax::arch::current_traits().compute_capability);
 }
 
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<700>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<750>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<800>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<860>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<890>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<900>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1000>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1030>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<1200>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_70>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_75>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_80>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_86>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_89>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_90>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_100>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_103>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_120>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_90a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_100a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_103a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch::id::sm_120a>();
 
-template <unsigned int Arch>
+template <unsigned int ComputeCapability>
 void constexpr compare_static_and_dynamic()
 {
-  using StaticTraits                            = cudax::arch<Arch>;
-  constexpr cudax::arch_traits_t dynamic_traits = cudax::arch_traits(Arch);
+  constexpr cudax::arch::traits_t static_traits =
+    cudax::arch::traits<cudax::arch::id_for_compute_capability(ComputeCapability)>();
+  constexpr cudax::arch::traits_t dynamic_traits = cudax::arch::traits_for_compute_capability(ComputeCapability);
 
-  static_assert(sizeof(StaticTraits) == 1);
+  static_assert(static_traits.arch_id == dynamic_traits.arch_id);
+  static_assert(static_traits.max_threads_per_block == dynamic_traits.max_threads_per_block);
+  static_assert(static_traits.max_block_dim_x == dynamic_traits.max_block_dim_x);
+  static_assert(static_traits.max_block_dim_y == dynamic_traits.max_block_dim_y);
+  static_assert(static_traits.max_block_dim_z == dynamic_traits.max_block_dim_z);
+  static_assert(static_traits.max_grid_dim_x == dynamic_traits.max_grid_dim_x);
+  static_assert(static_traits.max_grid_dim_y == dynamic_traits.max_grid_dim_y);
+  static_assert(static_traits.max_grid_dim_z == dynamic_traits.max_grid_dim_z);
 
-  static_assert(StaticTraits::max_threads_per_block == dynamic_traits.max_threads_per_block);
-  static_assert(StaticTraits::max_block_dim_x == dynamic_traits.max_block_dim_x);
-  static_assert(StaticTraits::max_block_dim_y == dynamic_traits.max_block_dim_y);
-  static_assert(StaticTraits::max_block_dim_z == dynamic_traits.max_block_dim_z);
-  static_assert(StaticTraits::max_grid_dim_x == dynamic_traits.max_grid_dim_x);
-  static_assert(StaticTraits::max_grid_dim_y == dynamic_traits.max_grid_dim_y);
-  static_assert(StaticTraits::max_grid_dim_z == dynamic_traits.max_grid_dim_z);
+  static_assert(static_traits.warp_size == dynamic_traits.warp_size);
+  static_assert(static_traits.total_constant_memory == dynamic_traits.total_constant_memory);
+  static_assert(static_traits.max_resident_grids == dynamic_traits.max_resident_grids);
+  static_assert(static_traits.max_shared_memory_per_block == dynamic_traits.max_shared_memory_per_block);
+  static_assert(static_traits.gpu_overlap == dynamic_traits.gpu_overlap);
+  static_assert(static_traits.can_map_host_memory == dynamic_traits.can_map_host_memory);
+  static_assert(static_traits.concurrent_kernels == dynamic_traits.concurrent_kernels);
+  static_assert(static_traits.stream_priorities_supported == dynamic_traits.stream_priorities_supported);
+  static_assert(static_traits.global_l1_cache_supported == dynamic_traits.global_l1_cache_supported);
+  static_assert(static_traits.local_l1_cache_supported == dynamic_traits.local_l1_cache_supported);
+  static_assert(static_traits.max_registers_per_block == dynamic_traits.max_registers_per_block);
+  static_assert(static_traits.max_registers_per_multiprocessor == dynamic_traits.max_registers_per_multiprocessor);
 
-  static_assert(StaticTraits::warp_size == dynamic_traits.warp_size);
-  static_assert(StaticTraits::total_constant_memory == dynamic_traits.total_constant_memory);
-  static_assert(StaticTraits::max_resident_grids == dynamic_traits.max_resident_grids);
-  static_assert(StaticTraits::max_shared_memory_per_block == dynamic_traits.max_shared_memory_per_block);
-  static_assert(StaticTraits::gpu_overlap == dynamic_traits.gpu_overlap);
-  static_assert(StaticTraits::can_map_host_memory == dynamic_traits.can_map_host_memory);
-  static_assert(StaticTraits::concurrent_kernels == dynamic_traits.concurrent_kernels);
-  static_assert(StaticTraits::stream_priorities_supported == dynamic_traits.stream_priorities_supported);
-  static_assert(StaticTraits::global_l1_cache_supported == dynamic_traits.global_l1_cache_supported);
-  static_assert(StaticTraits::local_l1_cache_supported == dynamic_traits.local_l1_cache_supported);
-  static_assert(StaticTraits::max_registers_per_block == dynamic_traits.max_registers_per_block);
-  static_assert(StaticTraits::max_registers_per_multiprocessor == dynamic_traits.max_registers_per_multiprocessor);
-  static_assert(StaticTraits::max_registers_per_thread == dynamic_traits.max_registers_per_thread);
-
-  static_assert(StaticTraits::compute_capability_major == dynamic_traits.compute_capability_major);
-  static_assert(StaticTraits::compute_capability_minor == dynamic_traits.compute_capability_minor);
-  static_assert(StaticTraits::compute_capability == dynamic_traits.compute_capability);
+  static_assert(static_traits.compute_capability == dynamic_traits.compute_capability);
+  static_assert(static_traits.compute_capability_major == dynamic_traits.compute_capability_major);
+  static_assert(static_traits.compute_capability_minor == dynamic_traits.compute_capability_minor);
+  static_assert(static_traits.compute_capability == dynamic_traits.compute_capability);
   static_assert(
-    StaticTraits::max_shared_memory_per_multiprocessor == dynamic_traits.max_shared_memory_per_multiprocessor);
-  static_assert(StaticTraits::max_blocks_per_multiprocessor == dynamic_traits.max_blocks_per_multiprocessor);
-  static_assert(StaticTraits::max_warps_per_multiprocessor == dynamic_traits.max_warps_per_multiprocessor);
-  static_assert(StaticTraits::max_threads_per_multiprocessor == dynamic_traits.max_threads_per_multiprocessor);
-  static_assert(StaticTraits::reserved_shared_memory_per_block == dynamic_traits.reserved_shared_memory_per_block);
-  static_assert(StaticTraits::max_shared_memory_per_block_optin == dynamic_traits.max_shared_memory_per_block_optin);
-  static_assert(StaticTraits::cluster_supported == dynamic_traits.cluster_supported);
-  static_assert(StaticTraits::redux_intrinisic == dynamic_traits.redux_intrinisic);
-  static_assert(StaticTraits::elect_intrinsic == dynamic_traits.elect_intrinsic);
-  static_assert(StaticTraits::cp_async_supported == dynamic_traits.cp_async_supported);
-  static_assert(StaticTraits::tma_supported == dynamic_traits.tma_supported);
-
-  constexpr cudax::arch_traits_t casted = StaticTraits{};
-  static_assert(casted.compute_capability == dynamic_traits.compute_capability);
+    static_traits.max_shared_memory_per_multiprocessor == dynamic_traits.max_shared_memory_per_multiprocessor);
+  static_assert(static_traits.max_blocks_per_multiprocessor == dynamic_traits.max_blocks_per_multiprocessor);
+  static_assert(static_traits.max_warps_per_multiprocessor == dynamic_traits.max_warps_per_multiprocessor);
+  static_assert(static_traits.max_threads_per_multiprocessor == dynamic_traits.max_threads_per_multiprocessor);
+  static_assert(static_traits.reserved_shared_memory_per_block == dynamic_traits.reserved_shared_memory_per_block);
+  static_assert(static_traits.max_shared_memory_per_block_optin == dynamic_traits.max_shared_memory_per_block_optin);
+  static_assert(static_traits.cluster_supported == dynamic_traits.cluster_supported);
+  static_assert(static_traits.redux_intrinisic == dynamic_traits.redux_intrinisic);
+  static_assert(static_traits.elect_intrinsic == dynamic_traits.elect_intrinsic);
+  static_assert(static_traits.cp_async_supported == dynamic_traits.cp_async_supported);
+  static_assert(static_traits.tma_supported == dynamic_traits.tma_supported);
 }
 
 C2H_CCCLRT_TEST("Traits", "[device]")
 {
-  compare_static_and_dynamic<700>();
-  compare_static_and_dynamic<750>();
-  compare_static_and_dynamic<800>();
-  compare_static_and_dynamic<860>();
-  compare_static_and_dynamic<890>();
-  compare_static_and_dynamic<900>();
-  compare_static_and_dynamic<1000>();
-  compare_static_and_dynamic<1030>();
-  compare_static_and_dynamic<1200>();
+  compare_static_and_dynamic<70>();
+  compare_static_and_dynamic<75>();
+  compare_static_and_dynamic<80>();
+  compare_static_and_dynamic<86>();
+  compare_static_and_dynamic<89>();
+  compare_static_and_dynamic<90>();
+  compare_static_and_dynamic<100>();
+  compare_static_and_dynamic<103>();
+  compare_static_and_dynamic<120>();
 
   // Compare arch traits with attributes
   for (const cudax::physical_device& dev : cudax::devices)
