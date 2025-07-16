@@ -346,14 +346,14 @@ C2H_VEC_TRAITS_OVERLOAD(double, double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(long_16a, long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(long_32a, long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(ulong_16a, unsigned long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(ulong_32a, unsigned long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(longlong_16a, long long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(longlong_32a, long long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(ulonglong_16a, unsigned long long, 4)
-C2H_VEC_TRAITS_OVERLOAD_IMPL(ulonglong_32a, unsigned long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(long4_16a, long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(long4_32a, long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulong4_16a, unsigned long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulong4_32a, unsigned long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(longlong4_16a, long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(longlong4_32a, long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulonglong4_16a, unsigned long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulonglong4_32a, unsigned long long, 4)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 #  undef C2H_VEC_TRAITS_OVERLOAD
