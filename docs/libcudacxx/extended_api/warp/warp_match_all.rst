@@ -11,7 +11,7 @@ Defined in ``<cuda/warp>`` header.
 
     template <typename T>
     [[nodiscard]] __device__ bool
-    warp_match_all(const T& data, lane_mask = lane_mask::all_active());
+    warp_match_all(const T& data, lane_mask = lane_mask::all());
 
     } // namespace cuda::device
 
@@ -30,7 +30,11 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 **Preconditions**
 
 - The functionality is only supported on ``SM >= 70``.
-- ``lane_mask`` must be a subset of the active mask and be non-zero.
+- ``lane_mask`` must be non-zero.
+
+**Undefined Behavior**
+
+- ``lane_mask`` must represent a subset of the active lanes, undefined behavior otherwise.
 
 **Performance considerations**
 

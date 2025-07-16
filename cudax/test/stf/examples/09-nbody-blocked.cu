@@ -183,7 +183,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t start;
   cuda_safe_call(cudaEventCreate(&start));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   for (size_t iter = 0; iter < NITER; iter++)
   {
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

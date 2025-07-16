@@ -43,6 +43,11 @@ namespace __detail
 static const ::cudaStream_t __invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
 } // namespace __detail
 
+//! @brief A type representing a stream ID.
+enum class stream_id : unsigned long long
+{
+};
+
 //! @brief A non-owning wrapper for cudaStream_t.
 //!
 //! @note It is undefined behavior to use a `stream_ref` object beyond the lifetime of the stream it was created from,
@@ -80,7 +85,7 @@ struct stream_ref : ::cuda::stream_ref
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] bool is_done() const
   {
-    const auto __result = __detail::driver::streamQuery(__stream);
+    const auto __result = _CUDA_DRIVER::__streamQueryNoThrow(__stream);
     switch (__result)
     {
       case ::cudaErrorNotReady:
@@ -105,7 +110,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if the priority query fails
   [[nodiscard]] _CCCL_HOST_API int priority() const
   {
-    return __detail::driver::streamGetPriority(__stream);
+    return _CUDA_DRIVER::__streamGetPriority(__stream);
   }
 
   //! @brief Get the unique ID of the stream
@@ -115,9 +120,9 @@ struct stream_ref : ::cuda::stream_ref
   //! @return The unique ID of the stream
   //!
   //! @throws cuda_error if the ID query fails
-  [[nodiscard]] _CCCL_HOST_API unsigned long long id() const
+  [[nodiscard]] _CCCL_HOST_API stream_id id() const
   {
-    return __detail::driver::streamGetId(__stream);
+    return stream_id{_CUDA_DRIVER::__streamGetId(__stream)};
   }
 
   //! @brief Create a new event and record it into this stream
@@ -145,7 +150,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if synchronization fails
   _CCCL_HOST_API void sync() const
   {
-    __detail::driver::streamSynchronize(__stream);
+    _CUDA_DRIVER::__streamSynchronize(__stream);
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of the specified event
@@ -157,7 +162,7 @@ struct stream_ref : ::cuda::stream_ref
   {
     _CCCL_ASSERT(__ev.get() != nullptr, "cuda::experimental::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
-    __detail::driver::streamWaitEvent(get(), __ev.get());
+    _CUDA_DRIVER::__streamWaitEvent(get(), __ev.get());
   }
 
   //! @brief Returns a \c execution::sender that completes on this stream.
@@ -191,13 +196,13 @@ struct stream_ref : ::cuda::stream_ref
   {
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
-#if CUDART_VERSION >= 12050
-    if (__detail::driver::getVersion() >= 12050)
+#if _CCCL_CTK_AT_LEAST(12, 5)
+    if (__driver::__getVersion() >= 12050)
     {
-      auto __ctx = __detail::driver::streamGetCtx_v2(__stream);
-      if (__ctx.__ctx_kind == __detail::driver::__ctx_from_stream::__kind::__green)
+      auto __ctx = _CUDA_DRIVER::__streamGetCtx_v2(__stream);
+      if (__ctx.__ctx_kind == _CUDA_DRIVER::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = __detail::driver::ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
+        __stream_ctx = _CUDA_DRIVER::__ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
@@ -207,9 +212,9 @@ struct stream_ref : ::cuda::stream_ref
       }
     }
     else
-#endif // CUDART_VERSION >= 12050
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
     {
-      __stream_ctx = __detail::driver::streamGetCtx(__stream);
+      __stream_ctx = _CUDA_DRIVER::__streamGetCtx(__stream);
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,

@@ -19,6 +19,7 @@
  * CUDASTF_DOT_REMOVE_DATA_DEPS
  * CUDASTF_DOT_TIMING
  * CUDASTF_DOT_MAX_DEPTH
+ * CUDASTF_DOT_SHOW_FENCE
  */
 
 #pragma once
@@ -50,6 +51,11 @@
 #include <stack>
 #include <unordered_set>
 
+/**
+ * @file
+ * @brief Generation of the DOT file to visualize task DAGs
+ */
+
 namespace cuda::experimental::stf::reserved
 {
 
@@ -59,6 +65,17 @@ namespace cuda::experimental::stf::reserved
 using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimental::stf::hash<::std::pair<int, int>>>;
 
 class dot;
+
+// edge represent dependencies, but we sometimes want to visualize differently
+// dependencies which are related to actual task dependencies, and "internal"
+// dependencies between asynchronous operations (eg. a task depends on an
+// allocation) which are not necessarily useful to visualize.
+enum edge_type
+{
+  plain   = 0,
+  prereqs = 1,
+  fence   = 2
+};
 
 // Information for every task, so that we can eventually generate a node for the task
 struct per_task_info
@@ -96,7 +113,7 @@ public:
 
   void add_fence_vertex(int unique_id)
   {
-    if (getenv("CUDASTF_DOT_NO_FENCE"))
+    if (!getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
@@ -130,13 +147,19 @@ public:
   //
   // style = 0 => plain
   // style = 1 => dashed
+  // style = 2 => dashed to fence
   //
   // Note that while tasks are topologically ordered, when we generate graphs
   // which includes internal async events, we may have (prereq) nodes which
   // are not ordered, so we cannot expect "id_from < id_to"
-  void add_edge(int id_from, int id_to, int style = 0)
+  void add_edge(int id_from, int id_to, edge_type style = edge_type::plain)
   {
     if (!is_tracing())
+    {
+      return;
+    }
+
+    if (!tracing_enabled)
     {
       return;
     }
@@ -148,7 +171,7 @@ public:
       return;
     }
 
-    if (style == 1 && getenv("CUDASTF_DOT_NO_FENCE"))
+    if (style == edge_type::fence && !getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
@@ -252,9 +275,9 @@ public:
     return current_color;
   }
 
-  void change_epoch()
+  void change_stage()
   {
-    if (getenv("CUDASTF_DOT_DISPLAY_EPOCHS"))
+    if (getenv("CUDASTF_DOT_DISPLAY_STAGES"))
     {
       ::std::lock_guard<::std::mutex> guard(mtx);
       prev_oss.push_back(mv(oss));
@@ -325,9 +348,9 @@ public:
   unique_id<per_ctx_dot> id;
 
 public: // XXX protected, friend : dot
-  // string for the current epoch
+  // string for the current stage
   mutable ::std::ostringstream oss;
-  // strings of the previous epochs
+  // strings of the previous stages
   mutable ::std::vector<::std::ostringstream> prev_oss;
   ::std::unordered_map<int /* id */, per_task_info> metadata;
 
@@ -568,7 +591,7 @@ public:
       bool display_clusters = (per_ctx.size() > 1);
       /*
        * For every context, we write the description of the DAG per
-       * epoch. Then we write the edges after removing redundant ones.
+       * stage. Then we write the edges after removing redundant ones.
        */
       for (const auto& pc : per_ctx)
       {
@@ -656,20 +679,20 @@ private:
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
     }
-    size_t epoch_cnt = pc->prev_oss.size();
-    for (size_t epoch_id = 0; epoch_id < epoch_cnt; epoch_id++)
+    size_t stage_cnt = pc->prev_oss.size();
+    for (size_t stage_id = 0; stage_id < stage_cnt; stage_id++)
     {
-      if (epoch_cnt > 1)
+      if (stage_cnt > 1)
       {
-        outFile << "subgraph cluster_" << epoch_id << "_" << ctx_id << " {\n";
-        outFile << "label=\"epoch " << epoch_id << "\"\n";
+        outFile << "subgraph cluster_" << stage_id << "_" << ctx_id << " {\n";
+        outFile << "label=\"stage " << stage_id << "\"\n";
       }
 
-      outFile << pc->prev_oss[epoch_id].str();
+      outFile << pc->prev_oss[stage_id].str();
 
-      if (epoch_cnt > 1)
+      if (stage_cnt > 1)
       {
-        outFile << "} // end subgraph cluster_" << epoch_id << "_" << ctx_id << "\n";
+        outFile << "} // end subgraph cluster_" << stage_id << "_" << ctx_id << "\n";
       }
 
       if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))

@@ -81,7 +81,7 @@ public:
     return lane_mask{0xffffffff};
   }
 
-  //! @brief Returns a lane mask object with all active lane bits set.
+  //! @brief Returns a lane mask object with all currently active lane bits set.
   //!
   //! This function returns a lane_mask object equivalent to calling `lane_mask{::__activemask()}`.
   //!
