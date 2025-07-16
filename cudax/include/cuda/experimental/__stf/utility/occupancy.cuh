@@ -65,6 +65,13 @@ compute_occupancy_result compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 
   return result;
 }
 
+struct cuda_kernel_limits_result
+{
+  int min_grid_size;
+  int max_block_size;
+  int block_size_limit;
+};
+
 /**
  * This method computes the block and grid sizes to optimize thread occupancy.
  *
@@ -77,18 +84,15 @@ compute_occupancy_result compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 
  *   resource constraints
  */
 template <typename Fun>
-void compute_kernel_limits(
-  const Fun&& f,
-  int& min_grid_size,
-  int& max_block_size,
-  size_t shared_mem_bytes,
-  bool cooperative,
-  int& block_size_limit)
+cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem_bytes, bool cooperative)
 {
   static_assert(::std::is_function<typename ::std::remove_pointer<Fun>::type>::value,
                 "Template parameter Fun must be a pointer to a function type.");
 
+  cuda_kernel_limits_result res;
+
   auto occupancy_res = compute_occupancy(f, shared_mem_bytes);
+  res.min_grid_size  = occupancy_res.min_grid_size;
 
   if (cooperative)
   {
@@ -97,10 +101,10 @@ void compute_kernel_limits(
     static const int sm_count = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, 0);
 
     // TODO there could be more than 1 block per SM, but we do not know the actual block sizes for now ...
-    min_grid_size = ::std::min(occupancy_res.min_grid_size, sm_count);
+    res.min_grid_size = ::std::min(res.min_grid_size, sm_count);
   }
 
-  max_block_size = occupancy_res.block_size;
+  res.max_block_size = occupancy_res.block_size;
 
   /* Compute the maximum block size (not the optimal size) */
   static const auto maxThreadsPerBlock = [&] {
@@ -108,7 +112,9 @@ void compute_kernel_limits(
     cuda_safe_call(cudaFuncGetAttributes(&result, f));
     return result.maxThreadsPerBlock;
   }();
-  block_size_limit = maxThreadsPerBlock;
+  res.block_size_limit = maxThreadsPerBlock;
+
+  return res;
 }
 
 } // end namespace reserved
