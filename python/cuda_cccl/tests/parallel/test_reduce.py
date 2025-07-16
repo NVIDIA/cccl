@@ -5,8 +5,6 @@
 import random
 
 import cupy as cp
-import numba.cuda
-import numba.types
 import numpy as np
 import pytest
 
@@ -50,12 +48,12 @@ def test_device_reduce(dtype, num_items):
 
     init_value = 42
     h_init = np.array([init_value], dtype=dtype)
-    d_output = numba.cuda.device_array(1, dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
 
     h_input = random_int(num_items, dtype)
-    d_input = numba.cuda.to_device(h_input)
+    d_input = cp.asarray(h_input)
     parallel.reduce_into(d_input, d_output, op, d_input.size, h_init)
-    h_output = d_output.copy_to_host()
+    h_output = d_output.get()
     assert h_output[0] == sum(h_input) + init_value
 
 
@@ -64,16 +62,16 @@ def test_complex_device_reduce():
         return a + b
 
     h_init = np.array([40.0 + 2.0j], dtype=complex)
-    d_output = numba.cuda.device_array(1, dtype=complex)
+    d_output = cp.empty(1, dtype=complex)
 
     for num_items in [42, 420000]:
         real_imag = np.random.random((2, num_items))
         h_input = real_imag[0] + 1j * real_imag[1]
-        d_input = numba.cuda.to_device(h_input)
+        d_input = cp.asarray(h_input)
         assert d_input.size == num_items
         parallel.reduce_into(d_input, d_output, op, num_items, h_init)
 
-        result = d_output.copy_to_host()[0]
+        result = d_output.get()[0]
         expected = np.sum(h_input, initial=h_init[0])
         assert result == pytest.approx(expected)
 
@@ -90,17 +88,17 @@ def _test_device_sum_with_iterator(
 
     if use_numpy_array:
         h_input = np.array(l_varr, dtype_inp)
-        d_input = numba.cuda.to_device(h_input)
+        d_input = cp.asarray(h_input)
     else:
         d_input = i_input
 
-    d_output = numba.cuda.device_array(1, dtype_out)  # to store device sum
+    d_output = cp.empty(1, dtype_out)  # to store device sum
 
     h_init = np.array([start_sum_with], dtype_out)
 
     parallel.reduce_into(d_input, d_output, add_op, len(l_varr), h_init)
 
-    h_output = d_output.copy_to_host()
+    h_output = d_output.get()
     assert h_output[0] == expected_result
 
 
@@ -141,7 +139,7 @@ def test_device_sum_cache_modified_input_it(
     l_varr = [rng.randrange(100) for _ in range(num_items)]
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
-    input_devarr = numba.cuda.to_device(np.array(l_varr, dtype=dtype_inp))
+    input_devarr = cp.asarray(np.array(l_varr, dtype=dtype_inp))
     i_input = parallel.CacheModifiedInputIterator(input_devarr, modifier="stream")
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array

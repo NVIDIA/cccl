@@ -155,11 +155,9 @@ def exclusive_scan(
     num_items: int,
     stream=None,
 ):
-    from numba.cuda import device_array
-
     scanner = make_exclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
-    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    tmp_storage = protocols.get_temp_buffer_factory(d_in, d_out)(tmp_storage_bytes)
     scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
 
 
@@ -203,9 +201,7 @@ def inclusive_scan(
     num_items: int,
     stream=None,
 ):
-    from numba.cuda import device_array
-
     scanner = make_inclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
-    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    tmp_storage = protocols.get_temp_buffer_factory(d_in, d_out)(tmp_storage_bytes)
     scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)

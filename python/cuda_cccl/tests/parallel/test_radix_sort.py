@@ -6,7 +6,6 @@ import itertools
 from typing import Tuple
 
 import cupy as cp
-import numba
 import numpy as np
 import pytest
 
@@ -147,12 +146,12 @@ def test_radix_sort_keys(dtype, num_items):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.asarray(h_out_keys)
 
     radix_sort_device(d_in_keys, d_out_keys, None, None, order, num_items)
 
-    h_out_keys = d_out_keys.copy_to_host()
+    h_out_keys = d_out_keys.get()
 
     h_in_keys, _ = host_sort(h_in_keys, None, order)
 
@@ -170,17 +169,17 @@ def test_radix_sort_pairs(dtype, num_items):
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_values = numba.cuda.to_device(h_in_values)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_values = numba.cuda.to_device(h_out_values)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_values = cp.asarray(h_in_values)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_values = cp.asarray(h_out_values)
 
     radix_sort_device(
         d_in_keys, d_out_keys, d_in_values, d_out_values, order, num_items
     )
 
-    h_out_keys = d_out_keys.copy_to_host()
-    h_out_values = d_out_values.copy_to_host()
+    h_out_keys = d_out_keys.get()
+    h_out_values = d_out_values.get()
 
     h_in_keys, h_in_values = host_sort(h_in_keys, h_in_values, order)
 
@@ -197,14 +196,21 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.asarray(h_out_keys)
 
     keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
 
-    radix_sort_device(keys_double_buffer, None, None, None, order, num_items)
+    radix_sort_device(
+        keys_double_buffer,
+        None,
+        None,
+        None,
+        order,
+        num_items,
+    )
 
-    h_out_keys = keys_double_buffer.current().copy_to_host()
+    h_out_keys = cp.asnumpy(keys_double_buffer.current())
 
     h_in_keys, _ = host_sort(h_in_keys, None, order)
 
@@ -216,26 +222,31 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items):
-    order = parallel.SortOrder.ASCENDING
+    order = parallel.SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_values = numba.cuda.to_device(h_in_values)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_values = numba.cuda.to_device(h_out_values)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_values = cp.asarray(h_in_values)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_values = cp.asarray(h_out_values)
 
     keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
     values_double_buffer = parallel.DoubleBuffer(d_in_values, d_out_values)
 
     radix_sort_device(
-        keys_double_buffer, None, values_double_buffer, None, order, num_items
+        keys_double_buffer,
+        None,
+        values_double_buffer,
+        None,
+        order,
+        num_items,
     )
 
-    h_out_keys = keys_double_buffer.current().copy_to_host()
-    h_out_values = values_double_buffer.current().copy_to_host()
+    h_out_keys = cp.asnumpy(keys_double_buffer.current())
+    h_out_values = cp.asnumpy(values_double_buffer.current())
 
     h_in_keys, h_in_values = host_sort(h_in_keys, h_in_values, order)
 
@@ -270,10 +281,10 @@ def test_radix_sort_pairs_bit_window(dtype, num_items):
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_values = np.empty(num_items, dtype=np.float32)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_values = numba.cuda.to_device(h_in_values)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_values = numba.cuda.to_device(h_out_values)
+        d_in_keys = cp.asarray(h_in_keys)
+        d_in_values = cp.asarray(h_in_values)
+        d_out_keys = cp.asarray(h_out_keys)
+        d_out_values = cp.asarray(h_out_values)
 
         radix_sort_device(
             d_in_keys,
@@ -286,8 +297,8 @@ def test_radix_sort_pairs_bit_window(dtype, num_items):
             end_bit,
         )
 
-        h_out_keys = d_out_keys.copy_to_host()
-        h_out_values = d_out_values.copy_to_host()
+        h_out_keys = d_out_keys.get()
+        h_out_values = d_out_values.get()
 
         h_in_keys, h_in_values = host_sort(
             h_in_keys, h_in_values, order, begin_bit, end_bit
@@ -316,10 +327,10 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_values = np.empty(num_items, dtype=np.float32)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_values = numba.cuda.to_device(h_in_values)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_values = numba.cuda.to_device(h_out_values)
+        d_in_keys = cp.asarray(h_in_keys)
+        d_in_values = cp.asarray(h_in_values)
+        d_out_keys = cp.asarray(h_out_keys)
+        d_out_values = cp.asarray(h_out_values)
 
         keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
         values_double_buffer = parallel.DoubleBuffer(d_in_values, d_out_values)
@@ -335,8 +346,8 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
             end_bit,
         )
 
-        h_out_keys = keys_double_buffer.current().copy_to_host()
-        h_out_values = values_double_buffer.current().copy_to_host()
+        h_out_keys = cp.asnumpy(keys_double_buffer.current())
+        h_out_values = cp.asnumpy(values_double_buffer.current())
 
         h_in_keys, h_in_values = host_sort(
             h_in_keys, h_in_values, order, begin_bit, end_bit

@@ -9,7 +9,6 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba.cuda import device_array
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -147,5 +146,5 @@ def reduce_into(
 ):
     reducer = make_reduce_into(d_in, d_out, op, h_init)
     tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
-    tmp_storage = device_array(tmp_storage_bytes, dtype=np.uint8)
+    tmp_storage = protocols.get_temp_buffer_factory(d_in, d_out)(tmp_storage_bytes)
     reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)

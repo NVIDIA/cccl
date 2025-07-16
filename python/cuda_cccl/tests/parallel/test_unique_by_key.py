@@ -4,7 +4,6 @@
 
 
 import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
 
@@ -114,11 +113,11 @@ def test_unique_by_key(dtype, num_items):
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_items = cp.asarray(h_in_items)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_items = cp.asarray(h_out_items)
+    d_out_num_selected = cp.asarray(h_out_num_selected)
 
     unique_by_key_device(
         d_in_keys,
@@ -130,10 +129,10 @@ def test_unique_by_key(dtype, num_items):
         num_items,
     )
 
-    h_out_num_selected = d_out_num_selected.copy_to_host()
+    h_out_num_selected = d_out_num_selected.get()
     num_selected = h_out_num_selected[0]
-    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
-    h_out_items = d_out_items.copy_to_host()[:num_selected]
+    h_out_keys = d_out_keys.get()[:num_selected]
+    h_out_items = d_out_items.get()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
@@ -146,10 +145,11 @@ def test_unique_by_key(dtype, num_items):
     DTYPE_SIZE_PAIRS,
 )
 def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Get compute capability using CuPy
+    cc_major, _ = cp.cuda.Device().compute_capability
     # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
-    if cc_major >= 9:
+    if int(cc_major) >= 9:
         import cuda.cccl.parallel.experimental._cccl_interop
 
         monkeypatch.setattr(
@@ -164,11 +164,11 @@ def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int64)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_items = cp.asarray(h_in_items)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_items = cp.asarray(h_out_items)
+    d_out_num_selected = cp.asarray(h_out_num_selected)
 
     i_in_keys = parallel.CacheModifiedInputIterator(d_in_keys, modifier="stream")
     i_in_items = parallel.CacheModifiedInputIterator(d_in_items, modifier="stream")
@@ -183,10 +183,10 @@ def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
         num_items,
     )
 
-    h_out_num_selected = d_out_num_selected.copy_to_host()
+    h_out_num_selected = d_out_num_selected.get()
     num_selected = h_out_num_selected[0]
-    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
-    h_out_items = d_out_items.copy_to_host()[:num_selected]
+    h_out_keys = d_out_keys.get()[:num_selected]
+    h_out_items = d_out_items.get()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
@@ -209,11 +209,11 @@ def test_unique_by_key_complex():
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_items = cp.asarray(h_in_items)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_items = cp.asarray(h_out_items)
+    d_out_num_selected = cp.asarray(h_out_num_selected)
 
     unique_by_key_device(
         d_in_keys,
@@ -225,10 +225,10 @@ def test_unique_by_key_complex():
         num_items,
     )
 
-    h_out_num_selected = d_out_num_selected.copy_to_host()
+    h_out_num_selected = d_out_num_selected.get()
     num_selected = h_out_num_selected[0]
-    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
-    h_out_items = d_out_items.copy_to_host()[:num_selected]
+    h_out_keys = d_out_keys.get()[:num_selected]
+    h_out_items = d_out_items.get()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(
         h_in_keys, h_in_items, compare_complex
@@ -270,14 +270,12 @@ def test_unique_by_key_struct_types():
     h_in_items["a"] = a_items
     h_in_items["b"] = b_items
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_keys = cp.asarray(d_in_keys).view(key_pair.dtype)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_in_items = cp.asarray(d_in_items).view(item_pair.dtype)
+    d_in_keys = cp.asarray(h_in_keys.view(np.int8)).view(key_pair.dtype)
+    d_in_items = cp.asarray(h_in_items.view(np.int8)).view(item_pair.dtype)
 
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_items = cp.empty_like(d_in_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_out_num_selected = cp.asarray(h_out_num_selected)
 
     unique_by_key_device(
         d_in_keys,
@@ -289,7 +287,7 @@ def test_unique_by_key_struct_types():
         num_items,
     )
 
-    h_out_num_selected = d_out_num_selected.copy_to_host()
+    h_out_num_selected = d_out_num_selected.get()
     num_selected = h_out_num_selected[0]
     h_out_keys = d_out_keys.get()[:num_selected]
     h_out_items = d_out_items.get()[:num_selected]

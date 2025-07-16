@@ -6,6 +6,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import Any, Callable, Dict, Tuple
 
+import array_api_compat
 import numba
 import numpy as np
 from llvmlite import ir
@@ -222,6 +223,13 @@ class IteratorBase:
         out.ltoirs = copy.copy(self.ltoirs)
         return out
 
+    def __array_namespace__(self, *, api_version=None):
+        # optionally define __array_namespace__ for iterators
+        # that are backed by an array-like object
+        raise NotImplementedError(
+            f"Iterator {self.__class__.__name__} does not support array_namespace"
+        )
+
 
 def sizeof_pointee(context, ptr):
     size = context.get_abi_sizeof(ptr.type.pointee)
@@ -260,10 +268,13 @@ class RawPointerKind(IteratorKind):
 class RawPointer(IteratorBase):
     iterator_kind_type = RawPointerKind
 
-    def __init__(self, ptr: int, value_type: types.Type, iterator_io: IteratorIOKind):
+    def __init__(
+        self, ptr: int, value_type: types.Type, iterator_io: IteratorIOKind, obj: object
+    ):
         cvalue = ctypes.c_void_p(ptr)
         state_type = types.CPointer(value_type)
         numba_type = types.CPointer(state_type)
+        self.obj = obj  # the container holding the data
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
@@ -301,10 +312,16 @@ class RawPointer(IteratorBase):
     def output_dereference(state, x):
         state[0][0] = x
 
+    def __array_namespace__(self, *, api_version=None):
+        return array_api_compat.array_namespace(self.obj, api_version=api_version)
+
 
 def pointer(container, value_type: types.Type) -> RawPointer:
     return RawPointer(
-        container.__cuda_array_interface__["data"][0], value_type, IteratorIOKind.INPUT
+        container.__cuda_array_interface__["data"][0],
+        value_type,
+        IteratorIOKind.INPUT,
+        container,
     )
 
 
@@ -470,7 +487,9 @@ def make_reverse_iterator(
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)), iterator_io)
+        it = RawPointer(
+            last_element_ptr, numba.from_dtype(get_dtype(it)), iterator_io, it
+        )
 
     it_advance = cuda.jit(it.advance, device=True)
     it_dereference = cuda.jit(it.dereference, device=True)
@@ -494,6 +513,9 @@ def make_reverse_iterator(
             self.kind_ = self.__class__.iterator_kind_type(
                 (it.kind, it.value_type), it.state_type
             )
+
+        def __array_namespace__(self, *, api_version=None):
+            return array_api_compat.array_namespace(self._it, api_version=api_version)
 
         @property
         def host_advance(self):
@@ -567,6 +589,9 @@ def make_transform_iterator(it, op: Callable):
             self.kind_ = self.__class__.iterator_kind_type(
                 (value_type, self._it.kind, self._op), state_type
             )
+
+        def __array_namespace__(self, *, api_version=None):
+            return self._it.__array_namespace__(api_version=api_version)
 
         @property
         def host_advance(self):
