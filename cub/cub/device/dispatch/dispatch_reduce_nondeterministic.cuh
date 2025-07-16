@@ -160,9 +160,6 @@ struct DispatchReduceNondeterministic
   /// Pointer to the output aggregate
   OutputIteratorT d_out;
 
-  // Needed to call cuMemsetD32Async
-  void* d_out_ptr;
-
   /// Total number of input items (i.e., length of `d_in`)
   OffsetT num_items;
 
@@ -193,7 +190,6 @@ struct DispatchReduceNondeterministic
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    void* d_out_ptr,
     OffsetT num_items,
     ReductionOpT reduction_op,
     InitT init,
@@ -206,7 +202,6 @@ struct DispatchReduceNondeterministic
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
       , d_out(d_out)
-      , d_out_ptr(d_out_ptr)
       , num_items(num_items)
       , reduction_op(reduction_op)
       , init(init)
@@ -389,7 +384,6 @@ struct DispatchReduceNondeterministic
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    void* d_out_ptr,
     OffsetT num_items,
     ReductionOpT reduction_op,
     InitT init,
@@ -416,7 +410,6 @@ struct DispatchReduceNondeterministic
         temp_storage_bytes,
         d_in,
         d_out,
-        d_out_ptr,
         num_items,
         reduction_op,
         init,
