@@ -31,7 +31,7 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
 
 namespace cuda::experimental::execution
 {
@@ -44,28 +44,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
       : __rcvr_{_CUDA_VSTD::addressof(__rcvr)}
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
-  _CCCL_TRIVIAL_API void set_value(_As&&... __as) noexcept
+  _CCCL_TRIVIAL_API constexpr void set_value(_As&&... __as) noexcept
   {
-    static_cast<_Rcvr&&>(*__rcvr_).set_value(static_cast<_As&&>(__as)...);
+    execution::set_value(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_As&&>(__as)...);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Error>
-  _CCCL_TRIVIAL_API void set_error(_Error&& __err) noexcept
+  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
   {
-    static_cast<_Rcvr&&>(*__rcvr_).set_error(static_cast<_Error&&>(__err));
+    execution::set_error(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_Error&&>(__err));
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TRIVIAL_API void set_stopped() noexcept
+  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
   {
-    static_cast<_Rcvr&&>(*__rcvr_).set_stopped();
+    execution::set_stopped(static_cast<_Rcvr&&>(*__rcvr_));
   }
 
-  _CCCL_API auto get_env() const noexcept -> _Env
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> _Env
   {
+    static_assert(sizeof(_Rcvr) > 0, "Receiver type is incomplete.");
     static_assert(_CUDA_VSTD::is_same_v<_Env, env_of_t<_Rcvr>>,
                   "get_env() must return the same type as env_of_t<_Rcvr>");
     return execution::get_env(*__rcvr_);
@@ -116,13 +114,13 @@ template <class _Env = void, class _Rcvr>
   {
     return __rcvr_ref<_Rcvr, _Env>{__rcvr};
   }
-  else if constexpr (_CUDA_VSTD::is_nothrow_copy_constructible_v<_Rcvr>)
+  else if constexpr (__nothrow_constructible<_Rcvr, const _Rcvr&> && _CUDA_VSTD::is_copy_constructible_v<_Rcvr>)
   {
-    return __rcvr;
+    return const_cast<const _Rcvr&>(__rcvr);
   }
   else
   {
-    return __rcvr_ref<_Rcvr, _Env>{__rcvr};
+    return __rcvr_ref{__rcvr};
   }
   _CCCL_UNREACHABLE();
 }
@@ -132,7 +130,7 @@ using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::experimental::executio
 
 } // namespace cuda::experimental::execution
 
-_CCCL_NV_DIAG_DEFAULT(114) // function "foo" was references but not defined
+_CCCL_END_NV_DIAG_SUPPRESS() // function "foo" was references but not defined
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

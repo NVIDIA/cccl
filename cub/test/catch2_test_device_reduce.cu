@@ -45,8 +45,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-_CCCL_NV_DIAG_SUPPRESS(1444)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
@@ -67,7 +65,15 @@ using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::in
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_pair<uchar3>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<

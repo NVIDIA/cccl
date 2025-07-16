@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-counting-semaphore:
 
-cuda::counting_semaphore
+``cuda::counting_semaphore``
 ============================
 
 Defined in header ``<cuda/semaphore>``:

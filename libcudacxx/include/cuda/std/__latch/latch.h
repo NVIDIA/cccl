@@ -33,7 +33,7 @@ class __latch_base
   __atomic_impl<ptrdiff_t, _Sco> __counter;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __latch_base(ptrdiff_t __expected)
+  _CCCL_API constexpr explicit __latch_base(ptrdiff_t __expected)
       : __counter(__expected)
   {}
 
@@ -41,7 +41,7 @@ public:
   __latch_base(const __latch_base&)            = delete;
   __latch_base& operator=(const __latch_base&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI void count_down(ptrdiff_t __update = 1)
+  _CCCL_API inline void count_down(ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update > 0, "");
     auto const __old = __counter.fetch_sub(__update, memory_order_release);
@@ -51,11 +51,11 @@ public:
       __counter.notify_all();
     }
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool try_wait() const noexcept
+  _CCCL_API inline bool try_wait() const noexcept
   {
     return __counter.load(memory_order_acquire) == 0;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void wait() const
+  _CCCL_API inline void wait() const
   {
     while (1)
     {
@@ -67,13 +67,13 @@ public:
       __counter.wait(__current, memory_order_relaxed);
     }
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_wait(ptrdiff_t __update = 1)
+  _CCCL_API inline void arrive_and_wait(ptrdiff_t __update = 1)
   {
     count_down(__update);
     wait();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  _CCCL_API static constexpr ptrdiff_t max() noexcept
   {
     return numeric_limits<ptrdiff_t>::max();
   }

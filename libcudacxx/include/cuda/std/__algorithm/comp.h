@@ -33,7 +33,7 @@ struct __equal_to
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _T1& __lhs, const _T2& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _T1& __lhs, const _T2& __rhs) const
     noexcept(noexcept(__lhs == __rhs))
   {
     return __lhs == __rhs;
@@ -50,7 +50,7 @@ struct __less
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Up>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __lhs, const _Up& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __lhs, const _Up& __rhs) const
     noexcept(noexcept(__lhs < __rhs))
   {
     return __lhs < __rhs;

@@ -38,13 +38,13 @@ class _MinmaxElementLessFunc
   _Proj& __proj_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _MinmaxElementLessFunc(_Comp& __comp, _Proj& __proj)
+  _CCCL_API constexpr _MinmaxElementLessFunc(_Comp& __comp, _Proj& __proj)
       : __comp_(__comp)
       , __proj_(__proj)
   {}
 
   template <class _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Iter& __it1, _Iter& __it2)
+  _CCCL_API constexpr bool operator()(_Iter& __it1, _Iter& __it2)
   {
     return _CUDA_VSTD::__invoke(__comp_, _CUDA_VSTD::__invoke(__proj_, *__it1), _CUDA_VSTD::__invoke(__proj_, *__it2));
   }
@@ -52,8 +52,7 @@ public:
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Sent, class _Proj, class _Comp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Iter, _Iter>
-__minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
+_CCCL_API constexpr pair<_Iter, _Iter> __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 {
   auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
 
@@ -116,19 +115,19 @@ __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 }
 
 template <class _ForwardIterator, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
+[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
                 "_CUDA_VSTD::minmax_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
-  auto __proj = __identity();
+  auto __proj = identity();
   return _CUDA_VSTD::__minmax_element_impl(__first, __last, __comp, __proj);
 }
 
 template <class _ForwardIterator>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
+[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::minmax_element(__first, __last, __less{});

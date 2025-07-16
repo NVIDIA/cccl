@@ -25,10 +25,12 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
@@ -50,7 +52,7 @@ private:
 
     _Rcvr __rcvr_;
 
-    _CCCL_API explicit __opstate_t(_Rcvr __rcvr)
+    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr) noexcept
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
@@ -66,19 +68,18 @@ private:
       {
         // This looks like a use after move, but `set_value` takes its
         // arguments by forwarding reference, so it's safe.
-        execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
+        execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
       }
       else
       {
-        _CUDAX_TRY( //
-          ({ //
-            execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
-          }),
-          _CUDAX_CATCH(...) //
-          ({ //
-            execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-          }) //
-        )
+        _CCCL_TRY
+        {
+          execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
+        }
+        _CCCL_CATCH_ALL
+        {
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        }
       }
     }
   };
@@ -118,21 +119,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (__nothrow_callable<_Query, _Env>)
-    {
-      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{};
-    }
     else
     {
-      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>),
-                                   set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{}
+           + __eptr_completion_if<!__nothrow_callable<_Query, _Env>>();
     }
 
     _CCCL_UNREACHABLE();
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }

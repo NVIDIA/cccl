@@ -180,7 +180,9 @@ struct __basic_query<_Query, void>
   }
 };
 
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)
+// nvvm/bin/cicc segfaults when `prop` uses [[no_unique_address]]
+#if (_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)) && !_CCCL_CUDA_COMPILER(NVCC) \
+  && !_CCCL_CUDA_COMPILER(NVRTC)
 
 //! @brief A template structure representing a query with a query and a value.
 //!
@@ -219,7 +221,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
     return __value;
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
+  _Value __value;
 };
 
 #endif // !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
@@ -287,7 +289,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     return env::__get_1st<_Query>(*this).query(__query);
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __tuple<_Envs...> __envs_;
+  __tuple<_Envs...> __envs_;
 };
 
 template <class... _Envs>
@@ -305,8 +307,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
 template <class _Env0, class _Env1>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _Env0 __env0_;
-  _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
+  _Env0 __env0_;
+  _Env1 __env1_;
 
   template <class _Query>
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
@@ -395,7 +397,7 @@ template <class _Tag>
 _CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
 
 //////////////////////////////////////////////////////////////////////////////////////////
-// __query_or_default
+// __query_or
 namespace __detail
 {
 // query an environment, or return a default value if the query is not supported
@@ -425,7 +427,7 @@ _CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default>
 using __query_result_or_t _CCCL_NODEBUG_ALIAS =
-  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _Query{}, _CUDA_VSTD::declval<_Default>()));
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _CUDA_VSTD::declval<_Query>(), _CUDA_VSTD::declval<_Default>()));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 

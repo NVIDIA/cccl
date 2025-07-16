@@ -47,7 +47,7 @@ template <class _AlgPolicy,
           class _Sentinel2,
           class _Proj1,
           class _Proj2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _RandomAccessIterator> __partial_sort_copy(
+_CCCL_API constexpr pair<_InputIterator, _RandomAccessIterator> __partial_sort_copy(
   _InputIterator __first,
   _Sentinel1 __last,
   _RandomAccessIterator __result_first,
@@ -84,7 +84,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _RandomAccessIterator> 
 }
 
 template <class _InputIterator, class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
+_CCCL_API constexpr _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,
@@ -100,13 +100,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
     __result_first,
     __result_last,
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    __identity(),
-    __identity());
+    identity(),
+    identity());
   return __result.second;
 }
 
 template <class _InputIterator, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
+_CCCL_API constexpr _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,

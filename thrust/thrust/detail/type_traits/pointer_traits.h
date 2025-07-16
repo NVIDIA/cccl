@@ -162,7 +162,7 @@ struct capture_address
 template <typename T>
 struct pointer_to_param
     : thrust::detail::eval_if<::cuda::std::is_void<T>::value,
-                              thrust::detail::identity_<capture_address<T>>,
+                              ::cuda::std::type_identity<capture_address<T>>,
                               ::cuda::std::add_lvalue_reference<T>>
 {};
 
@@ -306,16 +306,16 @@ struct is_void_pointer_system_convertible
 // avoid inspecting traits of the arguments if they aren't known to be pointers
 template <typename FromPtr, typename ToPtr>
 struct lazy_is_pointer_convertible
-    : thrust::detail::eval_if<is_thrust_pointer<FromPtr>::value && is_thrust_pointer<ToPtr>::value,
+    : thrust::detail::eval_if<is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>,
                               is_pointer_convertible<FromPtr, ToPtr>,
-                              thrust::detail::identity_<thrust::detail::false_type>>
+                              ::cuda::std::type_identity<thrust::detail::false_type>>
 {};
 
 template <typename FromPtr, typename ToPtr>
 struct lazy_is_void_pointer_system_convertible
-    : thrust::detail::eval_if<is_thrust_pointer<FromPtr>::value && is_thrust_pointer<ToPtr>::value,
+    : thrust::detail::eval_if<is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>,
                               is_void_pointer_system_convertible<FromPtr, ToPtr>,
-                              thrust::detail::identity_<thrust::detail::false_type>>
+                              ::cuda::std::type_identity<thrust::detail::false_type>>
 {};
 
 template <typename FromPtr, typename ToPtr, typename T = void>

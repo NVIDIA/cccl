@@ -30,7 +30,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _NBits, bool _IsSigned>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
+_CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 {
   if constexpr (_IsSigned)
   {

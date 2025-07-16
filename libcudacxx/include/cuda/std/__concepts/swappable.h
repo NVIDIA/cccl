@@ -40,7 +40,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -85,12 +85,12 @@ _CCCL_CONCEPT __exchangeable = _CCCL_FRAGMENT(__exchangeable_, _Tp);
 #if _CCCL_HAS_CONCEPTS() && !_CCCL_COMPILER(NVHPC) // nvbug4051640
 struct __fn;
 
-_CCCL_NV_DIAG_SUPPRESS(2642)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2642)
 template <class _Tp, class _Up, size_t _Size>
 concept __swappable_arrays =
   !__unqualified_swappable_with<_Tp (&)[_Size], _Up (&)[_Size]> && extent_v<_Tp> == extent_v<_Up>
   && requires(_Tp (&__t)[_Size], _Up (&__u)[_Size], const __fn& __swap) { __swap(__t[0], __u[0]); };
-_CCCL_NV_DIAG_DEFAULT(2642)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() && !_CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVHPC) vvv
 template <class _Tp, class _Up, size_t _Size, class = void>
@@ -106,7 +106,7 @@ struct __fn
   // *The name `swap` is used here unqualified.
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(__unqualified_swappable_with<_Tp, _Up>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp&& __t, _Up&& __u) const
+  _CCCL_API constexpr void operator()(_Tp&& __t, _Up&& __u) const
     noexcept(noexcept(swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u))))
   {
     swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
@@ -115,7 +115,7 @@ struct __fn
   // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...
   _CCCL_TEMPLATE(class _Tp, class _Up, size_t _Size)
   _CCCL_REQUIRES(__swappable_arrays<_Tp, _Up, _Size>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp (&__t)[_Size], _Up (&__u)[_Size]) const
+  _CCCL_API constexpr void operator()(_Tp (&__t)[_Size], _Up (&__u)[_Size]) const
     noexcept(__noexcept_swappable_arrays<_Tp, _Up>)
   {
     // TODO(cjdb): replace with `_CUDA_VRANGES::swap_ranges`.
@@ -128,7 +128,7 @@ struct __fn
   // 2.3   Otherwise, if `E1` and `E2` are lvalues of the same type `T` that models...
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__exchangeable<_Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp& __x, _Tp& __y) const
+  _CCCL_API constexpr void operator()(_Tp& __x, _Tp& __y) const
     noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
     __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));
@@ -198,7 +198,7 @@ _CCCL_CONCEPT swappable_with = _CCCL_FRAGMENT(__swappable_with_, _Tp, _Up);
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
+_CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
 #include <cuda/std/__cccl/epilogue.h>

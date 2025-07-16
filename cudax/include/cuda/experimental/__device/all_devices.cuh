@@ -24,6 +24,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__device/device.cuh>
 
@@ -39,13 +40,13 @@ namespace __detail
 class all_devices
 {
 public:
-  using size_type      = ::std::vector<device>::size_type;
-  using iterator       = ::std::vector<device>::const_iterator;
-  using const_iterator = ::std::vector<device>::const_iterator;
+  using size_type      = ::std::vector<physical_device>::size_type;
+  using iterator       = ::std::vector<physical_device>::const_iterator;
+  using const_iterator = ::std::vector<physical_device>::const_iterator;
 
   all_devices() = default;
 
-  [[nodiscard]] const device& operator[](size_type __i) const;
+  [[nodiscard]] const physical_device& operator[](size_type __i) const;
 
   [[nodiscard]] size_type size() const;
 
@@ -53,12 +54,12 @@ public:
 
   [[nodiscard]] iterator end() const noexcept;
 
-  operator ::std::vector<device_ref>() const;
+  operator ::cuda::std::span<const device_ref>() const;
 
 private:
   struct __initializer_iterator;
 
-  static const ::std::vector<device>& __devices();
+  static const ::std::vector<physical_device>& __devices();
 };
 
 //! @brief An iterator used to in-place construct `device` objects in a
@@ -111,7 +112,7 @@ struct all_devices::__initializer_iterator
   }
 };
 
-[[nodiscard]] inline const device& all_devices::operator[](size_type __id_) const
+[[nodiscard]] inline const physical_device& all_devices::operator[](size_type __id_) const
 {
   if (__id_ >= size())
   {
@@ -143,17 +144,18 @@ struct all_devices::__initializer_iterator
   return __devices().end();
 }
 
-inline all_devices::operator ::std::vector<device_ref>() const
+inline all_devices::operator ::cuda::std::span<const device_ref>() const
 {
-  return ::std::vector<device_ref>(begin(), end());
+  static const ::std::vector<device_ref> __refs(begin(), end());
+  return ::cuda::std::span<const device_ref>(__refs);
 }
 
-inline const ::std::vector<device>& all_devices::__devices()
+inline const ::std::vector<physical_device>& all_devices::__devices()
 {
-  static const ::std::vector<device> __devices = [] {
+  static const ::std::vector<physical_device> __devices = [] {
     int __count = 0;
     _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
-    return ::std::vector<device>{__initializer_iterator{0}, __initializer_iterator{__count}};
+    return ::std::vector<physical_device>{__initializer_iterator{0}, __initializer_iterator{__count}};
   }();
   return __devices;
 }
@@ -173,7 +175,7 @@ inline const ::std::vector<device>& all_devices::__devices()
 //!   struct iterator;
 //!   using const_iterator = iterator;
 //!
-//!   [[nodiscard]] constexpr const device& operator[](size_type i) const noexcept;
+//!   [[nodiscard]] constexpr const physical_device& operator[](size_type i) const noexcept;
 //!
 //!   [[nodiscard]] size_type size() const;
 //!
@@ -185,7 +187,7 @@ inline const ::std::vector<device>& all_devices::__devices()
 //!
 //! @par
 //! `__all_devices::iterator` is a random access iterator with a `reference`
-//! type of `const device&`.
+//! type of `const physical_device&`.
 //!
 //! @par Example
 //! @code
@@ -198,17 +200,17 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! * device_ref
 inline constexpr __detail::all_devices devices{};
 
-inline const arch_traits_t& device_ref::get_arch_traits() const
+inline const arch_traits_t& device_ref::arch_traits() const
 {
-  return devices[get()].get_arch_traits();
+  return devices[get()].arch_traits();
 }
 
-[[nodiscard]] inline ::std::vector<device_ref> device_ref::get_peers() const
+[[nodiscard]] inline ::std::vector<device_ref> device_ref::peer_devices() const
 {
   ::std::vector<device_ref> __result;
   __result.reserve(devices.size());
 
-  for (const device& __other_dev : devices)
+  for (const physical_device& __other_dev : devices)
   {
     // Exclude the device this API is called on. The main use case for this API
     // is enable/disable peer access. While enable peer access can be called on

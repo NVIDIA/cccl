@@ -34,7 +34,7 @@ int main()
   auto h_buf = frozen_buffer.get(data_place::host()).first;
   auto d_buf = frozen_buffer.get(data_place::current_device()).first;
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   auto lX = ctx.logical_data(buffer.shape()).set_symbol("X");
   ctx.parallel_for(lX.shape(), lX.write()).set_symbol("X=buf")->*[d_buf] __device__(size_t i, size_t j, auto x) {
@@ -47,7 +47,7 @@ int main()
           };
 
   // Make sure all tasks are done before unfreezing
-  frozen_buffer.unfreeze(ctx.task_fence());
+  frozen_buffer.unfreeze(ctx.fence());
 
   ctx.finalize();
 }

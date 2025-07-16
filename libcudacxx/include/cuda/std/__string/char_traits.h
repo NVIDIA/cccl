@@ -45,17 +45,17 @@ struct __cccl_char_traits_impl
   using comparison_category = strong_ordering;
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __lhs, const char_type& __rhs) noexcept
+  _CCCL_API static constexpr void assign(char_type& __lhs, const char_type& __rhs) noexcept
   {
     __lhs = __rhs;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool eq(char_type __lhs, char_type __rhs) noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool eq(char_type __lhs, char_type __rhs) noexcept
   {
     return __lhs == __rhs;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool lt(char_type __lhs, char_type __rhs) noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool lt(char_type __lhs, char_type __rhs) noexcept
   {
     if constexpr (_CCCL_TRAIT(is_same, char_type, char))
     {
@@ -67,7 +67,7 @@ struct __cccl_char_traits_impl
     }
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
+  [[nodiscard]] _CCCL_API static constexpr int
   compare(const char_type* __lhs, const char_type* __rhs, size_t __count) noexcept
   {
     if (__count > 0)
@@ -78,13 +78,13 @@ struct __cccl_char_traits_impl
     return _CUDA_VSTD::__cccl_memcmp(__lhs, __rhs, __count);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static size_t constexpr length(const char_type* __s) noexcept
+  [[nodiscard]] _CCCL_API inline static size_t constexpr length(const char_type* __s) noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "char_traits::length: nullptr passed as an argument");
     return _CUDA_VSTD::__cccl_strlen(__s);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr const char_type*
+  [[nodiscard]] _CCCL_API static constexpr const char_type*
   find(const char_type* __s, size_t __n, const char_type& __a) noexcept
   {
     if (__n > 0)
@@ -94,7 +94,7 @@ struct __cccl_char_traits_impl
     return _CUDA_VSTD::__cccl_memchr<const char_type>(__s, __a, __n);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
+  _CCCL_API static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
     if (__n > 0)
     {
@@ -104,7 +104,7 @@ struct __cccl_char_traits_impl
     return _CUDA_VSTD::__cccl_memmove(__s1, __s2, __n);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
+  _CCCL_API static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
     if (__n > 0)
     {
@@ -114,7 +114,7 @@ struct __cccl_char_traits_impl
     return _CUDA_VSTD::__cccl_memcpy(__s1, __s2, __n);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
+  _CCCL_API static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
   {
     if (__n > 0)
     {
@@ -123,12 +123,12 @@ struct __cccl_char_traits_impl
     return _CUDA_VSTD::__cccl_memset(__s, __a, __n);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type to_char_type(int_type __c) noexcept
+  [[nodiscard]] _CCCL_API static constexpr char_type to_char_type(int_type __c) noexcept
   {
     return char_type(__c);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr int_type to_int_type(char_type __c) noexcept
+  [[nodiscard]] _CCCL_API static constexpr int_type to_int_type(char_type __c) noexcept
   {
     if constexpr (_CCCL_TRAIT(is_same, char_type, char))
     {
@@ -140,18 +140,18 @@ struct __cccl_char_traits_impl
     }
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool eq_int_type(int_type __lhs, int_type __rhs) noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool eq_int_type(int_type __lhs, int_type __rhs) noexcept
   {
     return __lhs == __rhs;
   }
 
 #if 0 // todo: add EOF support
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr int_type eof() noexcept
+  [[nodiscard]] _CCCL_API static constexpr int_type eof() noexcept
   {
     return _EOFVal;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr int_type not_eof(int_type __c) noexcept
+  [[nodiscard]] _CCCL_API static constexpr int_type not_eof(int_type __c) noexcept
   {
     return eq_int_type(__c, eof()) ? static_cast<int_type>(~eof()) : __c;
   }
@@ -169,13 +169,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t> : __cccl_char_traits_i
 #endif // _CCCL_HAS_CHAR8_T()
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>
-    : __cccl_char_traits_impl<char16_t, uint_least16_t /*, ??? */>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+char_traits<char16_t> : __cccl_char_traits_impl<char16_t, uint_least16_t /*, ??? */>
 {};
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
-    : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+char_traits<char32_t> : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
 {};
 
 #if _CCCL_HAS_WCHAR_T()

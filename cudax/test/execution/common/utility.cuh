@@ -85,6 +85,33 @@ struct potentially_throwing
   }
 };
 
+struct non_default_constructible
+{
+  _CCCL_HOST_DEVICE constexpr explicit non_default_constructible(int value) noexcept
+      : value_(value)
+  {}
+
+  _CCCL_HOST_DEVICE friend constexpr bool
+  operator==(const non_default_constructible& a, const non_default_constructible& b) noexcept
+  {
+    return a.value_ == b.value_;
+  }
+
+  _CCCL_HOST_DEVICE friend constexpr bool
+  operator!=(const non_default_constructible& a, const non_default_constructible& b) noexcept
+  {
+    return a.value_ != b.value_;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const non_default_constructible& self)
+  {
+    os << "non_default_constructible{" << self.value_ << "}";
+    return os;
+  }
+
+  int value_;
+};
+
 struct string
 {
   string() = default;
@@ -204,14 +231,22 @@ template <class... Values, class Sndr>
 _CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
   using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, _CUDA_VSTD::__make_type_set>;
-  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>)
+  {
+    _CUDA_VSTD::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+  }
 }
 
 template <class... Errors, class Sndr>
 _CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
   using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, _CUDA_VSTD::__make_type_set>;
-  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>)
+  {
+    _CUDA_VSTD::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+  }
 }
 
 template <bool SendsStopped, class Sndr>
@@ -235,69 +270,3 @@ inline void wait_for_value(Sndr&& snd, Ts&&... val)
     C2H_CHECK_TUPLE(res.value() == expected);
   }
 }
-
-// A sender adapter that adds attributes to the child sender's attributes.
-struct write_attrs_t
-{
-  template <class _Sndr, class _Attrs>
-  struct __sndr_t
-  {
-    using sender_concept = cuda::experimental::execution::sender_t;
-
-    [[nodiscard]] _CCCL_API auto get_env() const noexcept
-    {
-      return _CUDA_STD_EXEC::env<const _Attrs&, _CUDA_STD_EXEC::env_of_t<_Sndr>>{
-        __attrs_, _CUDA_STD_EXEC::get_env(__sndr_)};
-    }
-
-    template <class _Self, class... _Env>
-    [[nodiscard]] _CCCL_API static constexpr auto get_completion_signatures()
-      -> cuda::experimental::execution::completion_signatures_of_t<_CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>, _Env...>
-    {
-      return {};
-    }
-
-    template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto
-    connect(_Rcvr __rcvr) && -> cuda::experimental::execution::connect_result_t<_Sndr, _Rcvr>
-    {
-      return cuda::experimental::execution::connect(_CUDA_VSTD::move(__sndr_), _CUDA_VSTD::move(__rcvr));
-    }
-
-    template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto
-    connect(_Rcvr __rcvr) const& -> cuda::experimental::execution::connect_result_t<_Sndr, _Rcvr>
-    {
-      return cuda::experimental::execution::connect(__sndr_, _CUDA_VSTD::move(__rcvr));
-    }
-
-    _Sndr __sndr_;
-    _Attrs __attrs_;
-  };
-
-  template <class _Sndr, class _Attrs>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr snd, _Attrs __attrs_) const -> __sndr_t<_Sndr, _Attrs>
-  {
-    return __sndr_t<_Sndr, _Attrs>{static_cast<_Sndr&&>(snd), static_cast<_Attrs&&>(__attrs_)};
-  }
-
-  template <class _Attrs>
-  struct __closure
-  {
-    _Attrs __attrs_;
-
-    template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr_, __closure _clsr)
-    {
-      return __sndr_t<_Sndr, _Attrs>{static_cast<_Sndr&&>(__sndr_), static_cast<_Attrs&&>(_clsr.__attrs_)};
-    }
-  };
-
-  template <class _Attrs>
-  [[nodiscard]] _CCCL_API auto operator()(_Attrs __attrs_) const
-  {
-    return __closure<_Attrs>{static_cast<_Attrs&&>(__attrs_)};
-  }
-};
-
-inline constexpr write_attrs_t write_attrs{};

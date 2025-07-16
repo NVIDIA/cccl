@@ -33,8 +33,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp>
@@ -59,11 +59,11 @@ template <typename _Tp>
 struct __is_destructor_wellformed
 {
   template <typename _Tp1>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type
+  _CCCL_API inline static true_type
     __test(typename __is_destructible_apply<decltype(_CUDA_VSTD::declval<_Tp1&>().~_Tp1())>::type);
 
   template <typename _Tp1>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API inline static false_type __test(...);
 
   static const bool value = decltype(__test<_Tp>(12))::value;
 };

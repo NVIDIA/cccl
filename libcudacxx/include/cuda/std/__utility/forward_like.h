@@ -41,8 +41,7 @@ template <class _Ap, class _Bp>
 using _ForwardLike = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
 
 template <class _Tp, class _Up>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr auto forward_like(_Up&& __ux) noexcept
-  -> _ForwardLike<_Tp, _Up>
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>
 {
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }

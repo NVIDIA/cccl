@@ -13,6 +13,8 @@
 
 #include "test_macros.h"
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <class VType, class BaseType, size_t Index>
 using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index, VType>::type, BaseType>;
 
@@ -58,6 +60,19 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(ulonglong, unsigned long long);
   EXPAND_VECTOR_TYPE(float, float);
   EXPAND_VECTOR_TYPE(double, double);
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test<long4_16a, long, 4>();
+  test<long4_32a, long, 4>();
+  test<ulong4_16a, unsigned long, 4>();
+  test<ulong4_32a, unsigned long, 4>();
+  test<longlong4_16a, long long, 4>();
+  test<longlong4_32a, long long, 4>();
+  test<ulonglong4_16a, unsigned long long, 4>();
+  test<ulonglong4_32a, unsigned long long, 4>();
+  test<double4_16a, double, 4>();
+  test<double4_32a, double, 4>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   return true;
 }

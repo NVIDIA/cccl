@@ -361,7 +361,38 @@ inline constexpr arch_traits_t sm_1000_traits = []() constexpr {
   return __traits;
 }();
 
-inline constexpr unsigned int __highest_known_arch = 1000;
+inline constexpr arch_traits_t sm_1030_traits = []() constexpr {
+  arch_traits_t __traits            = sm_1000_traits;
+  __traits.compute_capability_major = 10;
+  __traits.compute_capability_minor = 3;
+  __traits.compute_capability       = 1030;
+  return __traits;
+}();
+
+inline constexpr arch_traits_t sm_1200_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 12;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 1200;
+  __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 1536;
+  __traits.max_warps_per_multiprocessor =
+    __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+
+  return __traits;
+}();
+
+inline constexpr unsigned int __highest_known_arch = 1200;
 
 } // namespace __detail
 
@@ -393,6 +424,10 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
       return __detail::sm_900_traits;
     case 1000:
       return __detail::sm_1000_traits;
+    case 1030:
+      return __detail::sm_1030_traits;
+    case 1200:
+      return __detail::sm_1200_traits;
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
@@ -430,7 +465,7 @@ public:
 };
 
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
-_CCCL_DEVICE constexpr inline arch_traits_t current_arch()
+_CCCL_DEVICE constexpr arch_traits_t current_arch()
 {
   // fixme: this doesn't work with nvc++ -cuda
 #ifdef __CUDA_ARCH__
@@ -453,16 +488,15 @@ namespace __detail
   {
     // If the architecture is unknown, we need to craft the arch_traits from attributes
     arch_traits_t __traits{};
-    __traits.compute_capability_major = __arch / 100;
-    __traits.compute_capability_minor = (__arch / 10) % 10;
-    __traits.compute_capability       = __arch;
-    __traits.max_shared_memory_per_multiprocessor =
-      __detail::__device_attrs::max_shared_memory_per_multiprocessor(__device);
-    __traits.max_blocks_per_multiprocessor  = __detail::__device_attrs::max_blocks_per_multiprocessor(__device);
-    __traits.max_threads_per_multiprocessor = __detail::__device_attrs::max_threads_per_multiprocessor(__device);
+    __traits.compute_capability_major             = __arch / 100;
+    __traits.compute_capability_minor             = (__arch / 10) % 10;
+    __traits.compute_capability                   = __arch;
+    __traits.max_shared_memory_per_multiprocessor = device_attributes::max_shared_memory_per_multiprocessor(__device);
+    __traits.max_blocks_per_multiprocessor        = device_attributes::max_blocks_per_multiprocessor(__device);
+    __traits.max_threads_per_multiprocessor       = device_attributes::max_threads_per_multiprocessor(__device);
     __traits.max_warps_per_multiprocessor =
       __traits.max_threads_per_multiprocessor / __detail::arch_common_traits::warp_size;
-    __traits.reserved_shared_memory_per_block = __detail::__device_attrs::reserved_shared_memory_per_block(__device);
+    __traits.reserved_shared_memory_per_block = device_attributes::reserved_shared_memory_per_block(__device);
     __traits.max_shared_memory_per_block_optin =
       __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
 

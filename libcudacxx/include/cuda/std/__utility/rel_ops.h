@@ -31,25 +31,25 @@ namespace rel_ops
 {
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator!=(const _Tp& __x, const _Tp& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator>(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator>(const _Tp& __x, const _Tp& __y)
 {
   return __y < __x;
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator<=(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator<=(const _Tp& __x, const _Tp& __y)
 {
   return !(__y < __x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator>=(const _Tp& __x, const _Tp& __y)
+_CCCL_API inline bool operator>=(const _Tp& __x, const _Tp& __y)
 {
   return !(__x < __y);
 }

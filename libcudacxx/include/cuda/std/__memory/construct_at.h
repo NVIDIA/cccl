@@ -54,7 +54,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
+_CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
 #    if defined(_CCCL_BUILTIN_ADDRESSOF)
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
@@ -112,7 +112,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __location, _Args&&... __args)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
@@ -134,7 +134,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __locatio
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Tp* __construct_at(_Tp* __location, _Args&&... __args)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* __construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
@@ -160,11 +160,11 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Tp* __construct_at(_Tp* __locat
 // The internal functions are available regardless of the language version (with the exception of the `__destroy_at`
 // taking an array).
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
+_CCCL_API constexpr _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
+_CCCL_API constexpr void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)
@@ -183,7 +183,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator __first, _ForwardIterator __last)
+_CCCL_API constexpr _ForwardIterator __destroy(_ForwardIterator __first, _ForwardIterator __last)
 {
   for (; __first != __last; ++__first)
   {
@@ -194,7 +194,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator
+_CCCL_API constexpr _BidirectionalIterator
 __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   while (__last != __first)
@@ -207,7 +207,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)
@@ -225,14 +225,14 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last) noexcept
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last) noexcept
 {
   (void) _CUDA_VSTD::__destroy(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Size>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_ForwardIterator __first, _Size __n)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_ForwardIterator __first, _Size __n)
 {
   for (; __n > 0; (void) ++__first, --__n)
   {

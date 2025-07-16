@@ -48,7 +48,7 @@ _CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<voi
 struct __conj_if_needed
 {
   template <class _Type>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Type& __t) const
+  _CCCL_API constexpr auto operator()(const _Type& __t) const
   {
     if constexpr (is_arithmetic_v<_Type> || !_HasConj<_Type>)
     {

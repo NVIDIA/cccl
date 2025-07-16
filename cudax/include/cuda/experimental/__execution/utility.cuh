@@ -21,14 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
+
+#include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -107,15 +117,164 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
-_CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
+[[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
+  -> _CUDA_VSTD::decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline auto __get_pointer_attributes(const void* __pv) -> ::cudaPointerAttributes
+{
+  ::cudaPointerAttributes __attrs;
+  _CCCL_TRY_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
+  return __attrs;
+}
+
+// This function can only be called from a catch handler.
+[[nodiscard]] _CCCL_HOST_API inline auto __get_cuda_error_from_active_exception() -> ::cudaError_t
+{
+  try
+  {
+    throw; // rethrow the active exception
+  }
+  catch (::cuda::cuda_error& __err)
+  {
+    return __err.status();
+  }
+  catch (::std::bad_alloc&)
+  {
+    return ::cudaErrorMemoryAllocation;
+  }
+  catch (...)
+  {
+    return ::cudaErrorUnknown; // fallback if no cuda error is found
+  }
+  _CCCL_UNREACHABLE();
+}
+
+template <class _Ty>
+struct __managed_box : private __immovable
+{
+  using value_type = _Ty;
+
+  _CCCL_HIDE_FROM_ABI __managed_box() = default;
+
+  _CCCL_TEMPLATE(class... _Args)
+  _CCCL_REQUIRES(_CUDA_VSTD::constructible_from<_Ty, _Args...>)
+  _CCCL_HOST_API explicit __managed_box(_Args&&... __args) noexcept(__nothrow_constructible<_Ty, _Args...>)
+      : __value{static_cast<_Args&&>(__args)...}
+  {
+    _CCCL_ASSERT(execution::__get_pointer_attributes(this).type == cudaMemoryTypeManaged,
+                 "__managed_box must be allocated in managed memory");
+  }
+
+  template <class... _Args>
+  _CCCL_HOST_API static auto __make_unique(_Args&&... __args) -> _CUDA_VSTD::unique_ptr<__managed_box>
+  {
+    return _CUDA_VSTD::make_unique<__managed_box>(static_cast<_Args&&>(__args)...);
+  }
+
+  _CCCL_HOST_API static auto operator new(size_t __size) -> void*
+  {
+    void* __ptr = nullptr;
+    _CCCL_TRY_CUDA_API(::cudaMallocManaged, "cudaMallocManaged failed", &__ptr, __size);
+    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure the memory is allocated before returning it.
+    return __ptr;
+  }
+
+  _CCCL_HOST_API static void operator delete(void* __ptr, size_t) noexcept
+  {
+    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure all operations on the memory are complete.
+    _CUDA_VSTD::ignore = ::cudaFree(__ptr);
+  }
+
+  value_type __value;
+
+private:
+  // Prevent the construction of __managed_box without dynamic allocation.
+  friend struct _CUDA_VSTD::default_delete<__managed_box<_Ty>>;
+  ~__managed_box() = default;
+};
+
+//! \brief A callable that wraps a set of functions and calls the first one that is
+//! callable with a given set of arguments.
+template <class... _Fns>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
+{
+private:
+  //! \brief Returns the first function that is callable with a given set of arguments.
+  template <class... _Args, class _Self>
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
+  {
+    // NOLINTNEXTLINE (modernize-avoid-c-arrays)
+    constexpr bool __flags[] = {
+      _CUDA_VSTD::__is_callable_v<_CUDA_VSTD::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
+    constexpr size_t __idx = execution::__find_pos(__flags, __flags + sizeof...(_Fns));
+    if constexpr (__idx != __npos)
+    {
+      return _CUDA_VSTD::__get<__idx>(static_cast<_Self&&>(__self).__fns_);
+    }
+  }
+
+  //! \brief Alias for the type of the first function that is callable with a given set of arguments.
+  template <class _Self, class... _Args>
+  using __1st_fn_t _CCCL_NODEBUG_ALIAS = decltype(__first_callable::__get_1st<_Args...>(declval<_Self>()));
+
+public:
+  //! \brief Calls the first function that is callable with a given set of arguments.
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Args>
+  _CCCL_TRIVIAL_API constexpr auto
+  operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
+    -> _CUDA_VSTD::__call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
+  {
+    return __first_callable::__get_1st<_Args...>(static_cast<__first_callable&&>(*this))(
+      static_cast<_Args&&>(__args)...);
+  }
+
+  //! \overload
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Args>
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
+    __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
+    -> _CUDA_VSTD::__call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
+  {
+    return __first_callable::__get_1st<_Args...>(*this)(static_cast<_Args&&>(__args)...);
+  }
+
+  _CUDA_VSTD::__tuple<_Fns...> __fns_;
+};
+
+template <class... _Fns>
+_CCCL_HOST_DEVICE __first_callable(_Fns...) -> __first_callable<_Fns...>;
+
+//! \brief A callable that always return a value of type _Ty, regardless of the arguments
+//! passed to it.
+template <class _Ty>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
+{
+  template <class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
+  {
+    return static_cast<_Ty&&>(__value);
+  }
+
+  template <class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
+  {
+    return __value;
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Ty __value{};
+};
+
+template <class _Ty>
+_CCCL_HOST_DEVICE __always(_Ty) -> __always<_Ty>;
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 _CCCL_DIAG_SUPPRESS_NVHPC(probable_guiding_friend)
-_CCCL_NV_DIAG_SUPPRESS(probable_guiding_friend)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(probable_guiding_friend)
 
 // __zip/__unzip is for keeping type names short. It has the unfortunate side
 // effect of obfuscating the types.
@@ -189,7 +348,7 @@ using __unzip _CCCL_NODEBUG_ALIAS = decltype(__slot_allocated(_Id())());
 using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 } // namespace
 
-_CCCL_NV_DIAG_DEFAULT(probable_guiding_friend)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 } // namespace cuda::experimental::execution

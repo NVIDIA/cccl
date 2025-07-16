@@ -28,8 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
 
 template <class _Sp, class _Mp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-is_pointer_interconvertible_with_class(_Mp _Sp::* __m_ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr bool is_pointer_interconvertible_with_class(_Mp _Sp::* __m_ptr) noexcept
 {
   return _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_Sp, __m_ptr);
 }

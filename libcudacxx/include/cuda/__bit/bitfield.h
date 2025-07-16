@@ -66,7 +66,7 @@ __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 #endif // __cccl_ptx_isa >= 200
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
@@ -92,8 +92,7 @@ bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) 
 }
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
-bitfield_extract(const _Tp __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp bitfield_extract(const _Tp __value, int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_extract() requires unsigned integer types");
   [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;

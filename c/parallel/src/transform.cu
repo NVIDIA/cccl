@@ -10,7 +10,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#include <cub/device/dispatch/tuning/tuning_transform.cuh> // cub::detail::transform::Algorithm
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
@@ -54,44 +54,71 @@ constexpr auto output_iterator_name = "output_iterator_t";
 
 struct transform_runtime_tuning_policy
 {
+  int min_bif;
   int block_threads;
   int items_per_thread_no_input;
   int min_items_per_thread;
   int max_items_per_thread;
+  int items_per_thread_vectorized;
+  int load_store_word_size;
+
+  int MinBif() const
+  {
+    return min_bif;
+  }
 
   // Note: when we extend transform to support UBLKCP, we may no longer
   // be able to keep this constexpr:
   static constexpr cub::detail::transform::Algorithm GetAlgorithm()
   {
+    // FIXME(bgruber): this needs to incorporate the algorithm selection logic from CUB policy_hub
     return cub::detail::transform::Algorithm::prefetch;
   }
 
-  int BlockThreads()
+  int BlockThreads() const
   {
     return block_threads;
   }
 
-  int ItemsPerThreadNoInput()
+  int ItemsPerThreadNoInput() const
   {
     return items_per_thread_no_input;
   }
 
-  int MinItemsPerThread()
+  int MinItemsPerThread() const
   {
     return min_items_per_thread;
   }
 
-  int MaxItemsPerThread()
+  int MaxItemsPerThread() const
   {
     return max_items_per_thread;
   }
-  static constexpr int min_bif = 1024 * 12;
+
+  int ItemsPerThreadForVectorizedPath() const
+  {
+    return items_per_thread_vectorized;
+  }
+
+  int LoadStoreWordSize() const
+  {
+    return load_store_word_size;
+  }
 };
 
-transform_runtime_tuning_policy get_policy()
+transform_runtime_tuning_policy get_policy(int sm_arch)
 {
-  // return prefetch policy defaults:
-  return {256, 2, 1, 32};
+  constexpr int load_store_word_size = 8; // TODO(bgruber): should be fused with the constant in CUB
+  constexpr int value_type_size = 4; // FIXME(bgruber): this should be derived from the value types of the iterators
+  constexpr int target_bytes_per_thread = 32; // TODO(bgruber): should be fused with the constant in CUB
+  return {
+    .min_bif                     = cub::detail::transform::arch_to_min_bytes_in_flight(sm_arch),
+    .block_threads               = 256,
+    .items_per_thread_no_input   = 2,
+    .min_items_per_thread        = 1,
+    .max_items_per_thread        = 32,
+    .items_per_thread_vectorized = ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / value_type_size,
+    .load_store_word_size        = load_store_word_size};
 }
 
 template <typename StorageT>
@@ -159,9 +186,9 @@ struct dynamic_transform_policy_t
   using max_policy = dynamic_transform_policy_t;
 
   template <typename F>
-  cudaError_t Invoke(int /*device_ptx_version*/, F& op)
+  cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<transform_runtime_tuning_policy>(GetPolicy());
+    return op.template Invoke<transform_runtime_tuning_policy>(GetPolicy(device_ptx_version));
   }
 };
 
@@ -207,7 +234,7 @@ CUresult cccl_device_unary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy();
+    const auto policy            = transform::get_policy(cc * 10 /* convert to ptx version */);
     const auto input_it_value_t  = cccl_type_enum_to_name<input_storage_t>(input_it.value_type.type);
     const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
@@ -218,7 +245,6 @@ CUresult cccl_device_unary_transform_build(
     const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
 
     constexpr std::string_view src_template = R"XXX(
-#define _CUB_HAS_TRANSFORM_UBLKCP 0
 #include <cub/device/dispatch/kernels/transform.cuh>
 struct __align__({1}) input_storage_t {{
   char data[{0}];
@@ -295,14 +321,14 @@ struct device_transform_policy {{
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({kernel_name})
-        .compile_program({args, num_args})
-        .get_name({kernel_name, kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_expression({kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({kernel_name, kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
@@ -390,7 +416,7 @@ CUresult cccl_device_binary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy();
+    const auto policy            = transform::get_policy(cc * 10 /* convert to ptx version */);
     const auto input1_it_value_t = cccl_type_enum_to_name<input1_storage_t>(input1_it.value_type.type);
     const auto input2_it_value_t = cccl_type_enum_to_name<input2_storage_t>(input2_it.value_type.type);
 
@@ -407,7 +433,6 @@ CUresult cccl_device_binary_transform_build(
       make_kernel_user_binary_operator(input1_it_value_t, input2_it_value_t, output_it_value_t, op);
 
     constexpr std::string_view src_template = R"XXX(
-#define _CUB_HAS_TRANSFORM_UBLKCP 0
 #include <cub/device/dispatch/kernels/transform.cuh>
 struct __align__({1}) input1_storage_t {{
   char data[{0}];
@@ -485,14 +510,14 @@ struct device_transform_policy {{
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({kernel_name})
-        .compile_program({args, num_args})
-        .get_name({kernel_name, kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_expression({kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({kernel_name, kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));

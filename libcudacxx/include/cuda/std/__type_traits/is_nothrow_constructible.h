@@ -32,8 +32,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>
@@ -50,7 +50,7 @@ struct __cccl_is_nothrow_constructible</*is constructible*/ true, /*is reference
 {};
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __implicit_conversion_to(_Tp) noexcept
+_CCCL_API inline void __implicit_conversion_to(_Tp) noexcept
 {}
 
 template <class _Tp, class _Arg>

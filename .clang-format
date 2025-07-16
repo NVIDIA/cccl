@@ -27,6 +27,7 @@ AttributeMacros: [
                   '_CCCL_ALIGNAS',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
+                  '_CCCL_DECLSPEC_EMPTY_BASES',
                   '_CCCL_DEVICE',
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HIDE_FROM_ABI',
@@ -41,7 +42,6 @@ AttributeMacros: [
                   'THRUST_DETAIL_KERNEL_ATTRIBUTES',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
-                  '_LIBCUDACXX_HIDE_FROM_ABI',
                   '_CCCL_API',
                   '_CCCL_HOST_API',
                   '_CCCL_DEVICE_API',
@@ -77,6 +77,10 @@ ContinuationIndentWidth: 2
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
+IfMacros: [
+  '_CUB_WEAKEN_IF_CONSTEXPR_IF_COMPILED_FOR_CCCL_C',
+  '_CCCL_CATCH'
+]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
@@ -131,6 +135,7 @@ MaxEmptyLinesToKeep: 1
 Macros:
 - _CCCL_TEMPLATE(...)=template<...>
 - _CCCL_REQUIRES(...)=requires (...)
+- _CUDAX_SEMI_PRIVATE=private
 WhitespaceSensitiveMacros:
 - _CCCL_HAS_INCLUDE
 NamespaceIndentation: None

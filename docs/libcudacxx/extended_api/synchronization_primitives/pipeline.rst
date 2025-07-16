@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-pipeline:
 
-cuda::pipeline
+``cuda::pipeline``
 ==================
 
 .. toctree::

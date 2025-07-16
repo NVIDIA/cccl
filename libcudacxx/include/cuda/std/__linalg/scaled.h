@@ -58,8 +58,7 @@ public:
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
                    _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor)
                      _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor)))
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr scaled_accessor(
-    const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
+  _CCCL_API explicit constexpr scaled_accessor(const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
       : __scaling_factor_(__other.scaling_factor())
       , __nested_accessor_(__other.nested_accessor())
   {}
@@ -68,34 +67,33 @@ public:
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
                    _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor)
                      _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr scaled_accessor(
-    const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
+  _CCCL_API constexpr scaled_accessor(const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
       : __scaling_factor_(__other.scaling_factor())
       , __nested_accessor_(__other.nested_accessor())
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr scaled_accessor(const _ScalingFactor& __s, const _NestedAccessor& __a)
+  _CCCL_API constexpr scaled_accessor(const _ScalingFactor& __s, const _NestedAccessor& __a)
       : __scaling_factor_(__s)
       , __nested_accessor_(__a)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const
+  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const
   {
     return __scaling_factor_ * typename _NestedAccessor::element_type(__nested_accessor_.access(__p, __i));
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI
-  typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]]
+  _CCCL_API inline typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _NestedAccessor nested_accessor() const noexcept
+  [[nodiscard]] _CCCL_API constexpr _NestedAccessor nested_accessor() const noexcept
   {
     return __nested_accessor_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ScalingFactor scaling_factor() const noexcept
+  [[nodiscard]] _CCCL_API constexpr _ScalingFactor scaling_factor() const noexcept
   {
     return __scaling_factor_;
   }
@@ -115,10 +113,10 @@ using __scaled_element_type = add_const_t<typename scaled_accessor<_ScalingFacto
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>
 [[nodiscard]]
-_LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
-                                           _Extents,
-                                           _Layout,
-                                           scaled_accessor<_ScalingFactor, _Accessor>>
+_CCCL_API constexpr mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
+                           _Extents,
+                           _Layout,
+                           scaled_accessor<_ScalingFactor, _Accessor>>
 scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, _Accessor> __x)
 {
   using __acc_type = scaled_accessor<_ScalingFactor, _Accessor>;

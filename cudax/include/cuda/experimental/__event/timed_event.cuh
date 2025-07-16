@@ -49,6 +49,14 @@ public:
     record(__stream);
   }
 
+  //! @brief Construct a new `timed_event` object with the specified flags. The event can only be recorded on streams
+  //! from the specified device.
+  //!
+  //! @throws cuda_error if the event creation fails.
+  explicit timed_event(device_ref __device, flags __flags = flags::none)
+      : event(__device, static_cast<unsigned int>(__flags))
+  {}
+
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
@@ -92,8 +100,7 @@ public:
   [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
-    _CCCL_TRY_CUDA_API(
-      ::cudaEventElapsedTime, "Failed to get CUDA event elapsed time", &__ms, __start.get(), __end.get());
+    _CUDA_DRIVER::__eventElapsedTime(__start.get(), __end.get(), &__ms);
     return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 

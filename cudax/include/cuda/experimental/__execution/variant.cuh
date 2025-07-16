@@ -21,15 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
+#include <exception> // IWYU pragma: keep
 #include <new> // IWYU pragma: keep
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -84,9 +89,22 @@ class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
   }
 
 public:
-  __variant_impl(__variant_impl&&) = delete;
-
   _CCCL_API __variant_impl() noexcept {}
+
+  _CCCL_TEMPLATE(class...)
+  _CCCL_REQUIRES((_CUDA_VSTD::move_constructible<_Ts> && ...))
+  __variant_impl(__variant_impl&& __other) noexcept
+  {
+    if (__other.__index_ != __npos)
+    {
+      ((_Idx == __other.__index_
+          ? static_cast<void>(__emplace<__at<_Idx>>(static_cast<__variant_impl&&>(__other).template __get<_Idx>()))
+          : void(0)),
+       ...);
+      __index_ = __other.__index_;
+      __other.__destroy();
+    }
+  }
 
   _CCCL_API ~__variant_impl()
   {
@@ -111,8 +129,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty, class... _As>
-  _CCCL_API auto __emplace(_As&&... __as) //
-    noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
+  _CCCL_API auto __emplace(_As&&... __as) noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
     constexpr size_t __new_index = execution::__index_of<_Ty, _Ts...>();
     static_assert(__new_index != __npos, "Type not in variant");
@@ -125,8 +142,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Ny, class... _As>
-  _CCCL_API auto __emplace_at(_As&&... __as) //
-    noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
+  _CCCL_API auto __emplace_at(_As&&... __as) noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 
@@ -187,20 +203,9 @@ public:
   }
 };
 
-#if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
-struct __mk_variant_
-{
-  using __indices_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
-  using type _CCCL_NODEBUG_ALIAS        = __variant_impl<__indices_t, _Ts...>;
-};
-
-template <class... _Ts>
-using __variant _CCCL_NODEBUG_ALIAS = typename __mk_variant_<_Ts...>::type;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-template <class... _Ts>
-using __variant _CCCL_NODEBUG_ALIAS = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+struct __variant : __variant_impl<_CUDA_VSTD::index_sequence_for<_Ts...>, _Ts...>
+{};
 
 template <class... _Ts>
 using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<_CUDA_VSTD::decay_t<_Ts>...>;

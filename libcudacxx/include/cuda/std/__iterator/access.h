@@ -32,21 +32,19 @@ namespace __begin
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
   {
     return __array;
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin()))
-    -> decltype(__c.begin())
+  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.begin()))
-    -> decltype(__c.begin())
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
@@ -63,21 +61,19 @@ namespace __end
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
   {
     return __array + _Np;
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.end()))
-    -> decltype(__c.end())
+  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.end()))
-    -> decltype(__c.end())
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
@@ -94,7 +90,7 @@ namespace __cbegin
 struct __fn
 {
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::begin(__c)))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::begin(__c)))
     -> decltype(_CUDA_VSTD::begin(__c))
   {
     return _CUDA_VSTD::begin(__c);
@@ -112,7 +108,7 @@ namespace __cend
 struct __fn
 {
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::end(__c)))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::end(__c)))
     -> decltype(_CUDA_VSTD::end(__c))
   {
     return _CUDA_VSTD::end(__c);

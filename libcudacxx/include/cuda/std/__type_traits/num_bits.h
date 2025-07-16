@@ -36,7 +36,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __num_bits_impl() noexcept
+[[nodiscard]] _CCCL_API constexpr int __num_bits_impl() noexcept
 {
   if constexpr (is_arithmetic_v<_RawTp> || is_pointer_v<_RawTp>)
   {
