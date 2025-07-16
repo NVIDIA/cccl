@@ -28,6 +28,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/cmath>
+#include <cuda/memory>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -378,8 +379,7 @@ struct dispatch_t<StableAddress,
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
-      return THRUST_NS_QUALIFIER::detail::util::is_aligned(
-        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
+      return ::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
     }
     else
     {
