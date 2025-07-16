@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_DEVICE_REF
-#define _CUDAX__DEVICE_DEVICE_REF
+#ifndef _CUDA___DEVICE_DEVICE_REF_H
+#define _CUDA___DEVICE_DEVICE_REF_H
 
 #include <cuda/__cccl_config>
 
@@ -21,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/api_wrapper.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__utility/driver_api.cuh>
+#  include <string>
+#  include <vector>
 
-#include <string>
-#include <vector>
+#  include <cuda/std/__cccl/prologue.h>
 
-#include <cuda/std/__cccl/prologue.h>
-
-namespace cuda::experimental
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+class physical_device;
+namespace arch
 {
-class device;
-struct arch_traits_t;
+struct traits_t;
+} // namespace arch
 
 namespace __detail
 {
@@ -44,7 +46,7 @@ struct __dev_attr;
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
-  friend class device;
+  friend class physical_device;
 
   int __id_ = 0;
 
@@ -62,7 +64,7 @@ public:
     return __id_;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -76,7 +78,7 @@ public:
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#    if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -89,8 +91,8 @@ public:
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#  endif // _CCCL_STD_VER <= 2017
-#endif // _CCCL_DOXYGEN_INVOKED
+#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Retrieve the specified attribute for the device
   //!
@@ -122,7 +124,7 @@ public:
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    __detail::driver::getName(__name.data(), __max_name_length, get());
+    _CUDA_DRIVER::__deviceGetName(__name.data(), __max_name_length, get());
     return __name;
   }
 
@@ -152,7 +154,7 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& arch_traits() const;
+  const arch::traits_t& arch_traits() const;
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide
@@ -167,8 +169,10 @@ public:
   ::std::vector<device_ref> peer_devices() const;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_DEVICE_REF
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_DEVICE_REF_H

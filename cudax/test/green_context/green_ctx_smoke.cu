@@ -26,10 +26,10 @@ C2H_TEST("Green context", "[green_context]")
     INFO("Can create a green context");
     {
       {
-        [[maybe_unused]] cudax::green_context ctx(cudax::devices[0]);
+        [[maybe_unused]] cudax::green_context ctx(cuda::devices[0]);
       }
       {
-        cudax::green_context ctx(cudax::devices[0]);
+        cudax::green_context ctx(cuda::devices[0]);
         auto handle     = ctx.release();
         auto new_object = cudax::green_context::from_native_handle(handle);
       }
@@ -37,12 +37,12 @@ C2H_TEST("Green context", "[green_context]")
 
     INFO("Can create streams under green context");
     {
-      cudax::green_context green_ctx_dev0(cudax::devices[0]);
+      cudax::green_context green_ctx_dev0(cuda::devices[0]);
       cudax::stream stream_under_green_ctx(green_ctx_dev0);
       CUDAX_REQUIRE(stream_under_green_ctx.device() == 0);
-      if (cudax::devices.size() > 1)
+      if (cuda::devices.size() > 1)
       {
-        cudax::green_context green_ctx_dev1(cudax::devices[1]);
+        cudax::green_context green_ctx_dev1(cuda::devices[1]);
         cudax::stream stream_dev1(green_ctx_dev1);
         CUDAX_REQUIRE(stream_dev1.device() == 1);
       }

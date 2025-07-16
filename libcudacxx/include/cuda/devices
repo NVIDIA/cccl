@@ -8,13 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DEVICE__
-#define __CUDAX_DEVICE__
+#ifndef _CUDA_DEVICES
+#define _CUDA_DEVICES
 
-#include <cuda/experimental/__device/all_devices.cuh>
-#include <cuda/experimental/__device/arch_traits.cuh>
-#include <cuda/experimental/__device/attributes.cuh>
-#include <cuda/experimental/__device/device.cuh>
-#include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/__device/all_devices.h>
+#include <cuda/__device/arch_traits.h>
+#include <cuda/__device/attributes.h>
+#include <cuda/__device/device_ref.h>
+#include <cuda/__device/physical_device.h>
 
-#endif // __CUDAX_DEVICE__
+#endif // _CUDA_DEVICES

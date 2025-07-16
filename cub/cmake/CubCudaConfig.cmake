@@ -4,15 +4,7 @@ enable_language(CUDA)
 # Architecture options:
 #
 
-# TODO(bgruber): is this still true?
-if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  # Currently, there are linkage issues caused by bugs in interaction between MSBuild and CMake object libraries
-  # that take place with -rdc builds. Changing the default for now.
-  option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." OFF)
-else()
-  option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." ON)
-endif()
-
+option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." ON)
 option(CUB_FORCE_RDC "Enable separable compilation on all targets that support it." OFF)
 
 #

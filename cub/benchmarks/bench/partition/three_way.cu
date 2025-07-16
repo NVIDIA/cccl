@@ -62,17 +62,6 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-struct less_then_t
-{
-  T m_val;
-
-  __device__ bool operator()(const T& val) const
-  {
-    return val < m_val;
-  }
-};
-
 template <typename T, typename OffsetT>
 void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {

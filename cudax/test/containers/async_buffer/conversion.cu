@@ -38,7 +38,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
   using Buffer   = typename extract_properties<TestT>::async_buffer;
   using T        = typename Buffer::value_type;
 
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   Resource resource{};
   Env env{resource, stream};
 

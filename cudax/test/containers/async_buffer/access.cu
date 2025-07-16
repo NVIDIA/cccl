@@ -43,7 +43,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access", "[container][async_buffer]", test_
   using pointer         = typename Buffer::pointer;
   using const_pointer   = typename Buffer::const_pointer;
 
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::get_unsynchronized")

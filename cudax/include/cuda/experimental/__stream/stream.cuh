@@ -23,9 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
@@ -95,7 +95,7 @@ struct stream : stream_ref
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = __detail::driver::streamDestroy(__stream);
+      [[maybe_unused]] auto status = _CUDA_DRIVER::__streamDestroyNoThrow(__stream);
     }
   }
 
