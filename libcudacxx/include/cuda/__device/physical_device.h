@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK()
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__device/arch_traits.h>
 #  include <cuda/__device/attributes.h>
@@ -162,6 +162,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK()
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA___DEVICE_PHYSICAL_DEVICE_H
