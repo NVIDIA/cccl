@@ -16,6 +16,7 @@
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__utility/driver_api.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

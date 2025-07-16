@@ -28,6 +28,7 @@
 #include <cuda/std/string_view>
 
 #include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__library/library_ref.cuh>
 
 #include <string>
 
@@ -110,6 +111,18 @@ public:
   {
     return __attr(*this, __dev);
   }
+
+#if _CCCL_CTK_AT_LEAST(12, 5)
+  //! @brief Retrieve the library that contains the kernel
+  //!
+  //! @return A `library_ref` that refers to the library containing the kernel
+  //!
+  //! @throws cuda_error if the library cannot be retrieved
+  [[nodiscard]] library_ref library() const
+  {
+    return library_ref{_CUDA_DRIVER::__kernelGetLibrary(__kernel_)};
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
   //! @brief Retrieve the native kernel handle
   //!
