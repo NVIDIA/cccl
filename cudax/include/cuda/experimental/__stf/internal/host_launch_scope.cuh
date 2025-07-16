@@ -154,13 +154,24 @@ public:
         return deps.instance(t);
       }
     }();
-    auto* wrapper = new ::std::pair<Fun, decltype(payload)>{::std::forward<Fun>(f), mv(payload)};
+
+    using wrapper_t = ::std::pair<Fun, decltype(payload)>;
+
+    auto* raw_callback_arg = new wrapper_t{::std::forward<Fun>(f), mv(payload)};
 
     auto callback = [](void* untyped_wrapper) {
-      auto w = static_cast<decltype(wrapper)>(untyped_wrapper);
+      auto w = static_cast<wrapper_t*>(untyped_wrapper);
       SCOPE(exit)
       {
-        delete w;
+        // Delete the heap allocation with the argument if we are not building
+        // a CUDA graph. If this is a CUDA graph, that argument will be
+        // retained until the graph can be destroyed so that we can safely call
+        // this graph multiple times without erasing the arguments on the first
+        // call
+        if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+        {
+          delete w;
+        }
       };
 
       constexpr bool fun_invocable_task_deps = reserved::is_tuple_invocable_v<Fun, decltype(payload)>;
@@ -182,15 +193,28 @@ public:
 
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
-      cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
+      cudaHostNodeParams params = {.fn = callback, .userData = raw_callback_arg};
 
       // Put this host node into the child graph that implements the graph_task<>
       auto lock = t.lock_ctx_graph();
+
+      // If this is a CUDA graph callback, we want to retain this argument until
+      // the graph can be destroyed. It is possible that we launch the same graph
+      // multiple times, so we cannot simply delete the argument in the callback
+      // unless we know it is not going to be launched multiple times (as this is
+      // the case for the stream backend).
+      ::std::shared_ptr<void> void_wrapper{raw_callback_arg, [](void* p) {
+                                             // custom deleter: cast back and delete
+                                             delete static_cast<wrapper_t*>(p);
+                                           }};
+
+      ctx.callback_retain_arguments(mv(void_wrapper));
+
       cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
     }
     else
     {
-      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, wrapper));
+      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, raw_callback_arg));
     }
   }
 
