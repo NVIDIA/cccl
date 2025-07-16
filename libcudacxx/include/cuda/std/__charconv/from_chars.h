@@ -39,8 +39,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __from_chars_char_to_value_result
 {
-  bool __valid;
-  int __value;
+  bool __valid_;
+  int __value_;
 };
 
 [[nodiscard]] _CCCL_API constexpr __from_chars_char_to_value_result
@@ -73,13 +73,13 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
   for (; __it != __last; ++__it)
   {
     const auto __digit = _CUDA_VSTD::__from_chars_char_to_value(*__it, __base);
-    if (!__digit.__valid)
+    if (!__digit.__valid_)
     {
       break;
     }
     if (!__overflow)
     {
-      const auto __new_value = static_cast<_Tp>(__value * _Tp(__base) + _Tp(__digit.__value));
+      const auto __new_value = static_cast<_Tp>(__value * _Tp(__base) + _Tp(__digit.__value_));
       if (__new_value < __value)
       {
         __overflow = true;
