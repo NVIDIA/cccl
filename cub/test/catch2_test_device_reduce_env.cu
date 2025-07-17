@@ -184,7 +184,10 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 }
 #endif
 
-using requirements = c2h::type_list<cuda::execution::determinism::not_guaranteed_t>;
+using requirements =
+  c2h::type_list<cuda::execution::determinism::gpu_to_gpu_t,
+                 cuda::execution::determinism::run_to_run_t,
+                 cuda::execution::determinism::not_guaranteed_t>;
 
 C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 {
@@ -205,7 +208,6 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(
@@ -345,7 +347,6 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
