@@ -47,7 +47,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", te
   using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::begin/end properties")

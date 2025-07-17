@@ -24,13 +24,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
-
-#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -79,7 +78,7 @@ public:
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
     _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
     // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-    ::cuda::experimental::__driver::__eventRecord(__event_, __stream.get());
+    _CUDA_DRIVER::__eventRecord(__event_, __stream.get());
   }
 
   //! @brief Synchronizes the event

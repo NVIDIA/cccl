@@ -67,13 +67,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/configuration.cu
   )
 
-  cudax_add_catch2_test(test_target device ${cn_target}
-    device/device_smoke.cu
-    device/arch_traits.cu
-  )
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
-
   cudax_add_catch2_test(test_target event ${cn_target}
     event/event_smoke.cu
   )
@@ -118,7 +111,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target misc ${cn_target}
     utility/basic_any.cu
-    utility/driver_api.cu
     utility/ensure_current_device.cu
   )
 
