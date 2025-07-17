@@ -24,6 +24,7 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/experimental/__device/arch_traits.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 
@@ -68,6 +69,14 @@ struct __kernel_attr<::CU_FUNC_ATTRIBUTE_CONST_SIZE_BYTES> //
 template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES> //
     : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES, _CUDA_VSTD::size_t>
+{};
+template <>
+struct __kernel_attr<::CU_FUNC_ATTRIBUTE_PTX_VERSION> //
+    : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_PTX_VERSION, arch::id>
+{};
+template <>
+struct __kernel_attr<::CU_FUNC_ATTRIBUTE_BINARY_VERSION> //
+    : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_BINARY_VERSION, arch::id>
 {};
 template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_CACHE_MODE_CA> //

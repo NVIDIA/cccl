@@ -279,10 +279,10 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
                           CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES,
                           cuda::std::size_t>(kernel_ref, device);
     test_kernel_attribute<cudax::kernel_attributes::num_regs, CU_FUNC_ATTRIBUTE_NUM_REGS, int>(kernel_ref, device);
-    test_kernel_attribute<cudax::kernel_attributes::virtual_arch, CU_FUNC_ATTRIBUTE_PTX_VERSION, int>(
-      kernel_ref, device, 75);
-    test_kernel_attribute<cudax::kernel_attributes::binary_arch, CU_FUNC_ATTRIBUTE_BINARY_VERSION, int>(
-      kernel_ref, device, device.arch_traits().compute_capability);
+    test_kernel_attribute<cudax::kernel_attributes::virtual_arch, CU_FUNC_ATTRIBUTE_PTX_VERSION, cudax::arch::id>(
+      kernel_ref, device, cudax::arch::id::sm_75);
+    test_kernel_attribute<cudax::kernel_attributes::binary_arch, CU_FUNC_ATTRIBUTE_BINARY_VERSION, cudax::arch::id>(
+      kernel_ref, device, static_cast<cudax::arch::id>(device.arch_traits().compute_capability));
     test_kernel_attribute<cudax::kernel_attributes::cache_mode_ca, CU_FUNC_ATTRIBUTE_CACHE_MODE_CA, bool>(
       kernel_ref, device, false);
     test_kernel_attribute<cudax::kernel_attributes::requires_cluster_dims,
