@@ -17,7 +17,7 @@
 
    template <typename T>
    [[nodiscard]] __device__ inline
-   is_address_from(address_space space, const void* ptr)
+   bool is_address_from(address_space space, const void* ptr)
 
 The function checks if a pointer ``ptr`` with a generic address is from a ``space`` address state space.
 
@@ -29,11 +29,6 @@ The function checks if a pointer ``ptr`` with a generic address is from a ``spac
 **Return value**
 
 - ``true`` if the pointer is from the specified address space, ``false`` otherwise.
-
-**Constraints**
-
-- ``space`` must be a valid address space.
-- ``ptr`` must be a holding a generic address.
 
 **Performance considerations**
 

@@ -30,7 +30,7 @@ Memory
      - libcu++ 1.2.0 / CCCL 2.0.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
      - CUDA 11.1
 
-   * - :ref:`cuda::discard_memory <libcudacxx-extended-api-memory-discard-memory>`
+   * - :ref:`discard_memory <libcudacxx-extended-api-memory-discard-memory>`
      - Writes indeterminate values to memory
      - libcu++ 1.6.0 / CCCL 2.0.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
      - CUDA 11.5
