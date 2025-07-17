@@ -60,7 +60,6 @@ public:
   //!
   //! For behavior of the default stream,
   //! @see //! https://docs.nvidia.com/cuda/cuda-runtime-api/stream-sync-behavior.html
-  [[deprecated("Please use explicit streams over default streams")]]
   _CCCL_HIDE_FROM_ABI stream_ref() = default;
 
   //! @brief Constructs a `stream_ref` from a `cudaStream_t` handle.
