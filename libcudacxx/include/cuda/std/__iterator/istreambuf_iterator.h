@@ -35,8 +35,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT istreambuf_iterator
     : public iterator<input_iterator_tag, _CharT, typename _Traits::off_type, _CharT*, _CharT>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 public:
   using iterator_category = input_iterator_tag;
   using value_type        = _CharT;
@@ -135,6 +133,7 @@ public:
   }
 #endif // _CCCL_STD_VER < 2020
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _CharT, class _Traits>
 _LIBCUDACXX_HIDE_FROM_ABI bool

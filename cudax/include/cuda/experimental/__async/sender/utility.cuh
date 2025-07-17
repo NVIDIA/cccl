@@ -122,7 +122,7 @@ _CUDAX_API constexpr _CUDA_VSTD::decay_t<_Ty> __decay_copy(_Ty&& __ty) noexcept(
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 _CCCL_DIAG_SUPPRESS_NVHPC(probable_guiding_friend)
-_CCCL_NV_DIAG_SUPPRESS(probable_guiding_friend)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(probable_guiding_friend)
 
 // __zip/__unzip is for keeping type names short. It has the unfortunate side
 // effect of obfuscating the types.
@@ -196,7 +196,7 @@ using __unzip = decltype(__slot_allocated(_Id())());
 using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 } // namespace
 
-_CCCL_NV_DIAG_DEFAULT(probable_guiding_friend)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 } // namespace cuda::experimental::__async

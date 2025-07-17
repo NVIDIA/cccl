@@ -22,3 +22,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vend
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces around initializer
+
+#if _CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_compile)
+#endif // _CCCL_CUDA_COMPILER(NVHPC)

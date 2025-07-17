@@ -38,7 +38,7 @@
 #include <cuda/std/__utility/move.h>
 
 #if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
@@ -85,12 +85,12 @@ _CCCL_CONCEPT __exchangeable = _CCCL_FRAGMENT(__exchangeable_, _Tp);
 #  if !defined(_CCCL_NO_CONCEPTS) && !_CCCL_COMPILER(NVHPC) // nvbug4051640
 struct __fn;
 
-_CCCL_NV_DIAG_SUPPRESS(2642)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2642)
 template <class _Tp, class _Up, size_t _Size>
 concept __swappable_arrays =
   !__unqualified_swappable_with<_Tp (&)[_Size], _Up (&)[_Size]> && extent_v<_Tp> == extent_v<_Up>
   && requires(_Tp (&__t)[_Size], _Up (&__u)[_Size], const __fn& __swap) { __swap(__t[0], __u[0]); };
-_CCCL_NV_DIAG_DEFAULT(2642)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #  else // ^^^ !_CCCL_NO_CONCEPTS && !_CCCL_COMPILER(NVHPC) ^^^ / vvv _CCCL_NO_CONCEPTS || _CCCL_COMPILER(NVHPC) vvv
 template <class _Tp, class _Up, size_t _Size, class = void>
@@ -200,7 +200,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 #if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
+_CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H
