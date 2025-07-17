@@ -239,9 +239,7 @@ private:
             typename OutputIteratorT,
             typename ReductionOpT,
             typename T,
-            typename NumItemsT,
-            typename DeterminismT,
-            typename = std::enable_if_t<std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>>>
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -250,7 +248,7 @@ private:
     NumItemsT num_items,
     ReductionOpT reduction_op,
     T init,
-    DeterminismT,
+    ::cuda::execution::determinism::not_guaranteed_t,
     cudaStream_t stream)
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
@@ -482,11 +480,6 @@ public:
     constexpr auto gpu_gpu_determinism =
       ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
 
-    constexpr auto not_guaranteed_determinism =
-      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
-
-    constexpr auto not_pointer_fallback = not_guaranteed_determinism && !::cuda::std::is_pointer_v<OutputIteratorT>;
-
     // integral types are always gpu-to-gpu deterministic, so fallback to run-to-run determinism
     constexpr auto integral_fallback = gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t>;
 
@@ -500,8 +493,7 @@ public:
     constexpr auto float_double_plus =
       gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
 
-    constexpr auto supported = integral_fallback || fp_min_max_fallback || float_double_plus || not_pointer_fallback
-                            || !(gpu_gpu_determinism || not_guaranteed_determinism);
+    constexpr auto supported = integral_fallback || fp_min_max_fallback || float_double_plus || !gpu_gpu_determinism;
 
     // gpu_to_gpu determinism is only supported for integral types, or
     // float and double types with ::cuda::std::plus operator, or
@@ -514,10 +506,18 @@ public:
     }
     else
     {
-      using determinism_t =
-        ::cuda::std::conditional_t<integral_fallback || fp_min_max_fallback || not_pointer_fallback,
-                                   ::cuda::execution::determinism::run_to_run_t,
-                                   default_determinism_t>;
+      constexpr auto not_guaranteed_determinism =
+        ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+
+      constexpr auto is_not_pointer_fallback =
+        not_guaranteed_determinism && !::cuda::std::is_pointer_v<OutputIteratorT>;
+      constexpr auto is_not_plus_fallback = not_guaranteed_determinism && !detail::is_cuda_std_plus_v<ReductionOpT>;
+
+      using determinism_t = ::cuda::std::conditional_t<
+        (gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
+          || (not_guaranteed_determinism && (is_not_pointer_fallback || is_not_plus_fallback)),
+        ::cuda::execution::determinism::run_to_run_t,
+        default_determinism_t>;
 
       // Query relevant properties from the environment
       auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
@@ -627,10 +627,20 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
+
+    constexpr auto not_guaranteed_determinism =
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+
+    constexpr auto is_not_pointer_fallback = !::cuda::std::is_pointer_v<OutputIteratorT>;
+
+    using determinism_t =
+      ::cuda::std::conditional_t<not_guaranteed_determinism && is_not_pointer_fallback,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 default_determinism_t>;
 
     // Query relevant properties from the environment
     auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
