@@ -66,7 +66,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
   SECTION("Stream wait declared event")
   {
     verify_dependency([&]() {
-      cudax::event ev(waitee);
+      cuda::event ev(waitee);
       waiter.wait(ev);
     });
   }
@@ -140,8 +140,8 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
 
 C2H_CCCLRT_TEST("Stream ID", "[stream]")
 {
-  STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cudax::stream_id>>);
-  STATIC_REQUIRE(cuda::std::is_same_v<cudax::stream_id, decltype(cuda::std::declval<cudax::stream_ref>().id())>);
+  STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cuda::stream_id>>);
+  STATIC_REQUIRE(cuda::std::is_same_v<cuda::stream_id, decltype(cuda::std::declval<cudax::stream_ref>().id())>);
 
   cudax::stream stream1{cuda::device_ref{0}};
   cudax::stream stream2{cuda::device_ref{0}};

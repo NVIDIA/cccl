@@ -25,13 +25,14 @@
 
 #  include <cuda/__device/all_devices.h>
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/stream_ref>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+struct stream_ref;
+
 //! @brief RAII helper which on construction sets the current context to the specified one.
 //! It sets the state back on destruction.
 //!
@@ -66,11 +67,7 @@ struct [[maybe_unused]] __ensure_current_context
   //! @param stream Stream indicating the context to switch to
   //!
   //! @throws cuda_error if the context switch fails
-  explicit __ensure_current_context(stream_ref __stream)
-  {
-    auto __ctx = __driver::__streamGetCtx(__stream.get());
-    _CUDA_DRIVER::__ctxPush(__ctx);
-  }
+  explicit __ensure_current_context(stream_ref __stream);
 
   __ensure_current_context(__ensure_current_context&&)                 = delete;
   __ensure_current_context(__ensure_current_context const&)            = delete;

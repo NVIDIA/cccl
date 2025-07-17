@@ -8,11 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX_EVENT_DETAIL_H
-#define _CUDAX_EVENT_DETAIL_H
-
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
+#ifndef _CUDA___EVENT_EVENT_H
+#define _CUDA___EVENT_EVENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,18 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/utility>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__event/event_ref.cuh>
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
+#  include <cuda/__event/event_ref.h>
+#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/cstddef>
+#  include <cuda/std/utility>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 class timed_event;
 
 //! @brief An owning wrapper for an untimed `cudaEvent_t`.
@@ -56,11 +54,7 @@ public:
   //!        the event in the specified stream.
   //!
   //! @throws cuda_error if the event creation fails.
-  explicit event(stream_ref __stream, flags __flags = flags::none)
-      : event(__stream, static_cast<unsigned int>(__flags) | cudaEventDisableTiming)
-  {
-    record(__stream);
-  }
+  explicit event(stream_ref __stream, flags __flags = flags::none);
 
   //! @brief Construct a new `event` object with timing disabled. The event can only be recorded on streams from the
   //! specified device.
@@ -145,12 +139,12 @@ public:
     return _CUDA_VSTD::exchange(__event_, {});
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
     return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   // Use `event::from_native_handle(e)` to construct an owning `event`
@@ -159,24 +153,21 @@ private:
       : event_ref(__evnt)
   {}
 
-  explicit event(stream_ref __stream, unsigned int __flags)
-      : event_ref(::cudaEvent_t{})
-  {
-    [[maybe_unused]] __ensure_current_device __dev_setter(__stream);
-    _CCCL_TRY_CUDA_API(
-      ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
-  }
+  explicit event(stream_ref __stream, unsigned int __flags);
 
   explicit event(device_ref __device, unsigned int __flags)
       : event_ref(::cudaEvent_t{})
   {
-    [[maybe_unused]] __ensure_current_device __dev_setter(__device);
+    [[maybe_unused]] __ensure_current_context __ctx_setter(__device);
     _CCCL_TRY_CUDA_API(
       ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
   }
 };
-} // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDAX_EVENT_DETAIL_H
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___EVENT_EVENT_H
