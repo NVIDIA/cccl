@@ -311,13 +311,13 @@ transform(execution_policy<Derived>& policy, InputIt first, InputIt last, Output
               first, last, result, __transform::raw_reference_cast_args<TransformOp>{transform_op});));
 }
 
-template <typename Derived, typename InputIt, typename OutputIt, typename UnaryFunction>
+template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp>
 THRUST_FUNCTION OutputIt transform_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
   OutputIt result,
-  UnaryFunction transform_op)
+  TransformOp transform_op)
 {
   THRUST_CDP_DISPATCH(
     (return __transform::cub_transform_many(policy, ::cuda::std::make_tuple(first), result, num_items, transform_op);),
