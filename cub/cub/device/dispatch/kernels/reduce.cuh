@@ -526,7 +526,6 @@ template <typename ChainedPolicyT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
           typename AccumT,
           typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
@@ -538,7 +537,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   GridEvenShare<OffsetT> even_share,
 #endif
                                                                   ReductionOpT reduction_op,
-                                                                  InitT init,
                                                                   TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
@@ -568,12 +566,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   if (threadIdx.x == 0)
   {
     // ony thread 0 has valid value in block aggregate
-    // detail::uninitialized_copy_single(d_block_reductions + blockIdx.x, block_aggregate);
-    if (blockIdx.x == 0)
-    {
-      atomicAdd(d_out, init);
-    }
-
     atomicAdd(d_out, block_aggregate);
   }
 }

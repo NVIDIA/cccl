@@ -86,7 +86,6 @@ struct DeviceReduceNondeterministicKernelSource
       OutputIteratorT,
       OffsetT,
       ReductionOpT,
-      InitT,
       AccumT,
       TransformOpT>);
 
@@ -297,7 +296,6 @@ struct DispatchReduceNondeterministic
               even_share,
 #endif
               reduction_op,
-              init,
               transform_op);
 
       // Check for failure to launch
