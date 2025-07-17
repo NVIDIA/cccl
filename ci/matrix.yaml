@@ -8,6 +8,9 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - {jobs: ['test_nobuild'],      project: 'libcudacxx', gpu: 't4', sm: 'gpu', cxx: 'msvc'}
+#    - {jobs: ['test_lid0'], project: 'cub',        gpu: 't4', sm: 'gpu', cxx: 'msvc'}
+#    - {jobs: ['test_gpu'],  project: 'thrust',     gpu: 't4', sm: 'gpu', cxx: 'msvc'}
 
   pull_request:
     # Old CTK/compiler
@@ -124,7 +127,7 @@ workflows:
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
     # GPU runners are not available on Windows.
-    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
+    # - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
 
 
 #############################################################################################
