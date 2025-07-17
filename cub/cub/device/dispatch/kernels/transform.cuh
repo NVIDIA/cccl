@@ -24,6 +24,7 @@
 #include <cuda/__barrier/aligned_size.h> // cannot include <cuda/barrier> directly on CUDA_ARCH < 700
 #include <cuda/cmath>
 #include <cuda/ptx>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
@@ -94,7 +95,9 @@ _CCCL_DEVICE void transform_kernel_prefetch(
     out += offset;
   }
 
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   (..., prefetch_tile<block_threads>(ins, valid_items));
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -232,7 +235,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
       }
     };
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     (load_tile_vectorized(ins, inputs), ...);
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // process
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -492,12 +497,14 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // work for inputs in host stack memory ...
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
                   : copy_and_return_smem_dst_fallback<block_threads>(
                       aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
   __pipeline_wait_prior(0);
   __syncthreads();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
@@ -723,6 +730,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
       };
 
+      // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
@@ -768,6 +777,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       smem += tile_padding + int{sizeof(T)} * tile_size;
     };
 
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     // Order of evaluation is left-to-right
     (..., bulk_copy_tile_fallback(aligned_ptrs));
 
@@ -782,6 +792,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
     ;
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
