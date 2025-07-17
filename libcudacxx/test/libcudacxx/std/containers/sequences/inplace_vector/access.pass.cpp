@@ -118,7 +118,7 @@ void test_exceptions()
     try
     {
       vec too_small{};
-      auto res = too_small.at(vec.size());
+      auto res = too_small.at(too_small.size());
       unused(res);
     }
     catch (const std::out_of_range&)
@@ -131,7 +131,7 @@ void test_exceptions()
     try
     {
       const vec too_small{};
-      auto res = too_small.at(vec.size());
+      auto res = too_small.at(too_small.size());
       unused(res);
     }
     catch (const std::out_of_range&)
