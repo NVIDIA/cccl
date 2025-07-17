@@ -19,7 +19,7 @@ Arrives at a barrier in shared memory, decrementing the arrival count and increm
 Preconditions
 -------------
 
--  ``__isShared(&bar) == true``
+-  ``is_address_from(address_space::shared, &bar) == true``
 -  ``1 <= arrive_count_update && transaction_count_update <= (1 << 20) - 1``
 -  ``0 <= transaction_count_update && transaction_count_update <= (1 << 20) - 1``
 
