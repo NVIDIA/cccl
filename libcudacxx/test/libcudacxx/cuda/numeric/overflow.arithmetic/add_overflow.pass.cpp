@@ -53,8 +53,8 @@ __host__ __device__ constexpr void test_type()
     cuda::std::is_same_v<decltype(cuda::add_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})), bool>);
   static_assert(noexcept(cuda::add_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})));
 
-  using Common  = cuda::std::common_type_t<Lhs, Rhs>;
-  using MaxType = cuda::std::conditional_t<(sizeof(Common) > sizeof(Result)), Common, Result>;
+  using Common                   = cuda::std::common_type_t<Lhs, Rhs>;
+  using MaxType [[maybe_unused]] = cuda::std::conditional_t<(sizeof(Common) > sizeof(Result)), Common, Result>;
   // 1. Adding zeros should never overflow
   test_add_overflow<Result>(Lhs{}, Rhs{}, false);
 
@@ -142,7 +142,7 @@ __host__ __device__ constexpr void test_type()
 #if _CCCL_HAS_INT128()
   test_type<T, __int128_t>();
   test_type<T, __uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
 }
 
 __host__ __device__ constexpr bool test()
@@ -160,7 +160,7 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_INT128()
   test_type<__int128_t>();
   test_type<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
   return true;
 }
 
