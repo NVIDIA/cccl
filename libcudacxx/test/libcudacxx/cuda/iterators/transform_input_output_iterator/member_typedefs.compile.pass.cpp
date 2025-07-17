@@ -43,19 +43,6 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
   }
-
-  { // Still provides iter_category and iter_concept
-    using Iter = cuda::transform_input_output_iterator<cpp20_input_iterator<int*>, PlusOne, TimesTwo>;
-    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::input_iterator_tag>);
-    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
-    static_assert(cuda::std::same_as<Iter::pointer, void>);
-    static_assert(
-      cuda::std::same_as<Iter::reference,
-                         cuda::__transform_input_output_proxy<cpp20_input_iterator<int*>, PlusOne, TimesTwo>>);
-    static_assert(cuda::std::same_as<Iter::value_type, int>);
-    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::output_iterator<Iter, int>);
-  }
 }
 
 int main(int, char**)

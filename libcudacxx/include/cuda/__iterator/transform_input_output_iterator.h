@@ -153,11 +153,6 @@ public:
 template <class _Iter, class _InputFn, class _OutputFn>
 class transform_input_output_iterator
 {
-  static_assert(_CUDA_VSTD::is_object_v<_InputFn>,
-                "cuda::transform_input_output_iterator requires that _InputFn is a function object");
-  static_assert(_CUDA_VSTD::is_object_v<_OutputFn>,
-                "cuda::transform_input_output_iterator requires that _OutputFn is a function object");
-
 public:
   _Iter __current_{};
   _CUDA_VRANGES::__movable_box<_InputFn> __input_func_{};
@@ -170,14 +165,19 @@ public:
                               _CUDA_VSTD::bidirectional_iterator_tag,
                               _CUDA_VSTD::conditional_t<_CUDA_VSTD::forward_iterator<_Iter>,
                                                         _CUDA_VSTD::forward_iterator_tag,
-                                                        _CUDA_VSTD::conditional_t<_CUDA_VSTD::input_iterator<_Iter>,
-                                                                                  _CUDA_VSTD::input_iterator_tag,
-                                                                                  _CUDA_VSTD::output_iterator_tag>>>>;
+                                                        _CUDA_VSTD::output_iterator_tag>>>;
   using iterator_category = _CUDA_VSTD::output_iterator_tag;
   using difference_type   = _CUDA_VSTD::iter_difference_t<_Iter>;
   using value_type        = _CUDA_VSTD::invoke_result_t<_InputFn, _CUDA_VSTD::iter_value_t<_Iter>>;
   using pointer           = void;
   using reference         = __transform_input_output_proxy<_Iter, _InputFn, _OutputFn>;
+
+  static_assert(_CUDA_VSTD::is_object_v<_InputFn>,
+                "cuda::transform_input_output_iterator requires that _InputFn is a function object");
+  static_assert(_CUDA_VSTD::is_object_v<_OutputFn>,
+                "cuda::transform_input_output_iterator requires that _OutputFn is a function object");
+  static_assert(_CUDA_VSTD::forward_iterator<_Iter> || _CUDA_VSTD::output_iterator<_Iter, value_type>,
+                "cuda::transform_input_output_iterator requires that _Iter models forward_iterator or output_iterator");
 
   //! @brief Default constructs a \p transform_input_output_iterator with a value initialized iterator and functors
 #if _CCCL_HAS_CONCEPTS()
@@ -279,21 +279,13 @@ public:
 
   //! @brief Increments the stored iterator
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr auto operator++(int) noexcept(noexcept(++__current_))
-    -> _CUDA_VSTD::conditional_t<(_CUDA_VSTD::forward_iterator<_Iter> || _CUDA_VSTD::output_iterator<_Iter, value_type>),
-                                 transform_input_output_iterator,
-                                 void>
+  _CCCL_API constexpr transform_input_output_iterator operator++(int) noexcept(
+    noexcept(++__current_) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter>
+    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_InputFn> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_OutputFn>)
   {
-    if constexpr (_CUDA_VSTD::forward_iterator<_Iter> || _CUDA_VSTD::output_iterator<_Iter, value_type>)
-    {
-      auto __tmp = *this;
-      ++*this;
-      return __tmp;
-    }
-    else
-    {
-      ++__current_;
-    }
+    auto __tmp = *this;
+    ++*this;
+    return __tmp;
   }
 
   //! @brief Decrements the stored iterator

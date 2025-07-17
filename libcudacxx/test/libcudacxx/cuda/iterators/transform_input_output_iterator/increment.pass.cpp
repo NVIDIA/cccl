@@ -39,20 +39,6 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(++iter2)>, decltype(iter2++)>);
   }
 
-  { // input iterator
-    cuda::transform_input_output_iterator iter1{cpp20_input_iterator<int*>{buffer + 2}, input_func, output_func};
-    cuda::transform_input_output_iterator iter2{cpp20_input_iterator<int*>{buffer + 2}, input_func, output_func};
-    assert(base(iter1.base()) == base(iter2.base()));
-    assert(base((++iter1).base()) == buffer + 3);
-    iter2++;
-    assert(base(iter1.base()) == base(iter2.base()));
-
-    static_assert(!noexcept(++iter2));
-    static_assert(!noexcept(iter2++));
-    static_assert(cuda::std::is_void_v<decltype(iter2++)>);
-    static_assert(cuda::std::is_reference_v<decltype(++iter2)>);
-  }
-
   return true;
 }
 
