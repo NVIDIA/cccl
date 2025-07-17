@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_TABLES_H
-#define __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_TABLES_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,21 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/rtti.h>
+#include <cuda/__utility/__basic_any/virtual_functions.h>
+#include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
-
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/rtti.cuh>
-#include <cuda/experimental/__utility/basic_any/virtual_functions.cuh>
-#include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Interface>
 using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for<_Interface>::__vtable;
 
@@ -149,8 +148,8 @@ _CCCL_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (_CUDA_VSTD_NOVERSION::terminate();))
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_TABLES_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H

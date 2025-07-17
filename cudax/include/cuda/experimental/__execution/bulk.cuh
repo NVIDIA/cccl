@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__tuple_dir/ignore.h>
@@ -168,7 +169,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
         , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{{&__state_}})}
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {

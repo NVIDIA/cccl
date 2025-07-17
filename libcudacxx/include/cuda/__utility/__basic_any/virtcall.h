@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_VIRTCALL_H
-#define __CUDAX_DETAIL_BASIC_ANY_VIRTCALL_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,19 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/access.h>
+#include <cuda/__utility/__basic_any/basic_any_from.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/virtual_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
-#include <cuda/experimental/__utility/basic_any/access.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/virtual_functions.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! __virtuals_map
 //!
@@ -121,8 +120,7 @@ _CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super>* __self, _Args&&... __ar
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
-  return experimental::__virtcall<_Mbr, _Interface<>, _Super>(
-    experimental::basic_any_from(__self), static_cast<_Args&&>(__args)...);
+  return ::cuda::__virtcall<_Mbr, _Interface<>, _Super>(::cuda::basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
@@ -131,8 +129,7 @@ _CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super> const* __self, _Args&&..
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
-  return experimental::__virtcall<_Mbr, _Interface<>, _Super>(
-    experimental::basic_any_from(__self), static_cast<_Args&&>(__args)...);
+  return ::cuda::__virtcall<_Mbr, _Interface<>, _Super>(::cuda::basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
@@ -151,8 +148,8 @@ _CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) /
   _CCCL_UNREACHABLE();
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_VIRTCALL_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H

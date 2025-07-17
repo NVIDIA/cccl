@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_SEMIREGULAR_H
-#define __CUDAX_DETAIL_BASIC_ANY_SEMIREGULAR_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_SEMIREGULAR_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_SEMIREGULAR_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/access.h>
+#include <cuda/__utility/__basic_any/basic_any_base.h>
+#include <cuda/__utility/__basic_any/basic_any_from.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/conversions.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/storage.h>
+#include <cuda/__utility/__basic_any/virtcall.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
@@ -34,35 +42,27 @@
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/__utility/unreachable.h>
 
-#include <cuda/experimental/__utility/basic_any/access.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/conversions.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/storage.cuh>
-#include <cuda/experimental/__utility/basic_any/virtcall.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
 // WAR for NVBUG #4924416
-#  define _CUDAX_FNPTR_CONSTANT_WAR(...) ::cuda::experimental::__constant_war(__VA_ARGS__)
-namespace cuda::experimental
-{
+#  define _CCCL_FNPTR_CONSTANT_WAR(...) ::cuda::__constant_war(__VA_ARGS__)
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API constexpr _Tp __constant_war(_Tp __val) noexcept
 {
   return __val;
 }
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC) ^^^ /
       // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC) vvv
-#  define _CUDAX_FNPTR_CONSTANT_WAR(...) __VA_ARGS__
+#  define _CCCL_FNPTR_CONSTANT_WAR(...) __VA_ARGS__
 #endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC)
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! semi-regular overrides
 //!
@@ -134,16 +134,16 @@ struct imovable : interface<imovable>
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS =
-    overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__try_move_fn<_Tp>), _CUDAX_FNPTR_CONSTANT_WAR(&__move_fn<_Tp>)>;
+    overrides_for<_Tp, _CCCL_FNPTR_CONSTANT_WAR(&__try_move_fn<_Tp>), _CCCL_FNPTR_CONSTANT_WAR(&__move_fn<_Tp>)>;
 
   _CCCL_HOST_API auto __move_to(void* __pv) noexcept -> void
   {
-    return experimental::virtcall<&__move_fn<imovable>>(this, __pv);
+    return ::cuda::virtcall<&__move_fn<imovable>>(this, __pv);
   }
 
   [[nodiscard]] _CCCL_HOST_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
   {
-    return experimental::virtcall<&__try_move_fn<imovable>>(this, __pv, __size, __align);
+    return ::cuda::virtcall<&__try_move_fn<imovable>>(this, __pv, __size, __align);
   }
 };
 
@@ -152,7 +152,7 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
+  using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CCCL_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
 
   [[nodiscard]] _CCCL_HOST_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
@@ -191,9 +191,9 @@ struct iequality_comparable_base : interface<iequality_comparable>
   [[nodiscard]] _CCCL_HOST_API friend auto
   operator==(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
-    auto const& __other = experimental::basic_any_from(__rhs);
+    auto const& __other = ::cuda::basic_any_from(__rhs);
     constexpr auto __eq = &__equal_fn<iequality_comparable<_ILeft>>;
-    return experimental::virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
+    return ::cuda::virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
   }
 
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
@@ -222,7 +222,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   operator==(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
-    return experimental::virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
+    return ::cuda::virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
   }
 
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
@@ -232,7 +232,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   operator==(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
-    return experimental::virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
+    return ::cuda::virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
   }
 
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
@@ -255,7 +255,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
+  using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CCCL_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
 };
 
 template <class... _Super>
@@ -269,7 +269,7 @@ struct __iconvertible_to
 {
   static_assert(_CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<_CvSelf>, self>,
                 "The first template parameter to iconvertible_to must be the placeholder type "
-                "cuda::experimental::self, possibly with cv- and/or ref-qualifiers");
+                "cuda::self, possibly with cv- and/or ref-qualifiers");
 };
 
 template <class _To>
@@ -286,11 +286,11 @@ struct __iconvertible_to<self, _To>
   {
     [[nodiscard]] _CCCL_HOST_API operator _To()
     {
-      return experimental::virtcall<__conversion_fn<__interface_, _To>>(this);
+      return ::cuda::virtcall<__conversion_fn<__interface_, _To>>(this);
     }
 
     template <class _From>
-    using overrides = overrides_for<_From, _CUDAX_FNPTR_CONSTANT_WAR(&__conversion_fn<_From, _To>)>;
+    using overrides = overrides_for<_From, _CCCL_FNPTR_CONSTANT_WAR(&__conversion_fn<_From, _To>)>;
   };
 };
 
@@ -302,11 +302,11 @@ struct __iconvertible_to<self&, _To>
   {
     [[nodiscard]] _CCCL_HOST_API operator _To() &
     {
-      return experimental::virtcall<&__conversion_fn<__interface_&, _To>>(this);
+      return ::cuda::virtcall<&__conversion_fn<__interface_&, _To>>(this);
     }
 
     template <class _From>
-    using overrides = overrides_for<_From, _CUDAX_FNPTR_CONSTANT_WAR(&__conversion_fn<_From&, _To>)>;
+    using overrides = overrides_for<_From, _CCCL_FNPTR_CONSTANT_WAR(&__conversion_fn<_From&, _To>)>;
   };
 };
 
@@ -318,18 +318,18 @@ struct __iconvertible_to<self const&, _To>
   {
     [[nodiscard]] _CCCL_HOST_API operator _To() const&
     {
-      return experimental::virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
+      return ::cuda::virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
     }
 
     template <class _From>
-    using overrides = overrides_for<_From, _CUDAX_FNPTR_CONSTANT_WAR(&__conversion_fn<_From const&, _To>)>;
+    using overrides = overrides_for<_From, _CCCL_FNPTR_CONSTANT_WAR(&__conversion_fn<_From const&, _To>)>;
   };
 };
 
 template <class _From, class _To>
 using iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to<_From, _To>::template __interface_<>;
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_SEMIREGULAR_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_SEMIREGULAR_H

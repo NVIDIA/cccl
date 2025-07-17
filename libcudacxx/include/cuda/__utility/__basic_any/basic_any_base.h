@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H
-#define __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,20 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/storage.h>
+#include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstddef> // for byte
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/storage.cuh>
-#include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Interface>
 _CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface>&&) -> basic_any<_Interface>&&;
 template <class _Interface>
@@ -58,7 +56,7 @@ template <class _Tp>
 _CCCL_CONCEPT __is_basic_any =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    experimental::__is_basic_any_test(__value)
+    (::cuda::__is_basic_any_test(__value))
   );
 // clang-format on
 
@@ -143,8 +141,8 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
 };
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H

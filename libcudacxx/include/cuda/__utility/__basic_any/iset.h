@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_ISET_H
-#define __CUDAX_DETAIL_BASIC_ANY_ISET_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_ISET_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_ISET_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/rtti.h>
+#include <cuda/__utility/__basic_any/tagged_ptr.h>
+#include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_set.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/rtti.cuh>
-#include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
-#include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! __iset
 //!
@@ -136,8 +136,8 @@ struct __tagged_ptr<__iset_vptr<_Interfaces...>>
   uintptr_t __ptr_ = 0;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_ISET_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_ISET_H

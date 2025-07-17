@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_INTERFACES_H
-#define __CUDAX_DETAIL_BASIC_ANY_INTERFACES_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/overrides.h>
+#include <cuda/__utility/inherit.h>
 #include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -30,13 +33,10 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/type_set.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/overrides.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! Interface type traits
 //!
@@ -163,7 +163,7 @@ template <class _Tp>
 _CCCL_CONCEPT __is_interface =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    experimental::__is_interface_test(__value)
+    (::cuda::__is_interface_test(__value))
   );
 // clang-format on
 
@@ -293,7 +293,7 @@ struct __make_interface_fn
 {
   static_assert(_CUDA_VSTD::is_class_v<_Super>, "expected a class type");
   template <class... _Interfaces>
-  using __call _CCCL_NODEBUG_ALIAS = __inherit<__rebind_interface<_Interfaces, _Super>...>;
+  using __call _CCCL_NODEBUG_ALIAS = ::cuda::__inherit<__rebind_interface<_Interfaces, _Super>...>;
 };
 
 // Given an interface `_I<>`, let `_Bs<>...` be the list of types consisting
@@ -352,8 +352,8 @@ _CCCL_REQUIRES(__is_interface<_Interface> _CCCL_AND _CUDA_VSTD::__is_callable_v<
 {
   return __interface_cast_fn<_Interface>{}(_CUDA_VSTD::forward<Object>(__obj));
 }
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_INTERFACES_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H

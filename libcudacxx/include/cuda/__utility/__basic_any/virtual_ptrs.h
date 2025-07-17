@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H
-#define __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_PTRS_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_PTRS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 struct __base_vptr
 {
   __base_vptr() = default;
@@ -74,8 +73,8 @@ struct __base_vptr
   __rtti_base const* __vptr_{};
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_PTRS_H

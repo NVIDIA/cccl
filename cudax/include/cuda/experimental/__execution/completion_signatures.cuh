@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -165,7 +166,7 @@ inline constexpr bool sends_stopped = __sends_stopped<completion_signatures_of_t
 // __valid_completion_signatures
 template <class _Ty>
 _CCCL_CONCEPT __valid_completion_signatures =
-  __is_specialization_of_v<_CUDA_VSTD::remove_const_t<_Ty>, completion_signatures>;
+  ::cuda::__is_specialization_of_v<_CUDA_VSTD::remove_const_t<_Ty>, completion_signatures>;
 
 template <class... _Sigs>
 _CCCL_API _CCCL_CONSTEVAL void __assert_valid_completion_signatures(const completion_signatures<_Sigs...>&)

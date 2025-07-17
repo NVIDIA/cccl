@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_TAGGED_PTR_H
-#define __CUDAX_DETAIL_BASIC_ANY_TAGGED_PTR_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_TAGGED_PTR_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_TAGGED_PTR_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Ptr>
 struct __tagged_ptr;
 
@@ -51,8 +51,8 @@ struct __tagged_ptr<_Tp*>
   uintptr_t __ptr_ = 0;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_TAGGED_PTR_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_TAGGED_PTR_H
