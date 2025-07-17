@@ -184,10 +184,7 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 }
 #endif
 
-using requirements =
-  c2h::type_list<cuda::execution::determinism::gpu_to_gpu_t,
-                 cuda::execution::determinism::run_to_run_t,
-                 cuda::execution::determinism::not_guaranteed_t>;
+using requirements = c2h::type_list<cuda::execution::determinism::not_guaranteed_t>;
 
 C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 {
@@ -209,8 +206,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
     // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
-                  || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(
         cudaSuccess
@@ -239,6 +235,33 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             op_t,
             init_t,
             accumulator_t>)};
+    }
+    else if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    {
+      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
+      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
+        decltype(d_in),
+        decltype(raw_ptr),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>;
+
+      REQUIRE(
+        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
     }
     else
     {
@@ -293,7 +316,14 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
                           allowed_kernels(kernels), // allowed kernels for the given determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_reduce(d_in, d_out.begin(), num_items, op_t{}, init, env);
+  if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+  {
+    device_reduce(d_in, thrust::raw_pointer_cast(d_out.data()), num_items, op_t{}, init, env);
+  }
+  else
+  {
+    device_reduce(d_in, d_out.begin(), num_items, op_t{}, init, env);
+  }
 
   REQUIRE(d_out[0] == num_items);
 }
@@ -317,8 +347,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
     // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
-                  || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 
@@ -345,6 +374,33 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             op_t,
             init_t,
             accumulator_t>)};
+    }
+    else if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    {
+      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
+      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
+        decltype(d_in),
+        decltype(raw_ptr),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>;
+
+      REQUIRE(cudaSuccess
+              == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
     }
     else
     {
@@ -399,7 +455,14 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
                           allowed_kernels(kernels), // allowed kernels for the given determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_reduce_sum(d_in, d_out.begin(), num_items, env);
+  if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+  {
+    device_reduce_sum(d_in, thrust::raw_pointer_cast(d_out.data()), num_items, env);
+  }
+  else
+  {
+    device_reduce_sum(d_in, d_out.begin(), num_items, env);
+  }
 
   REQUIRE(d_out[0] == num_items);
 }

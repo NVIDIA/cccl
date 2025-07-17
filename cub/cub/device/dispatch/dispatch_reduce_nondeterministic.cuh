@@ -102,6 +102,8 @@ struct DeviceReduceNondeterministicKernelSource
 };
 } // namespace detail::reduce
 
+namespace detail
+{
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
@@ -236,20 +238,18 @@ struct DispatchReduceNondeterministic
       if (d_temp_storage == nullptr)
       {
         temp_storage_bytes = 1;
-        // Return if the caller is simply requesting the size of the storage
-        // allocation
         return cudaSuccess;
       }
 
       // Init regular kernel configuration
       detail::KernelConfig reduce_config;
-      error = CubDebug(reduce_config.Init(atomic_kernel, active_policy.Reduce(), launcher_factory));
+      error = CubDebug(reduce_config.Init(atomic_kernel, active_policy.ReduceNondeterministic(), launcher_factory));
       if (cudaSuccess != error)
       {
         break;
       }
 
-#if TUNE_USE_GRID_EVEN_SHARE
+#if ATOMIC_REDUCE_USE_GRID_EVEN_SHARE
       // Get SM count
       int sm_count;
       error = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
@@ -278,22 +278,22 @@ struct DispatchReduceNondeterministic
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceLastBlockKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+      _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%lu, %d, 0, %lld>>>(), %d items "
               "per thread, %d SM occupancy\n",
               (unsigned long) reduce_grid_size,
-              active_policy.Reduce().BlockThreads(),
+              active_policy.ReduceNondeterministic().BlockThreads(),
               (long long) stream,
-              active_policy.Reduce().ItemsPerThread(),
+              active_policy.ReduceNondeterministic().ItemsPerThread(),
               reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-      // Invoke DeviceReduceKernel
-      launcher_factory(reduce_grid_size, active_policy.Reduce().BlockThreads(), 0, stream)
+      // Invoke NondeterministicDeviceReduceAtomicKernel
+      launcher_factory(reduce_grid_size, active_policy.ReduceNondeterministic().BlockThreads(), 0, stream)
         .doit(atomic_kernel,
               d_in,
               d_out,
               num_items,
-#if TUNE_USE_GRID_EVEN_SHARE
+#if ATOMIC_REDUCE_USE_GRID_EVEN_SHARE
               even_share,
 #endif
               reduction_op,
@@ -386,8 +386,8 @@ struct DispatchReduceNondeterministic
     OutputIteratorT d_out,
     OffsetT num_items,
     ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
+    InitT init                             = {},
+    cudaStream_t stream                    = {},
     TransformOpT transform_op              = {},
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
@@ -430,5 +430,6 @@ struct DispatchReduceNondeterministic
     return error;
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

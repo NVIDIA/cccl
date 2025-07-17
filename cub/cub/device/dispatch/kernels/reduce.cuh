@@ -519,7 +519,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   }
 }
 
-#define TUSE_USE_GRID_EVEN_SHARE 1
+#define ATOMIC_REDUCE_USE_GRID_EVEN_SHARE 0
 
 template <typename ChainedPolicyT,
           typename InputIteratorT,
@@ -534,7 +534,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
     BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
                                                                   OutputIteratorT d_out,
                                                                   OffsetT num_items,
-#if TUNE_USE_GRID_EVEN_SHARE
+#if ATOMIC_REDUCE_USE_GRID_EVEN_SHARE
                                                                   GridEvenShare<OffsetT> even_share,
 #endif
                                                                   ReductionOpT reduction_op,
@@ -554,7 +554,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
 
-#if TUNE_USE_GRID_EVEN_SHARE
+#if ATOMIC_REDUCE_USE_GRID_EVEN_SHARE
   // Consume input tiles
   AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
 #else
