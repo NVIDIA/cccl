@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_FWD_H
-#define __CUDAX_DETAIL_BASIC_ANY_FWD_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,8 +25,6 @@
 #include <cuda/std/cstddef> // for max_align_t
 #include <cuda/std/cstdint> // for uint8_t
 
-#include <cuda/experimental/__detail/utility.cuh> // IWYU pragma: keep export
-
 // Some functions defined here have their addresses appear in public types
 // (e.g., in `cudax::overrides_for` specializations). If the function is declared
 // `__attribute__((visibility("hidden")))`, and if the address appears, say, in
@@ -38,8 +36,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Interface>
 struct __ireference;
 
@@ -103,9 +101,9 @@ struct __ctag_;
 template <auto... _Is>
 using __ctag _CCCL_NODEBUG_ALIAS = __ctag_<_Is...>*;
 
-constexpr size_t __word                 = sizeof(void*);
-constexpr size_t __default_buffer_size  = 3 * __word;
-constexpr size_t __default_buffer_align = alignof(_CUDA_VSTD::max_align_t);
+constexpr size_t __word                       = sizeof(void*);
+constexpr size_t __default_small_object_size  = 3 * __word;
+constexpr size_t __default_small_object_align = alignof(_CUDA_VSTD::max_align_t);
 
 using __make_type_list _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>;
 
@@ -125,8 +123,8 @@ extern _Interface __remove_ireference_v; // specialized in interfaces.cuh
 template <class _Interface>
 using __remove_ireference_t _CCCL_NODEBUG_ALIAS = decltype(__remove_ireference_v<_Interface>);
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_FWD_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H

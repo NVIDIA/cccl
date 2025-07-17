@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_ACCESS_H
-#define __CUDAX_DETAIL_BASIC_ANY_ACCESS_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_ACCESS_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_ACCESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,19 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/conversions.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/conversions.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! basic_any_access
 //!
@@ -82,8 +81,8 @@ struct __basic_any_access
   }
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_ACCESS_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_ACCESS_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_REF_H
-#define __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_REF_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_base.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/conversions.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/iset.h>
+#include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -29,17 +35,10 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/typeid.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/conversions.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/iset.cuh>
-#include <cuda/experimental/__utility/basic_any/rtti.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! \c __ireference<_Interface>
 //!
@@ -183,7 +182,7 @@ private:
   _CCCL_TRIVIAL_HOST_API void reset() noexcept {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_HOST_API void __release() noexcept {}
+  _CCCL_TRIVIAL_HOST_API void __release_() noexcept {}
 
   //! \brief Rebinds the reference with a vtable pointer and object pointer.
   _CCCL_HOST_API void __set_ref(__vptr_for<interface_type> __vptr,
@@ -282,7 +281,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CCCL_HOST_API basic_any(_Tp& __obj) noexcept
       : basic_any<__ireference<_Interface>>()
   {
-    __vptr_for<interface_type> const __vptr = experimental::__get_vtable_ptr_for<interface_type, _Up>();
+    __vptr_for<interface_type> const __vptr = ::cuda::__get_vtable_ptr_for<interface_type, _Up>();
     this->__set_ref(__vptr, &__obj);
   }
 
@@ -330,8 +329,8 @@ private:
   basic_any() = default;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_REF_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H

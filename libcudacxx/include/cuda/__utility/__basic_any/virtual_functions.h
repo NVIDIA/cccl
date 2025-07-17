@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H
-#define __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
@@ -35,12 +36,10 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/typeid.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! __override_tag
 //!
@@ -57,7 +56,7 @@ template <class _Fn, class _Cp>
 _CCCL_HOST_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 
 template <class _Fn>
-using __class_of _CCCL_NODEBUG_ALIAS = decltype(experimental::__class_of_(_Fn()));
+using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
 
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
@@ -87,7 +86,7 @@ template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class
     // after static_cast-ing to _Tp*, we need to use a C-style cast to get a
     // pointer to the correct base class.
     using __class_type  = _CUDA_VSTD::__maybe_const<_IsConst, __class_of<decltype(_Fn)>>;
-    __class_type& __obj = *experimental::__c_style_cast<__class_type*>(static_cast<__value_type*>(__pv));
+    __class_type& __obj = *::cuda::__c_style_cast<__class_type*>(static_cast<__value_type*>(__pv));
     return (__obj.*_Fn)(static_cast<_Args&&>(__args)...);
   }
   else
@@ -166,8 +165,8 @@ struct __virtual_fn
   using __function_t _CCCL_NODEBUG_ALIAS = decltype(__virtual_override_fn<decltype(_Fn)>);
   using __result_t _CCCL_NODEBUG_ALIAS   = decltype(__get_virtual_result(__function_t{}));
 
-  static constexpr bool __const_fn   = decltype(experimental::__is_virtual_const(__function_t{}))::value;
-  static constexpr bool __nothrow_fn = noexcept(experimental::__get_virtual_result(__function_t{}));
+  static constexpr bool __const_fn   = decltype(::cuda::__is_virtual_const(__function_t{}))::value;
+  static constexpr bool __nothrow_fn = noexcept(::cuda::__get_virtual_result(__function_t{}));
 
   template <class _Tp, auto _Override>
   _CCCL_HOST_API constexpr __virtual_fn(__override_tag<_Tp, _Override>) noexcept
@@ -177,8 +176,8 @@ struct __virtual_fn
   __function_t __fn_;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H

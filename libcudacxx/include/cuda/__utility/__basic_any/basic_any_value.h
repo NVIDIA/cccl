@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_VALUE_H
-#define __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_VALUE_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_base.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/basic_any_ref.h>
+#include <cuda/__utility/__basic_any/conversions.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/rtti.h>
+#include <cuda/__utility/__basic_any/semiregular.h>
+#include <cuda/__utility/__basic_any/storage.h>
+#include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__new/launder.h>
@@ -34,20 +43,10 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_ref.cuh>
-#include <cuda/experimental/__utility/basic_any/conversions.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/rtti.cuh>
-#include <cuda/experimental/__utility/basic_any/semiregular.cuh>
-#include <cuda/experimental/__utility/basic_any/storage.cuh>
-#include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 // constructible_from using list initialization syntax.
 // clang-format off
 template <class _Tp, class... _Args>
@@ -350,7 +349,7 @@ public:
       _CCCL_ASSERT(__vptr->__query_interface(iunknown())->__cookie_ == 0xDEADBEEF,
                    "query_interface returned a bad pointer to the iunknown vtable");
       __vptr->__query_interface(iunknown())->__dtor_(__buffer_, __in_situ());
-      __release();
+      __release_();
     }
   }
 
@@ -398,7 +397,7 @@ private:
   template <class, int>
   friend struct __basic_any_base;
 
-  _CCCL_HOST_API void __release()
+  _CCCL_HOST_API void __release_()
   {
     __vptr_for<_Interface> __vptr = nullptr;
     __vptr_.__set(__vptr, false);
@@ -417,7 +416,7 @@ private:
       ::new (__buffer_) _CUDA_VSTD::type_identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
     }
 
-    __vptr_for<_Interface> __vptr = experimental::__get_vtable_ptr_for<_Interface, _Tp>();
+    __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
     __vptr_.__set(__vptr, __is_small<_Tp>(__size_, __align_));
     return *_CUDA_VSTD::launder(static_cast<_Tp*>(__get_optr()));
   }
@@ -443,7 +442,7 @@ private:
       {
         ::new (__buffer_) _CUDA_VSTD::type_identity_t<void*>(__from.__get_optr());
         __vptr_.__set(__to_vptr, false);
-        __from.__release();
+        __from.__release_();
       }
       else if constexpr (_CUDA_VSTD::is_same_v<_SrcInterface, _Interface>)
       {
@@ -514,8 +513,8 @@ private:
   }
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_VALUE_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H

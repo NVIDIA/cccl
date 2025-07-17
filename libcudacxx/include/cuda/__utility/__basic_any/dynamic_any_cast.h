@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_DYNAMIC_ANY_CAST_H
-#define __CUDAX_DETAIL_BASIC_ANY_DYNAMIC_ANY_CAST_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/access.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/conversions.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/experimental/__utility/basic_any/access.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/conversions.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //! \brief Casts one basic_any reference type to another basic_any type using
 //! runtime information to determine the validity of the conversion.
 //!
@@ -99,8 +98,8 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const*, basic_any<_Dst
   return __dst;
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_DYNAMIC_ANY_CAST_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H

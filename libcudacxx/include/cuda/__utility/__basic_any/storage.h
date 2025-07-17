@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_STORAGE_H
-#define __CUDAX_DETAIL_BASIC_ANY_STORAGE_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,29 +21,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/swap.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 [[nodiscard]] _CCCL_HOST_API inline constexpr auto __buffer_size(size_t __size) -> size_t
 {
   //! round up to the nearest multiple of `__word`, which is the size of a
   //! void*.
-  return ((__size ? (_CUDA_VSTD::max) (__size, sizeof(void*)) : __default_buffer_size) + __word - 1) / __word * __word;
+  return ((__size ? (_CUDA_VSTD::max) (__size, sizeof(void*)) : __default_small_object_size) + __word - 1) / __word
+       * __word;
 }
 
 [[nodiscard]] _CCCL_HOST_API inline constexpr auto __buffer_align(size_t __align) -> size_t
 {
   //! need to be able to store a void* in the buffer.
-  return __align ? (_CUDA_VSTD::max) (__align, alignof(void*)) : __default_buffer_align;
+  return __align ? (_CUDA_VSTD::max) (__align, alignof(void*)) : __default_small_object_align;
 }
 
 template <class _Tp>
@@ -71,8 +71,8 @@ template <class _Tp,
   return false;
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_STORAGE_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H

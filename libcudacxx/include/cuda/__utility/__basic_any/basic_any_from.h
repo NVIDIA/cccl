@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_FROM_H
-#define __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_FROM_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,15 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/std/__type_traits/decay.h>
-
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! `basic_any_from`
 //!
@@ -86,12 +85,12 @@ template <template <class...> class _Interface>
 }
 
 template <class _CvInterface>
-using cvref_basic_any_from_t = decltype(experimental::basic_any_from(declval<_CvInterface>()));
+using cvref_basic_any_from_t = decltype(::cuda::basic_any_from(_CUDA_VSTD::declval<_CvInterface>()));
 
 template <class _CvInterface>
 using basic_any_from_t = _CUDA_VSTD::decay_t<cvref_basic_any_from_t<_CvInterface>>;
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_FROM_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
