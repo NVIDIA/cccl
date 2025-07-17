@@ -72,12 +72,12 @@ public:
   //! @param __stream
   //!
   //! @throws cuda_error if the event record fails
-  void record(stream_ref __stream) const;
+  _CCCL_HOST_API void record(stream_ref __stream) const;
 
   //! @brief Synchronizes the event
   //!
   //! @throws cuda_error if waiting for the event fails
-  void sync() const
+  _CCCL_HOST_API void sync() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
     _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
@@ -88,7 +88,7 @@ public:
   //! If is_done returns true, calling sync() on this event will return immediately
   //!
   //! @throws cuda_error if the event query fails
-  [[nodiscard]] bool is_done() const
+  [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
     cudaError_t __status = ::cudaEventQuery(__event_);

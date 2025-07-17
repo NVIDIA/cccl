@@ -113,7 +113,7 @@ public:
   //! @brief Synchronizes the wrapped stream.
   //!
   //! @throws cuda::cuda_error if synchronization fails.
-  void sync() const
+  _CCCL_HOST_API void sync() const
   {
     _CUDA_DRIVER::__streamSynchronize(__stream);
   }
@@ -162,7 +162,7 @@ public:
   //! \throws cuda::cuda_error if the query fails.
   //!
   //! \return `true` if all operations have completed, or `false` if not.
-  [[nodiscard]] bool is_done() const
+  [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     const auto __result = _CUDA_DRIVER::__streamQueryNoThrow(__stream);
     switch (__result)
@@ -191,7 +191,7 @@ public:
   //! @throws cuda::cuda_error if the query fails.
   //!
   //! @return value representing the priority of the wrapped stream.
-  [[nodiscard]] int priority() const
+  [[nodiscard]] _CCCL_HOST_API int priority() const
   {
     return _CUDA_DRIVER::__streamGetPriority(__stream);
   }

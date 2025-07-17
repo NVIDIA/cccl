@@ -31,7 +31,7 @@
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-struct stream_ref;
+class stream_ref;
 
 //! @brief RAII helper which on construction sets the current context to the specified one.
 //! It sets the state back on destruction.
