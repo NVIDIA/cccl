@@ -27,14 +27,6 @@ __host__ __device__ constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool over
     {
       assert(result.value == static_cast<Result>(static_cast<Result>(lhs) + static_cast<Result>(rhs)));
     }
-    // if (result.overflow != overflow)
-    //{
-    //   printf("%s: %lld, %lld | result.overflow = %d, overflow = %d\n", __PRETTY_FUNCTION__,
-    //          (long long) lhs,
-    //          (long long) rhs,
-    //          result.overflow,
-    //          overflow);
-    // }
     assert(result.overflow == overflow);
   }
   // test bool add_overflow(Lhs lhs, Rhs rhs, Result & result) overload
@@ -62,8 +54,6 @@ __host__ __device__ constexpr void test_type()
   static_assert(is_same_v<decltype(cuda::add_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})), bool>);
   static_assert(noexcept(cuda::add_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})));
 
-  using Common    = cuda::std::common_type_t<Lhs, Rhs>;
-  using CommonAll = cuda::std::common_type_t<Common, Result>;
   // 1. Adding zeros should never overflow
   test_add_overflow<Result>(Lhs{}, Rhs{}, false);
 
