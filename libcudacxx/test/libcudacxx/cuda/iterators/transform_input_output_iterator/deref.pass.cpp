@@ -28,7 +28,7 @@ __host__ __device__ constexpr void test()
     for (int i = 0; i < 8; ++i, ++iter)
     {
       assert(*iter == input_func(buffer[i]));
-      *iter = i;
+      assert((*iter = i) == input_func(output_func(i)));
       assert(buffer[i] == output_func(i));
     }
     static_assert(noexcept(*iter));

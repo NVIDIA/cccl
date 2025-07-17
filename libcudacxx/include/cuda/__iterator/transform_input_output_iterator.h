@@ -163,17 +163,21 @@ public:
   _CUDA_VRANGES::__movable_box<_InputFn> __input_func_{};
   _CUDA_VRANGES::__movable_box<_OutputFn> __output_func_{};
 
-  using _Cat = typename _CUDA_VSTD::iterator_traits<_Iter>::iterator_category;
-
-  using iterator_category =
-    _CUDA_VSTD::conditional_t<_CUDA_VSTD::derived_from<_Cat, _CUDA_VSTD::contiguous_iterator_tag>,
-                              _CUDA_VSTD::random_access_iterator_tag,
-                              _Cat>;
-  using iterator_concept = iterator_category;
-  using difference_type  = _CUDA_VSTD::iter_difference_t<_Iter>;
-  using value_type       = _CUDA_VSTD::invoke_result_t<_InputFn, _CUDA_VSTD::iter_value_t<_Iter>>;
-  using pointer          = void;
-  using reference        = __transform_input_output_proxy<_Iter, _InputFn, _OutputFn>;
+  using iterator_concept = _CUDA_VSTD::conditional_t<
+    _CUDA_VSTD::random_access_iterator<_Iter>,
+    _CUDA_VSTD::random_access_iterator_tag,
+    _CUDA_VSTD::conditional_t<_CUDA_VSTD::bidirectional_iterator<_Iter>,
+                              _CUDA_VSTD::bidirectional_iterator_tag,
+                              _CUDA_VSTD::conditional_t<_CUDA_VSTD::forward_iterator<_Iter>,
+                                                        _CUDA_VSTD::forward_iterator_tag,
+                                                        _CUDA_VSTD::conditional_t<_CUDA_VSTD::input_iterator<_Iter>,
+                                                                                  _CUDA_VSTD::input_iterator_tag,
+                                                                                  _CUDA_VSTD::output_iterator_tag>>>>;
+  using iterator_category = _CUDA_VSTD::output_iterator_tag;
+  using difference_type   = _CUDA_VSTD::iter_difference_t<_Iter>;
+  using value_type        = _CUDA_VSTD::invoke_result_t<_InputFn, _CUDA_VSTD::iter_value_t<_Iter>>;
+  using pointer           = void;
+  using reference         = __transform_input_output_proxy<_Iter, _InputFn, _OutputFn>;
 
   //! @brief Default constructs a \p transform_input_output_iterator with a value initialized iterator and functors
 #if _CCCL_HAS_CONCEPTS()
@@ -276,6 +280,9 @@ public:
   //! @brief Increments the stored iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr auto operator++(int) noexcept(noexcept(++__current_))
+    -> _CUDA_VSTD::conditional_t<(_CUDA_VSTD::forward_iterator<_Iter> || _CUDA_VSTD::output_iterator<_Iter, value_type>),
+                                 transform_input_output_iterator,
+                                 void>
   {
     if constexpr (_CUDA_VSTD::forward_iterator<_Iter> || _CUDA_VSTD::output_iterator<_Iter, value_type>)
     {
