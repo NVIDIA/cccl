@@ -1016,7 +1016,7 @@ public:
   // [containers.sequences.inplace.vector.access], element access
   [[nodiscard]] _CCCL_API constexpr reference at(const size_type __pos)
   {
-    if (__pos > this->size())
+    if (__pos >= this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
@@ -1025,7 +1025,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr const_reference at(const size_type __pos) const
   {
-    if (__pos > this->size())
+    if (__pos >= this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
