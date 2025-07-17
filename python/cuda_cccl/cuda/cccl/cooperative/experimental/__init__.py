@@ -9,6 +9,7 @@ from ._enums import (
     BlockHistogramAlgorithm,
     BlockLoadAlgorithm,
     BlockStoreAlgorithm,
+    NoAlgorithm,
     WarpLoadAlgorithm,
     WarpStoreAlgorithm,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "BlockStore",
     "gpu_dataclass",
     "local",
+    "NoAlgorithm",
     "shared",
     "StatefulFunction",
     "TempStorage",

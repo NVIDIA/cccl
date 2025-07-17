@@ -2,15 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._block_histogram import (
+    BlockHistogram,
+    histogram,
+)
 from ._block_load_store import (
-    load,
-    store,
     BlockLoad,
     BlockStore,
-)
-from ._block_histogram import (
-    histogram,
-    BlockHistogram,
+    load,
+    store,
 )
 from ._block_merge_sort import merge_sort_keys
 from ._block_radix_sort import (
@@ -18,6 +18,10 @@ from ._block_radix_sort import (
     radix_sort_keys_descending,
 )
 from ._block_reduce import reduce, sum
+from ._block_run_length_decode import (
+    BlockRunLength,
+    run_length,
+)
 from ._block_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -27,18 +31,22 @@ from ._block_scan import (
 )
 
 __all__ = [
-    "merge_sort_keys",
-    "reduce",
-    "sum",
-    "scan",
-    "exclusive_scan",
-    "inclusive_scan",
-    "exclusive_sum",
-    "inclusive_sum",
-    "radix_sort_keys",
-    "radix_sort_keys_descending",
-    "load",
-    "store",
+    "BlockHistogram",
     "BlockLoad",
     "BlockStore",
+    "BlockRunLength",
+    "exclusive_scan",
+    "exclusive_sum",
+    "histogram",
+    "inclusive_scan",
+    "inclusive_sum",
+    "load",
+    "merge_sort_keys",
+    "radix_sort_keys",
+    "radix_sort_keys_descending",
+    "reduce",
+    "run_length",
+    "scan",
+    "store",
+    "sum",
 ]

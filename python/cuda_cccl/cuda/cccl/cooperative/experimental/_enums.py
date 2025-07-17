@@ -28,6 +28,11 @@ def cub_cpp_name(instance):
     return f"::cub::{parts}_{instance.name}"
 
 
+# A dummy algorithm for primitives that have no algorithm enum.
+class NoAlgorithm(IntEnum):
+    NO_ALGORITHM = auto()
+
+
 class BaseAlgorithmEnum(IntEnum):
     def __str__(self):
         return cub_cpp_name(self)

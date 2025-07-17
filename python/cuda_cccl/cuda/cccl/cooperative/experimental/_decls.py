@@ -912,6 +912,199 @@ def codegen_block_histogram_call(context, builder, sig, args):
 
 
 # =============================================================================
+# RunLengthDecode
+# =================================================================================
+
+# N.B. Because `RunLengthDecodeRunLengthDecode` is an awfully-ugly name in
+#      Python, we use `RunLength` to represent the `cub::BlockRunLengthDecode`
+#      `cub::BlockRunLengthDecode` primitive, and simply `Decode` to represent
+#      the `cub::BlockRunLengthDecode::RunLengthDecode` method instance.
+
+
+class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
+    key = coop.block.run_length.decode
+    primitive_name = "coop.block.run_length.decode"
+
+    def generic(self):
+        def typer(decoded_items, relative_offsets, decoded_window_offset):
+            # Verify decoded_items is a device array.
+            if not isinstance(decoded_items, types.Array):
+                raise errors.TypingError(
+                    "decoded_items must be a device array, "
+                    f"got {type(decoded_items).__name__}"
+                )
+
+            # Verify relative_offsets is a device array.
+            if not isinstance(relative_offsets, types.Array):
+                raise errors.TypingError(
+                    "relative_offsets must be a device array, "
+                    f"got {type(relative_offsets).__name__}"
+                )
+
+            # Verify decoded_window_offset is an integer.
+            if not isinstance(decoded_window_offset, types.Integer):
+                raise errors.TypingError(
+                    "decoded_window_offset must be an integer value"
+                )
+
+            sig = signature(
+                types.void,
+                decoded_items,
+                relative_offsets,
+                decoded_window_offset,
+            )
+
+            return sig
+
+        return typer
+
+
+class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
+    key = coop.block.run_length
+    primitive_name = "coop.block.run_length"
+    algorithm_enum = coop.NoAlgorithm
+    default_algorithm = coop.NoAlgorithm.NO_ALGORITHM
+
+    def __init__(self, context=None):
+        super().__init__(context=context)
+
+    def generic(self):
+        def typer(
+            run_values,
+            run_lengths,
+            runs_per_thread,
+            decoded_items_per_thread,
+            total_decoded_size,
+            temp_storage=None,
+        ):
+            # Verify run_values and run_lengths are device arrays.
+            if not isinstance(run_values, types.Array):
+                raise errors.TypingError(
+                    "run_values must be a device array, "
+                    f"got {type(run_values).__name__}"
+                )
+
+            if not isinstance(run_lengths, types.Array):
+                raise errors.TypingError(
+                    "run_lengths must be a device array, "
+                    f"got {type(run_lengths).__name__}"
+                )
+
+            validate_positive_integer_literal(
+                self,
+                runs_per_thread,
+                "runs_per_thread",
+            )
+
+            validate_positive_integer_literal(
+                self,
+                decoded_items_per_thread,
+                "decoded_items_per_thread",
+            )
+
+            if not isinstance(total_decoded_size, types.Integer):
+                raise errors.TypingError("total_decoded_size must be an integer value")
+
+            validate_temp_storage(self, temp_storage)
+
+            arglist = [
+                run_values,
+                run_lengths,
+                runs_per_thread,
+                decoded_items_per_thread,
+                total_decoded_size,
+            ]
+
+            if temp_storage is not None:
+                arglist.append(temp_storage)
+
+            sig = signature(
+                block_run_length_instance_type,
+                *arglist,
+            )
+
+            return sig
+
+        return typer
+
+
+# =============================================================================
+# Instance-related RunLength Scaffolding
+# =============================================================================
+
+
+class CoopBlockRunLengthInstanceType(types.Type, CoopInstanceTypeMixin):
+    """
+    This type represents an instance of a cooperative block run_length.
+    It is used to create a two-phase cooperative block run_length instance.
+    """
+
+    decl_class = CoopBlockRunLengthDecl
+
+    def __init__(self):
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
+        CoopInstanceTypeMixin.__init__(self)
+
+
+block_run_length_instance_type = CoopBlockRunLengthInstanceType()
+
+
+@register_model(CoopBlockRunLengthInstanceType)
+class CoopBlockRunLengthInstanceModel(models.OpaqueModel):
+    pass
+
+
+@typeof_impl.register(coop.block.run_length)
+def typeof_block_run_length_instance(*args, **kwargs):
+    return block_run_length_instance_type
+
+
+@type_callable(block_run_length_instance_type)
+def type_block_run_length_instance_call(context):
+    def typer(
+        run_values,
+        run_lengths,
+        runs_per_thread,
+        decoded_items_per_thread,
+        total_decoded_size,
+        temp_storage=None,
+    ):
+        decl = block_run_length_instance_type.decl
+        return decl.generic()
+
+    return typer
+
+
+class CoopBlockRunLengthAttrsTemplate(AttributeTemplate):
+    key = block_run_length_instance_type
+
+    def resolve_decode(self, instance):
+        return types.BoundFunction(CoopBlockRunLengthDecodeDecl, instance)
+
+
+register_attr(CoopBlockRunLengthAttrsTemplate)
+
+block_run_length_attrs_template = CoopBlockRunLengthAttrsTemplate(None)
+
+
+@lower_constant(CoopBlockRunLengthInstanceType)
+def lower_constant_block_run_length_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+@lower_builtin(CoopBlockRunLengthInstanceType, types.VarArg(types.Any))
+def codegen_block_run_length(context, builder, sig, args):
+    return context.get_dummy_value()
+
+
+@lower_builtin("call", CoopBlockRunLengthInstanceType, types.VarArg(types.Any))
+def codegen_block_run_length_call(context, builder, sig, args):
+    return context.get_dummy_value()
+
+
+# =============================================================================
 # Module Template
 # =============================================================================
 
@@ -941,6 +1134,12 @@ class CoopBlockModuleTemplate(AttributeTemplate):
 
     def resolve_store(self, mod):
         return types.Function(CoopBlockStoreDecl)
+
+    def resolve_histogram(self, mod):
+        return types.Function(CoopBlockHistogramDecl)
+
+    def resolve_run_length(self, mod):
+        return types.Function(CoopBlockRunLengthDecl)
 
 
 @register_attr

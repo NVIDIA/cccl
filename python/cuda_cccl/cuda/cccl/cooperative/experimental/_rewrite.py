@@ -239,13 +239,8 @@ class Primitive(IntEnum):
     HISTOGRAM = auto()
     HISTOGRAM__INIT = auto()
     HISTOGRAM__COMPOSITE = auto()
-    # Run-length decode's struct name is `BlockRunLengthDecode`, and its
-    # method name is `RunLengthDecode`.  As we don't include the granularity
-    # in these primitive names (i.e. the `Block` part), we end up with the
-    # unsightly `RUN_LENGTH_DECODE__RUN_LENGTH_DECODE` primitive name for the
-    # method instance.
-    RUN_LENGTH_DECODE = auto()
-    RUN_LENGTH_DECODE__RUN_LENGTH_DECODE = auto()
+    RUN_LENGTH = auto()
+    RUN_LENGTH__DECODE = auto()
 
 
 class CoopNodeMixin:
@@ -519,17 +514,11 @@ class CoopNode:
                 return Primitive.HISTOGRAM__COMPOSITE
             elif name.endswith("histogram"):
                 return Primitive.HISTOGRAM
-        elif "run_length_decode" in name:
-            occurrences = name.count("run_length_decode")
-            if occurrences == 1:
-                return Primitive.RUN_LENGTH_DECODE
-            elif occurrences == 2:
-                return Primitive.RUN_LENGTH_DECODE__RUN_LENGTH_DECODE
-            else:
-                raise RuntimeError(
-                    "Unexpected number of 'run_length_decode' occurrences"
-                    f"in name: {name!r}"
-                )
+        elif "run_length" in name:
+            if "decode" in name:
+                return Primitive.RUN_LENGTH__DECODE
+            elif name.endswith("run_length"):
+                return Primitive.RUN_LENGTH
 
         raise RuntimeError(f"Unknown primitive: {self!r}")
 
@@ -1174,9 +1163,25 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
         print(self)
         pass
 
+
+class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.run_length"
+
     def rewrite(self, rewriter):
-        print(self)
-        return ()
+        pass
+
+    def refine_match(self, rewriter):
+        pass
+
+
+class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.run_length.decode"
+
+    def rewrite(self, rewriter):
+        pass
+
+    def refine_match(self, rewriter):
+        pass
 
 
 @lru_cache(maxsize=None)
@@ -1259,6 +1264,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
         # Called by match() when we've found the first coop node in a new block.
         self._modules.clear()
         self._needs_module.clear()
+        self.nodes = OrderedDict()
 
     def _get_or_create_global_module(
         self,
@@ -1508,6 +1514,12 @@ class BaseCooperativeNodeRewriter(Rewrite):
             if expr.op != "call":
                 continue
 
+            # call_expr_repr = repr(expr)
+            # if "run_length = " in call_expr_repr:
+            #     import debugpy
+            #     debugpy.breakpoint()
+            #     print(call_expr_repr)
+
             func_name = expr.func.name
             func = typemap[func_name]
 
@@ -1754,7 +1766,9 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 parent_node = self.nodes.get(parent_target_name, None)
                 if not parent_node:
                     raise RuntimeError(
-                        "Could not find parent node for {parent_target_name!r}"
+                        "Could not find parent node for "
+                        f"{parent_target_name!r}; "
+                        f"parent_root_def: {parent_root_def!r}"
                     )
 
                 # Invariant check: parent node's `two_phase_instance` must
@@ -1765,7 +1779,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 )
                 if instance_mismatch:
                     raise RuntimeError(
-                        f"Parent node's two_phase_instance mismatch: "
+                        "Parent node's two_phase_instance mismatch: "
                         f"{parent_two_phase_instance!r} != "
                         f"{parent_root_def.instance!r} "
                         f"({parent_target_name!r})"
@@ -1811,7 +1825,6 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 self.block = block
                 self.typemap = typemap
                 self.calltypes = calltypes
-                self.nodes = OrderedDict()
                 first = False
                 found = True
 
