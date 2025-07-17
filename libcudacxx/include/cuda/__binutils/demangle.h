@@ -25,20 +25,26 @@
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/cstdlib>
 #  include <cuda/std/string_view>
 
 #  include <string>
 
-#  include <nv_decode.h>
+#  if _CCCL_HAS_INCLUDE(<nv_decode.h>)
+#    include <nv_decode.h>
+#  endif // _CCCL_HAS_INCLUDE(<nv_decode.h>)
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <bool = true>
+template <class _Dummy = void>
 [[nodiscard]] _CCCL_HOST_API ::std::string __cccl_demangle_impl(const char* __name)
 {
+#  if !_CCCL_HAS_INCLUDE(<nv_decode.h>)
+  static_assert(__always_false_v<_Dummy>, "cuda::demangle requires the `cuxxfilt` package from the CUDA Toolkit.");
+#  else // ^^^ no cuxxfilt ^^^ / vvv has cuxxfilt vvv
   int __status{};
   char* __dname = ::__cu_demangle(__name, nullptr, nullptr, &__status);
 
@@ -68,6 +74,7 @@ template <bool = true>
     _CUDA_VSTD::free(__dname);
     throw;
   }
+#  endif // ^^^ has cuxxfilt ^^^
 }
 
 //! @brief Demangles a CUDA C++ mangled name.
@@ -81,7 +88,6 @@ template <bool = true>
 {
   // input must be zero-terminated, so we convert string_view to std::string
   ::std::string __name_in{__name.begin(), __name.end()};
-
   return ::cuda::__cccl_demangle_impl(__name_in.c_str());
 }
 
