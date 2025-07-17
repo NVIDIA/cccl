@@ -15,6 +15,26 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Install Git for Windows
+      shell: powershell
+      # the GPU runner image does not have Git Bash pre-installed...
+      env:
+        # doesn't seem there's an easy way to avoid hard-coding it?
+        GFW_EXE_URL: https://github.com/git-for-windows/git/releases/download/v2.49.0.windows.1/PortableGit-2.49.0-64-bit.7z.exe
+      run: |
+        if ((Get-Command git -ErrorAction SilentlyContinue) -and (Get-Command bash -ErrorAction SilentlyContinue)) {
+          Write-Host "Git and Bash are already installed."
+          exit 0
+        }
+        Invoke-WebRequest -Uri "$env:GFW_EXE_URL" -OutFile "PortableGit.7z.exe"
+        # Self-extracting, see https://gitforwindows.org/zip-archives-extracting-the-released-archives.html
+        Start-Process .\PortableGit.7z.exe -Wait -Verbose -ArgumentList '-y -gm2'
+        ls -l PortableGit
+        echo "$((Get-Location).Path)\\PortableGit\\bin" >> $env:GITHUB_PATH
+        $env:Path += ";$((Get-Location).Path)\\PortableGit\\bin"
+        bash --version
+
     - name: Configure env
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
