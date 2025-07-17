@@ -29,7 +29,10 @@
 
 #include <thrust/detail/config/device_system.h>
 
+#include <cuda/memory_resource>
 #include <cuda/std/limits>
+
+#include <cuda/experimental/container.cuh>
 
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
@@ -137,10 +140,31 @@ void gen(seed_t seed,
   detail::gen_values_between(seed, {THRUST_NS_QUALIFIER::raw_pointer_cast(data.data()), data.size()}, min, max);
 }
 
+template <typename T, typename... Ps>
+void gen(seed_t seed,
+         cuda::experimental::async_buffer<T, Ps...>& buffer,
+         T min = ::cuda::std::numeric_limits<T>::lowest(),
+         T max = ::cuda::std::numeric_limits<T>::max())
+{
+  static_assert(::cuda::has_property<cuda::experimental::async_buffer<T, Ps...>, ::cuda::mr::device_accessible>,
+                "buffer must store device-accessible memory");
+  ::cuda::experimental::__ensure_current_device __guard(buffer.stream());
+  detail::gen_values_between(seed, ::cuda::std::span<T>{buffer.data(), buffer.size()}, min, max);
+}
+
 template <typename T>
 void gen(modulo_t mod, device_vector<T>& data)
 {
   detail::gen_values_cyclic(mod, ::cuda::std::span<T>{THRUST_NS_QUALIFIER::raw_pointer_cast(data.data()), data.size()});
+}
+
+template <typename T, typename... Ps>
+void gen(modulo_t mod, cuda::experimental::async_buffer<T, Ps...>& buffer)
+{
+  static_assert(::cuda::has_property<cuda::experimental::async_buffer<T, Ps...>, ::cuda::mr::device_accessible>,
+                "buffer must store device-accessible memory");
+  ::cuda::experimental::__ensure_current_device __guard(buffer.stream());
+  detail::gen_values_cyclic(mod, ::cuda::std::span<T>{buffer.data(), buffer.size()});
 }
 
 /**
