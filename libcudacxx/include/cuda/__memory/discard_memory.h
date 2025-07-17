@@ -50,7 +50,7 @@ _CCCL_API inline void discard_memory([[maybe_unused]] volatile void* __ptr, [[ma
       asm volatile("discard.global.L2 [%0], 128;" ::"l"(__i) :);
     }))
   // clang-format off
-#endif
+#endif // __cccl_ptx_isa >= 740ULL
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
