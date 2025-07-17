@@ -259,7 +259,6 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
           decltype(raw_ptr),
           offset_t,
           op_t,
-          init_t,
           accumulator_t,
           transform_t>)};
     }
@@ -398,7 +397,6 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
           decltype(raw_ptr),
           offset_t,
           op_t,
-          init_t,
           accumulator_t,
           transform_t>)};
     }

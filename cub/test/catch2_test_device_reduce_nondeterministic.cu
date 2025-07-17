@@ -270,8 +270,6 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   type init_value = GENERATE_COPY(static_cast<type>(42), static_cast<type>(-42), static_cast<type>(0));
 
-  std::cout << "init_value: " << init_value << std::endl;
-
   const auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   cub::DeviceReduce::Reduce(
     d_input.begin(), thrust::raw_pointer_cast(d_output.data()), num_items, cuda::std::plus<type>{}, init_value, env);
