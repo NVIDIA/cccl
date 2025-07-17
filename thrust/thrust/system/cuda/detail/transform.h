@@ -291,7 +291,7 @@ struct raw_reference_cast_args
   mutable F f; // mutable to support non-const F::operator()
 
   template <typename... Ts>
-  auto operator()(Ts&&... args) const
+  THRUST_FUNCTION decltype(auto) operator()(Ts&&... args) const
   {
     return f(raw_reference_cast(::cuda::std::forward<Ts>(args))...);
   }
