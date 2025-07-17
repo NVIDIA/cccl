@@ -7,9 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-#ifndef _CUDA_ITERATOR
-#define _CUDA_ITERATOR
+#ifndef _CUDA___FORWARD_ZIP_ITERATOR_H
+#define _CUDA___FORWARD_ZIP_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +20,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__iterator/constant_iterator.h>
-#include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__iterator/discard_iterator.h>
-#include <cuda/__iterator/permutation_iterator.h>
-#include <cuda/__iterator/strided_iterator.h>
-#include <cuda/__iterator/tabulate_output_iterator.h>
-#include <cuda/__iterator/transform_input_output_iterator.h>
-#include <cuda/__iterator/transform_iterator.h>
-#include <cuda/__iterator/transform_output_iterator.h>
-#include <cuda/__iterator/zip_iterator.h>
-#include <cuda/std/iterator>
+#include <cuda/std/__cccl/prologue.h>
 
-#endif // _CUDA_ITERATOR
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+template <class... _Iterators>
+class zip_iterator;
+
+template <class>
+inline constexpr bool __is_zip_iterator = false;
+
+template <class... _Iterators>
+inline constexpr bool __is_zip_iterator<zip_iterator<_Iterators...>> = true;
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___FORWARD_ZIP_ITERATOR_H
