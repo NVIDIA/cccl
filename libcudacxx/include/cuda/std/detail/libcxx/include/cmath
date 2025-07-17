@@ -394,37 +394,6 @@ using ::nanl;
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 template <class _A1>
-_CCCL_API inline _A1 __constexpr_fabs(_A1 __x) noexcept
-{
-  return ::fabs(__x);
-}
-#else
-_CCCL_API constexpr float __constexpr_fabs(float __x) noexcept
-{
-  return __builtin_fabsf(__x);
-}
-
-_CCCL_API constexpr double __constexpr_fabs(double __x) noexcept
-{
-  return __builtin_fabs(__x);
-}
-
-#  if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_API constexpr long double __constexpr_fabs(long double __x) noexcept
-{
-  return __builtin_fabsl(__x);
-}
-#  endif // _CCCL_HAS_LONG_DOUBLE()
-
-template <class _Tp, enable_if_t<is_integral<_Tp>::value, int> = 0>
-_CCCL_API constexpr double __constexpr_fabs(_Tp __x) noexcept
-{
-  return __builtin_fabs(static_cast<double>(__x));
-}
-#endif // !_CCCL_COMPILER(MSVC)
-
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-template <class _A1>
 _CCCL_API inline _A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
 {
   return ::fmax(__x, __y);
@@ -526,7 +495,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp __x)
       return numeric_limits<_Tp>::quiet_NaN();
     }
 
-    __x                      = _CUDA_VSTD::__constexpr_fabs(__x);
+    __x                      = _CUDA_VSTD::fabs(__x);
     unsigned long long __exp = 0;
     while (__x >= _Tp(numeric_limits<_Tp>::radix))
     {
