@@ -178,7 +178,7 @@ _CCCL_REQUIRES((_CUDA_VSTD::is_void_v<_Result> || _CUDA_VSTD::__cccl_is_integer_
 add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
 #if defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
-  overflow_result<_Tp> __result;
+  overflow_result<_ActualResult> __result;
   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
   return __result;
 #else
