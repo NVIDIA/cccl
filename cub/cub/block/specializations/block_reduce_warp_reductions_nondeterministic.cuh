@@ -178,7 +178,6 @@ struct BlockReduceWarpReductionsNondeterministic
   template <bool FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
-#if TUNE_USE_ATOMIC_BLOCK_REDUCE
     if (linear_tid == 0)
     {
       detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
@@ -188,29 +187,11 @@ struct BlockReduceWarpReductionsNondeterministic
 
     if (lane_id == 0 && warp_id != 0)
     {
-      // printf("adding %f\n", warp_aggregate);
       atomicAdd(temp_storage.warp_aggregates, warp_aggregate);
     }
 
     __syncthreads();
     return temp_storage.warp_aggregates[0];
-#else
-    // Share lane aggregates
-    if (lane_id == 0)
-    {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
-    }
-
-    __syncthreads();
-
-    // Update total aggregate in warp 0, lane 0
-    if (linear_tid == 0)
-    {
-      warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<1>);
-    }
-
-    return warp_aggregate;
-#endif
   }
 
   /**
