@@ -27,7 +27,6 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
 #include <cub/util_type.cuh>
 
@@ -40,7 +39,6 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include <c2h/catch2_test_helper.h>
-#include <c2h/extended_types.h>
 #include <c2h/generators.h>
 
 using float_type_list = c2h::type_list<float, double>;
@@ -52,7 +50,8 @@ struct AgentReducePolicy
   static constexpr int VECTOR_LOAD_LENGTH = 4;
 
   /// Cooperative block-wide reduction algorithm to use
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING;
+  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM =
+    cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
 
   /// Cache load modifier for reading input elements
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::CacheLoadModifier::LOAD_DEFAULT;
