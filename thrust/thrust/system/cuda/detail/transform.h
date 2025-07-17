@@ -284,6 +284,18 @@ OutputIt THRUST_FUNCTION cub_transform_many(
   return cub_transform_many(
     policy, get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
 }
+
+template <typename F>
+struct raw_reference_cast_args
+{
+  mutable F f; // mutable to support non-const F::operator()
+
+  template <typename... Ts>
+  auto operator()(Ts&&... args) const
+  {
+    return f(raw_reference_cast(::cuda::std::forward<Ts>(args))...);
+  }
+};
 } // namespace __transform
 
 //  one input data stream
@@ -295,7 +307,8 @@ transform(execution_policy<Derived>& policy, InputIt first, InputIt last, Output
   THRUST_CDP_DISPATCH(
     (return __transform::cub_transform_many(
               policy, ::cuda::std::make_tuple(first), result, ::cuda::std::distance(first, last), transform_op);),
-    (return ::cuda::std::transform(first, last, result, transform_op);));
+    (return ::cuda::std::transform(
+              first, last, result, __transform::raw_reference_cast_args<TransformOp>{transform_op});));
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename UnaryFunction>
@@ -308,7 +321,8 @@ THRUST_FUNCTION OutputIt transform_n(
 {
   THRUST_CDP_DISPATCH(
     (return __transform::cub_transform_many(policy, ::cuda::std::make_tuple(first), result, num_items, transform_op);),
-    (return ::cuda::std::transform(first, first + num_items, result, transform_op);));
+    (return ::cuda::std::transform(
+              first, first + num_items, result, __transform::raw_reference_cast_args<TransformOp>{transform_op});));
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp, typename Predicate>
@@ -387,7 +401,8 @@ THRUST_FUNCTION OutputIt transform(
               result,
               ::cuda::std::distance(first1, last1),
               transform_op);),
-    (return ::cuda::std::transform(first1, last1, first2, result, transform_op);));
+    (return ::cuda::std::transform(
+              first1, last1, first2, result, __transform::raw_reference_cast_args<BinaryTransformOp>{transform_op});));
 }
 
 template <typename Derived, typename InputIt1, typename InputIt2, typename OutputIt, typename BinaryTransformOp>
@@ -399,9 +414,14 @@ THRUST_FUNCTION OutputIt transform_n(
   OutputIt result,
   BinaryTransformOp transform_op)
 {
-  THRUST_CDP_DISPATCH((return __transform::cub_transform_many(
-                                policy, ::cuda::std::make_tuple(first1, first2), result, num_items, transform_op);),
-                      (return ::cuda::std::transform(first1, first1 + num_items, first2, result, transform_op);));
+  THRUST_CDP_DISPATCH(
+    (return __transform::cub_transform_many(
+              policy, ::cuda::std::make_tuple(first1, first2), result, num_items, transform_op);),
+    (return ::cuda::std::transform(first1,
+                                   first1 + num_items,
+                                   first2,
+                                   result,
+                                   __transform::raw_reference_cast_args<BinaryTransformOp>{transform_op});));
 }
 
 // two input data streams + stencil
