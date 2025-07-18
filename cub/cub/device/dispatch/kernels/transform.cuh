@@ -23,6 +23,7 @@
 
 #include <cuda/__barrier/aligned_size.h> // cannot include <cuda/barrier> directly on CUDA_ARCH < 700
 #include <cuda/cmath>
+#include <cuda/memory>
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
@@ -656,11 +657,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   //                                                                bulk_copy_alignment));
   // However, CUDA currently does not provide this guarantee.
 
-  // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems (e.g. with driver
-  // 565.57.01 on RTX 2080 when cub::DeviceTransform is called from another kernel via CDP. See
-  // thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1). This will lead to slightly reduced performance of bulk copy, but
-  // correctness is maintained.
-  //_CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "");
+  // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems. For example the CI run
+  // `Thrust CTK12.9 nvcc GCC / Jw / [C++20 GCC13] TestGPU(amd64, H100): sm{90}` with driver `570.158.01` and CUDA
+  // version `12.8` on test `thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1`. This will lead to reduced performance of
+  // bulk copy on Hopper, but correctness is maintained.
+  _CCCL_ASSERT(::cuda::is_aligned(smem_base, bulk_copy_alignment), "");
 
   char* smem_base = smem_base_unaligned;
   // Since alignment via the attribute may not work, we have to align explicitly if it's larger than the default dynamic
