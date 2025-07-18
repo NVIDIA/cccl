@@ -126,24 +126,25 @@ template <class _Tp>
     }
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 37)
-    { // unsigned
-      if constexpr (sizeof(_Tp) == 1)
-      {
-        __result.overflow = ::_addcarry_u8(0, __lhs, __rhs, &__result.value);
+      if constexpr (_CUDA_VSTD::is_unsigned_v<_Tp>)
+      { // unsigned
+        if constexpr (sizeof(_Tp) == 1)
+        {
+          __result.overflow = ::_addcarry_u8(0, __lhs, __rhs, &__result.value);
+        }
+        else if constexpr (sizeof(_Tp) == 2)
+        {
+          __result.overflow = ::_addcarry_u16(0, __lhs, __rhs, &__result.value);
+        }
+        else if constexpr (sizeof(_Tp) == 4)
+        {
+          __result.overflow = ::_addcarry_u32(0, __lhs, __rhs, &__result.value);
+        }
+        else if constexpr (sizeof(_Tp) == 8)
+        {
+          __result.overflow = ::_addcarry_u64(0, __lhs, __rhs, &__result.value);
+        }
       }
-      else if constexpr (sizeof(_Tp) == 2)
-      {
-        __result.overflow = ::_addcarry_u16(0, __lhs, __rhs, &__result.value);
-      }
-      else if constexpr (sizeof(_Tp) == 4)
-      {
-        __result.overflow = ::_addcarry_u32(0, __lhs, __rhs, &__result.value);
-      }
-      else if constexpr (sizeof(_Tp) == 8)
-      {
-        __result.overflow = ::_addcarry_u64(0, __lhs, __rhs, &__result.value);
-      }
-    }
     return __result;
   }
 #  else
