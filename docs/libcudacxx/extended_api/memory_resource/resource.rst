@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-memory-resources-resource:
 
-The ``cuda::resource`` concept
+The ``cuda::synchronous_resource`` concept
 -------------------------------
 
 The `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__ feature provides only a
@@ -12,13 +12,13 @@ whether a memory resource can utilize stream-ordered allocations. Even if the ap
 to properly tell the memory resource to use stream-ordered allocation. Ideally, this should not be something discovered
 through an assert at run time, but should be checked by the compiler.
 
-The ``cuda::mr::resource`` concept provides basic type checks to ensure that a given memory resource provides the
+The ``cuda::mr::synchronous_resource`` concept provides basic type checks to ensure that a given memory resource provides the
 expected ``allocate`` / ``deallocate`` interface and is also equality comparable, which covers the whole API surface of
 `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__.
 See below for different memory resources and potential pitfals.
 
 To demonstrate, the following example defines several resources, only some of which are valid implementations of the
-``cuda::mr::resource`` concept. The ``static_assertion``'s will result in compile-time errors for the invalid resources.
+``cuda::mr::synchronous_resource`` concept. The ``static_assertion``'s will result in compile-time errors for the invalid resources.
 
 .. code:: cpp
 
@@ -65,7 +65,7 @@ To demonstrate, the following example defines several resources, only some of wh
      void deallocate(void*, std::size_t, std::size_t) noexcept {}
      bool operator!=(const non_eq_comparable&) { return false; }
    };
-   static_assert(!cuda::mr::resource<non_eq_comparable>, "");
+   static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>, "");
 
 In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`_ interface the
 ``cuda::mr::async_resource`` concept verifies that a memory resource also satisfies the ``allocate_async`` /
@@ -88,7 +88,7 @@ A library can easily decide whether to use the async interface:
 .. code:: cpp
 
    template<class MemoryResource>
-       requires cuda::mr::resource<MemoryResource>
+       requires cuda::mr::synchronous_resource<MemoryResource>
    void* maybe_allocate_async(MemoryResource& resource, std::size_t size, std::size_t align, cuda::stream_ref stream) {
        if constexpr(cuda::mr::async_resource<MemoryResource>) {
            return resource.allocate_async(size, align, stream);

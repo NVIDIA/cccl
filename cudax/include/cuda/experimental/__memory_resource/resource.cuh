@@ -33,8 +33,8 @@ namespace cuda::experimental
 
 template <class _Resource, class _OtherResource>
 _CCCL_CONCEPT __non_polymorphic_resources = _CCCL_REQUIRES_EXPR((_Resource, _OtherResource))(
-  requires(_CUDA_VMR::resource<_Resource>),
-  requires(_CUDA_VMR::resource<_OtherResource>),
+  requires(_CUDA_VMR::synchronous_resource<_Resource>),
+  requires(_CUDA_VMR::synchronous_resource<_OtherResource>),
   requires(__non_polymorphic<_Resource>),
   requires(__non_polymorphic<_OtherResource>));
 

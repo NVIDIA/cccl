@@ -183,8 +183,8 @@ struct resource
     return false;
   }
 };
-static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
 
 template <AccessibilityType Accessibility>
 struct async_resource : public resource<Accessibility>
@@ -203,7 +203,7 @@ struct derived_managed_resource : cudax::managed_memory_resource
 {
   using cudax::managed_memory_resource::managed_memory_resource;
 };
-static_assert(cuda::mr::resource<derived_managed_resource>, "");
+static_assert(cuda::mr::synchronous_resource<derived_managed_resource>, "");
 
 C2H_TEST("managed_memory_resource comparison", "[memory_resource]")
 {

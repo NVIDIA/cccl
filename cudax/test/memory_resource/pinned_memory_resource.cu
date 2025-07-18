@@ -196,8 +196,8 @@ struct resource
     return false;
   }
 };
-static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
 
 template <AccessibilityType Accessibility>
 struct async_resource : public resource<Accessibility>
@@ -216,7 +216,7 @@ struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
 {
   using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
-static_assert(cuda::mr::resource<derived_pinned_resource>, "");
+static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>, "");
 
 C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
