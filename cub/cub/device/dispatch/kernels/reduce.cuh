@@ -539,6 +539,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   ReductionOpT reduction_op,
                                                                   TransformOpT transform_op)
 {
+  static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
+                "Only plus is currently supported in nondeterministic reduce");
   // Thread block type for reducing input tiles
   using AgentReduceT = detail::reduce::AgentReduce<
     typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,

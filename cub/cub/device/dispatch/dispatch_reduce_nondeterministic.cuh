@@ -142,6 +142,8 @@ template <typename InputIteratorT,
           typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchReduceNondeterministic
 {
+  static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
+                "Only plus is currently supported in nondeterministic reduce");
   //---------------------------------------------------------------------------
   // Problem state
   //---------------------------------------------------------------------------
