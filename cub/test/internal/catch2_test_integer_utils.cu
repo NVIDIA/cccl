@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 #include <cub/detail/integer_utils.cuh>
 
-#include "c2h/catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 /***********************************************************************************************************************
  * TEST CASES
