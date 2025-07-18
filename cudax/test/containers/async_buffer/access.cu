@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -93,7 +94,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
     CUDAX_CHECK(buf.stream() == stream);
 
     {
-      cudax::stream other_stream{cudax::device_ref{0}};
+      cudax::stream other_stream{cuda::device_ref{0}};
       buf.set_stream_unsynchronized(other_stream);
       CUDAX_CHECK(buf.stream() == other_stream);
       // TODO swap to synchronized setter one cudax::stream_ref is moved to cuda namespace
