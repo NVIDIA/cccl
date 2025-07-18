@@ -27,7 +27,6 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/exponential_functions.h>
 #include <cuda/std/__complex/logarithms.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
@@ -344,6 +343,30 @@ template <class _Tp>
 {
   return _CUDA_VSTD::exp(__y * _CUDA_VSTD::log(__x));
 }
+
+#if _LIBCUDACXX_HAS_NVFP16()
+template <>
+_CCCL_API inline complex<__half> pow(const complex<__half>& __x, const complex<__half>& __y)
+{
+  // complex<__half>exp and complex<__half>log both call the fp32 version, as they are both
+  // faster and more accurate.
+  // With this in mind it also makes sense for complex<__half>pow to call the fp32 version,
+  // avoiding the intermediate narrowing conversion and losing accuracy.
+  return complex<__half>{_CUDA_VSTD::pow(complex<float>{__x}, complex<float>{__y})};
+}
+#endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> pow(const complex<__nv_bfloat16>& __x, const complex<__nv_bfloat16>& __y)
+{
+  // complex<__nv_bfloat16>exp and complex<__nv_bfloat16>log both call the fp32 version, as they are both
+  // faster and more accurate.
+  // With this in mind it also makes sense for complex<__nv_bfloat16>pow to call the fp32 version,
+  // avoiding the intermediate narrowing conversion and losing accuracy.
+  return complex<__nv_bfloat16>{_CUDA_VSTD::pow(complex<float>{__x}, complex<float>{__y})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244)
