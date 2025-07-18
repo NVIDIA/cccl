@@ -224,7 +224,7 @@ struct dist_interval<T, cuda::std::multiplies<>, ::cuda::std::enable_if_t<::cuda
   // Use floating point arithmetic to avoid unnecessarily small interval.
   static constexpr T min()
   {
-    const double log2_abs_min = ::cuda::std::log2(::cuda::std::abs(::cuda::std::numeric_limits<T>::min()));
+    const double log2_abs_min = ::cuda::std::log2(::cuda::std::fabs(::cuda::std::numeric_limits<T>::min()));
     return -::cuda::std::exp2(log2_abs_min / max_size);
   }
   static constexpr T max()
