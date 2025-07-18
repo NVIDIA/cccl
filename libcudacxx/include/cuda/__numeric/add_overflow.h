@@ -103,10 +103,10 @@ template <class _Tp>
 #  if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
   if constexpr (sizeof(_Tp) <= 8)
   {
-    overflow_result<_Tp> __result;
 #    if _CCCL_COMPILER(MSVC, >=, 19, 37)
     if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
     {
+      overflow_result<_Tp> __result;
       if constexpr (sizeof(_Tp) == 1)
       {
         __result.overflow = ::_add_overflow_i8(0, __lhs, __rhs, &__result.value);
@@ -123,11 +123,13 @@ template <class _Tp>
       {
         __result.overflow = ::_add_overflow_i64(0, __lhs, __rhs, &__result.value);
       }
+      return __result;
     }
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 37)
       if constexpr (_CUDA_VSTD::is_unsigned_v<_Tp>)
       { // unsigned
+        overflow_result<_Tp> __result;
         if constexpr (sizeof(_Tp) == 1)
         {
           __result.overflow = ::_addcarry_u8(0, __lhs, __rhs, &__result.value);
@@ -144,12 +146,11 @@ template <class _Tp>
         {
           __result.overflow = ::_addcarry_u64(0, __lhs, __rhs, &__result.value);
         }
+        return __result;
       }
-    return __result;
   }
-#  else
+#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_ARCH(X86_64) ^^^
   return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) ^^^
 }
 
 #endif // _CCCL_HOST_COMPILATION()
