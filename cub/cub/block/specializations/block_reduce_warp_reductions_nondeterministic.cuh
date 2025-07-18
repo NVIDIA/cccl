@@ -186,6 +186,7 @@ struct BlockReduceWarpReductionsNondeterministic
 
     if (lane_id == 0 && warp_id != 0)
     {
+      // TODO: replace this with other atomic operations when specified
       atomicAdd(temp_storage.warp_aggregates, warp_aggregate);
     }
 

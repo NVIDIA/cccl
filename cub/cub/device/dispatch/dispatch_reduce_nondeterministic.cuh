@@ -85,6 +85,7 @@ struct DeviceReduceNondeterministicKernelSource
       OutputIteratorT,
       OffsetT,
       ReductionOpT,
+      InitT,
       AccumT,
       TransformOpT>);
 
@@ -269,13 +270,6 @@ struct DispatchReduceNondeterministic
       int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
 #endif
 
-      error = CubDebug(launcher_factory.MemcpyAsync(
-        unwrap_indirect_arg(&d_out), &init, kernel_source.InitSize(), cudaMemcpyDefault, stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%lu, %d, 0, %lld>>>(), %d items "
@@ -297,6 +291,7 @@ struct DispatchReduceNondeterministic
               even_share,
 #endif
               reduction_op,
+              init,
               transform_op);
 
       // Check for failure to launch

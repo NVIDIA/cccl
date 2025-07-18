@@ -526,6 +526,7 @@ template <typename ChainedPolicyT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
+          typename InitT,
           typename AccumT,
           typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
@@ -537,6 +538,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   GridEvenShare<OffsetT> even_share,
 #endif
                                                                   ReductionOpT reduction_op,
+                                                                  InitT init,
                                                                   TransformOpT transform_op)
 {
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
@@ -565,10 +567,17 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
 #endif
 
   // Output result
+  // only thread 0 has valid value in block aggregate
   if (threadIdx.x == 0)
   {
-    // ony thread 0 has valid value in block aggregate
-    atomicAdd(d_out, block_aggregate);
+    if (blockIdx.x == 0)
+    {
+      atomicAdd(d_out, reduction_op(init, block_aggregate));
+    }
+    else
+    {
+      atomicAdd(d_out, block_aggregate);
+    }
   }
 }
 
