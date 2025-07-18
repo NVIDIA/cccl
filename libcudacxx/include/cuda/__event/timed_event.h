@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX_TIMED_EVENT_DETAIL_H
-#define _CUDAX_TIMED_EVENT_DETAIL_H
+#ifndef _CUDA___EVENT_TIMED_EVENT_H
+#define _CUDA___EVENT_TIMED_EVENT_H
 
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
@@ -24,17 +24,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/chrono>
-#include <cuda/std/cstddef>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__event/event.cuh>
+#  include <cuda/__event/event.h>
+#  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/chrono>
+#  include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
 class timed_event : public event
 {
@@ -43,11 +44,7 @@ public:
   //!        and record the event on the specified stream.
   //!
   //! @throws cuda_error if the event creation fails.
-  explicit timed_event(stream_ref __stream, flags __flags = flags::none)
-      : event(__stream, static_cast<unsigned int>(__flags))
-  {
-    record(__stream);
-  }
+  explicit timed_event(stream_ref __stream, flags __flags = flags::none);
 
   //! @brief Construct a new `timed_event` object with the specified flags. The event can only be recorded on streams
   //! from the specified device.
@@ -111,8 +108,11 @@ private:
       : event(__evnt)
   {}
 };
-} // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDAX_TIMED_EVENT_DETAIL_H
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___EVENT_TIMED_EVENT_H

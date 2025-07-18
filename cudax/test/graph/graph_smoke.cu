@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/event.cuh>
 #include <cuda/experimental/graph.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
