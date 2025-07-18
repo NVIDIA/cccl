@@ -31,43 +31,43 @@ constexpr int num_seeds = 3;
  * Thread Scan Wrapper Kernels
  **********************************************************************************************************************/
 
-template <int NUM_ITEMS, typename In, typename Out, typename Accum, typename ScanOperator>
+template <int NumItems, typename In, typename Out, typename Accum, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel(
   In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix)
 {
   using value_t  = ::cuda::std::iter_value_t<In>;
   using output_t = ::cuda::std::iter_value_t<Out>;
-  value_t thread_input[NUM_ITEMS];
+  value_t thread_input[NumItems];
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_input[i] = d_in[i];
   }
-  output_t thread_output[NUM_ITEMS];
+  output_t thread_output[NumItems];
   cub::detail::ThreadScanExclusivePartial(thread_input, thread_output, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_output[i];
   }
 }
 
-template <int NUM_ITEMS, typename In, typename Out, typename Accum, typename ScanOperator>
+template <int NumItems, typename In, typename Out, typename Accum, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel(
   In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix)
 {
   using value_t  = ::cuda::std::iter_value_t<In>;
   using output_t = ::cuda::std::iter_value_t<Out>;
-  value_t thread_input[NUM_ITEMS];
+  value_t thread_input[NumItems];
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_input[i] = d_in[i];
   }
-  output_t thread_output[NUM_ITEMS];
+  output_t thread_output[NumItems];
   cub::detail::ThreadScanInclusivePartial(thread_input, thread_output, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_output[i];
   }
@@ -75,79 +75,79 @@ __global__ void thread_scan_inclusive_partial_kernel(
 
 // The following kernels are less general/complex wuith the added benefit that we can test doing the scan in-place
 
-template <int NUM_ITEMS, typename T, typename ScanOperator>
+template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_array(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  ::cuda::std::array<T, NUM_ITEMS> thread_data;
+  ::cuda::std::array<T, NumItems> thread_data;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
   cub::detail::ThreadScanExclusivePartial(thread_data, thread_data, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_data[i];
   }
 }
 
-template <int NUM_ITEMS, typename T, typename ScanOperator>
+template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel_array(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  ::cuda::std::array<T, NUM_ITEMS> thread_data;
+  ::cuda::std::array<T, NumItems> thread_data;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
   cub::detail::ThreadScanInclusivePartial(thread_data, thread_data, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_data[i];
   }
 }
 
-template <int NUM_ITEMS, typename T, typename ScanOperator>
+template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_span(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  ::cuda::std::span<T, NUM_ITEMS> span(thread_data);
+  ::cuda::std::span<T, NumItems> span(thread_data);
   cub::detail::ThreadScanExclusivePartial(span, span, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_data[i];
   }
 }
 
-template <int NUM_ITEMS, typename T, typename ScanOperator>
+template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel_span(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  ::cuda::std::span<T, NUM_ITEMS> span(thread_data);
+  ::cuda::std::span<T, NumItems> span(thread_data);
   cub::detail::ThreadScanInclusivePartial(span, span, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_data[i];
   }
@@ -155,43 +155,43 @@ __global__ void thread_scan_inclusive_partial_kernel_span(
 
 #if _CCCL_STD_VER >= 2023
 
-template <int NUM_ITEMS, typename T, typename ScanOperator>
+template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_mdspan(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  using Extent = ::cuda::std::extents<int, NUM_ITEMS>;
-  ::cuda::std::mdspan<T, Extent> mdspan(thread_data, ::cuda::std::extents<int, NUM_ITEMS>{});
+  using Extent = ::cuda::std::extents<int, NumItems>;
+  ::cuda::std::mdspan<T, Extent> mdspan(thread_data, ::cuda::std::extents<int, NumItems>{});
   cub::detail::ThreadScanExclusivePartial(mdspan, mdspan, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_data[i];
   }
 }
 
-template <int NUM_ITEMS, typename T, typename ScanOperator>
+template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel_mdspan(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  using Extent = ::cuda::std::extents<int, NUM_ITEMS>;
-  ::cuda::std::mdspan<T, Extent> mdspan(thread_data, ::cuda::std::extents<int, NUM_ITEMS>{});
+  using Extent = ::cuda::std::extents<int, NumItems>;
+  ::cuda::std::mdspan<T, Extent> mdspan(thread_data, ::cuda::std::extents<int, NumItems>{});
   cub::detail::ThreadScanInclusivePartial(mdspan, mdspan, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     d_out[i] = thread_data[i];
   }
@@ -203,6 +203,7 @@ __global__ void thread_scan_inclusive_partial_kernel_mdspan(
  * CUB operator to identity
  **********************************************************************************************************************/
 
+// Replace with identity_v once #4312 lands
 template <typename T, typename Operator, typename = void>
 struct cub_operator_to_identity;
 
@@ -793,7 +794,6 @@ C2H_TEST("ThreadScamExclusive Container Tests", "[scan][thread]")
     values({1, max_size - 1, max_size, max_size + 1}));
   const int bounded_valid_items = cuda::std::min(valid_items, max_size);
   c2h::host_vector<int> reference_result(bounded_valid_items);
-  std::exclusive_scan(h_in.begin(), h_in.begin() + bounded_valid_items, reference_result.begin(), 0, std::plus<int>{});
   compute_exclusive_scan_reference(
     h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reference_result.begin(), 0, cuda::std::plus<>{});
 

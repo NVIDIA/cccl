@@ -184,10 +184,10 @@ ThreadScanExclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T p
  *   <b>[inferred]</b> The data type of the prefix.
  *
  * @param[in] input
- *   Array=like input
+ *   Array-like input
  *
  * @param[out] output
- *   Array=like output (may be aliased to @p input)
+ *   Array-like output (may be aliased to @p input)
  *
  * @param[in] scan_op
  *   Binary scan operator
@@ -434,10 +434,10 @@ ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T p
  *   <b>[inferred]</b> The data type of the prefix.
  *
  * @param[in] input
- *   Array=like input
+ *   Array-like input
  *
  * @param[out] output
- *   Array=like output (may be aliased to @p input)
+ *   Array-like output (may be aliased to @p input)
  *
  * @param[in] scan_op
  *   Binary scan operator
