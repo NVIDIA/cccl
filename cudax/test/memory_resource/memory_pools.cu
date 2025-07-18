@@ -343,7 +343,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // prime the pool to a given size
     memory_resource_for_pool<memory_pool> resource{pool};
-    cudax::stream stream{cudax::device_ref{0}};
+    cudax::stream stream{cuda::device_ref{0}};
 
     // Allocate a buffer to prime
     auto* ptr = resource.allocate_async(256 * sizeof(int), stream);
@@ -467,7 +467,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // prime the pool to a given size
     memory_resource_for_pool<memory_pool> resource{pool};
-    cudax::stream stream{cudax::device_ref{0}};
+    cudax::stream stream{cuda::device_ref{0}};
 
     // Allocate 2 buffers
     auto* ptr1 = resource.allocate_async(2048 * sizeof(int), stream);
@@ -519,13 +519,13 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
 C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 {
-  if (cudax::devices.size() > 1)
+  if (cuda::devices.size() > 1)
   {
-    auto peers = cudax::devices[0].peer_devices();
+    auto peers = cuda::devices[0].peer_devices();
     if (peers.size() > 0)
     {
-      cudax::device_memory_pool pool{cudax::devices[0]};
-      CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+      cudax::device_memory_pool pool{cuda::devices[0]};
+      CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
       pool.enable_access_from(peers);
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
@@ -545,13 +545,13 @@ C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 C2H_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 {
   cudax::pinned_memory_pool pool{};
-  CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+  CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
   // Currently bugged, need to wait for driver fix
-  // pool.disable_access_from(cudax::devices[0]);
-  // CUDAX_CHECK(!pool.is_accessible_from(cudax::devices[0]));
+  // pool.disable_access_from(cuda::devices[0]);
+  // CUDAX_CHECK(!pool.is_accessible_from(cuda::devices[0]));
 
-  // pool.enable_access_from(cudax::devices[0]);
-  // CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+  // pool.enable_access_from(cuda::devices[0]);
+  // CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 }
 #endif

@@ -41,8 +41,8 @@ struct D : B
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<long, MoveOnly> T0;
-    typedef cuda::std::tuple<long long, MoveOnly> T1;
+    using T0 = cuda::std::pair<long, MoveOnly>;
+    using T1 = cuda::std::tuple<long long, MoveOnly>;
     T0 t0(2, MoveOnly(3));
     T1 t1;
     t1 = cuda::std::move(t0);

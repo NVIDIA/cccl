@@ -57,7 +57,7 @@ void simple_continue_on_thread_test()
 
 void simple_start_on_stream_test()
 {
-  cudax::stream str{cudax::device_ref(0)};
+  cudax::stream str{cuda::device_ref(0)};
   auto sch  = cudax::stream_ref{str};
   auto sndr = ex::on(sch, ex::just(42) | ex::then([] __host__ __device__(int i) -> int {
                             return _on_device() ? i : -i;
@@ -71,7 +71,7 @@ void simple_start_on_stream_test()
 
 void simple_continue_on_stream_test()
 {
-  cudax::stream str{cudax::device_ref(0)};
+  cudax::stream str{cuda::device_ref(0)};
   auto sch  = cudax::stream_ref{str};
   auto sndr = ex::just(42) | ex::on(sch, ex::then([] __host__ __device__(int i) -> int {
                                       return _on_device() ? i : -i;

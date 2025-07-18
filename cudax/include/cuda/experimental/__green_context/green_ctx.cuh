@@ -21,18 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/all_devices.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
-
-#include <cuda/experimental/__device/all_devices.cuh>
-#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CTK_AT_LEAST(12, 5)
 namespace cuda::experimental
 {
-struct device_ref;
 
 struct green_context
 {
@@ -40,13 +38,13 @@ struct green_context
   CUgreenCtx __green_ctx  = nullptr;
   CUcontext __transformed = nullptr;
 
-  explicit green_context(const device& __device)
+  explicit green_context(device_ref __device)
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
-    auto __dev_handle = __detail::driver::deviceGet(__dev_id);
-    __green_ctx       = __detail::driver::greenCtxCreate(__dev_handle);
-    __transformed     = __detail::driver::ctxFromGreenCtx(__green_ctx);
+    auto __dev_handle = _CUDA_DRIVER::__deviceGet(__dev_id);
+    __green_ctx       = _CUDA_DRIVER::__greenCtxCreate(__dev_handle);
+    __transformed     = _CUDA_DRIVER::__ctxFromGreenCtx(__green_ctx);
   }
 
   green_context(const green_context&)            = delete;
@@ -56,10 +54,10 @@ struct green_context
   [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
     int __id;
-    CUcontext __transformed = __detail::driver::ctxFromGreenCtx(__gctx);
-    __detail::driver::ctxPush(__transformed);
+    CUcontext __transformed = _CUDA_DRIVER::__ctxFromGreenCtx(__gctx);
+    _CUDA_DRIVER::__ctxPush(__transformed);
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to get device ordinal from a green context", &__id);
-    __detail::driver::ctxPop();
+    _CUDA_DRIVER::__ctxPop();
     return green_context(__id, __gctx, __transformed);
   }
 
@@ -74,7 +72,7 @@ struct green_context
   {
     if (__green_ctx)
     {
-      [[maybe_unused]] cudaError_t __status = __detail::driver::greenCtxDestroy(__green_ctx);
+      [[maybe_unused]] cudaError_t __status = _CUDA_DRIVER::__greenCtxDestroyNoThrow(__green_ctx);
     }
   }
 
