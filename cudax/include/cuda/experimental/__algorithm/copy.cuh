@@ -49,21 +49,6 @@ __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUDA_VST
   _CUDA_DRIVER::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
 }
 
-template <typename _SrcExtents, typename _DstExtents>
-[[nodiscard]] _CCCL_HOST_API bool __copy_bytes_runtime_extents_match(_SrcExtents __src_exts, _DstExtents __dst_exts)
-{
-  for (typename _SrcExtents::rank_type __i = 0; __i < __src_exts.rank(); __i++)
-  {
-    if (__src_exts.extent(__i)
-        != static_cast<typename _SrcExtents::index_type>(
-          __dst_exts.extent(static_cast<typename _DstExtents::rank_type>(__i))))
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
 template <typename _SrcElem,
           typename _SrcExtents,
           typename _SrcLayout,
@@ -87,7 +72,7 @@ _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
     _CUDA_VSTD::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
   }
 
-  if (!::cuda::experimental::__detail::__copy_bytes_runtime_extents_match(__src.extents(), __dst.extents()))
+  if (__src.extents() != __dst.extents())
   {
     _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
   }
