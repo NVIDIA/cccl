@@ -848,15 +848,12 @@ public:
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
     static const auto conf = [] {
-      // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      int min_grid_size = 0, max_block_size = 0, block_size_limit = 0;
       // compute_kernel_limits will return the min number of blocks/max
       // block size to optimize occupancy, as well as some block size
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
-      reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, min_grid_size, max_block_size, 0, false, block_size_limit);
-      return ::std::pair(size_t(min_grid_size), size_t(max_block_size));
+      auto res = reserved::compute_kernel_limits(&reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, 0, false);
+      return ::std::pair(size_t(res.min_grid_size), size_t(res.max_block_size));
     }();
 
     const auto [block_size, min_blocks] = conf;

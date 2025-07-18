@@ -168,6 +168,7 @@ function(libcudacxx_add_test target_name_var source)
 
   add_executable(${target_name} "${source}")
   cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+  target_include_directories(${target_name} PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common")
   target_link_libraries(${target_name} PRIVATE
     libcudacxx::libcudacxx
     cccl.c2h.main

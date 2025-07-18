@@ -56,7 +56,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT unknown_sender : Sndr
 
 void stream_context_test1()
 {
-  ex::stream_context ctx{cuda::experimental::device_ref{0}};
+  ex::stream_context ctx{cuda::device_ref{0}};
   auto sched = ctx.get_scheduler();
   static_assert(ex::__is_scheduler<decltype(sched)>);
 
@@ -72,7 +72,7 @@ void stream_context_test1()
 void stream_context_test2()
 {
   ex::thread_context tctx;
-  ex::stream_context sctx{cuda::experimental::device_ref{0}};
+  ex::stream_context sctx{cuda::device_ref{0}};
   auto sch = sctx.get_scheduler();
 
   auto start = //
@@ -101,7 +101,7 @@ void stream_context_test2()
 void stream_ref_as_scheduler()
 {
   ex::thread_context tctx;
-  cudax::stream sctx{cuda::experimental::device_ref{0}};
+  cudax::stream sctx{cuda::device_ref{0}};
   auto sch = sctx.get_scheduler();
   static_assert(ex::__is_scheduler<decltype(sch)>);
 
@@ -130,7 +130,7 @@ void stream_ref_as_scheduler()
 
 void bulk_on_stream_scheduler()
 {
-  cuda::experimental::device_ref _dev{0};
+  cuda::device_ref _dev{0};
   cudax::stream sctx{_dev};
   auto sch = sctx.get_scheduler();
 
@@ -163,7 +163,7 @@ void bulk_on_stream_scheduler()
 
 void stream_adapt_non_visitable_sender()
 {
-  ex::stream_context ctx{cuda::experimental::device_ref{0}};
+  ex::stream_context ctx{cuda::device_ref{0}};
   auto with_sched = ex::prop{ex::get_scheduler, ctx.get_scheduler()};
 
   auto sndr = unknown_sender{ex::just(42)};
@@ -173,7 +173,7 @@ void stream_adapt_non_visitable_sender()
 
 void starts_on_with_stream_scheduler1()
 {
-  cudax::device_ref _dev{0};
+  cuda::device_ref _dev{0};
   cudax::stream sctx{_dev};
   ex::thread_context tctx;
   auto sch = sctx.get_scheduler();
@@ -188,7 +188,7 @@ void starts_on_with_stream_scheduler1()
 
 void starts_on_with_stream_scheduler2()
 {
-  cudax::device_ref _dev{0};
+  cuda::device_ref _dev{0};
   cudax::stream sctx{_dev};
   ex::thread_context tctx;
   auto sch = sctx.get_scheduler();

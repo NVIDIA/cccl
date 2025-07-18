@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,14 +32,17 @@ namespace cuda::experimental::stf
 namespace reserved
 {
 
+struct compute_occupancy_result
+{
+  int min_grid_size;
+  int block_size;
+};
+
 template <typename Kernel>
-::std::pair<int /*min_grid_size*/, int /*block_size*/>
-compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
+compute_occupancy_result compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
 {
   using key_t = ::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>;
-  static ::std::
-    unordered_map<key_t, ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
-      occupancy_cache;
+  static ::std::unordered_map<key_t, compute_occupancy_result, ::cuda::experimental::stf::hash<key_t>> occupancy_cache;
   const auto key = ::std::make_pair(dynamicSMemSize, blockSizeLimit);
 
   if (auto i = occupancy_cache.find(key); i != occupancy_cache.end())
@@ -51,16 +54,23 @@ compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0
   auto& result = occupancy_cache[key];
   if constexpr (::std::is_same_v<::std::decay_t<Kernel>, CUfunction>)
   {
-    cuda_safe_call(
-      cuOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, nullptr, dynamicSMemSize, blockSizeLimit));
+    cuda_safe_call(cuOccupancyMaxPotentialBlockSize(
+      &result.min_grid_size, &result.block_size, f, nullptr, dynamicSMemSize, blockSizeLimit));
   }
   else
   {
-    cuda_safe_call(
-      cudaOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, dynamicSMemSize, blockSizeLimit));
+    cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(
+      &result.min_grid_size, &result.block_size, f, dynamicSMemSize, blockSizeLimit));
   }
   return result;
 }
+
+struct cuda_kernel_limits_result
+{
+  int min_grid_size;
+  int max_block_size;
+  int block_size_limit;
+};
 
 /**
  * This method computes the block and grid sizes to optimize thread occupancy.
@@ -74,18 +84,15 @@ compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0
  *   resource constraints
  */
 template <typename Fun>
-void compute_kernel_limits(
-  const Fun&& f,
-  int& min_grid_size,
-  int& max_block_size,
-  size_t shared_mem_bytes,
-  bool cooperative,
-  int& block_size_limit)
+cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem_bytes, bool cooperative)
 {
   static_assert(::std::is_function<typename ::std::remove_pointer<Fun>::type>::value,
                 "Template parameter Fun must be a pointer to a function type.");
 
-  ::std::tie(min_grid_size, max_block_size) = compute_occupancy(f, shared_mem_bytes);
+  cuda_kernel_limits_result res;
+
+  auto occupancy_res = compute_occupancy(f, shared_mem_bytes);
+  res.min_grid_size  = occupancy_res.min_grid_size;
 
   if (cooperative)
   {
@@ -94,16 +101,17 @@ void compute_kernel_limits(
     static const int sm_count = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, 0);
 
     // TODO there could be more than 1 block per SM, but we do not know the actual block sizes for now ...
-    min_grid_size = ::std::min(min_grid_size, sm_count);
+    res.min_grid_size = ::std::min(res.min_grid_size, sm_count);
   }
 
+  res.max_block_size = occupancy_res.block_size;
+
   /* Compute the maximum block size (not the optimal size) */
-  static const auto maxThreadsPerBlock = [&] {
-    cudaFuncAttributes result;
-    cuda_safe_call(cudaFuncGetAttributes(&result, f));
-    return result.maxThreadsPerBlock;
-  }();
-  block_size_limit = maxThreadsPerBlock;
+  cudaFuncAttributes attrs;
+  cuda_safe_call(cudaFuncGetAttributes(&attrs, f));
+  res.block_size_limit = attrs.maxThreadsPerBlock;
+
+  return res;
 }
 
 } // end namespace reserved

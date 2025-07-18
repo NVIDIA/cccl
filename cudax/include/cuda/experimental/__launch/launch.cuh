@@ -142,7 +142,7 @@ _CCCL_TEMPLATE(typename _GraphInserter)
 _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
 _CCCL_HOST_API ::cuda::stream_ref __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
 {
-  return __detail::__invalid_stream;
+  return ::cuda::__detail::__invalid_stream;
 }
 
 _CCCL_HOST_API ::cuda::stream_ref inline __stream_or_invalid(cuda::stream_ref __stream)
