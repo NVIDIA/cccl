@@ -15,13 +15,14 @@
 #include <cuda/std/__format_>
 #include <cuda/std/cstddef>
 #include <cuda/std/iterator>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 template <class Arg, class = void>
 inline constexpr bool can_make_format_args = false;
 template <class Arg>
 inline constexpr bool
-  can_make_format_args<Arg, std::void_t<decltype(cuda::std::make_format_args(cuda::std::declval<Arg>()))>> = true;
+  can_make_format_args<Arg, cuda::std::void_t<decltype(cuda::std::make_format_args(cuda::std::declval<Arg>()))>> = true;
 
 static_assert(can_make_format_args<int&>);
 static_assert(!can_make_format_args<int>);
