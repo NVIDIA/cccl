@@ -49,7 +49,7 @@ __host__ __device__ void test_edges()
       // The __half or __nv_float16 functions use fp32, we need to account for this
       // as we are checking for floating-point equality:
 #if _LIBCUDACXX_HAS_NVFP16()
-      if (cuda::std::is_same<T, __half>::value)
+      if constexpr (cuda::std::is_same_v<T, __half>)
       {
         z = cuda::std::exp<float>(
           cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
@@ -57,7 +57,7 @@ __host__ __device__ void test_edges()
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-      if (cuda::std::is_same<T, __nv_bfloat16>::value)
+      if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
       {
         z = cuda::std::exp<float>(
           cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
