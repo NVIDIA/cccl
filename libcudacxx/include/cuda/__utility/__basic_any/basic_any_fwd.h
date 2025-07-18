@@ -31,7 +31,7 @@
 // `__attribute__((visibility("default")))`, GCC complains bitterly. So we
 // avoid declaring those functions `hidden`. Instead of the typical `_CCCL_HOST_API`
 // macro, we use `_CUDAX_PUBLIC_API` for those functions.
-#define _CUDAX_PUBLIC_API _CCCL_HOST
+#define _CUDAX_PUBLIC_API _CCCL_HOST _CCCL_VISIBILITY_DEFAULT
 
 #include <cuda/std/__cccl/prologue.h>
 

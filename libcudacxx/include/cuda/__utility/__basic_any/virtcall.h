@@ -12,6 +12,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/diagnostic.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,6 +31,9 @@
 #include <cuda/std/__type_traits/is_callable.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -148,6 +153,8 @@ _CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) /
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
