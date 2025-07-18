@@ -60,10 +60,10 @@ template <class _Sndr, class _GetStream>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
 _CCCL_GLOBAL_CONSTANT auto __get_stream_from_attrs =
-  __call_first{get_stream, _CUDA_VSTD::__compose(get_stream, get_completion_scheduler<set_value_t>)};
+  __first_callable{get_stream, _CUDA_VSTD::__compose(get_stream, get_completion_scheduler<set_value_t>)};
 
 _CCCL_GLOBAL_CONSTANT auto __get_stream_from_env =
-  __call_first{get_stream, _CUDA_VSTD::__compose(get_stream, get_scheduler)};
+  __first_callable{get_stream, _CUDA_VSTD::__compose(get_stream, get_scheduler)};
 
 using __get_stream_from_attrs_t = decltype(__get_stream_from_attrs);
 using __get_stream_from_env_t   = decltype(__get_stream_from_env);

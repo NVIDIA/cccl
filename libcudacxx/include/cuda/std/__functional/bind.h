@@ -73,29 +73,16 @@ template <int _Np>
 struct __ph
 {};
 
-#  if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_CCCL_API inline extern const __ph<1> _1;
-_CCCL_API inline extern const __ph<2> _2;
-_CCCL_API inline extern const __ph<3> _3;
-_CCCL_API inline extern const __ph<4> _4;
-_CCCL_API inline extern const __ph<5> _5;
-_CCCL_API inline extern const __ph<6> _6;
-_CCCL_API inline extern const __ph<7> _7;
-_CCCL_API inline extern const __ph<8> _8;
-_CCCL_API inline extern const __ph<9> _9;
-_CCCL_API inline extern const __ph<10> _10;
-#  else
-/* inline */ constexpr __ph<1> _1{};
-/* inline */ constexpr __ph<2> _2{};
-/* inline */ constexpr __ph<3> _3{};
-/* inline */ constexpr __ph<4> _4{};
-/* inline */ constexpr __ph<5> _5{};
-/* inline */ constexpr __ph<6> _6{};
-/* inline */ constexpr __ph<7> _7{};
-/* inline */ constexpr __ph<8> _8{};
-/* inline */ constexpr __ph<9> _9{};
-/* inline */ constexpr __ph<10> _10{};
-#  endif // defined(_LIBCUDACXX_BUILDING_LIBRARY)
+inline constexpr __ph<1> _1{};
+inline constexpr __ph<2> _2{};
+inline constexpr __ph<3> _3{};
+inline constexpr __ph<4> _4{};
+inline constexpr __ph<5> _5{};
+inline constexpr __ph<6> _6{};
+inline constexpr __ph<7> _7{};
+inline constexpr __ph<8> _8{};
+inline constexpr __ph<9> _9{};
+inline constexpr __ph<10> _10{};
 
 } // namespace placeholders
 

@@ -137,7 +137,9 @@ using __value_types _CCCL_NODEBUG_ALIAS =
 
 template <class _Sndr, class _Env, template <class...> class _Tuple, template <class...> class _Variant>
 using value_types_of_t _CCCL_NODEBUG_ALIAS =
-  __value_types<completion_signatures_of_t<_Sndr, _Env>, _Tuple, __type_try_quote<_Variant>::template __call>;
+  __value_types<completion_signatures_of_t<_Sndr, _Env>,
+                _CUDA_VSTD::__type_indirect_quote<_Tuple>::template __call,
+                _CUDA_VSTD::__type_indirect_quote<_Variant>::template __call>;
 
 template <class _Sigs,
           template <class...> class _Variant,
@@ -146,7 +148,8 @@ using __error_types _CCCL_NODEBUG_ALIAS =
   typename __partitioned_completions_of<_Sigs>::template __error_types<_Variant, _Transform>;
 
 template <class _Sndr, class _Env, template <class...> class _Variant>
-using error_types_of_t _CCCL_NODEBUG_ALIAS = __error_types<completion_signatures_of_t<_Sndr, _Env>, _Variant>;
+using error_types_of_t _CCCL_NODEBUG_ALIAS =
+  __error_types<completion_signatures_of_t<_Sndr, _Env>, _CUDA_VSTD::__type_indirect_quote<_Variant>::template __call>;
 
 template <class _Sigs, template <class...> class _Variant, class _Type = set_stopped_t()>
 using __stopped_types _CCCL_NODEBUG_ALIAS =
@@ -617,7 +620,7 @@ template <bool _PotentiallyThrowing>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // invalid_completion_signature
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
 
 template <class... _What, class... _Values>
 [[noreturn, nodiscard]] _CCCL_API consteval auto invalid_completion_signature(_Values... __values)

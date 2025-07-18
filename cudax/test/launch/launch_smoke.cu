@@ -121,7 +121,7 @@ struct launch_transform_to_int_convertible
       // CUDAX_CHECK_FALSE(kernel_run_proof);
     }
 
-    // Immovable to ensure that __launch_transform doesn't copy the returned
+    // Immovable to ensure that device_transform doesn't copy the returned
     // object
     int_convertible(int_convertible&&) = delete;
 
@@ -134,14 +134,14 @@ struct launch_transform_to_int_convertible
     }
 
     // This is the value that will be passed to the kernel
-    int kernel_transform() const
+    int transformed_argument() const
     {
       return value_;
     }
   };
 
   [[nodiscard]] friend int_convertible
-  __cudax_launch_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
+  transform_device_argument(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);
   }
@@ -151,7 +151,7 @@ struct launch_transform_to_int_convertible
 template <typename StreamOrPathBuilder>
 void launch_smoke_test(StreamOrPathBuilder& dst)
 {
-  cudax::__ensure_current_device guard(cudax::device_ref{0});
+  cudax::__ensure_current_device guard(cuda::device_ref{0});
   // Use raw stream to make sure it can be implicitly converted on call to launch
   cudaStream_t stream;
 
@@ -282,7 +282,7 @@ C2H_TEST("Launch smoke path builder", "[launch]")
   CUDAX_REQUIRE(g.node_count() == 46);
 
   auto exec = g.instantiate();
-  cudax::stream s{cudax::device_ref{0}};
+  cudax::stream s{cuda::device_ref{0}};
   exec.launch(s);
   s.sync();
 }
@@ -310,7 +310,7 @@ struct kernel_with_default_config
 
 void test_default_config()
 {
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   auto grid  = cudax::grid_dims(4);
   auto block = cudax::block_dims<256>;
 
@@ -408,7 +408,7 @@ struct lambda_wrapper
 C2H_TEST("Host launch", "")
 {
   cuda::atomic<int> atomic = 0;
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   int i = 0;
 
   auto set_lambda = [&](int set) {

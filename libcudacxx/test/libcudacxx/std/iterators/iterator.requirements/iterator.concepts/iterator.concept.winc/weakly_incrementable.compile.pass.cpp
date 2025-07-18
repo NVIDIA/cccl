@@ -34,13 +34,13 @@ struct S
 {};
 static_assert(!cuda::std::weakly_incrementable<int S::*>, "");
 
-#define CHECK_POINTER_TO_MEMBER_FUNCTIONS(qualifier)                                        \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier>, "");              \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier noexcept>, "");     \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&>, "");             \
-  static_assert(!cuda::std::weakly_incrementable < int(S::*)() qualifier & noexcept >, ""); \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&&>, "");            \
-  static_assert(!cuda::std::weakly_incrementable < int(S::*)() qualifier && noexcept >, "");
+#define CHECK_POINTER_TO_MEMBER_FUNCTIONS(qualifier)                                      \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier>, "");            \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier noexcept>, "");   \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&>, "");           \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier & noexcept>, ""); \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&&>, "");          \
+  static_assert(!cuda::std::weakly_incrementable < int (S::*)() qualifier && noexcept >, "");
 
 #define NO_QUALIFIER
 CHECK_POINTER_TO_MEMBER_FUNCTIONS(NO_QUALIFIER);

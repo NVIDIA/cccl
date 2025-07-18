@@ -272,12 +272,12 @@ public:
 
   void unfreeze(task& fake_task, event_list prereqs);
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
     automatic_unfreeze = flag;
 
     // Save for future use when destroying data
-    frozen_fake_task = fake_task;
+    unfreeze_fake_task = unfreeze_fake_task_;
   }
 
   // This needs the full definition of logical_data_untyped so the implementation is deferred
@@ -304,7 +304,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> frozen_fake_task;
+  ::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -1073,9 +1073,9 @@ public:
     pimpl->unfreeze(fake_task, mv(prereqs));
   }
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
-    pimpl->set_automatic_unfreeze(fake_task, flag);
+    pimpl->set_automatic_unfreeze(unfreeze_fake_task_, flag);
   }
 
   /**
@@ -1735,8 +1735,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Freeze data automatically : we assume all dependencies on that
     // frozen data are solved by other means (this is the requirement of
     // the set_automatic_unfreeze API)
-    assert(frozen_fake_task.has_value());
-    unfreeze(frozen_fake_task.value(), event_list());
+    assert(unfreeze_fake_task.has_value());
+    unfreeze(unfreeze_fake_task.value(), event_list());
   }
 
   auto& ctx_st = ctx.get_state();
@@ -2258,12 +2258,15 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 }
 
 // Defined here to avoid circular dependencies
+// (also, don't document this because Doxygen doesn't know `decltype`)
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <class T>
 inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 // Defined here to avoid circular dependencies
 inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) const
@@ -2284,6 +2287,8 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   return instance_id_t::invalid;
 }
 
+// Don't document this because Doxygen doesn't know `decltype`
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename T, typename logical_data_untyped>
 inline decltype(auto) task::get(size_t submitted_index) const
 {
@@ -2298,6 +2303,7 @@ inline decltype(auto) task::get(size_t submitted_index) const
   logical_data_untyped d    = pimpl->deps[reordered_id].get_data();
   return d.template instance<T>(instance_id);
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Represents typed logical data.
@@ -2439,7 +2445,7 @@ public:
   ///@}
 };
 
-// Shortcut type for the logical data produced by ctx.token()
+/// @brief Shortcut type for the logical data produced by ctx.token()
 using token = logical_data<void_interface>;
 
 /**

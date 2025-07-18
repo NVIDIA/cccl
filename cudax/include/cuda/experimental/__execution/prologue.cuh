@@ -30,7 +30,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces around initializer
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
-_CCCL_NV_DIAG_SUPPRESS(cuda_compile)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_compile)
 #endif // _CCCL_CUDA_COMPILER(NVHPC)
 
 // private and protected nested class types cannot be used as tparams to __global__

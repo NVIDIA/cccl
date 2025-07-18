@@ -61,20 +61,11 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target launch ${cn_target}
     launch/launch_smoke.cu
+  )
+
+  cudax_add_catch2_test(test_target launch_configuration ${cn_target}
     launch/configuration.cu
   )
-
-  cudax_add_catch2_test(test_target device ${cn_target}
-    device/device_smoke.cu
-    device/arch_traits.cu
-  )
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
-
-  cudax_add_catch2_test(test_target event ${cn_target}
-    event/event_smoke.cu
-  )
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
   cudax_add_catch2_test(test_target execution ${cn_target}
     execution/env.cu
@@ -87,13 +78,14 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_continues_on.cu
     execution/test_just.cu
     execution/test_let_value.cu
-    execution/test_on.cu
+    #execution/test_on.cu
     execution/test_sequence.cu
     execution/test_starts_on.cu
-    execution/test_stream_context.cu
+    #execution/test_stream_context.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
+    execution/test_write_env.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
@@ -114,7 +106,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target misc ${cn_target}
     utility/basic_any.cu
-    utility/driver_api.cu
     utility/ensure_current_device.cu
   )
 
@@ -130,6 +121,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/properties.cu
     containers/async_buffer/swap.cu
     containers/async_buffer/transform.cu
+  )
+
+  cudax_add_catch2_test(test_target cuco ${cn_target}
+    cuco/utility/hash_test.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}

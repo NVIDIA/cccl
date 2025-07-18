@@ -668,7 +668,7 @@ public:
     return _CCCL_FLOAT128_LITERAL(3.36210314311209350626267781732175260e-4932);
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type min() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type min() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x0001'0000'0000'0000} << 64);
   }
@@ -679,7 +679,7 @@ public:
     return _CCCL_FLOAT128_LITERAL(1.18973149535723176508575932662800702e+4932);
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type max() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type max() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7ffe'ffff'ffff'ffff} << 64 | 0xffff'ffff'ffff'ffff);
   }
@@ -690,7 +690,7 @@ public:
     return -max();
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type lowest() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type lowest() noexcept
   {
     return -max();
   }
@@ -725,7 +725,7 @@ public:
     return _CCCL_BUILTIN_HUGE_VALF128();
   }
 #  else // ^^^ _CCCL_BUILTIN_HUGE_VALF128 ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF128 vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'0000'0000'0000} << 64);
   }
@@ -736,7 +736,7 @@ public:
     return _CCCL_BUILTIN_NANF128("");
   }
 #  else // ^^^ _CCCL_BUILTIN_NANF128 ^^^ // vvv !_CCCL_BUILTIN_NANF128 vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'8000'0000'0000} << 64);
   }
@@ -747,7 +747,7 @@ public:
     return _CCCL_BUILTIN_NANSF128("");
   }
 #  else // ^^^ _CCCL_BUILTIN_NANSF128 ^^^ // vvv !_CCCL_BUILTIN_NANSF128 vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
   }
@@ -758,7 +758,7 @@ public:
     return _CCCL_FLOAT128_LITERAL(6.47517511943802511092443895822764655e-4966);
   }
 #  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _LIBCUDACXX_CONSTEXPR_BIT_CAST type denorm_min() noexcept
+  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type denorm_min() noexcept
   {
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x1});
   }

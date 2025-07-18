@@ -1016,7 +1016,7 @@ public:
   // [containers.sequences.inplace.vector.access], element access
   [[nodiscard]] _CCCL_API constexpr reference at(const size_type __pos)
   {
-    if (__pos > this->size())
+    if (__pos >= this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
@@ -1025,7 +1025,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr const_reference at(const size_type __pos) const
   {
-    if (__pos > this->size())
+    if (__pos >= this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
@@ -1119,12 +1119,12 @@ public:
     return __base::size();
   }
 
-  [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
+  [[nodiscard]] static _CCCL_API constexpr size_type max_size() noexcept
   {
     return _Capacity;
   }
 
-  [[nodiscard]] _CCCL_API constexpr size_type capacity() const noexcept
+  [[nodiscard]] static _CCCL_API constexpr size_type capacity() noexcept
   {
     return _Capacity;
   }
@@ -1912,12 +1912,12 @@ public:
   using __base::empty;
   using __base::size;
 
-  [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
+  [[nodiscard]] static _CCCL_API constexpr size_type max_size() noexcept
   {
     return 0;
   }
 
-  [[nodiscard]] _CCCL_API constexpr size_type capacity() const noexcept
+  [[nodiscard]] static _CCCL_API constexpr size_type capacity() noexcept
   {
     return 0;
   }

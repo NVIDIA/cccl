@@ -53,8 +53,69 @@ _CCCL_CONCEPT __statically_queryable_with = //
     (_CUDA_VSTD::remove_cvref_t<_Env>::query(_Query{})) //
   );
 
-// For senders that adapt other senders, the attribute queries are forwarded. __fwd_env_
-// is a utility that forwards queries to a given environment.
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_;
+
+//! \brief __env_ref_ is a utility that builds a queryable object from a reference
+//! to another queryable object.
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_
+{
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
+    -> __query_result_t<_Env, _Query>
+  {
+    return __env_.query(_Query{});
+  }
+
+  _Env const& __env_;
+};
+
+namespace __detail
+{
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  {
+    return {};
+  }
+
+  _CCCL_TEMPLATE(class _Env, class = _Env*) // not considered if _Env is a reference type
+  _CCCL_REQUIRES((!__is_specialization_of_v<_Env, __fwd_env_>) )
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
+  {
+    return static_cast<_Env&&>(__env);
+  }
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
+  {
+    return __env_ref_<_Env>{__env};
+  }
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __env_ref_<_Env>
+  {
+    return __env;
+  }
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
+    -> __fwd_env_<_Env const&>
+  {
+    return __fwd_env_<_Env const&>{__env.__env_};
+  }
+};
+} // namespace __detail
+
+template <class _Env>
+using __env_ref_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__env_ref_fn, _Env>;
+
+_CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
+
+//! \brief __fwd_env_ is a utility that forwards queries to a given queryable object
+//! provided those queries that satisfy the __forwarding_query concept.
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
 {
@@ -79,6 +140,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
   }
 
   template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
+    -> __fwd_env_<_Env const&>
+  {
+    return __fwd_env_<_Env const&>{__env.__env_};
+  }
+
+  template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
     -> decltype(auto)
   {
@@ -100,6 +168,8 @@ using __fwd_env_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 
+//! \brief __sch_env_t is a utility that builds a queryable object from a scheduler. It
+//! defines the `get_scheduler` query and provides a default for the `get_domain` query.
 template <class _Sch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 {
@@ -110,7 +180,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 
   [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
   {
-    return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
+    return __query_result_or_t<_Sch, get_domain_t, default_domain>{};
   }
 
   _Sch __sch_;
@@ -129,7 +199,7 @@ private:
   using __stream_ref = stream_ref;
 
   __resource __mr_;
-  __stream_ref __stream_                    = __detail::__invalid_stream;
+  __stream_ref __stream_                    = ::cuda::__detail::__invalid_stream;
   execution::any_execution_policy __policy_ = {};
 
 public:
@@ -138,7 +208,7 @@ public:
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
   _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
-                            __stream_ref __stream                    = __detail::__invalid_stream,
+                            __stream_ref __stream                    = ::cuda::__detail::__invalid_stream,
                             execution::any_execution_policy __policy = {}) noexcept
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
