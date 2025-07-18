@@ -39,7 +39,7 @@ __host__ __device__ void test_edges()
   for (unsigned i = 0; i < N; ++i)
   {
     cuda::std::complex<T> r = log10(testcases[i]);
-    const T log10_e         = T(0.434294481903251827651128918916605082294397);
+    const T log10_e         = cuda::std::__numbers<T>::__log10e();
     cuda::std::complex<T> z = log(testcases[i]) * log10_e;
 
     // The __half or __nv_float16 functions use fp32, we need to account for this
