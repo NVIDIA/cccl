@@ -23,9 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
@@ -47,7 +47,7 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
-      : stream_ref(__detail::__invalid_stream)
+      : stream_ref(::cuda::__detail::__invalid_stream)
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
@@ -60,7 +60,7 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails
   explicit stream(::cuda::experimental::logical_device __dev, int __priority = default_priority)
-      : stream_ref(__detail::__invalid_stream)
+      : stream_ref(::cuda::__detail::__invalid_stream)
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
@@ -72,7 +72,7 @@ struct stream : stream_ref
   //! @post `stream()` returns an invalid stream handle
   // Can't be constexpr because __invalid_stream isn't
   explicit stream(no_init_t) noexcept
-      : stream_ref(__detail::__invalid_stream)
+      : stream_ref(::cuda::__detail::__invalid_stream)
   {}
 
   //! @brief Move-construct a new `stream` object
@@ -81,7 +81,7 @@ struct stream : stream_ref
   //!
   //! @post `__other` is in moved-from state.
   stream(stream&& __other) noexcept
-      : stream(_CUDA_VSTD::exchange(__other.__stream, __detail::__invalid_stream))
+      : stream(_CUDA_VSTD::exchange(__other.__stream, ::cuda::__detail::__invalid_stream))
   {}
 
   stream(const stream&) = delete;
@@ -91,11 +91,11 @@ struct stream : stream_ref
   //! @note If the stream fails to be destroyed, the error is silently ignored.
   ~stream()
   {
-    if (__stream != __detail::__invalid_stream)
+    if (__stream != ::cuda::__detail::__invalid_stream)
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = __detail::driver::streamDestroy(__stream);
+      [[maybe_unused]] auto status = _CUDA_DRIVER::__streamDestroyNoThrow(__stream);
     }
   }
 
@@ -138,7 +138,7 @@ struct stream : stream_ref
   //! @post The stream object is in a moved-from state.
   [[nodiscard]] ::cudaStream_t release()
   {
-    return _CUDA_VSTD::exchange(__stream, __detail::__invalid_stream);
+    return _CUDA_VSTD::exchange(__stream, ::cuda::__detail::__invalid_stream);
   }
 
   //! @brief Returns a \c execution::scheduler that enqueues work on this stream.

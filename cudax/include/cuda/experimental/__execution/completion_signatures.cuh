@@ -620,7 +620,7 @@ template <bool _PotentiallyThrowing>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // invalid_completion_signature
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
 
 template <class... _What, class... _Values>
 [[noreturn, nodiscard]] _CCCL_API consteval auto invalid_completion_signature(_Values... __values)

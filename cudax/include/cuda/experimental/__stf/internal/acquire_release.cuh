@@ -201,7 +201,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   if (dot.is_tracing())
   {
     // Declare that the node identified by unique_id depends on these prereqs
-    result.dot_declare_prereqs(dot, get_unique_id(), 1);
+    result.dot_declare_prereqs(dot, get_unique_id(), reserved::edge_type::prereqs);
   }
 
   // We consider the setup phase is over
@@ -290,7 +290,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   {
     // These prereqs depend on the task identified by unique_id
     auto& done_prereqs_ = get_done_prereqs();
-    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), 1);
+    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), reserved::edge_type::prereqs);
   }
 
   // This task becomes a new "leaf task" until another task depends on it
