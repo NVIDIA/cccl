@@ -34,7 +34,7 @@ __host__ __device__ constexpr void test()
     static_assert(noexcept(iter[0]));
     static_assert(noexcept(static_cast<int>(iter[0])) == !cuda::std::is_same_v<InputFn, TimesTwoMayThrow>);
     static_assert(noexcept(iter[0] = 2) == !cuda::std::is_same_v<OutputFn, PlusOneMayThrow>);
-    static_assert(!cuda::std::is_same_v<decltype(iter[0]), int>);
+    static_assert(!cuda::std::is_same_v<decltype(iter[0]), int&>);
     static_assert(cuda::std::is_convertible_v<decltype(iter[0]), int>);
   }
 
@@ -46,7 +46,7 @@ __host__ __device__ constexpr void test()
     static_assert(noexcept(iter[0]));
     static_assert(noexcept(static_cast<int>(iter[0])) == !cuda::std::is_same_v<InputFn, TimesTwoMayThrow>);
     static_assert(noexcept(iter[0] = 2) == !cuda::std::is_same_v<OutputFn, PlusOneMayThrow>);
-    static_assert(!cuda::std::is_same_v<decltype(iter[0]), int>);
+    static_assert(!cuda::std::is_same_v<decltype(iter[0]), int&>);
     static_assert(cuda::std::is_convertible_v<decltype(iter[0]), int>);
   }
 }
