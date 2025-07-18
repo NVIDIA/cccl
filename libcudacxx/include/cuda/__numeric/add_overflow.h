@@ -190,9 +190,9 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
   using _CUDA_VSTD::is_same_v;
   using _CUDA_VSTD::is_signed_v;
   using _CUDA_VSTD::is_unsigned_v;
-  using _CommonAll            = _CUDA_VSTD::common_type_t<_Common, _ActualResult>;
-  const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
-  const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
+  using _CommonAll                             = _CUDA_VSTD::common_type_t<_Common, _ActualResult>;
+  [[maybe_unused]] const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
+  [[maybe_unused]] const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
   // * int + int -> int
   if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActualResult>) // all signed
   {
