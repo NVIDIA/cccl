@@ -71,7 +71,7 @@ template <typename Config>
 // PTX Redux SM100
 // TODO enable for 100f+ with __cccl_ptx_isa >= 880
 
-extern "C" _CCCL_DEVICE float redux_min_max_sync_is_only_supported_on_sm100a();
+extern "C" _CCCL_DEVICE float redux_min_max_sync_is_only_supported_on_sm100af_and_above();
 
 template <typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T redux_sm100a(ReductionOp, T value, Config config)
@@ -82,7 +82,7 @@ template <typename T, typename ReductionOp, typename Config>
   const auto mask = cub::detail::redux_lane_mask(config);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (return cub::detail::redux_sm100af_ptx(ReductionOp{}, value, mask);),
-               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))
+               (return cub::detail::redux_min_max_sync_is_only_supported_on_sm100af_and_above();))
 #else
   static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
 #endif // __cccl_ptx_isa >= 860

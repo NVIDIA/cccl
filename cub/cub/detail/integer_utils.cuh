@@ -29,7 +29,7 @@ namespace detail
 {
 
 template <typename Input>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto split_integers(Input input)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
 {
   using namespace _CUDA_VSTD;
   static_assert(__cccl_is_integer_v<Input>);
@@ -54,6 +54,23 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integers(Input inputA, Input inputB)
   return static_cast<output_t>((static_cast<unsigned_X2_t>(inputA) << num_bits) | static_cast<unsigned_t>(inputB));
 }
 
+// When it is not possible to use native functionalities to compare floating-point values, we can convert them to
+// an integer representation that preserves the order.
+template <typename MinMaxOp, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(MinMaxOp, T value)
+{
+  using namespace _CUDA_VSTD;
+  static_assert(::cuda::is_floating_point_v<T>);
+  static_assert(is_cuda_minimum_maximum_v<MinMaxOp, T>);
+  using signed_t        = __make_nbit_int_t<__num_bits_v<T>, true>;
+  constexpr auto lowest = numeric_limits<signed_t>::lowest();
+  constexpr auto is_max = is_cuda_maximum_v<MinMaxOp, T>;
+  const auto nan        = is_max ? static_cast<T>(-numeric_limits<T>::quiet_NaN()) : numeric_limits<T>::quiet_NaN();
+  auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
+  auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
+  return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
+}
+
 template <typename FloatingPointType, typename IntegerType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(IntegerType value)
 {
@@ -61,21 +78,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(IntegerType
   constexpr auto lowest = _CUDA_VSTD::numeric_limits<IntegerType>::lowest();
   auto value1           = static_cast<IntegerType>(value < 0 ? lowest - value : value);
   return cub::detail::unsafe_bitcast<FloatingPointType>(value1);
-}
-
-template <typename ReductionOp, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(ReductionOp, T value)
-{
-  using namespace _CUDA_VSTD;
-  static_assert(::cuda::is_floating_point_v<T>);
-  static_assert(is_cuda_minimum_maximum_v<ReductionOp, T>);
-  using signed_t        = __make_nbit_int_t<__num_bits_v<T>, true>;
-  constexpr auto lowest = numeric_limits<signed_t>::lowest();
-  constexpr auto is_max = is_cuda_maximum_v<ReductionOp, T>;
-  const auto nan        = is_max ? static_cast<T>(-numeric_limits<T>::quiet_NaN()) : numeric_limits<T>::quiet_NaN();
-  auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
-  auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
-  return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
 }
 
 } // namespace detail

@@ -140,9 +140,9 @@ _CCCL_REQUIRES(is_cuda_std_bitwise_v<ReductionOp, T>)
 warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
 {
   using cub::detail::merge_integers;
-  using cub::detail::split_integers;
+  using cub::detail::split_integer;
   using cub::detail::warp_reduce_dispatch;
-  auto [high, low]    = split_integers(input);
+  auto [high, low]    = split_integer(input);
   auto high_reduction = warp_reduce_dispatch(high, reduction_op, warp_config);
   auto low_reduction  = warp_reduce_dispatch(low, reduction_op, warp_config);
   return merge_integers(high_reduction, low_reduction);
@@ -155,11 +155,11 @@ warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
 {
   using namespace _CUDA_VSTD;
   using cub::detail::merge_integers;
-  using cub::detail::split_integers;
+  using cub::detail::split_integer;
   using cub::detail::warp_reduce_dispatch;
   constexpr auto half_bits   = __num_bits_v<T> / 2;
   using half_size_unsigned_t = __make_nbit_uint_t<half_bits>;
-  auto [high, low]           = split_integers(input);
+  auto [high, low]           = split_integer(input);
   auto high_result           = warp_reduce_dispatch(high, reduction_op, warp_config);
   if (is_unsigned_v<T> || high_result >= 0) // -> perform the computation as unsigned
   {
@@ -183,11 +183,11 @@ template <typename T, typename Config>
 {
   using namespace _CUDA_VSTD;
   using detail::merge_integers;
-  using detail::split_integers;
+  using detail::split_integer;
   using detail::warp_reduce_dispatch;
   using unsigned_t         = make_unsigned_t<T>;
   constexpr auto half_bits = __num_bits_v<T> / 2;
-  auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
+  auto [high, low]         = split_integer(static_cast<unsigned_t>(input));
   auto high_reduction      = warp_reduce_dispatch(high, _CUDA_VSTD::plus<>{}, warp_config);
   auto low_reduction       = warp_reduce_dispatch(low, _CUDA_VSTD::plus<>{}, warp_config);
   // handle overflow in the top 5 bits of 'low'

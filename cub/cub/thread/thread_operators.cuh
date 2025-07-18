@@ -559,55 +559,13 @@ inline constexpr bool is_simd_enabled_cuda_operator =
 //----------------------------------------------------------------------------------------------------------------------
 // Generalize Operator
 
-template <typename Op>
+template <typename Operator>
 struct GeneralizeOperator
 {
-  using type = Op;
+  using type = Operator;
 };
 
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::plus<T>>
-{
-  using type = _CUDA_VSTD::plus<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::bit_and<T>>
-{
-  using type = _CUDA_VSTD::bit_and<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::bit_or<T>>
-{
-  using type = _CUDA_VSTD::bit_or<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::bit_xor<T>>
-{
-  using type = _CUDA_VSTD::bit_xor<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<::cuda::maximum<T>>
-{
-  using type = ::cuda::maximum<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<::cuda::minimum<T>>
-{
-  using type = ::cuda::minimum<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::logical_and<T>>
-{
-  using type = _CUDA_VSTD::logical_and<>;
-};
-
-template <template <typename> typename Operator, typename T>
+template <template <typename = void> class Operator, typename T>
 struct GeneralizeOperator<Operator<T>>
 {
   using type = Operator<>;
