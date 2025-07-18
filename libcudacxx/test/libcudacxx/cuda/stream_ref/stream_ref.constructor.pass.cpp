@@ -26,12 +26,6 @@ static_assert(has_value_type<cuda::stream_ref>, "");
 
 __host__ __device__ void test()
 {
-  { // default construction
-    cuda::stream_ref ref;
-    static_assert(noexcept(cuda::stream_ref{}), "");
-    assert(ref.get() == reinterpret_cast<cudaStream_t>(0));
-  }
-
   { // from stream
     cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
     cuda::stream_ref ref{stream};

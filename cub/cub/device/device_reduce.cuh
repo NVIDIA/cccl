@@ -480,7 +480,8 @@ public:
                                    default_determinism_t>;
 
       // Query relevant properties from the environment
-      auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+      auto stream =
+        _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{static_cast<cudaStream_t>(0)});
       auto mr = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
       void* d_temp_storage      = nullptr;
@@ -593,7 +594,7 @@ public:
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{static_cast<cudaStream_t>(0)});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
