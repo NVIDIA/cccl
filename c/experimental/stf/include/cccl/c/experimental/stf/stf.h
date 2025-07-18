@@ -3,10 +3,10 @@
 extern "C" {
 #endif
 
-typedef struct stf_ctx_handle stf_ctx_handle;
+typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
 void stf_ctx_create(stf_ctx_handle* handle);
-void stf_ctx_finalize(stf_ctx_handle* handle);
+void stf_ctx_finalize(stf_ctx_handle handle);
 
 struct stf_task_handle
 {

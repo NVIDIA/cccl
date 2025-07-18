@@ -6,21 +6,20 @@ using namespace cuda::experimental::stf;
 
 extern "C" {
 
-struct stf_ctx_handle
+struct stf_ctx_handle_t
 {
-  context* ctx;
+  context ctx;
 };
 
 void stf_ctx_create(stf_ctx_handle* handle)
 {
-  handle->ctx = new context{};
+  if (handle) {
+    *handle = new stf_ctx_handle_t{context{}};
+  }
 }
 
-void stf_ctx_finalize(stf_ctx_handle* handle)
+void stf_ctx_finalize(stf_ctx_handle handle)
 {
-  if (handle)
-  {
-    handle->ctx->finalize();
-  }
+  delete handle;
 }
 }
