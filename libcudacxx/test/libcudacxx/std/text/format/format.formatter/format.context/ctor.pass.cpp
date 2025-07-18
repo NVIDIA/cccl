@@ -25,7 +25,7 @@ template <class Expected>
 struct Visitor
 {
   template <class T>
-  [[nodiscard]] __host__ __device__ bool operator()(T v) const
+  [[nodiscard]] __host__ __device__ bool operator()([[maybe_unused]] T v) const
   {
     if constexpr (cuda::std::is_same_v<T, Expected>)
     {

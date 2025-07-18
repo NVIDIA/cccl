@@ -28,7 +28,7 @@ template <class Context, class To>
 struct Visitor
 {
   template <class T>
-  __host__ __device__ To operator()(T v) const
+  __host__ __device__ To operator()([[maybe_unused]] T v) const
   {
     constexpr auto fmt_arg =
       (cuda::std::is_same_v<To, HandleTag>)
@@ -68,7 +68,7 @@ __host__ __device__ void test_visit_format_arg(From value)
   assert(args.__size() == 1);
   assert(args.get(0));
 
-  auto result = cuda::std::visit_format_arg(Visitor<Context, To>{}, args.get(0));
+  [[maybe_unused]] auto result = cuda::std::visit_format_arg(Visitor<Context, To>{}, args.get(0));
 
   if constexpr (fmt_arg == cuda::std::__fmt_arg_t::__string_view)
   {
