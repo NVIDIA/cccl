@@ -155,8 +155,7 @@ class WarpReduce
   static constexpr auto logical_warp_size = detail::logical_warp_size_t<LogicalWarpThreads>{};
 
 public:
-  struct TempStorage : Uninitialized<NullType>
-  {};
+  using TempStorage = NullType; // no smem needed
 
   //! @name Collective constructors
   //! @{
