@@ -281,6 +281,18 @@ struct policy_hub
 
 namespace rfa
 {
+
+template <class AccumT>
+struct sm90_tuning;
+
+template <>
+struct sm90_tuning<float>
+{
+  // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
+  static constexpr int items   = 13;
+  static constexpr int threads = 224;
+};
+
 /**
  * @tparam AccumT
  *   Accumulator data type
@@ -340,7 +352,27 @@ struct policy_hub
     using SingleTilePolicy = ReducePolicy;
   };
 
-  using MaxPolicy = Policy600;
+  /// SM90
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy600>
+  {
+    static constexpr int items_per_vec_load = 4;
+
+    // Use values from tuning if a specialization exists, otherwise pick Policy600
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
+
+    // use Policy600 as DefaultPolicy
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
+
+    using ReducePolicy = decltype(select_agent_policy<sm90_tuning<AccumT>>(0));
+
+    // SingleTilePolicy
+    using SingleTilePolicy = ReducePolicy;
+  };
+
+  using MaxPolicy = Policy900;
 };
 } // namespace rfa
 
