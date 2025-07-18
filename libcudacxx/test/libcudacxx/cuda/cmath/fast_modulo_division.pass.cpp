@@ -27,10 +27,11 @@ __host__ __device__ void test_power_of_2(value_t value)
     assert(value / div_op{i} == value / i);
   }
   assert(value / div_op{range} == value / range);
+  assert(value_t{0} / div_op{range} == value_t{0} / range);
   assert(value / div_op{max_divisor} == value / max_divisor);
-  assert((max_value / div_op(value)) == (common_t) (max_value / value));
   assert(max_divisor / div_op{max_divisor} == 1);
   assert(max_value / div_op(max_value) == 1);
+  assert((max_value / div_op(value)) == (common_t) (max_value / value));
 }
 
 template <typename value_t, typename divisor_t>
@@ -46,14 +47,15 @@ __host__ __device__ void test_sequence(value_t value)
 }
 
 template <typename value_t, typename divisor_t, typename gen_t>
-__host__ __device__ void test_random(value_t value, gen_t&& gen)
+__host__ __device__ void test_random(value_t value, gen_t& gen)
 {
+  cuda::std::uniform_int_distribution<divisor_t> distrib_div;
   constexpr auto max_value  = cuda::std::numeric_limits<divisor_t>::max();
   constexpr divisor_t range = max_value < 10000 ? max_value : 10000;
   using div_op              = cuda::fast_mod_div<divisor_t>;
   for (divisor_t i = 1; i < range; i++)
   {
-    auto divisor = gen();
+    auto divisor = gen(distrib_div);
     assert(value / div_op{divisor} == value / divisor);
   }
 }
@@ -64,19 +66,15 @@ __host__ __device__ void test()
   auto seed = cuda::std::chrono::system_clock::now().time_since_epoch().count();
   printf("%s: seed: %lld\n", (_CCCL_BUILTIN_PRETTY_FUNCTION()), (long long int) seed);
   cuda::std::uniform_int_distribution<value_t> distrib;
-  cuda::std::uniform_int_distribution<divisor_t> distrib_div;
   cuda::std::minstd_rand0 rng(static_cast<uint32_t>(seed));
-  value_t value = distrib(rng);
+  auto positive_distr = [&](auto& local_distrib) {
+    auto value = local_distrib(rng);
+    return cuda::std::max(divisor_t{1}, static_cast<divisor_t>(cuda::uabs(value)));
+  };
+  value_t value = positive_distr(distrib);
   test_power_of_2<value_t, divisor_t>(value);
   test_sequence<value_t, divisor_t>(value);
-  test_random<value_t, divisor_t>(value, [&]() {
-    auto divisor = distrib_div(rng);
-    if (divisor == cuda::std::numeric_limits<divisor_t>::min())
-    {
-      return divisor_t{1};
-    }
-    return cuda::std::max(divisor_t{1}, static_cast<divisor_t>(cuda::uabs(divisor)));
-  });
+  test_random<value_t, divisor_t>(value, positive_distr);
 }
 
 __host__ __device__ void test_cpp_semantic()
