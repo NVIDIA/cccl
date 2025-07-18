@@ -83,7 +83,7 @@ public:
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
-  size_t size() const
+  static _CCCL_HOST_DEVICE size_t size()
   {
     return sizeof(T);
   }

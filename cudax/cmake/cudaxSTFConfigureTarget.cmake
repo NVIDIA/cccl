@@ -10,6 +10,7 @@ function(cudax_stf_configure_target target_name)
     CUDA::cudart
     CUDA::curand
     CUDA::cuda_driver
+    CUDA::nvrtc
   )
 
   if (cudax_ENABLE_CUDASTF_CODE_GENERATION)

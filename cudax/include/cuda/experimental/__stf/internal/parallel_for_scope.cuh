@@ -54,7 +54,7 @@ namespace reserved
  * @param p The additional parameters to pass to the function `f`.
  */
 template <typename F, typename shape_t, typename tuple_args>
-__global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
+__global__ void loop(shape_t shape, F f, tuple_args targs)
 {
   size_t i          = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t step = blockDim.x * gridDim.x;
@@ -69,9 +69,10 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
       f(coords..., data...);
     };
     // For every linearized index in the shape
+    const int n = static_cast<int>(shape.size());
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      ::cuda::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
   ::std::apply(explode_args, mv(targs));
@@ -311,7 +312,7 @@ __global__ void loop_redux(
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      ::cuda::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
 
@@ -831,6 +832,13 @@ public:
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
 
+    // If there is no item in that shape, no need to launch a kernel !
+    if (sub_shape.size() == 0)
+    {
+      // fprintf(stderr, "Empty shape, no kernel ...\n");
+      return;
+    }
+
     if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
@@ -849,17 +857,9 @@ public:
     }();
 
     const auto [block_size, min_blocks] = conf;
-    size_t n                            = sub_shape.size();
-
-    // If there is no item in that shape, no need to launch a kernel !
-    if (n == 0)
-    {
-      // fprintf(stderr, "Empty shape, no kernel ...\n");
-      return;
-    }
 
     // max_blocks is computed so we have one thread per element processed
-    const auto max_blocks = (n + block_size - 1) / block_size;
+    const auto max_blocks = (sub_shape.size() + block_size - 1) / block_size;
 
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
@@ -874,8 +874,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
-        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
-          static_cast<int>(n), sub_shape, mv(f), arg_instances);
+        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
@@ -889,7 +888,7 @@ public:
 
       // It is ok to use reference to local variables because the arguments
       // will be used directly when calling cudaGraphAddKernelNode
-      void* kernelArgs[]         = {&n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances};
+      void* kernelArgs[]         = {const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances};
       kernel_params.kernelParams = kernelArgs;
       kernel_params.extra        = nullptr;
 
@@ -951,7 +950,7 @@ public:
         auto h = [&](auto... coords) {
           f(coords..., data...);
         };
-        ::std::apply(h, shape.index_to_coords(i));
+        ::cuda::std::apply(h, shape.index_to_coords(i));
       };
 
       // Finally we get to do the workload on every 1D item of the shape
