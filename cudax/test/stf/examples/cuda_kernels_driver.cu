@@ -52,39 +52,47 @@ int main()
     Y[i] = Y0(i);
   }
 
+  // Number of times we have applied the axpy kernel
+  int num_axpy = 0;
+
   double alpha = 3.14;
 
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
   CUfunction axpy_fun;
-  cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, (void *)axpy));
+  cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, (void*) axpy));
 
   // TODO ifdef
   CUkernel axpy_kernel;
-  cuda_safe_call(cudaGetKernel(&axpy_kernel, (void *)axpy));
+  cuda_safe_call(cudaGetKernel(&axpy_kernel, (void*) axpy));
 
   // runtime global kernel
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     // axpy<<<16, 128, 0, ...>>>(alpha, dX, dY)
     return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
   };
+  num_axpy++;
 
   // CUfunction driver API
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     return cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY};
   };
+  num_axpy++;
 
+#if CUDA_VERSION >= 12000
   // CUkernel driver API
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     return cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY};
   };
+  num_axpy++;
+#endif
 
   ctx.finalize();
 
   for (size_t i = 0; i < N; i++)
   {
-    assert(fabs(Y[i] - (Y0(i) + 3.0*alpha * X0(i))) < 0.0001);
+    assert(fabs(Y[i] - (Y0(i) + num_axpy * alpha * X0(i))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
 }
