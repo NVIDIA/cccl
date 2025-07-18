@@ -8,15 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-// CONSTEXPR_STEPS: 20000000
-
 #include <cuda/std/__charconv_>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/utility>
 
 #include "test_macros.h"
 
@@ -1286,7 +1284,7 @@ __host__ __device__ constexpr void test_overflow()
 }
 
 template <int Base>
-__host__ __device__ constexpr void test_base()
+__host__ __device__ constexpr bool test_base()
 {
   constexpr auto items = get_test_items<Base>();
 
@@ -1302,24 +1300,27 @@ __host__ __device__ constexpr void test_base()
     test_overflow<cuda::std::int64_t>();
     test_overflow<cuda::std::uint64_t>();
   }
-}
-
-template <int... Base>
-__host__ __device__ constexpr void test_helper(cuda::std::integer_sequence<int, Base...>)
-{
-  (test_base<Base + first_base>(), ...);
-}
-
-__host__ __device__ constexpr bool test()
-{
-  test_helper(cuda::std::make_integer_sequence<int, last_base - first_base + 1>{});
 
   return true;
+}
+
+struct TestBaseInvoker
+{
+  template <int Base>
+  __host__ __device__ constexpr void operator()(cuda::std::integral_constant<int, Base>) const
+  {
+    test_base<Base>();
+    static_assert(test_base<Base>());
+  }
+};
+
+__host__ __device__ constexpr void test()
+{
+  cuda::static_for<int, first_base, last_base + 1>(TestBaseInvoker{});
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test());
   return 0;
 }
