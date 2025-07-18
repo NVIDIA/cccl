@@ -509,7 +509,7 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScamInclusive Container Tests", "[scan][thread]")
+C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
 {
   c2h::device_vector<int> d_in(max_size);
   c2h::device_vector<int> d_out(max_size);
@@ -621,7 +621,7 @@ struct merge_segments_op
   bool* error_flag_ptr_;
 };
 
-C2H_TEST("ThreadScamInclusive Invalid Test", "[scan][thread]")
+C2H_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]")
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},
