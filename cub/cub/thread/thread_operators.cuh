@@ -607,10 +607,10 @@ struct GeneralizeOperator<_CUDA_VSTD::logical_and<T>>
   using type = _CUDA_VSTD::logical_and<>;
 };
 
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::logical_or<T>>
+template <template <typename> typename Operator, typename T>
+struct GeneralizeOperator<Operator<T>>
 {
-  using type = _CUDA_VSTD::logical_or<>;
+  using type = Operator<>;
 };
 
 template <typename Op>
