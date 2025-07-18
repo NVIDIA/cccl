@@ -67,7 +67,6 @@ int main()
   };
   num_axpy++;
 
-
   // CUfunction driver API
   CUfunction axpy_fun;
   cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, (void*) axpy));
