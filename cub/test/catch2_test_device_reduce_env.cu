@@ -317,14 +317,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
                           allowed_kernels(kernels), // allowed kernels for the given determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
-  {
-    device_reduce(d_in, thrust::raw_pointer_cast(d_out.data()), num_items, op_t{}, init, env);
-  }
-  else
-  {
-    device_reduce(d_in, d_out.begin(), num_items, op_t{}, init, env);
-  }
+  device_reduce(d_in, d_out.begin(), num_items, op_t{}, init, env);
 
   REQUIRE(d_out[0] == num_items);
 }
@@ -454,14 +447,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
                           allowed_kernels(kernels), // allowed kernels for the given determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
-  {
-    device_reduce_sum(d_in, thrust::raw_pointer_cast(d_out.data()), num_items, env);
-  }
-  else
-  {
-    device_reduce_sum(d_in, d_out.begin(), num_items, env);
-  }
+  device_reduce_sum(d_in, d_out.begin(), num_items, env);
 
   REQUIRE(d_out[0] == num_items);
 }

@@ -254,7 +254,7 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
-    using output_t = detail::it_value_t<OutputIteratorT>*;
+    using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
 
     using transform_t     = ::cuda::std::identity;
     using reduce_tuning_t = ::cuda::std::execution::
@@ -264,7 +264,14 @@ private:
       DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
 
     return dispatch_t::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), reduction_op, init, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+      static_cast<offset_t>(num_items),
+      reduction_op,
+      init,
+      stream);
   }
 
 public:
@@ -510,7 +517,8 @@ public:
         ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
 
       constexpr auto is_not_pointer_fallback =
-        not_guaranteed_determinism && !::cuda::std::is_pointer_v<OutputIteratorT>;
+        not_guaranteed_determinism
+        && !::cuda::std::is_pointer_v<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>>;
       constexpr auto is_not_plus_fallback = not_guaranteed_determinism && !detail::is_cuda_std_plus_v<ReductionOpT>;
 
       using determinism_t = ::cuda::std::conditional_t<
@@ -635,7 +643,8 @@ public:
     constexpr auto not_guaranteed_determinism =
       ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
 
-    constexpr auto is_not_pointer_fallback = !::cuda::std::is_pointer_v<OutputIteratorT>;
+    constexpr auto is_not_pointer_fallback =
+      !::cuda::std::is_pointer_v<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>>;
 
     using determinism_t =
       ::cuda::std::conditional_t<not_guaranteed_determinism && is_not_pointer_fallback,
