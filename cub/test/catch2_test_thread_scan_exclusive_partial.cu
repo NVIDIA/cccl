@@ -225,12 +225,12 @@ struct dist_interval<T, cuda::std::multiplies<>, ::cuda::std::enable_if_t<::cuda
   static constexpr T min()
   {
     const double log2_abs_min = ::cuda::std::log2(::cuda::std::fabs(::cuda::std::numeric_limits<T>::min()));
-    return -::cuda::std::exp2(log2_abs_min / max_size);
+    return static_cast<T>(-::cuda::std::exp2(log2_abs_min / max_size));
   }
   static constexpr T max()
   {
     const double log2_max = ::cuda::std::log2(::cuda::std::numeric_limits<T>::max());
-    return ::cuda::std::exp2(log2_max / max_size);
+    return static_cast<T>(::cuda::std::exp2(log2_max / max_size));
   }
 };
 
