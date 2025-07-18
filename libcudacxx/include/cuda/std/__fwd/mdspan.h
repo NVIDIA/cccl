@@ -34,6 +34,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// [mdspan.accessor.default]
+template <class _ElementType>
+struct default_accessor;
+
 // Layout policy with a mapping which corresponds to Fortran-style array layouts
 struct layout_left
 {
@@ -65,6 +69,19 @@ template <class _Layout, class _Extents>
 inline constexpr bool
   __is_valid_layout_mapping<_Layout, _Extents, void_t<typename _Layout::template mapping<_Extents>>> = true;
 } // namespace __mdspan_detail
+
+// [mdspan.mdspan]
+template <class _ElementType,
+          class _Extents,
+          class _LayoutPolicy   = layout_right,
+          class _AccessorPolicy = default_accessor<_ElementType>>
+class mdspan;
+
+template <class _Tp>
+inline constexpr bool __is_std_mdspan_v = false;
+
+template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
+inline constexpr bool __is_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
