@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_FORMAT
-#define _CUDA_STD_FORMAT
+#ifndef _LIBCUDACXX___FWD_ITERATOR_H
+#define _LIBCUDACXX___FWD_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,15 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__format/buffer.h>
-#include <cuda/std/__format/concepts.h>
-#include <cuda/std/__format/format_arg.h>
-#include <cuda/std/__format/format_arg_store.h>
-#include <cuda/std/__format/format_args.h>
-#include <cuda/std/__format/format_context.h>
-#include <cuda/std/__format/format_error.h>
-#include <cuda/std/__format/format_parse_context.h>
-#include <cuda/std/__format/formatter.h>
-#include <cuda/std/version>
+#include <cuda/std/__cccl/prologue.h>
 
-#endif // _CUDA_STD_FORMAT
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <class _Container>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __back_insert_iterator;
+
+#if _CCCL_HAS_CONCEPTS()
+template <class>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS()
+template <class, class = void>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _LIBCUDACXX___FWD_ITERATOR_H
