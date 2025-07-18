@@ -34,11 +34,7 @@ target_link_libraries(cccl.c.experimental.stf PRIVATE
   CUDA::nvrtc
   CUDA::nvJitLink
   CUDA::cuda_driver
-  cccl.compiler_interface_cpp20
-  cccl.c.parallel.jit_template
-  CUB::CUB
-  Thrust::Thrust
-  nlohmann_json::nlohmann_json
+  CCCL::cudax
 )
 # target_compile_definitions(cccl.c.experimental.stf PUBLIC CCCL_C_EXPERIMENTAL=1)
 # target_compile_definitions(cccl.c.experimental.stf PRIVATE
@@ -46,6 +42,8 @@ target_link_libraries(cccl.c.experimental.stf PRIVATE
 #   CUB_DISABLE_CDP=1
 #   CUB_DEFINE_RUNTIME_POLICIES
 # )
+
+target_compile_options(cccl.c.experimental.stf PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
 target_compile_options(cccl.c.experimental.stf PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
 target_include_directories(cccl.c.experimental.stf PUBLIC "include")

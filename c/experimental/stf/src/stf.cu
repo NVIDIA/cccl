@@ -13,14 +13,14 @@ struct stf_ctx_handle
 
 void stf_ctx_create(stf_ctx_handle* handle)
 {
-  return new context{};
+  handle->ctx = new context{};
 }
 
 void stf_ctx_finalize(stf_ctx_handle* handle)
 {
   if (handle)
   {
-    handle->finalize();
+    handle->ctx->finalize();
   }
 }
 }
