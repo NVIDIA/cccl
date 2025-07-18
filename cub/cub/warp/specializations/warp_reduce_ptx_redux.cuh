@@ -70,7 +70,7 @@ template <typename Config>
 //----------------------------------------------------------------------------------------------------------------------
 // PTX Redux SM100
 
-extern "C" _CCCL_DEVICE float redux_min_max_sync_is_not_supported_before_sm100a();
+extern "C" _CCCL_DEVICE float redux_min_max_sync_is_only_supported_on_sm100a();
 
 template <typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T redux_sm100a(ReductionOp, T value, Config config)
