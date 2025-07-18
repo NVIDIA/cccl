@@ -71,8 +71,8 @@ static __global__ void test_float_kernel(Operation op, const T* input, int num_i
 C2H_TEST("Split/Merge Integers", "[Split/Merge][Random]", integral_types)
 {
   using T        = c2h::get<0, TestType>;
-  auto num_items = 1 << 16;
-  c2h::device_vector<T> d_in(1 << 16);
+  const auto num_items = 1 << 16;
+  c2h::device_vector<T> d_in(num_items ); 
   c2h::gen(C2H_SEED(1), d_in);
   test_int_kernel<<<cuda::ceil_div(num_items, 256), 256>>>(thrust::raw_pointer_cast(d_in.data()), num_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
