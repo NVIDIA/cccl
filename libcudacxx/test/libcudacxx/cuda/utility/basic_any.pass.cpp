@@ -16,7 +16,9 @@
 
 #include "test_macros.h"
 
-#undef interface
+#if _CCCL_HOST_COMPILATION()
+
+#  undef interface
 
 using immovable = cuda::__immovable;
 
@@ -600,3 +602,12 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_basic_any<SmallType>(); test_basic_any<LargeType>();))
   return 0;
 }
+
+#else // ^^^ _CCCL_HOST_COMPILATION() // vvv !_CCCL_HOST_COMPILATION()
+
+int main(int, char**)
+{
+  return 0; // No tests for device compilation
+}
+
+#endif // _CCCL_HOST_COMPILATION()

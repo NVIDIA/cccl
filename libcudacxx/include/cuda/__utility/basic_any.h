@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#if _CCCL_HOST_COMPILATION()
+
 //! @file basic_any.h
 //!
 //! @brief This file provides the implementation of the `basic_any` class
@@ -485,23 +487,25 @@
 //! constructor, a pointer to that vtable is saved in its `__vptr_` member.
 
 // IWYU pragma: begin_exports
-#include <cuda/__utility/__basic_any/any_cast.h>
-#include <cuda/__utility/__basic_any/basic_any_from.h>
-#include <cuda/__utility/__basic_any/basic_any_ptr.h>
-#include <cuda/__utility/__basic_any/basic_any_ref.h>
-#include <cuda/__utility/__basic_any/basic_any_value.h>
-#include <cuda/__utility/__basic_any/conversions.h>
-#include <cuda/__utility/__basic_any/dynamic_any_cast.h>
-#include <cuda/__utility/__basic_any/interfaces.h>
-#include <cuda/__utility/__basic_any/iset.h>
-#include <cuda/__utility/__basic_any/overrides.h>
-#include <cuda/__utility/__basic_any/rtti.h>
-#include <cuda/__utility/__basic_any/semiregular.h>
-#include <cuda/__utility/__basic_any/storage.h>
-#include <cuda/__utility/__basic_any/tagged_ptr.h>
-#include <cuda/__utility/__basic_any/virtcall.h>
-#include <cuda/__utility/__basic_any/virtual_functions.h>
-#include <cuda/__utility/__basic_any/virtual_tables.h>
+#  include <cuda/__utility/__basic_any/any_cast.h>
+#  include <cuda/__utility/__basic_any/basic_any_from.h>
+#  include <cuda/__utility/__basic_any/basic_any_ptr.h>
+#  include <cuda/__utility/__basic_any/basic_any_ref.h>
+#  include <cuda/__utility/__basic_any/basic_any_value.h>
+#  include <cuda/__utility/__basic_any/conversions.h>
+#  include <cuda/__utility/__basic_any/dynamic_any_cast.h>
+#  include <cuda/__utility/__basic_any/interfaces.h>
+#  include <cuda/__utility/__basic_any/iset.h>
+#  include <cuda/__utility/__basic_any/overrides.h>
+#  include <cuda/__utility/__basic_any/rtti.h>
+#  include <cuda/__utility/__basic_any/semiregular.h>
+#  include <cuda/__utility/__basic_any/storage.h>
+#  include <cuda/__utility/__basic_any/tagged_ptr.h>
+#  include <cuda/__utility/__basic_any/virtcall.h>
+#  include <cuda/__utility/__basic_any/virtual_functions.h>
+#  include <cuda/__utility/__basic_any/virtual_tables.h>
 // IWYU pragma: end_exports
+
+#endif // _CCCL_HOST_COMPILATION()
 
 #endif // _LIBCUDACXX___UTILITY_BASIC_ANY_H
