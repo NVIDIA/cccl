@@ -58,6 +58,22 @@ struct Op2D
   }
 };
 
+struct OpThrowing
+{
+  template <class Idx>
+  __host__ __device__ constexpr void operator()(Idx) noexcept(false)
+  {}
+};
+
+template <class IdxType>
+struct OpThrowingIdx1
+{
+  template <class Idx>
+  __host__ __device__ constexpr void operator()(Idx) noexcept
+  {}
+  __host__ __device__ constexpr void operator()(cuda::std::integral_constant<IdxType, IdxType{1}>) noexcept(false) {}
+};
+
 template <typename T>
 __host__ __device__ constexpr void test()
 {
@@ -73,6 +89,56 @@ __host__ __device__ constexpr void test()
     cuda::static_for<T{-15}, T{15}, T{5}>(Op<T>{-15, 5, 6});
     cuda::static_for<T{15}, T{-15}, T{-5}>(Op<T>{15, -5, 6});
   }
+
+#if !_CCCL_COMPILER(GCC, <, 9)
+  // noexcept test for an always throwing operator
+  {
+    // 1. The function should be noexcept if there are 0 iterations even if the operator is not noexcept
+    static_assert(noexcept(cuda::static_for<T{0}>(OpThrowing{})));
+    static_assert(noexcept(cuda::static_for<T{0}, T{0}>(OpThrowing{})));
+    static_assert(noexcept(cuda::static_for<T, 0>(OpThrowing{})));
+    static_assert(noexcept(cuda::static_for<T, 0, 0>(OpThrowing{})));
+
+    // 2. The function should NOT be noexcept if there are iterations
+    static_assert(!noexcept(cuda::static_for<T{1}>(OpThrowing{})));
+    static_assert(!noexcept(cuda::static_for<T{0}, T{1}>(OpThrowing{})));
+    static_assert(!noexcept(cuda::static_for<T, 1>(OpThrowing{})));
+    static_assert(!noexcept(cuda::static_for<T, 0, 1>(OpThrowing{})));
+  }
+
+  // noexcept test for an operator that throws only if invked on index 1
+  {
+    // 1. The function should be noexcept in range [0, 1)]
+    static_assert(noexcept(cuda::static_for<T{1}>(OpThrowingIdx1<T>{})));
+    static_assert(noexcept(cuda::static_for<T{0}, T{1}>(OpThrowingIdx1<T>{})));
+    static_assert(noexcept(cuda::static_for<T, 1>(OpThrowingIdx1<T>{})));
+    static_assert(noexcept(cuda::static_for<T, 0, 1>(OpThrowingIdx1<T>{})));
+
+    // 2. The function should NOT be noexcept in range [0, 2)
+    static_assert(!noexcept(cuda::static_for<T{2}>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T{0}, T{2}>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T, 2>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T, 0, 2>(OpThrowingIdx1<T>{})));
+
+    // 3. The function should NOT be noexcept in range [0, 3)
+    static_assert(!noexcept(cuda::static_for<T{3}>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T{0}, T{3}>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T, 3>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T, 0, 3>(OpThrowingIdx1<T>{})));
+
+    // 4. The function should be noexcept in range [2, 3)
+    static_assert(noexcept(cuda::static_for<T{2}, T{3}>(OpThrowingIdx1<T>{})));
+    static_assert(noexcept(cuda::static_for<T, 2, 3>(OpThrowingIdx1<T>{})));
+
+    // 5. The function should be noexcept when the step is 2
+    static_assert(noexcept(cuda::static_for<T{0}, T{2}, T{2}>(OpThrowingIdx1<T>{})));
+    static_assert(noexcept(cuda::static_for<T, 0, 2, 2>(OpThrowingIdx1<T>{})));
+
+    // 6. The function should NOT be noexcept when the step is 2 but we are starting from 1
+    static_assert(!noexcept(cuda::static_for<T{1}, T{3}, T{2}>(OpThrowingIdx1<T>{})));
+    static_assert(!noexcept(cuda::static_for<T, 1, 3, 2>(OpThrowingIdx1<T>{})));
+  }
+#endif // !_CCCL_COMPILER(GCC, <, 9)
 }
 
 __host__ __device__ constexpr bool test()
