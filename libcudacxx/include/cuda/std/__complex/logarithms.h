@@ -233,7 +233,7 @@ template <class _Tp>
   _Tp __log1p_poly = __internal_unsafe_log1p_poly(__hypot_sq_scaled);
 
   // Scale our answer back up.
-  _Tp __abs_rescaled = _CUDA_VSTD::fma(_CUDA_VSTD::numbers::ln2_v<_Tp>, __exp_d, __log1p_poly); // ln(2)
+  _Tp __abs_rescaled = _CUDA_VSTD::fma(__numbers<_Tp>::__ln2(), __exp_d, __log1p_poly);
 
   // Fix x == 0.0
   if (__x.real() == _Tp(0.0) && __x.imag() == _Tp(0.0))
@@ -275,7 +275,7 @@ _CCCL_API inline complex<__half> log(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> log10(const complex<_Tp>& __x)
 {
-  return _CUDA_VSTD::log(__x) * _Tp(_CUDA_VSTD::numbers::log10e_v<_Tp>);
+  return _CUDA_VSTD::log(__x) * __numbers<_Tp>::__log10e();
 }
 
 #if _LIBCUDACXX_HAS_NVBF16()
