@@ -8,11 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX_EVENT_REF_DETAIL_H
-#define _CUDAX_EVENT_REF_DETAIL_H
-
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
+#ifndef _CUDA___EVENT_EVENT_REF_H
+#define _CUDA___EVENT_EVENT_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/cassert>
-#include <cuda/std/cstddef>
-#include <cuda/std/utility>
-#include <cuda/stream_ref>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/cassert>
+#  include <cuda/std/cstddef>
+#  include <cuda/std/utility>
 
-namespace cuda::experimental
-{
+#  include <cuda/std/__cccl/prologue.h>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 class event;
 class timed_event;
+class stream_ref;
 
 //! @brief An non-owning wrapper for an untimed `cudaEvent_t`.
 class event_ref
@@ -73,18 +72,12 @@ public:
   //! @param __stream
   //!
   //! @throws cuda_error if the event record fails
-  void record(stream_ref __stream) const
-  {
-    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
-    _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
-    // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-    _CUDA_DRIVER::__eventRecord(__event_, __stream.get());
-  }
+  _CCCL_HOST_API void record(stream_ref __stream) const;
 
   //! @brief Synchronizes the event
   //!
   //! @throws cuda_error if waiting for the event fails
-  void sync() const
+  _CCCL_HOST_API void sync() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
     _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
@@ -95,7 +88,7 @@ public:
   //! If is_done returns true, calling sync() on this event will return immediately
   //!
   //! @throws cuda_error if the event query fails
-  [[nodiscard]] bool is_done() const
+  [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
     cudaError_t __status = ::cudaEventQuery(__event_);
@@ -129,7 +122,7 @@ public:
     return __event_ != nullptr;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `event_ref`s for equality
   //!
   //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
@@ -155,10 +148,13 @@ public:
   {
     return __lhs.__event_ != __rhs.__event_;
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 };
-} // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDAX_EVENT_REF_DETAIL_H
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___EVENT_EVENT_REF_H
