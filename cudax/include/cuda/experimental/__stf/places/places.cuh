@@ -33,6 +33,7 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 // Sync only will not move data....
@@ -1495,76 +1496,6 @@ UNITTEST("grid exec place equality")
 };
 #endif // UNITTESTED_FILE
 
-namespace reserved
-{
-
-template <typename Kernel>
-::std::pair<int /*min_grid_size*/, int /*block_size*/>
-compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
-{
-  using key_t = ::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>;
-  static ::std::
-    unordered_map<key_t, ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
-      occupancy_cache;
-  const auto key = ::std::make_pair(dynamicSMemSize, blockSizeLimit);
-
-  if (auto i = occupancy_cache.find(key); i != occupancy_cache.end())
-  {
-    // Cache hit
-    return i->second;
-  }
-  // Miss
-  auto& result = occupancy_cache[key];
-  cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, dynamicSMemSize, blockSizeLimit));
-  return result;
-}
-
-/**
- * This method computes the block and grid sizes to optimize thread occupancy.
- *
- * If cooperative kernels are needed, the grid size is capped to the number of
- * blocks
- *
- * - min_grid_size and max_block_size are the grid and block sizes to
- *   _optimize_ occupancy
- * - block_size_limit is the absolute maximum of threads in a block due to
- *   resource constraints
- */
-template <typename Fun>
-void compute_kernel_limits(
-  const Fun&& f,
-  int& min_grid_size,
-  int& max_block_size,
-  size_t shared_mem_bytes,
-  bool cooperative,
-  int& block_size_limit)
-{
-  static_assert(::std::is_function<typename ::std::remove_pointer<Fun>::type>::value,
-                "Template parameter Fun must be a pointer to a function type.");
-
-  ::std::tie(min_grid_size, max_block_size) = compute_occupancy(f, shared_mem_bytes);
-
-  if (cooperative)
-  {
-    // For cooperative kernels, the number of blocks is limited. We compute the number of SM on device 0 and assume
-    // we have a homogeneous machine.
-    static const int sm_count = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, 0);
-
-    // TODO there could be more than 1 block per SM, but we do not know the actual block sizes for now ...
-    min_grid_size = ::std::min(min_grid_size, sm_count);
-  }
-
-  /* Compute the maximum block size (not the optimal size) */
-  static const auto maxThreadsPerBlock = [&] {
-    cudaFuncAttributes result;
-    cuda_safe_call(cudaFuncGetAttributes(&result, f));
-    return result.maxThreadsPerBlock;
-  }();
-  block_size_limit = maxThreadsPerBlock;
-}
-
-} // end namespace reserved
-
 template <auto... spec>
 template <typename Fun>
 interpreted_execution_policy<spec...>::interpreted_execution_policy(
@@ -1589,26 +1520,24 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     size_t l0_size = p.get_width(0);
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
 
-    int max_block_size = 0, min_grid_size = 0;
     size_t shared_mem_bytes = 0;
-    int block_size_limit    = 0;
 
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    auto kernel_limits = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
 
     int grid_size = 0;
     int block_size;
 
     if (l0_size == 0)
     {
-      grid_size = min_grid_size;
+      grid_size = kernel_limits.min_grid_size;
       // Maximum occupancy without exceeding limits
-      block_size = ::std::min(max_block_size, block_size_limit);
+      block_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
       l0_size    = ndevs * grid_size * block_size;
     }
     else
     {
       // Find grid_size and block_size such that grid_size*block_size = l0_size and block_size <= max_block_size
-      for (block_size = max_block_size; block_size >= 1; block_size--)
+      for (block_size = kernel_limits.max_block_size; block_size >= 1; block_size--)
       {
         if (l0_size % block_size == 0)
         {
@@ -1622,7 +1551,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     assert(l0_size > 0);
 
     assert(grid_size > 0);
-    assert(block_size <= max_block_size);
+    assert(block_size <= kernel_limits.max_block_size);
 
     assert(l0_size % ndevs == 0);
     assert(l0_size % (ndevs * block_size) == 0);
@@ -1642,25 +1571,23 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
 
-    int max_block_size = 0, min_grid_size = 0;
-    int block_size_limit = 0;
     /* level 1 will be mapped on threads, level 0 on blocks and above */
     size_t shared_mem_bytes = size_t(p.get_mem(1));
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l1_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l1_size = ::std::min(max_block_size, block_size_limit);
+      l1_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
-      if (int(l1_size) > block_size_limit)
+      if (int(l1_size) > kernel_limits.block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 1)\n",
-                block_size_limit,
+                kernel_limits.block_size_limit,
                 l1_size);
         abort();
       }
@@ -1668,11 +1595,11 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     if (l0_size == 0)
     {
-      l0_size = min_grid_size * ndevs;
+      l0_size = kernel_limits.min_grid_size * ndevs;
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l1_size) <= block_size_limit);
+    assert(int(l1_size) <= kernel_limits.block_size_limit);
 
     assert(l0_size % ndevs == 0);
 
@@ -1694,26 +1621,23 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
     bool l2_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<2>;
 
-    int max_block_size = 0, min_grid_size = 0;
-    int block_size_limit = 0;
     /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
     size_t shared_mem_bytes = size_t(p.get_mem(2));
-    reserved::compute_kernel_limits(
-      f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync || l1_sync);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l2_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l2_size = ::std::min(max_block_size, block_size_limit);
+      l2_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
-      if (int(l2_size) > block_size_limit)
+      if (int(l2_size) > kernel_limits.block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
-                block_size_limit,
+                kernel_limits.block_size_limit,
                 l2_size);
         abort();
       }
@@ -1721,7 +1645,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     if (l1_size == 0)
     {
-      l1_size = min_grid_size;
+      l1_size = kernel_limits.min_grid_size;
     }
 
     if (l0_size == 0)
@@ -1730,7 +1654,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= block_size_limit);
+    assert(int(l2_size) <= kernel_limits.block_size_limit);
     assert(int(l0_size) <= ndevs);
 
     /* Merge blocks and devices */

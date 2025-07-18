@@ -550,18 +550,18 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(stream_ref __new_stream)
   {
-    __buf_.change_stream(__new_stream);
+    __buf_.set_stream(__new_stream);
   }
 
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(stream_ref __new_stream) noexcept
   {
-    __buf_.change_stream_unsynchronized(__new_stream);
+    __buf_.set_stream_unsynchronized(__new_stream);
   }
 
   //! @brief Move assignment operator

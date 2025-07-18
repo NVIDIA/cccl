@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_DEVICE
-#define _CUDAX__DEVICE_DEVICE
+#ifndef _CUDA___DEVICE_PHYSICAL_DEVICE_H
+#define _CUDA___DEVICE_PHYSICAL_DEVICE_H
 
 #include <cuda/__cccl_config>
 
@@ -21,21 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__device/arch_traits.cuh>
-#include <cuda/experimental/__device/attributes.cuh>
-#include <cuda/experimental/__device/device_ref.cuh>
+#  include <cuda/__device/arch_traits.h>
+#  include <cuda/__device/attributes.h>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__driver/driver_api.h>
 
-#include <cassert>
-#include <mutex>
+#  include <cassert>
+#  include <mutex>
 
-#include <cuda.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-#include <cuda/std/__cccl/prologue.h>
-
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
 //! @brief A proxy object used to in-place construct a `device` object from an
@@ -69,15 +67,15 @@ using device_attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
 class physical_device : public device_ref
 {
 public:
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  if _CCCL_COMPILER(MSVC)
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#    if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
   physical_device(__detail::__emplace_device __ed)
       : physical_device(__ed.__id_)
   {}
+#    endif
 #  endif
-#endif
 
   //! @brief Retrieve architecture traits of this device.
   //!
@@ -85,11 +83,14 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch_traits_t& arch_traits() const noexcept
+  const arch::traits_t& arch_traits() const noexcept
   {
     return __traits;
   }
 
+  //! @brief Retrieve the primary context for this device.
+  //!
+  //! @return A reference to the primary context for this device.
   ::CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
@@ -122,11 +123,11 @@ private:
   // TODO should this be a reference/pointer to the constexpr traits instances?
   //  Do we care about lazy init?
   //  We should have some of the attributes just return from the arch traits
-  arch_traits_t __traits;
+  arch::traits_t __traits;
 
   explicit physical_device(int __id)
       : device_ref(__id)
-      , __traits(__detail::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
+      , __traits(arch::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
@@ -138,10 +139,10 @@ private:
   friend bool operator==(const physical_device& __lhs, int __rhs) = delete;
   friend bool operator==(int __lhs, const physical_device& __rhs) = delete;
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   friend bool operator!=(const physical_device& __lhs, int __rhs) = delete;
   friend bool operator!=(int __lhs, const physical_device& __rhs) = delete;
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 };
 
 namespace __detail
@@ -157,8 +158,10 @@ namespace __detail
 }
 } // namespace __detail
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_DEVICE
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_PHYSICAL_DEVICE_H

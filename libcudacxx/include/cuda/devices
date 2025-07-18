@@ -8,11 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX_EVENT_H
-#define _CUDAX_EVENT_H
+#ifndef _CUDA_DEVICES
+#define _CUDA_DEVICES
 
-#include <cuda/experimental/__event/event.cuh>
-#include <cuda/experimental/__event/event_ref.cuh>
-#include <cuda/experimental/__event/timed_event.cuh>
+#include <cuda/__device/all_devices.h>
+#include <cuda/__device/arch_traits.h>
+#include <cuda/__device/attributes.h>
+#include <cuda/__device/device_ref.h>
+#include <cuda/__device/physical_device.h>
 
-#endif // _CUDAX_EVENT_H
+#endif // _CUDA_DEVICES
