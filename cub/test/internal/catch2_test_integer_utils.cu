@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 #include <cub/detail/integer_utils.cuh>
 
@@ -70,9 +70,9 @@ static __global__ void test_float_kernel(Operation op, const T* input, int num_i
 
 C2H_TEST("Split/Merge Integers", "[Split/Merge][Random]", integral_types)
 {
-  using T        = c2h::get<0, TestType>;
+  using T              = c2h::get<0, TestType>;
   const auto num_items = 1 << 16;
-  c2h::device_vector<T> d_in(num_items ); 
+  c2h::device_vector<T> d_in(num_items);
   c2h::gen(C2H_SEED(1), d_in);
   test_int_kernel<<<cuda::ceil_div(num_items, 256), 256>>>(thrust::raw_pointer_cast(d_in.data()), num_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
@@ -84,8 +84,8 @@ C2H_TEST(
 {
   using cub::detail::comparable_int_to_floating_point;
   using cub::detail::floating_point_to_comparable_int;
-  using Op       = c2h::get<0, TestType>;
-  using T        = c2h::get<1, TestType>;
+  using Op             = c2h::get<0, TestType>;
+  using T              = c2h::get<1, TestType>;
   const auto num_items = 1 << 16;
   c2h::device_vector<T> d_in(num_items);
   c2h::gen(C2H_SEED(1), d_in);
