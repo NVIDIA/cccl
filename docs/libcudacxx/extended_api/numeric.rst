@@ -27,8 +27,8 @@ Numeric
 
    * - :ref:`cuda::overflow_result <libcudacxx-extended-api-numeric-overflow_result>`
      - Performs addition with overflow checking
-     - CCCL 3.1.0
-     - CUDA 13.1
+     - CCCL 3.0.0
+     - CUDA 13.0
 
    * - :ref:`cuda::add_overflow <libcudacxx-extended-api-numeric-add_overflow>`
      - Performs addition with overflow checking
