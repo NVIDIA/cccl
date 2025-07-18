@@ -183,38 +183,6 @@ struct DispatchReduceNondeterministic
 
   KernelLauncherFactory launcher_factory;
 
-  //---------------------------------------------------------------------------
-  // Constructor
-  //---------------------------------------------------------------------------
-
-  /// Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduceNondeterministic(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    int ptx_version,
-    TransformOpT transform_op              = {},
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {})
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_items(num_items)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , transform_op(transform_op)
-      , kernel_source(kernel_source)
-      , launcher_factory(launcher_factory)
-  {}
-
   /**
    * @brief Invoke a single block block to reduce in-core
    *
@@ -388,40 +356,31 @@ struct DispatchReduceNondeterministic
     MaxPolicyT max_policy                  = {})
   {
     cudaError error = cudaSuccess;
-    do
+    // Get PTX version
+    int ptx_version = 0;
+    error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
+    if (cudaSuccess != error)
     {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Create dispatch functor
-      DispatchReduceNondeterministic dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_items,
-        reduction_op,
-        init,
-        stream,
-        ptx_version,
-        transform_op,
-        kernel_source,
-        launcher_factory);
+    // Create dispatch functor
+    DispatchReduceNondeterministic dispatch{
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      reduction_op,
+      init,
+      stream,
+      ptx_version,
+      transform_op,
+      kernel_source,
+      launcher_factory};
 
-      // Dispatch to chained policy
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
+    // Dispatch to chained policy
+    return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
 } // namespace detail
