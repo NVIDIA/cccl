@@ -60,13 +60,6 @@ int main()
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
-  CUfunction axpy_fun;
-  cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, (void*) axpy));
-
-  // TODO ifdef
-  CUkernel axpy_kernel;
-  cuda_safe_call(cudaGetKernel(&axpy_kernel, (void*) axpy));
-
   // runtime global kernel
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     // axpy<<<16, 128, 0, ...>>>(alpha, dX, dY)
@@ -74,14 +67,21 @@ int main()
   };
   num_axpy++;
 
+
   // CUfunction driver API
+  CUfunction axpy_fun;
+  cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, (void*) axpy));
+
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     return cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY};
   };
   num_axpy++;
 
-#if CUDA_VERSION >= 12000
+#if CUDA_VERSION >= 12010
   // CUkernel driver API
+  CUkernel axpy_kernel;
+  cuda_safe_call(cudaGetKernel(&axpy_kernel, (void*) axpy));
+
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     return cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY};
   };
