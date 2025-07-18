@@ -35,6 +35,7 @@ struct say_hello
 
 __host__ void run()
 {
+  /*
   try
   {
     task::thread_context tctx;
@@ -72,6 +73,7 @@ __host__ void run()
   {
     std::printf("Unknown exception\n");
   }
+  */
 }
 
 int main()

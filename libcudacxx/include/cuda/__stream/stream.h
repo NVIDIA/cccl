@@ -8,12 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_STREAM
-#define _CUDAX__STREAM_STREAM
+#ifndef _CUDA___STREAM_STREAM
+#define _CUDA___STREAM_STREAM
 
 #include <cuda/std/detail/__config>
-
-#include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,17 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/device_ref.h>
-#include <cuda/std/__cuda/api_wrapper.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__device/logical_device.cuh>
-#include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
+#  include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief An owning wrapper for cudaStream_t.
 struct stream : stream_ref
@@ -47,22 +44,9 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
-      : stream_ref(::cuda::__detail::__invalid_stream)
+      : stream_ref(__detail::__invalid_stream)
   {
-    [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
-  }
-
-  //! @brief Constructs a stream on a specified logical device and with specified priority
-  //!
-  //! Priority is defaulted to stream::default_priority
-  //!
-  //! @throws cuda_error if stream creation fails
-  explicit stream(::cuda::experimental::logical_device __dev, int __priority = default_priority)
-      : stream_ref(::cuda::__detail::__invalid_stream)
-  {
-    [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
+    [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
     _CCCL_TRY_CUDA_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
   }
@@ -72,7 +56,7 @@ struct stream : stream_ref
   //! @post `stream()` returns an invalid stream handle
   // Can't be constexpr because __invalid_stream isn't
   explicit stream(no_init_t) noexcept
-      : stream_ref(::cuda::__detail::__invalid_stream)
+      : stream_ref(__detail::__invalid_stream)
   {}
 
   //! @brief Move-construct a new `stream` object
@@ -81,7 +65,7 @@ struct stream : stream_ref
   //!
   //! @post `__other` is in moved-from state.
   stream(stream&& __other) noexcept
-      : stream(_CUDA_VSTD::exchange(__other.__stream, ::cuda::__detail::__invalid_stream))
+      : stream(_CUDA_VSTD::exchange(__other.__stream, __detail::__invalid_stream))
   {}
 
   stream(const stream&) = delete;
@@ -91,7 +75,7 @@ struct stream : stream_ref
   //! @note If the stream fails to be destroyed, the error is silently ignored.
   ~stream()
   {
-    if (__stream != ::cuda::__detail::__invalid_stream)
+    if (__stream != __detail::__invalid_stream)
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
@@ -138,13 +122,7 @@ struct stream : stream_ref
   //! @post The stream object is in a moved-from state.
   [[nodiscard]] ::cudaStream_t release()
   {
-    return _CUDA_VSTD::exchange(__stream, ::cuda::__detail::__invalid_stream);
-  }
-
-  //! @brief Returns a \c execution::scheduler that enqueues work on this stream.
-  auto get_scheduler() const noexcept -> stream_ref
-  {
-    return *this;
+    return _CUDA_VSTD::exchange(__stream, __detail::__invalid_stream);
   }
 
 private:
@@ -155,8 +133,10 @@ private:
   {}
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_STREAM
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___STREAM_STREAM

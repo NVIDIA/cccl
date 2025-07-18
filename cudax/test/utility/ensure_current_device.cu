@@ -10,7 +10,6 @@
 
 #include <cuda/experimental/__stream/stream.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
-#include <cuda/experimental/event.cuh>
 #include <cuda/experimental/launch.cuh>
 
 #include <utility.cuh>

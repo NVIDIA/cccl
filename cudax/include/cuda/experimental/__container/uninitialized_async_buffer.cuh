@@ -82,7 +82,7 @@ private:
   using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
 
   __async_resource __mr_;
-  ::cuda::stream_ref __stream_ = {};
+  ::cuda::stream_ref __stream_ = {static_cast<::cudaStream_t>(0)};
   size_t __count_              = 0;
   void* __buf_                 = nullptr;
 
@@ -211,7 +211,7 @@ public:
   //! Takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
+      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{static_cast<::cudaStream_t>(0)}))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
@@ -223,7 +223,7 @@ public:
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
+      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{static_cast<::cudaStream_t>(0)}))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
@@ -243,7 +243,7 @@ public:
       __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
     }
     __mr_     = _CUDA_VSTD::move(__other.__mr_);
-    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, {});
+    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{static_cast<::cudaStream_t>(0)});
     __count_  = _CUDA_VSTD::exchange(__other.__count_, 0);
     __buf_    = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
