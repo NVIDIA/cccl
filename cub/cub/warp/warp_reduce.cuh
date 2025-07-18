@@ -750,8 +750,7 @@ class WarpReduce<T, 1>
   static constexpr auto result_mode_default  = detail::ReduceResultMode::SingleLane;
 
 public:
-  struct TempStorage : Uninitialized<NullType>
-  {};
+  using TempStorage = NullType; // no smem needed
 
   WarpReduce() = default;
 
