@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -102,7 +103,7 @@ template <class _Env = void, class _Rcvr>
   {
     return execution::__ref_rcvr<env_of_t<_Rcvr>>(__rcvr);
   }
-  else if constexpr (__is_specialization_of_v<_Rcvr, __rcvr_ref>)
+  else if constexpr (::cuda::__is_specialization_of_v<_Rcvr, __rcvr_ref>)
   {
     return __rcvr;
   }

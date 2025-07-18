@@ -1,15 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_OVERRIDES_H
-#define __CUDAX_DETAIL_BASIC_ANY_OVERRIDES_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_OVERRIDES_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_OVERRIDES_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,15 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_const.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Interface, class _Tp = __remove_ireference_t<_Interface>>
 using __overrides_for _CCCL_NODEBUG_ALIAS = typename _Interface::template overrides<_Tp>;
 
@@ -58,8 +56,8 @@ struct overrides_for<iunknown>
   using __vptr_t _CCCL_NODEBUG_ALIAS = __rtti const*;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_OVERRIDES_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_OVERRIDES_H

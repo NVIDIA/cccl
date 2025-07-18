@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -56,7 +57,7 @@ private:
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() noexcept

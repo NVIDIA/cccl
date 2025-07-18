@@ -26,7 +26,7 @@ struct unused_property
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
-  constexpr bool is_big = sizeof(TestResource) > cudax::__default_buffer_size;
+  constexpr bool is_big = sizeof(TestResource) > cuda::__default_small_object_size;
 
   SECTION("construct and destruct")
   {

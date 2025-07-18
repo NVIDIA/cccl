@@ -1,15 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_RTTI_H
-#define __CUDAX_DETAIL_BASIC_ANY_RTTI_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_RTTI_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_RTTI_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,13 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/virtual_ptrs.h>
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
-
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
 #include <nv/target>
 
@@ -35,8 +34,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! __iunknown: Logically, the root of all interfaces.
 //!
@@ -245,8 +244,8 @@ template <class _SrcInterface, class _DstInterface>
   _CCCL_UNREACHABLE();
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_RTTI_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_RTTI_H

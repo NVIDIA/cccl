@@ -1,15 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_CONVERSIONS_H
-#define __CUDAX_DETAIL_BASIC_ANY_CONVERSIONS_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_CONVERSIONS_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_CONVERSIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +20,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
-
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! conversions
 //!
@@ -88,7 +87,7 @@ auto __normalize(_Ty*) -> _Ty*
 {}
 
 template <class _Ty>
-using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(experimental::__normalize(declval<_Ty>()));
+using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize(_CUDA_VSTD::declval<_Ty>()));
 
 // Used to map a basic_any specialization to a normalized interface type:
 template <class _Ty>
@@ -163,8 +162,8 @@ _CCCL_CONCEPT __any_convertible_to =
   extension_of<typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type,
                typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_CONVERSIONS_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_CONVERSIONS_H
