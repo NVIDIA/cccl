@@ -311,7 +311,7 @@ public:
   //!
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type having member
-  //!   `T operator()(const T &a, const T &b)`
+  //!   `T operator()(const T &a, const T &b) const`
   //!
   //! @param[in] input
   //!   Calling thread's input
