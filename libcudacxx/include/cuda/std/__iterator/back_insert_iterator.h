@@ -59,20 +59,24 @@ public:
     container->push_back(_CUDA_VSTD::move(__value));
     return *this;
   }
-  _CCCL_API inline constexpr __back_insert_iterator& operator*()
+  _CCCL_API inline constexpr __back_insert_iterator& operator*() noexcept
   {
     return *this;
   }
-  _CCCL_API inline constexpr __back_insert_iterator& operator++()
+  _CCCL_API inline constexpr const __back_insert_iterator& operator*() const noexcept
   {
     return *this;
   }
-  _CCCL_API inline constexpr __back_insert_iterator operator++(int)
+  _CCCL_API inline constexpr __back_insert_iterator& operator++() noexcept
+  {
+    return *this;
+  }
+  _CCCL_API inline constexpr __back_insert_iterator operator++(int) noexcept
   {
     return *this;
   }
 
-  _CCCL_API inline constexpr _Container* __get_container() const
+  _CCCL_API inline constexpr _Container* __get_container() const noexcept
   {
     return container;
   }
