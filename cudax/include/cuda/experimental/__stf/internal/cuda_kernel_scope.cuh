@@ -37,6 +37,28 @@ namespace cuda::experimental::stf
 class graph_ctx;
 class stream_ctx;
 
+namespace reserved
+{
+
+template <typename T>
+struct is_function_or_kernel : ::std::false_type
+{};
+
+template <>
+struct is_function_or_kernel<CUfunction> : ::std::true_type
+{};
+
+#if CUDA_VERSION >= 12000
+template <>
+struct is_function_or_kernel<CUkernel> : ::std::true_type
+{};
+#endif
+
+template <typename T>
+inline constexpr bool is_function_or_kernel_v = is_function_or_kernel<T>::value;
+
+} // end namespace reserved
+
 /**
  * @brief Description of a CUDA kernel
  *
@@ -61,7 +83,7 @@ struct cuda_kernel_desc
 
     // Ensure we are packing arguments of the proper types to call func (only
     // valid with the runtime API)
-    if constexpr (!::std::is_same_v<CUfunction, Fun>)
+    if constexpr (!reserved::is_function_or_kernel_v<Fun>)
     {
       static_assert(::std::is_invocable_v<Fun, Args...>);
     }
@@ -78,8 +100,13 @@ struct cuda_kernel_desc
     arg_tuple_type_erased = mv(arg_tuple);
   }
 
-  /* CUfunction (CUDA driver API) or __global__ function (CUDA runtime API) */
-  using func_variant_t = ::std::variant<CUfunction, const void*>;
+  /* CUfunction/CUkernel (CUDA driver API) or __global__ function (CUDA runtime API) */
+  using func_variant_t =
+    ::std::variant<CUfunction,
+#if CUDA_VERSION >= 12000
+                   CUkernel,
+#endif
+                   const void*>;
   func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
@@ -101,9 +128,11 @@ struct cuda_kernel_desc
         }
         else
         {
-          static_assert(::std::is_same_v<T, CUfunction>, "Unsupported function type in func_variant");
+          static_assert(reserved::is_function_or_kernel_v<T>, "Unsupported function type in func_variant");
+
+          // If this is a CUkernel, the cast to a CUfunction is sufficient
           cuda_safe_call(cuLaunchKernel(
-            kernel_func,
+            (CUfunction) kernel_func,
             gridDim.x,
             gridDim.y,
             gridDim.z,
@@ -125,10 +154,10 @@ struct cuda_kernel_desc
       [&](auto&& kernel_func) {
         using T = ::std::decay_t<decltype(kernel_func)>;
 
-        if constexpr (::std::is_same_v<T, CUfunction>)
+        if constexpr (reserved::is_function_or_kernel_v<T>)
         {
           CUDA_KERNEL_NODE_PARAMS params{
-            .func           = kernel_func,
+            .func           = (CUfunction) kernel_func,
             .gridDimX       = gridDim.x,
             .gridDimY       = gridDim.y,
             .gridDimZ       = gridDim.z,
@@ -164,9 +193,9 @@ struct cuda_kernel_desc
     return ::std::visit(
       [](auto&& kernel_func) {
         using T = ::std::decay_t<decltype(kernel_func)>;
-        if constexpr (::std::is_same_v<T, CUfunction>)
+        if constexpr (reserved::is_function_or_kernel_v<T>)
         {
-          return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, kernel_func);
+          return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, (CUfunction) kernel_func);
         }
         else
         {
@@ -186,6 +215,13 @@ private:
   {
     return f;
   }
+
+#if CUDA_VERSION >= 12000
+  static func_variant_t store_func(CUkernel k)
+  {
+    return k;
+  }
+#endif
 
   template <typename T>
   static func_variant_t store_func(T* f)
