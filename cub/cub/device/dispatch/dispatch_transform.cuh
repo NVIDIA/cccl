@@ -95,15 +95,28 @@ struct TransformKernelSource<Offset,
   }
 
   template <typename It>
-  CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
+  CUB_RUNTIME_FUNCTION static constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
   {
     return detail::transform::make_iterator_kernel_arg(it);
   }
 
   template <typename It>
-  CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> MakeAlignedBasePtrKernelArg(It it, int align)
+  CUB_RUNTIME_FUNCTION static constexpr kernel_arg<It> MakeAlignedBasePtrKernelArg(It it, int align)
   {
     return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
+  }
+
+  template <typename T>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, [[maybe_unused]] int alignment)
+  {
+    if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
+    {
+      return ::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
+    }
+    else
+    {
+      return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
+    }
   }
 };
 
@@ -198,7 +211,7 @@ struct dispatch_t<StableAddress,
     auto wrapped_policy = MakeTransformPolicyWrapper(policy);
     int block_threads   = wrapped_policy.AlgorithmPolicy().BlockThreads();
 
-    _CCCL_ASSERT(block_threads % bulk_copy_align == 0, "block_threads needs to be a multiple of bulk_copy_alignment");
+    _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
     // ^ then tile_size is a multiple of it
 
     CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = wrapped_policy.AlgorithmPolicy().MinItemsPerThread();
@@ -374,19 +387,6 @@ struct dispatch_t<StableAddress,
 
 #undef CUB_DEFINE_SFINAE_GETTER
 
-  template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto is_pointer_aligned(T it, [[maybe_unused]] int alignment)
-  {
-    if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
-    {
-      return ::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
-    }
-    else
-    {
-      return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
-    }
-  }
-
   template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy active_policy = {})
@@ -440,8 +440,8 @@ struct dispatch_t<StableAddress,
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
       const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize       = (is_pointer_aligned(::cuda::std::get<Is>(in), alignment) && ...)
-                   && is_pointer_aligned(out, alignment);
+      can_vectorize       = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
+                   && kernel_source.IsPointerAligned(out, alignment);
     }
 
     int ipt        = 0;

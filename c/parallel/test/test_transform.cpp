@@ -177,6 +177,65 @@ C2H_TEST("Transform works with integral types", "[transform]", integral_types)
   }
 }
 
+struct Transform_MisalignedInput_IntegerTypes_Fixture_Tag;
+C2H_TEST("Transform works with misaligned input with integral types", "[transform]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_unary_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items + 1);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr_aligned(input);
+  pointer_t<T> input_ptr = input;
+  input_ptr.ptr += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
+  input_ptr.size -= 1;
+  pointer_t<T> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_MisalignedInput_IntegerTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+  input_ptr.ptr = nullptr; // avoid freeing the memory through this pointer
+
+  std::vector<T> expected(num_items, 0);
+  std::transform(input.begin() + 1, input.end(), expected.begin(), [](const T& x) {
+    return 2 * x;
+  });
+
+  REQUIRE(expected == std::vector<T>(output_ptr));
+}
+
+struct Transform_MisalignedOutput_IntegerTypes_Fixture_Tag;
+C2H_TEST("Transform works with misaligned output with integral types", "[transform]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_unary_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items + 1, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr_aligned(output);
+  pointer_t<T> output_ptr = output;
+  output_ptr.ptr += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
+  output_ptr.size -= 1;
+
+  auto& build_cache    = get_cache<Transform_MisalignedOutput_IntegerTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
+    return 2 * x;
+  });
+
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  output_ptr.ptr = nullptr; // avoid freeing the memory through this pointer
+}
+
 struct pair
 {
   short a;

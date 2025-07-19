@@ -164,10 +164,11 @@ runtime_tuning_policy* make_runtime_tuning_policy(
     algo_policy));
 }
 
+template <int NumInputs>
 struct transform_kernel_source
 {
   cccl_device_transform_build_result_t& build;
-  std::vector<cuda::std::pair<cuda::std::size_t, cuda::std::size_t>> it_value_sizes_alignments;
+  std::array<cuda::std::pair<cuda::std::size_t, cuda::std::size_t>, NumInputs> it_value_sizes_alignments;
 
   static constexpr bool CanCacheConfiguration()
   {
@@ -190,14 +191,20 @@ struct transform_kernel_source
   }
 
   template <typename It>
-  constexpr It MakeIteratorKernelArg(It it) const
+  static constexpr It MakeIteratorKernelArg(It it)
   {
     return it;
   }
 
-  cdt::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_arg_t it, int align) const
+  static cdt::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_iterator_t it, int align)
   {
-    return cdt::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(&it), align);
+    _CCCL_ASSERT(it.value_size != 0, "a non-pointer iterator passed into MakeALignedBasePtrKernelArg");
+    return cdt::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(it.ptr), align);
+  }
+
+  static auto IsPointerAligned(indirect_iterator_t it, int alignment)
+  {
+    return it.value_size != 0 && ::cuda::is_aligned(*static_cast<char**>(it.ptr), alignment);
   }
 };
 
@@ -318,7 +325,7 @@ struct device_transform_policy {{
     // Note: `-default-device` is needed because of the use of lambdas
     // in the transform kernel code. Qualifying those explicitly with
     // `__device__` seems not to be supported by NVRTC.
-    constexpr size_t num_args  = 10;
+    constexpr size_t num_args  = 9;
     const char* args[num_args] = {
       arch.c_str(),
       cub_path,
@@ -328,8 +335,7 @@ struct device_transform_policy {{
       "-rdc=true",
       "-dlto",
       "-default-device",
-      "-DCUB_DISABLE_CDP",
-      "-lineinfo"};
+      "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -393,18 +399,18 @@ CUresult cccl_device_unary_transform(
         return transform::cdt::dispatch_t<
           transform::cdt::requires_stable_address::no, // TODO implement yes
           OffsetT,
-          ::cuda::std::tuple<indirect_arg_t>,
-          indirect_arg_t,
+          ::cuda::std::tuple<indirect_iterator_t>,
+          indirect_iterator_t,
           indirect_arg_t,
           Policy,
-          transform::transform_kernel_source,
+          transform::transform_kernel_source<1>,
           cub::detail::CudaDriverLauncherFactory>::
           dispatch(d_in,
                    d_out,
                    num_items,
                    op,
                    stream,
-                   {build, {{d_in.value_type.size, d_in.value_type.alignment}}},
+                   {build, {{{d_in.value_type.size, d_in.value_type.alignment}}}},
                    cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                    policy);
       },
@@ -553,7 +559,7 @@ struct device_transform_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 10;
+    constexpr size_t num_args  = 9;
     const char* args[num_args] = {
       arch.c_str(),
       cub_path,
@@ -563,8 +569,7 @@ struct device_transform_policy {{
       "-rdc=true",
       "-dlto",
       "-default-device",
-      "-DCUB_DISABLE_CDP",
-      "-lineinfo"};
+      "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -631,20 +636,21 @@ CUresult cccl_device_binary_transform(
         return transform::cdt::dispatch_t<
           transform::cdt::requires_stable_address::no, // TODO implement yes
           OffsetT,
-          ::cuda::std::tuple<indirect_arg_t, indirect_arg_t>,
-          indirect_arg_t,
+          ::cuda::std::tuple<indirect_iterator_t, indirect_iterator_t>,
+          indirect_iterator_t,
           indirect_arg_t,
           Policy,
-          transform::transform_kernel_source,
+          transform::transform_kernel_source<2>,
           cub::detail::CudaDriverLauncherFactory>::
           dispatch(
-            ::cuda::std::make_tuple<indirect_arg_t, indirect_arg_t>(d_in1, d_in2),
+            ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
             d_out,
             num_items,
             op,
             stream,
             {build,
-             {{d_in1.value_type.size, d_in1.value_type.alignment}, {d_in2.value_type.size, d_in2.value_type.alignment}}},
+             {{{d_in1.value_type.size, d_in1.value_type.alignment},
+               {d_in2.value_type.size, d_in2.value_type.alignment}}}},
             cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
             policy);
       },
