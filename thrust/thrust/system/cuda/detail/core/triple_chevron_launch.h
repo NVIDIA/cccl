@@ -87,7 +87,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-#  if _CCCL_HAS_PDL
+#  if _CCCL_HAS_PDL()
     if (dependent_launch)
     {
       cudaLaunchAttribute attribute[1];
@@ -108,7 +108,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 #    endif
     }
     else
-#  endif // _CCCL_HAS_PDL
+#  endif // _CCCL_HAS_PDL()
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
     }
