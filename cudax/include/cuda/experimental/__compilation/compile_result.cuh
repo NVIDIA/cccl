@@ -166,10 +166,10 @@ struct compile_cuda_to_ptx_result : public __nvrtc_compile_result_base
   using _Base::operator=;
   using _Base::operator bool;
 
-  //! @brief Get the compiled PTX code.
+  //! @brief Get the compiled PTX.
   //!
   //! @brief A string containing the compiled PTX code.
-  [[nodiscard]] ::std::string get_code() const
+  [[nodiscard]] ::std::string get_ptx() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvrtcGetPTXSize(__program_, &__size) != ::NVRTC_SUCCESS)
@@ -194,10 +194,28 @@ struct compile_cuda_to_cubin_result : public __nvrtc_compile_result_base
   using _Base::operator=;
   using _Base::operator bool;
 
-  //! @brief Get the compiled CUBIN code.
+  //! @brief Get the compiled PTX.
+  //!
+  //! @brief A string containing the compiled PTX code.
+  [[nodiscard]] ::std::string get_ptx() const
+  {
+    _CUDA_VSTD::size_t __size{};
+    if (::nvrtcGetPTXSize(__program_, &__size) != ::NVRTC_SUCCESS)
+    {
+      // todo: throw
+    }
+    ::std::string __code(__size, '\0');
+    if (::nvrtcGetPTX(__program_, __code.data()) != ::NVRTC_SUCCESS)
+    {
+      // todo: throw
+    }
+    return __code;
+  }
+
+  //! @brief Get the compiled CUBIN.
   //!
   //! @return A vector containing the compiled CUBIN code.
-  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_code() const
+  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_cubin() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvrtcGetCUBINSize(__program_, &__size) != ::NVRTC_SUCCESS)
@@ -222,10 +240,10 @@ struct compile_cuda_to_ltoir_result : public __nvrtc_compile_result_base
   using _Base::operator=;
   using _Base::operator bool;
 
-  //! @brief Get the compiled CUBIN code.
+  //! @brief Get the compiled LTOIR.
   //!
-  //! @return A vector containing the compiled CUBIN code.
-  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_code() const
+  //! @return A vector containing the compiled LTOIR code.
+  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_ltoir() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvrtcGetLTOIRSize(__program_, &__size) != ::NVRTC_SUCCESS)
@@ -340,10 +358,10 @@ public:
     return __log;
   }
 
-  //! @brief Get the compiled cubin code.
+  //! @brief Get the compiled CUBIN.
   //!
-  //! @return A vector containing the compiled cubin code.
-  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_code() const
+  //! @return A vector containing the compiled CUBIN.
+  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_cubin() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvPTXCompilerGetCompiledProgramSize(__handle_, &__size) != ::NVPTXCOMPILE_SUCCESS)

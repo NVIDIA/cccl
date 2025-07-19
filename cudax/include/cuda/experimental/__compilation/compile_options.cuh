@@ -23,6 +23,7 @@
 
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/string_view>
 
 #include <vector>
@@ -64,6 +65,9 @@ struct force_include_opt
 //! @brief Option to specify the C++ standard version for the CUDA compilation.
 enum class std_version_opt
 {
+  cxx03 = 03, //!< C++03 standard version.
+  cxx11 = 11, //!< C++11 standard version.
+  cxx14 = 14, //!< C++14 standard version.
   cxx17 = 17, //!< C++17 standard version.
   cxx20 = 20, //!< C++20 standard version.
 };
@@ -74,34 +78,39 @@ enum class std_version_opt
 class cuda_compile_opts
 {
 public: // todo: make this private
-  enum class _OptType
+  enum class _DynOptType
   {
     __define_macro,
     __undefine_macro,
     __include_path,
     __force_include,
-    __std_ver,
   };
   struct _StringView2
   {
     _CUDA_VSTD::string_view __first_;
     _CUDA_VSTD::string_view __second_;
   };
-  union _OptValue
+  union _DynOptValue
   {
     _CUDA_VSTD::string_view __string_view_;
     _StringView2 __string_view2_;
-    int __int_;
   };
-  struct _Opt
+  struct _DynOpt
   {
-    _OptType __type_;
-    _OptValue __value_;
+    _DynOptType __type_;
+    _DynOptValue __value_;
   };
 
-  ::std::vector<_Opt> __opts_;
+  ::std::vector<_DynOpt> __dyn_opts_;
+  unsigned __std_version_ : 8;
 
 public:
+  //! @brief Default constructor for CUDA compilation options.
+  cuda_compile_opts() noexcept
+      : __dyn_opts_{}
+      , __std_version_{_CUDA_VSTD::to_underlying(cuda_compile_options::std_version_opt::cxx17)}
+  {}
+
   //! @brief Adds a compilation option to the list of options.
   //!
   //! @tparam _Tp The type of the option to add.
@@ -112,39 +121,41 @@ public:
   {
     using namespace cuda_compile_options;
 
-    _Opt __new_opt{};
+    [[maybe_unused]] _DynOpt __dyn_opt{};
 
     // todo: add value checking
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, define_macro_opt>)
     {
-      __new_opt.__type_                  = _OptType::__define_macro;
-      __new_opt.__value_.__string_view2_ = {__opt.name, __opt.value};
+      __dyn_opt.__type_                  = _DynOptType::__define_macro;
+      __dyn_opt.__value_.__string_view2_ = {__opt.name, __opt.value};
+      __dyn_opts_.push_back(__dyn_opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, undefine_macro_opt>)
     {
-      __new_opt.__type_                 = _OptType::__undefine_macro;
-      __new_opt.__value_.__string_view_ = __opt.name;
+      __dyn_opt.__type_                 = _DynOptType::__undefine_macro;
+      __dyn_opt.__value_.__string_view_ = __opt.name;
+      __dyn_opts_.push_back(__dyn_opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, include_path_opt>)
     {
-      __new_opt.__type_                 = _OptType::__include_path;
-      __new_opt.__value_.__string_view_ = __opt.path;
+      __dyn_opt.__type_                 = _DynOptType::__include_path;
+      __dyn_opt.__value_.__string_view_ = __opt.path;
+      __dyn_opts_.push_back(__dyn_opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, force_include_opt>)
     {
-      __new_opt.__type_                 = _OptType::__force_include;
-      __new_opt.__value_.__string_view_ = __opt.file_name;
+      __dyn_opt.__type_                 = _DynOptType::__force_include;
+      __dyn_opt.__value_.__string_view_ = __opt.file_name;
+      __dyn_opts_.push_back(__dyn_opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, std_version_opt>)
     {
-      __new_opt.__type_         = _OptType::__std_ver;
-      __new_opt.__value_.__int_ = static_cast<int>(__opt);
+      __std_version_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else
     {
       static_assert(_CUDA_VSTD::__always_false_v<_Tp>, "Unsupported option type by cuda_compile_opts");
     }
-    __opts_.push_back(__new_opt);
   }
 
   //! @brief Adds multiple compilation options to the list of options.
@@ -178,12 +189,15 @@ enum class fmad_opt : bool
 };
 
 //! @brief Option to specify the maximum number of registers per thread in PTX compilation.
-enum class max_reg_count_opt : unsigned
+enum class max_reg_count_opt : int
 {
+  __unspecified = -3,
+  arch_min      = -2, //!< Use the minimum number of registers for the architecture.
+  arch_max      = -1, //!< Use the maximum number of registers for the architecture.
 };
 
 //! @brief Option to specify the optimization level for PTX compilation.
-enum class optimization_level_opt : int
+enum class optimization_level_opt
 {
   O0,
   O1,
@@ -202,31 +216,24 @@ enum class pic_opt : bool
 class ptx_compile_opts
 {
 public: // todo: make this private
-  enum class _OptType
-  {
-    __device_debug,
-    __line_info,
-    __fmad,
-    __max_reg_count,
-    __optimization_level,
-    __pic,
-  };
-  union _OptValue
-  {
-    _CUDA_VSTD::string_view __string_view_;
-    int __int_;
-    unsigned __unsigned_;
-    bool __boolean_;
-  };
-  struct _Opt
-  {
-    _OptType __type_;
-    _OptValue __value_;
-  };
-
-  ::std::vector<_Opt> __opts_;
+  int __max_reg_count_;
+  unsigned __optimization_level_ : 2;
+  unsigned __device_debug_       : 1;
+  unsigned __line_info_          : 1;
+  unsigned __fmad_               : 1;
+  unsigned __pic_                : 1;
 
 public:
+  //! @brief Default constructor for PTX compilation options.
+  ptx_compile_opts() noexcept
+      : __max_reg_count_{_CUDA_VSTD::to_underlying(ptx_compile_options::max_reg_count_opt::__unspecified)}
+      , __optimization_level_{_CUDA_VSTD::to_underlying(ptx_compile_options::optimization_level_opt::O3)}
+      , __device_debug_{false}
+      , __line_info_{false}
+      , __fmad_{false}
+      , __pic_{false}
+  {}
+
   //! @brief Adds a PTX compilation option to the list of options.
   //!
   //! @tparam _Tp The type of the option to add.
@@ -237,44 +244,35 @@ public:
   {
     using namespace ptx_compile_options;
 
-    _Opt __new_opt{};
-
     // todo: add value checking
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, device_debug_opt>)
     {
-      __new_opt.__type_             = _OptType::__device_debug;
-      __new_opt.__value_.__boolean_ = static_cast<bool>(__opt);
+      __device_debug_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, line_info_opt>)
     {
-      __new_opt.__type_             = _OptType::__line_info;
-      __new_opt.__value_.__boolean_ = static_cast<bool>(__opt);
+      __line_info_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, fmad_opt>)
     {
-      __new_opt.__type_             = _OptType::__fmad;
-      __new_opt.__value_.__boolean_ = static_cast<bool>(__opt);
+      __fmad_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, max_reg_count_opt>)
     {
-      __new_opt.__type_              = _OptType::__max_reg_count;
-      __new_opt.__value_.__unsigned_ = static_cast<unsigned>(__opt);
+      __max_reg_count_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, optimization_level_opt>)
     {
-      __new_opt.__type_         = _OptType::__optimization_level;
-      __new_opt.__value_.__int_ = static_cast<int>(__opt);
+      __optimization_level_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, pic_opt>)
     {
-      __new_opt.__type_             = _OptType::__pic;
-      __new_opt.__value_.__boolean_ = static_cast<bool>(__opt);
+      __pic_ = _CUDA_VSTD::to_underlying(__opt);
     }
     else
     {
       static_assert(_CUDA_VSTD::__always_false_v<_Tp>, "Unsupported option type");
     }
-    __opts_.push_back(__new_opt);
   }
 
   //! @brief Adds multiple PTX compilation options to the list of options.

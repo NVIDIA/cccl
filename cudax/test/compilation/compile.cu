@@ -63,14 +63,15 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
 
   cuda::std::string_view name_exprs[]{"test_kernel<int>"};
 
-  auto result = cudax::compile_to_ptx(cudax::cuda_source_code{"test.cu", test_cuda_src}, cuda_opts, name_exprs);
+  cudax::cuda_compiler compiler{};
+  auto result = compiler.compile_to_ptx(cudax::cuda_source_code{"test.cu", test_cuda_src}, cuda_opts, name_exprs);
 
   if (result)
   {
     [[maybe_unused]] const auto log = result.get_log();
   }
 
-  [[maybe_unused]] auto code         = result.get_code();
+  [[maybe_unused]] auto ptx          = result.get_ptx();
   [[maybe_unused]] auto lowered_name = result.get_lowered_name(name_exprs[0]);
 }
 
@@ -97,15 +98,17 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
 
   cuda::std::string_view name_exprs[]{"test_kernel<int>"};
 
+  cudax::cuda_compiler compiler{};
   auto result =
-    cudax::compile_to_cubin(cudax::cuda_source_code{"test.cu", test_cuda_src}, cuda_opts, ptx_opts, name_exprs);
+    compiler.compile_to_cubin(cudax::cuda_source_code{"test.cu", test_cuda_src}, cuda_opts, ptx_opts, name_exprs);
 
   if (result)
   {
     [[maybe_unused]] const auto log = result.get_log();
   }
 
-  [[maybe_unused]] auto code         = result.get_code();
+  [[maybe_unused]] auto ptx          = result.get_ptx();
+  [[maybe_unused]] auto cubin        = result.get_cubin();
   [[maybe_unused]] auto lowered_name = result.get_lowered_name(name_exprs[0]);
 }
 
@@ -124,14 +127,15 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
 
   cuda::std::string_view name_exprs[]{"test_kernel<int>"};
 
-  auto result = cudax::compile_to_ltoir(cudax::cuda_source_code{"test.cu", test_cuda_src}, cuda_opts, name_exprs);
+  cudax::cuda_compiler compiler{};
+  auto result = compiler.compile_to_ltoir(cudax::cuda_source_code{"test.cu", test_cuda_src}, cuda_opts, name_exprs);
 
   if (result)
   {
     [[maybe_unused]] const auto log = result.get_log();
   }
 
-  [[maybe_unused]] auto code         = result.get_code();
+  [[maybe_unused]] auto ltoir        = result.get_ltoir();
   [[maybe_unused]] auto lowered_name = result.get_lowered_name(name_exprs[0]);
 }
 
@@ -148,12 +152,13 @@ C2H_TEST("Compile ptx to cubin", "[cuda.compile.ptx_to_cubin]")
 
   cuda::std::string_view lowered_names[]{"_Z11test_kernelPi"};
 
-  auto result = cudax::compile_to_cubin(cudax::ptx_source_code{test_ptx_src}, ptx_opts, lowered_names);
+  cudax::ptx_compiler compiler{};
+  auto result = compiler.compile_to_cubin(cudax::ptx_source_code{test_ptx_src}, ptx_opts, lowered_names);
 
   if (result)
   {
     [[maybe_unused]] const auto log = result.get_log();
   }
 
-  [[maybe_unused]] auto code = result.get_code();
+  [[maybe_unused]] auto cubin = result.get_cubin();
 }
