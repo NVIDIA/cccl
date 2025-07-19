@@ -41,7 +41,7 @@ namespace cuda::experimental
 
 class __nvrtc_compile_result_base
 {
-public: // todo: make this protected
+protected:
   ::nvrtcProgram __program_;
   bool __success_;
 
@@ -160,6 +160,8 @@ public:
 //! @brief Result of compiling CUDA source code to PTX.
 struct compile_cuda_to_ptx_result : public __nvrtc_compile_result_base
 {
+  friend class cuda_compiler;
+
   using _Base = __nvrtc_compile_result_base;
 
   using _Base::_Base;
@@ -188,6 +190,8 @@ struct compile_cuda_to_ptx_result : public __nvrtc_compile_result_base
 //! @brief Result of compiling CUDA source code to CUBIN.
 struct compile_cuda_to_cubin_result : public __nvrtc_compile_result_base
 {
+  friend class cuda_compiler;
+
   using _Base = __nvrtc_compile_result_base;
 
   using _Base::_Base;
@@ -234,6 +238,8 @@ struct compile_cuda_to_cubin_result : public __nvrtc_compile_result_base
 //! @brief Result of compiling CUDA source code to LTOIR.
 struct compile_cuda_to_ltoir_result : public __nvrtc_compile_result_base
 {
+  friend class cuda_compiler;
+
   using _Base = __nvrtc_compile_result_base;
 
   using _Base::_Base;
@@ -262,7 +268,8 @@ struct compile_cuda_to_ltoir_result : public __nvrtc_compile_result_base
 //! @brief Result of compiling PTX to CUBIN.
 class compile_ptx_to_cubin_result
 {
-public: // todo: make this private
+  friend class ptx_compiler;
+
   ::nvPTXCompilerHandle __handle_;
   bool __success_;
 
