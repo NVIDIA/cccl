@@ -13,7 +13,7 @@
 
 #include <cccl/c/experimental/stf/stf.h>
 
-C2H_TEST("basic stf task", "[task]")
+C2H_TEST("empty stf tasks", "[task]")
 {
   size_t N = 1000000;
 

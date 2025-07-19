@@ -36,6 +36,12 @@ void stf_ctx_finalize(stf_ctx_handle ctx)
   delete ctx;
 }
 
+cudaStream_t stf_fence(stf_ctx_handle ctx)
+{
+   assert(ctx);
+   return ctx->ctx.fence();
+}
+
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
 {
   assert(ld);
