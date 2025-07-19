@@ -60,6 +60,18 @@ __host__ __device__ void test_random(value_t value, gen_t& gen)
   }
 }
 
+struct PositiveDistribution
+{
+  cuda::std::minstd_rand0 rng;
+
+  template <typename T>
+  __host__ __device__ T operator()(cuda::std::uniform_int_distribution<T>& distrib)
+  {
+    auto value = distrib(rng);
+    return cuda::std::max(T{1}, static_cast<T>(cuda::uabs(value)));
+  }
+};
+
 template <typename value_t, typename divisor_t>
 __host__ __device__ void test()
 {
@@ -67,10 +79,7 @@ __host__ __device__ void test()
   printf("%s: seed: %lld\n", (_CCCL_BUILTIN_PRETTY_FUNCTION()), (long long int) seed);
   cuda::std::uniform_int_distribution<value_t> distrib;
   cuda::std::minstd_rand0 rng(static_cast<uint32_t>(seed));
-  auto positive_distr = [&](auto& local_distrib) {
-    auto value = local_distrib(rng);
-    return cuda::std::max(divisor_t{1}, static_cast<divisor_t>(cuda::uabs(value)));
-  };
+  PositiveDistribution positive_distr{rng};
   value_t value = positive_distr(distrib);
   test_power_of_2<value_t, divisor_t>(value);
   test_sequence<value_t, divisor_t>(value);
