@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_ALIGNED_SIZE_H
-#define _CUDA___BARRIER_ALIGNED_SIZE_H
+#ifndef _CUDA___MEMORY_ALIGNED_SIZE_H
+#define _CUDA___MEMORY_ALIGNED_SIZE_H
 
 #include <cuda/std/detail/__config>
 
@@ -58,4 +58,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___BARRIER_ALIGNED_SIZE_H
+#endif // _CUDA___MEMORY_ALIGNED_SIZE_H

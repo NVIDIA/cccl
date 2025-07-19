@@ -19,7 +19,7 @@ Prefetch memory in the L2 cache starting at ``ptr`` applying a residence control
 
 **Constraints**
 
-- :ref:`ShapeT <libcudacxx-extended-api-memory-access-shapes>` is either ``size_t`` or :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-access-shapes-aligned-size>`.
+- ``ShapeT`` is either ``size_t`` or :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-aligned-size>`.
 - Two properties are supported:
 
     -  :ref:`cuda::access_property::persisting <libcudacxx-extended-api-memory-access-properties-access-property-persisting>`

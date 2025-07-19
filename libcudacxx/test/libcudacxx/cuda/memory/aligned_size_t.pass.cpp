@@ -11,9 +11,9 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 
-// <cuda/barrier>
+// <cuda/memory>
 
-#include <cuda/barrier>
+#include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

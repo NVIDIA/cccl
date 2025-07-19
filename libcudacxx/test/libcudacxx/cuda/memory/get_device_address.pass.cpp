@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/functional>
+#include <cuda/memory>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

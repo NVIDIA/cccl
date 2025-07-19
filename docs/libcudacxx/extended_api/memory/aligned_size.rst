@@ -1,9 +1,9 @@
-.. _libcudacxx-extended-api-memory-access-shapes-aligned-size:
+.. _libcudacxx-extended-api-memory-aligned-size:
 
 ``cuda::aligned_size_t``
 ========================
 
-Defined in headers ``<cuda/barrier>`` and ``<cuda/pipeline>``:
+Defined in headers ``<cuda/memory>``, ``<cuda/barrier>`` and ``<cuda/pipeline>``:
 
 .. code:: cuda
 
@@ -72,7 +72,7 @@ Example
 
 .. code:: cuda
 
-   #include <cuda/barrier>
+   #include <cuda/memory>
 
    __global__ void example_kernel(void* dst, void* src, size_t size) {
      cuda::barrier<cuda::thread_scope_system> bar;

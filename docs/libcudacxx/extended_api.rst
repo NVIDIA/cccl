@@ -10,7 +10,6 @@ Extended API
    extended_api/execution_model
    extended_api/memory_model
    extended_api/thread_groups
-   extended_api/shapes
    extended_api/synchronization_primitives
    extended_api/asynchronous_operations
    extended_api/memory_access_properties
