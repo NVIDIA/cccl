@@ -148,9 +148,16 @@ template <class _Tp>
         }
         return __result;
       }
+      else
+      {
+        return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+      }
   }
+  else
 #  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_ARCH(X86_64) ^^^
-  return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+  {
+    return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+  }
 }
 
 #endif // _CCCL_HOST_COMPILATION()
