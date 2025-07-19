@@ -90,7 +90,9 @@ __host__ __device__ constexpr void test()
     cuda::static_for<T{15}, T{-15}, T{-5}>(Op<T>{15, -5, 6});
   }
 
-#if !_CCCL_COMPILER(GCC, <, 9)
+  // gcc < 9 and msvc < 19.42 in C++17 mode have problems determining noexcept for static_for,
+  // see https://godbolt.org/z/7rT7bTxcK
+#if !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 42) && _CCCL_STD_VER == 2017)
   // noexcept test for an always throwing operator
   {
     // 1. The function should be noexcept if there are 0 iterations even if the operator is not noexcept
@@ -138,7 +140,7 @@ __host__ __device__ constexpr void test()
     static_assert(!noexcept(cuda::static_for<T{1}, T{3}, T{2}>(OpThrowingIdx1<T>{})));
     static_assert(!noexcept(cuda::static_for<T, 1, 3, 2>(OpThrowingIdx1<T>{})));
   }
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 42) && _CCCL_STD_VER == 2017)
 }
 
 __host__ __device__ constexpr bool test()
