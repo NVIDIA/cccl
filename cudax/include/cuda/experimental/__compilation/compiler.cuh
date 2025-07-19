@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILATION_COMPILE_CUH
-#define _CUDAX___COMPILATION_COMPILE_CUH
+#ifndef _CUDAX___COMPILATION_COMPILER_CUH
+#define _CUDAX___COMPILATION_COMPILER_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -439,4 +439,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILATION_COMPILE_CUH
+#endif // _CUDAX___COMPILATION_COMPILER_CUH

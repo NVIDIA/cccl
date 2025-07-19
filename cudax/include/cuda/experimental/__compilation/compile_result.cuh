@@ -103,7 +103,7 @@ public:
     return *this;
   }
 
-  //! @brief Get the info log.
+  //! @brief Get the log.
   //!
   //! @return A string containing the info log.
   [[nodiscard]] ::std::string get_log() const
