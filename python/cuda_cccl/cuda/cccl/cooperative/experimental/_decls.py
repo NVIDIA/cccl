@@ -50,6 +50,17 @@ class CoopDeclMixin:
     we use `CoopInstanceTypeMixin`.
     """
 
+    is_constructor = False
+    """
+    When true, indicates that this is a constructor for a cooperative
+    primitive that needs an explicit instance type to be created, such
+    that other methods can be invoked on it, e.g.:
+        run_length = coop.block.run_length(...)
+        run_length.decode(...)
+    The `run_length()` call is a constructor in this instance, and should
+    have `is_constructor = True`
+    """
+
 
 def get_coop_decl_class_map():
     return {
@@ -926,19 +937,12 @@ class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
     primitive_name = "coop.block.run_length.decode"
 
     def generic(self):
-        def typer(decoded_items, relative_offsets, decoded_window_offset):
+        def typer(decoded_items, decoded_window_offset, relative_offsets=None):
             # Verify decoded_items is a device array.
             if not isinstance(decoded_items, types.Array):
                 raise errors.TypingError(
                     "decoded_items must be a device array, "
                     f"got {type(decoded_items).__name__}"
-                )
-
-            # Verify relative_offsets is a device array.
-            if not isinstance(relative_offsets, types.Array):
-                raise errors.TypingError(
-                    "relative_offsets must be a device array, "
-                    f"got {type(relative_offsets).__name__}"
                 )
 
             # Verify decoded_window_offset is an integer.
@@ -947,11 +951,23 @@ class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
                     "decoded_window_offset must be an integer value"
                 )
 
+            arglist = [
+                decoded_items,
+                decoded_window_offset,
+            ]
+
+            if relative_offsets is not None:
+                # Verify relative_offsets is a device array.
+                if not isinstance(relative_offsets, types.Array):
+                    raise errors.TypingError(
+                        "relative_offsets must be a device array, "
+                        f"got {type(relative_offsets).__name__}"
+                    )
+                arglist.append(relative_offsets)
+
             sig = signature(
                 types.void,
-                decoded_items,
-                relative_offsets,
-                decoded_window_offset,
+                *arglist,
             )
 
             return sig
@@ -964,6 +980,7 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
     primitive_name = "coop.block.run_length"
     algorithm_enum = coop.NoAlgorithm
     default_algorithm = coop.NoAlgorithm.NO_ALGORITHM
+    is_constructor = True
 
     def __init__(self, context=None):
         super().__init__(context=context)
@@ -974,7 +991,7 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
             run_lengths,
             runs_per_thread,
             decoded_items_per_thread,
-            total_decoded_size,
+            total_decoded_size=None,
             temp_storage=None,
         ):
             # Verify run_values and run_lengths are device arrays.
@@ -1002,8 +1019,11 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
                 "decoded_items_per_thread",
             )
 
-            if not isinstance(total_decoded_size, types.Integer):
-                raise errors.TypingError("total_decoded_size must be an integer value")
+            if total_decoded_size is not None:
+                if not isinstance(total_decoded_size, types.Integer):
+                    raise errors.TypingError(
+                        "total_decoded_size must be an integer type"
+                    )
 
             validate_temp_storage(self, temp_storage)
 
@@ -1068,7 +1088,7 @@ def type_block_run_length_instance_call(context):
         run_lengths,
         runs_per_thread,
         decoded_items_per_thread,
-        total_decoded_size,
+        total_decoded_size=None,
         temp_storage=None,
     ):
         decl = block_run_length_instance_type.decl

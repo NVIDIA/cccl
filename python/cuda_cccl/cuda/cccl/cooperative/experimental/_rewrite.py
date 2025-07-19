@@ -45,6 +45,8 @@ if False:
     config.CUDA_LOG_LEVEL = "debug"
     # config.CUDA_ENABLE_PYNVJITLINK = True
 
+CUDA_CCCL_COOP_MODULE_NAME = "cuda.cccl.cooperative.experimental"
+
 
 def get_element_count(shape):
     if isinstance(shape, int):
@@ -125,32 +127,132 @@ RootVarType = Union[ir.Arg, ir.Const, ir.FreeVar, ir.Global]
 
 
 @dataclass
+class CallDefinition:
+    instr: VarType
+    func: VarType
+    func_name: str
+    assign: Optional[ir.Assign] = None
+    order: Optional[int] = None
+
+
+@dataclass
+class GetAttrDefinition:
+    instr: VarType
+    instance_name: str
+    attr_name: str
+    assign: Optional[ir.Assign] = None
+    instance: Optional[Any] = None
+    attr_instance: Optional[Any] = None
+    order: Optional[int] = None
+    subsequent_call: Optional[CallDefinition] = None
+
+
+@dataclass
 class RootDefinition:
     original_instr: VarType
     root_instr: RootVarType
+    root_assign: ir.Assign
     instance: Any
     needs_pre_launch_callback: bool
+    all_instructions: list[VarType]
+    all_assignments: list[ir.Assign]
+    definitions: list[Union[GetAttrDefinition, CallDefinition]] = None
+    attr_instance: Optional[Any] = None
+
+    @cached_property
+    def is_single_phase(self) -> bool:
+        # Single-phase is ascertained by checking if the root instruction
+        # is a call expression.
+        var = self.root_assign.value
+        return isinstance(var, ir.Expr) and var.op == "call"
+
+    @cached_property
+    def leaf_constructor_call(self):
+        if not self.is_single_phase:
+            return
+
+        leaf_def = self.getattr_definitions[-1]
+        leaf_constructor = leaf_def.subsequent_call
+        if not isinstance(leaf_constructor, CallDefinition):
+            raise RuntimeError(
+                "Expected last getattr definition to have a subsequent call, "
+                f"but got {leaf_def!r}."
+            )
+        return leaf_constructor
+
+    @cached_property
+    def primitive_name(self) -> str:
+        """
+        Return the fully-qualified name of the primitive for the root
+        instruction.  E.g. `coop.block.run_length`.
+        """
+        suffix = ".".join(a.attr_name for a in self.getattr_definitions)
+
+        root_module = self.instance
+        if not isinstance(root_module, PyModuleType):
+            raise RuntimeError(f"Root instance {root_module!r} is not a module.")
+        root_name = root_module.__name__
+
+        if root_name != CUDA_CCCL_COOP_MODULE_NAME:
+            raise RuntimeError(
+                f"Root module name '{root_name}' is not expected "
+                f"'{CUDA_CCCL_COOP_MODULE_NAME}'."
+            )
+
+        return ".".join(("coop", suffix))
+
+    @cached_property
+    def getattr_definitions(self) -> list[GetAttrDefinition]:
+        """
+        Return the list of GetAttrDefinition objects found during the
+        resolution of the root definition.  Ordered from the root definition
+        to the last `getattr()` instruction encountered.
+        """
+        return [d for d in self.definitions if isinstance(d, GetAttrDefinition)]
+
+    @cached_property
+    def call_definitions(self) -> list[CallDefinition]:
+        """
+        Return the list of CallDefinition objects found during the resolution
+        of the root definition.  Ordered from the root definition to the last
+        `call()` instruction encountered.
+        """
+        return [d for d in self.definitions if isinstance(d, CallDefinition)]
 
 
 def get_root_definition(
     func_ir: ir.FunctionIR,
     instr: VarType,
     launch_config: "LaunchConfig",
+    assignments_map: dict[ir.Var, ir.Assign],
 ) -> Optional[RootDefinition]:
     """
     Recursively find the root definition of an instruction in the function IR.
     """
     counter = 0
     instance = None
+    attr_name = None
+    attr_instance = None
     root_instr = None
     original_instr = instr
     needs_pre_launch_callback = False
 
+    original_instr_is_getattr = (
+        isinstance(original_instr, ir.Expr) and original_instr.op == "getattr"
+    )
+
     instructions = [instr]
+    all_instructions = [instr]
+    all_assignments = []
+    definitions = []
 
     while instructions:
         counter += 1
         instr = instructions.pop()
+        assign = assignments_map.get(instr, None)
+        # We append even if None so that the `all_instructions` list
+        # and `all_assignments` list are symmetric.
+        all_assignments.append(assign)
 
         # The list should be empty at this point.
         assert not instructions, (instr, instructions)
@@ -169,26 +271,79 @@ def get_root_definition(
                 launch_config,
             )
             assert not instructions, (root_instr, instructions)
-            if counter == 1:
-                needs_pre_launch_callback = True
-            continue
+            # If the original instruction is a `getattr(value=V, attr=A)`, and
+            # the value V's name matches our arg name here, then we need a
+            # pre-launch callback to register the extension.
+            if original_instr_is_getattr:
+                if original_instr.value.name != instr.name:
+                    raise RuntimeError(
+                        f"XXX TODO Ummm unexpected code path? {original_instr!r} "
+                    )
+                else:
+                    needs_pre_launch_callback = True
+                if attr_name is None:
+                    raise RuntimeError(
+                        "Expected attr_name to be set, but got "
+                        f"None for {original_instr!r}"
+                    )
+                attr_instance = getattr(instance, attr_name)
+
+            last_instr = all_instructions[-1]
+            last_instr_was_getattr = (
+                isinstance(last_instr, ir.Expr) and last_instr.op == "getattr"
+            )
+            if last_instr_was_getattr:
+                if last_instr.value.name != instr.name:
+                    raise RuntimeError(
+                        "Expected last instruction value name to match arg name, "
+                        f"but got {last_instr.value.name!r} != {instr.name!r}"
+                    )
+                if attr_name is None:
+                    raise RuntimeError(
+                        "Expected attr_name to be set, but got None for "
+                        f"{last_instr!r}, instr: {instr!r}"
+                    )
+                attr_instance = getattr(instance, attr_name)
+            break
         elif isinstance(instr, ir.Var):
             next_instr = func_ir.get_definition(instr.name)
             instructions.append(next_instr)
+            all_instructions.append(next_instr)
             continue
         elif isinstance(instr, ir.Expr):
             if instr.op == "getattr":
                 # If the instruction is a getattr, append it to our list of
                 # instructions and continue.  This handles arbitrarily-nested
                 # attributes.
-                obj = instr.value
-                next_instr = func_ir.get_definition(obj.name)
+                var_obj = instr.value
+                assert isinstance(var_obj, ir.Var), (
+                    f"Expected ir.Var, got {type(var_obj)}: {var_obj!r}"
+                )
+                attr_name = instr.attr
+                next_instr = func_ir.get_definition(var_obj)
                 instructions.append(next_instr)
+                all_instructions.append(next_instr)
+                last_instr_was_getattr = True
+                getattr_def = GetAttrDefinition(
+                    instr=instr,
+                    instance_name=var_obj.name,
+                    attr_name=attr_name,
+                    assign=assign,
+                )
+                definitions.append(getattr_def)
                 continue
             elif instr.op == "call":
                 func = instr.func
                 next_instr = func_ir.get_definition(func.name)
                 instructions.append(next_instr)
+                all_instructions.append(next_instr)
+                defn = CallDefinition(
+                    instr=instr,
+                    func=func,
+                    func_name=func.name,
+                    assign=assign,
+                )
+                definitions.append(defn)
                 continue
             else:
                 msg = f"Unexpected expression op: {instr!r}"
@@ -201,11 +356,58 @@ def get_root_definition(
         # If we didn't find a root instruction, return None.
         return None
 
+    # Reverse the list of all instructions and any definitions we found.  This
+    # ensures they occur in temporal order (i.e. from the root first to the
+    # "original" instruction we were asked to resolve).
+    all_instructions.reverse()
+    definitions.reverse()
+
+    root_instance = instance
+
+    # Fill out each definition with additional information now that we've got
+    # the full chain of instructions and definitions available.  For getattrs,
+    # we fill in the instance and corresponding result of the `getattr()` on
+    # that instance with the collected attribute name.  For calls, if there's
+    # a preceding getattr, we wire up the `.subsequent_call` attribute, such
+    # that callers can easily find the method invocation or object construction
+    # of interest.
+    for i, defn in enumerate(definitions):
+        if isinstance(defn, GetAttrDefinition):
+            attr_instance = getattr(instance, defn.attr_name)
+            defn.instance = instance
+            defn.attr_instance = attr_instance
+            defn.order = i
+            instance = attr_instance
+        elif isinstance(defn, CallDefinition):
+            defn.order = i
+            if i > 0:
+                preceeding_defn = definitions[i - 1]
+                if isinstance(preceeding_defn, GetAttrDefinition):
+                    # If the preceding definition is a getattr, we can use
+                    # its instance as the instance for this call definition.
+                    preceeding_defn.subsequent_call = defn
+
+    root_assign = None
+    for assign in all_assignments:
+        if assign:
+            root_assign = assign
+            break
+    if not root_assign:
+        raise RuntimeError(
+            "Expected to find at least one assignment for the "
+            f"root instruction, but got none for {original_instr!r}"
+        )
+
     root_definition = RootDefinition(
         original_instr=original_instr,
         root_instr=root_instr,
-        instance=instance,
+        root_assign=root_assign,
+        instance=root_instance,
         needs_pre_launch_callback=needs_pre_launch_callback,
+        all_instructions=all_instructions,
+        all_assignments=all_assignments,
+        definitions=definitions,
+        attr_instance=attr_instance,
     )
 
     return root_definition
@@ -292,7 +494,7 @@ class CoopNode:
     parent_node: Optional["CoopNode"] = None
 
     # Defaults.
-    implicit_temp_storage: bool = True
+    # implicit_temp_storage: bool = True
 
     # Optional.
     threads: int = None
@@ -313,6 +515,9 @@ class CoopNode:
     instance: Any = None
     codegens: list = None
     children: list = None
+    temp_storage: Optional[Any] = None
+    parent_node: Optional["CoopNode"] = None
+    parent_root_def: Optional["RootDefinition"] = None
 
     def __post_init__(self):
         # If we're handling a two-phase invocation via a primitive that was
@@ -325,6 +530,9 @@ class CoopNode:
             # _prepare_args() method when it doesn't know how to handle one
             # of our two-phase primitive instances.
             self.launch_config.pre_launch_callbacks.append(self.pre_launch_callback)
+
+        if self.parent_node is not None:
+            self.parent_node.children.append(self)
 
     def pre_launch_callback(self, kernel, launch_config):
         register_kernel_extension(kernel, self)
@@ -348,6 +556,10 @@ class CoopNode:
         # sane here that'll pacify _Kernel._prepare_args().
         addr = id(val)
         return (types.uint64, addr)
+
+    @property
+    def implicit_temp_storage(self):
+        return self.temp_storage is None
 
     @property
     def is_two_phase(self):
@@ -548,12 +760,11 @@ class CoopNode:
 
     @property
     def codegen(self):
-        assert len(self.codegens) == 2, (len(self.codegens), self.codegens)
-        if self.implicit_temp_storage:
-            idx = 1
-        else:
-            idx = 0
-        return self.codegens[idx]
+        # This should only ever be one for the new primitive impl; we've
+        # obviated the need for the automatic implicit temp storage parameter
+        # codegen by way of our richer primitives and rewriting facilities.
+        assert len(self.codegens) == 1, (len(self.codegens), self.codegens)
+        return self.codegens[0]
 
 
 class CoopLoadStoreNode(CoopNode):
@@ -752,7 +963,7 @@ class CoopLoadStoreNode(CoopNode):
         instance = self.two_phase_instance
         algo = instance.specialization
 
-        # Create the codegens for the algorithm
+        # Create the codegen for the algorithm
         self.codegens = algo.create_codegens()
 
         # Set the instance as the invocable for consistency
@@ -1167,10 +1378,79 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
 class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length"
 
-    def rewrite(self, rewriter):
-        pass
-
     def refine_match(self, rewriter):
+        # The caller has invoked us with something like this:
+        #   run_length = coop.block.run_length(
+        #       run_values,
+        #       run_lengths,
+        #       runs_per_thread,
+        #       decoded_items_per_thread,
+        #       total_decoded_size,
+        #       temp_storage=temp_storage,
+        #   )
+        #
+        # We need to create the constructor as follows:
+        #
+        #   run_length_constructor = coop.block.run_length(
+        #       item_dtype=run_values.dtype,
+        #       dim=launch_config.blockdim,
+        #       runs_per_thread=runs_per_thread,
+        #       decoded_items_per_thread=decoded_items_per_thread,
+        #       decoded_offset_dtype=run_lengths.dtype,
+        #       total_decoded_size=total_decoded_size,
+        #       temp_storage=temp_storage,
+        #   )
+        #
+        # And then invoke as:
+        #
+        #   run_length = run_length_constructor(
+        #       run_values,
+        #       run_lengths,
+        #       total_decoded_size=total_decoded_size,
+        #       temp_storage=temp_storage,
+        #   )
+
+        expr = self.expr
+        expr_args = self.expr_args = list(expr.args)
+
+        run_values = expr_args.pop(0)
+        run_values_ty = self.typemap[run_values.name]
+
+        run_lengths = expr_args.pop(0)
+        run_lengths_ty = self.typemap[run_lengths.name]
+
+        runs_per_thread = self.get_arg_value("runs_per_thread")
+        decoded_items_per_thread = self.get_arg_value("decoded_items_per_thread")
+
+        total_decoded_size = self.get_arg_value_safe("total_decoded_size")
+        temp_storage = self.get_arg_value_safe("temp_storage")
+
+        item_dtype = run_values_ty.dtype
+        decoded_offset_dtype = run_lengths_ty.dtype
+
+        self.run_values = run_values
+        self.item_dtype = item_dtype
+        self.run_lengths = run_lengths
+        self.decoded_offset_dtype = decoded_offset_dtype
+        self.runs_per_thread = runs_per_thread
+        self.decoded_items_per_thread = decoded_items_per_thread
+        self.total_decoded_size = total_decoded_size
+        self.temp_storage = temp_storage
+
+        self.instance = self.impl_class(
+            item_dtype=item_dtype,
+            dim=self.launch_config.blockdim,
+            runs_per_thread=runs_per_thread,
+            decoded_items_per_thread=decoded_items_per_thread,
+            decoded_offset_dtype=decoded_offset_dtype,
+            total_decoded_size=total_decoded_size,
+            temp_storage=temp_storage,
+        )
+
+    def add_child(self, child):
+        self.children.append(child)
+
+    def rewrite(self, rewriter):
         pass
 
 
@@ -1234,7 +1514,7 @@ def get_coop_class_and_instance_maps():
 
 
 @register_rewrite("after-inference")
-class BaseCooperativeNodeRewriter(Rewrite):
+class CoopNodeRewriter(Rewrite):
     interesting_modules = {
         "numba",
         "numba.cuda",
@@ -1242,6 +1522,9 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
     def __init__(self, state, *args, **kwargs):
         super().__init__(state, *args, **kwargs)
+
+        self._match_count = 0
+        self.first_match = True
 
         maps = get_coop_class_and_instance_maps()
         self._decl_classes = maps.decls
@@ -1260,130 +1543,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
         self._state = state
 
-    def _reset(self):
-        # Called by match() when we've found the first coop node in a new block.
-        self._modules.clear()
-        self._needs_module.clear()
         self.nodes = OrderedDict()
-
-    def _get_or_create_global_module(
-        self,
-        mod_key: str,
-        module_obj,
-        scope,
-        loc,
-        new_nodes: list[ir.Assign],
-    ) -> ir.Assign:
-        instr = self._modules.get(mod_key)
-        if instr:
-            new_nodes.append(instr)
-            return instr
-
-        # Unique SSA variable for the module object
-        unique_name = f"$g_{mod_key.replace('.', '_')}_var"
-        var_name = ir_utils.mk_unique_var(unique_name)
-        var = ir.Var(scope, var_name, loc)
-
-        # ir.Global wraps the Python module so it becomes a constant
-        g_mod = ir.Global(mod_key.split(".")[-1], module_obj, loc)
-        instr = ir.Assign(value=g_mod, target=var, loc=loc)
-
-        # Type-map entry so later passes know this is a module object.
-        self.typemap[var.name] = types.Module(module_obj)
-
-        # Cache for reuse.
-        self._modules[mod_key] = instr
-
-        new_nodes.append(instr)
-        return instr
-
-    def get_or_create_global_numba_module_instr(self, scope, loc, new_nodes):
-        import numba
-
-        return self._get_or_create_global_module("numba", numba, scope, loc, new_nodes)
-
-    def get_or_create_global_numba_cuda_module_instr(self, scope, loc, new_nodes):
-        import numba.cuda
-
-        return self._get_or_create_global_module(
-            "numba.cuda", numba.cuda, scope, loc, new_nodes
-        )
-
-    def handle_new_kernel_traits_struct(
-        self, struct: Any, name: str, launch_config: "LaunchConfig"
-    ):
-        # N.B. See the comment in the `match()` method for more details about
-        #      the purpose of this method and the `CustomPrepareArgs` class.
-        needs_custom = not hasattr(struct, "prepare_args") or not hasattr(
-            struct, "pre_launch_callback"
-        )
-        if not needs_custom:
-            # Use the struct directly.
-            custom = struct
-        else:
-            # Synthesize a custom prepare_args handler for the struct.
-            class CustomPrepareArgs:
-                """
-                Custom prepare_args handler for the struct-like object.
-                This will be added to the kernel's extensions list.
-                """
-
-                def __init__(self, struct: Any, name: str):
-                    self.struct = struct
-                    self.name = name
-
-                def pre_launch_callback(self, kernel, launch_config):
-                    register_kernel_extension(kernel, self)
-
-                def prepare_args(self, ty, val, *args, **kwds):
-                    if val is not self.struct:
-                        return (ty, val)
-
-                    # The values we return here just need to pacify _Kernel's
-                    # _parse_args() routines--we never actually use the kernel
-                    # parameters by way of the arguments provided at kernel
-                    # launch.
-                    addr = id(val)
-                    return (types.uint64, addr)
-
-            custom = CustomPrepareArgs(struct, name)
-
-        launch_config.pre_launch_callbacks.append(custom.pre_launch_callback)
-
-    def match(self, func_ir, block, typemap, calltypes, **kw):
-        # If there are no calls in this block, we can immediately skip it.
-        num_calltypes = len(calltypes)
-        if num_calltypes == 0:
-            return False
-
-        self._reset()
-
-        first = True
-        found = False
-        launch_config = None
-
-        decl_classes = self._decl_classes
-        node_classes = self._node_classes
-        type_instances = self._instances
-        launch_config = ensure_current_launch_config()
-        interesting_modules = self.interesting_modules
-
-        # Reverse the decl_classes map to get a mapping from templates (or,
-        # more specifically, the value of `CoopDeclMixin.key` class attribute,
-        # which might be a string for primitive functions associated with a
-        # parent struct (i.e. `init` of `coop.block.histogram`)).
-        # to the corresponding declaration class.
-        impl_to_decl_classes = {v: k for (k, v) in decl_classes.items()}
-        # Sanity check that the values in the decl_classes were unique.
-        if len(impl_to_decl_classes) != len(decl_classes):
-            raise RuntimeError(
-                f"Duplicates found in decl_classes.values(): {decl_classes.values()}"
-            )
-
-        # py_func = func_ir.func_id.func
-        # code_obj = py_func.__code__
-        # free_vars = code_obj.co_freevars
-        # cells = py_func.__closure__
 
         # Advanced C++ CUDA kernels will often leverage a templated struct
         # for specialized CUB primitives, e.g.
@@ -1455,7 +1615,240 @@ class BaseCooperativeNodeRewriter(Rewrite):
         # this by obtaining the launch configuration and appending to the
         # `pre_launch_callbacks` list, providing another synthesized routine
         # that, when invoked, will update the kernel's extensions list.
-        seen_structs = set()
+        self.seen_structs = set()
+
+    def _get_or_create_global_module(
+        self,
+        mod_key: str,
+        module_obj,
+        scope,
+        loc,
+        new_nodes: list[ir.Assign],
+    ) -> ir.Assign:
+        instr = self._modules.get(mod_key)
+        if instr:
+            new_nodes.append(instr)
+            return instr
+
+        # Unique SSA variable for the module object
+        unique_name = f"$g_{mod_key.replace('.', '_')}_var"
+        var_name = ir_utils.mk_unique_var(unique_name)
+        var = ir.Var(scope, var_name, loc)
+
+        # ir.Global wraps the Python module so it becomes a constant
+        g_mod = ir.Global(mod_key.split(".")[-1], module_obj, loc)
+        instr = ir.Assign(value=g_mod, target=var, loc=loc)
+
+        # Type-map entry so later passes know this is a module object.
+        self.typemap[var.name] = types.Module(module_obj)
+
+        # Cache for reuse.
+        self._modules[mod_key] = instr
+
+        new_nodes.append(instr)
+        return instr
+
+    def get_or_create_global_numba_module_instr(self, scope, loc, new_nodes):
+        import numba
+
+        return self._get_or_create_global_module("numba", numba, scope, loc, new_nodes)
+
+    def get_or_create_global_numba_cuda_module_instr(self, scope, loc, new_nodes):
+        import numba.cuda
+
+        return self._get_or_create_global_module(
+            "numba.cuda", numba.cuda, scope, loc, new_nodes
+        )
+
+    def get_or_create_parent_node(
+        self,
+        func_ir: ir.FunctionIR,
+        current_block: ir.Block,
+        parent_target_name: str,
+        parent_root_def: RootDefinition,
+        calltypes: dict[ir.Expr, types.Type],
+        typemap: dict[str, types.Type],
+        launch_config: "LaunchConfig",
+    ) -> CoopNode:
+        if parent_target_name in self.nodes:
+            return self.nodes[parent_target_name]
+
+        # Create a new CoopNode instance for the parent.
+        needs_pre_launch_callback = parent_root_def.needs_pre_launch_callback
+
+        primitive_name = parent_root_def.primitive_name
+        node_class = self._node_classes[primitive_name]
+        decl = self.decl_class_by_primitive_name[primitive_name]
+        template = decl
+        impl_class = self._decl_classes[decl]
+
+        root_assign = parent_root_def.root_assign
+        root_block = self.all_assignments[root_assign]
+        expr = root_assign.value
+        func_name = expr.func.name
+        func = typemap[func_name]
+        target = root_assign.target
+
+        node = node_class(
+            index=-1,
+            block_line=root_block.loc.line,
+            expr=expr,
+            instr=parent_root_def.root_instr,
+            template=template,
+            func=func,
+            func_name=func_name,
+            impl_class=impl_class,
+            target=target,
+            calltypes=calltypes,
+            typemap=typemap,
+            func_ir=func_ir,
+            typingctx=self._state.typingctx,
+            launch_config=launch_config,
+            needs_pre_launch_callback=needs_pre_launch_callback,
+            type_instance=None,  # type_instance,
+            two_phase_instance=None,
+            parent_struct_instance_type=None,
+            parent_node=None,
+        )
+
+        self.nodes[parent_target_name] = node
+        node.refine_match(self)
+
+        return node
+
+    def handle_new_kernel_traits_struct(
+        self, struct: Any, name: str, launch_config: "LaunchConfig"
+    ):
+        # N.B. See the comment in the `match()` method for more details about
+        #      the purpose of this method and the `CustomPrepareArgs` class.
+        needs_custom = not hasattr(struct, "prepare_args") or not hasattr(
+            struct, "pre_launch_callback"
+        )
+        if not needs_custom:
+            # Use the struct directly.
+            custom = struct
+        else:
+            # Synthesize a custom prepare_args handler for the struct.
+            class CustomPrepareArgs:
+                """
+                Custom prepare_args handler for the struct-like object.
+                This will be added to the kernel's extensions list.
+                """
+
+                def __init__(self, struct: Any, name: str):
+                    self.struct = struct
+                    self.name = name
+
+                def pre_launch_callback(self, kernel, launch_config):
+                    register_kernel_extension(kernel, self)
+
+                def prepare_args(self, ty, val, *args, **kwds):
+                    if val is not self.struct:
+                        return (ty, val)
+
+                    # The values we return here just need to pacify _Kernel's
+                    # _parse_args() routines--we never actually use the kernel
+                    # parameters by way of the arguments provided at kernel
+                    # launch.
+                    addr = id(val)
+                    return (types.uint64, addr)
+
+            custom = CustomPrepareArgs(struct, name)
+
+        launch_config.pre_launch_callbacks.append(custom.pre_launch_callback)
+
+    @cached_property
+    def launch_config(self):
+        return ensure_current_launch_config()
+
+    @cached_property
+    def all_assignments(self) -> dict[ir.Assign, ir.Block]:
+        """
+        Returns a dict that maps all `ir.Assign` instructions in the function
+        IR to their corresponding `ir.Block`.
+        """
+        assignments = {}
+        for block in self.func_ir.blocks.values():
+            assignments.update({a: block for a in block.find_insts(ir.Assign)})
+        return assignments
+
+    @cached_property
+    def impl_to_decl_classes(self):
+        decl_classes = self._decl_classes
+        impl_to_decl_classes = {v: k for (k, v) in decl_classes.items()}
+        # Sanity check that the values in the decl_classes were unique.
+        if len(impl_to_decl_classes) != len(decl_classes):
+            raise RuntimeError(
+                f"Duplicates found in decl_classes.values(): {decl_classes.values()}"
+            )
+        return impl_to_decl_classes
+
+    @cached_property
+    def decl_class_by_primitive_name(self):
+        decl_classes = self._decl_classes
+        primitive_names = set(k.primitive_name for k in decl_classes.keys())
+        if len(primitive_names) != len(decl_classes):
+            raise RuntimeError(
+                "Duplicate primitive names found in decl_classes: "
+                f"{decl_classes}, primitive names: {primitive_names}"
+            )
+        return {k.primitive_name: k for k in decl_classes.keys()}
+
+    @cached_property
+    def assignments_map(self):
+        """
+        Returns a map of `ir.Assign` values to their corresponding `ir.Assign`
+        node.  This allows us to find any assignment to a variable in any block
+        at any point during match processing (i.e. handy for finding assignments
+        in blocks other than the current one being processed by `match()`).
+        """
+        assignments = self.all_assignments
+        return {assign.value: assign for assign in assignments.keys()}
+
+    def match(self, func_ir, block, typemap, calltypes, **kw):
+        # If there are no calls in this block, we can immediately skip it.
+        num_calltypes = len(calltypes)
+        if num_calltypes == 0:
+            return False
+
+        self._match_count += 1
+        if self._match_count == 1:
+            self.func_ir = func_ir
+
+        first = True
+        launch_config = None
+
+        # We return this value at the end of the routine.  A true value
+        # indicates that we want `apply()` to be called after we return
+        # from this routine in order to rewrite the block we just processed.
+        we_want_apply = False
+
+        decl_classes = self._decl_classes
+        node_classes = self._node_classes
+        type_instances = self._instances
+        launch_config = self.launch_config
+        interesting_modules = self.interesting_modules
+
+        # N.B. I keep thinking I need these, but then never end up using them.
+        #      Keeping for now so I can easily uncomment if I do actually end
+        #      up needing them.
+        #
+        # py_func = func_ir.func_id.func
+        # code_obj = py_func.__code__
+        # free_vars = code_obj.co_freevars
+        # cells = py_func.__closure__
+
+        found = False
+        for block_no, (offset, ir_block) in enumerate(func_ir.blocks.items()):
+            if ir_block is block:
+                found = True
+                break
+
+        if not found:
+            raise RuntimeError(
+                f"Block {block!r} not found in function IR blocks: "
+                f"{list(func_ir.blocks.keys())}"
+            )
 
         for i, instr in enumerate(block.body):
             # We're only interested in ir.Assign nodes.  Skip the rest.
@@ -1510,15 +1903,16 @@ class BaseCooperativeNodeRewriter(Rewrite):
 
             expr = rhs
 
+            expr_repr = repr(expr)
+            if "run_length" in expr_repr:
+                # import debugpy
+                # debugpy.breakpoint()
+                # print(expr_repr)
+                pass
+
             # We can ignore nodes that aren't function calls herein.
             if expr.op != "call":
                 continue
-
-            # call_expr_repr = repr(expr)
-            # if "run_length = " in call_expr_repr:
-            #     import debugpy
-            #     debugpy.breakpoint()
-            #     print(call_expr_repr)
 
             func_name = expr.func.name
             func = typemap[func_name]
@@ -1580,6 +1974,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 # We're dealing with a two-phase primitive instance.
                 type_instance = func
                 def_instr = func_ir.get_definition(func_name)
+                was_getattr = False
                 if isinstance(def_instr, (ir.Global, ir.FreeVar)):
                     # Globals and free variables are easy; we can get the
                     # instance directly from the instruction's value.
@@ -1594,6 +1989,7 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     needs_pre_launch_callback = True
                 elif isinstance(def_instr, ir.Expr):
                     if def_instr.op == "getattr":
+                        was_getattr = True
                         obj = def_instr.value
                         obj_instr = func_ir.get_definition(obj.name)
                         if isinstance(obj_instr, (ir.Global, ir.FreeVar)):
@@ -1605,13 +2001,13 @@ class BaseCooperativeNodeRewriter(Rewrite):
                                 obj_instr.name,
                                 launch_config,
                             )
-                            if obj.name not in seen_structs:
+                            if obj.name not in self.seen_structs:
                                 # If we haven't seen this struct before, we
                                 # need to create a new class for it.
                                 self.handle_new_kernel_traits_struct(
                                     arg_value, obj.name, launch_config
                                 )
-                                seen_structs.add(obj.name)
+                                self.seen_structs.add(obj.name)
                             two_phase_instance = getattr(arg_value, def_instr.attr)
 
                             # N.B. We don't need to set `needs_pre_launch_callback`
@@ -1629,8 +2025,12 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     func_ir,
                     def_instr,
                     launch_config,
+                    self.assignments_map,
                 )
-                assert root_def.instance is two_phase_instance
+                if was_getattr:
+                    assert root_def.attr_instance is two_phase_instance
+                else:
+                    assert root_def.instance is two_phase_instance
 
                 value_type = typemap[func_name]
                 primitive_name = repr(value_type)
@@ -1719,9 +2119,8 @@ class BaseCooperativeNodeRewriter(Rewrite):
                 # that directly from our `self.nodes` map.
 
                 # bound_func = func
-                type_instance = func
+                # type_instance = func
                 template = func.template
-                impl_class = func.key[0]
                 primitive_name = template.primitive_name
                 parent_struct_instance_type = func.key[1]
 
@@ -1743,49 +2142,38 @@ class BaseCooperativeNodeRewriter(Rewrite):
                     continue
 
                 # The `getattr_expr.value` will be the parent object for which
-                # the `getattr()` was called, e.g. `histo` in the example.  We
-                # can then use that to find the parent node in our `self.nodes`.
+                # the `getattr()` was called, e.g. `histo` in the example.
                 parent_obj = getattr_expr.value
                 parent_target_name = parent_obj.name
 
-                # Get the root definition of the parent object.  We'll use this
-                # to verify the parent node from our `self.nodes` map has its
-                # `two_phase_instance` match the same instance we obtained on
-                # the root definition.
+                # Get the root definition of the parent object.
                 parent_root_def = get_root_definition(
                     func_ir,
                     parent_obj,
                     launch_config,
+                    self.assignments_map,
                 )
                 if not parent_root_def:
                     raise RuntimeError(
                         f"Could not find root definition for {parent_target_name!r}"
                     )
 
-                # Get the parent node via the target name we derived.
-                parent_node = self.nodes.get(parent_target_name, None)
-                if not parent_node:
-                    raise RuntimeError(
-                        "Could not find parent node for "
-                        f"{parent_target_name!r}; "
-                        f"parent_root_def: {parent_root_def!r}"
-                    )
-
-                # Invariant check: parent node's `two_phase_instance` must
-                # match the parent root definition's instance.
-                parent_two_phase_instance = parent_node.two_phase_instance
-                instance_mismatch = parent_two_phase_instance is None or (
-                    parent_root_def.instance is not parent_two_phase_instance
+                parent_node = self.get_or_create_parent_node(
+                    func_ir,
+                    block,
+                    parent_target_name,
+                    parent_root_def,
+                    calltypes,
+                    typemap,
+                    launch_config,
                 )
-                if instance_mismatch:
-                    raise RuntimeError(
-                        "Parent node's two_phase_instance mismatch: "
-                        f"{parent_two_phase_instance!r} != "
-                        f"{parent_root_def.instance!r} "
-                        f"({parent_target_name!r})"
-                    )
 
-                two_phase_instance = parent_two_phase_instance
+                if not parent_root_def.is_single_phase:
+                    # Everything should be single-phase at this stage.
+                    raise RuntimeError("Not yet implemented.")
+
+                impl_func = func.key[0]
+                impl_class = impl_func
 
             else:
                 raise RuntimeError(f"Unexpected code path; {func!r}")
@@ -1821,12 +2209,12 @@ class BaseCooperativeNodeRewriter(Rewrite):
             # Small performance optimization: only store attributes once,
             # upon first match.
             if first:
-                self.func_ir = func_ir
-                self.block = block
                 self.typemap = typemap
                 self.calltypes = calltypes
                 first = False
-                found = True
+                we_want_apply = True
+
+            self.current_block = block
 
             node = node_class(
                 index=i,
@@ -1861,13 +2249,13 @@ class BaseCooperativeNodeRewriter(Rewrite):
             self.nodes[target_name] = node
             node.refine_match(self)
 
-        return found
+        return we_want_apply
 
     def apply(self):
-        new_block = ir.Block(self.block.scope, self.block.loc)
+        new_block = ir.Block(self.current_block.scope, self.current_block.loc)
         new_instrs = []
 
-        for instr in self.block.body:
+        for instr in self.current_block.body:
             if isinstance(instr, ir.Assign):
                 target_name = instr.target.name
                 node = self.nodes.get(target_name, None)

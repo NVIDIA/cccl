@@ -8,7 +8,7 @@ from io import StringIO
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
 from types import SimpleNamespace
-from typing import BinaryIO, Literal, Sequence
+from typing import TYPE_CHECKING, BinaryIO, List, Literal, Sequence
 
 import numba
 from llvmlite import ir
@@ -23,7 +23,11 @@ import cuda.cccl.cooperative.experimental._nvrtc as nvrtc
 from ._common import (
     find_unsigned,
     make_binary_tempfile,
+    normalize_dtype_param,
 )
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopNode
 
 NUMBA_TYPES_TO_CPP = {
     types.boolean: "bool",
@@ -564,9 +568,11 @@ class Algorithm:
         includes,
         template_parameters,
         parameters,
+        primitive,
         type_definitions=None,
         fake_return=False,
         threads=None,
+        temp_storage=None,
     ):
         self.struct_name = struct_name
         self.method_name = method_name
@@ -574,12 +580,14 @@ class Algorithm:
         self.includes = includes
         self.template_parameters = template_parameters
         self.parameters = parameters
+        self.primitive = primitive
         self.type_definitions = type_definitions
         self.fake_return = fake_return
         self.mangled_names = []
         self.mangled_names_alloc = []
         self._lto_irs = []
         self.threads = threads
+        self.temp_storage = temp_storage
 
     def __repr__(self) -> str:
         return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
@@ -627,13 +635,14 @@ class Algorithm:
             self.includes,
             [],
             specialized_parameters,
+            self.primitive,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
             threads=self.threads,
         )
 
     @cached_property
-    def _temp_storage_bytes_and_alignment(self):
+    def _size_and_alignment_info(self):
         algorithm_name = self.struct_name
         includes = self.includes or []
         type_definitions = self.type_definitions or []
@@ -648,6 +657,10 @@ class Algorithm:
             w(f"{type_definition.code}\n")
 
         w(f"using algorithm_t = cub::{algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned algorithm_struct_"
+        w(f"{prefix}size = sizeof(algorithm_t);\n")
+        w(f"{prefix}alignment = alignof(algorithm_t);\n")
+
         w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
         prefix = "__device__ constexpr unsigned temp_storage_"
         w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
@@ -658,20 +671,52 @@ class Algorithm:
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
         _, ptx = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="ptx")
+
+        algorithm_struct_size = find_unsigned("algorithm_struct_size", ptx)
+        algorithm_struct_alignment = find_unsigned("algorithm_struct_alignment", ptx)
+
         temp_storage_bytes = find_unsigned("temp_storage_bytes", ptx)
         temp_storage_alignment = find_unsigned("temp_storage_alignment", ptx)
-        return (temp_storage_bytes, temp_storage_alignment)
+
+        return SimpleNamespace(
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            temp_storage_bytes=temp_storage_bytes,
+            temp_storage_alignment=temp_storage_alignment,
+        )
+
+    @property
+    def algorithm_struct_size(self):
+        return self._size_and_alignment_info.algorithm_struct_size
+
+    @property
+    def algorithm_struct_alignment(self):
+        return self._size_and_alignment_info.algorithm_struct_alignment
 
     @property
     def temp_storage_bytes(self):
-        return self._temp_storage_bytes_and_alignment[0]
+        return self._size_and_alignment_info.temp_storage_bytes
 
     @property
     def temp_storage_alignment(self):
-        return self._temp_storage_bytes_and_alignment[1]
+        return self._size_and_alignment_info.temp_storage_alignment
 
-    @cached_property
+    @property
     def source_code(self):
+        primitive = self.primitive
+        if primitive.is_one_shot:
+            return self.source_code_one_shot
+        elif primitive.is_parent:
+            return self.source_code_parent
+        elif primitive.is_child:
+            return self.source_code_child
+        else:
+            raise RuntimeError("Invalid primitive state: {primitive!r}")
+
+    @property
+    def source_code_one_shot(self):
+        assert self.primitive.is_one_shot
+
         if len(self.template_parameters):
             raise ValueError("Cannot generate source for a template")
 
@@ -725,7 +770,7 @@ class Algorithm:
             param_args = []
             out_param = None
 
-            for pid, param in enumerate(method[1:]):
+            for pid, param in enumerate(method):
                 if isinstance(param, StatelessOperator):
                     func_decls.append(param.wrap_decl(f"param_{pid}"))
                     param_args.append(f"param_{pid}")
@@ -752,7 +797,10 @@ class Algorithm:
                     raise ValueError("Warp algorithm must specify number of threads")
                 # sub hw warps require computing masks for syncwarp, which is not supported
                 # allocate temporary storage explicitly
-                provide_alloc_version = threads == 32
+                # provide_alloc_version = threads == 32
+
+                # Need to review existing warp primitives re temp storage.
+                raise RuntimeError("Not implemented yet...")
 
                 # pessimistic temporary storage allocation for 1024 threads
                 storage = (
@@ -763,7 +811,6 @@ class Algorithm:
                 )
                 sync = "__syncwarp();"
             elif self.struct_name.startswith("Block"):
-                provide_alloc_version = True
                 storage = "__shared__ temp_storage_t temp_storage;"
                 sync = "__syncthreads();"
 
@@ -774,8 +821,9 @@ class Algorithm:
             param_decls_csv = ", ".join(param_decls)
             param_args_csv = ", ".join(param_args)
 
-            if provide_alloc_version:
-                w(f'extern "C" __device__ void {mangled_name}_alloc(')
+            w(f'extern "C" __device__ void {mangled_name}(')
+
+            if self.implicit_temp_storage:
                 w(f"{param_decls_csv}) {{\n")
                 w(f"    {storage}\n")
                 for decl in func_decls:
@@ -788,24 +836,33 @@ class Algorithm:
                 w(f"{method_name}({param_args_csv});\n")
                 w(f"    {sync}\n")
                 w("}\n")
-
-            w(f'extern "C" __device__ void {mangled_name}(')
-            w("temp_storage_t *temp_storage, ")
-            w(f"{param_decls_csv}) {{\n")
-            for decl in func_decls:
-                w(f"    {decl}\n")
-            if out_param:
-                w(f"    {out_param} = ")
             else:
-                w("    ")
-            w("algorithm_t(*temp_storage).")
-            w(f"{method_name}({param_args_csv});\n")
-            w("}\n\n")
+                w("temp_storage_t *temp_storage, ")
+                w(f"{param_decls_csv}) {{\n")
+                for decl in func_decls:
+                    w(f"    {decl}\n")
+                if out_param:
+                    w(f"    {out_param} = ")
+                else:
+                    w("    ")
+                w("algorithm_t(*temp_storage).")
+                w(f"{method_name}({param_args_csv});\n")
+                w("}\n\n")
 
             chunk = buf.getvalue()
             src += chunk
 
         return src
+
+    @property
+    def source_code_parent(self):
+        assert self.is_parent
+        pass
+
+    @property
+    def source_code_child(self):
+        assert self.is_child
+        pass
 
     def get_lto_ir(self):
         # Compatibility with original two-phase API.
@@ -853,24 +910,43 @@ class Algorithm:
                     f"{given_parameters - known_parameters}"
                 )
 
+        # Temporary hack to support the fact that when the primitives were
+        # first written, (almost?) everything got a `Pointer(numba.uint8)`
+        # as the first parameter for temporary storage.  Now that we can
+        # detect whether or not temp storage has been provided by the user,
+        # we can dynamically codegen an appropriate method, instead of doing
+        # both up-front.
+        #
+        # This logic can be removed once all the primitives have been updated
+        # to have their `Pointer(numba.uint8)` first parameter removed.
+        first_param_is_temp_storage = False
+        if parameters:
+            first = parameters[0]
+            if isinstance(first, Pointer):
+                first_dtype = normalize_dtype_param(first.value_dtype)
+                if isinstance(first_dtype, (numba.types.uint8, numba.types.int8)):
+                    first_param_is_temp_storage = True
+                    first_dtype = first_dtype.dtype
+
         for method in parameters:
             mangled_name = self.mangled_name(method)
+            if first_param_is_temp_storage:
+                params = method[1:]
+            else:
+                params = method
             results.append(
                 self.create_codegen_method(
-                    method,
+                    params,
                     mangled_name,
-                    func_to_overload=func_to_overload,
-                )
-            )
-            results.append(
-                self.create_codegen_method(
-                    method[1:],
-                    mangled_name + "_alloc",
                     func_to_overload=func_to_overload,
                 )
             )
 
         return results
+
+    @property
+    def implicit_temp_storage(self):
+        return self.primitive.temp_storage is None
 
     def create_codegen_method(self, method, mangled_name, func_to_overload=None):
         if len(self.template_parameters):
@@ -1054,7 +1130,35 @@ class Invocable:
 class BasePrimitive:
     # Runtime reference to the corresponding CoopNode created for this
     # primitive as part of rewriting.
-    node = None
+    node: "CoopNode" = None
+
+    # When true, indicates this is a parent primitive (i.e. the constructor
+    # call for the corresponding primitive's struct).
+    is_parent: bool = False
+
+    # When true, indicates this is a child primitive (i.e. a method call
+    # against an instance of the primitive's struct) of the parent captured
+    # by the `parent` field.  Invariant: `is_parent` and `is_child` can
+    # never be both set.
+    is_child: bool = False
+
+    # When true, indicates that this is a "one-shot" primitive with no
+    # persistent struct state that needs to be maintained (and thus, no
+    # capturing of a struct constructor call is required).  Mutually
+    # exclusive with both `is_parent` and `is_child` flags.
+    #
+    # N.B. The vast majority of coop primitives are one-shot.
+    is_one_shot: bool = False
+
+    # If this is a constructor/struct, the `children` field will point to
+    # zero or more instances of base primitives for subsequent method
+    # invocations against this primitive's struct.
+    children: List["BasePrimitive"] = None
+
+    # If this is a method invocation against an instance of a primitive's
+    # struct, the `parent` field points to the containing struct's base
+    # primitive instance.
+    parent = None
 
     @property
     def temp_storage_bytes(self):
@@ -1063,6 +1167,14 @@ class BasePrimitive:
     @property
     def temp_storage_alignment(self):
         return self.specialization.temp_storage_alignment
+
+    @property
+    def algorithm_struct_size(self):
+        return self.specialization.algorithm_struct_size
+
+    @property
+    def algorithm_struct_alignment(self):
+        return self.specialization.algorithm_struct_alignment
 
     @cached_property
     def lto_irs(self):

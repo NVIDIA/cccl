@@ -11,6 +11,9 @@ from .._common import (
 from .._types import (
     Algorithm,
     BasePrimitive,
+    Dependency,
+    DependentArray,
+    DependentReference,
     TemplateParameter,
 )
 from .._typing import (
@@ -19,7 +22,83 @@ from .._typing import (
 )
 
 
+class BlockRunLengthDecode(BasePrimitive):
+    is_child = True
+
+    c_name = "decode"
+    method_name = "RunLengthDecode"
+    struct_name = "BlockRunLengthDecode"
+    includes = [
+        "cub/block/block_run_length_decode.cuh",
+    ]
+
+    def __init__(
+        self,
+        parent: "BlockRunLength",
+        decoded_items,
+        decoded_window_offset,
+        relative_offsets=None,
+    ) -> None:
+        self.parent = parent
+        self.decoded_items = decoded_items
+        self.decoded_window_offset = decoded_window_offset
+        self.relative_offsets = relative_offsets
+
+        # self.template_parameters = list(parent.template_parameters)
+        self.template_parameters = []
+
+        self.specialization_kwds = {
+            "RunLengthT": parent.item_dtype,
+            "TotalDecodedSizeT": parent.decoded_offset_dtype,
+        }
+
+        has_relative_offsets = relative_offsets is not None
+        if has_relative_offsets:
+            self.template_parameters += [
+                TemplateParameter("RelativeOffsetsT"),
+            ]
+
+        self.parameters = [
+            # RunLengthDecode(
+            #   ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
+            #   DecodedOffsetT decoded_window_offset,
+            #   ...
+            # ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
+            DependentArray(Dependency("ItemT"), Dependency("DECODED_ITEMS_PER_THREAD")),
+            DependentReference(Dependency("DecodedOffsetT")),
+        ]
+
+        if has_relative_offsets:
+            self.template_parameters.append(
+                TemplateParameter("RelativeOffsetsT"),
+            )
+
+            # RelativeOffsetsT (&relative_offsets)[DECODED_ITEMS_PER_THREAD],
+            self.parameters.append(
+                DependentArray(
+                    Dependency("RelativeOffsetsT"),
+                    Dependency("DECODED_ITEMS_PER_THREAD"),
+                )
+            )
+
+            self.specialization_kwds["RelativeOffsetsT"] = relative_offsets.dtype
+
+        self.algorithm = Algorithm(
+            struct_name=self.struct_name,
+            method_name=self.method_name,
+            c_name=self.c_name,
+            includes=[],
+            template_parameters=self.template_parameters,
+            parameters=self.parameters,
+            primitive=self.primitive,
+        )
+
+        self.specialization = self.algorithm.specialize(**self.specialization_kwds)
+
+
 class BlockRunLength(BasePrimitive):
+    is_parent = True
+
     struct_name = "BlockRunLengthDecode"
     method_name = "BlockRunLengthDecode"
     c_name = "BlockRunLengthDecode"
@@ -60,6 +139,8 @@ class BlockRunLength(BasePrimitive):
         runs_per_thread: int,
         decoded_items_per_thread: int,
         decoded_offset_dtype: DtypeType = None,
+        total_decoded_size=None,
+        temp_storage=None,
     ) -> None:
         self.item_dtype = normalize_dtype_param(item_dtype)
         self.dim = normalize_dim_param(dim)
@@ -104,12 +185,16 @@ class BlockRunLength(BasePrimitive):
 
     def decode(
         self,
-        struct: "BlockRunLength",
         decoded_items,
-        from_decoded_offset=None,
-        item_offsets=None,
+        decoded_window_offset,
+        relative_offsets=None,
     ):
-        pass
+        return BlockRunLengthDecode(
+            self,
+            decoded_items,
+            decoded_window_offset,
+            relative_offsets=relative_offsets,
+        )
 
 
 class run_length(BlockRunLength):

@@ -20,7 +20,6 @@ from .._types import (
     DependentArray,
     DependentPointer,
     Invocable,
-    Pointer,
     TemplateParameter,
 )
 from .._typing import (
@@ -48,6 +47,8 @@ CUB_BLOCK_STORE_ALGOS = {
 
 
 class BaseLoadStore(BasePrimitive):
+    is_one_shot = True
+
     template_parameters = [
         TemplateParameter("T"),
         TemplateParameter("BLOCK_DIM_X"),
@@ -59,7 +60,6 @@ class BaseLoadStore(BasePrimitive):
 
     parameters = [
         [
-            Pointer(numba.uint8),
             DependentPointer(Dependency("T")),
             DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
         ]
@@ -86,6 +86,7 @@ class BaseLoadStore(BasePrimitive):
             self.includes,
             self.template_parameters,
             self.parameters,
+            self,
         )
         self.specialization = self.algorithm.specialize(
             {

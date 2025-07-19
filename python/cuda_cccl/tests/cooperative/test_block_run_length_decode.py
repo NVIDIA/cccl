@@ -62,14 +62,23 @@ def test_block_run_length_decode_single_phase0():
 
             run_length.decode(
                 decoded_items,
-                relative_offsets,
                 decoded_window_offset,
+                relative_offsets,
             )
 
             # Or, without relative_offsets:
             # run_length.decode(decoded_items, decoded_window_offset)
 
             decoded_window_offset += stride
+
+            global_idx = (
+                cuda.threadIdx.x * decoded_items_per_thread + decoded_window_offset
+            )
+
+            if global_idx < total_decoded_size:
+                start = global_idx
+                end = min(global_idx + decoded_items_per_thread, total_decoded_size)
+                run_items[start:end] = decoded_items[: end - start]
 
     h_run_values = np.random.randint(0, dim, dim, dtype=dtype)
     h_run_lengths = np.random.randint(0, dim, dim, dtype=dtype)
@@ -89,14 +98,21 @@ def test_block_run_length_decode_single_phase0():
     )
 
     # Generate a reference output.
-    h_output = np.zeros(dim, dtype=dtype)
+    ref_output = []
     for i in range(dim):
-        for j in range(runs_per_thread):
-            h_output[i] = h_run_items[i]
-            i += h_run_lengths[i]
-    h_output = d_output.copy_to_host()
+        length = h_run_lengths[i]
+        value = h_run_items[i]
+        ref_output.extend([value] * length)
+    ref_output = np.array(ref_output[:dim])
 
+    h_output = d_output.copy_to_host()
     h_run_items = h_run_items.copy_to_host()
+
+    h_run_items_result = d_run_items.copy_to_host()
+    np.testing.assert_array_equal(
+        h_run_items_result[: len(ref_output)],
+        ref_output,
+    )
 
     # Verify the output.
     np.testing.assert_array_equal(h_output, h_run_items)
