@@ -20,10 +20,12 @@ dependencies = [
   "numba>=0.60.0",
   "numpy",
   "cuda-python==12.9.0",
+  "cuda-core",
   "cupy-cuda12x",
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
   "pynvjitlink-cu12>=0.2.4",
+  "array_api_compat",
 ]
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -68,7 +70,14 @@ root = "../.."
 python_version = "3.10"
 
 [[tool.mypy.overrides]]
-module = ["numba.*", "llvmlite", "cupy", "cuda.cccl.headers.*"]
+module = [
+  "numba.*",
+  "llvmlite",
+  "cupy",
+  "cuda.cccl.headers.*",
+  "array_api_compat",
+  "cuda.core.*",
+]
 ignore_missing_imports = true
 follow_imports = "skip"
 

@@ -13,8 +13,7 @@ def unary_transform_host(h_input: np.ndarray, op):
 
 
 def unary_transform_device(d_input, d_output, num_items, op, stream=None):
-    transform = parallel.unary_transform(d_input, d_output, op)
-    transform(d_input, d_output, num_items, stream=stream)
+    parallel.unary_transform(d_input, d_output, op, num_items, stream=stream)
 
 
 def binary_transform_host(h_input1: np.ndarray, h_input2: np.ndarray, op):
@@ -22,8 +21,9 @@ def binary_transform_host(h_input1: np.ndarray, h_input2: np.ndarray, op):
 
 
 def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=None):
-    transform = parallel.binary_transform(d_input1, d_input2, d_output, op)
-    transform(d_input1, d_input2, d_output, num_items, stream=stream)
+    parallel.binary_transform(
+        d_input1, d_input2, d_output, op, num_items, stream=stream
+    )
 
 
 def test_unary_transform(input_array):
@@ -92,8 +92,7 @@ def test_unary_transform_struct_type():
 
     d_out = cp.empty_like(d_in)
 
-    transform = parallel.unary_transform(d_in, d_out, op)
-    transform(d_in, d_out, len(d_in))
+    parallel.unary_transform(d_in, d_out, op, len(d_in))
 
     got = d_out.get()
 
@@ -140,8 +139,7 @@ def test_binary_transform_struct_type():
 
     d_out = cp.empty_like(d_in1)
 
-    transform = parallel.binary_transform(d_in1, d_in2, d_out, op)
-    transform(d_in1, d_in2, d_out, len(d_in1))
+    parallel.binary_transform(d_in1, d_in2, d_out, op, len(d_in1))
 
     got = d_out.get()
 

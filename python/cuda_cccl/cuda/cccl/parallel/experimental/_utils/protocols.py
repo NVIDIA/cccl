@@ -7,11 +7,13 @@
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
+from array_api_compat import array_namespace
 
 from ..typing import DeviceArrayLike
+from .temp_storage_buffer import TempStorageBuffer
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
@@ -130,3 +132,10 @@ def validate_and_get_stream(stream) -> Optional[int]:
         return handle
 
     raise TypeError(f"unsupported __cuda_stream__ version {version}")
+
+
+def get_temp_buffer_factory(*args) -> Callable:
+    try:
+        return array_namespace(*args).empty
+    except Exception:
+        return TempStorageBuffer

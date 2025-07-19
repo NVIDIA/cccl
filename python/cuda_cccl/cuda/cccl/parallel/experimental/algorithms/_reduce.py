@@ -107,7 +107,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def reduce_into(
+def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
     op: Callable,
@@ -134,3 +134,17 @@ def reduce_into(
         A callable object that can be used to perform the reduction
     """
     return _Reduce(d_in, d_out, op, h_init)
+
+
+def reduce_into(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    num_items: int,
+    h_init: np.ndarray | GpuStruct,
+    stream=None,
+):
+    reducer = make_reduce_into(d_in, d_out, op, h_init)
+    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = protocols.get_temp_buffer_factory(d_in, d_out)(tmp_storage_bytes)
+    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
