@@ -173,6 +173,17 @@ def normalize_dim_param(dim: DimType) -> dim3:
             msg = f"Tuple dimension must have 2 or 3 elements, got {len(dim)}"
             raise ValueError(msg)
 
+    # Last ditch effort at casting to an integer.
+    try:
+        dim = int(dim)
+    except (ValueError, TypeError):
+        pass
+    else:
+        if dim < 0:
+            msg = f"Dimension value must be non-negative, got {dim}"
+            raise ValueError(msg)
+        return dim3(dim, 1, 1)
+
     raise ValueError(f"Unsupported dimension type: {type(dim)}")
 
 

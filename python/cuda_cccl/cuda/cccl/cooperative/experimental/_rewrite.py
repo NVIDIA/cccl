@@ -1460,39 +1460,34 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         assert decoded_items_per_thread_var.name == "decoded_items_per_thread"
         decoded_items_per_thread = self.get_arg_value("decoded_items_per_thread")
 
-        total_decoded_size = None
-        total_decoded_size_ty = None
-        decoded_offset_dtype = None
-        decoded_offset_dtype_ty = None
-        temp_storage = None
+        total_decoded_size = self.bound.arguments.get("total_decoded_size")
+        if total_decoded_size is not None:
+            assert isinstance(total_decoded_size, ir.Var)
+            total_decoded_size_ty = self.typemap[total_decoded_size.name]
+
+        decoded_offset_dtype = self.get_arg_value_safe("decoded_offset_dtype")
+        if decoded_offset_dtype is not None:
+            decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
+
+        temp_storage = self.bound.arguments.get("temp_storage")
         temp_storage_ty = None
+        if temp_storage is not None:
+            assert isinstance(temp_storage, ir.Var)
+            temp_storage_ty = self.typemap[temp_storage.name]
 
-        while len(expr_args) > 0:
-            arg_var = expr_args.pop(0)
-            if isinstance(arg_var, ir.Var):
-                if arg_var.name == "total_decoded_size":
-                    total_decoded_size = arg_var
-                    total_decoded_size_ty = self.typemap[arg_var.name]
-                elif arg_var.name == "temp_storage":
-                    temp_storage = arg_var
-                    temp_storage_ty = self.typemap[arg_var.name]
-                elif arg_var.name == "decoded_offset_dtype":
-                    decoded_offset_dtype = arg_var
-                    decoded_offset_dtype_ty = self.typemap[arg_var.name]
-                else:
-                    raise RuntimeError(
-                        f"Unexpected argument {arg_var.name!r} in {self!r}"
-                    )
-            else:
-                raise RuntimeError(f"Unexpected argument {arg_var!r} in {self!r}")
-
-        if decoded_offset_dtype_ty is None:
-            # Try and resolve it from the child_expr.
+        if decoded_offset_dtype is None and self.child_expr is not None:
+            # We're being created indirectly as part of the rewriter
+            # processing the `run_length.decode()` child node first.
+            # If the caller has supplied a `decoded_window_offset`
+            # parameter to their `decode()` call, we can obtain the
+            # decoded offset dtype from there.
             child_expr = self.child_expr
             child_template = self.child_template
             typer = child_template.generic(child_template)
             sig = inspect.signature(typer)
             bound = sig.bind(*list(child_expr.args), **dict(child_expr.kws))
+            # XXX: Do we need to simulate more of the get_arg_value() logic
+            # here, or is bound.arguments sufficient?
             arg_var = bound.arguments.get("decoded_window_offset", None)
             if arg_var is not None:
                 if isinstance(arg_var, ir.Var):
@@ -2275,9 +2270,11 @@ class CoopNodeRewriter(Rewrite):
                 algo = parent_node.instance.specialization
                 source_code = algo.source_code
                 print(source_code)
+                # Next: add the decode() to the parent's source.
 
             else:
-                raise RuntimeError(f"Unexpected code path; {func!r}")
+                # Not something we recognize; continue.
+                continue
 
             # We can now obtain the node rewriting class from the primitive
             # name.
@@ -2317,6 +2314,22 @@ class CoopNodeRewriter(Rewrite):
 
             self.current_block = block
 
+            # If we already have a node for this target name, it must have
+            # been created by a preceding block containing a child primitive
+            # invocation against a parent struct, for which the child will
+            # have called `get_or_create_parent_node()`.
+            node = self.nodes.get(target_name, None)
+            if node is not None:
+                # Verify that this is a parent node, then continue.
+                if not node.instance.is_parent:
+                    raise RuntimeError(
+                        f"Node for target name {target_name!r} already "
+                        f"exists, but it is not a parent node: {node!r}"
+                    )
+                # We still want an opportunity to rewrite this block.
+                we_want_apply = True
+                continue
+
             node = node_class(
                 index=i,
                 block_line=block.loc.line,
@@ -2354,7 +2367,6 @@ class CoopNodeRewriter(Rewrite):
 
     def apply(self):
         new_block = ir.Block(self.current_block.scope, self.current_block.loc)
-        new_instrs = []
 
         for instr in self.current_block.body:
             if isinstance(instr, ir.Assign):
@@ -2364,9 +2376,10 @@ class CoopNodeRewriter(Rewrite):
                     new_block.append(instr)
                     continue
 
-                new_instrs = node.rewrite(self)
-                for new_instr in new_instrs:
-                    new_block.append(new_instr)
+                results = node.rewrite(self)
+                if results:
+                    for new_instr in results:
+                        new_block.append(new_instr)
 
             else:
                 # Copy the original instruction verbatim.

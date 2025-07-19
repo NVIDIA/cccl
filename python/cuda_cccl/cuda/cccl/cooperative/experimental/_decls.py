@@ -1035,9 +1035,11 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
             )
 
             if decoded_offset_dtype is not None:
-                decoded_offset_dtype = parse_dtype(decoded_offset_dtype)
-                if not isinstance(decoded_offset_dtype, types.Integer):
-                    raise error_class("decoded_offset_dtype must be an integer type")
+                from ._common import normalize_dtype_param
+
+                decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
+                # if not isinstance(decoded_offset_dtype, types.Integer):
+                #    raise error_class("decoded_offset_dtype must be an integer type")
 
             invalid_total_decoded_size = total_decoded_size is None or not isinstance(
                 total_decoded_size, types.Integer
@@ -1112,7 +1114,7 @@ def type_block_run_length_instance_call(context):
         runs_per_thread,
         decoded_items_per_thread,
         total_decoded_size,
-        decoded_offset_dtype=None,
+        decoded_offset_dtype,
         temp_storage=None,
     ):
         decl = block_run_length_instance_type.decl

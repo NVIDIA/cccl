@@ -119,8 +119,11 @@ class BlockRunLength(BasePrimitive):
     ]
 
     def _validate_items_per_thread(self, items_per_thread: int, name: str) -> None:
-        invalid = not isinstance(items_per_thread, int) or items_per_thread <= 0
-        if invalid:
+        try:
+            items_per_thread = int(items_per_thread)
+        except ValueError:
+            raise ValueError(f"{name} must be an integer; got: {items_per_thread}")
+        if items_per_thread <= 0:
             raise ValueError(
                 f"{name} must be a positive integer; got: {items_per_thread}"
             )

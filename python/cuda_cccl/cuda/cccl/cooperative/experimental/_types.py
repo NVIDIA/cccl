@@ -696,22 +696,38 @@ class Algorithm:
     def specialize(self, template_arguments):
         # No partial specializations for now
         template_list = []
+        template_names = []
         for template_parameter in self.template_parameters:
             if template_parameter.name not in template_arguments:
                 raise ValueError(
                     f"Template argument {template_parameter.name} not provided"
                 )
             template_argument = template_arguments[template_parameter.name]
+            template_names.append(template_parameter.name)
             if isinstance(template_argument, int):
                 template_list.append(str(template_argument))
             elif isinstance(template_argument, str):
                 template_list.append(template_argument)
             else:
                 template_list.append(numba_type_to_cpp(template_argument))
-        template_list = ", ".join(template_list)
+
+        # Purely aesthetic tweaks: put each template on a new line, and add
+        # a trailing comment indicating the corresponding template parameter
+        # name.
+        assert len(template_list) == len(template_names)
+        commas = ([","] * (len(template_list) - 1)) + [""]
+        template_list_pretty = "\n".join(
+            f"    {template}{comma} // {name}"
+            for (template, name, comma) in zip(
+                template_list,
+                template_names,
+                commas,
+            )
+        )
 
         # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
-        mangle = internal_mangle_cpp(template_list)
+        template_list_csv = ", ".join(template_list)
+        mangle = internal_mangle_cpp(template_list_csv)
 
         specialized_parameters = []
         for method in self.parameters:
@@ -725,7 +741,7 @@ class Algorithm:
             except SubstitutionFailure:
                 pass  # Substitution failure is not an error
 
-        specialized_name = f"{self.struct_name}<{template_list}>"
+        specialized_name = f"{self.struct_name}<\n{template_list_pretty}\n>"
         return Algorithm(
             specialized_name,
             self.method_name,
@@ -993,6 +1009,133 @@ class Algorithm:
         w("\n")
         for decl in udf_declarations.values():
             w(f"{decl}\n")
+        w("\n\n")
+
+        # Write the algorithm instantiation with template specialization,
+        # and then corresponding size and alignment information.
+        w(f"using algorithm_t = cub::{algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned algorithm_struct_"
+        w(f"{prefix}size = sizeof(algorithm_t);\n")
+        w(f"{prefix}alignment = alignof(algorithm_t);\n\n")
+
+        # Write the temporary storage type and size/alignment information.
+        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned temp_storage_"
+        w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
+        w(f"{prefix}alignment = alignof(temp_storage_t);\n\n")
+
+        src = buf.getvalue()
+
+        assert len(self.parameters) == 1
+
+        method = self.parameters[0]
+
+        param_decls = []
+        func_decls = []
+        param_args = []
+        param_names = []
+        out_param = None
+
+        for pid, param in enumerate(method):
+            param_name = param.name
+            if param_name is None:
+                param_name = f"param_{pid}"
+            param_names.append(param_name)
+            if isinstance(param, StatelessOperator):
+                func_decls.append(param.wrap_decl(param_name))
+                param_args.append(param_name)
+            elif isinstance(param, StatefulOperator):
+                func_decls.append(param.wrap_decl(param_name))
+                param_args.append(param_name)
+            elif isinstance(param, CxxFunction):
+                param_args.append(param.cpp)
+            else:
+                param_decls.append(param.cpp_decl(param_name))
+                # XXX: I think we can remove this for parent source.
+                if not self.fake_return and param.is_output:
+                    if out_param is not None:
+                        raise ValueError("Multiple output parameters not supported")
+                    out_param = param_name
+                else:
+                    # Skip the first two parameters, which were our injected
+                    # addr/size parameters.
+                    if pid == 0:
+                        assert param_name == "addr", param_name
+                        continue
+                    elif pid == 1:
+                        assert param_name == "size", param_name
+                        continue
+                    param_args.append(param_name)
+
+        buf = StringIO()
+        w = buf.write
+
+        node = self.primitive.node
+        function_name = f"{node.target.name}_construct"
+
+        param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
+        param_decls_csv = f"\n{param_decls_csv}\n"
+        param_args_csv = ", ".join(param_args)
+
+        w(f'extern "C" __device__ algorithm_t* {function_name}(')
+
+        w(f"{param_decls_csv}) {{\n")
+        w("    if (size < sizeof(algorithm_t)) {\n")
+        w("        return nullptr;\n")
+        w("    }\n")
+
+        addr_cast = "reinterpret_cast<uintptr_t>(addr)"
+        w(f"    if ({addr_cast} % alignof(algorithm_t) != 0) {{\n")
+        w("         return nullptr;\n")
+        w("    }\n")
+        w(f"    return new (addr) algorithm_t({param_args_csv});\n")
+        w("}\n\n")
+
+        chunk = buf.getvalue()
+        src += chunk
+
+        return src
+
+    @property
+    def source_code_child(self):
+        assert self.primitive.is_child
+        assert not self.template_parameters
+
+        lto_irs = self._lto_irs
+
+        if self.type_definitions:
+            for type_definition in self.type_definitions:
+                lto_irs.extend(type_definition.lto_irs)
+
+        udf_declarations = {}
+
+        for method in self.parameters:
+            for param in method:
+                if isinstance(param, StatelessOperator) or isinstance(
+                    param, StatefulOperator
+                ):
+                    if param.name not in udf_declarations:
+                        udf_declarations[param.name] = param.forward_decl()
+                        lto_irs.append(param.ltoir)
+
+        self.udf_declarations = udf_declarations
+
+        algorithm_name = self.struct_name
+        includes = self.includes or []
+        type_definitions = self.type_definitions or []
+
+        buf = StringIO()
+        w = buf.write
+
+        w("#include <cuda/std/cstdint>\n")
+        for include in includes:
+            w(f"#include <{include}>\n")
+        for type_definition in type_definitions:
+            w(f"{type_definition.code}\n")
+
+        w("\n")
+        for decl in udf_declarations.values():
+            w(f"{decl}\n")
         w("\n")
 
         w(f"using algorithm_t = cub::{algorithm_name};\n")
@@ -1071,12 +1214,6 @@ class Algorithm:
         src += chunk
 
         return src
-
-    @property
-    def source_code_child(self):
-        assert self.primitive.is_child
-        assert not self.template_parameters
-        raise RuntimeError("Not yet implemented")
 
     def get_lto_ir(self):
         # Compatibility with original two-phase API.

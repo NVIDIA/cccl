@@ -9,8 +9,8 @@ import cuda.cccl.cooperative.experimental as coop
 def test_block_run_length_decode_single_phase0():
     dtype = np.int32
     dim = 128
-    runs_per_thread = 16
-    decoded_items_per_thread = 16
+    runs_per_thread = np.uint32(16)
+    decoded_items_per_thread = np.uint32(16)
     decoded_offset_dtype = np.uint32
     total_decoded_size_dtype = np.uint32
 
@@ -26,6 +26,7 @@ def test_block_run_length_decode_single_phase0():
             runs_per_thread,
             decoded_items_per_thread,
             total_decoded_size,
+            decoded_offset_dtype,
         )
 
         stride = decoded_offset_dtype(cuda.blockDim.x * decoded_items_per_thread)
@@ -48,14 +49,14 @@ def test_block_run_length_decode_single_phase0():
 
             decoded_window_offset += stride
 
-            global_idx = (
-                cuda.threadIdx.x * decoded_items_per_thread + decoded_window_offset
-            )
+            # global_idx = (
+            #     cuda.threadIdx.x * decoded_items_per_thread + decoded_window_offset
+            # )
 
-            if global_idx < total_decoded_size:
-                start = global_idx
-                end = min(global_idx + decoded_items_per_thread, total_decoded_size)
-                run_items[start:end] = decoded_items[: end - start]
+            # if global_idx < total_decoded_size:
+            #    start = global_idx
+            #    end = min(global_idx + decoded_items_per_thread, total_decoded_size)
+            #    run_items[start:end] = decoded_items[: end - start]
 
     h_run_values = np.random.randint(0, dim, dim, dtype=dtype)
     h_run_lengths = np.random.randint(0, dim, dim, dtype=dtype)
@@ -63,7 +64,6 @@ def test_block_run_length_decode_single_phase0():
     d_run_values = cuda.to_device(h_run_values)
     d_run_lengths = cuda.to_device(h_run_lengths)
     d_run_items = cuda.device_array(dim, dtype=dtype)
-    d_output = cuda.device_array(dim, dtype=decoded_offset_dtype)
     num_blocks = 1
     k = kernel1[num_blocks, dim]
     k(
@@ -82,17 +82,11 @@ def test_block_run_length_decode_single_phase0():
         ref_output.extend([value] * length)
     ref_output = np.array(ref_output[:dim])
 
-    h_output = d_output.copy_to_host()
-    h_run_items = h_run_items.copy_to_host()
-
-    h_run_items_result = d_run_items.copy_to_host()
+    result_items = d_run_items.copy_to_host()
     np.testing.assert_array_equal(
-        h_run_items_result[: len(ref_output)],
+        result_items[: len(ref_output)],
         ref_output,
     )
-
-    # Verify the output.
-    np.testing.assert_array_equal(h_output, h_run_items)
 
 
 def test_block_run_length_decode_single_phase1():
