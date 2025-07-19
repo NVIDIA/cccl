@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILATION_LINK_RESULT_CUH
-#define _CUDAX___COMPILATION_LINK_RESULT_CUH
+#ifndef _CUDAX___LINKER_LINK_RESULT_CUH
+#define _CUDAX___LINKER_LINK_RESULT_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -26,8 +26,8 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/exchange.h>
 
-#include <cuda/experimental/__compilation/nvjitlink.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__linker/nvjitlink.cuh>
 
 #include <string>
 #include <vector>
@@ -163,7 +163,7 @@ struct link_to_ptx_result : public __link_result_base
 };
 
 //! @brief Class representing the result of a CUBIN link operation.
-class link_to_cubin_result : public __link_result_base
+struct link_to_cubin_result : public __link_result_base
 {
   friend class cubin_linker;
 
@@ -196,4 +196,4 @@ class link_to_cubin_result : public __link_result_base
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILATION_LINK_RESULT_CUH
+#endif // _CUDAX___LINKER_LINK_RESULT_CUH

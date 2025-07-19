@@ -156,8 +156,12 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     algorithm/copy.cu
   )
 
-  cudax_add_catch2_test(test_target compile ${cn_target}
-    compilation/compile.cu
+  cudax_add_catch2_test(test_target compiler ${cn_target}
+    compiler/compiler.cu
+  )
+
+  cudax_add_catch2_test(test_target linker ${cn_target}
+    linker/linker.cu
   )
 
 endforeach()

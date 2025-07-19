@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILATION_COMPILER_CUH
-#define _CUDAX___COMPILATION_COMPILER_CUH
+#ifndef _CUDAX___COMPILER_COMPILER_CUH
+#define _CUDAX___COMPILER_COMPILER_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -26,8 +26,8 @@
 #include <cuda/std/span>
 #include <cuda/std/string_view>
 
-#include <cuda/experimental/__compilation/compile_options.cuh>
-#include <cuda/experimental/__compilation/compile_result.cuh>
+#include <cuda/experimental/__compiler/compile_options.cuh>
+#include <cuda/experimental/__compiler/compile_result.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <string>
@@ -439,4 +439,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILATION_COMPILER_CUH
+#endif // _CUDAX___COMPILER_COMPILER_CUH

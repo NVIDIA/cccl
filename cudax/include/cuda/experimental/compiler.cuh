@@ -11,12 +11,8 @@
 #ifndef _CUDAX_COMPILATON_CUH
 #define _CUDAX_COMPILATON_CUH
 
-#include <cuda/experimental/__compilation/compile_options.cuh>
-#include <cuda/experimental/__compilation/compile_result.cuh>
-#include <cuda/experimental/__compilation/compiler.cuh>
-#include <cuda/experimental/__compilation/link_options.cuh>
-#include <cuda/experimental/__compilation/link_result.cuh>
-#include <cuda/experimental/__compilation/link_sources.cuh>
-#include <cuda/experimental/__compilation/linker.cuh>
+#include <cuda/experimental/__compiler/compile_options.cuh>
+#include <cuda/experimental/__compiler/compile_result.cuh>
+#include <cuda/experimental/__compiler/compiler.cuh>
 
 #endif // _CUDAX_COMPILATON_CUH

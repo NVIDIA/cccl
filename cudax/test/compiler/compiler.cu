@@ -1,4 +1,4 @@
-#include <cuda/experimental/compilation.cuh>
+#include <cuda/experimental/compiler.cuh>
 
 #include <testing.cuh>
 #include <utility.cuh>

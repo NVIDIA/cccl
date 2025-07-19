@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILATION_NVJITLINK_CUH
-#define _CUDAX___COMPILATION_NVJITLINK_CUH
+#ifndef _CUDAX___LINKER_NVJITLINK_CUH
+#define _CUDAX___LINKER_NVJITLINK_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -46,4 +46,4 @@ nvJitLinkResult nvJitLinkGetInfoLog(nvJitLinkHandle, char*);
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILATION_NVJITLINK_CUH
+#endif // _CUDAX___LINKER_NVJITLINK_CUH

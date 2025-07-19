@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILATION_LINK_OPTIONS_CUH
-#define _CUDAX___COMPILATION_LINK_OPTIONS_CUH
+#ifndef _CUDAX___LINKER_LINK_OPTIONS_CUH
+#define _CUDAX___LINKER_LINK_OPTIONS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -79,4 +79,4 @@ class cubin_link_opts : public __link_opts
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILATION_LINK_OPTIONS_CUH
+#endif // _CUDAX___LINKER_LINK_OPTIONS_CUH

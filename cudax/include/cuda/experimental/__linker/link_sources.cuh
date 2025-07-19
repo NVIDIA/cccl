@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILATION_LINK_SOURCES_CUH
-#define _CUDAX___COMPILATION_LINK_SOURCES_CUH
+#ifndef _CUDAX___LINKER_LINK_SOURCES_CUH
+#define _CUDAX___LINKER_LINK_SOURCES_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 #include <cuda/std/span>
 #include <cuda/std/string_view>
 
-#include <cuda/experimental/__compilation/nvjitlink.cuh>
+#include <cuda/experimental/__linker/nvjitlink.cuh>
 
 #include <vector>
 
@@ -130,4 +130,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILATION_LINK_SOURCES_CUH
+#endif // _CUDAX___LINKER_LINK_SOURCES_CUH
