@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda_runtime.h>
-#include <c2h/catch2_test_helper.h>
 
+#include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
 C2H_TEST("basic stf context", "[context]")
