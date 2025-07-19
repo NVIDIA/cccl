@@ -411,7 +411,8 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
+          CounterT histogram[BINS])
   {
     InternalBlockHistogram(temp_storage).Composite(items, histogram);
   }

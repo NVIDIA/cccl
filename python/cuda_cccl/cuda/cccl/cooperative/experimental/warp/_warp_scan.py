@@ -5,7 +5,6 @@
 
 import numba
 
-from cuda.cccl.cooperative.experimental._common import make_binary_tempfile
 from cuda.cccl.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -18,7 +17,7 @@ from cuda.cccl.cooperative.experimental._types import (
 
 def exclusive_sum(dtype, threads_in_warp=32):
     """Computes an exclusive warp-wide prefix sum using addition (+) as the scan operator.
-    The value of 0 is applied as the initial value, and is assigned to the output in *lane*\ :sub:`0`.
+    The value of 0 is applied as the initial value, and is assigned to the output in *lane* :sub:`0`.
 
     Example:
         The code snippet below illustrates an exclusive prefix sum of 32 integer items:
@@ -68,10 +67,7 @@ def exclusive_sum(dtype, threads_in_warp=32):
         {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
     )
     return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
+        ltoir_files=specialization.get_lto_ir(),
         temp_storage_bytes=specialization.temp_storage_bytes,
         temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,

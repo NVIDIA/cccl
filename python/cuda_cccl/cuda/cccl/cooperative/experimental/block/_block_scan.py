@@ -300,6 +300,7 @@ def scan(
             return DependentCxxOperator(
                 dep=Dependency("T"),
                 cpp=scan_op.op_cpp,
+                name="scan_op",
             )
 
     elif scan_op.is_callable:
@@ -309,6 +310,7 @@ def scan(
                 ret_dtype=Dependency("T"),
                 arg_dtypes=[Dependency("T"), Dependency("T")],
                 op=Dependency("ScanOp"),
+                name="scan_op",
             )
 
     if block_prefix_callback_op is not None:
@@ -318,6 +320,7 @@ def scan(
                 ret_dtype=Dependency("T"),
                 arg_dtypes=[Dependency("T")],
                 op=Dependency("BlockPrefixCallbackOp"),
+                name="block_prefix_callback",
             )
 
     if scan_op.is_sum:
@@ -333,12 +336,14 @@ def scan(
                     #     T& # output
                     # )
                     [
-                        # temp_storage
-                        Pointer(numba.uint8),
                         # T input
-                        DependentReference(Dependency("T")),
+                        DependentReference(Dependency("T"), name="input"),
                         # T& output
-                        DependentReference(Dependency("T"), is_output=True),
+                        DependentReference(
+                            Dependency("T"),
+                            is_output=True,
+                            name="output",
+                        ),
                     ],
                 ]
             else:

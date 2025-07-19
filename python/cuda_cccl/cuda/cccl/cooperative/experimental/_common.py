@@ -6,10 +6,12 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import BinaryIO, Union
+from typing import BinaryIO, Type, Union
 
 import numba
+import numba.types
 import numpy as np
+from numba.cuda.stubs import Stub as CudaVectorTypeStub
 
 from ._typing import DimType
 
@@ -171,18 +173,37 @@ def normalize_dim_param(dim: DimType) -> dim3:
             msg = f"Tuple dimension must have 2 or 3 elements, got {len(dim)}"
             raise ValueError(msg)
 
+    # Last ditch effort at casting to an integer.
+    try:
+        dim = int(dim)
+    except (ValueError, TypeError):
+        pass
+    else:
+        if dim < 0:
+            msg = f"Dimension value must be non-negative, got {dim}"
+            raise ValueError(msg)
+        return dim3(dim, 1, 1)
+
     raise ValueError(f"Unsupported dimension type: {type(dim)}")
 
 
+def _is_cuda_vector_type(obj) -> bool:
+    """
+    Returns True iff the object is a CUDA vector type, False otherwise.
+    """
+    return isinstance(obj, type) and issubclass(obj, CudaVectorTypeStub)
+
+
 def normalize_dtype_param(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-) -> "numba.types.Type":
+    dtype: Union[str, type, "np.dtype", numba.types.Type, Type[CudaVectorTypeStub]],
+) -> Union[numba.types.Type, Type[CudaVectorTypeStub]]:
     """
     Normalize the dtype parameter to an appropriate Numba type.
 
     The logic for this routine is as follows:
 
     - If the dtype is already a numba type, return it as is.
+    - If the dtype is already a numba-cuda vector type, return it as is.
     - If the dtype is a valid numpy dtype, convert it to the corresponding
       numba type.  Note that this applies to both `np.int32` and
       `np.dtype(np.int32)`.
@@ -200,7 +221,8 @@ def normalize_dtype_param(
         dtype: Supplies the dtype parameter to normalize.
 
     Returns:
-        The normalized dtype parameter as a numba type.
+        The normalized dtype parameter as a numba type, or, in the case of
+        CUDA vector types, the original dtype parameter.
 
     Raises:
         ValueError: If the dtype is invalid.
@@ -210,6 +232,10 @@ def normalize_dtype_param(
 
     # If dtype is already a numba type, return it as is.
     if isinstance(dtype, numba.types.Type):
+        return dtype
+
+    # If dtype is a CUDA vector type, return it as is.
+    if _is_cuda_vector_type(dtype):
         return dtype
 
     # Handle numpy dtype objects.
