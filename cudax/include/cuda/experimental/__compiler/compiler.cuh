@@ -23,11 +23,13 @@
 
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
 #include <cuda/std/string_view>
 
 #include <cuda/experimental/__compiler/compile_options.cuh>
 #include <cuda/experimental/__compiler/compile_result.cuh>
+#include <cuda/experimental/__compiler/compile_source.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <string>
@@ -47,20 +49,13 @@ struct __compile_options
   ::std::vector<::std::string> __opt_strs;
 };
 
-//! @brief A lightweight wrapper for CUDA source code.
-struct cuda_source_code
-{
-  _CUDA_VSTD::string_view name; //!< The name of the CUDA source code.
-  _CUDA_VSTD::string_view code; //!< The CUDA source code to compile.
-};
-
 /// @brief A class representing a CUDA compiler.
 class cuda_compiler
 {
-  [[nodiscard]] static ::nvrtcProgram __make_program(const cuda_source_code& __src)
+  [[nodiscard]] static ::nvrtcProgram __make_program(const cuda_compile_source& __src)
   {
-    ::std::string __name{__src.name.begin(), __src.name.end()};
-    ::std::string __code{__src.code.begin(), __src.code.end()};
+    ::std::string __name{__src.__name_.begin(), __src.__name_.end()};
+    ::std::string __code{__src.__code_.begin(), __src.__code_.end()};
     ::nvrtcProgram __program{};
     if (::nvrtcCreateProgram(&__program, __code.c_str(), __name.c_str(), 0, nullptr, nullptr) != ::NVRTC_SUCCESS)
     {
@@ -218,13 +213,13 @@ class cuda_compiler
     return __ret;
   }
 
-  template <class _It>
-  static void __add_name_expressions(::nvrtcProgram __program, _It __begin, _It __end)
+  static void
+  __add_name_expressions(::nvrtcProgram __program, _CUDA_VSTD::span<const _CUDA_VSTD::string_view> __name_exprs)
   {
     ::std::string __tmp{};
-    for (; __begin != __end; ++__begin)
+    for (const auto& __name_expr : __name_exprs)
     {
-      __tmp.assign(__begin->begin(), __begin->end());
+      __tmp.assign(__name_expr.begin(), __name_expr.end());
       if (::nvrtcAddNameExpression(__program, __tmp.c_str()) != ::NVRTC_SUCCESS)
       {
         // todo: throw an exception if the name expression could not be added
@@ -241,18 +236,15 @@ class cuda_compiler
 public:
   //! @brief Compile CUDA source code to PTX.
   //!
-  //! @param __cuda_src_code The CUDA source code to compile.
+  //! @param __cuda_src The CUDA source code to compile.
   //! @param __cuda_opts The CUDA compilation options to use.
-  //! @param __name_exprs Optional name expressions to lower.
   //!
   //! @return A compile_cuda_to_ptx_result object.
-  [[nodiscard]] compile_cuda_to_ptx_result compile_to_ptx(
-    cuda_source_code __cuda_src_code,
-    const cuda_compile_opts& __cuda_opts,
-    _CUDA_VSTD::span<const _CUDA_VSTD::string_view> __name_exprs = {})
+  [[nodiscard]] compile_cuda_to_ptx_result
+  compile_to_ptx(const cuda_compile_source& __cuda_src, const cuda_compile_opts& __cuda_opts)
   {
-    auto __program = __make_program(__cuda_src_code);
-    __add_name_expressions(__program, __name_exprs.begin(), __name_exprs.end());
+    auto __program = __make_program(__cuda_src);
+    __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts);
 
@@ -261,20 +253,16 @@ public:
 
   //! @brief Compile CUDA source code to CUBIN.
   //!
-  //! @param __cuda_src_code The CUDA source code to compile.
+  //! @param __cuda_src The CUDA source code to compile.
   //! @param __cuda_opts The CUDA compilation options to use.
   //! @param __ptx_opts The PTX compilation options to use.
-  //! @param __name_exprs Optional name expressions to lower.
   //!
   //! @return A compile_cuda_to_cubin_result object.
   [[nodiscard]] compile_cuda_to_cubin_result compile_to_cubin(
-    cuda_source_code __cuda_src_code,
-    const cuda_compile_opts& __cuda_opts,
-    const ptx_compile_opts& __ptx_opts,
-    _CUDA_VSTD::span<const _CUDA_VSTD::string_view> __name_exprs = {})
+    const cuda_compile_source& __cuda_src, const cuda_compile_opts& __cuda_opts, const ptx_compile_opts& __ptx_opts)
   {
-    auto __program = __make_program(__cuda_src_code);
-    __add_name_expressions(__program, __name_exprs.begin(), __name_exprs.end());
+    auto __program = __make_program(__cuda_src);
+    __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts, __ptx_opts);
 
@@ -283,18 +271,15 @@ public:
 
   //! @brief Compile CUDA source code to LTOIR.
   //!
-  //! @param __cuda_src_code The CUDA source code to compile.
+  //! @param __cuda_src The CUDA source code to compile.
   //! @param __cuda_opts The CUDA compilation options to use.
-  //! @param __name_exprs Optional name expressions to lower.
   //!
   //! @return A compile_cuda_to_ltoir_result object.
-  [[nodiscard]] compile_cuda_to_ltoir_result compile_to_ltoir(
-    cuda_source_code __cuda_src_code,
-    const cuda_compile_opts& __cuda_opts,
-    _CUDA_VSTD::span<const _CUDA_VSTD::string_view> __name_exprs = {})
+  [[nodiscard]] compile_cuda_to_ltoir_result
+  compile_to_ltoir(const cuda_compile_source& __cuda_src, const cuda_compile_opts& __cuda_opts)
   {
-    auto __program = __make_program(__cuda_src_code);
-    __add_name_expressions(__program, __name_exprs.begin(), __name_exprs.end());
+    auto __program = __make_program(__cuda_src);
+    __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts);
     __opt_ptrs.push_back("-dlto");
@@ -303,27 +288,13 @@ public:
   }
 };
 
-//! @brief A lightweight wrapper for PTX source code.
-struct ptx_source_code
-{
-  _CUDA_VSTD::string_view code; //!< The PTX source code to compile.
-
-  //! @brief Constructor to create a ptx_source_code object.
-  //!
-  //! @param __code The PTX source code to compile.
-  constexpr explicit ptx_source_code(_CUDA_VSTD::string_view __code) noexcept
-      : code{__code}
-  {}
-};
-
 //! @brief A class representing a PTX compiler.
 class ptx_compiler
 {
-  [[nodiscard]] static ::nvPTXCompilerHandle __make_handle(const ptx_source_code& __ptx_src_code)
+  [[nodiscard]] static ::nvPTXCompilerHandle __make_handle(const ptx_compile_source& __ptx_src)
   {
     ::nvPTXCompilerHandle __handle{};
-    if (::nvPTXCompilerCreate(&__handle, __ptx_src_code.code.size(), __ptx_src_code.code.data())
-        != ::NVPTXCOMPILE_SUCCESS)
+    if (::nvPTXCompilerCreate(&__handle, __ptx_src.__code_.size(), __ptx_src.__code_.data()) != ::NVPTXCOMPILE_SUCCESS)
     {
       // todo: throw an exception if the program creation failed
     }
@@ -404,28 +375,26 @@ class ptx_compiler
 public:
   //! @brief Compile PTX source code to CUBIN.
   //!
-  //! @param __ptx_src_code The PTX source code to compile.
+  //! @param __ptx_src The PTX source code to compile.
   //! @param __ptx_opts The PTX compilation options to use.
   //! @param __lowered_names Optional names to lower.
   //!
   //! @return A compile_ptx_to_cubin_result object.
-  [[nodiscard]] compile_ptx_to_cubin_result compile_to_cubin(
-    ptx_source_code __ptx_src_code,
-    const ptx_compile_opts& __ptx_opts,
-    _CUDA_VSTD::span<const _CUDA_VSTD::string_view> __lowered_names = {})
+  [[nodiscard]] compile_ptx_to_cubin_result
+  compile_to_cubin(const ptx_compile_source& __ptx_src, const ptx_compile_opts& __ptx_opts)
   {
-    auto __handle = __make_handle(__ptx_src_code);
+    auto __handle = __make_handle(__ptx_src);
 
     auto [__opt_ptrs, __opt_strings] = __make_options(__ptx_opts);
 
     ::std::string __tmp{"--entry=\""};
-    for (_CUDA_VSTD::size_t __i = 0; __i < __lowered_names.size(); ++__i)
+    for (_CUDA_VSTD::size_t __i = 0; __i < __ptx_src.__symbols_.size(); ++__i)
     {
       if (__i > 0)
       {
         __tmp.append(",");
       }
-      __tmp.append(__lowered_names[__i].begin(), __lowered_names[__i].end());
+      __tmp.append(__ptx_src.__symbols_[__i].begin(), __ptx_src.__symbols_[__i].end());
     }
     __tmp.append("\"");
     __opt_strings.emplace_back(_CUDA_VSTD::move(__tmp));

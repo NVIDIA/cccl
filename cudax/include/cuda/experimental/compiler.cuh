@@ -13,6 +13,7 @@
 
 #include <cuda/experimental/__compiler/compile_options.cuh>
 #include <cuda/experimental/__compiler/compile_result.cuh>
+#include <cuda/experimental/__compiler/compile_source.cuh>
 #include <cuda/experimental/__compiler/compiler.cuh>
 
 #endif // _CUDAX_COMPILATON_CUH
