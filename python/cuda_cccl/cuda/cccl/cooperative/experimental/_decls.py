@@ -932,12 +932,17 @@ def codegen_block_histogram_call(context, builder, sig, args):
 #      the `cub::BlockRunLengthDecode::RunLengthDecode` method instance.
 
 
+@register
 class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
     key = coop.block.run_length.decode
     primitive_name = "coop.block.run_length.decode"
 
+    unsafe_casting = False
+    exact_match_required = True
+    prefer_literal = True
+
     def generic(self):
-        def typer(decoded_items, decoded_window_offset, relative_offsets=None):
+        def typer(decoded_items, decoded_window_offset=None, relative_offsets=None):
             # Verify decoded_items is a device array.
             if not isinstance(decoded_items, types.Array):
                 raise errors.TypingError(
@@ -945,16 +950,16 @@ class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
                     f"got {type(decoded_items).__name__}"
                 )
 
-            # Verify decoded_window_offset is an integer.
-            if not isinstance(decoded_window_offset, types.Integer):
-                raise errors.TypingError(
-                    "decoded_window_offset must be an integer value"
-                )
-
             arglist = [
                 decoded_items,
-                decoded_window_offset,
             ]
+
+            if decoded_window_offset is not None:
+                if not isinstance(decoded_window_offset, types.Integer):
+                    raise errors.TypingError(
+                        "decoded_window_offset must be an integer value"
+                    )
+                arglist.append(decoded_window_offset)
 
             if relative_offsets is not None:
                 # Verify relative_offsets is a device array.
@@ -975,12 +980,18 @@ class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
         return typer
 
 
+@register
 class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
     key = coop.block.run_length
     primitive_name = "coop.block.run_length"
     algorithm_enum = coop.NoAlgorithm
     default_algorithm = coop.NoAlgorithm.NO_ALGORITHM
     is_constructor = True
+    decode_decl = CoopBlockRunLengthDecodeDecl
+
+    unsafe_casting = True
+    exact_match_required = False
+    prefer_literal = True
 
     def __init__(self, context=None):
         super().__init__(context=context)
@@ -991,18 +1002,22 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
             run_lengths,
             runs_per_thread,
             decoded_items_per_thread,
-            total_decoded_size=None,
+            total_decoded_size,
+            decoded_offset_dtype=None,
             temp_storage=None,
         ):
+            # error_class = errors.TypingError
+            error_class = RuntimeError
+
             # Verify run_values and run_lengths are device arrays.
             if not isinstance(run_values, types.Array):
-                raise errors.TypingError(
+                raise error_class(
                     "run_values must be a device array, "
                     f"got {type(run_values).__name__}"
                 )
 
             if not isinstance(run_lengths, types.Array):
-                raise errors.TypingError(
+                raise error_class(
                     "run_lengths must be a device array, "
                     f"got {type(run_lengths).__name__}"
                 )
@@ -1019,11 +1034,16 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
                 "decoded_items_per_thread",
             )
 
-            if total_decoded_size is not None:
-                if not isinstance(total_decoded_size, types.Integer):
-                    raise errors.TypingError(
-                        "total_decoded_size must be an integer type"
-                    )
+            if decoded_offset_dtype is not None:
+                decoded_offset_dtype = parse_dtype(decoded_offset_dtype)
+                if not isinstance(decoded_offset_dtype, types.Integer):
+                    raise error_class("decoded_offset_dtype must be an integer type")
+
+            invalid_total_decoded_size = total_decoded_size is None or not isinstance(
+                total_decoded_size, types.Integer
+            )
+            if invalid_total_decoded_size:
+                raise error_class("total_decoded_size must be an integer type")
 
             validate_temp_storage(self, temp_storage)
 
@@ -1034,6 +1054,9 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
                 decoded_items_per_thread,
                 total_decoded_size,
             ]
+
+            if decoded_offset_dtype is not None:
+                arglist.append(decoded_offset_dtype)
 
             if temp_storage is not None:
                 arglist.append(temp_storage)
@@ -1088,7 +1111,8 @@ def type_block_run_length_instance_call(context):
         run_lengths,
         runs_per_thread,
         decoded_items_per_thread,
-        total_decoded_size=None,
+        total_decoded_size,
+        decoded_offset_dtype=None,
         temp_storage=None,
     ):
         decl = block_run_length_instance_type.decl
@@ -1111,16 +1135,19 @@ block_run_length_attrs_template = CoopBlockRunLengthAttrsTemplate(None)
 
 @lower_constant(CoopBlockRunLengthInstanceType)
 def lower_constant_block_run_length_instance_type(context, builder, typ, value):
+    raise RuntimeError("Not yet implemented")
     return context.get_dummy_value()
 
 
 @lower_builtin(CoopBlockRunLengthInstanceType, types.VarArg(types.Any))
 def codegen_block_run_length(context, builder, sig, args):
+    raise RuntimeError("Not yet implemented")
     return context.get_dummy_value()
 
 
 @lower_builtin("call", CoopBlockRunLengthInstanceType, types.VarArg(types.Any))
 def codegen_block_run_length_call(context, builder, sig, args):
+    raise RuntimeError("Not yet implemented")
     return context.get_dummy_value()
 
 

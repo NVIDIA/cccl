@@ -445,6 +445,12 @@ class Primitive(IntEnum):
     RUN_LENGTH__DECODE = auto()
 
 
+class Disposition(IntEnum):
+    ONE_SHOT = auto()
+    PARENT = auto()
+    CHILD = auto()
+
+
 class CoopNodeMixin:
     pass
 
@@ -518,6 +524,9 @@ class CoopNode:
     temp_storage: Optional[Any] = None
     parent_node: Optional["CoopNode"] = None
     parent_root_def: Optional["RootDefinition"] = None
+    rewriter: Optional[Any] = None
+    child_expr: Optional[ir.Expr] = None
+    child_template: Optional[Any] = None
 
     def __post_init__(self):
         # If we're handling a two-phase invocation via a primitive that was
@@ -532,7 +541,7 @@ class CoopNode:
             self.launch_config.pre_launch_callbacks.append(self.pre_launch_callback)
 
         if self.parent_node is not None:
-            self.parent_node.children.append(self)
+            self.parent_node.add_child(self)
 
     def pre_launch_callback(self, kernel, launch_config):
         register_kernel_extension(kernel, self)
@@ -658,8 +667,8 @@ class CoopNode:
             f"{self.primitive.name.lower()}_"
             f"{self.block_line}_{self.index}"
         )
-        if self.implicit_temp_storage:
-            name += "_alloc"
+        # if self.implicit_temp_storage:
+        #    name += "_alloc"
         return name
 
     def make_arg_name(self, arg_name: str) -> str:
@@ -668,30 +677,30 @@ class CoopNode:
         """
         return f"{self.call_var_name}_{arg_name}"
 
-    @cached_property
+    @property
     def expr_name(self):
         return f"{self.granularity.name.lower()}_{self.primitive.name.lower()}"
 
-    @cached_property
+    @property
     def c_name(self):
         # Need to obtain the mangled name depending on the template parameter
         # match.
         name = self.instance.specialization.mangled_names_alloc[0]
         return name
 
-    @cached_property
+    @property
     def key_name(self):
         if self.is_two_phase:
             return self.type_instance.decl.primitive_name
         else:
             return self.template.key.__name__
 
-    @cached_property
+    @property
     def granularity(self):
         """
         Determine the granularity of the cooperative operation.
         """
-        name = self.key_name
+        name = self.primitive_name
         if "block" in name:
             return Granularity.BLOCK
         elif "warp" in name:
@@ -759,6 +768,18 @@ class CoopNode:
         return self.granularity == Granularity.WARP
 
     @property
+    def is_one_shot(self):
+        return self.disposition == Disposition.ONE_SHOT
+
+    @property
+    def is_parent(self):
+        return self.disposition == Disposition.PARENT
+
+    @property
+    def is_child(self):
+        return self.disposition == Disposition.CHILD
+
+    @property
     def codegen(self):
         # This should only ever be one for the new primitive impl; we've
         # obviated the need for the automatic implicit temp storage parameter
@@ -769,6 +790,7 @@ class CoopNode:
 
 class CoopLoadStoreNode(CoopNode):
     threads_per_block = None
+    disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
         """
@@ -1080,6 +1102,7 @@ class CoopArrayNode(CoopNode):
     shape = None
     dtype = None
     alignment = None
+    disposition = Disposition.ONE_SHOT
 
     @cached_property
     def is_shared(self):
@@ -1319,6 +1342,7 @@ class CoopLocalArrayNode(CoopArrayNode, CoopNodeMixin):
 
 class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram"
+    disposition = Disposition.PARENT
 
     def refine_match(self, rewriter):
         expr = self.expr
@@ -1357,6 +1381,7 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
 
 class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram.init"
+    disposition = Disposition.CHILD
 
     def refine_match(self, rewriter):
         print(self)
@@ -1369,6 +1394,7 @@ class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
 
 class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram.composite"
+    disposition = Disposition.CHILD
 
     def refine_match(self, rewriter):
         print(self)
@@ -1377,6 +1403,7 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
 
 class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length"
+    disposition = Disposition.PARENT
 
     def refine_match(self, rewriter):
         # The caller has invoked us with something like this:
@@ -1385,7 +1412,8 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         #       run_lengths,
         #       runs_per_thread,
         #       decoded_items_per_thread,
-        #       total_decoded_size,
+        #       decoded_offset_dtype=...,   # Optional.
+        #       total_decoded_size=...,     # Optional.
         #       temp_storage=temp_storage,
         #   )
         #
@@ -1415,18 +1443,65 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
 
         run_values = expr_args.pop(0)
         run_values_ty = self.typemap[run_values.name]
+        item_dtype = run_values_ty.dtype
 
         run_lengths = expr_args.pop(0)
         run_lengths_ty = self.typemap[run_lengths.name]
 
+        # Would our new get_root_definition() work here instead of raw-dogging
+        # self.get_arg_value()?
+        runs_per_thread_var = expr_args.pop(0)
+        assert isinstance(runs_per_thread_var, ir.Var)
+        assert runs_per_thread_var.name == "runs_per_thread"
         runs_per_thread = self.get_arg_value("runs_per_thread")
+
+        decoded_items_per_thread_var = expr_args.pop(0)
+        assert isinstance(decoded_items_per_thread_var, ir.Var)
+        assert decoded_items_per_thread_var.name == "decoded_items_per_thread"
         decoded_items_per_thread = self.get_arg_value("decoded_items_per_thread")
 
-        total_decoded_size = self.get_arg_value_safe("total_decoded_size")
-        temp_storage = self.get_arg_value_safe("temp_storage")
+        total_decoded_size = None
+        total_decoded_size_ty = None
+        decoded_offset_dtype = None
+        decoded_offset_dtype_ty = None
+        temp_storage = None
+        temp_storage_ty = None
 
-        item_dtype = run_values_ty.dtype
-        decoded_offset_dtype = run_lengths_ty.dtype
+        while len(expr_args) > 0:
+            arg_var = expr_args.pop(0)
+            if isinstance(arg_var, ir.Var):
+                if arg_var.name == "total_decoded_size":
+                    total_decoded_size = arg_var
+                    total_decoded_size_ty = self.typemap[arg_var.name]
+                elif arg_var.name == "temp_storage":
+                    temp_storage = arg_var
+                    temp_storage_ty = self.typemap[arg_var.name]
+                elif arg_var.name == "decoded_offset_dtype":
+                    decoded_offset_dtype = arg_var
+                    decoded_offset_dtype_ty = self.typemap[arg_var.name]
+                else:
+                    raise RuntimeError(
+                        f"Unexpected argument {arg_var.name!r} in {self!r}"
+                    )
+            else:
+                raise RuntimeError(f"Unexpected argument {arg_var!r} in {self!r}")
+
+        if decoded_offset_dtype_ty is None:
+            # Try and resolve it from the child_expr.
+            child_expr = self.child_expr
+            child_template = self.child_template
+            typer = child_template.generic(child_template)
+            sig = inspect.signature(typer)
+            bound = sig.bind(*list(child_expr.args), **dict(child_expr.kws))
+            arg_var = bound.arguments.get("decoded_window_offset", None)
+            if arg_var is not None:
+                if isinstance(arg_var, ir.Var):
+                    decoded_offset_dtype = self.typemap[arg_var.name]
+                else:
+                    raise RuntimeError(
+                        "Expected a variable for decoded_window_offset, "
+                        f"got {arg_var!r}"
+                    )
 
         self.run_values = run_values
         self.item_dtype = item_dtype
@@ -1436,6 +1511,7 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         self.decoded_items_per_thread = decoded_items_per_thread
         self.total_decoded_size = total_decoded_size
         self.temp_storage = temp_storage
+        self.decoded_offset_dtype = decoded_offset_dtype
 
         self.instance = self.impl_class(
             item_dtype=item_dtype,
@@ -1443,9 +1519,12 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
             runs_per_thread=runs_per_thread,
             decoded_items_per_thread=decoded_items_per_thread,
             decoded_offset_dtype=decoded_offset_dtype,
-            total_decoded_size=total_decoded_size,
-            temp_storage=temp_storage,
+            run_values=run_values_ty,
+            run_lengths=run_lengths_ty,
+            total_decoded_size=total_decoded_size_ty,
+            temp_storage=temp_storage_ty,
         )
+        self.instance.node = self
 
     def add_child(self, child):
         self.children.append(child)
@@ -1456,6 +1535,7 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
 
 class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length.decode"
+    disposition = Disposition.CHILD
 
     def rewrite(self, rewriter):
         pass
@@ -1544,6 +1624,9 @@ class CoopNodeRewriter(Rewrite):
         self._state = state
 
         self.nodes = OrderedDict()
+
+        self.typemap = None
+        self.calltypes = None
 
         # Advanced C++ CUDA kernels will often leverage a templated struct
         # for specialized CUB primitives, e.g.
@@ -1669,6 +1752,8 @@ class CoopNodeRewriter(Rewrite):
         calltypes: dict[ir.Expr, types.Type],
         typemap: dict[str, types.Type],
         launch_config: "LaunchConfig",
+        child_expr: ir.Expr,
+        child_template: Any,
     ) -> CoopNode:
         if parent_target_name in self.nodes:
             return self.nodes[parent_target_name]
@@ -1689,8 +1774,14 @@ class CoopNodeRewriter(Rewrite):
         func = typemap[func_name]
         target = root_assign.target
 
+        if not self.typemap:
+            self.typemap = typemap
+
+        if not self.calltypes:
+            self.calltypes = calltypes
+
         node = node_class(
-            index=-1,
+            index=0,
             block_line=root_block.loc.line,
             expr=expr,
             instr=parent_root_def.root_instr,
@@ -1709,6 +1800,10 @@ class CoopNodeRewriter(Rewrite):
             two_phase_instance=None,
             parent_struct_instance_type=None,
             parent_node=None,
+            children=[],
+            rewriter=self,
+            child_expr=child_expr,
+            child_template=child_template,
         )
 
         self.nodes[parent_target_name] = node
@@ -1922,8 +2017,8 @@ class CoopNodeRewriter(Rewrite):
             template = None
             impl_class = None
             node_class = None
-            # bound_func = None
             value_type = None
+            parent_node = None
             type_instance = None
             parent_node = None
             primitive_name = None
@@ -2166,6 +2261,8 @@ class CoopNodeRewriter(Rewrite):
                     calltypes,
                     typemap,
                     launch_config,
+                    expr,
+                    template,
                 )
 
                 if not parent_root_def.is_single_phase:
@@ -2174,6 +2271,10 @@ class CoopNodeRewriter(Rewrite):
 
                 impl_func = func.key[0]
                 impl_class = impl_func
+
+                algo = parent_node.instance.specialization
+                source_code = algo.source_code
+                print(source_code)
 
             else:
                 raise RuntimeError(f"Unexpected code path; {func!r}")

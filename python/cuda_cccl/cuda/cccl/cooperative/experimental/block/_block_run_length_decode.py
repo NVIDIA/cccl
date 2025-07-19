@@ -15,6 +15,7 @@ from .._types import (
     DependentArray,
     DependentReference,
     TemplateParameter,
+    TempStoragePointer,
 )
 from .._typing import (
     DimType,
@@ -36,7 +37,7 @@ class BlockRunLengthDecode(BasePrimitive):
         self,
         parent: "BlockRunLength",
         decoded_items,
-        decoded_window_offset,
+        decoded_window_offset=None,
         relative_offsets=None,
     ) -> None:
         self.parent = parent
@@ -45,43 +46,54 @@ class BlockRunLengthDecode(BasePrimitive):
         self.relative_offsets = relative_offsets
 
         # self.template_parameters = list(parent.template_parameters)
-        self.template_parameters = []
+        self.template_parameters = [
+            TemplateParameter("ItemT"),
+            TemplateParameter("DECODED_ITEMS_PER_THREAD"),
+        ]
 
         self.specialization_kwds = {
-            "RunLengthT": parent.item_dtype,
-            "TotalDecodedSizeT": parent.decoded_offset_dtype,
+            "ItemT": parent.item_dtype,
         }
 
-        has_relative_offsets = relative_offsets is not None
-        if has_relative_offsets:
-            self.template_parameters += [
-                TemplateParameter("RelativeOffsetsT"),
-            ]
-
-        self.parameters = [
+        method = [
             # RunLengthDecode(
             #   ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
             #   DecodedOffsetT decoded_window_offset,
             #   ...
             # ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
-            DependentArray(Dependency("ItemT"), Dependency("DECODED_ITEMS_PER_THREAD")),
-            DependentReference(Dependency("DecodedOffsetT")),
+            DependentArray(
+                Dependency("ItemT"),
+                Dependency("DECODED_ITEMS_PER_THREAD"),
+                name="decoded_items",
+            ),
         ]
 
-        if has_relative_offsets:
+        if decoded_window_offset is not None:
             self.template_parameters.append(
-                TemplateParameter("RelativeOffsetsT"),
+                TemplateParameter("DecodedOffsetT"),
             )
-
-            # RelativeOffsetsT (&relative_offsets)[DECODED_ITEMS_PER_THREAD],
-            self.parameters.append(
-                DependentArray(
-                    Dependency("RelativeOffsetsT"),
-                    Dependency("DECODED_ITEMS_PER_THREAD"),
+            self.specialization_kwds["DecodedOffsetT"] = parent.decoded_offset_dtype
+            method.append(
+                DependentReference(
+                    Dependency("DecodedOffsetT"),
+                    name="from_decoded_offset",
                 )
             )
 
-            self.specialization_kwds["RelativeOffsetsT"] = relative_offsets.dtype
+        if relative_offsets is not None:
+            self.template_parameters.append(
+                TemplateParameter("RelativeOffsetT"),
+            )
+            self.specialization_kwds["RelativeOffsetT"] = relative_offsets.dtype
+            method.append(
+                DependentArray(
+                    Dependency("RelativeOffsetT"),
+                    Dependency("DECODED_ITEMS_PER_THREAD"),
+                    name="item_offsets",
+                )
+            )
+
+        self.parameters = [method]
 
         self.algorithm = Algorithm(
             struct_name=self.struct_name,
@@ -90,7 +102,7 @@ class BlockRunLengthDecode(BasePrimitive):
             includes=[],
             template_parameters=self.template_parameters,
             parameters=self.parameters,
-            primitive=self.primitive,
+            primitive=self,
         )
 
         self.specialization = self.algorithm.specialize(**self.specialization_kwds)
@@ -104,23 +116,6 @@ class BlockRunLength(BasePrimitive):
     c_name = "BlockRunLengthDecode"
     includes = [
         "cub/block/block_run_length_decode.cuh",
-    ]
-
-    template_parameters = [
-        TemplateParameter("ItemT"),
-        TemplateParameter("BLOCK_DIM_X"),
-        TemplateParameter("RUNS_PER_THREAD"),
-        TemplateParameter("DECODED_ITEMS_PER_THREAD"),
-        TemplateParameter("DecodedOffsetT"),
-        TemplateParameter("BLOCK_DIM_Y"),
-        TemplateParameter("BLOCK_DIM_Z"),
-    ]
-
-    # XXX temporary storage location.
-    decoder_template_parameters = [
-        TemplateParameter("RunLengthT"),
-        TemplateParameter("TotalDecodedSizeT"),
-        TemplateParameter("UserRunOffsetT"),
     ]
 
     def _validate_items_per_thread(self, items_per_thread: int, name: str) -> None:
@@ -139,6 +134,8 @@ class BlockRunLength(BasePrimitive):
         runs_per_thread: int,
         decoded_items_per_thread: int,
         decoded_offset_dtype: DtypeType = None,
+        run_values=None,
+        run_lengths=None,
         total_decoded_size=None,
         temp_storage=None,
     ) -> None:
@@ -157,16 +154,15 @@ class BlockRunLength(BasePrimitive):
             decoded_offset_dtype = numba.uint32
         self.decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
 
-        self.parameters = []
-
-        self.algorithm = Algorithm(
-            self.struct_name,
-            self.method_name,
-            self.c_name,
-            self.includes,
-            self.template_parameters,
-            self.parameters,
-        )
+        template_parameters = [
+            TemplateParameter("ItemT"),
+            TemplateParameter("BLOCK_DIM_X"),
+            TemplateParameter("RUNS_PER_THREAD"),
+            TemplateParameter("DECODED_ITEMS_PER_THREAD"),
+            TemplateParameter("DecodedOffsetT"),
+            TemplateParameter("BLOCK_DIM_Y"),
+            TemplateParameter("BLOCK_DIM_Z"),
+        ]
 
         specialization_kwds = {
             "ItemT": self.item_dtype,
@@ -177,22 +173,78 @@ class BlockRunLength(BasePrimitive):
             "BLOCK_DIM_Y": self.dim[1],
             "BLOCK_DIM_Z": self.dim[2],
         }
+
+        method = []
+
+        if run_values is not None:
+            method.append(
+                DependentArray(
+                    Dependency("ItemT"),
+                    Dependency("RUNS_PER_THREAD"),
+                    name="run_values",
+                )
+            )
+
+        if run_lengths is not None:
+            method.append(
+                DependentArray(
+                    Dependency("RunLengthT"),
+                    Dependency("RUNS_PER_THREAD"),
+                    name="run_lengths",
+                )
+            )
+            specialization_kwds["RunLengthT"] = run_lengths.dtype
+
+        if total_decoded_size is not None:
+            # template_parameters.append(
+            #    TemplateParameter("TotalDecodedSizeT"),
+            # )
+            specialization_kwds["TotalDecodedSizeT"] = total_decoded_size
+            method.append(
+                DependentReference(
+                    Dependency("TotalDecodedSizeT"),
+                    name="total_decoded_size",
+                )
+            )
+
+        if temp_storage is not None:
+            (method.insert(0, TempStoragePointer()),)
+
+        if method:
+            self.parameters = [
+                method,
+            ]
+        else:
+            self.parameters = []
+
+        self.template_parameters = template_parameters
+
+        self.algorithm = Algorithm(
+            self.struct_name,
+            self.method_name,
+            self.c_name,
+            self.includes,
+            self.template_parameters,
+            self.parameters,
+            self,
+        )
+
         self.specialization = self.algorithm.specialize(specialization_kwds)
 
         # Trigger the LTO IR generation so that the temp storage info is
         # accessible.
-        _ = self.specialization.get_lto_ir()
+        # _ = self.specialization.get_lto_ir()
 
     def decode(
         self,
         decoded_items,
-        decoded_window_offset,
+        decoded_window_offset=None,
         relative_offsets=None,
     ):
         return BlockRunLengthDecode(
             self,
             decoded_items,
-            decoded_window_offset,
+            decoded_window_offset=None,
             relative_offsets=relative_offsets,
         )
 
