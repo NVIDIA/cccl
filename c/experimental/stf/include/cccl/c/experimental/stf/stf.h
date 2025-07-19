@@ -5,18 +5,15 @@ extern "C" {
 
 typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
-void stf_ctx_create(stf_ctx_handle* handle);
-void stf_ctx_finalize(stf_ctx_handle handle);
+void stf_ctx_create(stf_ctx_handle* ctx);
+void stf_ctx_finalize(stf_ctx_handle ctx);
 
-struct stf_task_handle
-{
-  void* handle;
-};
+typedef struct stf_logical_data_handle_t* stf_logical_data_handle;
 
-struct stf_logical_data_handle
-{
-  void* handle;
-};
+void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle *ld, void *addr, size_t sz);
+void stf_logical_data_destroy(stf_ctx_handle ctx, stf_logical_data_handle ld);
+
+typedef struct stf_task_handle_t* stf_task_handle;
 
 #ifdef __cplusplus
 }
