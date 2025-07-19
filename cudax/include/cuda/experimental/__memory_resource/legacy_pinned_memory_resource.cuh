@@ -116,8 +116,8 @@ public:
   using default_queries = properties_list<device_accessible, host_accessible>;
 };
 
-static_assert(_CUDA_VMR::resource_with<legacy_pinned_memory_resource, device_accessible>, "");
-static_assert(_CUDA_VMR::resource_with<legacy_pinned_memory_resource, host_accessible>, "");
+static_assert(_CUDA_VMR::synchronous_resource_with<legacy_pinned_memory_resource, device_accessible>, "");
+static_assert(_CUDA_VMR::synchronous_resource_with<legacy_pinned_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
 

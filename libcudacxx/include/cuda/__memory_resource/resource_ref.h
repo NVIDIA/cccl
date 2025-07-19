@@ -515,7 +515,7 @@ public:
   //! @param __res The resource to be wrapped within the \c basic_resource_ref
   _CCCL_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _CCCL_REQUIRES((!_Is_resource_ref<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Default)
-                   _CCCL_AND resource_with<_Resource, _Properties...>)
+                   _CCCL_AND synchronous_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
           _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _WrapperType::_Reference, _Resource>)
@@ -539,7 +539,7 @@ public:
   //! @param __res Pointer to a resource to be wrapped within the \c basic_resource_ref
   _CCCL_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _CCCL_REQUIRES((!_Is_resource_ref<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Default)
-                   _CCCL_AND resource_with<_Resource, _Properties...>)
+                   _CCCL_AND synchronous_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
           __res, &__alloc_vtable<_Alloc_type, _WrapperType::_Reference, _Resource>)

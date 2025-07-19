@@ -359,10 +359,10 @@ struct resource
   friend void get_property(const resource&, cudax::device_accessible) noexcept
   {}
 };
-static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::resource_with<resource<AccessibilityType::Host>, cudax::device_accessible>, "");
-static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::resource_with<resource<AccessibilityType::Device>, cudax::device_accessible>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
+static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, cudax::device_accessible>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, cudax::device_accessible>, "");
 
 template <AccessibilityType Accessibility>
 struct async_resource : public resource<Accessibility>

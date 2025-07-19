@@ -166,7 +166,7 @@ _CUDAX_PUBLIC_API const _CUDA_VMR::_Alloc_vtable* __get_resource_vptr(_Resource&
   {
     return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Async, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
   }
-  else if constexpr (_CUDA_VMR::resource<_Resource>)
+  else if constexpr (_CUDA_VMR::synchronous_resource<_Resource>)
   {
     return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Default, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
   }
@@ -412,7 +412,7 @@ public:
 };
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
-_CCCL_REQUIRES(mr::resource_with<_Resource, _Properties...>)
+_CCCL_REQUIRES(mr::synchronous_resource_with<_Resource, _Properties...>)
 resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
 {
   return resource_ref<_Properties...>(__mr);
@@ -492,7 +492,7 @@ public:
   //! @param __res The resource to be wrapped by the \c basic_any_resource.
   //! @pre \c _Resource is not a specialization of \c basic_any_resource or
   //! \c basic_resource_ref, or a type derived from such.
-  //! @pre `resource_with<_Resource, _Properties...>` is `true`.
+  //! @pre `synchronous_resource_with<_Resource, _Properties...>` is `true`.
   //! @pre If \c _Kind is \c _ResourceKind::_Asynchronous,
   //! `async_resource_with<_Resource, _Properties...>` is `true`.
   //! @post `has_value()` is `true`
@@ -535,7 +535,7 @@ public:
   //! @param __res The resource to be wrapped within the \c basic_any_resource
   //! @pre \c _Resource is not a specialization of \c basic_any_resource or
   //! \c basic_resource_ref, or a type derived from such.
-  //! @pre `resource_with<_Resource, _Properties...>` is `true`.
+  //! @pre `synchronous_resource_with<_Resource, _Properties...>` is `true`.
   //! @pre If \c _Kind is \c _ResourceKind::_Asynchronous,
   //! `async_resource_with<_Resource, _Properties...>` is `true`.
   //! @post `has_value()` is `true`
@@ -696,7 +696,7 @@ public:
   //! satisfies the \c resource concept and that supports all of the specified
   //! properties.
   //! @param __res The resource reference to be wrapped.
-  //! @pre `resource_with<_Resource, _Properties...>` is `true`.
+  //! @pre `synchronous_resource_with<_Resource, _Properties...>` is `true`.
   //! @pre If \c _Kind is \c _ResourceKind::_Asynchronous,
   //! `async_resource_with<_Resource, _Properties...>` is `true`.
   //! @pre If \c __res refers to a specialization of \c basic_any_resource or
@@ -722,7 +722,7 @@ public:
   //! \c resource concept and that supports all of the specified properties.
   //! @param __res The reference to the resource to be wrapped by the \c
   //! basic_resource_ref.
-  //! @pre `resource_with<_Resource, _Properties...>` is `true`.
+  //! @pre `synchronous_resource_with<_Resource, _Properties...>` is `true`.
   //! @pre If \c _Kind is \c _ResourceKind::_Asynchronous,
   //! `async_resource_with<_Resource, _Properties...>` is `true`.
   //! @pre If \c __res refers to a specialization of \c basic_any_resource or a
@@ -903,8 +903,9 @@ using async_resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Pro
 template <class _Resource, class... _Properties, class... _Args>
 auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
-  static_assert(_CUDA_VMR::resource_with<_Resource, _Properties...>,
+  static_assert(_CUDA_VMR::synchronous_resource<_Resource>,
+                "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
+  static_assert(_CUDA_VMR::synchronous_resource_with<_Resource, _Properties...>,
                 "The provided _Resource type does not support the requested properties");
   return any_resource<_Properties...>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }

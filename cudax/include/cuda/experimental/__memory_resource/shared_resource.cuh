@@ -52,7 +52,7 @@ namespace cuda::experimental
 template <class _Resource>
 struct shared_resource : __copy_default_queries<_Resource>
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "");
+  static_assert(_CUDA_VMR::synchronous_resource<_Resource>, "");
 
   //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
   //! that has been constructed with arguments \c __args. The \c _Resource object is
@@ -254,7 +254,8 @@ private:
 template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
+  static_assert(_CUDA_VMR::synchronous_resource<_Resource>,
+                "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
   return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }
 

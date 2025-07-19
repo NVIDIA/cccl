@@ -75,7 +75,7 @@ struct resource_derived_first : public resource_base<Properties...>
 
   int _val = 0;
 };
-static_assert(cuda::mr::resource<resource_derived_first<>>, "");
+static_assert(cuda::mr::synchronous_resource<resource_derived_first<>>, "");
 
 struct some_data
 {

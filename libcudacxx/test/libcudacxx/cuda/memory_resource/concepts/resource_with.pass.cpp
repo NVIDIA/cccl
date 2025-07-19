@@ -10,7 +10,7 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::resource_with
+// cuda::mr::synchronous_resource_with
 
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
@@ -37,7 +37,7 @@ struct valid_resource_with_property
   }
   friend void get_property(const valid_resource_with_property&, prop_with_value) {}
 };
-static_assert(cuda::mr::resource_with<valid_resource_with_property, prop_with_value>, "");
+static_assert(cuda::mr::synchronous_resource_with<valid_resource_with_property, prop_with_value>, "");
 
 struct valid_resource_without_property
 {
@@ -55,13 +55,13 @@ struct valid_resource_without_property
     return false;
   }
 };
-static_assert(!cuda::mr::resource_with<valid_resource_without_property, prop_with_value>, "");
+static_assert(!cuda::mr::synchronous_resource_with<valid_resource_without_property, prop_with_value>, "");
 
 struct invalid_resource_with_property
 {
   friend void get_property(const invalid_resource_with_property&, prop_with_value) {}
 };
-static_assert(!cuda::mr::resource_with<invalid_resource_with_property, prop_with_value>, "");
+static_assert(!cuda::mr::synchronous_resource_with<invalid_resource_with_property, prop_with_value>, "");
 
 struct resource_with_many_properties
 {
@@ -81,14 +81,14 @@ struct resource_with_many_properties
   friend void get_property(const resource_with_many_properties&, prop_with_value) {}
   friend void get_property(const resource_with_many_properties&, prop) {}
 };
-static_assert(cuda::mr::resource_with<resource_with_many_properties, prop_with_value, prop>, "");
-static_assert(!cuda::mr::resource_with<resource_with_many_properties, prop_with_value, int, prop>, "");
+static_assert(cuda::mr::synchronous_resource_with<resource_with_many_properties, prop_with_value, prop>, "");
+static_assert(!cuda::mr::synchronous_resource_with<resource_with_many_properties, prop_with_value, int, prop>, "");
 
 struct derived_with_property : public valid_resource_without_property
 {
   friend void get_property(const derived_with_property&, prop_with_value) {}
 };
-static_assert(cuda::mr::resource_with<derived_with_property, prop_with_value>, "");
+static_assert(cuda::mr::synchronous_resource_with<derived_with_property, prop_with_value>, "");
 
 int main(int, char**)
 {

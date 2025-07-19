@@ -19,7 +19,7 @@
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;
-  static_assert(cuda::mr::resource_with<TestResource, cudax::host_accessible>);
+  static_assert(cuda::mr::synchronous_resource_with<TestResource, cudax::host_accessible>);
   constexpr bool is_big = sizeof(TestResource) > cudax::__default_buffer_size;
 
   SECTION("construct and destruct")
