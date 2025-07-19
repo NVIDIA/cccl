@@ -28,6 +28,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
     cccl.c2h.main
     CUDA::nvrtc
     CUDA::nvptxcompiler_static
+    CUDA::nvJitLink
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"

@@ -26,6 +26,7 @@
 #include <cuda/std/string_view>
 
 #include <cuda/experimental/__compilation/compile_options.cuh>
+#include <cuda/experimental/__compilation/link_options.cuh>
 #include <cuda/experimental/__compilation/link_result.cuh>
 #include <cuda/experimental/__compilation/link_sources.cuh>
 #include <cuda/experimental/__compilation/nvjitlink.cuh>
@@ -62,11 +63,12 @@ public:
   //! @brief Link PTX sources to a single PTX output.
   //!
   //! @param __sources The PTX sources to link.
-  [[nodiscard]] link_to_ptx_result link_to_ptx(const ptx_link_sources& __sources)
+  [[nodiscard]] link_to_ptx_result link_to_ptx(const ptx_link_sources& __sources, const ptx_link_opts& __ptx_opts)
   {
     ::std::vector<const char*> __opt_ptrs{"-lto", "-ptx"};
 
     // todo: process options
+    (void) __ptx_opts; // suppress unused variable warning
 
     ::nvJitLinkHandle __handle{};
     if (::nvJitLinkCreate(&__handle, static_cast<_CUDA_VSTD::uint32_t>(__opt_ptrs.size()), __opt_ptrs.data())
@@ -87,12 +89,14 @@ public:
   //!
   //! @param __sources The CUBIN sources to link.
   //! @param __ptx_opts The PTX compilation options to use.
-  [[nodiscard]] link_to_cubin_result
-  link_to_cubin(const cubin_link_sources& __sources, const ptx_compile_opts& __ptx_opts)
+  [[nodiscard]] link_to_cubin_result link_to_cubin(
+    const cubin_link_sources& __sources, const ptx_compile_opts& __ptx_opts, const cubin_link_opts& __cubin_opts)
   {
     ::std::vector<const char*> __opt_ptrs{};
 
     // todo: process options
+    (void) __ptx_opts; // suppress unused variable warning
+    (void) __cubin_opts; // suppress unused variable warning
 
     ::nvJitLinkHandle __handle{};
     if (::nvJitLinkCreate(&__handle, static_cast<_CUDA_VSTD::uint32_t>(__opt_ptrs.size()), __opt_ptrs.data())

@@ -25,6 +25,8 @@
 #include <nvJitLink.h>
 #undef NVJITLINK_NO_INLINE
 
+#include <cuda/std/__cccl/prologue.h>
+
 extern "C" {
 
 nvJitLinkResult nvJitLinkCreate(nvJitLinkHandle*, uint32_t, const char**);
