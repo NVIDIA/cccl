@@ -77,7 +77,8 @@ enum class std_version_opt
 //! @brief Class to hold CUDA compilation options.
 class cuda_compile_opts
 {
-public: // todo: make this private
+  friend class cuda_compiler;
+
   enum class _DynOptType
   {
     __define_macro,
@@ -215,7 +216,9 @@ enum class pic_opt : bool
 //! @brief Class to hold PTX compilation options.
 class ptx_compile_opts
 {
-public: // todo: make this private
+  friend class cuda_compiler;
+  friend class ptx_compiler;
+
   int __max_reg_count_;
   unsigned __optimization_level_ : 2;
   unsigned __device_debug_       : 1;
