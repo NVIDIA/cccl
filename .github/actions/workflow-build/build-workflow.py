@@ -432,6 +432,14 @@ def generate_dispatch_job_runner(matrix_job, job_type):
         return f"{runner_os}-{cpu}-cpu16"
 
     gpu = get_gpu(matrix_job["gpu"])
+
+    if runner_os == "windows":
+        assert gpu["id"] == "t4", (
+            "Windows GPU jobs currently only support the T4 GPU. "
+            "Please update the matrix.yaml file to use a T4 GPU."
+        )
+        return "cuda-python-windows-gpu-github"
+
     suffix = "-testing" if gpu["testing"] else ""
 
     return f"{runner_os}-{cpu}-gpu-{gpu['id']}-latest-1{suffix}"
