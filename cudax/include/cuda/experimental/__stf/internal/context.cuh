@@ -139,6 +139,7 @@ class context
     ::std::variant<T1, T2> payload;
   };
 
+public:
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -167,6 +168,22 @@ class context
         self.set_symbol(mv(s));
       };
       return mv(*this);
+    }
+
+    auto& start()
+    {
+      payload->*[&](auto& self) {
+        self.start();
+      };
+      return *this;
+    }
+
+    auto& end()
+    {
+      payload->*[&](auto& self) {
+        self.end();
+      };
+      return *this;
     }
 
     /**
@@ -213,7 +230,6 @@ class context
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
 
-public:
   /**
    * @brief Default constructor for the context class.
    */
