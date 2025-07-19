@@ -14,6 +14,7 @@
 #include <cuda/experimental/__compilation/compile_options.cuh>
 #include <cuda/experimental/__compilation/compile_result.cuh>
 #include <cuda/experimental/__compilation/compiler.cuh>
+#include <cuda/experimental/__compilation/link_options.cuh>
 #include <cuda/experimental/__compilation/link_result.cuh>
 #include <cuda/experimental/__compilation/link_sources.cuh>
 #include <cuda/experimental/__compilation/linker.cuh>

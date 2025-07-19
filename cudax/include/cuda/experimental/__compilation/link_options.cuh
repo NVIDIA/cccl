@@ -34,10 +34,20 @@ namespace __link_options
 
 struct __link_opts
 {
+  //! @brief Adds a link option.
+  //!
+  //! @tparam _Tp The type of the option to add.
+  //!
+  //! @param option The option to add.
   template <class _Tp>
   void add_option(const _Tp& option)
   {}
 
+  //! @brief Adds multiple link options.
+  //!
+  //! @tparam _Tps The types of the options to add.
+  //!
+  //! @param options The options to add.
   template <class... _Tps>
   void add_options(const _Tps&... options)
   {
