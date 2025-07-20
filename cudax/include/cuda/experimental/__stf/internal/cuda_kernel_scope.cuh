@@ -67,14 +67,25 @@ inline constexpr bool is_function_or_kernel_v = is_function_or_kernel<T>::value;
  */
 struct cuda_kernel_desc
 {
+  cuda_kernel_desc() = default;
+
   template <typename Fun, typename... Args>
   cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
-      : func_variant(store_func(mv(func)))
-      , gridDim(gridDim_)
-      , blockDim(blockDim_)
-      , sharedMem(sharedMem_)
+  {
+    configure(mv(func), gridDim_, blockDim_, sharedMem_, ::std::forward<Args>(args)...);
+  }
+
+  template <typename Fun, typename... Args>
+  void configure(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
   {
     using TupleType = ::std::tuple<::std::decay_t<Args>...>;
+
+    _CCCL_ASSERT(!configured, "cuda_kernel_desc was already configured");
+
+    func_variant = store_func(mv(func));
+    gridDim      = gridDim_;
+    blockDim     = blockDim_;
+    sharedMem    = sharedMem_;
 
     // We first copy all arguments into a tuple because the kernel
     // implementation needs pointers to the argument, so we cannot use
@@ -98,6 +109,30 @@ struct cuda_kernel_desc
 
     // Save the tuple in a typed erased value
     arg_tuple_type_erased = mv(arg_tuple);
+
+    configured = true;
+  }
+
+  // It is the responsibility of the caller to unsure arguments are valid until
+  // the CUDA kernel construct ends
+  template <typename Fun>
+  void configure_raw(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, int arg_cnt, const void** args)
+  {
+    _CCCL_ASSERT(!configured, "cuda_kernel_desc was already configured");
+
+    func_variant = store_func(mv(func));
+    gridDim      = gridDim_;
+    blockDim     = blockDim_;
+    sharedMem    = sharedMem_;
+
+    for (int i = 0; i < arg_cnt; i++)
+    {
+      // We can safely forget the const here because CUDA will not modify the
+      // argument
+      args_ptr.push_back(const_cast<void*>(args[i]));
+    }
+
+    configured = true;
   }
 
   /* CUfunction/CUkernel (CUDA driver API) or __global__ function (CUDA runtime API) */
@@ -230,6 +265,9 @@ private:
   {
     return reinterpret_cast<const void*>(f);
   }
+
+  // We can only configure the kernel descriptor once
+  bool configured = false;
 };
 
 namespace reserved

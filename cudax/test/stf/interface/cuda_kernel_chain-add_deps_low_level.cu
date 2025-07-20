@@ -66,13 +66,16 @@ int main()
   t.start();
   auto dX = t.template get<slice<double>>(0);
   auto dY = t.template get<slice<double>>(1);
-  // clang-format off
-  auto descs = ::std::vector<cuda_kernel_desc> {
-        { axpy, 16, 128, 0, alpha, dX, dY },
-        { axpy, 16, 128, 0, beta, dX, dY },
-        { axpy, 16, 128, 0, gamma, dX, dY }
-    };
-  // clang-format on
+  ::std::vector<cuda_kernel_desc> descs;
+  descs.resize(3);
+  // Configure with types
+  descs[0].configure(axpy, 16, 128, 0, alpha, dX, dY);
+  descs[1].configure(axpy, 16, 128, 0, beta, dX, dY);
+
+  // Configure with low level API
+  const void* args[3] = {&gamma, &dX, &dY};
+  descs[2].configure_raw(axpy, 16, 128, 0, 3, args);
+
   t.add_kernel_desc(descs);
   t.end();
 
