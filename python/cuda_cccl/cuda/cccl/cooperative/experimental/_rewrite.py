@@ -8,7 +8,7 @@
 import functools
 import inspect
 import sys
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from enum import IntEnum, auto
 from functools import cached_property, lru_cache, reduce
@@ -615,6 +615,8 @@ class CoopNode:
     rewriter: Optional[Any] = None
     child_expr: Optional[ir.Expr] = None
     child_template: Optional[Any] = None
+    wants_rewrite: bool = None
+    has_been_rewritten: bool = False
 
     def __post_init__(self):
         # If we're handling a two-phase invocation via a primitive that was
@@ -876,9 +878,11 @@ class CoopNode:
         return self.codegens[0]
 
 
+@dataclass
 class CoopLoadStoreNode(CoopNode):
     threads_per_block = None
     disposition = Disposition.ONE_SHOT
+    wants_rewrite: bool = True
 
     def refine_match(self, rewriter):
         """
@@ -1178,19 +1182,23 @@ class CoopLoadStoreNode(CoopNode):
         return (g_assign, new_assign)
 
 
+@dataclass
 class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.load"
 
 
+@dataclass
 class CoopBlockStoreNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.store"
 
 
+@dataclass
 class CoopArrayNode(CoopNode):
     shape = None
     dtype = None
     alignment = None
     disposition = Disposition.ONE_SHOT
+    wants_rewrite: bool = True
 
     @cached_property
     def is_shared(self):
@@ -1420,14 +1428,17 @@ class CoopArrayNode(CoopNode):
         return new_nodes
 
 
+@dataclass
 class CoopSharedArrayNode(CoopArrayNode, CoopNodeMixin):
     primitive_name = "coop.shared.array"
 
 
+@dataclass
 class CoopLocalArrayNode(CoopArrayNode, CoopNodeMixin):
     primitive_name = "coop.local.array"
 
 
+@dataclass
 class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram"
     disposition = Disposition.PARENT
@@ -1467,6 +1478,7 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
         return ()
 
 
+@dataclass
 class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram.init"
     disposition = Disposition.CHILD
@@ -1480,6 +1492,7 @@ class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
         return ()
 
 
+@dataclass
 class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram.composite"
     disposition = Disposition.CHILD
@@ -1489,9 +1502,11 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
         pass
 
 
+@dataclass
 class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length"
     disposition = Disposition.PARENT
+    wants_rewrite: bool = False
 
     def refine_match(self, rewriter):
         # The caller has invoked us with something like this:
@@ -1613,12 +1628,13 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         self.children.append(child)
 
     def rewrite(self, rewriter):
-        pass
+        raise RuntimeError("CoopBlockRunLengthNode should not be rewritten")
 
 
 class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length.decode"
     disposition = Disposition.CHILD
+    wants_rewrite = False
 
     def refine_match(self, rewriter):
         # Possible call invocation types:
@@ -1695,13 +1711,17 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
 
         self.instance = parent_instance.decode(
             decoded_items_dtype=decoded_items_array_dtype,
-            relative_offsets_dtype=relative_offsets_dtype,
             decoded_window_offset_dtype=decoded_window_offset_dtype,
+            relative_offsets_dtype=relative_offsets_dtype,
         )
         self.instance.node = self
 
+        algo = self.instance.specialization
+        source_code = algo.source_code
+        print(source_code)
+
     def rewrite(self, rewriter):
-        pass
+        raise RuntimeError("CoopBlockRunLengthDecodeNode should not be rewritten")
 
 
 @lru_cache(maxsize=None)
@@ -1763,8 +1783,13 @@ class CoopNodeRewriter(Rewrite):
     def __init__(self, state, *args, **kwargs):
         super().__init__(state, *args, **kwargs)
 
-        self._match_count = 0
+        self._all_match_invocations_count = 0
+        self._match_invocations_per_block_offset = defaultdict(int)
         self.first_match = True
+
+        self.func_ir = None
+        self.typemap = None
+        self.calltypes = None
 
         maps = get_coop_class_and_instance_maps()
         self._decl_classes = maps.decls
@@ -2075,11 +2100,11 @@ class CoopNodeRewriter(Rewrite):
         if num_calltypes == 0:
             return False
 
-        self._match_count += 1
-        if self._match_count == 1:
-            self.func_ir = func_ir
-            self.typemap = typemap
-            self.calltypes = calltypes
+        self.func_ir = func_ir
+        self.typemap = typemap
+        self.calltypes = calltypes
+
+        self.current_block = block
 
         first = True
         launch_config = None
@@ -2105,9 +2130,11 @@ class CoopNodeRewriter(Rewrite):
         # cells = py_func.__closure__
 
         found = False
+        block_offset = None
         for block_no, (offset, ir_block) in enumerate(func_ir.blocks.items()):
             if ir_block is block:
                 found = True
+                block_offset = offset
                 break
 
         if not found:
@@ -2115,6 +2142,20 @@ class CoopNodeRewriter(Rewrite):
                 f"Block {block!r} not found in function IR blocks: "
                 f"{list(func_ir.blocks.keys())}"
             )
+
+        self._all_match_invocations_count += 1
+        self._match_invocations_per_block_offset[block_offset] += 1
+
+        all_match_invocations_count = self._all_match_invocations_count
+        invocation_count = self._match_invocations_per_block_offset[block_offset]
+
+        print(
+            f"Processing rewriter.match(): block_no: {block_no}, "
+            f"block_offset: {block_offset}, "
+            f"invocation_count for block offset: {invocation_count}, "
+            f"all_match_invocations_count: {all_match_invocations_count}, "
+            f"num nodes: {len(self.nodes)}"
+        )
 
         for i, instr in enumerate(block.body):
             # We're only interested in ir.Assign nodes.  Skip the rest.
@@ -2127,6 +2168,38 @@ class CoopNodeRewriter(Rewrite):
             rhs = instr.value
             target = instr.target
             target_name = target.name
+
+            node = self.nodes.get(target_name, None)
+            if node:
+                # If the node is a parent node, it must have been created
+                # in response to a child primitive invocation being processed.
+                # Check to see if we should still register for a rewrite.
+                if node.is_parent:
+                    if node.wants_rewrite and not node.has_been_rewritten:
+                        we_want_apply = True
+                    continue
+
+                # The only way we could have a node for this target is if
+                # we're getting reinvoked against a block we've already
+                # processed (which can happen if a rewrite occurs).  Verify
+                # this invariant now.
+                if invocation_count == 1:
+                    raise RuntimeError(
+                        f"Node {node!r} for target {target_name!r} "
+                        "already exists, but this is the first invocation "
+                        "of the rewriter.match() method for this block."
+                    )
+
+                if node.block_line != block.loc.line:
+                    raise RuntimeError(
+                        f"Node {node!r} for target {target_name!r} "
+                        f"has a different block line ({node.block_line}) "
+                        f"than the current block ({block.loc.line})"
+                    )
+
+                print(f"Found existing node for {target_name!r} skipping...")
+
+                continue
 
             # N.B. This code block used to have a lot more functionality, but
             #      has shrunk considerably after hoisting out logic elsewhere.
@@ -2476,9 +2549,6 @@ class CoopNodeRewriter(Rewrite):
                 self.typemap = typemap
                 self.calltypes = calltypes
                 first = False
-                we_want_apply = True
-
-            self.current_block = block
 
             # If we already have a node for this target name, it must have
             # been created by a preceding block containing a child primitive
@@ -2486,6 +2556,7 @@ class CoopNodeRewriter(Rewrite):
             # have called `get_or_create_parent_node()`.
             node = self.nodes.get(target_name, None)
             if node is not None:
+                assert False
                 # Verify that this is a parent node, then continue.
                 if not node.instance.is_parent:
                     raise RuntimeError(
@@ -2530,26 +2601,48 @@ class CoopNodeRewriter(Rewrite):
             self.nodes[target_name] = node
             node.refine_match(self)
 
+            if not we_want_apply:
+                if node.wants_rewrite and not node.has_been_rewritten:
+                    # If the node wants a rewrite, request apply.
+                    we_want_apply = True
+
+        print(
+            f"Returning from rewriter.match(): block_no: {block_no}, "
+            f"we_want_apply: {we_want_apply}, "
+            f"num nodes: {len(self.nodes)}"
+        )
         return we_want_apply
 
     def apply(self):
         new_block = ir.Block(self.current_block.scope, self.current_block.loc)
 
         for instr in self.current_block.body:
-            if isinstance(instr, ir.Assign):
-                target_name = instr.target.name
-                node = self.nodes.get(target_name, None)
-                if not node:
-                    new_block.append(instr)
-                    continue
+            if not isinstance(instr, ir.Assign):
+                # If the instruction is not an assignment, copy it verbatim.
+                new_block.append(instr)
+                continue
 
-                results = node.rewrite(self)
-                if results:
-                    for new_instr in results:
-                        new_block.append(new_instr)
+            # We're dealing with an assignment instruction.  See if we
+            # created a node for the target name.
+            target_name = instr.target.name
+            node = self.nodes.get(target_name, None)
+            if not node:
+                new_block.append(instr)
+                continue
 
+            if not node.wants_rewrite or node.has_been_rewritten:
+                # If the node doesn't want a rewrite, or it has already
+                # been rewritten, we can just copy the instruction
+                # verbatim.
+                new_block.append(instr)
+                continue
+
+            results = node.rewrite(self)
+            node.has_been_rewritten = True
+            if results:
+                for new_instr in results:
+                    new_block.append(new_instr)
             else:
-                # Copy the original instruction verbatim.
                 new_block.append(instr)
 
         return new_block

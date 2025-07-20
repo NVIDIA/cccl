@@ -942,7 +942,7 @@ class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
     prefer_literal = True
 
     def generic(self):
-        def typer(decoded_items, decoded_window_offset=None, relative_offsets=None):
+        def typer(decoded_items, decoded_window_offset, relative_offsets=None):
             # Verify decoded_items is a device array.
             if not isinstance(decoded_items, types.Array):
                 raise errors.TypingError(
@@ -986,11 +986,11 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
     primitive_name = "coop.block.run_length"
     algorithm_enum = coop.NoAlgorithm
     default_algorithm = coop.NoAlgorithm.NO_ALGORITHM
-    is_constructor = True
     decode_decl = CoopBlockRunLengthDecodeDecl
+    is_constructor = True
 
-    unsafe_casting = True
-    exact_match_required = False
+    # unsafe_casting = True
+    exact_match_required = True
     prefer_literal = True
 
     def __init__(self, context=None):

@@ -1181,29 +1181,26 @@ class Algorithm:
                         raise ValueError("Multiple output parameters not supported")
                     out_param = param_name
                 else:
-                    # Skip the first two parameters, which were our injected
-                    # addr/size parameters.
-                    if pid == 0:
-                        assert param_name == "addr", param_name
-                        continue
-                    elif pid == 1:
-                        assert param_name == "size", param_name
-                        continue
                     param_args.append(param_name)
 
         buf = StringIO()
         w = buf.write
 
-        node = self.primitive.node
-        func_name = f"{node.target.name}_{self.c_name}"
+        primitive = self.primitive
+        node = primitive.node
+        parent_node = node.parent_node
+        parent_name = parent_node.target.name
+        c_name = primitive.c_name
+        func_name = f"{parent_name}_{c_name}"
+        self.c_name = func_name
 
         param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
         param_args_csv = ",\n".join(f"        {p}" for p in param_args)
 
         w(f"// {self.method_name}\n")
-        w(f'extern "C" __device__ void {func_name}(')
+        w(f'extern "C" __device__ void {func_name}(\n')
         w(f"{param_decls_csv}\n    )\n{{\n")
-        w(f"    algorithm->(\n{param_args_csv}\n    );\n")
+        w(f"    algorithm->{self.method_name}(\n{param_args_csv}\n    );\n")
         w("}\n\n")
 
         chunk = buf.getvalue()
