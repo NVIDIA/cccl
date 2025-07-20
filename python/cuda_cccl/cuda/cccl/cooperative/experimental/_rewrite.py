@@ -25,7 +25,34 @@ from numba.core.typing.templates import (
 )
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
-from numba.cuda.launchconfig import ensure_current_launch_config
+
+try:
+    from numba.cuda.launchconfig import ensure_current_launch_config
+except ModuleNotFoundError:
+    msg = (
+        "cuda.cccl.cooperative currently requires a customized version of\n"
+        "numba-cuda with the new `LaunchConfig` support.  This requires\n"
+        "running a custom version of numba-cuda (which will typically need\n"
+        "the latest version of numba).  Steps I use for now to get a working\n"
+        "environment:\n"
+        "   conda create -n cccl312 python=3.12 pip\n"
+        "   conda activate cccl312\n"
+        "   cd ~/src\n"
+        "   git clone https://github.com/numba/numba\n"
+        "   cd numba\n"
+        "   pip install -e .\n"
+        "   cd ..\n"
+        "   git clone https://github.com/tpn/numba-cuda\n"
+        "   cd numba-cuda\n"
+        "   git checkout 280-launch-config-contextvar\n"
+        "   pip install -e '.[cu12]'\n"
+        "   cd ..\n"
+        "   # Assuming you don't have cccl already cloned:\n"
+        "   git clone https://github.com/nvidia/cccl\n"
+        "   cd cccl/python/cuda_cccl\n"
+        "   pip install -e .\n"
+    )
+    raise ModuleNotFoundError(msg) from None
 
 from ._common import (
     normalize_dim_param,
