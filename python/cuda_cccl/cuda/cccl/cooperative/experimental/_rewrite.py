@@ -5,6 +5,7 @@
 # This module is responsible for rewriting cuda.cooperative single-phase
 # primitives detected in typed Numba IR into equivalent two-phase invocations.
 
+import functools
 import inspect
 import sys
 from collections import OrderedDict
@@ -73,6 +74,8 @@ if False:
     # config.CUDA_ENABLE_PYNVJITLINK = True
 
 CUDA_CCCL_COOP_MODULE_NAME = "cuda.cccl.cooperative.experimental"
+CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
+NUMBA_CUDA_ARRAY_MODULE_NAME = "numba.cuda.stubs"
 
 
 def get_element_count(shape):
@@ -163,6 +166,21 @@ class CallDefinition:
 
 
 @dataclass
+class ArrayCallDefinition(CallDefinition):
+    """
+    Specialization of CallDefinition for array calls.  This is used to capture
+    additional information specific to array calls.
+    """
+
+    # N.B. We need to mark everything `Optional` and default to None because
+    #      our parent `CallDefinition` class had optional fields at the end
+    #      (`assign`, and `order`).
+    array_type: Optional[types.Array] = None
+    array_dtype: Optional[types.DType] = None
+    is_coop_array: bool = False
+
+
+@dataclass
 class GetAttrDefinition:
     instr: VarType
     instance_name: str
@@ -248,8 +266,10 @@ class RootDefinition:
 
 
 def get_root_definition(
-    func_ir: ir.FunctionIR,
     instr: VarType,
+    func_ir: ir.FunctionIR,
+    typemap: dict[str, types.Type],
+    calltypes: dict[ir.Expr, types.Type],
     launch_config: "LaunchConfig",
     assignments_map: dict[ir.Var, ir.Assign],
 ) -> Optional[RootDefinition]:
@@ -364,12 +384,53 @@ def get_root_definition(
                 next_instr = func_ir.get_definition(func.name)
                 instructions.append(next_instr)
                 all_instructions.append(next_instr)
-                defn = CallDefinition(
-                    instr=instr,
-                    func=func,
-                    func_name=func.name,
-                    assign=assign,
+
+                # Determine if this is an array construction function or not.
+                func_ty = typemap[func.name]
+                py_func = func_ty.typing_key
+                func_qualname = py_func.__qualname__
+                func_modname = py_func.__module__
+                is_array = (
+                    func_qualname.endswith("array")
+                    and (
+                        func_qualname.startswith("local")
+                        or func_qualname.startswith("shared")
+                    )
+                    and (
+                        func_modname == CUDA_CCCL_COOP_ARRAY_MODULE_NAME
+                        or func_modname == NUMBA_CUDA_ARRAY_MODULE_NAME
+                    )
                 )
+                if not is_array:
+                    # Normal function, create a CallDefinition.
+                    defn = CallDefinition(
+                        instr=instr,
+                        func=func,
+                        func_name=func.name,
+                        assign=assign,
+                        order=-1,
+                    )
+                else:
+                    calltype = calltypes[instr]
+                    array_type = calltype.return_type
+                    if not isinstance(array_type, types.Array):
+                        raise TypeError(
+                            f"Expected array type, got {array_type!r} for "
+                            f"call {instr!r}."
+                        )
+                    array_dtype = array_type.dtype
+                    is_coop_array = func_modname == CUDA_CCCL_COOP_ARRAY_MODULE_NAME
+                    defn = ArrayCallDefinition(
+                        instr=instr,
+                        func=func,
+                        func_name=func.name,
+                        assign=assign,
+                        order=-1,
+                        array_type=array_type,
+                        array_dtype=array_dtype,
+                        is_coop_array=is_coop_array,
+                    )
+                    assert isinstance(defn, CallDefinition)
                 definitions.append(defn)
                 continue
             else:
@@ -1559,10 +1620,87 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length.decode"
     disposition = Disposition.CHILD
 
-    def rewrite(self, rewriter):
-        pass
-
     def refine_match(self, rewriter):
+        # Possible call invocation types:
+        #
+        #   run_length.decode(
+        #       decoded_items,
+        #       relative_offsets,
+        #       decoded_window_offset
+        #   )
+        #
+        # Or:
+        #   run_length.decode(
+        #       decoded_items,
+        #       decoded_window_offset,
+        #   )
+        #
+        # Or:
+        #
+        #   run_length.decode(decoded_items)
+
+        parent_instance = self.parent_node.instance
+
+        bound_args = self.bound.arguments
+        decoded_items = bound_args.get("decoded_items")
+        decoded_items_root_def = self.rewriter.get_root_def(decoded_items)
+        decoded_items_array_call = decoded_items_root_def.leaf_constructor_call
+        if not isinstance(decoded_items_array_call, ArrayCallDefinition):
+            raise RuntimeError(
+                f"Expected a leaf array call definition for {decoded_items!r},"
+                f" got {decoded_items_root_def!r}"
+            )
+        decoded_items_array_dtype = decoded_items_array_call.array_dtype
+
+        relative_offsets_dtype = None
+        relative_offsets = bound_args.get("relative_offsets", None)
+        if relative_offsets is not None:
+            relative_offsets_root_def = self.rewriter.get_root_def(relative_offsets)
+            relative_offsets_array_call = (
+                relative_offsets_root_def.leaf_constructor_call
+            )
+            if not isinstance(relative_offsets_array_call, ArrayCallDefinition):
+                raise RuntimeError(
+                    f"Expected a leaf array call definition for "
+                    f"{relative_offsets!r}, got {relative_offsets_root_def!r}"
+                )
+            relative_offsets_array_type = relative_offsets_array_call.array_type
+            relative_offsets_dtype = relative_offsets_array_type.dtype
+
+        decoded_window_offset_dtype = None
+        decoded_window_offset = bound_args.get("decoded_window_offset", None)
+        if decoded_window_offset is not None:
+            if isinstance(decoded_window_offset, ir.Var):
+                decoded_window_offset_ty = self.typemap[decoded_window_offset.name]
+                decoded_window_offset_dtype = normalize_dtype_param(
+                    decoded_window_offset_ty
+                )
+            else:
+                raise RuntimeError(
+                    f"Expected a variable for decoded_window_offset, "
+                    f"got {decoded_window_offset!r}"
+                )
+
+        if decoded_window_offset_dtype is None:
+            # Try and obtain the type from the parent.
+            decoded_window_offset_dtype = self.parent_node.decode_window_offset_dtype
+
+        if decoded_window_offset_dtype is None:
+            # If we still don't have a decoded window offset dtype, then
+            # we need to raise an error.  We need it for codegen.
+            raise RuntimeError(
+                "No decoded window offset dtype provided for "
+                f"{self!r} or its parent node {self.parent_node!r}"
+            )
+
+        self.instance = parent_instance.decode(
+            decoded_items_dtype=decoded_items_array_dtype,
+            relative_offsets_dtype=relative_offsets_dtype,
+            decoded_window_offset_dtype=decoded_window_offset_dtype,
+        )
+        self.instance.node = self
+
+    def rewrite(self, rewriter):
         pass
 
 
@@ -1765,6 +1903,21 @@ class CoopNodeRewriter(Rewrite):
             "numba.cuda", numba.cuda, scope, loc, new_nodes
         )
 
+    @cached_property
+    def get_root_def(self):
+        """
+        Returns a function that retrieves the root definition for a given
+        variable in the function IR, using the current launch configuration.
+        """
+        return functools.partial(
+            get_root_definition,
+            func_ir=self.func_ir,
+            typemap=self.typemap,
+            calltypes=self.calltypes,
+            launch_config=self.launch_config,
+            assignments_map=self.assignments_map,
+        )
+
     def get_or_create_parent_node(
         self,
         func_ir: ir.FunctionIR,
@@ -1795,12 +1948,6 @@ class CoopNodeRewriter(Rewrite):
         func_name = expr.func.name
         func = typemap[func_name]
         target = root_assign.target
-
-        if not self.typemap:
-            self.typemap = typemap
-
-        if not self.calltypes:
-            self.calltypes = calltypes
 
         node = node_class(
             index=0,
@@ -1931,6 +2078,8 @@ class CoopNodeRewriter(Rewrite):
         self._match_count += 1
         if self._match_count == 1:
             self.func_ir = func_ir
+            self.typemap = typemap
+            self.calltypes = calltypes
 
         first = True
         launch_config = None
@@ -2138,12 +2287,7 @@ class CoopNodeRewriter(Rewrite):
                     msg = f"Unexpected instruction type: {def_instr!r}"
                     raise RuntimeError(msg)
 
-                root_def = get_root_definition(
-                    func_ir,
-                    def_instr,
-                    launch_config,
-                    self.assignments_map,
-                )
+                root_def = self.get_root_def(def_instr)
                 if was_getattr:
                     assert root_def.attr_instance is two_phase_instance
                 else:
@@ -2264,12 +2408,7 @@ class CoopNodeRewriter(Rewrite):
                 parent_target_name = parent_obj.name
 
                 # Get the root definition of the parent object.
-                parent_root_def = get_root_definition(
-                    func_ir,
-                    parent_obj,
-                    launch_config,
-                    self.assignments_map,
-                )
+                parent_root_def = self.get_root_def(parent_obj)
                 if not parent_root_def:
                     raise RuntimeError(
                         f"Could not find root definition for {parent_target_name!r}"
@@ -2377,6 +2516,7 @@ class CoopNodeRewriter(Rewrite):
                 two_phase_instance=two_phase_instance,
                 parent_struct_instance_type=parent_struct_instance_type,
                 parent_node=parent_node,
+                rewriter=self,
             )
 
             if two_phase_instance is not None:

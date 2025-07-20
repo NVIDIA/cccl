@@ -36,31 +36,28 @@ class BlockRunLengthDecode(BasePrimitive):
     def __init__(
         self,
         parent: "BlockRunLength",
-        decoded_items,
-        decoded_window_offset=None,
-        relative_offsets=None,
+        decoded_items_dtype: DtypeType,
+        decoded_window_offset_dtype: DtypeType,
+        relative_offsets_dtype: DtypeType = None,
     ) -> None:
         self.parent = parent
-        self.decoded_items = decoded_items
-        self.decoded_window_offset = decoded_window_offset
-        self.relative_offsets = relative_offsets
+        self.decoded_items_dtype = decoded_items_dtype
+        self.decoded_window_offset_dtype = decoded_window_offset_dtype
+        self.relative_offsets_dtype = relative_offsets_dtype
 
         # self.template_parameters = list(parent.template_parameters)
         self.template_parameters = [
             TemplateParameter("ItemT"),
             TemplateParameter("DECODED_ITEMS_PER_THREAD"),
+            TemplateParameter("DecodedOffsetT"),
         ]
 
         self.specialization_kwds = {
             "ItemT": parent.item_dtype,
+            "DecodedOffsetT": decoded_window_offset_dtype,
         }
 
         method = [
-            # RunLengthDecode(
-            #   ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
-            #   DecodedOffsetT decoded_window_offset,
-            #   ...
-            # ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
             DependentArray(
                 Dependency("ItemT"),
                 Dependency("DECODED_ITEMS_PER_THREAD"),
@@ -68,23 +65,11 @@ class BlockRunLengthDecode(BasePrimitive):
             ),
         ]
 
-        if decoded_window_offset is not None:
-            self.template_parameters.append(
-                TemplateParameter("DecodedOffsetT"),
-            )
-            self.specialization_kwds["DecodedOffsetT"] = parent.decoded_offset_dtype
-            method.append(
-                DependentReference(
-                    Dependency("DecodedOffsetT"),
-                    name="from_decoded_offset",
-                )
-            )
-
-        if relative_offsets is not None:
+        if relative_offsets_dtype is not None:
             self.template_parameters.append(
                 TemplateParameter("RelativeOffsetT"),
             )
-            self.specialization_kwds["RelativeOffsetT"] = relative_offsets.dtype
+            self.specialization_kwds["RelativeOffsetT"] = relative_offsets_dtype
             method.append(
                 DependentArray(
                     Dependency("RelativeOffsetT"),
@@ -92,6 +77,13 @@ class BlockRunLengthDecode(BasePrimitive):
                     name="item_offsets",
                 )
             )
+
+        method.append(
+            DependentReference(
+                Dependency("DecodedOffsetT"),
+                name="from_decoded_offset",
+            )
+        )
 
         self.parameters = [method]
 
@@ -241,14 +233,14 @@ class BlockRunLength(BasePrimitive):
     def decode(
         self,
         decoded_items,
-        decoded_window_offset=None,
         relative_offsets=None,
+        decoded_window_offset=None,
     ):
         return BlockRunLengthDecode(
             self,
             decoded_items,
-            decoded_window_offset=None,
             relative_offsets=relative_offsets,
+            decoded_window_offset=decoded_window_offset,
         )
 
 

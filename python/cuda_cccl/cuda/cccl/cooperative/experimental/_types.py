@@ -1007,9 +1007,12 @@ class Algorithm:
             w(f"{type_definition.code}\n")
 
         w("\n")
-        for decl in udf_declarations.values():
-            w(f"{decl}\n")
-        w("\n\n")
+
+        if udf_declarations:
+            w("\n")
+            for decl in udf_declarations.values():
+                w(f"{decl}\n")
+            w("\n")
 
         # Write the algorithm instantiation with template specialization,
         # and then corresponding size and alignment information.
@@ -1071,24 +1074,33 @@ class Algorithm:
         w = buf.write
 
         node = self.primitive.node
-        function_name = f"{node.target.name}_construct"
+        constructor_name = f"{node.target.name}_construct"
+        destructor_name = f"{node.target.name}_destruct"
 
         param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
-        param_decls_csv = f"\n{param_decls_csv}\n"
         param_args_csv = ", ".join(param_args)
 
-        w(f'extern "C" __device__ algorithm_t* {function_name}(')
-
-        w(f"{param_decls_csv}) {{\n")
+        # Constructor.
+        w("// Constructor\n")
+        w(f'extern "C" __device__ algorithm_t* {constructor_name}(\n')
+        w(f"{param_decls_csv}\n    )\n{{\n")
         w("    if (size < sizeof(algorithm_t)) {\n")
         w("        return nullptr;\n")
         w("    }\n")
-
         addr_cast = "reinterpret_cast<uintptr_t>(addr)"
         w(f"    if ({addr_cast} % alignof(algorithm_t) != 0) {{\n")
         w("         return nullptr;\n")
         w("    }\n")
         w(f"    return new (addr) algorithm_t({param_args_csv});\n")
+        w("}\n\n")
+
+        # Destructor.
+        w("// Destructor\n")
+        w(f'extern "C" __device__ void {destructor_name}(\n')
+        w("    algorithm_t *algorithm\n    )\n{\n")
+        w("    if (algorithm != nullptr) {\n")
+        w("        algorithm->~algorithm_t();\n")
+        w("    }\n")
         w("}\n\n")
 
         chunk = buf.getvalue()
@@ -1120,26 +1132,19 @@ class Algorithm:
 
         self.udf_declarations = udf_declarations
 
-        algorithm_name = self.struct_name
-        includes = self.includes or []
         type_definitions = self.type_definitions or []
 
         buf = StringIO()
         w = buf.write
 
-        w("#include <cuda/std/cstdint>\n")
-        for include in includes:
-            w(f"#include <{include}>\n")
         for type_definition in type_definitions:
             w(f"{type_definition.code}\n")
 
-        w("\n")
-        for decl in udf_declarations.values():
-            w(f"{decl}\n")
-        w("\n")
-
-        w(f"using algorithm_t = cub::{algorithm_name};\n")
-        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+        if udf_declarations:
+            w("\n")
+            for decl in udf_declarations.values():
+                w(f"{decl}\n")
+            w("\n")
 
         src = buf.getvalue()
 
@@ -1190,24 +1195,15 @@ class Algorithm:
         w = buf.write
 
         node = self.primitive.node
-        function_name = f"{node.target.name}_construct"
+        func_name = f"{node.target.name}_{self.c_name}"
 
         param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
-        param_decls_csv = f"\n{param_decls_csv}\n"
-        param_args_csv = ", ".join(param_args)
+        param_args_csv = ",\n".join(f"        {p}" for p in param_args)
 
-        w(f'extern "C" __device__ algorithm_t* {function_name}(')
-
-        w(f"{param_decls_csv}) {{\n")
-        w("    if (size < sizeof(algorithm_t)) {\n")
-        w("        return nullptr;\n")
-        w("    }\n")
-
-        addr_cast = "reinterpret_cast<uintptr_t>(addr)"
-        w(f"    if ({addr_cast} % alignof(algorithm_t) != 0) {{\n")
-        w("         return nullptr;\n")
-        w("    }\n")
-        w(f"    return new (addr) algorithm_t({param_args_csv});\n")
+        w(f"// {self.method_name}\n")
+        w(f'extern "C" __device__ void {func_name}(')
+        w(f"{param_decls_csv}\n    )\n{{\n")
+        w(f"    algorithm->(\n{param_args_csv}\n    );\n")
         w("}\n\n")
 
         chunk = buf.getvalue()
