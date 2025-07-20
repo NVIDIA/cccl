@@ -44,17 +44,14 @@ cudaStream_t stf_task_get_stream(stf_task_handle t);
 void* stf_task_get(stf_task_handle t, size_t submitted_index);
 void stf_task_destroy(stf_task_handle t);
 
-typedef struct stf_kernel_desc_handle_t* stf_kernel_desc_handle;
+typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 
-void stf_kernel_create(stf_kernel_desc_handle* d);
-void stf_kernel_destroy(stf_kernel_desc_handle d);
-// TODO stf_cuda_kernel_desc : symbol, deps, args... ?
-// void stf_kernel_set_symbol((stf_kernel_handle k, const char* symbol)
-// void stf_kernel_add_dep(stf_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
-// void stf_kernel_start(stf_kernel_handle k);
-// void stf_kernel_set_args(stf_kernel_handle k, size_t cnt, void **args);
-// void stf_kernel_end(stf_kernel_handle k);
-// void stf_kernel_destroy(stf_kernel_handle k);
+void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
+void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
+void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
+void stf_cuda_kernel_start(stf_cuda_kernel_handle k);
+void stf_cuda_kernel_end(stf_cuda_kernel_handle k);
+void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t);
 
 #ifdef __cplusplus
 }

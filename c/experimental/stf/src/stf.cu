@@ -153,20 +153,20 @@ void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle l
   assert(k);
   assert(ld);
 
-  k->k.add_deps(cuda_kernel_dep_untyped(ld->ld, access_mode(m)));
+  k->k.add_deps(task_dep_untyped(ld->ld, access_mode(m)));
 }
 
-// void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
-// {
-//   assert(k);
-//   k->k.start();
-// }
-//
-// void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
-// {
-//   assert(k);
-//   k->k.end();
-// }
+void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
+{
+  assert(k);
+  k->k.start();
+}
+
+void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
+{
+  assert(k);
+  k->k.end();
+}
 
 void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 {
