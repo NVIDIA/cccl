@@ -47,8 +47,8 @@ template <typename _Tp>
 _CCCL_HOST_DEVICE __two& __is_polymorphic_impl(...);
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic
-    : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_polymorphic : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1>
 {};
 
 template <class _Tp>

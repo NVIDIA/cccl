@@ -22,6 +22,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/format_error.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/string_view>
 
@@ -30,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT>
-class basic_format_parse_context
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_parse_context
 {
 public:
   using char_type      = _CharT;
@@ -115,11 +116,6 @@ private:
 };
 
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_format_parse_context);
-
-using format_parse_context = basic_format_parse_context<char>;
-#if _CCCL_HAS_WCHAR_T()
-using wformat_parse_context = basic_format_parse_context<wchar_t>;
-#endif // _CCCL_HAS_WCHAR_T()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

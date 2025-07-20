@@ -186,7 +186,7 @@ __host__ __device__ void bullet_one_two_tests()
     test_b12<int volatile&(NonCopyable&&) volatile&, int volatile&>(cl);
     test_b12<int const volatile&(NonCopyable&&) const volatile&, int const volatile&>(cl);
 
-    test_b12<int && (NonCopyable&&)&&, int&&>(cuda::std::move(cl));
+    test_b12<int && (NonCopyable&&) &&, int&&>(cuda::std::move(cl));
     test_b12<int const && (NonCopyable&&) const&&, int const&&>(cuda::std::move(cl));
     test_b12<int volatile && (NonCopyable&&) volatile&&, int volatile&&>(cuda::std::move(cl));
     test_b12<int const volatile && (NonCopyable&&) const volatile&&, int const volatile&&>(cuda::std::move(cl));
@@ -198,7 +198,7 @@ __host__ __device__ void bullet_one_two_tests()
     test_b12<int volatile&(NonCopyable&&) volatile&, int volatile&>(cl);
     test_b12<int const volatile&(NonCopyable&&) const volatile&, int const volatile&>(cl);
 
-    test_b12<int && (NonCopyable&&)&&, int&&>(cuda::std::move(cl));
+    test_b12<int && (NonCopyable&&) &&, int&&>(cuda::std::move(cl));
     test_b12<int const && (NonCopyable&&) const&&, int const&&>(cuda::std::move(cl));
     test_b12<int volatile && (NonCopyable&&) volatile&&, int volatile&&>(cuda::std::move(cl));
     test_b12<int const volatile && (NonCopyable&&) const volatile&&, int const volatile&&>(cuda::std::move(cl));

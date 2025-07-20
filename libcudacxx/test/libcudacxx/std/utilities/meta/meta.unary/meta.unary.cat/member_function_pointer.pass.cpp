@@ -103,12 +103,12 @@ int main(int, char**)
   test_member_function_pointer<void (Class::*)(int, char, ...) volatile noexcept>();
 
   // lvalue qualifiers
-  test_member_function_pointer<void (Class::*)()&>();
-  test_member_function_pointer<void (Class::*)(int)&>();
-  test_member_function_pointer<void (Class::*)(int, char)&>();
-  test_member_function_pointer<void (Class::*)(...)&>();
-  test_member_function_pointer<void (Class::*)(int, ...)&>();
-  test_member_function_pointer<void (Class::*)(int, char, ...)&>();
+  test_member_function_pointer<void (Class::*)() &>();
+  test_member_function_pointer<void (Class::*)(int) &>();
+  test_member_function_pointer<void (Class::*)(int, char) &>();
+  test_member_function_pointer<void (Class::*)(...) &>();
+  test_member_function_pointer<void (Class::*)(int, ...) &>();
+  test_member_function_pointer<void (Class::*)(int, char, ...) &>();
 
   test_member_function_pointer<void (Class::*)() const&>();
   test_member_function_pointer<void (Class::*)(int) const&>();

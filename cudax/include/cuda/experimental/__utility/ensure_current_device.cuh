@@ -21,12 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/stream_ref>
+#include <cuda/__runtime/ensure_current_context.h>
 
-#include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
-#include <cuda/experimental/__utility/driver_api.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,19 +38,9 @@ namespace cuda::experimental
 //! @brief RAII helper which on construction sets the current device to the specified one or one a
 //! stream was created under. It sets the state back on destruction.
 //!
-struct [[maybe_unused]] __ensure_current_device
+struct [[maybe_unused]] __ensure_current_device : ::cuda::__ensure_current_context
 {
-  //! @brief Construct a new `__ensure_current_device` object and switch to the specified
-  //!        device.
-  //!
-  //! @param new_device The device to switch to
-  //!
-  //! @throws cuda_error if the device switch fails
-  explicit __ensure_current_device(device_ref __new_device)
-  {
-    auto __ctx = devices[__new_device.get()].primary_context();
-    __detail::driver::ctxPush(__ctx);
-  }
+  using __ensure_current_context::__ensure_current_context;
 
   //! @brief Construct a new `__ensure_current_device` object and switch to the specified
   //!        device.
@@ -64,50 +52,14 @@ struct [[maybe_unused]] __ensure_current_device
   //!
   //! @throws cuda_error if the device switch fails
   explicit __ensure_current_device(logical_device __new_device)
-  {
-    __detail::driver::ctxPush(__new_device.context());
-  }
-
-  // Doesn't really fit into the type description, we might consider changing it once
-  // green ctx design is more finalized
-  explicit __ensure_current_device(CUcontext __ctx)
-  {
-    __detail::driver::ctxPush(__ctx);
-  }
-
-  //! @brief Construct a new `__ensure_current_device` object and switch to the device
-  //!        under which the specified stream was created.
-  //!
-  //! @param stream Stream indicating the device to switch to
-  //!
-  //! @throws cuda_error if the device switch fails
-  explicit __ensure_current_device(stream_ref __stream)
-  {
-    auto __ctx = __detail::driver::streamGetCtx(__stream.get());
-    __detail::driver::ctxPush(__ctx);
-  }
+      : __ensure_current_context(__new_device.context())
+  {}
 
   _CCCL_TEMPLATE(typename _GraphInserter)
   _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
   explicit __ensure_current_device(const _GraphInserter& __inserter)
       : __ensure_current_device(__inserter.get_device())
   {}
-
-  __ensure_current_device(__ensure_current_device&&)                 = delete;
-  __ensure_current_device(__ensure_current_device const&)            = delete;
-  __ensure_current_device& operator=(__ensure_current_device&&)      = delete;
-  __ensure_current_device& operator=(__ensure_current_device const&) = delete;
-
-  //! @brief Destroy the `__ensure_current_device` object and switch back to the original
-  //!        device.
-  //!
-  //! @throws cuda_error if the device switch fails. If the destructor is called
-  //!         during stack unwinding, the program is automatically terminated.
-  ~__ensure_current_device() noexcept(false)
-  {
-    // TODO would it make sense to assert here that we pushed and popped the same thing?
-    __detail::driver::ctxPop();
-  }
 };
 } // namespace cuda::experimental
 #endif // _CCCL_DOXYGEN_INVOKED

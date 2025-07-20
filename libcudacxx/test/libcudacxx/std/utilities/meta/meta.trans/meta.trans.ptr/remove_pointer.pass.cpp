@@ -35,8 +35,8 @@ int main(int, char**)
 
   test_remove_pointer<int&, int&>();
   test_remove_pointer<const int&, const int&>();
-  test_remove_pointer<int(&)[3], int(&)[3]>();
-  test_remove_pointer<int(*)[3], int[3]>();
+  test_remove_pointer<int (&)[3], int (&)[3]>();
+  test_remove_pointer<int (*)[3], int[3]>();
   test_remove_pointer<int*&, int*&>();
   test_remove_pointer<const int*&, const int*&>();
 
