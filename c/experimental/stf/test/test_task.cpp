@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda_runtime.h>
-#include <c2h/catch2_test_helper.h>
 
+#include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
 C2H_TEST("empty stf tasks", "[task]")
@@ -23,13 +23,13 @@ C2H_TEST("empty stf tasks", "[task]")
   stf_logical_data_handle lX, lY, lZ;
 
   float *X, *Y, *Z;
-  X = (float *)malloc(N*sizeof(float));
-  Y = (float *)malloc(N*sizeof(float));
-  Z = (float *)malloc(N*sizeof(float));
+  X = (float*) malloc(N * sizeof(float));
+  Y = (float*) malloc(N * sizeof(float));
+  Z = (float*) malloc(N * sizeof(float));
 
-  stf_logical_data(ctx, &lX, X, N*sizeof(float));
-  stf_logical_data(ctx, &lY, Y, N*sizeof(float));
-  stf_logical_data(ctx, &lZ, Z, N*sizeof(float));
+  stf_logical_data(ctx, &lX, X, N * sizeof(float));
+  stf_logical_data(ctx, &lY, Y, N * sizeof(float));
+  stf_logical_data(ctx, &lZ, Z, N * sizeof(float));
 
   stf_logical_data_set_symbol(lX, "X");
   stf_logical_data_set_symbol(lY, "Y");

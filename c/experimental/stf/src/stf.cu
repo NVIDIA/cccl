@@ -38,8 +38,8 @@ void stf_ctx_finalize(stf_ctx_handle ctx)
 
 cudaStream_t stf_fence(stf_ctx_handle ctx)
 {
-   assert(ctx);
-   return ctx->ctx.fence();
+  assert(ctx);
+  return ctx->ctx.fence();
 }
 
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
@@ -103,6 +103,72 @@ void stf_task_end(stf_task_handle t)
 }
 
 void stf_task_destroy(stf_task_handle t)
+{
+  assert(t);
+  delete t;
+}
+
+/**
+ * Low level example of cuda_kernel(_chain)
+ *   auto t = ctx.cuda_kernel_chain();
+     t.add_deps(lX.read());
+     t.add_deps(lY.rw());
+     t->*[&]() {
+     auto dX = t.template get<slice<double>>(0);
+     auto dY = t.template get<slice<double>>(1);
+     return std::vector<cuda_kernel_desc> {
+         { axpy, 16, 128, 0, alpha, dX, dY },
+         { axpy, 16, 128, 0, beta, dX, dY },
+         { axpy, 16, 128, 0, gamma, dX, dY }
+     };
+  };
+
+ *
+ */
+struct stf_cuda_kernel_handle_t
+{
+  // return type of ctx.cuda_kernel()
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  kernel_type k;
+};
+
+void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k)
+{
+  assert(k);
+  assert(ctx);
+
+  *k = new stf_cuda_kernel_handle_t{ctx->ctx.cuda_kernel()};
+}
+
+void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
+{
+  assert(k);
+  assert(symbol);
+
+  k->k.set_symbol(symbol);
+}
+
+void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m)
+{
+  assert(k);
+  assert(ld);
+
+  k->k.add_deps(cuda_kernel_dep_untyped(ld->ld, access_mode(m)));
+}
+
+// void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
+// {
+//   assert(k);
+//   k->k.start();
+// }
+//
+// void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
+// {
+//   assert(k);
+//   k->k.end();
+// }
+
+void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 {
   assert(t);
   delete t;

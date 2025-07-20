@@ -41,12 +41,12 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
 void stf_task_start(stf_task_handle t);
 void stf_task_end(stf_task_handle t);
 cudaStream_t stf_task_get_stream(stf_task_handle t);
-void *stf_task_get(stf_task_handle t, size_t submitted_index);
+void* stf_task_get(stf_task_handle t, size_t submitted_index);
 void stf_task_destroy(stf_task_handle t);
 
-typedef struct stf_kernel_desc_handle_t *stf_kernel_desc_handle;
+typedef struct stf_kernel_desc_handle_t* stf_kernel_desc_handle;
 
-void stf_kernel_create(stf_kernel_desc_handle *d);
+void stf_kernel_create(stf_kernel_desc_handle* d);
 void stf_kernel_destroy(stf_kernel_desc_handle d);
 // TODO stf_cuda_kernel_desc : symbol, deps, args... ?
 // void stf_kernel_set_symbol((stf_kernel_handle k, const char* symbol)
