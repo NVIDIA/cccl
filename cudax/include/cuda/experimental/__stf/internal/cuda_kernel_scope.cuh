@@ -275,8 +275,8 @@ public:
   template <typename T>
   decltype(auto) get(size_t submitted_index) const
   {
-    _CCCL_ASSERT(untyped_t.has_value(), "uninitialized task");
-    return untyped_t->template get<T>(submitted_index);
+    _CCCL_ASSERT(support_task.has_value(), "uninitialized task");
+    return support_task->template get<T>(submitted_index);
   }
 
   /**
@@ -299,11 +299,7 @@ public:
     // If a place is specified, use it
     support_task = e_place ? ctx.task(e_place.value()) : ctx.task();
 
-    // Short-hand for more readable code
     auto& t = *support_task;
-
-    // So that we can use get to retrieve dynamic dependencies
-    untyped_t = t;
 
     t.add_deps(deps);
 
@@ -381,8 +377,9 @@ public:
 
     t.clear();
 
-    // Now that we have executed 'f', we do not need to access it anymore
-    untyped_t.reset();
+    // Do release to the task structure as we don't need to reference it when
+    // we have called end()
+    support_task.reset();
 
     return *this;
   }
@@ -494,14 +491,14 @@ private:
   // Statically defined deps
   task_dep_vector<Deps...> deps;
 
-  // To store a task that implements cuda_kernel(_chain)
+  // To store a task that implements cuda_kernel(_chain). Note that we do not
+  // store the task with Deps... but a "dynamic" task where all dependencies
+  // are added using add_deps.
   using underlying_task_type = decltype(::std::declval<Ctx>().task());
   ::std::optional<underlying_task_type> support_task;
 
   // Dependencies added with add_deps
   ::std::vector<task_dep_untyped> dynamic_deps;
-  // Used to retrieve deps with t.get<>(...)
-  ::std::optional<task> untyped_t;
 
   ::std::optional<exec_place> e_place;
 
