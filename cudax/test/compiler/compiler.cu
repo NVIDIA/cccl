@@ -59,6 +59,7 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
     cuda_opts.add_option(include_path_opt{"/usr/local/cuda/include"});
     cuda_opts.add_option(force_include_opt{"force_include.h"});
     cuda_opts.add_option(std_version_opt::cxx17);
+    cuda_opts.add_option(virtual_arch_opt{cuda::arch::id::sm_75});
   }
 
   constexpr auto name_expr = "test_kernel<int>";
@@ -89,6 +90,7 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
     cuda_opts.add_option(include_path_opt{"/usr/local/cuda/include"});
     cuda_opts.add_option(force_include_opt{"force_include.h"});
     cuda_opts.add_option(std_version_opt::cxx17);
+    cuda_opts.add_option(virtual_arch_opt{cuda::arch::id::sm_75});
   }
   cudax::ptx_compile_opts ptx_opts;
   {
@@ -97,6 +99,7 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
     ptx_opts.add_option(fmad_opt{true});
     ptx_opts.add_option(max_reg_count_opt{32});
     ptx_opts.add_option(optimization_level_opt{3});
+    ptx_opts.add_option(binary_arch_opt{cuda::arch::id::sm_75});
   }
 
   constexpr auto name_expr = "test_kernel<int>";
@@ -128,6 +131,7 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
     cuda_opts.add_option(include_path_opt{"/usr/local/cuda/include"});
     cuda_opts.add_option(force_include_opt{"force_include.h"});
     cuda_opts.add_option(std_version_opt::cxx17);
+    cuda_opts.add_option(virtual_arch_opt{cuda::arch::id::sm_75});
   }
 
   constexpr auto name_expr = "test_kernel<int>";
@@ -156,6 +160,7 @@ C2H_TEST("Compile ptx to cubin", "[cuda.compile.ptx_to_cubin]")
     ptx_opts.add_option(fmad_opt{true});
     ptx_opts.add_option(max_reg_count_opt{32});
     ptx_opts.add_option(optimization_level_opt{3});
+    ptx_opts.add_option(binary_arch_opt{cuda::arch::id::sm_75});
   }
 
   constexpr auto lowered_name = "_Z11test_kernelPi";

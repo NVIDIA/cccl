@@ -128,6 +128,49 @@ class cuda_compiler
         _CCCL_UNREACHABLE();
     }
 
+    // virtual architecture
+    switch (__cuda_opts.__virtual_arch_)
+    {
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
+        __ret.__opt_ptrs.push_back("-arch=compute_75");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
+        __ret.__opt_ptrs.push_back("-arch=compute_80");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
+        __ret.__opt_ptrs.push_back("-arch=compute_86");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
+        __ret.__opt_ptrs.push_back("-arch=compute_89");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
+        __ret.__opt_ptrs.push_back("-arch=compute_90");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
+        __ret.__opt_ptrs.push_back("-arch=compute_100");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
+        __ret.__opt_ptrs.push_back("-arch=compute_103");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
+        __ret.__opt_ptrs.push_back("-arch=compute_120");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
+        __ret.__opt_ptrs.push_back("-arch=compute_90a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
+        __ret.__opt_ptrs.push_back("-arch=compute_100a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
+        __ret.__opt_ptrs.push_back("-arch=compute_103a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
+        __ret.__opt_ptrs.push_back("-arch=compute_120a");
+        break;
+      default:
+        _CCCL_UNREACHABLE();
+    }
+
     // process dynamic options
     for (const auto& __dopt : __cuda_opts.__dyn_opts_)
     {
@@ -209,6 +252,49 @@ class cuda_compiler
     __ret.__opt_ptrs.push_back("-Xptxas");
     __ret.__opt_ptrs.push_back(
       __ptx_opts.__pic_ ? "--position-independent-code=true" : "--position-independent-code=false");
+
+    // binary architecture
+    switch (__ptx_opts.__binary_arch_)
+    {
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
+        __ret.__opt_ptrs.push_back("-arch=sm_75");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
+        __ret.__opt_ptrs.push_back("-arch=sm_80");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
+        __ret.__opt_ptrs.push_back("-arch=sm_86");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
+        __ret.__opt_ptrs.push_back("-arch=sm_89");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
+        __ret.__opt_ptrs.push_back("-arch=sm_90");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
+        __ret.__opt_ptrs.push_back("-arch=sm_100");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
+        __ret.__opt_ptrs.push_back("-arch=sm_103");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
+        __ret.__opt_ptrs.push_back("-arch=sm_120");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
+        __ret.__opt_ptrs.push_back("-arch=sm_90a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
+        __ret.__opt_ptrs.push_back("-arch=sm_100a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
+        __ret.__opt_ptrs.push_back("-arch=sm_103a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
+        __ret.__opt_ptrs.push_back("-arch=sm_120a");
+        break;
+      default:
+        _CCCL_UNREACHABLE();
+    }
 
     return __ret;
   }
@@ -363,6 +449,50 @@ class ptx_compiler
     // position independent code flag
     __ret.__opt_ptrs.push_back(
       __ptx_opts.__pic_ ? "--position-independent-code=true" : "--position-independent-code=false");
+
+    // binary architecture
+    switch (__ptx_opts.__binary_arch_)
+    {
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
+        __ret.__opt_ptrs.push_back("-arch=sm_75");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
+        __ret.__opt_ptrs.push_back("-arch=sm_80");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
+        __ret.__opt_ptrs.push_back("-arch=sm_86");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
+        __ret.__opt_ptrs.push_back("-arch=sm_89");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
+        __ret.__opt_ptrs.push_back("-arch=sm_90");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
+        __ret.__opt_ptrs.push_back("-arch=sm_100");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
+        __ret.__opt_ptrs.push_back("-arch=sm_103");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
+        __ret.__opt_ptrs.push_back("-arch=sm_120");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
+        __ret.__opt_ptrs.push_back("-arch=sm_90a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
+        __ret.__opt_ptrs.push_back("-arch=sm_100a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
+        __ret.__opt_ptrs.push_back("-arch=sm_103a");
+        break;
+      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
+        __ret.__opt_ptrs.push_back("-arch=sm_120a");
+        break;
+      default:
+        _CCCL_UNREACHABLE();
+    }
+
     return __ret;
   }
 

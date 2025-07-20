@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/arch_traits.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/to_underlying.h>
@@ -72,6 +73,12 @@ enum class std_version_opt
   cxx20 = 20, //!< C++20 standard version.
 };
 
+//! @brief Option to specify the virtual architecture ID for the CUDA compilation.
+struct virtual_arch_opt
+{
+  cuda::arch::id arch_id; //!< The virtual architecture ID to use for the CUDA compilation.
+};
+
 // todo: add other options
 
 } // namespace cuda_compile_options
@@ -106,12 +113,14 @@ class cuda_compile_opts
 
   ::std::vector<_DynOpt> __dyn_opts_;
   unsigned __std_version_ : 8;
+  int __virtual_arch_;
 
 public:
   //! @brief Default constructor for CUDA compilation options.
   cuda_compile_opts() noexcept
       : __dyn_opts_{}
       , __std_version_{_CUDA_VSTD::to_underlying(cuda_compile_options::std_version_opt::cxx17)}
+      , __virtual_arch_{_CUDA_VSTD::to_underlying(cuda::arch::id::sm_75)}
   {}
 
   //! @brief Adds a compilation option to the list of options.
@@ -154,6 +163,10 @@ public:
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, std_version_opt>)
     {
       __std_version_ = _CUDA_VSTD::to_underlying(__opt);
+    }
+    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, virtual_arch_opt>)
+    {
+      __virtual_arch_ = _CUDA_VSTD::to_underlying(__opt.arch_id);
     }
     else
     {
@@ -213,6 +226,12 @@ enum class pic_opt : bool
 {
 };
 
+//! @brief Option to specify the binary architecture for the PTX compilation.
+struct binary_arch_opt
+{
+  cuda::arch::id arch_id; //!< The binary architecture ID to use for the PTX compilation.
+};
+
 // todo: add other options
 
 } // namespace ptx_compile_options
@@ -224,6 +243,7 @@ class ptx_compile_opts
   friend class ptx_compiler;
 
   int __max_reg_count_;
+  int __binary_arch_;
   unsigned __optimization_level_ : 2;
   unsigned __device_debug_       : 1;
   unsigned __line_info_          : 1;
@@ -234,6 +254,7 @@ public:
   //! @brief Default constructor for PTX compilation options.
   ptx_compile_opts() noexcept
       : __max_reg_count_{_CUDA_VSTD::to_underlying(ptx_compile_options::max_reg_count_opt::__unspecified)}
+      , __binary_arch_{_CUDA_VSTD::to_underlying(cuda::arch::id::sm_75)}
       , __optimization_level_{_CUDA_VSTD::to_underlying(ptx_compile_options::optimization_level_opt::O3)}
       , __device_debug_{false}
       , __line_info_{false}
@@ -275,6 +296,10 @@ public:
     else if constexpr (_CUDA_VSTD::is_same_v<_Tp, pic_opt>)
     {
       __pic_ = _CUDA_VSTD::to_underlying(__opt);
+    }
+    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, binary_arch_opt>)
+    {
+      __binary_arch_ = _CUDA_VSTD::to_underlying(__opt.arch_id);
     }
     else
     {
