@@ -209,6 +209,8 @@ struct cuda_kernel_desc
   }
 
 private:
+  // This type-erased smart pointer keeps the argument tuple valid until the
+  // object is destroyed, so that the pointer to these arguments remain valid
   ::std::shared_ptr<void> arg_tuple_type_erased;
 
   static func_variant_t store_func(CUfunction f)
@@ -292,17 +294,13 @@ public:
     return *this;
   }
 
-  /**
-   * @brief Takes a lambda function and executes it on the host in a graph callback node.
-   *
-   * @tparam Fun type of lambda function
-   * @param f Lambda function to execute
-   */
-  template <typename Fun>
-  void operator->*(Fun&& f)
+  auto& start()
   {
     // If a place is specified, use it
-    auto t = e_place ? ctx.task(e_place.value()) : ctx.task();
+    support_task = e_place ? ctx.task(e_place.value()) : ctx.task();
+
+    // Short-hand for more readable code
+    auto& t = *support_task;
 
     // So that we can use get to retrieve dynamic dependencies
     untyped_t = t;
@@ -321,53 +319,18 @@ public:
       t.set_symbol(symbol);
     }
 
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    cudaEvent_t start_event, end_event;
-    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+    // Do we need to measure the duration of the kernel(s) ?
+    auto& statistics   = reserved::task_statistics::instance();
+    record_time        = t.schedule_task() || statistics.is_calibrating_to_file();
+    record_time_device = -1;
 
     t.start();
-
-    int device = -1;
-
-    SCOPE(exit)
-    {
-      t.end_uncleared();
-
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-      {
-        if (record_time)
-        {
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
-        }
-      }
-
-      t.clear();
-
-      // Now that we have executed 'f', we do not need to access it anymore
-      untyped_t.reset();
-    };
 
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
-        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
+        cuda_safe_call(cudaGetDevice(&record_time_device)); // We will use this to force it during the next run
         // Events must be created here to avoid issues with multi-gpu
         cuda_safe_call(cudaEventCreate(&start_event));
         cuda_safe_call(cudaEventCreate(&end_event));
@@ -375,10 +338,70 @@ public:
       }
     }
 
+    auto& dot = *ctx.get_dot();
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
     }
+
+    return *this;
+  }
+
+  auto& end()
+  {
+    auto& t = *support_task;
+
+    // We need to access the task structures (eg. to get the stream) so we do
+    // not clear all its resources yet.
+    t.end_uncleared();
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+        cuda_safe_call(cudaEventSynchronize(end_event));
+
+        float milliseconds = 0;
+        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+        auto& dot = *ctx.get_dot();
+        if (dot.is_tracing())
+        {
+          dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, record_time_device);
+        }
+
+        auto& statistics = reserved::task_statistics::instance();
+        if (statistics.is_calibrating())
+        {
+          statistics.log_task_time(t, milliseconds);
+        }
+      }
+    }
+
+    t.clear();
+
+    // Now that we have executed 'f', we do not need to access it anymore
+    untyped_t.reset();
+
+    return *this;
+  }
+
+  /**
+   * @brief Takes a lambda function and executes it on the host in a graph callback node.
+   *
+   * @tparam Fun type of lambda function
+   * @param f Lambda function to execute
+   */
+  template <typename Fun>
+  void operator->*(Fun&& f)
+  {
+    start();
+
+    SCOPE(exit)
+    {
+      end();
+    };
 
     // If CUDASTF_CUDA_KERNEL_DEBUG is set, we display the number of registers
     // used by the kernel(s)
@@ -386,6 +409,8 @@ public:
       const char* env = ::std::getenv("CUDASTF_CUDA_KERNEL_DEBUG");
       return env && (atoi(env) != 0);
     }();
+
+    auto& t = *support_task;
 
     // When chained is enable, we expect a vector of kernel description which should be executed one after the other
     if constexpr (chained)
@@ -469,12 +494,21 @@ private:
   // Statically defined deps
   task_dep_vector<Deps...> deps;
 
+  // To store a task that implements cuda_kernel(_chain)
+  using underlying_task_type = decltype(::std::declval<Ctx>().task());
+  ::std::optional<underlying_task_type> support_task;
+
   // Dependencies added with add_deps
   ::std::vector<task_dep_untyped> dynamic_deps;
   // Used to retrieve deps with t.get<>(...)
   ::std::optional<task> untyped_t;
 
   ::std::optional<exec_place> e_place;
+
+  // Are we making some measurements ?
+  bool record_time;
+  int record_time_device;
+  cudaEvent_t start_event, end_event;
 };
 
 } // end namespace reserved
