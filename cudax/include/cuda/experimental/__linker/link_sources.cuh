@@ -41,12 +41,24 @@ struct __link_src
   _CUDA_VSTD::span<const _CUDA_VSTD_NOVERSION::byte> __data_;
 };
 
+struct __link_symbol
+{
+  enum class __type
+  {
+    __kernel,
+    __var,
+  };
+  __type __type_;
+  _CUDA_VSTD::string_view __name_;
+};
+
 //! @brief A collection of PTX link sources.
 class ptx_link_sources
 {
   friend class ptx_linker;
 
   ::std::vector<__link_src> __sources_;
+  ::std::vector<__link_symbol> __symbols_;
 
 public:
   //! @brief Adds a PTX source to the collection.
@@ -77,6 +89,22 @@ public:
   {
     __sources_.push_back({::NVJITLINK_INPUT_FATBIN, __name, __data});
   }
+
+  //! @brief Adds a kernel symbol to be kept in the PTX source code.
+  //!
+  //! @param __name The name of the kernel symbol.
+  void add_kernel_symbol(_CUDA_VSTD::string_view __name)
+  {
+    __symbols_.push_back({__link_symbol::__type::__kernel, __name});
+  }
+
+  //! @brief Adds a variable symbol to be kept in the PTX source code.
+  //!
+  //! @param __name The name of the variable symbol.
+  void add_variable_symbol(_CUDA_VSTD::string_view __name)
+  {
+    __symbols_.push_back({__link_symbol::__type::__var, __name});
+  }
 };
 
 //! @brief A collection of cubin link sources.
@@ -85,6 +113,7 @@ class cubin_link_sources
   friend class cubin_linker;
 
   ::std::vector<__link_src> __sources_;
+  ::std::vector<__link_symbol> __symbols_;
 
 public:
   //! @brief Adds a PTX source to the collection.
@@ -123,6 +152,22 @@ public:
   void add_fatbin(_CUDA_VSTD::string_view __name, _CUDA_VSTD::span<const _CUDA_VSTD_NOVERSION::byte> __data)
   {
     __sources_.push_back({::NVJITLINK_INPUT_FATBIN, __name, __data});
+  }
+
+  //! @brief Adds a kernel symbol to be kept in the PTX source code.
+  //!
+  //! @param __name The name of the kernel symbol.
+  void add_kernel_symbol(_CUDA_VSTD::string_view __name)
+  {
+    __symbols_.push_back({__link_symbol::__type::__kernel, __name});
+  }
+
+  //! @brief Adds a variable symbol to be kept in the PTX source code.
+  //!
+  //! @param __name The name of the variable symbol.
+  void add_variable_symbol(_CUDA_VSTD::string_view __name)
+  {
+    __symbols_.push_back({__link_symbol::__type::__var, __name});
   }
 };
 

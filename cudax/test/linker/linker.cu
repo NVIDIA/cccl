@@ -132,6 +132,7 @@ C2H_TEST("Link PTX", "[cuda.linker.ptx]")
   cudax::ptx_link_sources ptx_sources{};
   ptx_sources.add_ptx("compute.ptx", compute_ptx_src);
   ptx_sources.add_ptx("saxpy.ptx", saxpy_ptx_src);
+  ptx_sources.add_kernel_symbol("_Z5saxpyfPfS_S_m");
 
   cudax::ptx_linker linker{};
   auto result = linker.link_to_ptx(ptx_sources, ptx_opts);
@@ -161,6 +162,7 @@ C2H_TEST("Link CUBIN", "[cuda.linker.cubin]")
   cudax::cubin_link_sources cubin_sources{};
   cubin_sources.add_ptx("compute.ptx", compute_ptx_src);
   cubin_sources.add_ptx("saxpy.ptx", saxpy_ptx_src);
+  cubin_sources.add_kernel_symbol("_Z5saxpyfPfS_S_m");
 
   cudax::cubin_linker linker{};
   auto result = linker.link_to_cubin(cubin_sources, ptx_copts, cubin_lopts);

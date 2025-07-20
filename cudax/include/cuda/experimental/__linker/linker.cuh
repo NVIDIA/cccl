@@ -70,6 +70,8 @@ public:
     // todo: process options
     (void) __ptx_opts; // suppress unused variable warning
 
+    // todo: process symbols
+
     ::nvJitLinkHandle __handle{};
     if (::nvJitLinkCreate(&__handle, static_cast<_CUDA_VSTD::uint32_t>(__opt_ptrs.size()), __opt_ptrs.data())
         != ::NVJITLINK_SUCCESS)
@@ -97,6 +99,8 @@ public:
     // todo: process options
     (void) __ptx_opts; // suppress unused variable warning
     (void) __cubin_opts; // suppress unused variable warning
+
+    // todo: process symbols
 
     ::nvJitLinkHandle __handle{};
     if (::nvJitLinkCreate(&__handle, static_cast<_CUDA_VSTD::uint32_t>(__opt_ptrs.size()), __opt_ptrs.data())

@@ -111,10 +111,18 @@ public:
   //! @brief Move assignment operator.
   ptx_compile_source& operator=(ptx_compile_source&&) noexcept = default;
 
-  //! @brief Adds a symbol to be kept in the PTX source code.
+  //! @brief Adds a kernel symbol to be kept in the PTX source code.
   //!
-  //! @param __symbol The symbol to be added.
-  void add_symbol(_CUDA_VSTD::string_view __symbol)
+  //! @param __symbol The kernel symbol to be added.
+  void add_kernel_symbol(_CUDA_VSTD::string_view __symbol)
+  {
+    __symbols_.push_back(__symbol);
+  }
+
+  //! @brief Adds a function symbol to be kept in the PTX source code.
+  //!
+  //! @param __symbol The function symbol to be added.
+  void add_function_symbol(_CUDA_VSTD::string_view __symbol)
   {
     __symbols_.push_back(__symbol);
   }

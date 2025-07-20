@@ -161,7 +161,7 @@ C2H_TEST("Compile ptx to cubin", "[cuda.compile.ptx_to_cubin]")
   constexpr auto lowered_name = "_Z11test_kernelPi";
 
   cudax::ptx_compile_source src{"test.ptx", test_ptx_src};
-  src.add_symbol(lowered_name);
+  src.add_kernel_symbol(lowered_name);
 
   cudax::ptx_compiler compiler{};
   auto result = compiler.compile_to_cubin(src, ptx_opts);
