@@ -347,6 +347,9 @@ public:
   {
     auto& t = *support_task;
 
+    // Do submit kernels
+    launch_kernels();
+
     // We need to access the task structures (eg. to get the stream) so we do
     // not clear all its resources yet.
     t.end_uncleared();
@@ -400,65 +403,15 @@ public:
       end();
     };
 
-    // If CUDASTF_CUDA_KERNEL_DEBUG is set, we display the number of registers
-    // used by the kernel(s)
-    static bool display_register_cnt = [] {
-      const char* env = ::std::getenv("CUDASTF_CUDA_KERNEL_DEBUG");
-      return env && (atoi(env) != 0);
-    }();
-
     auto& t = *support_task;
 
-    // When chained is enable, we expect a vector of kernel description which should be executed one after the other
+    // Get the vector of kernel(s) to perform
+    // When chained is enable, we expect a vector of kernel description which
+    // should be executed one after the other.
     if constexpr (chained)
     {
-      ::std::vector<cuda_kernel_desc> res = ::std::apply(f, deps.instance(t));
-      assert(!res.empty());
-
-      if (display_register_cnt)
-      {
-        fprintf(stderr, "cuda_kernel_chain (%s):\n", symbol.c_str());
-        for (size_t i = 0; i < res.size(); i++)
-        {
-          fprintf(stderr, "- kernel %ld uses %d register(s)\n", i, res[i].get_num_registers());
-        }
-      }
-
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-      {
-        auto lock = t.lock_ctx_graph();
-        auto& g   = t.get_ctx_graph();
-
-        // We have two situations : either there is a single kernel and we put the kernel in the context's
-        // graph, or we rely on a child graph
-        if (res.size() == 1)
-        {
-          res[0].launch_in_graph(t.get_node(), g);
-        }
-        else
-        {
-          ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
-          chain.resize(res.size());
-
-          // Create a chain of kernels
-          for (size_t i = 0; i < res.size(); i++)
-          {
-            res[i].launch_in_graph(chain[i], g);
-            if (i > 0)
-            {
-              cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
-            }
-          }
-        }
-      }
-      else
-      {
-        // Rely on stream semantic to have a dependency between the kernels
-        for (auto& k : res)
-        {
-          k.launch(t.get_stream());
-        }
-      }
+      kernel_descs = ::std::apply(f, deps.instance(t));
+      assert(!kernel_descs.empty());
     }
     else
     {
@@ -468,24 +421,94 @@ public:
       static_assert(!chained);
 
       cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
-      if (display_register_cnt)
-      {
-        fprintf(stderr, "cuda_kernel (%s): uses %d register(s)\n", symbol.c_str(), res.get_num_registers());
-      }
+      kernel_descs.push_back(res);
+    }
+  }
 
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+  // Manually add one kernel
+  auto& add_kernel_desc(cuda_kernel_desc d)
+  {
+    kernel_descs.push_back(mv(d));
+    return *this;
+  }
+
+  // Manually add a vector of kernels
+  auto& add_kernel_desc(const ::std::vector<cuda_kernel_desc>& descs)
+  {
+    for (const auto& d : descs)
+    {
+      add_kernel_desc(d);
+    }
+    return *this;
+  }
+
+private:
+  // This does submit all kernels and print statistics if needed
+  void launch_kernels()
+  {
+    // If CUDASTF_CUDA_KERNEL_DEBUG is set, we display the number of registers
+    // used by the kernel(s)
+    static bool display_register_cnt = [] {
+      const char* env = ::std::getenv("CUDASTF_CUDA_KERNEL_DEBUG");
+      return env && (atoi(env) != 0);
+    }();
+
+    // Print some statistics if needed
+    if (display_register_cnt)
+    {
+      if (kernel_descs.size() > 1)
       {
-        auto lock = t.lock_ctx_graph();
-        res.launch_in_graph(t.get_node(), t.get_ctx_graph());
+        fprintf(stderr, "cuda_kernel_chain (%s):\n", symbol.c_str());
+        for (size_t i = 0; i < kernel_descs.size(); i++)
+        {
+          fprintf(stderr, "- kernel %ld uses %d register(s)\n", i, kernel_descs[i].get_num_registers());
+        }
       }
       else
       {
-        res.launch(t.get_stream());
+        fprintf(stderr, "cuda_kernel (%s): uses %d register(s)\n", symbol.c_str(), kernel_descs[0].get_num_registers());
+      }
+    }
+
+    auto& t = *support_task;
+
+    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+    {
+      auto lock = t.lock_ctx_graph();
+      auto& g   = t.get_ctx_graph();
+
+      // We have two situations : either there is a single kernel and we put the kernel in the context's
+      // graph, or we rely on a child graph
+      if (kernel_descs.size() == 1)
+      {
+        kernel_descs[0].launch_in_graph(t.get_node(), g);
+      }
+      else
+      {
+        ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
+        chain.resize(kernel_descs.size());
+
+        // Create a chain of kernels
+        for (size_t i = 0; i < kernel_descs.size(); i++)
+        {
+          kernel_descs[i].launch_in_graph(chain[i], g);
+          if (i > 0)
+          {
+            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
+          }
+        }
+      }
+    }
+    else
+    {
+      // Rely on stream semantic to have a dependency between the kernels
+      for (auto& k : kernel_descs)
+      {
+        k.launch(t.get_stream());
       }
     }
   }
 
-private:
   ::std::string symbol;
   Ctx& ctx;
   // Statically defined deps
@@ -501,6 +524,10 @@ private:
   ::std::vector<task_dep_untyped> dynamic_deps;
 
   ::std::optional<exec_place> e_place;
+
+  // What kernel(s) must be done ? We also store this in a vector if there is a
+  // single kernel (with the cuda_kernel construct)
+  ::std::vector<cuda_kernel_desc> kernel_descs;
 
   // Are we making some measurements ?
   bool record_time;
