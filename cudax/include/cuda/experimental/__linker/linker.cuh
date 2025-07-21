@@ -41,6 +41,9 @@ namespace cuda::experimental
 
 class __linker_base
 {
+  bool __enable_internal_cache_{true};
+  unsigned __thread_limit_{1};
+
 protected:
   static void __add_link_sources(::nvJitLinkHandle __handle, _CUDA_VSTD::span<const __link_src> __sources)
   {
@@ -73,6 +76,22 @@ public:
       // Handle error
     }
     return static_cast<int>(__major * 100 + __minor);
+  }
+
+  //! @brief Set whether to enable the internal cache.
+  //!
+  //! @param __enable If `true`, the internal cache is enabled; otherwise, it is disabled.
+  void enable_internal_cache(bool __enable = true) noexcept
+  {
+    __enable_internal_cache_ = __enable;
+  }
+
+  //! @brief Set the thread limit for compilation.
+  //!
+  //! @param __limit The maximum number of threads to use for compilation. 0 means no limit.
+  void set_thread_limit(unsigned __limit) noexcept
+  {
+    __thread_limit_ = __limit;
   }
 };
 

@@ -141,6 +141,8 @@ C2H_TEST("Link PTX", "[cuda.linker.ptx]")
   ptx_sources.add_kernel_symbol("_Z5saxpyfPfS_S_m");
 
   cudax::ptx_linker linker{};
+  linker.set_thread_limit(4);
+  linker.enable_internal_cache();
   auto result = linker.link_to_ptx(ptx_sources, ptx_opts);
 
   if (result)

@@ -74,6 +74,8 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
   src.add_name_expression(name_expr);
 
   cudax::cuda_compiler compiler{};
+  compiler.set_thread_limit(2);
+  compiler.enable_internal_cache(false);
   auto result = compiler.compile_to_ptx(src, cuda_opts);
 
   if (result)
@@ -181,6 +183,7 @@ C2H_TEST("Compile ptx to cubin", "[ptx.compile.ptx_to_cubin]")
   src.add_kernel_symbol(lowered_name);
 
   cudax::ptx_compiler compiler{};
+  compiler.set_thread_limit(2);
   auto result = compiler.compile_to_cubin(src, ptx_opts);
 
   if (result)

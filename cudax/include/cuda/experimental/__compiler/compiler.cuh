@@ -52,6 +52,9 @@ struct __compile_options
 /// @brief A class representing a CUDA compiler.
 class cuda_compiler
 {
+  bool __enable_internal_cache_{true};
+  unsigned __thread_limit_{1};
+
   [[nodiscard]] static ::nvrtcProgram __make_program(const cuda_compile_source& __src)
   {
     ::std::string __name{__src.__name_.begin(), __src.__name_.end()};
@@ -64,44 +67,75 @@ class cuda_compiler
     return __program;
   }
 
-  [[nodiscard]] static const char*
-  __make_dyn_opt(cuda_compile_opts::_DynOpt __dopt, ::std::vector<::std::string>& __opt_strs)
+  [[nodiscard]] __compile_options __make_options() const
+  {
+    __compile_options __ret{};
+
+    // enable internal cache
+    if (!__enable_internal_cache_)
+    {
+      __ret.__opt_ptrs.push_back("-no-cache");
+    }
+
+    // set thread limit
+    if (__thread_limit_ != 1)
+    {
+      auto& __str = __ret.__opt_strs.emplace_back("-split-compile=");
+      __str.append(::std::to_string(__thread_limit_));
+      __ret.__opt_ptrs.push_back(__str.c_str());
+    }
+
+    return __ret;
+  }
+
+  static void __add_dyn_opt(cuda_compile_opts::_DynOpt __dopt, __compile_options& __compile_opts)
   {
     switch (__dopt.__type_)
     {
       case cuda_compile_opts::_DynOptType::__define_macro: {
-        auto& __str = __opt_strs.emplace_back("-D");
-        __str.append(__dopt.__value_.__string_view2_.__first_.begin(), __dopt.__value_.__string_view2_.__first_.end());
+        __compile_opts.__opt_ptrs.push_back("-D");
+        auto& __str = __compile_opts.__opt_strs.emplace_back(
+          __dopt.__value_.__string_view2_.__first_.begin(), __dopt.__value_.__string_view2_.__first_.end());
         if (!__dopt.__value_.__string_view2_.__second_.empty())
         {
           __str.append("=");
           __str.append(__dopt.__value_.__string_view2_.__second_.begin(),
                        __dopt.__value_.__string_view2_.__second_.end());
         }
-        return __str.c_str();
+        __compile_opts.__opt_ptrs.push_back(__str.c_str());
+        break;
       }
-      case cuda_compile_opts::_DynOptType::__undefine_macro:
-        return __opt_strs.emplace_back(_CUDA_VSTD::move("-U"))
-          .append(__dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end())
-          .c_str();
-      case cuda_compile_opts::_DynOptType::__include_path:
-        return __opt_strs.emplace_back(_CUDA_VSTD::move("-I"))
-          .append(__dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end())
-          .c_str();
-      case cuda_compile_opts::_DynOptType::__force_include:
-        return __opt_strs.emplace_back(_CUDA_VSTD::move("-include "))
-          .append(__dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end())
-          .c_str();
+      case cuda_compile_opts::_DynOptType::__undefine_macro: {
+        __compile_opts.__opt_ptrs.push_back("-U");
+        auto& __str = __compile_opts.__opt_strs.emplace_back(
+          __dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end());
+        __compile_opts.__opt_ptrs.push_back(__str.c_str());
+        break;
+      }
+      case cuda_compile_opts::_DynOptType::__include_path: {
+        __compile_opts.__opt_ptrs.push_back("-I");
+        auto& __str = __compile_opts.__opt_strs.emplace_back(
+          __dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end());
+        __compile_opts.__opt_ptrs.push_back(__str.c_str());
+        break;
+      }
+      case cuda_compile_opts::_DynOptType::__force_include: {
+        __compile_opts.__opt_ptrs.push_back("-include");
+        auto& __str = __compile_opts.__opt_strs.emplace_back(
+          __dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end());
+        __compile_opts.__opt_ptrs.push_back(__str.c_str());
+        break;
+      }
       default:
         _CCCL_UNREACHABLE();
     }
   }
 
-  [[nodiscard]] static __compile_options __make_options(const cuda_compile_opts& __cuda_opts)
+  [[nodiscard]] __compile_options __make_options(const cuda_compile_opts& __cuda_opts) const
   {
     using namespace cuda_compile_options;
 
-    __compile_options __ret{};
+    __compile_options __ret = __make_options();
 
     // disable automatic addition of source's directory to the include path
     __ret.__opt_ptrs.push_back("-no-source-include");
@@ -174,18 +208,14 @@ class cuda_compiler
     // process dynamic options
     for (const auto& __dopt : __cuda_opts.__dyn_opts_)
     {
-      const char* __opt_ptr = __make_dyn_opt(__dopt, __ret.__opt_strs);
-      if (__opt_ptr != nullptr)
-      {
-        __ret.__opt_ptrs.push_back(__opt_ptr);
-      }
+      __add_dyn_opt(__dopt, __ret);
     }
 
     return __ret;
   }
 
-  [[nodiscard]] static __compile_options
-  __make_options(const cuda_compile_opts& __cuda_opts, const ptx_compile_opts& __ptx_opts)
+  [[nodiscard]] __compile_options
+  __make_options(const cuda_compile_opts& __cuda_opts, const ptx_compile_opts& __ptx_opts) const
   {
     using namespace ptx_compile_options;
 
@@ -335,6 +365,22 @@ public:
     return __major * 100 + __minor;
   }
 
+  //! @brief Set whether to enable the internal cache.
+  //!
+  //! @param __enable If `true`, the internal cache is enabled; otherwise, it is disabled.
+  void enable_internal_cache(bool __enable = true) noexcept
+  {
+    __enable_internal_cache_ = __enable;
+  }
+
+  //! @brief Set the thread limit for compilation.
+  //!
+  //! @param __limit The maximum number of threads to use for compilation. 0 means no limit.
+  void set_thread_limit(unsigned __limit) noexcept
+  {
+    __thread_limit_ = __limit;
+  }
+
   //! @brief Compile CUDA source code to PTX.
   //!
   //! @param __cuda_src The CUDA source code to compile.
@@ -392,6 +438,8 @@ public:
 //! @brief A class representing a PTX compiler.
 class ptx_compiler
 {
+  unsigned __thread_limit_{1};
+
   [[nodiscard]] static ::nvPTXCompilerHandle __make_handle(const ptx_compile_source& __ptx_src)
   {
     ::nvPTXCompilerHandle __handle{};
@@ -402,11 +450,25 @@ class ptx_compiler
     return __handle;
   }
 
-  [[nodiscard]] static __compile_options __make_options(const ptx_compile_opts& __ptx_opts)
+  [[nodiscard]] __compile_options __make_options() const
+  {
+    __compile_options __ret{};
+
+    // set thread limit
+    if (__thread_limit_ != 1)
+    {
+      auto& __str = __ret.__opt_strs.emplace_back("-split-compile=");
+      __str.append(::std::to_string(__thread_limit_));
+      __ret.__opt_ptrs.push_back(__str.c_str());
+    }
+    return __ret;
+  }
+
+  [[nodiscard]] __compile_options __make_options(const ptx_compile_opts& __ptx_opts) const
   {
     using namespace ptx_compile_options;
 
-    __compile_options __ret{};
+    __compile_options __ret = __make_options();
 
     // device debug flag
     if (__ptx_opts.__device_debug_)
@@ -531,6 +593,14 @@ public:
       // Handle error
     }
     return static_cast<int>(__major * 100 + __minor);
+  }
+
+  //! @brief Set the thread limit for compilation.
+  //!
+  //! @param __limit The maximum number of threads to use for compilation. 0 means no limit.
+  void set_thread_limit(unsigned __limit) noexcept
+  {
+    __thread_limit_ = __limit;
   }
 
   //! @brief Compile PTX source code to CUBIN.
