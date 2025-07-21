@@ -88,7 +88,7 @@ jobs:
       if: ${{ steps.inspect-changes.outputs.skip != 'true' }}
       id: get-list
       run: |
-        devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | while read -r devcontainer; do
+        devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | grep -wP '?!.*cuda99' | while read -r devcontainer; do
           jq --arg path "$devcontainer" '{path: $path, name: .name}' "$devcontainer"
           done | jq -s -c .)
         echo "devcontainers=${devcontainers}" | tee --append "${GITHUB_OUTPUT}"
