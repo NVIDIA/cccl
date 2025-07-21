@@ -162,6 +162,48 @@ void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
   k->k.start();
 }
 
+#if 0
+//
+//  template <typename Fun>
+//  void configure_raw(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, int arg_cnt, const void** args)
+void stf_cuda_kernel_add_desc(stf_cuda_kernel_handle k, const void *func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, int arg_cnt, const void** args)
+{
+    /* We convert the function to a CUfunction because this code is a shared
+     * library which cannot launch kernels using cudaLaunchKernel directly, or we
+     * will get invalid device function. */
+    //CUfunction cufunc;
+    //cudaGetFuncBySymbol(&cufunc, (void *)func);
+    CUkernel cukernel;
+    cudaGetKernel(&cukernel, (void *)func);
+
+    cuda_kernel_desc desc;
+    desc.configure_raw(cukernel, gridDim_, blockDim_, sharedMem_, arg_cnt, args);
+
+    k->k.add_kernel_desc(mv(desc));
+}
+#endif
+
+void stf_cuda_kernel_add_desc_cufunc(
+  stf_cuda_kernel_handle k,
+  CUfunction cufunc,
+  dim3 gridDim_,
+  dim3 blockDim_,
+  size_t sharedMem_,
+  int arg_cnt,
+  const void** args)
+{
+  cuda_kernel_desc desc;
+  desc.configure_raw(cufunc, gridDim_, blockDim_, sharedMem_, arg_cnt, args);
+
+  k->k.add_kernel_desc(mv(desc));
+}
+
+void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index)
+{
+  auto s = k->k.template get<slice<const char>>(index);
+  return (void*) s.data_handle();
+}
+
 void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
 {
   assert(k);

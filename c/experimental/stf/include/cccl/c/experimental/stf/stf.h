@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <cuda.h>
 #include <cuda_runtime.h>
 
 // TODO use CCCL_C_EXTERN_C_BEGIN/CCCL_C_EXTERN_C_END
@@ -50,6 +52,35 @@ void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
 void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
 void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
 void stf_cuda_kernel_start(stf_cuda_kernel_handle k);
+
+void stf_cuda_kernel_add_desc_cufunc(
+  stf_cuda_kernel_handle k,
+  CUfunction cufunc,
+  dim3 gridDim_,
+  dim3 blockDim_,
+  size_t sharedMem_,
+  int arg_cnt,
+  const void** args);
+
+/* Convert CUDA kernel address to CUfunction because we may use them from a
+ * shared library where this would be invalid in the runtime API. */
+static inline void stf_cuda_kernel_add_desc(
+  stf_cuda_kernel_handle k,
+  const void* func,
+  dim3 gridDim_,
+  dim3 blockDim_,
+  size_t sharedMem_,
+  int arg_cnt,
+  const void** args)
+{
+  CUfunction cufunc;
+  cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
+  assert(res == cudaSuccess);
+
+  stf_cuda_kernel_add_desc_cufunc(k, cufunc, gridDim_, blockDim_, sharedMem_, arg_cnt, args);
+}
+
+void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index);
 void stf_cuda_kernel_end(stf_cuda_kernel_handle k);
 void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t);
 

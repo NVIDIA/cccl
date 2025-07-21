@@ -13,17 +13,22 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
-using namespace cuda::experimental::stf;
-
+#if 0
 __global__ void axpy(int cnt, double a, const double *x, double *y)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
 
-  for (int i = tid; i < cnt; i += nthreads)
-  {
-    y[i] += a * x[i];
-  }
+//  for (int i = tid; i < cnt; i += nthreads)
+//  {
+//    y[i] += a * x[i];
+//  }
+}
+#endif
+
+extern "C" __global__ void axpy(int, double, const double*, double*)
+{
+  printf("hello.\n");
 }
 
 C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
@@ -51,7 +56,9 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   stf_cuda_kernel_add_dep(k, lX, STF_READ);
   stf_cuda_kernel_add_dep(k, lY, STF_RW);
   stf_cuda_kernel_start(k);
-  // TODO add descs
+  void* dummy         = nullptr;
+  const void* args[4] = {&N, &alpha, &dummy, &dummy};
+  stf_cuda_kernel_add_desc(k, (void*) axpy, 2, 4, 0, 4, args);
   stf_cuda_kernel_end(k);
   stf_cuda_kernel_destroy(k);
 
