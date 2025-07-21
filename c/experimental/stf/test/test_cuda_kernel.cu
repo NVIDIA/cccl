@@ -44,6 +44,8 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   X = (float*) malloc(N * sizeof(float));
   Y = (float*) malloc(N * sizeof(float));
 
+  const double alpha = 3.14;
+
   stf_logical_data(ctx, &lX, X, N * sizeof(float));
   stf_logical_data(ctx, &lY, Y, N * sizeof(float));
 
