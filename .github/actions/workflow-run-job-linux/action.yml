@@ -20,6 +20,9 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  # This token must have the "read:enterprise" scope
+  dist-token:
+    description: "The token used to authenticate with the sccache-dist build cluster."
   producer_id:
     description: "The producer job's ID, if downloading a wheelhouse from a producer."
     required: false
@@ -29,11 +32,16 @@ runs:
   steps:
     - name: Install dependencies
       shell: sh
+      env:
+        COMMAND: "${{inputs.command}}"
       run: |
         # Install script dependencies
         alias retry="${{github.workspace}}/ci/util/retry.sh 5 30"
         retry sudo apt update
         retry sudo apt install -y --no-install-recommends tree git
+        if echo "$COMMAND" | grep -Eq '"./ci/.*_python.sh"'; then
+          echo "is_python=true" >> "$GITHUB_ENV"
+        fi
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -44,7 +52,8 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-    - name: Download wheelhouse artifact if it exists
+    - if: ${{ env.is_python == 'true' }}
+      name: Download wheelhouse artifact if it exists
       uses: actions/download-artifact@v4
       with:
         name: wheelhouse-${{ inputs.producer_id || inputs.id }}
@@ -59,16 +68,21 @@ runs:
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        DIST_TOKEN: "${{inputs.dist-token}}"
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        mkdir -p artifacts
-
-        cat <<'EOF' > ci.sh
+        cat <<"EOF" > ci.sh
         #! /usr/bin/env bash
         set -euo pipefail
+        ulimit -n $(ulimit -Hn)
+        sccache --stop-server >/dev/null 2>&1
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
+        # Print current dist status to verify we're connected
+        echo -e "::group::️⚙️ \e[1;34mBuild cluster status:\e[0m"
+        ./ci/sccache_dist_status.sh | sed 's/\"//g' | column -t -s,
+        echo -e "::endgroup::"
         echo -e "\e[1;34m${COMMAND}\e[0m"
         exit_code=0
         eval "${COMMAND}" || exit_code=$?
@@ -84,31 +98,17 @@ runs:
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+          echo -e "::endgroup::"
           exit $exit_code
         fi
-
-        # Copy any artifacts we want to preserve out of the container:
-        results_dir=/artifacts
-
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          filename="$1"
-          filepath="$(find . -name "${filename}" -print -quit)"
-          if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
-            return 1
-          fi
-          cp -v "$filepath" "$results_dir"
-        }
-
-        find_and_copy "sccache_stats.json" || :
         EOF
 
         chmod +x ci.sh
 
         # The devcontainer will mount this path to the home directory:
         readonly aws_dir="${{github.workspace}}/.aws"
-        mkdir "${aws_dir}";
+        readonly cfg_dir="${{github.workspace}}/.config"
+        mkdir -p "${aws_dir}" "${cfg_dir}/sccache";
 
         cat <<EOF > "${aws_dir}/config"
         [default]
@@ -123,29 +123,119 @@ runs:
         aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
         EOF
 
+        # Configure the sccache client
+        cat <<EOF > "${cfg_dir}/sccache/config"
+        server_startup_timeout_ms = $((5 * 60 * 1000))
+        [cache.disk]
+        size = 0
+        [cache.disk.preprocessor_cache_mode]
+        use_preprocessor_cache_mode = false
+        EOF
+
         chmod 0600 "${aws_dir}/credentials"
         chmod 0664 "${aws_dir}/config"
+        chmod 0664 "${cfg_dir}/sccache/config"
 
-        declare -a gpu_request=()
+        # Download new sccache binary
+        mkdir -p "${{runner.temp}}/bin"
+        curl -fsSL \
+          "https://github.com/rapidsai/sccache/releases/download/v0.10.0-rapids.35/sccache-v0.10.0-rapids.35-$(uname -m)-unknown-linux-musl.tar.gz" \
+        | tar -C "${{runner.temp}}/bin" -zf - --wildcards --strip-components=1 -x '*/sccache'
+
+        declare -a extra_launch_args=(
+          # Write debug logs to a file we can upload
+          --env "SCCACHE_SERVER_LOG=sccache=debug"
+          --env "SCCACHE_ERROR_LOG=/home/coder/cccl/sccache.log"
+          # Cache in a separate S3 bucket prefix
+          --env "SCCACHE_S3_KEY_PREFIX=cccl-test-sccache-dist"
+          # Mount in new sccache binary
+          --volume "${{runner.temp}}/bin/sccache:/usr/bin/sccache:ro"
+        )
+
+        OS="$(uname -s)"
+        CPUS="$(nproc --all)"
+        ARCH="$(dpkg --print-architecture)"
+
+        # Use the build cluster
+        if test -n "${DIST_TOKEN+x}"; then
+
+          # Configure sccache client to talk to the build cluster
+          cat <<EOF >> "${cfg_dir}/sccache/config"
+        [dist]
+        # Infinitely retry all retryable dist-compilation errors
+        max_retries = inf
+        # Never fallback to building locally, fail instead
+        fallback_to_local_compile = false
+        # Build cluster URL
+        scheduler_url = "https://${ARCH}.${OS,,}.sccache.rapids.nvidia.com"
+
+        # Build cluster auth
+        [dist.auth]
+        type = "token"
+        token = "$DIST_TOKEN"
+
+        # Build cluster network config
+        [dist.net]
+        connect_timeout = 30
+        request_timeout = 4000
+
+        [dist.net.keepalive]
+        enabled = true
+        interval = 20
+        timeout = 600
+        EOF
+
+          if grep -q '"./ci/build_' <<< "$COMMAND"; then
+            extra_launch_args+=(
+              # Repopulate the cache
+              # --env "SCCACHE_RECACHE=1"
+              # Do not cache build products
+              # --env "SCCACHE_NO_CACHE=1"
+            )
+          fi
+
+          # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
+          # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
+          # and we'll OOM if we try to compile too many at once.
+          if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
+            if ! grep -q '_python.sh' <<< "$COMMAND"; then
+              extra_launch_args+=(
+                --env "PARALLEL_LEVEL=$((CPUS < 32 ? 32 : CPUS))"
+                --ulimit "nofile=$(ulimit -Hn):$(ulimit -Hn)"
+              )
+            else
+              extra_launch_args+=(
+                --env "PARALLEL_LEVEL=${CPUS}"
+              )
+            fi
+          fi
+
+          if ! grep -q '11.1' <<< "${{inputs.cuda}}"; then
+            # Compile device objects in parallel
+            extra_launch_args+=(
+              --env "NVCC_APPEND_FLAGS=-t=100"
+            )
+          fi
+        fi
 
         # Explicitly pass which GPU to use if on a GPU runner
         if [[ "${RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+          extra_launch_args+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
 
         # If the image contains "cudaXX.Yext"...
         if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
-          cuda_ext_request="--cuda-ext"
+          extra_launch_args+=(--cuda-ext)
         fi
 
         # Launch this container using the host's docker daemon
         set -x
+
         ${{github.workspace}}/.devcontainer/launch.sh \
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
-          ${cuda_ext_request:-} \
-          "${gpu_request[@]}" \
+          "${extra_launch_args[@]}" \
           --env "CI=$CI" \
           --env "AWS_ROLE_ARN=" \
           --env "COMMAND=$COMMAND" \
@@ -162,36 +252,58 @@ runs:
           --env "HOST_WORKSPACE=${{github.workspace}}" \
           --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
-          --volume "${{github.workspace}}/artifacts:/artifacts" \
           -- /ci.sh
 
-    - name: Prepare job artifacts
+    - if: ${{ always() }}
+      name: Create job artifact dir
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        result_dir="jobs/${{inputs.id}}"
+        mkdir -p "$result_dir"
+        echo "result_dir=$result_dir" >> "$GITHUB_ENV"
+
+    - if: ${{ success() }}
+      name: Record job success
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        touch "$result_dir/success"
+
+    - if: ${{ always() }}
+      name: Prepare job artifacts
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "Prepare job artifacts"
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
 
-        touch "$result_dir/success"
+        # chmod all temp contents 777 so the runner can delete them
+        find "${{runner.temp}}/" -exec chmod 0777 {} \;
 
-        artifacts_exist="$(ls -A artifacts)"
-        if [ "$artifacts_exist" ]; then
-          cp -rv artifacts/* "$result_dir"
-        fi
+        # Finds a matching file in the repo directory and copies it to the results directory.
+        find_and_copy() {
+          find . -maxdepth 4 -type f -name "$1" -print0 | xargs -0 -I% cp -v % "$result_dir/"
+        }
+
+        # Copy any artifacts we want to preserve out of the container
+        find_and_copy "sccache.log" || :
+        find_and_copy ".ninja_log" || :
+        find_and_copy "build.ninja" || :
+        find_and_copy "rules.ninja" || :
+        find_and_copy "sccache_stats.json" || :
 
         echo "::group::Job artifacts"
         tree "$result_dir"
         echo "::endgroup::"
 
-    - name: Upload job artifacts
+    - if: ${{ always() }}
+      name: Upload job artifacts
       uses: actions/upload-artifact@v4
       with:
         name: jobs-${{inputs.id}}
         path: jobs
         compression-level: 0
+        include-hidden-files: true
 
-    - name: Upload wheelhouse
-      if: always()
+    - if: ${{ env.is_python == 'true' }}
+      name: Upload wheelhouse
       uses: actions/upload-artifact@v4
       with:
         name: wheelhouse-${{inputs.id}}
