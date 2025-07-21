@@ -109,7 +109,7 @@ struct BlockReduceWarpReductionsNondeterministic
   {
     if (FULL_TILE || (SUCCESSOR_WARP * LOGICAL_WARP_SIZE < num_valid))
     {
-      T addend       = temp_storage.warp_aggregates[SUCCESSOR_WARP];
+      const T addend = temp_storage.warp_aggregates[SUCCESSOR_WARP];
       warp_aggregate = reduction_op(warp_aggregate, addend);
     }
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<SUCCESSOR_WARP + 1>);
@@ -179,10 +179,11 @@ struct BlockReduceWarpReductionsNondeterministic
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     ::cuda::std::plus<> reduction_op;
-    int warp_offset    = (warp_id * LOGICAL_WARP_SIZE);
-    int warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
-                         ? LOGICAL_WARP_SIZE
-                         : num_valid - warp_offset;
+    const int warp_offset = (warp_id * LOGICAL_WARP_SIZE);
+    const int warp_num_valid =
+      ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
+        ? LOGICAL_WARP_SIZE
+        : num_valid - warp_offset;
 
     // Warp reduction in every warp
     T warp_aggregate =
@@ -210,14 +211,15 @@ struct BlockReduceWarpReductionsNondeterministic
   template <bool FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
-    int warp_offset    = warp_id * LOGICAL_WARP_SIZE;
-    int warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
-                         ? LOGICAL_WARP_SIZE
-                         : num_valid - warp_offset;
+    const int warp_offset = warp_id * LOGICAL_WARP_SIZE;
+    const int warp_num_valid =
+      ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
+        ? LOGICAL_WARP_SIZE
+        : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
-                         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
+    const T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
+                               .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
