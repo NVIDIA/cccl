@@ -24,7 +24,6 @@
 #include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-#include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
@@ -194,25 +193,7 @@ struct DispatchReduceNondeterministic
         break;
       }
 
-#if ATOMIC_REDUCE_USE_GRID_EVEN_SHARE
-      // Get SM count
-      int sm_count;
-      error = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-      const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
-
-      // Even-share work distribution
-      int max_blocks = reduce_device_occupancy * detail::subscription_factor;
-      GridEvenShare<OffsetT> even_share;
-      even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
-      // Get grid size for device_reduce_sweep_kernel
-      const int reduce_grid_size = even_share.grid_size;
-#else
       const int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
-#endif
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -227,16 +208,7 @@ struct DispatchReduceNondeterministic
 
       // Invoke NondeterministicDeviceReduceAtomicKernel
       launcher_factory(reduce_grid_size, active_policy.ReduceNondeterministic().BlockThreads(), 0, stream)
-        .doit(atomic_kernel,
-              d_in,
-              d_out,
-              num_items,
-#if ATOMIC_REDUCE_USE_GRID_EVEN_SHARE
-              even_share,
-#endif
-              reduction_op,
-              init,
-              transform_op);
+        .doit(atomic_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
