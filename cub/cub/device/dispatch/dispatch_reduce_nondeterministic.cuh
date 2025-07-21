@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 /**
- * @file cub::DeviceReduce provides device-wide, parallel operations for
- *       computing a reduction across a sequence of data items residing within
- *       device-accessible memory.
+ * @file cub::DeviceReduce provides device-wide, parallel operations for computing a reduction
+ *       across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -79,8 +78,7 @@ struct DeviceReduceNondeterministicKernelSource
 namespace detail
 {
 /**
- * @brief Utility class for dispatching the appropriately-tuned kernels for
- *        device-wide reduction
+ * @brief Utility class for dispatching the appropriately-tuned kernels for device-wide reduction
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -92,8 +90,7 @@ namespace detail
  *   Signed integer type for global offsets
  *
  * @tparam ReductionOpT
- *   Binary reduction functor type having member
- *   `auto operator()(const T &a, const U &b)`
+ *   Binary reduction functor type having member `auto operator()(const T &a, const U &b)`
  *
  * @tparam InitT
  *   Initial value type
@@ -124,9 +121,8 @@ struct DispatchReduceNondeterministic
   // Problem state
   //---------------------------------------------------------------------------
 
-  /// Device-accessible allocation of temporary storage. When `nullptr`, the
-  /// required allocation size is written to `temp_storage_bytes` and no work
-  /// is done.
+  /// Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
+  /// size is written to `temp_storage_bytes` and no work is done.
   void* d_temp_storage;
 
   /// Reference to size in bytes of `d_temp_storage` allocation
@@ -168,8 +164,7 @@ struct DispatchReduceNondeterministic
    *   Function type of cub::DeviceReduceAtomicKernel
    *
    * @param[in] last_block_kernel
-   *   Kernel function pointer to parameterization of
-   *   cub::DeviceReduceLastBlockKernel
+   *   Kernel function pointer to parameterization of cub::DeviceReduceLastBlockKernel
    */
   template <typename ActivePolicyT, typename AtomicKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -228,10 +223,11 @@ struct DispatchReduceNondeterministic
     return error;
   }
 
-  // This function handles both pointers passed from C++ and indirect_arg_t. We pass the address of the device pointer
-  // here, cast it to a double pointer, and dereference it. This is necessary because indirect_arg_t stores the address
-  // of the device pointer in `ptr`, which is a host pointer stored in `void*`. We can't dereference it directly, so we
-  // cast it to a double pointer. This also just works for pointers from the C++ path.
+  // This function handles both pointers passed from C++ and indirect_arg_t. We pass the address of the
+  // device pointer here, cast it to a double pointer, and dereference it. This is necessary because
+  // indirect_arg_t stores the address of the device pointer in `ptr`, which is a host pointer stored
+  // in `void*`. We can't dereference it directly, so we cast it to a double pointer. This also just
+  // works for pointers from the C++ path.
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* unwrap_indirect_arg(void* iterator)
   {
     return *reinterpret_cast<void**>(iterator);
@@ -262,9 +258,8 @@ struct DispatchReduceNondeterministic
    * @brief Internal dispatch routine for computing a device-wide reduction
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
+   *   size is written to `temp_storage_bytes` and no work is done.
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -285,8 +280,7 @@ struct DispatchReduceNondeterministic
    *   The initial value of the reduction
    *
    * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within.
-   *   Default is stream<sub>0</sub>.
+   *   **[optional]** CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
    */
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
