@@ -35,6 +35,10 @@ C2H_CCCLRT_TEST("Fill", "[algorithm]")
     }
 
     check_result_and_erase(_stream, host_vector);
+
+    cuda::std::span<int> span(buffer.data(), 0);
+    cuda::fill_bytes(_stream, span, fill_byte);
+    printf("0 sized span: %p\n", span.data());
   }
 }
 

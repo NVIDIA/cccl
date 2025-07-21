@@ -130,8 +130,8 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    cuda::__as_mdspan(_CUDA_VSTD::forward<_SrcTy>(__src)),
-    cuda::__as_mdspan(_CUDA_VSTD::forward<_DstTy>(__dst)));
+    ::cuda::__as_mdspan(_CUDA_VSTD::forward<_SrcTy>(__src)),
+    ::cuda::__as_mdspan(_CUDA_VSTD::forward<_DstTy>(__dst)));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

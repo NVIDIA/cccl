@@ -39,6 +39,10 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
 
       cuda::copy_bytes(_stream, const_buffer, cuda::std::span(host_vector));
       check_result_and_erase(_stream, host_vector);
+
+      ::cuda::std::span<int> span(const_buffer.data(), 0);
+      cuda::copy_bytes(_stream, span, host_vector);
+      printf("0 sized span: %p\n", span.data());
     }
   }
 
