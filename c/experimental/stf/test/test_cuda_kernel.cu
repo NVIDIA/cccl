@@ -24,6 +24,16 @@ __global__ void axpy(int cnt, double a, const double* x, double* y)
   }
 }
 
+double X0(int i)
+{
+  return sin((double) i);
+}
+
+double Y0(int i)
+{
+  return cos((double) i);
+}
+
 C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 {
   size_t N = 1000000;
@@ -36,6 +46,12 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   double *X, *Y;
   X = (double*) malloc(N * sizeof(double));
   Y = (double*) malloc(N * sizeof(double));
+
+  for (size_t i = 0; i < N; i++)
+  {
+    X[i] = X0(i);
+    Y[i] = Y0(i);
+  }
 
   const double alpha = 3.14;
 
@@ -62,6 +78,12 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   stf_logical_data_destroy(lY);
 
   stf_ctx_finalize(ctx);
+
+  for (size_t i = 0; i < N; i++)
+  {
+    assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
+    assert(fabs(X[i] - X0(i)) < 0.0001);
+  }
 
   free(X);
   free(Y);
