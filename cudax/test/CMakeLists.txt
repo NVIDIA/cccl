@@ -123,6 +123,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/transform.cu
   )
 
+  cudax_add_catch2_test(test_target cuco ${cn_target}
+    cuco/utility/hash_test.cu
+  )
+
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
     memory_resource/any_async_resource.cu
     memory_resource/any_resource.cu
