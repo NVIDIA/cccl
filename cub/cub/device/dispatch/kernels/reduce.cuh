@@ -554,8 +554,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   // Consume input tiles
   AccumT block_aggregate =
     AgentReduceT(temp_storage, d_in, reduction_op, transform_op)
-      .ConsumeRange(blockIdx.x * AgentReduceT::TILE_ITEMS,
-                    _CUDA_VSTD::min(static_cast<OffsetT>((blockIdx.x + 1) * AgentReduceT::TILE_ITEMS), num_items));
+      .ConsumeRange(
+        static_cast<OffsetT>(blockIdx.x) * static_cast<OffsetT>(AgentReduceT::TILE_ITEMS),
+        _CUDA_VSTD::min(static_cast<OffsetT>(blockIdx.x + 1) * static_cast<OffsetT>(AgentReduceT::TILE_ITEMS),
+                        num_items));
 
   // Output result
   // only thread 0 has valid value in block aggregate
