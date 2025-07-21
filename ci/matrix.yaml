@@ -8,6 +8,9 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+   # See how the new example job handles the expanded matrix:
+    - {jobs: ['test_py_headers', 'test_py_coop'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
+    - {jobs: ['test_py_par'],                     project: 'python', ctk: ['12.8', '12.9'],                 py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
 
   pull_request:
     # Old CTK/compiler
