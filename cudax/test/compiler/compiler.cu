@@ -48,6 +48,12 @@ constexpr auto test_ptx_src = R"(
 }
 )";
 
+C2H_TEST("Cuda compiler version", "[cuda.compiler.version]")
+{
+  STATIC_REQUIRE(cuda::std::is_same_v<int, decltype(cudax::cuda_compiler::version())>);
+  [[maybe_unused]] auto version = cudax::cuda_compiler::version();
+}
+
 C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
 {
   cudax::cuda_compile_opts cuda_opts;
@@ -151,7 +157,13 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
   [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
 }
 
-C2H_TEST("Compile ptx to cubin", "[cuda.compile.ptx_to_cubin]")
+C2H_TEST("PTX compiler version", "[ptx.compiler.version]")
+{
+  STATIC_REQUIRE(cuda::std::is_same_v<int, decltype(cudax::ptx_compiler::version())>);
+  [[maybe_unused]] auto version = cudax::ptx_compiler::version();
+}
+
+C2H_TEST("Compile ptx to cubin", "[ptx.compile.ptx_to_cubin]")
 {
   cudax::ptx_compile_opts ptx_opts;
   {

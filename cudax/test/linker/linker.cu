@@ -121,6 +121,12 @@ $L__BB0_2:
 }
 )";
 
+C2H_TEST("PTX linker version", "[ptx.linker.version]")
+{
+  STATIC_REQUIRE(cuda::std::is_same_v<int, decltype(cudax::ptx_linker::version())>);
+  [[maybe_unused]] auto version = cudax::ptx_linker::version();
+}
+
 C2H_TEST("Link PTX", "[cuda.linker.ptx]")
 {
   cudax::ptx_link_opts ptx_opts;
@@ -143,6 +149,12 @@ C2H_TEST("Link PTX", "[cuda.linker.ptx]")
   }
 
   [[maybe_unused]] auto ptx = result.ptx();
+}
+
+C2H_TEST("CUBIN linker version", "[cubin.linker.version]")
+{
+  STATIC_REQUIRE(cuda::std::is_same_v<int, decltype(cudax::cubin_linker::version())>);
+  [[maybe_unused]] auto version = cudax::cubin_linker::version();
 }
 
 C2H_TEST("Link CUBIN", "[cuda.linker.cubin]")

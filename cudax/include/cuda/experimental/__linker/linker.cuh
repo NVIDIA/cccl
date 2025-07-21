@@ -39,25 +39,45 @@
 namespace cuda::experimental
 {
 
-void __add_link_sources(::nvJitLinkHandle __handle, _CUDA_VSTD::span<const __link_src> __sources)
+class __linker_base
 {
-  for (const auto& __source : __sources)
+protected:
+  static void __add_link_sources(::nvJitLinkHandle __handle, _CUDA_VSTD::span<const __link_src> __sources)
   {
-    ::std::string __name(__source.__name_.begin(), __source.__name_.end());
-    if (::nvJitLinkAddData(__handle,
-                           __source.__type_,
-                           __name.c_str(),
-                           __source.__data_.size(),
-                           reinterpret_cast<const char*>(__source.__data_.data()))
-        != ::NVJITLINK_SUCCESS)
+    for (const auto& __source : __sources)
     {
-      // todo: throw
+      ::std::string __name(__source.__name_.begin(), __source.__name_.end());
+      if (::nvJitLinkAddData(__handle,
+                             __source.__type_,
+                             __name.c_str(),
+                             __source.__data_.size(),
+                             reinterpret_cast<const char*>(__source.__data_.data()))
+          != ::NVJITLINK_SUCCESS)
+      {
+        // todo: throw
+      }
     }
   }
-}
+
+public:
+  //! @brief Get the version of the nvJitLink linker.
+  //!
+  //! @return The version of the nvJitLink linker as an integer, where the major version is multiplied by 100 and added
+  //!         to the minor version.
+  [[nodiscard]] static int version()
+  {
+    unsigned __major{};
+    unsigned __minor{};
+    if (::nvJitLinkVersion(&__major, &__minor) != ::NVJITLINK_SUCCESS)
+    {
+      // Handle error
+    }
+    return static_cast<int>(__major * 100 + __minor);
+  }
+};
 
 //! @brief A linker for PTX sources.
-class ptx_linker
+class ptx_linker : public __linker_base
 {
 public:
   //! @brief Link PTX sources to a single PTX output.
@@ -84,7 +104,7 @@ public:
 };
 
 //! @brief A linker for CUBIN sources.
-class cubin_linker
+class cubin_linker : public __linker_base
 {
 public:
   //! @brief Link CUBIN sources to a single CUBIN output.

@@ -320,6 +320,21 @@ class cuda_compiler
   }
 
 public:
+  //! @brief Get the version of the NVRTC compiler.
+  //!
+  //! @return The version of the NVRTC compiler as an integer, where the major version is multiplied by 100 and added to
+  //!         the minor version.
+  [[nodiscard]] static int version()
+  {
+    int __major{};
+    int __minor{};
+    if (::nvrtcVersion(&__major, &__minor) != ::NVRTC_SUCCESS)
+    {
+      // Handle error
+    }
+    return __major * 100 + __minor;
+  }
+
   //! @brief Compile CUDA source code to PTX.
   //!
   //! @param __cuda_src The CUDA source code to compile.
@@ -503,6 +518,21 @@ class ptx_compiler
   }
 
 public:
+  //! @brief Get the version of the nvPTX compiler.
+  //!
+  //! @return The version of the nvPTX compiler as an integer, where the major version is multiplied by 100 and added to
+  //!         the minor version.
+  [[nodiscard]] static int version()
+  {
+    unsigned __major{};
+    unsigned __minor{};
+    if (::nvPTXCompilerGetVersion(&__major, &__minor) != ::NVPTXCOMPILE_SUCCESS)
+    {
+      // Handle error
+    }
+    return static_cast<int>(__major * 100 + __minor);
+  }
+
   //! @brief Compile PTX source code to CUBIN.
   //!
   //! @param __ptx_src The PTX source code to compile.
