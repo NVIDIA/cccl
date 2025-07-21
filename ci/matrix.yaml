@@ -180,6 +180,7 @@ host_compilers:
       11: { stds: [17, 20] }
       12: { stds: [17, 20] }
       13: { stds: [17, 20] }
+      14: { stds: [17, 20] }
   clang:
     name: 'Clang'
     container_tag: 'llvm'
