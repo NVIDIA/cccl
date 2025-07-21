@@ -606,7 +606,12 @@ class CoopLoadStoreInstanceBaseType(types.Type, CoopInstanceTypeMixin):
         CoopInstanceTypeMixin.__init__(self)
 
     def _validate_args_and_create_signature(
-        self, src, dst, items_per_thread=None, num_valid_items=None, temp_storage=None
+        self,
+        src,
+        dst,
+        items_per_thread=None,
+        num_valid_items=None,
+        temp_storage=None,
     ):
         return self.decl._validate_args_and_create_signature(
             src,

@@ -133,6 +133,7 @@ class BlockRunLength(BasePrimitive):
         run_values=None,
         run_lengths=None,
         total_decoded_size=None,
+        unique_id=None,
         temp_storage=None,
     ) -> None:
         self.item_dtype = normalize_dtype_param(item_dtype)
@@ -223,6 +224,7 @@ class BlockRunLength(BasePrimitive):
             self.template_parameters,
             self.parameters,
             self,
+            unique_id=unique_id,
         )
 
         self.specialization = self.algorithm.specialize(specialization_kwds)

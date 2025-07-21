@@ -573,6 +573,7 @@ class CoopNode:
     typingctx: Any
     launch_config: Any
     needs_pre_launch_callback: bool
+    unique_id: int
 
     # Non-None for instance of instance types (i.e. when calling an invocable
     # obtained via two-phase creation of the primitive outside the kernel).
@@ -620,7 +621,6 @@ class CoopNode:
     has_been_rewritten: bool = False
     wants_codegen: bool = None
     has_been_codegened: bool = False
-    one_shot_id: Optional[int] = None
 
     @property
     def shortname(self):
@@ -640,9 +640,6 @@ class CoopNode:
 
         if self.parent_node is not None:
             self.parent_node.add_child(self)
-
-        if self.is_one_shot:
-            self.one_shot_id = self.rewriter.next_one_shot_id
 
     def pre_launch_callback(self, kernel, launch_config):
         register_kernel_extension(kernel, self)
@@ -1003,8 +1000,8 @@ class CoopLoadStoreNode(CoopNode):
             items_per_thread=self.items_per_thread,
             algorithm=self.algorithm_id,
             num_valid_items=self.num_valid_items,
+            unique_id=self.unique_id,
             temp_storage=self.temp_storage,
-            one_shot_id=self.one_shot_id,
         )
 
         code = dedent(f"""
@@ -1103,7 +1100,7 @@ class CoopLoadStoreNode(CoopNode):
         #      in with all the other attempted variants.
         instance = self.two_phase_instance
         algo = instance.specialization
-        algo.one_shot_id = self.one_shot_id
+        algo.unique_id = self.unique_id
 
         # Create the codegen for the algorithm
         self.codegens = algo.create_codegens()
@@ -1658,6 +1655,7 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
             run_values=run_values_ty,
             run_lengths=run_lengths_ty,
             total_decoded_size=total_decoded_size_ty,
+            unique_id=self.unique_id,
             temp_storage=temp_storage_ty,
         )
         self.instance.node = self
@@ -2082,7 +2080,7 @@ class CoopNodeRewriter(Rewrite):
 
         self._all_match_invocations_count = 0
         self._match_invocations_per_block_offset = defaultdict(int)
-        self._one_shot_counter = itertools.count(0)
+        self._unique_id_counter = itertools.count(0)
 
         self.first_match = True
 
@@ -2242,13 +2240,8 @@ class CoopNodeRewriter(Rewrite):
             assignments_map=self.assignments_map,
         )
 
-    @property
-    def next_one_shot_id(self):
-        # This is a one-shot counter that we ensures we generate unique
-        # mangled C names for one-shot nodes we encounter.  (We don't need
-        # this for parent/child nodes because parents implicitly get stored
-        # in a variable, which we use as the external C name.)
-        return next(self._one_shot_counter)
+    def next_unique_id(self):
+        return next(self._unique_id_counter)
 
     def get_or_create_parent_node(
         self,
@@ -2298,6 +2291,7 @@ class CoopNodeRewriter(Rewrite):
             typingctx=self._state.typingctx,
             launch_config=launch_config,
             needs_pre_launch_callback=needs_pre_launch_callback,
+            unique_id=self.next_unique_id(),
             type_instance=None,  # type_instance,
             two_phase_instance=None,
             parent_struct_instance_type=None,
@@ -2822,13 +2816,7 @@ class CoopNodeRewriter(Rewrite):
                     # Everything should be single-phase at this stage.
                     raise RuntimeError("Not yet implemented.")
 
-                impl_func = func.key[0]
-                impl_class = impl_func
-
-                algo = parent_node.instance.specialization
-                source_code = algo.source_code
-                print(source_code)
-                # Next: add the decode() to the parent's source.
+                impl_class = func.key[0]
 
             else:
                 # Not something we recognize; continue.
@@ -2895,6 +2883,7 @@ class CoopNodeRewriter(Rewrite):
                 typingctx=self._state.typingctx,
                 launch_config=launch_config,
                 needs_pre_launch_callback=needs_pre_launch_callback,
+                unique_id=self.next_unique_id(),
                 type_instance=type_instance,
                 two_phase_instance=two_phase_instance,
                 parent_struct_instance_type=parent_struct_instance_type,

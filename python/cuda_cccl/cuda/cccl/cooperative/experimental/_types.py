@@ -29,6 +29,9 @@ from ._common import (
     make_binary_tempfile,
     normalize_dtype_param,
 )
+from ._numba_extension import (
+    _get_source_code_rewriter,
+)
 
 if TYPE_CHECKING:
     from ._rewrite import CoopNode
@@ -684,7 +687,7 @@ class Algorithm:
         type_definitions=None,
         fake_return=False,
         threads=None,
-        one_shot_id=None,
+        unique_id=None,
         temp_storage=None,
     ):
         self.struct_name = struct_name
@@ -700,7 +703,8 @@ class Algorithm:
         self.mangled_names_alloc = []
         self._lto_irs = []
         self.threads = threads
-        self.one_shot_id = one_shot_id
+        self._unique_id = None
+        self.unique_id = unique_id
         self.temp_storage = temp_storage
 
         if not template_parameters:
@@ -741,13 +745,23 @@ class Algorithm:
     def __repr__(self) -> str:
         return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
 
-    def mangled_name(self, parameters):
-        if self.one_shot_id is not None:
-            suffix = f"_{self.one_shot_id}"
-        else:
-            suffix = ""
-        c_name = f"{self.c_name}{suffix}"
-        return mangle_symbol(c_name, parameters)
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @unique_id.setter
+    def unique_id(self, value):
+        if value is None or not isinstance(value, int):
+            return
+        self._unique_id = value
+
+    @property
+    def unique_name(self):
+        unique_id = self._unique_id
+        unique_name = self.c_name
+        if unique_id is not None:
+            unique_name += f"_{unique_id}"
+        return unique_name
 
     def specialize(self, template_arguments):
         # No partial specializations for now
@@ -785,10 +799,7 @@ class Algorithm:
             )
         )
 
-        # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
-        template_list_csv = ", ".join(template_list)
-        mangle = internal_mangle_cpp(template_list_csv)
-
+        assert len(self.parameters) == 1
         specialized_parameters = []
         for method in self.parameters:
             specialized_signature = []
@@ -805,12 +816,13 @@ class Algorithm:
         return Algorithm(
             specialized_name,
             self.method_name,
-            self.c_name + mangle,
+            # self.c_name + mangle,
+            self.c_name,
             self.includes,
             [],
             specialized_parameters,
             self.primitive,
-            one_shot_id=self.one_shot_id,
+            unique_id=self.unique_id,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
             threads=self.threads,
@@ -842,6 +854,9 @@ class Algorithm:
         w(f"{prefix}alignment = alignof(temp_storage_t);\n")
 
         src = buf.getvalue()
+        rewriter = _get_source_code_rewriter()
+        if rewriter is not None:
+            src = rewriter(src, self)
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
@@ -915,7 +930,6 @@ class Algorithm:
 
         self.udf_declarations = udf_declarations
 
-        algorithm_name = self.struct_name
         includes = self.includes or []
         type_definitions = self.type_definitions or []
 
@@ -929,12 +943,17 @@ class Algorithm:
             w(f"{type_definition.code}\n")
 
         w("\n")
-        for decl in udf_declarations.values():
-            w(f"{decl}\n")
-        w("\n")
 
-        w(f"using algorithm_t = cub::{algorithm_name};\n")
-        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+        if udf_declarations:
+            w("\n")
+            for decl in udf_declarations.values():
+                w(f"{decl}\n")
+            w("\n")
+
+        n = self.names
+
+        w(f"using {n.algorithm_t} = cub::{n.algorithm_name};\n")
+        w(f"using {n.temp_storage_t} = typename {n.algorithm_t}::TempStorage;\n")
 
         src = buf.getvalue()
 
@@ -945,27 +964,29 @@ class Algorithm:
             func_decls = []
             param_args = []
             out_param = None
+            param_names = []
 
             for pid, param in enumerate(method):
+                param_name = param.name
+                if param_name is None:
+                    param_name = f"param_{pid}"
+                param_names.append(param_name)
                 if isinstance(param, StatelessOperator):
-                    func_decls.append(param.wrap_decl(f"param_{pid}"))
-                    param_args.append(f"param_{pid}")
+                    func_decls.append(param.wrap_decl(param_name))
+                    param_args.append(param_name)
                 elif isinstance(param, StatefulOperator):
-                    name = f"param_{pid}"
-                    func_decls.append(param.wrap_decl(name))
-                    param_args.append(name)
-                    param_decls.append(param.cpp_decl(name))
+                    func_decls.append(param.wrap_decl(param_name))
+                    param_args.append(param_name)
                 elif isinstance(param, CxxFunction):
                     param_args.append(param.cpp)
                 else:
-                    name = f"param_{pid}"
-                    param_decls.append(param.cpp_decl(name))
+                    param_decls.append(param.cpp_decl(param_name))
                     if not self.fake_return and param.is_output:
                         if out_param is not None:
                             raise ValueError("Multiple output parameters not supported")
-                        out_param = name
+                        out_param = param_name
                     else:
-                        param_args.append(name)
+                        param_args.append(param_name)
 
             if self.struct_name.startswith("Warp"):
                 threads = self.threads
@@ -976,7 +997,7 @@ class Algorithm:
                 # provide_alloc_version = threads == 32
 
                 # Need to review existing warp primitives re temp storage.
-                raise RuntimeError("Not implemented yet...")
+                raise NotImplementedError
 
                 # pessimistic temporary storage allocation for 1024 threads
                 storage = (
@@ -987,17 +1008,17 @@ class Algorithm:
                 )
                 sync = "__syncwarp();"
             elif self.struct_name.startswith("Block"):
-                storage = "__shared__ temp_storage_t temp_storage;"
+                storage = f"__shared__ {n.temp_storage_t} temp_storage;"
                 sync = "__syncthreads();"
 
             buf = StringIO()
             w = buf.write
 
-            mangled_name = self.mangled_name(method)
+            unique_name = self.unique_name
             param_decls_csv = ", ".join(param_decls)
             param_args_csv = ", ".join(param_args)
 
-            w(f'extern "C" __device__ void {mangled_name}(')
+            w(f'extern "C" __device__ void {unique_name}(')
 
             if self.implicit_temp_storage:
                 w(f"{param_decls_csv}) {{\n")
@@ -1008,12 +1029,12 @@ class Algorithm:
                     w(f"    {out_param} = ")
                 else:
                     w("    ")
-                w("algorithm_t(temp_storage).")
+                w(f"{n.algorithm_t}(temp_storage).")
                 w(f"{method_name}({param_args_csv});\n")
                 w(f"    {sync}\n")
                 w("}\n")
             else:
-                w("temp_storage_t *temp_storage, ")
+                w(f"{n.temp_storage_t} *temp_storage, ")
                 w(f"{param_decls_csv}) {{\n")
                 for decl in func_decls:
                     w(f"    {decl}\n")
@@ -1021,7 +1042,7 @@ class Algorithm:
                     w(f"    {out_param} = ")
                 else:
                     w("    ")
-                w("algorithm_t(*temp_storage).")
+                w(f"{n.algorithm_t}(*temp_storage).")
                 w(f"{method_name}({param_args_csv});\n")
                 w("}\n\n")
 
@@ -1030,10 +1051,20 @@ class Algorithm:
 
         return src
 
-    @cached_property
+    @property
     def names(self):
         node = self.primitive.node
-        target_name = f"{node.target.name}"
+        try:
+            target = node.target
+            target_name = f"{target.name}"
+            if "$" in target_name:
+                target_name = self.c_name
+            if self.unique_id is not None:
+                target_name += f"_{self.unique_id}"
+        except AttributeError:
+            target_name = self.unique_name
+        assert "$" not in target_name, target_name
+        assert not target_name[0].isdigit(), target_name
         algorithm_t = f"{target_name}_t"
         algorithm_struct_size = f"{algorithm_t}_struct_size"
         algorithm_struct_alignment = f"{algorithm_t}_struct_alignment"
@@ -1088,7 +1119,6 @@ class Algorithm:
 
         self.udf_declarations = udf_declarations
 
-        algorithm_name = self.struct_name
         includes = self.includes or []
         type_definitions = self.type_definitions or []
 
@@ -1109,29 +1139,20 @@ class Algorithm:
                 w(f"{decl}\n")
             w("\n")
 
-        names = self.names
-        algorithm_name = names.algorithm_name
-        algorithm_t = names.algorithm_t
-        algorithm_struct_size = names.algorithm_struct_size
-        algorithm_struct_alignment = names.algorithm_struct_alignment
-        temp_storage_t = names.temp_storage_t
-        temp_storage_bytes = names.temp_storage_bytes
-        temp_storage_alignment = names.temp_storage_alignment
-        constructor_name = names.constructor_name
-        destructor_name = names.destructor_name
+        n = self.names
 
         # Write the algorithm instantiation with template specialization,
         # and then corresponding size and alignment information.
-        w(f"using {algorithm_t} = cub::{algorithm_name};\n")
+        w(f"using {n.algorithm_t} = cub::{n.algorithm_name};\n")
         prefix = "__device__ constexpr unsigned int "
-        w(f"{prefix}{algorithm_struct_size} = sizeof({algorithm_t});\n")
-        w(f"{prefix}{algorithm_struct_alignment} = alignof({algorithm_t});\n\n")
+        w(f"{prefix}{n.algorithm_struct_size} = sizeof({n.algorithm_t});\n")
+        w(f"{prefix}{n.algorithm_struct_alignment} = alignof({n.algorithm_t});\n\n")
 
         # Write the temporary storage type and size/alignment information.
-        w(f"using {temp_storage_t} = typename {algorithm_t}::TempStorage;\n")
+        w(f"using {n.temp_storage_t} = typename {n.algorithm_t}::TempStorage;\n")
         prefix = "__device__ constexpr unsigned int "
-        w(f"{prefix}{temp_storage_bytes} = sizeof({temp_storage_t});\n")
-        w(f"{prefix}{temp_storage_alignment} = alignof({temp_storage_t});\n\n")
+        w(f"{prefix}{n.temp_storage_bytes} = sizeof({n.temp_storage_t});\n")
+        w(f"{prefix}{n.temp_storage_alignment} = alignof({n.temp_storage_t});\n\n")
 
         src = buf.getvalue()
 
@@ -1184,24 +1205,24 @@ class Algorithm:
 
         # Constructor.
         w("// Constructor\n")
-        w(f'extern "C" __device__ {algorithm_t}* {constructor_name}(\n')
+        w(f'extern "C" __device__ {n.algorithm_t}* {n.constructor_name}(\n')
         w(f"{param_decls_csv}\n    )\n{{\n")
-        w(f"    if (size < sizeof({algorithm_t})) {{\n")
+        w(f"    if (size < sizeof({n.algorithm_t})) {{\n")
         w("        return nullptr;\n")
         w("    }\n")
         addr_cast = "reinterpret_cast<uintptr_t>(addr)"
-        w(f"    if ({addr_cast} % alignof({algorithm_t}) != 0) {{\n")
+        w(f"    if ({addr_cast} % alignof({n.algorithm_t}) != 0) {{\n")
         w("         return nullptr;\n")
         w("    }\n")
-        w(f"    return new (addr) {algorithm_t}({param_args_csv});\n")
+        w(f"    return new (addr) {n.algorithm_t}({param_args_csv});\n")
         w("}\n\n")
 
         # Destructor.
         w("// Destructor\n")
-        w(f'extern "C" __device__ void {destructor_name}(\n')
-        w(f"    {algorithm_t}* __restrict__ algorithm\n    )\n{{\n")
+        w(f'extern "C" __device__ void {n.destructor_name}(\n')
+        w(f"    {n.algorithm_t}* __restrict__ algorithm\n    )\n{{\n")
         w("    if (algorithm != nullptr) {\n")
-        w(f"        algorithm->~{algorithm_t}();\n")
+        w(f"        algorithm->~{n.algorithm_t}();\n")
         w("    }\n")
         w("}\n\n")
 
@@ -1338,6 +1359,14 @@ class Algorithm:
                     c.instance.specialization.source_code for c in children
                 ]
                 src += "\n".join(child_sources)
+
+        rewriter = _get_source_code_rewriter()
+        if rewriter is not None:
+            src = rewriter(src, self)
+
+        print(f"-------- BEGIN {self.c_name} --------")
+        print(src)
+        print(f"-------- END   {self.c_name} --------\n\n\n")
         _, blob = nvrtc.compile(
             cpp=src,
             cc=cc,
@@ -1395,8 +1424,9 @@ class Algorithm:
                         first_param_is_temp_storage = True
                         first_dtype = first_dtype.dtype
 
+        assert len(parameters) == 1
         for method in parameters:
-            mangled_name = self.mangled_name(method)
+            unique_name = self.unique_name
             if first_param_is_temp_storage:
                 params = method[1:]
             else:
@@ -1404,7 +1434,7 @@ class Algorithm:
             results.append(
                 self.create_codegen_method(
                     params,
-                    mangled_name,
+                    unique_name,
                     func_to_overload=func_to_overload,
                 )
             )
@@ -1415,7 +1445,7 @@ class Algorithm:
     def implicit_temp_storage(self):
         return self.primitive.temp_storage is None
 
-    def create_codegen_method(self, method, mangled_name, func_to_overload=None):
+    def create_codegen_method(self, method, unique_name, func_to_overload=None):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
@@ -1501,7 +1531,7 @@ class Algorithm:
                 if primitive.is_one_shot:
                     function_type = ir.FunctionType(ir.VoidType(), types)
                     function = cgutils.get_or_insert_function(
-                        builder.module, function_type, mangled_name
+                        builder.module, function_type, unique_name
                     )
                     builder.call(function, arguments)
                 elif primitive.is_parent:
@@ -1616,7 +1646,7 @@ class Algorithm:
 
         cg = SimpleNamespace(
             method=method,
-            mangled_name=mangled_name,
+            unique_name=unique_name,
             intrinsic_impl=intrinsic_impl,
             numba_intrinsic=numba_intrinsic,
             algorithm_impl=algorithm_impl,

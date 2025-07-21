@@ -37,6 +37,88 @@ def test_block_load_store_single_phase():
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_block_load_store_single_phase_num_valid_items():
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        # thread_offset = cuda.threadIdx.x * items_per_thread
+
+        # Allocate local memory per thread
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+
+        # This loop allows handling arrays larger than the grid size
+        while block_offset < num_total_items:
+            # Calculate num_valid_items for the current block load/store
+            if block_offset + items_per_block <= num_total_items:
+                num_valid_items = items_per_block
+            else:
+                num_valid_items = num_total_items - block_offset
+
+            if num_valid_items == items_per_block:
+                coop.block.load(
+                    d_in[block_offset:],
+                    thread_data,
+                    items_per_thread=items_per_thread,
+                    algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                )
+
+                coop.block.store(
+                    d_out[block_offset:],
+                    thread_data,
+                    items_per_thread=items_per_thread,
+                    algorithm=coop.BlockStoreAlgorithm.DIRECT,
+                )
+
+            else:
+                coop.block.load(
+                    d_in[block_offset:],
+                    thread_data,
+                    items_per_thread=items_per_thread,
+                    algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                    num_valid_items=num_valid_items,
+                )
+
+                coop.block.store(
+                    d_out[block_offset:],
+                    thread_data,
+                    items_per_thread=items_per_thread,
+                    algorithm=coop.BlockStoreAlgorithm.DIRECT,
+                    num_valid_items=num_valid_items,
+                )
+
+            # Move to next data block
+            block_offset += items_per_block * cuda.gridDim.x
+
+    dtype = np.int32
+    threads_per_block = 128
+    num_total_items = 1000
+    items_per_thread = 4
+
+    h_input = np.random.randint(0, 42, num_total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    # Calculate number of blocks required
+    threads_per_block = 128
+    items_per_block = threads_per_block * items_per_thread
+    blocks_per_grid = (num_total_items + items_per_block - 1) // items_per_block
+
+    # Launch kernel
+    kernel[blocks_per_grid, threads_per_block](
+        d_input,
+        d_output,
+        items_per_thread,
+        num_total_items,
+    )
+
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_array_equal(h_output, h_input)
+
+
 def test_block_load_store_two_phase():
     dtype = np.int32
     dim = 128

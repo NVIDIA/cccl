@@ -66,14 +66,14 @@ class BaseLoadStore(BasePrimitive):
         items_per_thread: int,
         algorithm=None,
         num_valid_items=None,
-        one_shot_id: int = None,
+        unique_id: int = None,
         temp_storage=None,
     ) -> None:
         self.dtype = normalize_dtype_param(dtype)
         self.dim = normalize_dim_param(dim)
         self.items_per_thread = items_per_thread
         self.num_valid_items = num_valid_items
-        self.one_shot_id = one_shot_id
+        self.unique_id = unique_id
         (algorithm_cub, algorithm_enum) = self.resolve_cub_algorithm(
             algorithm,
         )
@@ -96,7 +96,7 @@ class BaseLoadStore(BasePrimitive):
             self.template_parameters,
             self.parameters,
             self,
-            one_shot_id=one_shot_id,
+            unique_id=unique_id,
         )
         self.specialization = self.algorithm.specialize(
             {
