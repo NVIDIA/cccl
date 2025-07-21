@@ -33,7 +33,8 @@ namespace cuda::experimental
 namespace __detail
 {
 template <typename _DstTy, _CUDA_VSTD::size_t _DstSize>
-_CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> __dst, _CUDA_VSTD::uint8_t __value)
+_CCCL_HOST_API void
+__fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> __dst, _CUDA_VSTD::uint8_t __value)
 {
   static_assert(!_CUDA_VSTD::is_const_v<_DstTy>, "Fill destination can't be const");
   static_assert(_CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
@@ -43,8 +44,9 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_Dst
 }
 
 template <typename _DstElem, typename _DstExtents, typename _DstLayout, typename _DstAccessor>
-_CCCL_HOST_API void __fill_bytes_impl(
-  stream_ref __stream, _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst, _CUDA_VSTD::uint8_t __value)
+_CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
+                                      _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst,
+                                      _CUDA_VSTD::uint8_t __value)
 {
   // Check if the mdspan is exhaustive
   if (!__dst.is_exhaustive())
