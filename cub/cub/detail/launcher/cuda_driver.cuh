@@ -36,7 +36,7 @@ struct CudaDriverLauncher
     void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
 
     CUfunction kernel_fn;
-    auto status = static_cast<cudaError_t>(cuKernelGetFunction(&kernel_fn, kernel));
+    auto status = static_cast<cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel));
     if (status != cudaSuccess)
     {
       return status;
@@ -61,12 +61,12 @@ struct CudaDriverLauncher
       config.attrs          = attribute;
       config.numAttrs       = 1;
 
-      return static_cast<cudaError_t>(cuLaunchKernelEx(&config, kernel_fn, kernel_args, 0));
+      return static_cast<cudaError_t>(::cuLaunchKernelEx(&config, kernel_fn, kernel_args, 0));
     }
     else
 #endif
     {
-      return static_cast<cudaError_t>(cuLaunchKernel(
+      return static_cast<cudaError_t>(::cuLaunchKernel(
         kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
     }
   }
@@ -88,7 +88,8 @@ struct CudaDriverLauncherFactory
 
   _CCCL_HIDE_FROM_ABI cudaError_t MultiProcessorCount(int& sm_count) const
   {
-    return static_cast<cudaError_t>(cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device));
+    return static_cast<cudaError_t>(
+      ::cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device));
   }
 
   _CCCL_HIDE_FROM_ABI cudaError_t
@@ -96,32 +97,34 @@ struct CudaDriverLauncherFactory
   {
     // Older drivers have issues handling CUkernel in the occupancy queries, get the CUfunction instead.
     CUfunction kernel_fn;
-    auto status = static_cast<cudaError_t>(cuKernelGetFunction(&kernel_fn, kernel));
+    auto status = static_cast<cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel));
     if (status != cudaSuccess)
     {
       return status;
     }
 
     return static_cast<cudaError_t>(
-      cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_fn, block_size, dynamic_smem_bytes));
+      ::cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_fn, block_size, dynamic_smem_bytes));
   }
 
   _CCCL_HIDE_FROM_ABI cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
-    return static_cast<cudaError_t>(cuDeviceGetAttribute(&max_grid_dim_x, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, device));
+    return static_cast<cudaError_t>(
+      ::cuDeviceGetAttribute(&max_grid_dim_x, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, device));
   }
 
   _CCCL_HIDE_FROM_ABI cudaError_t
   MemsetAsync(void* dst, int value, size_t num_elements, size_t /*element_size*/, CUstream stream) const
   {
-    return static_cast<cudaError_t>(cuMemsetD32Async(reinterpret_cast<CUdeviceptr>(dst), value, num_elements, stream));
+    return static_cast<cudaError_t>(
+      ::cuMemsetD32Async(reinterpret_cast<CUdeviceptr>(dst), value, num_elements, stream));
   }
 
   _CCCL_HIDE_FROM_ABI cudaError_t
   MemcpyAsync(void* dst, const void* src, size_t num_bytes, cudaMemcpyKind /*kind*/, CUstream stream) const
   {
     return static_cast<cudaError_t>(
-      cuMemcpyAsync(reinterpret_cast<CUdeviceptr>(dst), reinterpret_cast<CUdeviceptr>(src), num_bytes, stream));
+      ::cuMemcpyAsync(reinterpret_cast<CUdeviceptr>(dst), reinterpret_cast<CUdeviceptr>(src), num_bytes, stream));
   }
 
   CUdevice device;
