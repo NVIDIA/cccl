@@ -7,6 +7,7 @@
 
 import functools
 import inspect
+import itertools
 import sys
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
@@ -619,6 +620,7 @@ class CoopNode:
     has_been_rewritten: bool = False
     wants_codegen: bool = None
     has_been_codegened: bool = False
+    one_shot_id: Optional[int] = None
 
     @property
     def shortname(self):
@@ -638,6 +640,9 @@ class CoopNode:
 
         if self.parent_node is not None:
             self.parent_node.add_child(self)
+
+        if self.is_one_shot:
+            self.one_shot_id = self.rewriter.next_one_shot_id
 
     def pre_launch_callback(self, kernel, launch_config):
         register_kernel_extension(kernel, self)
@@ -912,21 +917,21 @@ class CoopLoadStoreNode(CoopNode):
             src = expr_args.pop(0)
             dst = expr_args.pop(0)
             runtime_args = [src, dst]
-            runtime_arg_types = (
+            runtime_arg_types = [
                 self.typemap[src.name],
                 self.typemap[dst.name],
-            )
-            runtime_arg_names = ("src", "dst")
+            ]
+            runtime_arg_names = ["src", "dst"]
 
         else:
             dst = expr_args.pop(0)
             src = expr_args.pop(0)
             runtime_args = [dst, src]
-            runtime_arg_types = (
+            runtime_arg_types = [
                 self.typemap[dst.name],
                 self.typemap[src.name],
-            )
-            runtime_arg_names = ("dst", "src")
+            ]
+            runtime_arg_names = ["dst", "src"]
 
         arg_ty = self.typemap[src.name]
         assert isinstance(arg_ty, types.Array)
@@ -946,11 +951,31 @@ class CoopLoadStoreNode(CoopNode):
         if algorithm_id is None:
             algorithm_id = int(self.impl_class.default_algorithm)
 
+        num_valid_items = self.get_arg_value_safe("num_valid_items")
+        if num_valid_items is None:
+            num_valid_items = self.bound.arguments.get("num_valid_items", None)
+
+        if num_valid_items is not None:
+            runtime_args.append(num_valid_items)
+            runtime_arg_types.append(types.int32)
+            runtime_arg_names.append("num_valid_items")
+
+        temp_storage = self.bound.arguments.get("temp_storage")
+        temp_storage_ty = None
+        if temp_storage is not None:
+            assert isinstance(temp_storage, ir.Var)
+            temp_storage_ty = self.typemap[temp_storage.name]
+            runtime_args.append(temp_storage)
+            runtime_arg_types.append(temp_storage_ty)
+            runtime_arg_names.append("temp_storage")
+
         self.dtype = dtype
         self.items_per_thread = items_per_thread
         self.algorithm_id = algorithm_id
+        self.num_valid_items = num_valid_items
         self.src = src
         self.dst = dst
+        self.temp_storage = temp_storage
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
@@ -962,35 +987,37 @@ class CoopLoadStoreNode(CoopNode):
             return self.rewrite_single_phase(rewriter)
 
     def rewrite_single_phase(self, rewriter):
-        node = self
-        expr = node.expr
+        expr = self.expr
 
-        impl_class = node.impl_class
+        impl_class = self.impl_class
 
         # Create a global variable for the invocable.
-        scope = node.instr.target.scope
-        g_var_name = f"${node.call_var_name}"
+        scope = self.instr.target.scope
+        g_var_name = f"${self.call_var_name}"
         g_var = ir.Var(scope, g_var_name, expr.loc)
 
         # Create an instance of the invocable.
-        instance = node.instance = impl_class(
-            node.dtype,
-            node.threads_per_block,
-            node.items_per_thread,
-            node.algorithm_id,
+        instance = self.instance = impl_class(
+            dtype=self.dtype,
+            dim=self.threads_per_block,
+            items_per_thread=self.items_per_thread,
+            algorithm=self.algorithm_id,
+            num_valid_items=self.num_valid_items,
+            temp_storage=self.temp_storage,
+            one_shot_id=self.one_shot_id,
         )
 
         code = dedent(f"""
-            def {node.call_var_name}(*args):
+            def {self.call_var_name}(*args):
                 return
         """)
         exec(code, globals())
-        invocable = globals()[node.call_var_name]
+        invocable = globals()[self.call_var_name]
         mod = sys.modules[invocable.__module__]
-        setattr(mod, node.call_var_name, invocable)
+        setattr(mod, self.call_var_name, invocable)
 
-        node.invocable = instance.invocable = invocable
-        invocable.node = node
+        self.invocable = instance.invocable = invocable
+        invocable.node = self
 
         g_assign = ir.Assign(
             value=ir.Global(g_var_name, invocable, expr.loc),
@@ -1000,30 +1027,20 @@ class CoopLoadStoreNode(CoopNode):
 
         new_call = ir.Expr.call(
             func=g_var,
-            args=node.runtime_args,
+            args=self.runtime_args,
             kws=(),
             loc=expr.loc,
         )
 
         new_assign = ir.Assign(
             value=new_call,
-            target=node.instr.target,
-            loc=node.instr.loc,
+            target=self.instr.target,
+            loc=self.instr.loc,
         )
-
-        if node.is_load:
-            first = node.src
-            second = node.dst
-        else:
-            first = node.dst
-            second = node.src
-
-        first_ty = self.typemap[first.name]
-        second_ty = self.typemap[second.name]
 
         sig = Signature(
             types.none,
-            args=(first_ty, second_ty),
+            args=self.runtime_arg_types,
             recvr=None,
             pysig=None,
         )
@@ -1031,7 +1048,7 @@ class CoopLoadStoreNode(CoopNode):
         self.calltypes[new_call] = sig
 
         algo = instance.specialization
-        node.codegens = algo.create_codegens()
+        self.codegens = algo.create_codegens()
 
         @register_global(invocable)
         class ImplDecl(AbstractTemplate):
@@ -1065,7 +1082,7 @@ class CoopLoadStoreNode(CoopNode):
         typingctx = self.typingctx
         func_ty.get_call_type(
             typingctx,
-            args=(first_ty, second_ty),
+            args=self.runtime_arg_types,
             kws={},
         )
         check = func_ty._impl_keys[sig.args]
@@ -1086,6 +1103,7 @@ class CoopLoadStoreNode(CoopNode):
         #      in with all the other attempted variants.
         instance = self.two_phase_instance
         algo = instance.specialization
+        algo.one_shot_id = self.one_shot_id
 
         # Create the codegen for the algorithm
         self.codegens = algo.create_codegens()
@@ -1127,7 +1145,7 @@ class CoopLoadStoreNode(CoopNode):
         # Create the new call using the wrapper
         new_call = ir.Expr.call(
             func=g_var,
-            args=self.expr.args,  # Use original args
+            args=self.runtime_args,
             kws=(),
             loc=expr.loc,
         )
@@ -1140,11 +1158,9 @@ class CoopLoadStoreNode(CoopNode):
 
         # Determine argument types
 
-        arg_types = [self.typemap[arg.name] for arg in self.expr.args]
-
         sig = Signature(
             types.none,
-            args=tuple(arg_types),
+            args=self.runtime_arg_types,
             recvr=None,
             pysig=None,
         )
@@ -1179,10 +1195,10 @@ class CoopLoadStoreNode(CoopNode):
         typingctx = self.typingctx
         func_ty.get_call_type(
             typingctx,
-            args=tuple(arg_types),
+            args=self.runtime_arg_types,
             kws={},
         )
-        check = func_ty._impl_keys[tuple(arg_types)]
+        check = func_ty._impl_keys[sig.args]
         assert check is not None, check
 
         self.typemap[g_var.name] = func_ty
@@ -1655,9 +1671,6 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
 
     @cached_property
     def rewrite_details(self):
-        # We should have a single decode child node at this point.
-        assert len(self.children) == 1
-
         expr = self.expr
 
         # Create a global variable for the invocable.
@@ -2069,6 +2082,8 @@ class CoopNodeRewriter(Rewrite):
 
         self._all_match_invocations_count = 0
         self._match_invocations_per_block_offset = defaultdict(int)
+        self._one_shot_counter = itertools.count(0)
+
         self.first_match = True
 
         self.func_ir = None
@@ -2226,6 +2241,14 @@ class CoopNodeRewriter(Rewrite):
             launch_config=self.launch_config,
             assignments_map=self.assignments_map,
         )
+
+    @property
+    def next_one_shot_id(self):
+        # This is a one-shot counter that we ensures we generate unique
+        # mangled C names for one-shot nodes we encounter.  (We don't need
+        # this for parent/child nodes because parents implicitly get stored
+        # in a variable, which we use as the external C name.)
+        return next(self._one_shot_counter)
 
     def get_or_create_parent_node(
         self,

@@ -684,6 +684,7 @@ class Algorithm:
         type_definitions=None,
         fake_return=False,
         threads=None,
+        one_shot_id=None,
         temp_storage=None,
     ):
         self.struct_name = struct_name
@@ -699,6 +700,7 @@ class Algorithm:
         self.mangled_names_alloc = []
         self._lto_irs = []
         self.threads = threads
+        self.one_shot_id = one_shot_id
         self.temp_storage = temp_storage
 
         if not template_parameters:
@@ -740,7 +742,12 @@ class Algorithm:
         return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
 
     def mangled_name(self, parameters):
-        return mangle_symbol(self.c_name, parameters)
+        if self.one_shot_id is not None:
+            suffix = f"_{self.one_shot_id}"
+        else:
+            suffix = ""
+        c_name = f"{self.c_name}{suffix}"
+        return mangle_symbol(c_name, parameters)
 
     def specialize(self, template_arguments):
         # No partial specializations for now
@@ -758,7 +765,11 @@ class Algorithm:
             elif isinstance(template_argument, str):
                 template_list.append(template_argument)
             else:
-                template_list.append(numba_type_to_cpp(template_argument))
+                try:
+                    int_val = int(template_argument)
+                    template_list.append(str(int_val))
+                except TypeError:
+                    template_list.append(numba_type_to_cpp(template_argument))
 
         # Purely aesthetic tweaks: put each template on a new line, and add
         # a trailing comment indicating the corresponding template parameter
@@ -799,6 +810,7 @@ class Algorithm:
             [],
             specialized_parameters,
             self.primitive,
+            one_shot_id=self.one_shot_id,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
             threads=self.threads,
@@ -1018,6 +1030,40 @@ class Algorithm:
 
         return src
 
+    @cached_property
+    def names(self):
+        node = self.primitive.node
+        target_name = f"{node.target.name}"
+        algorithm_t = f"{target_name}_t"
+        algorithm_struct_size = f"{algorithm_t}_struct_size"
+        algorithm_struct_alignment = f"{algorithm_t}_struct_alignment"
+        algorithm_temp_storage_size = f"{algorithm_t}_temp_storage_size"
+        algorithm_temp_storage_alignment = f"{algorithm_t}_temp_storage_alignment"
+        temp_storage_t = f"{target_name}_temp_storage_t"
+        temp_storage_bytes = f"{temp_storage_t}_bytes"
+        temp_storage_alignment = f"{temp_storage_t}_alignment"
+        if self.primitive.is_parent:
+            constructor_name = f"{target_name}_construct"
+            destructor_name = f"{target_name}_destruct"
+        else:
+            constructor_name = None
+            destructor_name = None
+
+        return SimpleNamespace(
+            target_name=target_name,
+            algorithm_name=self.struct_name,
+            algorithm_t=algorithm_t,
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            algorithm_temp_storage_size=algorithm_temp_storage_size,
+            algorithm_temp_storage_alignment=algorithm_temp_storage_alignment,
+            temp_storage_t=temp_storage_t,
+            temp_storage_bytes=temp_storage_bytes,
+            temp_storage_alignment=temp_storage_alignment,
+            constructor_name=constructor_name,
+            destructor_name=destructor_name,
+        )
+
     @property
     def source_code_parent(self):
         assert self.primitive.is_parent
@@ -1063,32 +1109,16 @@ class Algorithm:
                 w(f"{decl}\n")
             w("\n")
 
-        node = self.primitive.node
-        target_name = f"{node.target.name}"
-        algorithm_t = f"{target_name}_t"
-        algorithm_struct_size = f"{algorithm_t}_struct_size"
-        algorithm_struct_alignment = f"{algorithm_t}_struct_alignment"
-        algorithm_temp_storage_size = f"{algorithm_t}_temp_storage_size"
-        algorithm_temp_storage_alignment = f"{algorithm_t}_temp_storage_alignment"
-        temp_storage_t = f"{target_name}_temp_storage_t"
-        temp_storage_bytes = f"{temp_storage_t}_bytes"
-        temp_storage_alignment = f"{temp_storage_t}_alignment"
-        constructor_name = f"{target_name}_construct"
-        destructor_name = f"{target_name}_destruct"
-
-        # Capture all of the names so that child classes can refer to them.
-        self.names = SimpleNamespace(
-            target_name=target_name,
-            algorithm_name=algorithm_name,
-            algorithm_t=algorithm_t,
-            algorithm_struct_size=algorithm_struct_size,
-            algorithm_struct_alignment=algorithm_struct_alignment,
-            algorithm_temp_storage_size=algorithm_temp_storage_size,
-            algorithm_temp_storage_alignment=algorithm_temp_storage_alignment,
-            temp_storage_t=temp_storage_t,
-            constructor_name=constructor_name,
-            destructor_name=destructor_name,
-        )
+        names = self.names
+        algorithm_name = names.algorithm_name
+        algorithm_t = names.algorithm_t
+        algorithm_struct_size = names.algorithm_struct_size
+        algorithm_struct_alignment = names.algorithm_struct_alignment
+        temp_storage_t = names.temp_storage_t
+        temp_storage_bytes = names.temp_storage_bytes
+        temp_storage_alignment = names.temp_storage_alignment
+        constructor_name = names.constructor_name
+        destructor_name = names.destructor_name
 
         # Write the algorithm instantiation with template specialization,
         # and then corresponding size and alignment information.
@@ -1303,9 +1333,11 @@ class Algorithm:
         primitive = self.primitive
         if primitive.is_parent:
             children = primitive.node.children
-            assert children, "Parent primitive must have children"
-            child_sources = [c.instance.specialization.source_code for c in children]
-            src += "\n".join(child_sources)
+            if children:
+                child_sources = [
+                    c.instance.specialization.source_code for c in children
+                ]
+                src += "\n".join(child_sources)
         _, blob = nvrtc.compile(
             cpp=src,
             cc=cc,

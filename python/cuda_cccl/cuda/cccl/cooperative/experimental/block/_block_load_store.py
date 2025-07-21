@@ -21,6 +21,7 @@ from .._types import (
     DependentPointer,
     Invocable,
     TemplateParameter,
+    Value,
 )
 from .._typing import (
     DimType,
@@ -58,27 +59,35 @@ class BaseLoadStore(BasePrimitive):
         TemplateParameter("BLOCK_DIM_Z"),
     ]
 
-    parameters = [
-        [
-            DependentPointer(Dependency("T")),
-            DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-        ]
-    ]
-
     def __init__(
         self,
         dtype: DtypeType,
         dim: DimType,
         items_per_thread: int,
         algorithm=None,
+        num_valid_items=None,
+        one_shot_id: int = None,
         temp_storage=None,
     ) -> None:
         self.dtype = normalize_dtype_param(dtype)
         self.dim = normalize_dim_param(dim)
         self.items_per_thread = items_per_thread
+        self.num_valid_items = num_valid_items
+        self.one_shot_id = one_shot_id
         (algorithm_cub, algorithm_enum) = self.resolve_cub_algorithm(
             algorithm,
         )
+
+        parameters = [
+            [
+                DependentPointer(Dependency("T")),
+                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+            ]
+        ]
+        if num_valid_items is not None:
+            parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
+        self.parameters = parameters
+
         self.algorithm = Algorithm(
             self.struct_name,
             self.method_name,
@@ -87,6 +96,7 @@ class BaseLoadStore(BasePrimitive):
             self.template_parameters,
             self.parameters,
             self,
+            one_shot_id=one_shot_id,
         )
         self.specialization = self.algorithm.specialize(
             {
@@ -100,30 +110,6 @@ class BaseLoadStore(BasePrimitive):
         )
         self.temp_storage = temp_storage
 
-    def __call__(self, src, dst, items_per_thread=None):
-        """
-        Invokes the load/store operation on the specified source and
-        destination.
-        """
-
-        if items_per_thread is None:
-            items_per_thread = self.items_per_thread
-
-        if not isinstance(src, numba.cuda.cudadrv.devicearray.DeviceNDArray):
-            raise TypeError("Source must be a device array.")
-        if not isinstance(dst, numba.cuda.cudadrv.devicearray.DeviceNDArray):
-            raise TypeError("Destination must be a device array.")
-
-        if src.dtype != self.dtype or dst.dtype != self.dtype:
-            raise ValueError("Source and destination must have the same dtype.")
-
-        return Invocable(
-            ltoir_files=self.specialization.get_lto_ir(),
-            temp_storage_bytes=self.specialization.temp_storage_bytes,
-            temp_storage_alignment=self.specialization.temp_storage_alignment,
-            algorithm=self.specialization,
-        )
-
     @classmethod
     def create(
         cls,
@@ -132,7 +118,6 @@ class BaseLoadStore(BasePrimitive):
         items_per_thread: int,
         algorithm=None,
     ):
-        """Creates a block-wide load operation."""
         algo = cls(dtype, threads_per_block, items_per_thread, algorithm)
         specialization = algo.specialization
 

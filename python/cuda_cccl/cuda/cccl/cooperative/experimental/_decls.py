@@ -438,6 +438,7 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
         dst,
         items_per_thread=None,
         algorithm=None,
+        num_valid_items=None,
         temp_storage=None,
         two_phase=False,
     ):
@@ -468,6 +469,14 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
         if algorithm is not None:
             arglist.append(algorithm)
 
+        if num_valid_items is not None:
+            if not isinstance(num_valid_items, types.Integer):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'num_valid_items' "
+                    f"to be an integer, got: {num_valid_items}"
+                )
+            arglist.append(num_valid_items)
+
         if temp_storage is not None:
             arglist.append(temp_storage)
 
@@ -488,6 +497,7 @@ class LoadMixin:
             dst,
             items_per_thread=None,
             algorithm=None,
+            num_valid_items=None,
             temp_storage=None,
         ):
             return self._validate_args_and_create_signature(
@@ -495,6 +505,7 @@ class LoadMixin:
                 dst,
                 items_per_thread,
                 algorithm,
+                num_valid_items,
                 temp_storage,
             )
 
@@ -510,6 +521,7 @@ class StoreMixin:
             src,
             items_per_thread=None,
             algorithm=None,
+            num_valid_items=None,
             temp_storage=None,
         ):
             return self._validate_args_and_create_signature(
@@ -517,6 +529,7 @@ class StoreMixin:
                 dst,
                 items_per_thread,
                 algorithm,
+                num_valid_items,
                 temp_storage,
             )
 
@@ -593,13 +606,14 @@ class CoopLoadStoreInstanceBaseType(types.Type, CoopInstanceTypeMixin):
         CoopInstanceTypeMixin.__init__(self)
 
     def _validate_args_and_create_signature(
-        self, src, dst, items_per_thread=None, temp_storage=None
+        self, src, dst, items_per_thread=None, num_valid_items=None, temp_storage=None
     ):
         return self.decl._validate_args_and_create_signature(
             src,
             dst,
             items_per_thread=items_per_thread,
             algorithm=None,
+            num_valid_items=num_valid_items,
             temp_storage=temp_storage,
             two_phase=True,
         )
