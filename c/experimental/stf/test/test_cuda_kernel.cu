@@ -13,22 +13,15 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
-#if 0
-__global__ void axpy(int cnt, double a, const double *x, double *y)
+__global__ void axpy(int cnt, double a, const double* x, double* y)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
 
-//  for (int i = tid; i < cnt; i += nthreads)
-//  {
-//    y[i] += a * x[i];
-//  }
-}
-#endif
-
-extern "C" __global__ void axpy(int, double, const double*, double*)
-{
-  printf("hello.\n");
+  for (int i = tid; i < cnt; i += nthreads)
+  {
+    y[i] += a * x[i];
+  }
 }
 
 C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
@@ -40,14 +33,14 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 
   stf_logical_data_handle lX, lY;
 
-  float *X, *Y;
-  X = (float*) malloc(N * sizeof(float));
-  Y = (float*) malloc(N * sizeof(float));
+  double *X, *Y;
+  X = (double*) malloc(N * sizeof(double));
+  Y = (double*) malloc(N * sizeof(double));
 
   const double alpha = 3.14;
 
-  stf_logical_data(ctx, &lX, X, N * sizeof(float));
-  stf_logical_data(ctx, &lY, Y, N * sizeof(float));
+  stf_logical_data(ctx, &lX, X, N * sizeof(double));
+  stf_logical_data(ctx, &lY, Y, N * sizeof(double));
 
   stf_logical_data_set_symbol(lX, "X");
   stf_logical_data_set_symbol(lY, "Y");
@@ -58,8 +51,9 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   stf_cuda_kernel_add_dep(k, lX, STF_READ);
   stf_cuda_kernel_add_dep(k, lY, STF_RW);
   stf_cuda_kernel_start(k);
-  void* dummy         = nullptr;
-  const void* args[4] = {&N, &alpha, &dummy, &dummy};
+  double* dX          = (double*) stf_cuda_kernel_get_arg(k, 0);
+  double* dY          = (double*) stf_cuda_kernel_get_arg(k, 1);
+  const void* args[4] = {&N, &alpha, &dX, &dY};
   stf_cuda_kernel_add_desc(k, (void*) axpy, 2, 4, 0, 4, args);
   stf_cuda_kernel_end(k);
   stf_cuda_kernel_destroy(k);
