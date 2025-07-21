@@ -561,14 +561,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   // only thread 0 has valid value in block aggregate
   if (threadIdx.x == 0)
   {
-    if (blockIdx.x == 0)
-    {
-      atomicAdd(d_out, reduction_op(init, block_aggregate));
-    }
-    else
-    {
-      atomicAdd(d_out, block_aggregate);
-    }
+    // TODO: replace this with other atomic operations when specified
+    ::cuda::atomic_ref<AccumT> atomic_target(d_out[0]);
+    atomic_target += blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate;
   }
 }
 
