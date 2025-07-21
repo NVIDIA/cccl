@@ -47,14 +47,14 @@ __host__ __device__ void test_edges()
 #if _LIBCUDACXX_HAS_NVFP16()
     if constexpr (cuda::std::is_same_v<T, __half>)
     {
-      z = log<float>(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
+      z = log(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
     }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
     if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
     {
-      z = log<float>(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
+      z = log(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
     }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

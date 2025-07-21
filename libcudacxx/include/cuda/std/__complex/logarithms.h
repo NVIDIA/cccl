@@ -190,7 +190,7 @@ template <class _Tp>
 
   // hypot(__max_reduced, __min_reduced) is now ~1.0, and we now want log(hypot())).
   // We can end up with large ulp errors due to catastrophic cancellation with hypot, however.
-  // To prevent this can instead calculate:
+  // To prevent this we instead calculate:
   //        ((real^2 +  imag^2) - 1)
   // accurately and use log1p.
   _Tp max_2_hi = __max_reduced * __max_reduced;
