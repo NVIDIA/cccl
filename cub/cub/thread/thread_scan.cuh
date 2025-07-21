@@ -211,7 +211,6 @@ template <typename Input,
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
   Input& input, Output& output, ScanOp scan_op, int valid_items, PrefixT prefix, bool apply_prefix = true)
 {
-  using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(is_fixed_size_random_access_range_v<Output>,
@@ -461,7 +460,6 @@ template <typename Input,
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
   Input& input, Output& output, ScanOp scan_op, int valid_items, PrefixT prefix, bool apply_prefix = true)
 {
-  using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(is_fixed_size_random_access_range_v<Output>,

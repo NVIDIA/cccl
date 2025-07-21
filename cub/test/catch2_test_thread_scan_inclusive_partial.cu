@@ -125,7 +125,7 @@ template <typename T, typename Operator, typename = void>
 struct cub_operator_to_identity;
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::std::plus<>>
+struct cub_operator_to_identity<T, ::cuda::std::plus<>>
 {
   static constexpr T value()
   {
@@ -134,7 +134,7 @@ struct cub_operator_to_identity<T, cuda::std::plus<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::std::multiplies<>>
+struct cub_operator_to_identity<T, ::cuda::std::multiplies<>>
 {
   static constexpr T value()
   {
@@ -143,7 +143,7 @@ struct cub_operator_to_identity<T, cuda::std::multiplies<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_and<>>
+struct cub_operator_to_identity<T, ::cuda::std::bit_and<>>
 {
   static constexpr T value()
   {
@@ -152,7 +152,7 @@ struct cub_operator_to_identity<T, cuda::std::bit_and<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_or<>>
+struct cub_operator_to_identity<T, ::cuda::std::bit_or<>>
 {
   static constexpr T value()
   {
@@ -161,7 +161,7 @@ struct cub_operator_to_identity<T, cuda::std::bit_or<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
+struct cub_operator_to_identity<T, ::cuda::std::bit_xor<>>
 {
   static constexpr T value()
   {
@@ -170,7 +170,7 @@ struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::minimum<>>
+struct cub_operator_to_identity<T, ::cuda::minimum<>>
 {
   static constexpr T value()
   {
@@ -179,7 +179,7 @@ struct cub_operator_to_identity<T, cuda::minimum<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cuda::maximum<>>
+struct cub_operator_to_identity<T, ::cuda::maximum<>>
 {
   static constexpr T value()
   {
@@ -204,12 +204,16 @@ struct dist_interval
 };
 
 template <typename T>
-struct dist_interval<T, cuda::std::plus<>, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_signed_integer_v<T>>>
+struct dist_interval<
+  T,
+  ::cuda::std::plus<>,
+  ::cuda::std::enable_if_t<::cuda::std::__cccl_is_signed_integer_v<T> || ::cuda::std::is_floating_point_v<T>>>
 {
-  // Avoid possibility of over-/underflow causing UB
+  // signed_integer: Avoid possibility of over-/underflow causing UB
+  // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
   static constexpr T min()
   {
-    return ::cuda::std::numeric_limits<T>::min() / max_size;
+    return ::cuda::std::numeric_limits<T>::lowest() / max_size;
   }
   static constexpr T max()
   {
@@ -218,13 +222,17 @@ struct dist_interval<T, cuda::std::plus<>, ::cuda::std::enable_if_t<::cuda::std:
 };
 
 template <typename T>
-struct dist_interval<T, cuda::std::multiplies<>, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_signed_integer_v<T>>>
+struct dist_interval<
+  T,
+  ::cuda::std::multiplies<>,
+  ::cuda::std::enable_if_t<::cuda::std::__cccl_is_signed_integer_v<T> || ::cuda::std::is_floating_point_v<T>>>
 {
-  // Avoid possibility of over-/underflow causing UB.
+  // signed_integer: Avoid possibility of over-/underflow causing UB
+  // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
   // Use floating point arithmetic to avoid unnecessarily small interval.
   static constexpr T min()
   {
-    const double log2_abs_min = ::cuda::std::log2(::cuda::std::fabs(::cuda::std::numeric_limits<T>::min()));
+    const double log2_abs_min = ::cuda::std::log2(::cuda::std::fabs(::cuda::std::numeric_limits<T>::lowest()));
     return static_cast<T>(-::cuda::std::exp2(log2_abs_min / max_size));
   }
   static constexpr T max()
@@ -247,11 +255,11 @@ struct dist_interval
   static constexpr Input min()
   {
     auto res = ::cuda::std::numeric_limits<Input>::lowest();
-    if constexpr (cuda::std::__cccl_is_signed_integer_v<Output>)
+    if constexpr (::cuda::std::__cccl_is_signed_integer_v<Output>)
     {
       res = ::cuda::std::max(res, static_cast<Input>(detail::dist_interval<Output, Operator>::min()));
     }
-    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum>)
+    if constexpr (::cuda::std::__cccl_is_signed_integer_v<Accum> || ::cuda::std::is_floating_point_v<Accum>)
     {
       res = ::cuda::std::max(res, static_cast<Input>(detail::dist_interval<Accum, Operator>::min()));
     }
@@ -260,11 +268,11 @@ struct dist_interval
   static constexpr Input max()
   {
     auto res = ::cuda::std::numeric_limits<Input>::max();
-    if constexpr (cuda::std::__cccl_is_signed_integer_v<Output>)
+    if constexpr (::cuda::std::__cccl_is_signed_integer_v<Output>)
     {
       res = ::cuda::std::min(res, static_cast<Input>(detail::dist_interval<Output, Operator>::max()));
     }
-    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum>)
+    if constexpr (::cuda::std::__cccl_is_signed_integer_v<Accum> || ::cuda::std::is_floating_point_v<Accum>)
     {
       res = ::cuda::std::min(res, static_cast<Input>(detail::dist_interval<Accum, Operator>::max()));
     }
@@ -296,16 +304,16 @@ using integral_type_list =
 using fp_type_list = c2h::type_list<type_pair<float>, type_pair<double>>;
 
 using cub_operator_integral_list =
-  c2h::type_list<cuda::std::plus<>,
-                 cuda::std::multiplies<>,
-                 cuda::std::bit_and<>,
-                 cuda::std::bit_or<>,
-                 cuda::std::bit_xor<>,
-                 cuda::minimum<>,
-                 cuda::maximum<>>;
+  c2h::type_list<::cuda::std::plus<>,
+                 ::cuda::std::multiplies<>,
+                 ::cuda::std::bit_and<>,
+                 ::cuda::std::bit_or<>,
+                 ::cuda::std::bit_xor<>,
+                 ::cuda::minimum<>,
+                 ::cuda::maximum<>>;
 
 using cub_operator_fp_list =
-  c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::minimum<>, cuda::maximum<>>;
+  c2h::type_list<::cuda::std::plus<>, ::cuda::std::multiplies<>, ::cuda::minimum<>, ::cuda::maximum<>>;
 
 /***********************************************************************************************************************
  * Kernel launch
@@ -399,9 +407,9 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests", "[scan][thread]", integral_t
   constexpr auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
   const int num_items              = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items            = GENERATE_COPY(
-    take(1, random(2, num_items - 2)),
+    take(1, random(2, ::cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, ::cuda::std::numeric_limits<int>::max())),
-    values({1, num_items - 1, num_items, num_items + 1}));
+    values({1, num_items, num_items + 1}));
   const accum_t prefix    = GENERATE_COPY(take(1, random(dist_param::min(), dist_param::max())));
   const bool apply_prefix = GENERATE(true, false);
   CAPTURE(c2h::type_name<value_t>(),
@@ -413,11 +421,11 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests", "[scan][thread]", integral_t
           operator_identity,
           prefix,
           apply_prefix);
-  c2h::device_vector<value_t> d_in(max_size);
-  c2h::device_vector<output_t> d_out(max_size);
+  c2h::device_vector<value_t> d_in(num_items);
+  c2h::device_vector<output_t> d_out(num_items);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
-  c2h::host_vector<output_t> reference_result(max_size);
+  c2h::host_vector<output_t> reference_result(num_items);
   compute_inclusive_scan_reference(
     h_in.cbegin(), h_in.cend(), reference_result.begin(), scan_op, apply_prefix ? prefix : operator_identity);
   run_thread_scan_inclusive_partial_kernel(num_items, d_in, d_out, scan_op, valid_items, prefix, apply_prefix);
@@ -435,15 +443,15 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests", "[scan][thread]", fp_t
   using output_t               = typename params::output_t;
   using op_t                   = c2h::get<1, TestType>;
   using accum_t                = ::cuda::std::__accumulator_t<op_t, value_t>;
+  using dist_param             = dist_interval<value_t, output_t, op_t>;
   constexpr auto scan_op       = op_t{};
   const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
   const int num_items          = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items        = GENERATE_COPY(
-    take(1, random(2, num_items - 2)),
+    take(1, random(2, ::cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, ::cuda::std::numeric_limits<int>::max())),
-    values({1, num_items - 1, num_items, num_items + 1}));
-  const accum_t prefix = GENERATE_COPY(
-    take(1, random(::cuda::std::numeric_limits<value_t>::lowest(), ::cuda::std::numeric_limits<value_t>::max())));
+    values({1, num_items, num_items + 1}));
+  const accum_t prefix    = GENERATE_COPY(take(1, random(dist_param::min(), dist_param::max())));
   const bool apply_prefix = GENERATE(true, false);
   CAPTURE(c2h::type_name<value_t>(),
           c2h::type_name<output_t>(),
@@ -454,11 +462,11 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests", "[scan][thread]", fp_t
           operator_identity,
           prefix,
           apply_prefix);
-  c2h::device_vector<value_t> d_in(max_size);
-  c2h::device_vector<output_t> d_out(max_size);
-  c2h::gen(C2H_SEED(num_seeds), d_in);
+  c2h::device_vector<value_t> d_in(num_items);
+  c2h::device_vector<output_t> d_out(num_items);
+  c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
-  c2h::host_vector<output_t> reference_result(max_size);
+  c2h::host_vector<output_t> reference_result(num_items);
   compute_inclusive_scan_reference(
     h_in.cbegin(), h_in.cend(), reference_result.begin(), scan_op, apply_prefix ? prefix : operator_identity);
   run_thread_scan_inclusive_partial_kernel(num_items, d_in, d_out, scan_op, valid_items, prefix, apply_prefix);
@@ -481,19 +489,21 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
   using output_t               = typename params::output_t;
   using op_t                   = c2h::get<1, TestType>;
   using accum_t                = ::cuda::std::__accumulator_t<op_t, value_t>;
+  using dist_param             = dist_interval<value_t, output_t, op_t>;
   constexpr auto scan_op       = unwrap_op(std::true_type{}, op_t{});
   const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
   const int num_items          = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items        = GENERATE_COPY(
-    take(1, random(2, num_items - 2)),
+    take(1, random(2, ::cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, ::cuda::std::numeric_limits<int>::max())),
-    values({1, num_items - 1, num_items, num_items + 1}));
-  auto prefix             = static_cast<accum_t>(GENERATE_COPY(take(1, random(1.0f, 2.0f))));
+    values({1, num_items, num_items + 1}));
+  auto prefix =
+    static_cast<accum_t>(GENERATE_COPY(take(1, random(float{dist_param::min()}, float{dist_param::max()}))));
   const bool apply_prefix = GENERATE(true, false);
   CAPTURE(c2h::type_name<value_t>(), num_items, c2h::type_name<op_t>(), valid_items, prefix, apply_prefix);
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<output_t> d_out(num_items);
-  c2h::gen(C2H_SEED(num_seeds), d_in, value_t{1.0f}, value_t{2.0f});
+  c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items);
   compute_inclusive_scan_reference(
@@ -513,21 +523,22 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
 {
   c2h::device_vector<int> d_in(max_size);
   c2h::device_vector<int> d_out(max_size);
-  c2h::gen(C2H_SEED(num_seeds), d_in);
+  using dist_param = dist_interval<int, int, ::cuda::std::plus<>>;
+  c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<int> h_in = d_in;
   const int valid_items      = GENERATE_COPY(
-    take(1, random(2, max_size - 2)),
+    take(1, random(2, ::cuda::std::max(2, max_size - 1))),
     take(1, random(max_size + 2, ::cuda::std::numeric_limits<int>::max())),
-    values({1, max_size - 1, max_size, max_size + 1}));
-  const int bounded_valid_items = cuda::std::min(valid_items, max_size);
+    values({1, max_size, max_size + 1}));
+  const int bounded_valid_items = ::cuda::std::min(valid_items, max_size);
   c2h::host_vector<int> reference_result(bounded_valid_items);
   compute_inclusive_scan_reference(
-    h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reference_result.begin(), cuda::std::plus<>{}, 0);
+    h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reference_result.begin(), ::cuda::std::plus<>{}, 0);
 
   thread_scan_inclusive_partial_kernel_array<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
     thrust::raw_pointer_cast(d_out.data()),
-    cuda::std::plus<>{},
+    ::cuda::std::plus<>{},
     valid_items,
     0,
     true);
@@ -542,7 +553,7 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
   thread_scan_inclusive_partial_kernel_span<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
     thrust::raw_pointer_cast(d_out.data()),
-    cuda::std::plus<>{},
+    ::cuda::std::plus<>{},
     valid_items,
     0,
     true);
@@ -557,7 +568,7 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
   thread_scan_inclusive_partial_kernel_mdspan<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
     thrust::raw_pointer_cast(d_out.data()),
-    cuda::std::plus<>{},
+    ::cuda::std::plus<>{},
     valid_items,
     0,
     true);
@@ -572,8 +583,8 @@ struct segment
 {
   using offset_t = int32_t;
   // Make sure that default constructed segments can not be merged
-  offset_t begin = cuda::std::numeric_limits<offset_t>::min();
-  offset_t end   = cuda::std::numeric_limits<offset_t>::max();
+  offset_t begin = ::cuda::std::numeric_limits<offset_t>::min();
+  offset_t end   = ::cuda::std::numeric_limits<offset_t>::max();
 
   __host__ __device__ friend bool operator==(segment left, segment right)
   {
@@ -590,7 +601,7 @@ struct segment
 // Needed for data input using fancy iterators
 struct tuple_to_segment_op
 {
-  __host__ __device__ segment operator()(cuda::std::tuple<segment::offset_t, segment::offset_t> interval)
+  __host__ __device__ segment operator()(::cuda::std::tuple<segment::offset_t, segment::offset_t> interval)
   {
     const auto [begin, end] = interval;
     return {begin, end};
@@ -623,15 +634,15 @@ struct merge_segments_op
 
 C2H_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]")
 {
-  const auto in_it = cuda::make_transform_iterator(
-    thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},
-                              cuda::counting_iterator<segment::offset_t>{2}),
+  const auto in_it = ::cuda::make_transform_iterator(
+    thrust::make_zip_iterator(::cuda::counting_iterator<segment::offset_t>{1},
+                              ::cuda::counting_iterator<segment::offset_t>{2}),
     tuple_to_segment_op{});
   const int valid_items = GENERATE_COPY(
     take(3, random(2, max_size - 1)),
     take(1, random(max_size + 1, ::cuda::std::numeric_limits<int>::max())),
     values({-1, 0, 1}));
-  const int bounded_valid_items = cuda::std::clamp(valid_items, 0, max_size);
+  const int bounded_valid_items = ::cuda::std::clamp(valid_items, 0, max_size);
   const bool apply_prefix       = GENERATE(true, false);
   // Invalid prefix when not apply_prefix
   const segment prefix{0, apply_prefix ? 1 : 0};
