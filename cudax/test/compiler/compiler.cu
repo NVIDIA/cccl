@@ -72,11 +72,11 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
 
   if (result)
   {
-    [[maybe_unused]] const auto log = result.get_log();
+    [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto ptx          = result.get_ptx();
-  [[maybe_unused]] auto lowered_name = result.get_lowered_name(name_expr);
+  [[maybe_unused]] auto ptx          = result.ptx();
+  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
 }
 
 C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
@@ -112,12 +112,12 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
 
   if (result)
   {
-    [[maybe_unused]] const auto log = result.get_log();
+    [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto ptx          = result.get_ptx();
-  [[maybe_unused]] auto cubin        = result.get_cubin();
-  [[maybe_unused]] auto lowered_name = result.get_lowered_name(name_expr);
+  [[maybe_unused]] auto ptx          = result.ptx();
+  [[maybe_unused]] auto cubin        = result.cubin();
+  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
 }
 
 C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
@@ -144,11 +144,11 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
 
   if (result)
   {
-    [[maybe_unused]] const auto log = result.get_log();
+    [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto ltoir        = result.get_ltoir();
-  [[maybe_unused]] auto lowered_name = result.get_lowered_name(name_expr);
+  [[maybe_unused]] auto ltoir        = result.ltoir();
+  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
 }
 
 C2H_TEST("Compile ptx to cubin", "[cuda.compile.ptx_to_cubin]")
@@ -173,8 +173,8 @@ C2H_TEST("Compile ptx to cubin", "[cuda.compile.ptx_to_cubin]")
 
   if (result)
   {
-    [[maybe_unused]] const auto log = result.get_log();
+    [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto cubin = result.get_cubin();
+  [[maybe_unused]] auto cubin = result.cubin();
 }

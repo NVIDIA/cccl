@@ -100,7 +100,7 @@ public:
   //! @brief Get the log.
   //!
   //! @return A string containing the log.
-  [[nodiscard]] ::std::string get_log() const
+  [[nodiscard]] ::std::string log() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvJitLinkGetErrorLogSize(__handle_, &__size) != ::NVJITLINK_SUCCESS)
@@ -146,7 +146,7 @@ struct link_to_ptx_result : public __link_result_base
   //! @brief Get the linked PTX.
   //!
   //! @return A string containing the linked PTX.
-  [[nodiscard]] ::std::string get_ptx() const
+  [[nodiscard]] ::std::string ptx() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvJitLinkGetLinkedPtxSize(__handle_, &__size) != ::NVJITLINK_SUCCESS)
@@ -176,7 +176,7 @@ struct link_to_cubin_result : public __link_result_base
   //! @brief Get the linked CUBIN.
   //!
   //! @return A string containing the linked CUBIN.
-  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> get_cubin() const
+  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> cubin() const
   {
     _CUDA_VSTD::size_t __size{};
     if (::nvJitLinkGetLinkedCubinSize(__handle_, &__size) != ::NVJITLINK_SUCCESS)

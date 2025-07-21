@@ -139,10 +139,10 @@ C2H_TEST("Link PTX", "[cuda.linker.ptx]")
 
   if (result)
   {
-    [[maybe_unused]] const auto log = result.get_log();
+    [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto ptx = result.get_ptx();
+  [[maybe_unused]] auto ptx = result.ptx();
 }
 
 C2H_TEST("Link CUBIN", "[cuda.linker.cubin]")
@@ -169,8 +169,8 @@ C2H_TEST("Link CUBIN", "[cuda.linker.cubin]")
 
   if (result)
   {
-    [[maybe_unused]] const auto log = result.get_log();
+    [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto cubin = result.get_cubin();
+  [[maybe_unused]] auto cubin = result.cubin();
 }
