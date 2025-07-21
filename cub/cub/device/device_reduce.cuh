@@ -516,14 +516,19 @@ public:
       constexpr auto not_guaranteed_determinism =
         ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
 
-      constexpr auto is_not_pointer_fallback =
+      // Certain conditions must be met to be able to use the non-deterministic
+      // kernel. The output iterator must be a contiguous iterator and the
+      // reduction operator must be plus (for now).
+      constexpr auto is_not_contiguous_fallback =
         not_guaranteed_determinism
         && !::cuda::std::is_pointer_v<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>>;
       constexpr auto is_not_plus_fallback = not_guaranteed_determinism && !detail::is_cuda_std_plus_v<ReductionOpT>;
 
+      // If the conditions for gpu-to-gpu determinism or non-deterministic
+      // reduction are not met, we fall back to run-to-run determinism.
       using determinism_t = ::cuda::std::conditional_t<
         (gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
-          || (not_guaranteed_determinism && (is_not_pointer_fallback || is_not_plus_fallback)),
+          || (not_guaranteed_determinism && (is_not_contiguous_fallback || is_not_plus_fallback)),
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
 
@@ -643,11 +648,13 @@ public:
     constexpr auto not_guaranteed_determinism =
       ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
 
-    constexpr auto is_not_pointer_fallback =
+    // The output iterator must be a contiguous iterator or we fall back to
+    // run-to-run determinism.
+    constexpr auto is_not_contiguous_fallback =
       !::cuda::std::is_pointer_v<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>>;
 
     using determinism_t =
-      ::cuda::std::conditional_t<not_guaranteed_determinism && is_not_pointer_fallback,
+      ::cuda::std::conditional_t<not_guaranteed_determinism && is_not_contiguous_fallback,
                                  ::cuda::execution::determinism::run_to_run_t,
                                  default_determinism_t>;
 
