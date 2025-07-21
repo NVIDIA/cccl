@@ -8,6 +8,7 @@ from ._dataclass import gpu_dataclass
 from ._enums import (
     BlockHistogramAlgorithm,
     BlockLoadAlgorithm,
+    BlockScanAlgorithm,
     BlockStoreAlgorithm,
     NoAlgorithm,
     WarpLoadAlgorithm,
@@ -30,6 +31,7 @@ __all__ = [
     "BlockHistogramAlgorithm",
     "BlockLoad",
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "BlockStore",
     "gpu_dataclass",

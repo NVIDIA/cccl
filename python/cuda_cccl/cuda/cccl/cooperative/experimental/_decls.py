@@ -302,6 +302,54 @@ class CoopLocalArrayDecl(CoopArrayBaseTemplate, CoopDeclMixin):
 # =============================================================================
 
 
+def validate_src_dst(obj, src, dst):
+    """
+    Validate that *src* and *dst* are both provided, are device arrays,
+    and have compatible types (dtype, ndim, layout).  Raise TypingError
+    if any of the checks fail.  Return None if all checks pass.
+    """
+    if src is None or dst is None:
+        raise errors.TypingError(
+            f"{obj.primitive_name} needs both 'src' and 'dst' arrays"
+        )
+
+    permitted = (types.Array, ThreadDataType)
+    invalid_types = not isinstance(src, permitted) or not isinstance(dst, permitted)
+    if invalid_types:
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires both 'src' and 'dst' to be "
+            "device or thread-data arrays"
+        )
+
+    if isinstance(src, ThreadDataType) or isinstance(dst, ThreadDataType):
+        # No more validation required if one of the types is thread data.
+        return
+
+    # Mismatched types.
+    if src.dtype != dst.dtype:
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires 'src' and 'dst' to have the "
+            f"same dtype (got {src.dtype} vs {dst.dtype})"
+        )
+
+    # Mismatched dimensions.
+    if src.ndim != dst.ndim:
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires 'src' and 'dst' to have the "
+            f"same number of dimensions (got {src.ndim} vs {dst.ndim})"
+        )
+
+    # Mismatched layout if neither is 'A'.
+    invalid_layout = (
+        src.layout != "A" and dst.layout != "A" and src.layout != dst.layout
+    )
+    if invalid_layout:
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires 'src' and 'dst' to have the "
+            f"same layout (got {src.layout!r} vs {dst.layout!r})"
+        )
+
+
 def validate_positive_integer_literal(obj, value, param_name):
     """
     Validate that *value* is a positive integer literal and return it as
@@ -385,53 +433,6 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
     def __init__(self, context=None):
         super().__init__(context=context)
 
-    def _validate_src_dst(self, src, dst):
-        """
-        Validate that *src* and *dst* are both provided, are device arrays,
-        and have compatible types (dtype, ndim, layout).  Raise TypingError
-        if any of the checks fail.  Return None if all checks pass.
-        """
-        if src is None or dst is None:
-            raise errors.TypingError(
-                f"{self.primitive_name} needs both 'src' and 'dst' arrays"
-            )
-
-        permitted = (types.Array, ThreadDataType)
-        invalid_types = not isinstance(src, permitted) or not isinstance(dst, permitted)
-        if invalid_types:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires both 'src' and 'dst' to be "
-                "device or thread-data arrays"
-            )
-
-        if isinstance(src, ThreadDataType) or isinstance(dst, ThreadDataType):
-            # No more validation required if one of the types is thread data.
-            return
-
-        # Mismatched types.
-        if src.dtype != dst.dtype:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'src' and 'dst' to have the "
-                f"same dtype (got {src.dtype} vs {dst.dtype})"
-            )
-
-        # Mismatched dimensions.
-        if src.ndim != dst.ndim:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'src' and 'dst' to have the "
-                f"same number of dimensions (got {src.ndim} vs {dst.ndim})"
-            )
-
-        # Mismatched layout if neither is 'A'.
-        invalid_layout = (
-            src.layout != "A" and dst.layout != "A" and src.layout != dst.layout
-        )
-        if invalid_layout:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'src' and 'dst' to have the "
-                f"same layout (got {src.layout!r} vs {dst.layout!r})"
-            )
-
     def _validate_args_and_create_signature(
         self,
         src,
@@ -442,7 +443,7 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
         temp_storage=None,
         two_phase=False,
     ):
-        self._validate_src_dst(src, dst)
+        validate_src_dst(self, src, dst)
 
         using_thread_data = isinstance(src, ThreadDataType) or isinstance(
             dst, ThreadDataType
@@ -1177,6 +1178,117 @@ def codegen_block_run_length_call(context, builder, sig, args):
 
 
 # =============================================================================
+# Scan
+# =================================================================================
+
+
+@register
+class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
+    key = coop.block.scan
+    primitive_name = "coop.block.scan"
+    algorithm_enum = coop.BlockScanAlgorithm
+    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    is_constructor = False
+
+    unsafe_casting = True
+    exact_match_required = False
+    prefer_literal = True
+
+    def __init__(self, context=None):
+        super().__init__(context=context)
+
+    @staticmethod
+    def get_instance_type():
+        return block_run_length_instance_type
+
+    def generic(self):
+        def typer(
+            src,
+            dst,
+            items_per_thread,
+            # mode,
+            # scan_op,
+            initial_value,
+            # block_prefix_callback_op=None,
+            # algorithm=None,
+            # temp_storage=None,
+        ):
+            # block_prefix_callback_op = None
+            algorithm = None
+            temp_storage = None
+
+            validate_src_dst(self, src, dst)
+            validate_items_per_thread(self, items_per_thread)
+            validate_algorithm(self, algorithm)
+            validate_temp_storage(self, temp_storage)
+
+            arglist = [
+                src,
+                dst,
+                items_per_thread,
+                initial_value,
+            ]
+
+            # if initial_value is not None:
+            #    arglist.append(initial_value)
+
+            # if mode is not None:
+            #    arglist.append(mode)
+
+            # if scan_op is not None:
+            #    arglist.append(scan_op)
+
+            # if block_prefix_callback_op is not None:
+            #    arglist.append(block_prefix_callback_op)
+
+            # if temp_storage is not None:
+            #    arglist.append(temp_storage)
+
+            sig = signature(
+                block_scan_instance_type,
+                *arglist,
+            )
+
+            return sig
+
+        return typer
+
+
+class CoopBlockScanInstanceType(types.Type, CoopInstanceTypeMixin):
+    decl_class = CoopBlockScanDecl
+
+    def __init__(self):
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
+        CoopInstanceTypeMixin.__init__(self)
+
+
+block_scan_instance_type = CoopBlockScanInstanceType()
+
+
+@typeof_impl.register(coop.block.scan)
+def typeof_block_scan_instance(*args, **kwargs):
+    return block_scan_instance_type
+
+
+@type_callable(block_scan_instance_type)
+def type_block_scan_instance_call(context):
+    decl = block_scan_instance_type.decl
+    return decl.generic()
+
+
+@register_model(CoopBlockScanInstanceType)
+class CoopBlockScanInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockScanInstanceType)
+def lower_constant_block_scan_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+# =============================================================================
 # Module Template
 # =============================================================================
 
@@ -1213,6 +1325,9 @@ class CoopBlockModuleTemplate(AttributeTemplate):
     def resolve_run_length(self, mod):
         return types.Function(CoopBlockRunLengthDecl)
 
+    def resolve_scan(self, mod):
+        return types.Function(CoopBlockScanDecl)
+
 
 @register_attr
 class CoopModuleTemplate(AttributeTemplate):
@@ -1232,6 +1347,9 @@ class CoopModuleTemplate(AttributeTemplate):
 
     def resolve_BlockStoreAlgorithm(self, mod):
         return types.Module(coop.BlockStoreAlgorithm)
+
+    def resolve_BlockScanAlgorithm(self, mod):
+        return types.Module(coop.BlockScanAlgorithm)
 
     def resolve_WarpLoadAlgorithm(self, mod):
         return types.Module(coop.WarpLoadAlgorithm)

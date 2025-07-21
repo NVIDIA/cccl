@@ -1534,6 +1534,8 @@ class Algorithm:
                         builder.module, function_type, unique_name
                     )
                     builder.call(function, arguments)
+                    if ret is not None:
+                        return builder.load(ret)
                 elif primitive.is_parent:
                     assert ret is None
                     # We need to stack-alloc sufficient space for the struct
@@ -1595,9 +1597,17 @@ class Algorithm:
                         builder.module, function_type, func_name
                     )
                     builder.call(function, arguments)
+                    return None
+                else:
+                    raise RuntimeError("Invalid primitive state: {primitive!r}")
 
             params = []
-            ret = None
+            primitive = self.primitive
+            if primitive.is_parent:
+                ret = primitive.node.template.get_instance_type()
+            else:
+                ret = numba.types.void
+
             for pid, param in enumerate(method):
                 if ignore_param(param, pid):
                     continue
@@ -1608,19 +1618,6 @@ class Algorithm:
                     ret = param.dtype()
                 else:
                     params.append(param.dtype())
-
-            primitive = self.primitive
-            if primitive.is_one_shot:
-                if ret is None:
-                    ret = numba.types.void
-            elif primitive.is_parent:
-                instance_type = primitive.node.template.get_instance_type()
-                ret = instance_type
-            elif primitive.is_child:
-                # Child methods return void.
-                ret = numba.types.void
-            else:
-                raise RuntimeError("Invalid primitive state: {primitive!r}")
 
             return signature(ret, *params), codegen
 

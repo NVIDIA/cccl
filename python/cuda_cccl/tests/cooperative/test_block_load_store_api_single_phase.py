@@ -119,6 +119,106 @@ def test_block_load_store_single_phase_num_valid_items():
     np.testing.assert_array_equal(h_output, h_input)
 
 
+def test_block_load_store_single_phase_num_valid_items_with_scan():
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        thread_offset = cuda.threadIdx.x * items_per_thread
+
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        shared_last = coop.shared.array(1, dtype=d_in.dtype)
+
+        initial_value = np.int32(0)
+
+        while block_offset < num_total_items:
+            # Calculate num_valid_items for current block
+            num_valid_items = min(
+                items_per_block,
+                num_total_items - block_offset,
+            )
+
+            # Load with padding
+            coop.block.load(
+                d_in[block_offset:],
+                thread_data,
+                items_per_thread=items_per_thread,
+                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                num_valid_items=num_valid_items,
+            )
+
+            # Zero-pad invalid thread items explicitly.
+            for i in range(items_per_thread):
+                global_idx = block_offset + thread_offset + i
+                if global_idx >= num_total_items:
+                    thread_data[i] = 0
+
+            coop.block.scan(
+                thread_data,
+                thread_data,
+                items_per_thread,
+                initial_value,
+            )
+
+            # Store only valid items back to global memory
+            coop.block.store(
+                d_out[block_offset:],
+                thread_data,
+                items_per_thread=items_per_thread,
+                algorithm=coop.BlockStoreAlgorithm.DIRECT,
+                num_valid_items=num_valid_items,
+            )
+
+            # Compute the sum of this block iteration
+            last_thread = (num_valid_items - 1) // items_per_thread
+            last_elem_idx = (num_valid_items - 1) % items_per_thread
+
+            if cuda.threadIdx.x == last_thread:
+                shared_last[0] = (
+                    thread_data[last_elem_idx]
+                    + d_in[block_offset + num_valid_items - 1]
+                )
+
+            cuda.syncthreads()
+
+            # initial_value += shared_last[0]
+            initial_value = shared_last[0]
+
+            block_offset += items_per_block * cuda.gridDim.x
+
+            cuda.syncthreads()
+
+    dtype = np.int32
+    threads_per_block = 128
+    num_total_items = 1000
+    items_per_thread = 4
+
+    h_input = np.random.randint(0, 42, num_total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    items_per_block = threads_per_block * items_per_thread
+    blocks_per_grid = (num_total_items + items_per_block - 1) // items_per_block
+
+    kernel[blocks_per_grid, threads_per_block](
+        d_input, d_output, items_per_thread, num_total_items
+    )
+
+    # Compute the correct prefix-sum on host to compare results
+    h_reference = np.zeros_like(h_input)
+    if len(h_input) > 0:
+        h_reference[0] = 0
+        h_reference[1:] = np.cumsum(h_input[:-1])
+
+    # h_reference2 = np.cumsum(h_input)
+    # h_reference3 = np.cumsum(h_input) - h_input
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_block_load_store_two_phase():
     dtype = np.int32
     dim = 128

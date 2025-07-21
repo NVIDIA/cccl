@@ -194,6 +194,18 @@ class GetAttrDefinition:
 
 
 @dataclass
+class ConstDefinition:
+    """
+    Represents a constant definition in the IR.
+    This is used to capture constant values that are used in the cooperative
+    operations.
+    """
+
+    instr: ir.Const
+    value: Any
+
+
+@dataclass
 class RootDefinition:
     original_instr: VarType
     root_instr: RootVarType
@@ -265,6 +277,23 @@ class RootDefinition:
         """
         return [d for d in self.definitions if isinstance(d, CallDefinition)]
 
+    @cached_property
+    def const_definition(self) -> Union[ConstDefinition, None]:
+        """
+        Return the ConstDefinition object found during the resolution of the
+        root definition, or None if no constant definition was found.
+        """
+        const_defs = [d for d in self.definitions if isinstance(d, ConstDefinition)]
+        if const_defs:
+            if len(const_defs) > 1:
+                raise RuntimeError(
+                    "Expected at most one ConstDefinition, "
+                    f"but got {len(const_defs)}: {const_defs!r}"
+                )
+            return const_defs[0]
+        else:
+            return None
+
 
 def get_root_definition(
     instr: VarType,
@@ -311,6 +340,14 @@ def get_root_definition(
             root_instr = instr
             instance = instr.value
             assert not instructions, (root_instr, instructions)
+            break
+        if isinstance(instr, ir.Const):
+            # If the instruction is a constant, we can directly use it.
+            root_instr = instr
+            instance = instr.value
+            assert not instructions, (root_instr, instructions)
+            const_def = ConstDefinition(instr=instr, value=instance)
+            definitions.append(const_def)
             break
         elif isinstance(instr, ir.Arg):
             root_instr = instr
@@ -588,6 +625,9 @@ class CoopNode:
     # the parent/containing struct.
     parent_struct_instance_type: Optional[Any] = None
     parent_node: Optional["CoopNode"] = None
+
+    impl_kwds: dict[str, Any] = None
+    codegen_return_type: Optional[types.Type] = types.void
 
     # Defaults.
     # implicit_temp_storage: bool = True
@@ -889,6 +929,130 @@ class CoopNode:
     def codegen_callback(self):
         raise NotImplementedError
 
+    def do_rewrite(self):
+        if self.is_two_phase:
+            instance = self.two_phase_instance
+            algo = instance.specialization
+            algo.unique_id = self.unique_id
+        else:
+            instance = self.instance = self.impl_class(**self.impl_kwds)
+
+        expr = self.expr
+        assign = self.instr
+        assert isinstance(assign, ir.Assign)
+        scope = assign.target.scope
+
+        g_var_name = f"${self.call_var_name}"
+        g_var = ir.Var(scope, g_var_name, expr.loc)
+
+        existing = self.typemap.get(g_var_name, None)
+        if existing:
+            raise RuntimeError(f"Variable {g_var.name} already exists in typemap.")
+
+        # Create a dummy invocable we can use for lowering.
+        code = dedent(f"""
+            def {self.call_var_name}(*args):
+                return
+        """)
+        exec(code, globals())
+        invocable = globals()[self.call_var_name]
+        mod = sys.modules[invocable.__module__]
+        setattr(mod, self.call_var_name, invocable)
+
+        self.invocable = instance.invocable = invocable
+        invocable.node = self
+
+        g_assign = ir.Assign(
+            value=ir.Global(g_var_name, invocable, expr.loc),
+            target=g_var,
+            loc=expr.loc,
+        )
+
+        new_call = ir.Expr.call(
+            func=g_var,
+            args=self.runtime_args,
+            kws=(),
+            loc=expr.loc,
+        )
+
+        new_assign = ir.Assign(
+            value=new_call,
+            target=assign.target,
+            loc=assign.loc,
+        )
+
+        if self.is_parent:
+            template = self.template
+            return_type = template.get_instance_type()
+        else:
+            return_type = types.void
+
+        existing_type = self.typemap[assign.target.name]
+        if existing_type != return_type:
+            del self.typemap[assign.target.name]
+            self.typemap[assign.target.name] = return_type
+
+        sig = Signature(
+            return_type,
+            args=self.runtime_arg_types,
+            recvr=None,
+            pysig=None,
+        )
+
+        self.calltypes[new_call] = sig
+
+        algo = instance.specialization
+        self.codegens = algo.create_codegens()
+
+        @register_global(invocable)
+        class ImplDecl(AbstractTemplate):
+            key = invocable
+
+            def generic(self, outer_args, outer_kws):
+                @lower(invocable, types.VarArg(types.Any))
+                def codegen(context, builder, sig, args):
+                    node = invocable.node
+                    cg = node.codegen
+                    (_, codegen_method) = cg.intrinsic_impl()
+                    res = codegen_method(context, builder, sig, args)
+
+                    if not node.is_child:
+                        # Add all the LTO-IRs to the current code library.
+                        lib = context.active_code_library
+                        algo = node.instance.specialization
+                        # algo.generate_source(node.threads)
+                        for ltoir in algo.lto_irs:
+                            lib.add_linking_file(ltoir)
+
+                    return res
+
+                return sig
+
+        func_ty = types.Function(ImplDecl)
+
+        typingctx = self.typingctx
+        result = func_ty.get_call_type(
+            typingctx,
+            args=self.runtime_arg_types,
+            kws={},
+        )
+        assert result is not None, result
+        check = func_ty._impl_keys[sig.args]
+        assert check is not None, check
+
+        self.typemap[g_var.name] = func_ty
+
+        rewrite_details = SimpleNamespace(
+            g_var=g_var,
+            g_assign=g_assign,
+            new_call=new_call,
+            new_assign=new_assign,
+            sig=sig,
+            func_ty=func_ty,
+        )
+
+        return rewrite_details
+
 
 @dataclass
 class CoopLoadStoreNode(CoopNode):
@@ -1028,6 +1192,8 @@ class CoopLoadStoreNode(CoopNode):
             kws=(),
             loc=expr.loc,
         )
+
+        # existing_type = self.typemap[self.instr.target.name]
 
         new_assign = ir.Assign(
             value=new_call,
@@ -2017,6 +2183,113 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
         return rewrite_details
 
         raise RuntimeError("CoopBlockRunLengthDecodeNode should not be rewritten")
+
+
+@dataclass
+class CoopBlockScanNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.scan"
+    disposition = Disposition.ONE_SHOT
+    wants_rewrite: bool = True
+    threads_per_block: int = None
+    codegen_return_type2: types.Type = None
+    codegen_return_type3: types.Type = types.void
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        items_per_thread = None
+        algorithm = None
+        initial_value = None
+        mode = None
+        scan_op = None
+        block_prefix_callback_op = None
+        temp_storage = None
+
+        expr_args = list(expr.args)
+
+        src = expr_args.pop(0)
+        dst = expr_args.pop(0)
+
+        assert src is not None, src
+        assert dst is not None, dst
+
+        src_ty = self.typemap[src.name]
+        dst_ty = self.typemap[dst.name]
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        runtime_args.append(dst)
+        runtime_arg_types.append(dst_ty)
+        runtime_arg_names.append("dst")
+
+        items_per_thread = self.get_arg_value("items_per_thread")
+
+        mode = self.get_arg_value_safe("mode")
+        if mode is None:
+            mode = "exclusive"
+
+        scan_op = self.get_arg_value_safe("scan_op")
+        if scan_op is None:
+            scan_op = "+"
+
+        bound = self.bound.arguments
+
+        initial_value = bound.get("initial_value")
+        if initial_value is not None:
+            if isinstance(initial_value, ir.Var):
+                initial_value = self.typemap[initial_value.name]
+        block_prefix_callback_op = bound.get("block_prefix_callback_op")
+        algorithm = bound.get("algorithm")
+        temp_storage = bound.get("temp_storage")
+
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+        self.src = src
+        self.dst = dst
+        self.dtype = src_ty.dtype
+        self.items_per_thread = items_per_thread
+        self.mode = mode
+        self.scan_op = scan_op
+        self.initial_value = initial_value
+        self.block_prefix_callback_op = block_prefix_callback_op
+        self.algorithm = algorithm
+        self.temp_storage = temp_storage
+
+        self.impl_kwds = {
+            "dtype": self.dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "initial_value": initial_value,
+            "mode": mode,
+            "scan_op": scan_op,
+            "block_prefix_callback_op": block_prefix_callback_op,
+            "algorithm": algorithm,
+            "unique_id": self.unique_id,
+            "temp_storage": temp_storage,
+        }
+
+        return
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
 
 
 @lru_cache(maxsize=None)

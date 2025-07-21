@@ -46,19 +46,20 @@ def test_block_run_length_decode_single_phase0():
     def get_sizes_kernel(
         d_run_values,
         d_run_lengths,
-        decoded_sizes,
-        num_runs,
+        d_decoded_sizes,
+        total_num_runs,
         runs_per_thread,
         decoded_items_per_thread,
     ):
         # total_decoded_size = total_decoded_size_dtype(0)
 
-        num_block_threads = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
-        runs_per_block = runs_per_thread * num_block_threads
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        runs_per_block = runs_per_thread * threads_per_block
 
         block_offset = cuda.blockIdx.x * runs_per_block
-        if block_offset + runs_per_block >= num_runs:
-            num_valid_runs = num_runs - block_offset
+
+        if block_offset + runs_per_block >= total_num_runs:
+            num_valid_runs = total_num_runs - block_offset
         else:
             num_valid_runs = runs_per_block
 
@@ -111,7 +112,7 @@ def test_block_run_length_decode_single_phase0():
             decoded_offset_dtype,
         )
 
-        decoded_sizes[cuda.blockIdx.x] = decoded_size
+        d_decoded_sizes[cuda.blockIdx.x] = decoded_size
 
     h_run_values = np.random.randint(
         low=0,

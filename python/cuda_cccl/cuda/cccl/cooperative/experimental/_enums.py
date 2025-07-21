@@ -79,3 +79,9 @@ class BlockHistogramAlgorithm(IntEnum):
         # (`BLOCK_HISTO_` prefix instead of `BLOCK_HISTOGRAM_`) so we can't
         # use `cub_cpp_name()` here.
         return f"::cub::BLOCK_HISTO_{self.name.upper()}"
+
+
+class BlockScanAlgorithm(BaseAlgorithmEnum):
+    RAKING = auto()
+    RAKING_MEMOIZE = auto()
+    WARP_SCANS = auto()
