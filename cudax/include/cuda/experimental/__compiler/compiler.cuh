@@ -88,53 +88,8 @@ class cuda_compiler
     return __ret;
   }
 
-  static void __add_dyn_opt(cuda_compile_opts::_DynOpt __dopt, __compile_options& __compile_opts)
+  [[nodiscard]] __compile_options __make_options(const cuda_compile_options& __cuda_opts) const
   {
-    switch (__dopt.__type_)
-    {
-      case cuda_compile_opts::_DynOptType::__define_macro: {
-        __compile_opts.__opt_ptrs.push_back("-D");
-        auto& __str = __compile_opts.__opt_strs.emplace_back(
-          __dopt.__value_.__string_view2_.__first_.begin(), __dopt.__value_.__string_view2_.__first_.end());
-        if (!__dopt.__value_.__string_view2_.__second_.empty())
-        {
-          __str.append("=");
-          __str.append(__dopt.__value_.__string_view2_.__second_.begin(),
-                       __dopt.__value_.__string_view2_.__second_.end());
-        }
-        __compile_opts.__opt_ptrs.push_back(__str.c_str());
-        break;
-      }
-      case cuda_compile_opts::_DynOptType::__undefine_macro: {
-        __compile_opts.__opt_ptrs.push_back("-U");
-        auto& __str = __compile_opts.__opt_strs.emplace_back(
-          __dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end());
-        __compile_opts.__opt_ptrs.push_back(__str.c_str());
-        break;
-      }
-      case cuda_compile_opts::_DynOptType::__include_path: {
-        __compile_opts.__opt_ptrs.push_back("-I");
-        auto& __str = __compile_opts.__opt_strs.emplace_back(
-          __dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end());
-        __compile_opts.__opt_ptrs.push_back(__str.c_str());
-        break;
-      }
-      case cuda_compile_opts::_DynOptType::__force_include: {
-        __compile_opts.__opt_ptrs.push_back("-include");
-        auto& __str = __compile_opts.__opt_strs.emplace_back(
-          __dopt.__value_.__string_view_.begin(), __dopt.__value_.__string_view_.end());
-        __compile_opts.__opt_ptrs.push_back(__str.c_str());
-        break;
-      }
-      default:
-        _CCCL_UNREACHABLE();
-    }
-  }
-
-  [[nodiscard]] __compile_options __make_options(const cuda_compile_opts& __cuda_opts) const
-  {
-    using namespace cuda_compile_options;
-
     __compile_options __ret = __make_options();
 
     // disable automatic addition of source's directory to the include path
@@ -143,19 +98,19 @@ class cuda_compiler
     // C++ standard version
     switch (__cuda_opts.__std_version_)
     {
-      case _CUDA_VSTD::to_underlying(std_version_opt::cxx03):
+      case _CUDA_VSTD::to_underlying(cuda_std_version::cxx03):
         __ret.__opt_ptrs.push_back("-std=c++03");
         break;
-      case _CUDA_VSTD::to_underlying(std_version_opt::cxx11):
+      case _CUDA_VSTD::to_underlying(cuda_std_version::cxx11):
         __ret.__opt_ptrs.push_back("-std=c++11");
         break;
-      case _CUDA_VSTD::to_underlying(std_version_opt::cxx14):
+      case _CUDA_VSTD::to_underlying(cuda_std_version::cxx14):
         __ret.__opt_ptrs.push_back("-std=c++14");
         break;
-      case _CUDA_VSTD::to_underlying(std_version_opt::cxx17):
+      case _CUDA_VSTD::to_underlying(cuda_std_version::cxx17):
         __ret.__opt_ptrs.push_back("-std=c++17");
         break;
-      case _CUDA_VSTD::to_underlying(std_version_opt::cxx20):
+      case _CUDA_VSTD::to_underlying(cuda_std_version::cxx20):
         __ret.__opt_ptrs.push_back("-std=c++20");
         break;
       default:
@@ -208,17 +163,15 @@ class cuda_compiler
     // process dynamic options
     for (const auto& __dopt : __cuda_opts.__dyn_opts_)
     {
-      __add_dyn_opt(__dopt, __ret);
+      __ret.__opt_ptrs.push_back(__dopt.c_str());
     }
 
     return __ret;
   }
 
   [[nodiscard]] __compile_options
-  __make_options(const cuda_compile_opts& __cuda_opts, const ptx_compile_opts& __ptx_opts) const
+  __make_options(const cuda_compile_options& __cuda_opts, const ptx_compile_options& __ptx_opts) const
   {
-    using namespace ptx_compile_options;
-
     auto __ret = __make_options(__cuda_opts);
 
     // device debug flag
@@ -237,40 +190,29 @@ class cuda_compiler
     __ret.__opt_ptrs.push_back((__ptx_opts.__fmad_) ? "--fmad=true" : "--fmad=false");
 
     // max register count
-    switch (__ptx_opts.__max_reg_count_)
+    if (__ptx_opts.__max_reg_count_ >= 0)
     {
-      case _CUDA_VSTD::to_underlying(max_reg_count_opt::__unspecified):
-        break;
-      case _CUDA_VSTD::to_underlying(max_reg_count_opt::arch_min):
-        __ret.__opt_ptrs.push_back("--maxrregcount=archmin");
-        break;
-      case _CUDA_VSTD::to_underlying(max_reg_count_opt::arch_max):
-        __ret.__opt_ptrs.push_back("--maxrregcount=archmax");
-        break;
-      default: {
-        auto& __str = __ret.__opt_strs.emplace_back("--maxrregcount=");
-        __str.append(::std::to_string(__ptx_opts.__max_reg_count_));
-        __ret.__opt_ptrs.push_back(__str.c_str());
-        break;
-      }
+      auto& __str = __ret.__opt_strs.emplace_back("--maxrregcount=");
+      __str.append(::std::to_string(__ptx_opts.__max_reg_count_));
+      __ret.__opt_ptrs.push_back(__str.c_str());
     }
 
     // optimization level
     switch (__ptx_opts.__optimization_level_)
     {
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O0):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O0):
         __ret.__opt_ptrs.push_back("-Xptxas");
         __ret.__opt_ptrs.push_back("-O0");
         break;
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O1):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O1):
         __ret.__opt_ptrs.push_back("-Xptxas");
         __ret.__opt_ptrs.push_back("-O1");
         break;
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O2):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O2):
         __ret.__opt_ptrs.push_back("-Xptxas");
         __ret.__opt_ptrs.push_back("-O2");
         break;
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O3):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O3):
         __ret.__opt_ptrs.push_back("-Xptxas");
         __ret.__opt_ptrs.push_back("-O3");
         break;
@@ -388,7 +330,7 @@ public:
   //!
   //! @return A compile_cuda_to_ptx_result object.
   [[nodiscard]] compile_cuda_to_ptx_result
-  compile_to_ptx(const cuda_compile_source& __cuda_src, const cuda_compile_opts& __cuda_opts)
+  compile_to_ptx(const cuda_compile_source& __cuda_src, const cuda_compile_options& __cuda_opts)
   {
     auto __program = __make_program(__cuda_src);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
@@ -406,7 +348,9 @@ public:
   //!
   //! @return A compile_cuda_to_cubin_result object.
   [[nodiscard]] compile_cuda_to_cubin_result compile_to_cubin(
-    const cuda_compile_source& __cuda_src, const cuda_compile_opts& __cuda_opts, const ptx_compile_opts& __ptx_opts)
+    const cuda_compile_source& __cuda_src,
+    const cuda_compile_options& __cuda_opts,
+    const ptx_compile_options& __ptx_opts)
   {
     auto __program = __make_program(__cuda_src);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
@@ -423,7 +367,7 @@ public:
   //!
   //! @return A compile_cuda_to_ltoir_result object.
   [[nodiscard]] compile_cuda_to_ltoir_result
-  compile_to_ltoir(const cuda_compile_source& __cuda_src, const cuda_compile_opts& __cuda_opts)
+  compile_to_ltoir(const cuda_compile_source& __cuda_src, const cuda_compile_options& __cuda_opts)
   {
     auto __program = __make_program(__cuda_src);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
@@ -464,10 +408,8 @@ class ptx_compiler
     return __ret;
   }
 
-  [[nodiscard]] __compile_options __make_options(const ptx_compile_opts& __ptx_opts) const
+  [[nodiscard]] __compile_options __make_options(const ptx_compile_options& __ptx_opts) const
   {
-    using namespace ptx_compile_options;
-
     __compile_options __ret = __make_options();
 
     // device debug flag
@@ -486,37 +428,26 @@ class ptx_compiler
     __ret.__opt_ptrs.push_back(__ptx_opts.__fmad_ ? "--fmad=true" : "--fmad=false");
 
     // max register count
-    switch (__ptx_opts.__max_reg_count_)
+    if (__ptx_opts.__max_reg_count_ >= 0)
     {
-      case _CUDA_VSTD::to_underlying(max_reg_count_opt::__unspecified):
-        break;
-      case _CUDA_VSTD::to_underlying(max_reg_count_opt::arch_min):
-        __ret.__opt_ptrs.push_back("--maxrregcount=archmin");
-        break;
-      case _CUDA_VSTD::to_underlying(max_reg_count_opt::arch_max):
-        __ret.__opt_ptrs.push_back("--maxrregcount=archmax");
-        break;
-      default: {
-        auto& __str = __ret.__opt_strs.emplace_back("--maxrregcount=");
-        __str.append(::std::to_string(__ptx_opts.__max_reg_count_));
-        __ret.__opt_ptrs.push_back(__str.c_str());
-        break;
-      }
+      auto& __str = __ret.__opt_strs.emplace_back("--maxrregcount=");
+      __str.append(::std::to_string(__ptx_opts.__max_reg_count_));
+      __ret.__opt_ptrs.push_back(__str.c_str());
     }
 
     // optimization level
     switch (__ptx_opts.__optimization_level_)
     {
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O0):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O0):
         __ret.__opt_ptrs.push_back("-O0");
         break;
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O1):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O1):
         __ret.__opt_ptrs.push_back("-O1");
         break;
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O2):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O2):
         __ret.__opt_ptrs.push_back("-O2");
         break;
-      case _CUDA_VSTD::to_underlying(optimization_level_opt::O3):
+      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O3):
         __ret.__opt_ptrs.push_back("-O3");
         break;
       default:
@@ -611,7 +542,7 @@ public:
   //!
   //! @return A compile_ptx_to_cubin_result object.
   [[nodiscard]] compile_ptx_to_cubin_result
-  compile_to_cubin(const ptx_compile_source& __ptx_src, const ptx_compile_opts& __ptx_opts)
+  compile_to_cubin(const ptx_compile_source& __ptx_src, const ptx_compile_options& __ptx_opts)
   {
     auto __handle = __make_handle(__ptx_src);
 

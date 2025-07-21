@@ -129,11 +129,8 @@ C2H_TEST("PTX linker version", "[ptx.linker.version]")
 
 C2H_TEST("Link PTX", "[cuda.linker.ptx]")
 {
-  cudax::ptx_link_opts ptx_opts;
-  {
-    using namespace cudax::ptx_link_options;
-    // todo
-  }
+  cudax::ptx_link_options ptx_opts;
+  // todo: set options
 
   cudax::ptx_link_sources ptx_sources{};
   ptx_sources.add_ptx("compute.ptx", compute_ptx_src);
@@ -161,17 +158,11 @@ C2H_TEST("CUBIN linker version", "[cubin.linker.version]")
 
 C2H_TEST("Link CUBIN", "[cuda.linker.cubin]")
 {
-  cudax::ptx_compile_opts ptx_copts;
-  {
-    using namespace cudax::ptx_compile_options;
-    // todo
-  }
+  cudax::ptx_compile_options ptx_copts;
+  // todo: set options
 
-  cudax::cubin_link_opts cubin_lopts;
-  {
-    using namespace cudax::cubin_link_options;
-    // todo
-  }
+  cudax::cubin_link_options cubin_lopts;
+  // todo: set options
 
   cudax::cubin_link_sources cubin_sources{};
   cubin_sources.add_ptx("compute.ptx", compute_ptx_src);

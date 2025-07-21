@@ -27,6 +27,7 @@
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/string_view>
 
+#include <string>
 #include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -34,37 +35,8 @@
 namespace cuda::experimental
 {
 
-namespace cuda_compile_options
-{
-
-//! @brief Option to define a macro for the CUDA compilation.
-struct define_macro_opt
-{
-  _CUDA_VSTD::string_view name; //!< The name of the macro to define.
-  _CUDA_VSTD::string_view value = {}; //!< The value of the macro to define. If empty, the macro is defined without a
-                                      //!< value.
-};
-
-//! @brief Option to undefine a macro for the CUDA compilation.
-struct undefine_macro_opt
-{
-  _CUDA_VSTD::string_view name; //!< The name of the macro to undefine.
-};
-
-//! @brief Option to specify an include path for the CUDA compilation.
-struct include_path_opt
-{
-  _CUDA_VSTD::string_view path; //!< The include path to add.
-};
-
-//! @brief Option to force include a file in the CUDA compilation.
-struct force_include_opt
-{
-  _CUDA_VSTD::string_view file_name; //!< The file to force include.
-};
-
-//! @brief Option to specify the C++ standard version for the CUDA compilation.
-enum class std_version_opt
+//! @brief Enum class to specify the C++ standard version for the CUDA compilation.
+enum class cuda_std_version
 {
   cxx03 = 03, //!< C++03 standard version.
   cxx11 = 11, //!< C++11 standard version.
@@ -73,147 +45,132 @@ enum class std_version_opt
   cxx20 = 20, //!< C++20 standard version.
 };
 
-//! @brief Option to specify the virtual architecture ID for the CUDA compilation.
-struct virtual_arch_opt
-{
-  cuda::arch::id arch_id; //!< The virtual architecture ID to use for the CUDA compilation.
-};
-
-// todo: add other options
-
-} // namespace cuda_compile_options
-
 //! @brief Class to hold CUDA compilation options.
-class cuda_compile_opts
+class cuda_compile_options
 {
   friend class cuda_compiler;
 
-  enum class _DynOptType
-  {
-    __define_macro,
-    __undefine_macro,
-    __include_path,
-    __force_include,
-  };
-  struct _StringView2
-  {
-    _CUDA_VSTD::string_view __first_;
-    _CUDA_VSTD::string_view __second_;
-  };
-  union _DynOptValue
-  {
-    _CUDA_VSTD::string_view __string_view_;
-    _StringView2 __string_view2_;
-  };
-  struct _DynOpt
-  {
-    _DynOptType __type_;
-    _DynOptValue __value_;
-  };
-
-  ::std::vector<_DynOpt> __dyn_opts_;
+  ::std::vector<::std::string> __dyn_opts_;
   unsigned __std_version_ : 8;
   int __virtual_arch_;
 
 public:
   //! @brief Default constructor for CUDA compilation options.
-  cuda_compile_opts() noexcept
+  cuda_compile_options() noexcept
       : __dyn_opts_{}
-      , __std_version_{_CUDA_VSTD::to_underlying(cuda_compile_options::std_version_opt::cxx17)}
+      , __std_version_{_CUDA_VSTD::to_underlying(cuda_std_version::cxx17)}
       , __virtual_arch_{_CUDA_VSTD::to_underlying(cuda::arch::id::sm_75)}
   {}
 
-  //! @brief Adds a compilation option to the list of options.
+  //! @brief Adds a macro definition to the list of options.
   //!
-  //! @tparam _Tp The type of the option to add.
-  //!
-  //! @param __opt The option to add.
-  template <class _Tp>
-  void add_option(const _Tp& __opt)
+  //! @param __name The name of the macro to define. If the `__name` is empty, no action is taken.
+  void add_macro_definition(_CUDA_VSTD::string_view __name)
   {
-    using namespace cuda_compile_options;
+    constexpr _CUDA_VSTD::string_view __prefix{"-D"};
 
-    [[maybe_unused]] _DynOpt __dyn_opt{};
-
-    // todo: add value checking
-    if constexpr (_CUDA_VSTD::is_same_v<_Tp, define_macro_opt>)
+    if (__name.empty())
     {
-      __dyn_opt.__type_                  = _DynOptType::__define_macro;
-      __dyn_opt.__value_.__string_view2_ = {__opt.name, __opt.value};
-      __dyn_opts_.push_back(__dyn_opt);
+      return;
     }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, undefine_macro_opt>)
-    {
-      __dyn_opt.__type_                 = _DynOptType::__undefine_macro;
-      __dyn_opt.__value_.__string_view_ = __opt.name;
-      __dyn_opts_.push_back(__dyn_opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, include_path_opt>)
-    {
-      __dyn_opt.__type_                 = _DynOptType::__include_path;
-      __dyn_opt.__value_.__string_view_ = __opt.path;
-      __dyn_opts_.push_back(__dyn_opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, force_include_opt>)
-    {
-      __dyn_opt.__type_                 = _DynOptType::__force_include;
-      __dyn_opt.__value_.__string_view_ = __opt.file_name;
-      __dyn_opts_.push_back(__dyn_opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, std_version_opt>)
-    {
-      __std_version_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, virtual_arch_opt>)
-    {
-      __virtual_arch_ = _CUDA_VSTD::to_underlying(__opt.arch_id);
-    }
-    else
-    {
-      static_assert(_CUDA_VSTD::__always_false_v<_Tp>, "Unsupported option type by cuda_compile_opts");
-    }
+    ::std::string __str{};
+    __str.reserve(__name.size() + __prefix.size());
+    __str.append(__prefix.begin(), __prefix.end());
+    __str.append(__name.begin(), __name.end());
+    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
   }
 
-  //! @brief Adds multiple compilation options to the list of options.
+  //! @brief Adds a macro definition to the list of options.
   //!
-  //! @tparam _Tps The types of the options to add.
-  //!
-  //! @param __opts The options to add.
-  template <class... _Tps>
-  void add_options(const _Tps&... __opts)
+  //! @param __name The name of the macro to define. If the `__name` is empty, no action is taken. If the `__value` is
+  //! empty, the macro is defined without a value.
+  void add_macro_definition(_CUDA_VSTD::string_view __name, _CUDA_VSTD::string_view __value)
   {
-    (add_option(__opts), ...);
+    constexpr _CUDA_VSTD::string_view __prefix{"-D"};
+
+    if (__name.empty())
+    {
+      return;
+    }
+    if (__value.empty())
+    {
+      return add_macro_definition(__name);
+    }
+    ::std::string __str{};
+    __str.reserve(__name.size() + __value.size() + __prefix.size() + 1); // +1 for '='
+    __str.append(__prefix.begin(), __prefix.end());
+    __str.append(__name.begin(), __name.end());
+    __str.append("=");
+    __str.append(__value.begin(), __value.end());
+    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
   }
-};
 
-namespace ptx_compile_options
-{
+  //! @brief Adds a macro undefinition to the list of options.
+  //!
+  //! @param __name The name of the macro to undefine. If the `__name` is empty, no action is taken.
+  void add_macro_undefinition(_CUDA_VSTD::string_view __name)
+  {
+    constexpr _CUDA_VSTD::string_view __prefix{"-U"};
 
-//! @brief Option to enable or disable device debugging information in PTX compilation.
-enum class device_debug_opt : bool
-{
-};
+    if (__name.empty())
+    {
+      return;
+    }
+    ::std::string __str{};
+    __str.reserve(__name.size() + __prefix.size());
+    __str.append(__prefix.begin(), __prefix.end());
+    __str.append(__name.begin(), __name.end());
+    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
+  }
 
-//! @brief Option to enable or disable line information in PTX compilation.
-enum class line_info_opt : bool
-{
-};
+  //! @brief Adds an include path to the list of options.
+  //!
+  //! @param __path The include path to add. If the `__path` is empty, no action is taken.
+  void add_include_path(_CUDA_VSTD::string_view __path)
+  {
+    constexpr _CUDA_VSTD::string_view __prefix{"-I"};
 
-//! @brief Option to enable or disable fused multiply-add (FMA) operations in PTX compilation.
-enum class fmad_opt : bool
-{
-};
+    ::std::string __str{};
+    __str.reserve(__path.size() + __prefix.size());
+    __str.append(__prefix.begin(), __prefix.end());
+    __str.append(__path.begin(), __path.end());
+    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
+  }
 
-//! @brief Option to specify the maximum number of registers per thread in PTX compilation.
-enum class max_reg_count_opt : int
-{
-  __unspecified = -3,
-  arch_min      = -2, //!< Use the minimum number of registers for the architecture.
-  arch_max      = -1, //!< Use the maximum number of registers for the architecture.
+  //! @brief Adds a file to be force-included in the compilation.
+  //!
+  //! @param __file_name The file to force include. If the `__file_name` is empty, no action is taken.
+  void add_force_include(_CUDA_VSTD::string_view __file_name)
+  {
+    constexpr _CUDA_VSTD::string_view __prefix{"-include"};
+
+    if (__file_name.empty())
+    {
+      return;
+    }
+    __dyn_opts_.push_back(::std::string{__prefix.begin(), __prefix.end()});
+    __dyn_opts_.push_back(::std::string{__file_name.begin(), __file_name.end()});
+  }
+
+  //! @brief Sets the C++ standard version for the compilation.
+  //!
+  //! @param __std_version The C++ standard version to use. Default is C++17.
+  void set_std_version(cuda_std_version __std_version)
+  {
+    __std_version_ = _CUDA_VSTD::to_underlying(__std_version);
+  }
+
+  //! @brief Sets the virtual architecture ID for the compilation.
+  //!
+  //! @param __arch_id The virtual architecture ID to use. Default is `cuda::arch::id::sm_75`.
+  void set_virtual_arch(cuda::arch::id __arch_id)
+  {
+    __virtual_arch_ = _CUDA_VSTD::to_underlying(__arch_id);
+  }
 };
 
 //! @brief Option to specify the optimization level for PTX compilation.
-enum class optimization_level_opt
+enum class ptx_optimization_level
 {
   O0,
   O1,
@@ -221,23 +178,8 @@ enum class optimization_level_opt
   O3,
 };
 
-//! @brief Option to enable or disable position-independent code (PIC) in PTX compilation.
-enum class pic_opt : bool
-{
-};
-
-//! @brief Option to specify the binary architecture for the PTX compilation.
-struct binary_arch_opt
-{
-  cuda::arch::id arch_id; //!< The binary architecture ID to use for the PTX compilation.
-};
-
-// todo: add other options
-
-} // namespace ptx_compile_options
-
 //! @brief Class to hold PTX compilation options.
-class ptx_compile_opts
+class ptx_compile_options
 {
   friend class cuda_compiler;
   friend class ptx_compiler;
@@ -252,70 +194,70 @@ class ptx_compile_opts
 
 public:
   //! @brief Default constructor for PTX compilation options.
-  ptx_compile_opts() noexcept
-      : __max_reg_count_{_CUDA_VSTD::to_underlying(ptx_compile_options::max_reg_count_opt::__unspecified)}
+  ptx_compile_options() noexcept
+      : __max_reg_count_{-1}
       , __binary_arch_{_CUDA_VSTD::to_underlying(cuda::arch::id::sm_75)}
-      , __optimization_level_{_CUDA_VSTD::to_underlying(ptx_compile_options::optimization_level_opt::O3)}
+      , __optimization_level_{_CUDA_VSTD::to_underlying(ptx_optimization_level::O3)}
       , __device_debug_{false}
       , __line_info_{false}
       , __fmad_{false}
       , __pic_{false}
   {}
 
-  //! @brief Adds a PTX compilation option to the list of options.
+  //! @brief Enable device debugging information.
   //!
-  //! @tparam _Tp The type of the option to add.
-  //!
-  //! @param __opt The option to add.
-  template <class _Tp>
-  void add_option(const _Tp& __opt)
+  //! @param __enable If true, enables device debugging information; otherwise, disables it.
+  void enable_device_debug(bool __enable = true) noexcept
   {
-    using namespace ptx_compile_options;
-
-    // todo: add value checking
-    if constexpr (_CUDA_VSTD::is_same_v<_Tp, device_debug_opt>)
-    {
-      __device_debug_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, line_info_opt>)
-    {
-      __line_info_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, fmad_opt>)
-    {
-      __fmad_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, max_reg_count_opt>)
-    {
-      __max_reg_count_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, optimization_level_opt>)
-    {
-      __optimization_level_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, pic_opt>)
-    {
-      __pic_ = _CUDA_VSTD::to_underlying(__opt);
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<_Tp, binary_arch_opt>)
-    {
-      __binary_arch_ = _CUDA_VSTD::to_underlying(__opt.arch_id);
-    }
-    else
-    {
-      static_assert(_CUDA_VSTD::__always_false_v<_Tp>, "Unsupported option type");
-    }
+    __device_debug_ = __enable;
   }
 
-  //! @brief Adds multiple PTX compilation options to the list of options.
+  //! @brief Enable line information.
   //!
-  //! @tparam _Tps The types of the options to add.
-  //!
-  //! @param __opts The options to add.
-  template <class... _Tps>
-  void add_options(const _Tps&... __opts)
+  //! @param __enable If true, enables line information; otherwise, disables it.
+  void enable_line_info(bool __enable = true) noexcept
   {
-    (add_option(__opts), ...);
+    __line_info_ = __enable;
+  }
+
+  //! @brief Enable fused multiply-add (FMA) operations.
+  //!
+  //! @param __enable If true, enables FMA operations; otherwise, disables it.
+  void enable_fmad(bool __enable = true) noexcept
+  {
+    __fmad_ = __enable;
+  }
+
+  //! @brief Set the maximum number of registers per thread.
+  //!
+  //! @param __max_reg_count The maximum number of registers per thread.
+  void set_max_reg_count(int __max_reg_count) noexcept
+  {
+    __max_reg_count_ = __max_reg_count;
+  }
+
+  //! @brief Set the optimization level for PTX compilation.
+  //!
+  //! @param __opt_level The optimization level to use.
+  void set_optimization_level(ptx_optimization_level __opt_level) noexcept
+  {
+    __optimization_level_ = _CUDA_VSTD::to_underlying(__opt_level);
+  }
+
+  //! @brief Enable position-independent code (PIC).
+  //!
+  //! @param __enable If true, enables PIC; otherwise, disables it.
+  void enable_pic(bool __enable = true) noexcept
+  {
+    __pic_ = __enable;
+  }
+
+  //! @brief Set the binary architecture for PTX compilation.
+  //!
+  //! @param __arch_id The binary architecture ID to use. Default is `cuda::arch::id::sm_75`.
+  void set_binary_arch(cuda::arch::id __arch_id) noexcept
+  {
+    __binary_arch_ = _CUDA_VSTD::to_underlying(__arch_id);
   }
 };
 

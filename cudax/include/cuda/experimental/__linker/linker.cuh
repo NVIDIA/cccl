@@ -102,7 +102,7 @@ public:
   //! @brief Link PTX sources to a single PTX output.
   //!
   //! @param __sources The PTX sources to link.
-  [[nodiscard]] link_to_ptx_result link_to_ptx(const ptx_link_sources& __sources, const ptx_link_opts& __ptx_opts)
+  [[nodiscard]] link_to_ptx_result link_to_ptx(const ptx_link_sources& __sources, const ptx_link_options& __ptx_opts)
   {
     ::std::vector<const char*> __opt_ptrs{"-lto", "-ptx"};
 
@@ -131,7 +131,7 @@ public:
   //! @param __sources The CUBIN sources to link.
   //! @param __ptx_opts The PTX compilation options to use.
   [[nodiscard]] link_to_cubin_result link_to_cubin(
-    const cubin_link_sources& __sources, const ptx_compile_opts& __ptx_opts, const cubin_link_opts& __cubin_opts)
+    const cubin_link_sources& __sources, const ptx_compile_options& __ptx_opts, const cubin_link_options& __cubin_opts)
   {
     ::std::vector<const char*> __opt_ptrs{};
 

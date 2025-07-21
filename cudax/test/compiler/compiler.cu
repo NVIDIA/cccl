@@ -56,17 +56,14 @@ C2H_TEST("Cuda compiler version", "[cuda.compiler.version]")
 
 C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
 {
-  cudax::cuda_compile_opts cuda_opts;
-  {
-    using namespace cudax::cuda_compile_options;
-    cuda_opts.add_option(define_macro_opt{"MACRO"});
-    cuda_opts.add_option(define_macro_opt{"VALUE", "10"});
-    cuda_opts.add_option(undefine_macro_opt{"UMACRO"});
-    cuda_opts.add_option(include_path_opt{"/usr/local/cuda/include"});
-    cuda_opts.add_option(force_include_opt{"force_include.h"});
-    cuda_opts.add_option(std_version_opt::cxx17);
-    cuda_opts.add_option(virtual_arch_opt{cuda::arch::id::sm_75});
-  }
+  cudax::cuda_compile_options cuda_opts;
+  cuda_opts.add_macro_definition("MACRO");
+  cuda_opts.add_macro_definition("VALUE", "10");
+  cuda_opts.add_macro_undefinition("UMACRO");
+  cuda_opts.add_include_path("/usr/local/cuda/include");
+  cuda_opts.add_force_include("force_include.h");
+  cuda_opts.set_std_version(cudax::cuda_std_version::cxx17);
+  cuda_opts.set_virtual_arch(cuda::arch::id::sm_75);
 
   constexpr auto name_expr = "test_kernel<int>";
 
@@ -89,26 +86,21 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
 
 C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
 {
-  cudax::cuda_compile_opts cuda_opts;
-  {
-    using namespace cudax::cuda_compile_options;
-    cuda_opts.add_option(define_macro_opt{"MACRO"});
-    cuda_opts.add_option(define_macro_opt{"VALUE", "10"});
-    cuda_opts.add_option(undefine_macro_opt{"UMACRO"});
-    cuda_opts.add_option(include_path_opt{"/usr/local/cuda/include"});
-    cuda_opts.add_option(force_include_opt{"force_include.h"});
-    cuda_opts.add_option(std_version_opt::cxx17);
-    cuda_opts.add_option(virtual_arch_opt{cuda::arch::id::sm_75});
-  }
-  cudax::ptx_compile_opts ptx_opts;
-  {
-    using namespace cudax::ptx_compile_options;
-    ptx_opts.add_option(line_info_opt{true});
-    ptx_opts.add_option(fmad_opt{true});
-    ptx_opts.add_option(max_reg_count_opt{32});
-    ptx_opts.add_option(optimization_level_opt{3});
-    ptx_opts.add_option(binary_arch_opt{cuda::arch::id::sm_75});
-  }
+  cudax::cuda_compile_options cuda_opts;
+  cuda_opts.add_macro_definition("MACRO");
+  cuda_opts.add_macro_definition("VALUE", "10");
+  cuda_opts.add_macro_undefinition("UMACRO");
+  cuda_opts.add_include_path("/usr/local/cuda/include");
+  cuda_opts.add_force_include("force_include.h");
+  cuda_opts.set_std_version(cudax::cuda_std_version::cxx17);
+  cuda_opts.set_virtual_arch(cuda::arch::id::sm_75);
+
+  cudax::ptx_compile_options ptx_opts;
+  ptx_opts.enable_line_info(true);
+  ptx_opts.enable_fmad();
+  ptx_opts.set_max_reg_count(32);
+  ptx_opts.set_optimization_level(cudax::ptx_optimization_level::O3);
+  ptx_opts.set_binary_arch(cuda::arch::id::sm_75);
 
   constexpr auto name_expr = "test_kernel<int>";
 
@@ -130,17 +122,14 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
 
 C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
 {
-  cudax::cuda_compile_opts cuda_opts;
-  {
-    using namespace cudax::cuda_compile_options;
-    cuda_opts.add_option(define_macro_opt{"MACRO"});
-    cuda_opts.add_option(define_macro_opt{"VALUE", "10"});
-    cuda_opts.add_option(undefine_macro_opt{"UMACRO"});
-    cuda_opts.add_option(include_path_opt{"/usr/local/cuda/include"});
-    cuda_opts.add_option(force_include_opt{"force_include.h"});
-    cuda_opts.add_option(std_version_opt::cxx17);
-    cuda_opts.add_option(virtual_arch_opt{cuda::arch::id::sm_75});
-  }
+  cudax::cuda_compile_options cuda_opts;
+  cuda_opts.add_macro_definition("MACRO");
+  cuda_opts.add_macro_definition("VALUE", "10");
+  cuda_opts.add_macro_undefinition("UMACRO");
+  cuda_opts.add_include_path("/usr/local/cuda/include");
+  cuda_opts.add_force_include("force_include.h");
+  cuda_opts.set_std_version(cudax::cuda_std_version::cxx17);
+  cuda_opts.set_virtual_arch(cuda::arch::id::sm_75);
 
   constexpr auto name_expr = "test_kernel<int>";
 
@@ -167,15 +156,12 @@ C2H_TEST("PTX compiler version", "[ptx.compiler.version]")
 
 C2H_TEST("Compile ptx to cubin", "[ptx.compile.ptx_to_cubin]")
 {
-  cudax::ptx_compile_opts ptx_opts;
-  {
-    using namespace cudax::ptx_compile_options;
-    ptx_opts.add_option(line_info_opt{true});
-    ptx_opts.add_option(fmad_opt{true});
-    ptx_opts.add_option(max_reg_count_opt{32});
-    ptx_opts.add_option(optimization_level_opt{3});
-    ptx_opts.add_option(binary_arch_opt{cuda::arch::id::sm_75});
-  }
+  cudax::ptx_compile_options ptx_opts;
+  ptx_opts.enable_line_info(true);
+  ptx_opts.enable_fmad();
+  ptx_opts.set_max_reg_count(32);
+  ptx_opts.set_optimization_level(cudax::ptx_optimization_level::O3);
+  ptx_opts.set_binary_arch(cuda::arch::id::sm_75);
 
   constexpr auto lowered_name = "_Z11test_kernelPi";
 
