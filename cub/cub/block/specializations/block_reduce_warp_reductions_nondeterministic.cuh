@@ -94,45 +94,6 @@ struct BlockReduceWarpReductionsNondeterministic
   {}
 
   /**
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   */
-  template <bool FULL_TILE, typename ReductionOp, int SUCCESSOR_WARP>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp reduction_op, T warp_aggregate, int num_valid, constant_t<SUCCESSOR_WARP> /*successor_warp*/)
-  {
-    if (FULL_TILE || (SUCCESSOR_WARP * LOGICAL_WARP_SIZE < num_valid))
-    {
-      const T addend = temp_storage.warp_aggregates[SUCCESSOR_WARP];
-      warp_aggregate = reduction_op(warp_aggregate, addend);
-    }
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<SUCCESSOR_WARP + 1>);
-  }
-
-  /**
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   */
-  template <bool FULL_TILE, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, constant_t<int{WARPS}> /*successor_warp*/)
-  {
-    return warp_aggregate;
-  }
-
-  /**
    * @brief Returns block-wide aggregate in <em>thread</em><sub>0</sub>.
    *
    * @param[in] reduction_op
