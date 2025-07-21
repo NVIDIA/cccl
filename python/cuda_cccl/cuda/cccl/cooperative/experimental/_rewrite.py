@@ -617,6 +617,12 @@ class CoopNode:
     child_template: Optional[Any] = None
     wants_rewrite: bool = None
     has_been_rewritten: bool = False
+    wants_codegen: bool = None
+    has_been_codegened: bool = False
+
+    @property
+    def shortname(self):
+        return f"{self.__class__.__name__}({self.target.name})"
 
     def __post_init__(self):
         # If we're handling a two-phase invocation via a primitive that was
@@ -807,7 +813,8 @@ class CoopNode:
         """
         Determine the primitive type of the cooperative operation.
         """
-        name = self.key_name.lower()
+        # name = self.key_name.lower()
+        name = self.primitive_name.lower()
         if "array" in name:
             return Primitive.ARRAY
         elif "load" in name:
@@ -871,11 +878,14 @@ class CoopNode:
 
     @property
     def codegen(self):
-        # This should only ever be one for the new primitive impl; we've
+        # There should only ever be one for the new primitive impl; we've
         # obviated the need for the automatic implicit temp storage parameter
         # codegen by way of our richer primitives and rewriting facilities.
         assert len(self.codegens) == 1, (len(self.codegens), self.codegens)
         return self.codegens[0]
+
+    def codegen_callback(self):
+        raise NotImplementedError
 
 
 @dataclass
@@ -1128,10 +1138,8 @@ class CoopLoadStoreNode(CoopNode):
             loc=self.instr.loc,
         )
 
-        # Set up type information
-        from numba.core.typing.templates import AbstractTemplate, Signature
-
         # Determine argument types
+
         arg_types = [self.typemap[arg.name] for arg in self.expr.args]
 
         sig = Signature(
@@ -1506,7 +1514,9 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
 class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length"
     disposition = Disposition.PARENT
-    wants_rewrite: bool = False
+    wants_rewrite: bool = True
+    # wants_rewrite: bool = False
+    # wants_codegen: bool = False
 
     def refine_match(self, rewriter):
         # The caller has invoked us with something like this:
@@ -1532,14 +1542,9 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         #       temp_storage=temp_storage,
         #   )
         #
-        # And then invoke as:
-        #
-        #   run_length = run_length_constructor(
-        #       run_values,
-        #       run_lengths,
-        #       total_decoded_size=total_decoded_size,
-        #       temp_storage=temp_storage,
-        #   )
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
 
         expr = self.expr
         expr_args = self.expr_args = list(expr.args)
@@ -1547,9 +1552,15 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         run_values = expr_args.pop(0)
         run_values_ty = self.typemap[run_values.name]
         item_dtype = run_values_ty.dtype
+        runtime_args.append(run_values)
+        runtime_arg_types.append(run_values_ty)
+        runtime_arg_names.append("run_values")
 
         run_lengths = expr_args.pop(0)
         run_lengths_ty = self.typemap[run_lengths.name]
+        runtime_args.append(run_lengths)
+        runtime_arg_types.append(run_lengths_ty)
+        runtime_arg_names.append("run_lengths")
 
         # Would our new get_root_definition() work here instead of raw-dogging
         # self.get_arg_value()?
@@ -1567,6 +1578,9 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         if total_decoded_size is not None:
             assert isinstance(total_decoded_size, ir.Var)
             total_decoded_size_ty = self.typemap[total_decoded_size.name]
+            runtime_args.append(total_decoded_size)
+            runtime_arg_types.append(total_decoded_size_ty)
+            runtime_arg_names.append("total_decoded_size")
 
         decoded_offset_dtype = self.get_arg_value_safe("decoded_offset_dtype")
         if decoded_offset_dtype is not None:
@@ -1577,6 +1591,9 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         if temp_storage is not None:
             assert isinstance(temp_storage, ir.Var)
             temp_storage_ty = self.typemap[temp_storage.name]
+            runtime_args.append(temp_storage)
+            runtime_arg_types.append(temp_storage_ty)
+            runtime_arg_names.append("temp_storage")
 
         if decoded_offset_dtype is None and self.child_expr is not None:
             # We're being created indirectly as part of the rewriter
@@ -1610,7 +1627,12 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         self.total_decoded_size = total_decoded_size
         self.temp_storage = temp_storage
         self.decoded_offset_dtype = decoded_offset_dtype
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
 
+        # We instantiate the implementation class here so child classes can
+        # access it before our rewrite() method is called.
         self.instance = self.impl_class(
             item_dtype=item_dtype,
             dim=self.launch_config.blockdim,
@@ -1628,13 +1650,136 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         self.children.append(child)
 
     def rewrite(self, rewriter):
-        raise RuntimeError("CoopBlockRunLengthNode should not be rewritten")
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        # We should have a single decode child node at this point.
+        assert len(self.children) == 1
+
+        expr = self.expr
+
+        # Create a global variable for the invocable.
+        assign = self.instr
+        assert isinstance(assign, ir.Assign)
+        # assign = self.rewriter.assignments_map[self.instr]
+        scope = assign.target.scope
+
+        g_var_name = f"${self.call_var_name}"
+        g_var = ir.Var(scope, g_var_name, expr.loc)
+
+        existing = self.typemap.get(g_var_name, None)
+        assert not existing
+        # existing = self.rewriter.func_ir.get_definition(g_var_name, None)
+        # assert not existing
+
+        instance = self.instance
+
+        # Create a dummy invocable we can use for lowering.
+        code = dedent(f"""
+            def {self.call_var_name}(*args):
+                return
+        """)
+        exec(code, globals())
+        invocable = globals()[self.call_var_name]
+        mod = sys.modules[invocable.__module__]
+        setattr(mod, self.call_var_name, invocable)
+
+        self.invocable = instance.invocable = invocable
+        invocable.node = self
+
+        g_assign = ir.Assign(
+            value=ir.Global(g_var_name, invocable, expr.loc),
+            target=g_var,
+            loc=expr.loc,
+        )
+
+        new_call = ir.Expr.call(
+            func=g_var,
+            args=self.runtime_args,
+            kws=(),
+            loc=expr.loc,
+        )
+
+        new_assign = ir.Assign(
+            value=new_call,
+            target=assign.target,
+            loc=assign.loc,
+        )
+
+        template = self.template
+        instance_type = template.get_instance_type()
+
+        sig = Signature(
+            instance_type,
+            args=self.runtime_arg_types,
+            recvr=None,
+            pysig=None,
+        )
+
+        self.calltypes[new_call] = sig
+
+        algo = instance.specialization
+        self.codegens = algo.create_codegens()
+
+        @register_global(invocable)
+        class ImplDecl(AbstractTemplate):
+            key = invocable
+
+            def generic(self, outer_args, outer_kws):
+                @lower(invocable, types.VarArg(types.Any))
+                def codegen(context, builder, sig, args):
+                    node = invocable.node
+                    cg = node.codegen
+                    (_, codegen_method) = cg.intrinsic_impl()
+                    res = codegen_method(context, builder, sig, args)
+
+                    # Add all the LTO-IRs to the current code library.
+                    lib = context.active_code_library
+                    algo = node.instance.specialization
+                    # algo.generate_source(node.threads)
+                    for ltoir in algo.lto_irs:
+                        lib.add_linking_file(ltoir)
+
+                    return res
+
+                return sig
+
+        func_ty = types.Function(ImplDecl)
+
+        typingctx = self.typingctx
+        result = func_ty.get_call_type(
+            typingctx,
+            args=self.runtime_arg_types,
+            kws={},
+        )
+        assert result is not None, result
+        check = func_ty._impl_keys[sig.args]
+        assert check is not None, check
+
+        existing = self.typemap.get(g_var.name, None)
+        if existing:
+            raise RuntimeError(f"Variable {g_var.name} already exists in typemap.")
+        self.typemap[g_var.name] = func_ty
+
+        rewrite_details = SimpleNamespace(
+            g_var=g_var,
+            g_assign=g_assign,
+            new_call=new_call,
+            new_assign=new_assign,
+            sig=sig,
+            func_ty=func_ty,
+        )
+
+        return rewrite_details
 
 
+@dataclass
 class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length.decode"
     disposition = Disposition.CHILD
-    wants_rewrite = False
+    wants_rewrite: bool = True
 
     def refine_match(self, rewriter):
         # Possible call invocation types:
@@ -1654,6 +1799,9 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
         # Or:
         #
         #   run_length.decode(decoded_items)
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
 
         parent_instance = self.parent_node.instance
 
@@ -1666,10 +1814,16 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
                 f"Expected a leaf array call definition for {decoded_items!r},"
                 f" got {decoded_items_root_def!r}"
             )
+        decoded_items_array_type = decoded_items_array_call.array_type
         decoded_items_array_dtype = decoded_items_array_call.array_dtype
+        runtime_args.append(decoded_items)
+        runtime_arg_types.append(decoded_items_array_type)
+        runtime_arg_names.append("decoded_items")
 
-        relative_offsets_dtype = None
         relative_offsets = bound_args.get("relative_offsets", None)
+        relative_offsets_dtype = None
+        relative_offsets_root_def = None
+        relative_offsets_array_type = None
         if relative_offsets is not None:
             relative_offsets_root_def = self.rewriter.get_root_def(relative_offsets)
             relative_offsets_array_call = (
@@ -1682,8 +1836,12 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
                 )
             relative_offsets_array_type = relative_offsets_array_call.array_type
             relative_offsets_dtype = relative_offsets_array_type.dtype
+            runtime_args.append(relative_offsets)
+            runtime_arg_types.append(relative_offsets_array_type)
+            runtime_arg_names.append("relative_offsets")
 
         decoded_window_offset_dtype = None
+        decoded_window_offset_ty = None
         decoded_window_offset = bound_args.get("decoded_window_offset", None)
         if decoded_window_offset is not None:
             if isinstance(decoded_window_offset, ir.Var):
@@ -1696,7 +1854,6 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
                     f"Expected a variable for decoded_window_offset, "
                     f"got {decoded_window_offset!r}"
                 )
-
         if decoded_window_offset_dtype is None:
             # Try and obtain the type from the parent.
             decoded_window_offset_dtype = self.parent_node.decode_window_offset_dtype
@@ -1709,6 +1866,27 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
                 f"{self!r} or its parent node {self.parent_node!r}"
             )
 
+        if decoded_window_offset is not None:
+            runtime_args.append(decoded_window_offset)
+            runtime_arg_types.append(decoded_window_offset_ty)
+            runtime_arg_names.append("decoded_window_offset")
+
+        self.decoded_items = decoded_items
+        self.decoded_items_root_def = decoded_items_root_def
+        self.decoded_items_array_dtype = decoded_items_array_dtype
+
+        self.relative_offsets = relative_offsets
+        self.relative_offsets_dtype = relative_offsets_dtype
+        self.relative_offsets_root_def = relative_offsets_root_def
+        self.relative_offsets_array_type = relative_offsets_array_type
+
+        self.decoded_window_offset = decoded_window_offset
+        self.decoded_window_offset_dtype = decoded_window_offset_dtype
+
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
         self.instance = parent_instance.decode(
             decoded_items_dtype=decoded_items_array_dtype,
             decoded_window_offset_dtype=decoded_window_offset_dtype,
@@ -1716,11 +1894,117 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
         )
         self.instance.node = self
 
-        algo = self.instance.specialization
-        source_code = algo.source_code
-        print(source_code)
-
     def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        expr = self.expr
+
+        # Create a global variable for the invocable.
+        assign = self.instr
+        assert isinstance(assign, ir.Assign)
+        # assign = self.rewriter.assignments_map[self.instr]
+        scope = assign.target.scope
+
+        g_var_name = f"${self.call_var_name}"
+        g_var = ir.Var(scope, g_var_name, expr.loc)
+
+        existing = self.typemap.get(g_var_name, None)
+        assert not existing
+
+        instance = self.instance
+
+        # Create a dummy invocable we can use for lowering.
+        code = dedent(f"""
+            def {self.call_var_name}(*args):
+                return
+        """)
+        exec(code, globals())
+        invocable = globals()[self.call_var_name]
+        mod = sys.modules[invocable.__module__]
+        setattr(mod, self.call_var_name, invocable)
+
+        self.invocable = instance.invocable = invocable
+        invocable.node = self
+
+        g_assign = ir.Assign(
+            value=ir.Global(g_var_name, invocable, expr.loc),
+            target=g_var,
+            loc=expr.loc,
+        )
+
+        new_call = ir.Expr.call(
+            func=g_var,
+            args=self.runtime_args,
+            kws=(),
+            loc=expr.loc,
+        )
+
+        new_assign = ir.Assign(
+            value=new_call,
+            target=assign.target,
+            loc=assign.loc,
+        )
+
+        sig = Signature(
+            types.void,
+            args=self.runtime_arg_types,
+            recvr=None,
+            pysig=None,
+        )
+
+        self.calltypes[new_call] = sig
+
+        algo = instance.specialization
+        self.codegens = algo.create_codegens()
+
+        @register_global(invocable)
+        class ImplDecl(AbstractTemplate):
+            key = invocable
+
+            def generic(self, outer_args, outer_kws):
+                @lower(invocable, types.VarArg(types.Any))
+                def codegen(context, builder, sig, args):
+                    node = invocable.node
+                    cg = node.codegen
+                    (_, codegen_method) = cg.intrinsic_impl()
+                    res = codegen_method(context, builder, sig, args)
+
+                    # As we're a child, we don't need to do any linking.
+                    return res
+
+                return sig
+
+        func_ty = types.Function(ImplDecl)
+
+        typingctx = self.typingctx
+        result = func_ty.get_call_type(
+            typingctx,
+            args=self.runtime_arg_types,
+            kws={},
+        )
+        print(result)
+        check = func_ty._impl_keys[sig.args]
+        assert check is not None, check
+
+        existing = self.typemap.get(g_var.name, None)
+        if existing:
+            raise RuntimeError(f"Variable {g_var.name} already exists in typemap.")
+        self.typemap[g_var.name] = func_ty
+
+        rewrite_details = SimpleNamespace(
+            g_var=g_var,
+            g_assign=g_assign,
+            new_call=new_call,
+            new_assign=new_assign,
+            sig=sig,
+            func_ty=func_ty,
+        )
+
+        return rewrite_details
+
         raise RuntimeError("CoopBlockRunLengthDecodeNode should not be rewritten")
 
 
@@ -1978,7 +2262,8 @@ class CoopNodeRewriter(Rewrite):
             index=0,
             block_line=root_block.loc.line,
             expr=expr,
-            instr=parent_root_def.root_instr,
+            # instr=parent_root_def.root_instr,
+            instr=root_assign,
             template=template,
             func=func,
             func_name=func_name,
@@ -2106,7 +2391,6 @@ class CoopNodeRewriter(Rewrite):
 
         self.current_block = block
 
-        first = True
         launch_config = None
 
         # We return this value at the end of the routine.  A true value
@@ -2173,32 +2457,53 @@ class CoopNodeRewriter(Rewrite):
             if node:
                 # If the node is a parent node, it must have been created
                 # in response to a child primitive invocation being processed.
-                # Check to see if we should still register for a rewrite.
                 if node.is_parent:
+                    # Check to see if we should still register for a rewrite.
                     if node.wants_rewrite and not node.has_been_rewritten:
                         we_want_apply = True
+
+                    # If we're processing the genesis instruction for the
+                    # parent (i.e. the first invocation of the primitive),
+                    # the node's `instr.loc` will match the current
+                    # instruction's loc.
+                    if node.instr.loc == instr.loc:
+                        # Check to see if we need to kick-off codegen for
+                        # the parent and all children nodes.
+                        if node.wants_codegen and not node.has_been_codegened:
+                            node.codegen_callback()
                     continue
 
-                # The only way we could have a node for this target is if
-                # we're getting reinvoked against a block we've already
-                # processed (which can happen if a rewrite occurs).  Verify
-                # this invariant now.
+                # If we're not a parent, the only way we could have a node
+                # for this target is if we're getting reinvoked against a
+                # block we've already processed (which can happen if a
+                # rewrite occurs).  Thus, our invocation count should be
+                # greater than 1, and block line and root instruction should
+                # match the current block and instruction.  Verify these
+                # critical invariants now.
+                assert invocation_count > 0
                 if invocation_count == 1:
                     raise RuntimeError(
-                        f"Node {node!r} for target {target_name!r} "
+                        f"Node {node.shortname} for target {target_name!r} "
                         "already exists, but this is the first invocation "
                         "of the rewriter.match() method for this block."
                     )
 
                 if node.block_line != block.loc.line:
                     raise RuntimeError(
-                        f"Node {node!r} for target {target_name!r} "
+                        f"Node {node.shortname} for target {target_name!r} "
                         f"has a different block line ({node.block_line}) "
                         f"than the current block ({block.loc.line})"
                     )
 
-                print(f"Found existing node for {target_name!r} skipping...")
+                if node.instr.loc != instr.loc:
+                    raise RuntimeError(
+                        f"Node {node.shortname} for target {target_name!r} "
+                        f"has a different instruction location "
+                        f"({node.instr.loc}) than the current instruction "
+                        f"({instr.loc})"
+                    )
 
+                print(f"Found existing node for {target_name!r} skipping...")
                 continue
 
             # N.B. This code block used to have a lot more functionality, but
@@ -2242,13 +2547,6 @@ class CoopNodeRewriter(Rewrite):
 
             expr = rhs
 
-            expr_repr = repr(expr)
-            if "run_length" in expr_repr:
-                # import debugpy
-                # debugpy.breakpoint()
-                # print(expr_repr)
-                pass
-
             # We can ignore nodes that aren't function calls herein.
             if expr.op != "call":
                 continue
@@ -2291,20 +2589,15 @@ class CoopNodeRewriter(Rewrite):
             # code path, and we raise an error.
             if hasattr(func, "templates"):
                 templates = func.templates
-                # N.B. I don't yet understand the implications of multiple
-                #      templates matching here, so, for now, just return the
-                #      first match.  (I don't *think* we'll ever have more
-                #      than one template here anyway, based on how we wire
-                #      everything up.)
-                for template in templates:
-                    impl_class = decl_classes.get(template, None)
-                    if impl_class:
-                        break
+                if len(templates) != 1:
+                    # Our primitives will never have more than one template,
+                    # so this isn't one of ours.
+                    continue
 
+                template = templates[0]
+                impl_class = decl_classes.get(template, None)
                 if not impl_class:
-                    # If there's no matching implementation class, we can
-                    # ignore this function call, as it's not one of our
-                    # primitives.
+                    # This isn't one of our primitives, so we can skip it.
                     continue
 
                 primitive_name = template.primitive_name
@@ -2455,6 +2748,9 @@ class CoopNodeRewriter(Rewrite):
                 # bound_func = func
                 # type_instance = func
                 template = func.template
+                if not hasattr(template, "primitive_name"):
+                    # This isn't one of our bound functions.
+                    continue
                 primitive_name = template.primitive_name
                 parent_struct_instance_type = func.key[1]
 
@@ -2542,13 +2838,6 @@ class CoopNodeRewriter(Rewrite):
                     f"{two_phase_instance!r} ({primitive_name!r})"
                 )
                 raise RuntimeError(msg)
-
-            # Small performance optimization: only store attributes once,
-            # upon first match.
-            if first:
-                self.typemap = typemap
-                self.calltypes = calltypes
-                first = False
 
             # If we already have a node for this target name, it must have
             # been created by a preceding block containing a child primitive

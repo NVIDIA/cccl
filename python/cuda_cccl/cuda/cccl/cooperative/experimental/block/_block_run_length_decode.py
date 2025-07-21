@@ -3,10 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import numba
-from numba import types
-from numba.core.imputils import (
-    lower_builtin,
-)
 
 from .._common import (
     normalize_dim_param,
@@ -251,49 +247,3 @@ class BlockRunLength(BasePrimitive):
 
 class run_length(BlockRunLength):
     pass
-
-
-@lower_builtin("call", run_length, types.VarArg(types.Any))
-@lower_builtin(run_length, types.VarArg(types.Any))
-def run_length_impl(context, builder, sig, args):
-    """
-    Lower the `run_length` primitive to a call to the CUB implementation.
-    """
-    return context.get_dummy_value()
-    # xxx todo
-    item_dtype = sig.args[0]
-    dim = sig.args[1]
-    runs_per_thread = sig.args[2]
-    decoded_items_per_thread = sig.args[3]
-    decoded_offset_dtype = sig.args[4] if len(sig.args) > 4 else numba.uint32
-
-    run_length_primitive = run_length(
-        item_dtype,
-        dim,
-        runs_per_thread,
-        decoded_items_per_thread,
-        decoded_offset_dtype,
-    )
-
-    return run_length_primitive.specialization.lower(context, builder, args)
-
-
-@lower_builtin("call", run_length.decode, types.VarArg(types.Any))
-@lower_builtin(run_length.decode, types.VarArg(types.Any))
-def run_length_decode_impl(context, builder, sig, args):
-    """
-    Lower the `run_length.decode` primitive to a call to the CUB implementation.
-    """
-    return context.get_dummy_value()
-    run_length_primitive = sig.args[0]
-    decoded_items_dtype = sig.args[1]
-    decoded_window_offset_dtype = sig.args[2]
-    relative_offsets_dtype = sig.args[3] if len(sig.args) > 3 else None
-
-    decode_primitive = run_length_primitive.decode(
-        decoded_items_dtype,
-        decoded_window_offset_dtype,
-        relative_offsets_dtype=relative_offsets_dtype,
-    )
-
-    return decode_primitive.specialization.lower(context, builder, args)

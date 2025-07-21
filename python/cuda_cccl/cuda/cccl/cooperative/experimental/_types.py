@@ -6,8 +6,12 @@ import re
 from functools import cached_property
 from io import StringIO
 from textwrap import dedent
-from types import FunctionType as PyFunctionType
-from types import SimpleNamespace
+from types import (
+    FunctionType as PyFunctionType,
+)
+from types import (
+    SimpleNamespace,
+)
 from typing import TYPE_CHECKING, BinaryIO, List, Literal, Sequence
 
 import numba
@@ -169,25 +173,44 @@ class Value(Parameter):
 
 
 class Pointer(Parameter):
-    def __init__(self, value_dtype, is_output=False, name=None):
+    def __init__(
+        self,
+        value_dtype,
+        is_output=False,
+        name=None,
+        type_name=None,
+        restrict=False,
+        is_array_pointer=True,
+    ):
         self.value_dtype = value_dtype
+        self.type_name = type_name
+        self.restrict = restrict
+        self.is_array_pointer = is_array_pointer
         super().__init__(is_output, name)
 
     def __repr__(self) -> str:
+        buf = StringIO()
+        w = buf.write
+        w("Pointer(dtype={self.value_dtype}, out={self.is_output}, ")
+        w(f"restrict={self.restrict}")
         if self.name is not None:
-            return (
-                f"Pointer(name={self.name}, "
-                f"dtype={self.value_dtype}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return f"Pointer(dtype={self.value_dtype}, out={self.is_output})"
+            w(f", name={self.name}")
+        if self.type_name is not None:
+            w(f", type_name={self.type_name}")
+        w(f", is_array_pointer={self.is_array_pointer})")
+        return buf.getvalue()
 
-    def cpp_decl(self, name, default="storage_t"):
-        return numba_type_to_cpp(self.value_dtype, default) + "* " + name
+    def cpp_decl(self, name):
+        var_name = name
+        type_name = self.type_name or numba_type_to_cpp(self.value_dtype)
+        restrict = "__restrict__" if self.restrict else ""
+        return f"{type_name}* {restrict} {var_name}"
 
     def dtype(self):
-        return numba.types.Array(self.value_dtype, 1, "A")
+        if self.is_array_pointer:
+            return numba.types.Array(self.value_dtype, 1, "A")
+        else:
+            return numba.types.CPointer(self.value_dtype)
 
     def mangled_name(self):
         return f"P{self.value_dtype}"
@@ -678,14 +701,40 @@ class Algorithm:
         self.threads = threads
         self.temp_storage = temp_storage
 
-        if self.primitive.is_parent and not template_parameters:
-            # Inject the void *addr and size parameters for structs.
-            injected = [
-                Pointer(numba.types.voidptr, name="addr"),
-                Value(numba.types.int64, name="size"),
-            ]
-            for method in self.parameters:
-                method[:0] = injected
+        if not template_parameters:
+            # We're dealing with a specialized instance.
+            if primitive.is_parent:
+                # Inject the void *addr and size parameters for structs.
+                injected = [
+                    Pointer(
+                        numba.types.voidptr,
+                        name="addr",
+                        restrict=True,
+                        is_array_pointer=False,
+                    ),
+                    Value(numba.types.uint32, name="size"),
+                ]
+                for method in self.parameters:
+                    method[:0] = injected
+            elif primitive.is_child:
+                # Inject the typed pointer to the parent instance type as
+                # the first parameter.
+                parent_node = primitive.parent.node
+                template = parent_node.template
+                parent_instance_type = template.get_instance_type()
+                parent_algo = parent_node.instance.specialization
+                parent_names = parent_algo.names
+                injected = [
+                    Pointer(
+                        parent_instance_type,
+                        name="algorithm",
+                        type_name=parent_names.algorithm_t,
+                        restrict=True,
+                        is_array_pointer=False,
+                    )
+                ]
+                for method in self.parameters:
+                    method[:0] = injected
 
     def __repr__(self) -> str:
         return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
@@ -1014,18 +1063,45 @@ class Algorithm:
                 w(f"{decl}\n")
             w("\n")
 
+        node = self.primitive.node
+        target_name = f"{node.target.name}"
+        algorithm_t = f"{target_name}_t"
+        algorithm_struct_size = f"{algorithm_t}_struct_size"
+        algorithm_struct_alignment = f"{algorithm_t}_struct_alignment"
+        algorithm_temp_storage_size = f"{algorithm_t}_temp_storage_size"
+        algorithm_temp_storage_alignment = f"{algorithm_t}_temp_storage_alignment"
+        temp_storage_t = f"{target_name}_temp_storage_t"
+        temp_storage_bytes = f"{temp_storage_t}_bytes"
+        temp_storage_alignment = f"{temp_storage_t}_alignment"
+        constructor_name = f"{target_name}_construct"
+        destructor_name = f"{target_name}_destruct"
+
+        # Capture all of the names so that child classes can refer to them.
+        self.names = SimpleNamespace(
+            target_name=target_name,
+            algorithm_name=algorithm_name,
+            algorithm_t=algorithm_t,
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            algorithm_temp_storage_size=algorithm_temp_storage_size,
+            algorithm_temp_storage_alignment=algorithm_temp_storage_alignment,
+            temp_storage_t=temp_storage_t,
+            constructor_name=constructor_name,
+            destructor_name=destructor_name,
+        )
+
         # Write the algorithm instantiation with template specialization,
         # and then corresponding size and alignment information.
-        w(f"using algorithm_t = cub::{algorithm_name};\n")
-        prefix = "__device__ constexpr unsigned algorithm_struct_"
-        w(f"{prefix}size = sizeof(algorithm_t);\n")
-        w(f"{prefix}alignment = alignof(algorithm_t);\n\n")
+        w(f"using {algorithm_t} = cub::{algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{algorithm_struct_size} = sizeof({algorithm_t});\n")
+        w(f"{prefix}{algorithm_struct_alignment} = alignof({algorithm_t});\n\n")
 
         # Write the temporary storage type and size/alignment information.
-        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
-        prefix = "__device__ constexpr unsigned temp_storage_"
-        w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
-        w(f"{prefix}alignment = alignof(temp_storage_t);\n\n")
+        w(f"using {temp_storage_t} = typename {algorithm_t}::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{temp_storage_bytes} = sizeof({temp_storage_t});\n")
+        w(f"{prefix}{temp_storage_alignment} = alignof({temp_storage_t});\n\n")
 
         src = buf.getvalue()
 
@@ -1073,33 +1149,29 @@ class Algorithm:
         buf = StringIO()
         w = buf.write
 
-        node = self.primitive.node
-        constructor_name = f"{node.target.name}_construct"
-        destructor_name = f"{node.target.name}_destruct"
-
         param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
         param_args_csv = ", ".join(param_args)
 
         # Constructor.
         w("// Constructor\n")
-        w(f'extern "C" __device__ algorithm_t* {constructor_name}(\n')
+        w(f'extern "C" __device__ {algorithm_t}* {constructor_name}(\n')
         w(f"{param_decls_csv}\n    )\n{{\n")
-        w("    if (size < sizeof(algorithm_t)) {\n")
+        w(f"    if (size < sizeof({algorithm_t})) {{\n")
         w("        return nullptr;\n")
         w("    }\n")
         addr_cast = "reinterpret_cast<uintptr_t>(addr)"
-        w(f"    if ({addr_cast} % alignof(algorithm_t) != 0) {{\n")
+        w(f"    if ({addr_cast} % alignof({algorithm_t}) != 0) {{\n")
         w("         return nullptr;\n")
         w("    }\n")
-        w(f"    return new (addr) algorithm_t({param_args_csv});\n")
+        w(f"    return new (addr) {algorithm_t}({param_args_csv});\n")
         w("}\n\n")
 
         # Destructor.
         w("// Destructor\n")
         w(f'extern "C" __device__ void {destructor_name}(\n')
-        w("    algorithm_t *algorithm\n    )\n{\n")
+        w(f"    {algorithm_t}* __restrict__ algorithm\n    )\n{{\n")
         w("    if (algorithm != nullptr) {\n")
-        w("        algorithm->~algorithm_t();\n")
+        w(f"        algorithm->~{algorithm_t}();\n")
         w("    }\n")
         w("}\n\n")
 
@@ -1181,6 +1253,11 @@ class Algorithm:
                         raise ValueError("Multiple output parameters not supported")
                     out_param = param_name
                 else:
+                    # Skip the first parameter, which was our injected
+                    # parent pointer.
+                    if pid == 0:
+                        assert param_name == "algorithm", param_name
+                        continue
                     param_args.append(param_name)
 
         buf = StringIO()
@@ -1189,9 +1266,11 @@ class Algorithm:
         primitive = self.primitive
         node = primitive.node
         parent_node = node.parent_node
-        parent_name = parent_node.target.name
+        parent_algo = parent_node.instance.specialization
+        names = parent_algo.names
+        target_name = names.target_name
         c_name = primitive.c_name
-        func_name = f"{parent_name}_{c_name}"
+        func_name = f"{target_name}_{c_name}"
         self.c_name = func_name
 
         param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
@@ -1221,6 +1300,12 @@ class Algorithm:
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
         src = self.source_code
+        primitive = self.primitive
+        if primitive.is_parent:
+            children = primitive.node.children
+            assert children, "Parent primitive must have children"
+            child_sources = [c.instance.specialization.source_code for c in children]
+            src += "\n".join(child_sources)
         _, blob = nvrtc.compile(
             cpp=src,
             cc=cc,
@@ -1265,12 +1350,18 @@ class Algorithm:
         # to have their `Pointer(numba.uint8)` first parameter removed.
         first_param_is_temp_storage = False
         if parameters:
-            first = parameters[0]
-            if isinstance(first, Pointer):
-                first_dtype = normalize_dtype_param(first.value_dtype)
-                if isinstance(first_dtype, (numba.types.uint8, numba.types.int8)):
-                    first_param_is_temp_storage = True
-                    first_dtype = first_dtype.dtype
+            for method in parameters:
+                first = method[0]
+                if isinstance(first, Pointer):
+                    first_dtype = normalize_dtype_param(first.value_dtype)
+                    is_ptr = (
+                        isinstance(first_dtype, numba.types.Integer)
+                        and first_dtype.bitwidth == 8
+                    )
+                    if is_ptr:
+                        assert False
+                        first_param_is_temp_storage = True
+                        first_dtype = first_dtype.dtype
 
         for method in parameters:
             mangled_name = self.mangled_name(method)
@@ -1296,12 +1387,18 @@ class Algorithm:
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
-        def ignore_param(param):
+        def ignore_param(param, pid):
             # Stateless operators and C++ functions do not require any
             # additional argument handling or code generation, so we can
             # safely ignore them during this code gen phase.
-            ignore = isinstance(param, StatelessOperator) or isinstance(
-                param, CxxFunction
+            primitive = self.primitive
+            ignore = (
+                isinstance(param, StatelessOperator)
+                or isinstance(param, CxxFunction)
+                or (
+                    (primitive.is_parent and pid in (0, 1))
+                    or (primitive.is_child and pid == 0)
+                )
             )
             return ignore
 
@@ -1311,8 +1408,9 @@ class Algorithm:
                 arguments = []
                 ret = None
                 arg_id = 0
-                for param in method:
-                    if ignore_param(param):
+                primitive = self.primitive
+                for pid, param in enumerate(method):
+                    if ignore_param(param, pid):
                         continue
 
                     dtype = param.dtype()
@@ -1368,19 +1466,78 @@ class Algorithm:
                     if not param.is_output:
                         arg_id += 1
 
-                function_type = ir.FunctionType(ir.VoidType(), types)
-                function = cgutils.get_or_insert_function(
-                    builder.module, function_type, mangled_name
-                )
-                builder.call(function, arguments)
+                if primitive.is_one_shot:
+                    function_type = ir.FunctionType(ir.VoidType(), types)
+                    function = cgutils.get_or_insert_function(
+                        builder.module, function_type, mangled_name
+                    )
+                    builder.call(function, arguments)
+                elif primitive.is_parent:
+                    assert ret is None
+                    # We need to stack-alloc sufficient space for the struct
+                    # and then call the constructor shim with the addr and
+                    # size parameters injected as the first two arguments.
+                    primitive = self.primitive
+                    node = primitive.node
+                    algo = node.instance.specialization
+                    names = algo.names
+                    struct_size = primitive.algorithm_struct_size
+                    struct_alignment = primitive.algorithm_struct_alignment
+                    buf_name = f"{names.target_name}_buf"
+                    buf = cgutils.alloca_once(
+                        builder,
+                        ir.IntType(8),
+                        size=struct_size,
+                        name=buf_name,
+                    )
+                    buf.align = struct_alignment
+                    addr_ty = ir.PointerType(ir.IntType(8))
+                    addr = builder.bitcast(buf, addr_ty)
+                    size_ty = ir.IntType(32)
+                    size = ir.Constant(size_ty, struct_size)
+                    # Inject our addr and size parameters as the first two
+                    # arguments to the intrinsic.  Ditto for the types.
+                    arguments[:0] = [addr, size]
+                    types[:0] = [addr_ty, size_ty]
 
-                if ret is not None:
-                    return builder.load(ret)
+                    function_type = ir.FunctionType(addr_ty, types)
+                    function = cgutils.get_or_insert_function(
+                        builder.module, function_type, names.constructor_name
+                    )
+                    result = builder.call(function, arguments)
+                    node.cg_details = SimpleNamespace(
+                        buf=buf,
+                        addr=addr,
+                        size=size,
+                        arguments=arguments,
+                        types=types,
+                        result=result,
+                    )
+                    return result
+                elif primitive.is_child:
+                    assert ret is None
+                    primitive = self.primitive
+                    node = primitive.node
+                    parent_node = node.parent_node
+                    parent_cg_details = parent_node.cg_details
+
+                    func_name = self.c_name
+
+                    parent_ptr = parent_cg_details.result
+                    arguments.insert(0, parent_ptr)
+                    ptr_ty = ir.PointerType(parent_ptr.type.pointee)
+                    types.insert(0, ptr_ty)
+
+                    function_type = ir.FunctionType(ir.VoidType(), types)
+                    function = cgutils.get_or_insert_function(
+                        builder.module, function_type, func_name
+                    )
+                    builder.call(function, arguments)
 
             params = []
-            ret = numba.types.void
-            for param in method:
-                if ignore_param(param):
+            ret = None
+            for pid, param in enumerate(method):
+                if ignore_param(param, pid):
                     continue
 
                 if param.is_output:
@@ -1389,6 +1546,19 @@ class Algorithm:
                     ret = param.dtype()
                 else:
                     params.append(param.dtype())
+
+            primitive = self.primitive
+            if primitive.is_one_shot:
+                if ret is None:
+                    ret = numba.types.void
+            elif primitive.is_parent:
+                instance_type = primitive.node.template.get_instance_type()
+                ret = instance_type
+            elif primitive.is_child:
+                # Child methods return void.
+                ret = numba.types.void
+            else:
+                raise RuntimeError("Invalid primitive state: {primitive!r}")
 
             return signature(ret, *params), codegen
 

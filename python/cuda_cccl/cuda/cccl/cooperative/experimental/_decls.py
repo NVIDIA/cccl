@@ -996,6 +996,10 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
     def __init__(self, context=None):
         super().__init__(context=context)
 
+    @staticmethod
+    def get_instance_type():
+        return block_run_length_instance_type
+
     def generic(self):
         def typer(
             run_values,
