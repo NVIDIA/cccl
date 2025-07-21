@@ -202,16 +202,16 @@ struct DispatchReduceNondeterministic
       {
         break;
       }
-      int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
+      const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
 
       // Even-share work distribution
       int max_blocks = reduce_device_occupancy * detail::subscription_factor;
       GridEvenShare<OffsetT> even_share;
       even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
       // Get grid size for device_reduce_sweep_kernel
-      int reduce_grid_size = even_share.grid_size;
+      const int reduce_grid_size = even_share.grid_size;
 #else
-      int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
+      const int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
 #endif
 
 // Log device_reduce_sweep_kernel configuration
