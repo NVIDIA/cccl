@@ -335,6 +335,8 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__cmath/modulo.h>
+#include <cuda/std/__cmath/remainder.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cmath/signbit.h>
@@ -367,12 +369,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using ::double_t;
 using ::float_t;
 
-using ::fmod;
-using ::fmodf;
-
-using ::modf;
-using ::modff;
-
 using ::erf;
 using ::erfc;
 using ::erfcf;
@@ -383,20 +379,10 @@ using ::fdimf;
 using ::nan;
 using ::nanf;
 
-using ::remainder;
-using ::remainderf;
-using ::remquo;
-using ::remquof;
-
-using ::fmodl;
-using ::modfl;
-
 using ::erfcl;
 using ::erfl;
 using ::fdiml;
 using ::nanl;
-using ::remainderl;
-using ::remquol;
 
 #endif // _CCCL_COMPILER(NVRTC)
 
@@ -405,40 +391,6 @@ using ::remquol;
 #else
 #  define _CCCL_CONSTEXPR_CXX14_COMPLEX
 #endif // !_LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-template <class _A1>
-_CCCL_API inline _A1 __constexpr_copysign(_A1 __x, _A1 __y) noexcept
-{
-  return ::copysign(__x, __y);
-}
-#else
-_CCCL_API constexpr float __constexpr_copysign(float __x, float __y) noexcept
-{
-  return __builtin_copysignf(__x, __y);
-}
-
-_CCCL_API constexpr double __constexpr_copysign(double __x, double __y) noexcept
-{
-  return __builtin_copysign(__x, __y);
-}
-
-#  if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_API constexpr long double __constexpr_copysign(long double __x, long double __y) noexcept
-{
-  return __builtin_copysignl(__x, __y);
-}
-#  endif // _CCCL_HAS_LONG_DOUBLE()
-
-template <class _A1, class _A2>
-_CCCL_API constexpr enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value, __promote_t<_A1, _A2>>
-__constexpr_copysign(_A1 __x, _A2 __y) noexcept
-{
-  using __result_type = __promote_t<_A1, _A2>;
-  static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
-  return __builtin_copysign((__result_type) __x, (__result_type) __y);
-}
-#endif // !_CCCL_COMPILER(MSVC)
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 template <class _A1>

@@ -72,7 +72,7 @@ int main(void)
 try
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream(cudax::devices[0]);
+  cudax::stream stream(cuda::devices[0]);
 
   // Print the vector length to be used, and compute its size
   int numElements = 50000;

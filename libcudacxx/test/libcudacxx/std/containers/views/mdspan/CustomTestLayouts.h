@@ -56,6 +56,8 @@ __host__ __device__ inline const T& Min(const T& __a, const T& __b)
 struct not_extents_constructible_tag
 {};
 
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+
 TEST_GLOBAL_VARIABLE int layout_wrapping_integral_swap_counter = 0;
 template <size_t Wrap>
 class layout_wrapping_integral
@@ -239,8 +241,6 @@ public:
   {
     return false;
   }
-
-  TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
   __host__ __device__ constexpr bool is_unique() const noexcept
   {

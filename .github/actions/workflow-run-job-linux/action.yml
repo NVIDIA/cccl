@@ -75,10 +75,8 @@ runs:
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
-
-        eval "${COMMAND}"
-        exit_code=$?
-
+        exit_code=0
+        eval "${COMMAND}" || exit_code=$?
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"

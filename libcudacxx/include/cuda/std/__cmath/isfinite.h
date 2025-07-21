@@ -37,6 +37,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
+#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isfinite)
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_impl(_Tp __x) noexcept
 {
@@ -57,11 +61,11 @@ template <class _Tp>
   {
     return ::isfinite(__x);
   }
-#  if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_of_v<float>) != __fp_exp_mask_of_v<float>;
-#  else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+#  else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isfinite_impl(__x);
-#  endif // ^^^ !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^
+#  endif // ^^^ !_CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
@@ -74,11 +78,11 @@ template <class _Tp>
   {
     return ::isfinite(__x);
   }
-#  if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
-#  else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+#  else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isfinite_impl(__x);
-#  endif // ^^^ !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^
+#  endif // ^^^ !_CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 

@@ -25,6 +25,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
+#  include <cuda/std/__floating_point/nvfp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__tuple_dir/structured_bindings.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
@@ -97,8 +98,12 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(longlong, long long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulonglong, unsigned long long)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(long, long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(long, long, 4, _32a)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulong, unsigned long, 4, _16a)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulong, unsigned long, 4, _32a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(longlong, long long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(longlong, long long, 4, _32a)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _16a)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _32a)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
@@ -111,6 +116,12 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _16a)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _32a)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(dim, unsigned int, 3)
+#  if _CCCL_HAS_NVFP16()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__half, __half, 2)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_bfloat16, __nv_bfloat16, 2)
+#  endif // _CCCL_HAS_NVBF16()
 
 template <size_t _Ip>
 struct __get_element;
@@ -238,10 +249,30 @@ _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(longlong, long long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulonglong, unsigned long long)
 _CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_GET(long4_16a, long)
+_LIBCUDACXX_SPECIALIZE_GET(long4_32a, long)
+_LIBCUDACXX_SPECIALIZE_GET(ulong4_16a, unsigned long)
+_LIBCUDACXX_SPECIALIZE_GET(ulong4_32a, unsigned long)
+_LIBCUDACXX_SPECIALIZE_GET(longlong4_16a, long long)
+_LIBCUDACXX_SPECIALIZE_GET(longlong4_32a, long long)
+_LIBCUDACXX_SPECIALIZE_GET(ulonglong4_16a, unsigned long long)
+_LIBCUDACXX_SPECIALIZE_GET(ulonglong4_32a, unsigned long long)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(float, float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_GET(double4_16a, double)
+_LIBCUDACXX_SPECIALIZE_GET(double4_32a, double)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
+#  if _CCCL_HAS_NVFP16()
+_LIBCUDACXX_SPECIALIZE_GET(__half2, __half)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+_LIBCUDACXX_SPECIALIZE_GET(__nv_bfloat162, __nv_bfloat16)
+#  endif // _CCCL_HAS_NVBF16()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

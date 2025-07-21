@@ -38,6 +38,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_isinf) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isinf)
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_impl(_Tp __x) noexcept
 {
@@ -64,13 +68,13 @@ template <class _Tp>
     return _CCCL_BUILTIN_ISINF(__x);
   }
   return _CCCL_BUILTIN_ISINF(__x) && !_CCCL_BUILTIN_ISNAN(__x);
-#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::isinf(__x);
   }
   return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<float>) == __fp_exp_mask_of_v<float>;
-#else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isinf_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
@@ -86,13 +90,13 @@ template <class _Tp>
     return _CCCL_BUILTIN_ISINF(__x);
   }
   return _CCCL_BUILTIN_ISINF(__x) && !_CCCL_BUILTIN_ISNAN(__x);
-#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::isinf(__x);
   }
   return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
-#else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isinf_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }

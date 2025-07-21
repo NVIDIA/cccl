@@ -40,8 +40,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT istream_iterator
     : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 public:
   using iterator_category = input_iterator_tag;
   using value_type        = _Tp;
@@ -119,6 +117,7 @@ public:
   }
 #endif // _CCCL_STD_VER < 2020
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
 _CCCL_API inline bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,

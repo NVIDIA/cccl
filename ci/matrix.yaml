@@ -268,10 +268,11 @@ jobs:
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
   # Python:
-  build_py_wheel:  { name: "Build cuda.cccl",             gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
-  test_py_headers: { name: "Test cuda.cccl.headers",      gpu: true, needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_headers'} }
-  test_py_coop:    { name: "Test cuda.cccl.cooperative",  gpu: true, needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_cooperative'} }
-  test_py_par:     { name: "Test cuda.cccl.parallel",     gpu: true, needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_parallel'} }
+  build_py_wheel:   { name: "Build cuda.cccl",             gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
+  test_py_headers:  { name: "Test cuda.cccl.headers",      gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_headers'} }
+  test_py_coop:     { name: "Test cuda.cccl.cooperative",  gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_cooperative'} }
+  test_py_par:      { name: "Test cuda.cccl.parallel",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_parallel'} }
+  test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "12.9", invoke: { prefix: 'test_cuda_cccl_examples'} }
 
 # Projects have the following properties:
 #
@@ -320,7 +321,7 @@ projects:
     name: "Python"
     job_map:
       build: ['build_py_wheel']
-      test:  ['test_py_headers', 'test_py_coop', 'test_py_par']
+      test:  ['test_py_headers', 'test_py_coop', 'test_py_par', test_py_examples]
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

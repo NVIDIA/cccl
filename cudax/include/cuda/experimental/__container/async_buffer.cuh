@@ -175,14 +175,7 @@ private:
 
     static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
-    _CCCL_TRY_CUDA_API(
-      ::cudaMemcpyAsync,
-      "cudax::async_buffer::__copy_cross: failed to copy data",
-      __dest,
-      _CUDA_VSTD::to_address(__first),
-      sizeof(_Tp) * __count,
-      ::cudaMemcpyDefault,
-      __buf_.stream().get());
+    _CUDA_DRIVER::__memcpyAsync(__dest, _CUDA_VSTD::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
 
   //! @brief Value-initializes elements in the range `[__first, __first + __count)`.
@@ -557,18 +550,18 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(stream_ref __new_stream)
   {
-    __buf_.change_stream(__new_stream);
+    __buf_.set_stream(__new_stream);
   }
 
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(stream_ref __new_stream) noexcept
   {
-    __buf_.change_stream_unsynchronized(__new_stream);
+    __buf_.set_stream_unsynchronized(__new_stream);
   }
 
   //! @brief Move assignment operator
@@ -603,11 +596,10 @@ public:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  template <class _Tp2 = _Tp>
+  template <class _DeviceAccessible = device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  __cudax_launch_transform(::cuda::stream_ref, async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  transform_device_argument(::cuda::stream_ref, async_buffer& __self) noexcept
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(_CUDA_VSTD::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
@@ -615,11 +607,10 @@ public:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  template <class _Tp2 = _Tp>
+  template <class _DeviceAccessible = device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  __cudax_launch_transform(::cuda::stream_ref, const async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  transform_device_argument(::cuda::stream_ref, const async_buffer& __self) noexcept _CCCL_TRAILING_REQUIRES(
+    _CUDA_VSTD::span<const _Tp>)(_CUDA_VSTD::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
@@ -646,13 +637,10 @@ template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
   __stream.wait(__from.stream());
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemcpyAsync,
-    "make_async_buffer: failed to copy data",
+  _CUDA_DRIVER::__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),
     sizeof(typename _BufferTo::value_type) * __from.size(),
-    cudaMemcpyKind::cudaMemcpyDefault,
     __stream.get());
 }
 

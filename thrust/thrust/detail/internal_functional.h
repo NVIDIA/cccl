@@ -40,6 +40,8 @@
 
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
+#include <cuda/__iterator/transform_input_output_iterator.h>
+#include <cuda/__iterator/transform_output_iterator.h>
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -96,6 +98,12 @@ inline constexpr bool is_proxy_reference_v<::cuda::discard_iterator::__discard_p
 
 template <class Fn, class Index>
 inline constexpr bool is_proxy_reference_v<::cuda::__tabulate_proxy<Fn, Index>> = true;
+
+template <class Iter, class Fn>
+inline constexpr bool is_proxy_reference_v<::cuda::__transform_output_proxy<Iter, Fn>> = true;
+
+template <class Iter, class InputFn, class OutputFn>
+inline constexpr bool is_proxy_reference_v<::cuda::__transform_input_output_proxy<Iter, InputFn, OutputFn>> = true;
 
 template <typename T>
 inline constexpr bool is_non_const_reference_v =

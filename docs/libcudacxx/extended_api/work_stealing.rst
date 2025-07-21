@@ -33,7 +33,7 @@ For better performance, extract the shared thread-block prologue and epilogue ou
 **Mandates**:
 
    - ``ThreadBlockRank`` equals the rank of the thread block: ``1``, ``2``, or ``3`` for one-dimensional, two-dimensional, and three-dimensional thread blocks, respectively.
-   - ``is_invokable_r_v<UnaryFunction, void, dim3>`` is true.
+   - ``is_invocable_r_v<UnaryFunction, void, dim3>`` is true.
 
 **Preconditions**:
 

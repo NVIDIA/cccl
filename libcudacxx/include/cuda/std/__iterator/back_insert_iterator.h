@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
@@ -31,6 +32,56 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <class _Container>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __back_insert_iterator
+{
+protected:
+  _Container* container;
+
+public:
+  using iterator_category = output_iterator_tag;
+  using value_type        = void;
+  using difference_type   = ptrdiff_t;
+  using pointer           = void;
+  using reference         = void;
+  using container_type    = _Container;
+
+  _CCCL_API inline constexpr explicit __back_insert_iterator(_Container& __x)
+      : container(_CUDA_VSTD::addressof(__x))
+  {}
+  _CCCL_API inline constexpr __back_insert_iterator& operator=(const typename _Container::value_type& __value)
+  {
+    container->push_back(__value);
+    return *this;
+  }
+  _CCCL_API inline constexpr __back_insert_iterator& operator=(typename _Container::value_type&& __value)
+  {
+    container->push_back(_CUDA_VSTD::move(__value));
+    return *this;
+  }
+  _CCCL_API inline constexpr __back_insert_iterator& operator*() noexcept
+  {
+    return *this;
+  }
+  _CCCL_API inline constexpr const __back_insert_iterator& operator*() const noexcept
+  {
+    return *this;
+  }
+  _CCCL_API inline constexpr __back_insert_iterator& operator++() noexcept
+  {
+    return *this;
+  }
+  _CCCL_API inline constexpr __back_insert_iterator operator++(int) noexcept
+  {
+    return *this;
+  }
+
+  _CCCL_API inline constexpr _Container* __get_container() const noexcept
+  {
+    return container;
+  }
+};
+
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT back_insert_iterator
@@ -38,8 +89,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT back_insert_iterator
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 protected:
   _Container* container;
 
@@ -86,6 +135,7 @@ public:
     return container;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>
