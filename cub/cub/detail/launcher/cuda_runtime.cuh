@@ -38,46 +38,46 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
-    cudaError_t error = CubDebug(cudaGetDevice(&device_ordinal));
+    cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
     if (cudaSuccess != error)
     {
       return error;
     }
 
     // Get SM count
-    return cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal);
+    return ::cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal);
   }
 
   template <typename Kernel>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
   MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0)
   {
-    return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
+    return ::cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     int device_ordinal;
-    cudaError_t error = CubDebug(cudaGetDevice(&device_ordinal));
+    cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
     if (cudaSuccess != error)
     {
       return error;
     }
 
     // Get max grid dimension
-    return cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal);
+    return ::cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
   MemsetAsync(void* dst, int value, size_t num_elements, size_t element_size, cudaStream_t stream) const
   {
-    return cudaMemsetAsync(dst, value, num_elements * element_size, stream);
+    return ::cudaMemsetAsync(dst, value, num_elements * element_size, stream);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
   MemcpyAsync(void* dst, const void* src, size_t num_bytes, cudaMemcpyKind kind, cudaStream_t stream) const
   {
-    return cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
+    return ::cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
   }
 };
 
