@@ -67,6 +67,14 @@ void stf_logical_data_destroy(stf_logical_data_handle ld)
   delete ld;
 }
 
+void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
+{
+  assert(ctx);
+  assert(ld);
+
+  *ld = new stf_logical_data_handle_t{ctx->ctx.token()};
+}
+
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
 {
   assert(t);

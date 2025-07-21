@@ -33,7 +33,8 @@ void stf_logical_data_destroy(stf_logical_data_handle ld);
 
 // TODO
 // void stf_logical_data_wait(stf_logical_data_handle ld);
-// void stf_token(stf_ctx_handle ctx);
+
+void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
 
 typedef struct stf_task_handle_t* stf_task_handle;
 
