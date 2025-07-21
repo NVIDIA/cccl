@@ -105,7 +105,7 @@ struct BlockReduceWarpReductionsNondeterministic
    * @param[in] num_valid
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
-  template <bool FULL_TILE, typename ReductionOp>
+  template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
     if (linear_tid == 0)
@@ -152,7 +152,7 @@ struct BlockReduceWarpReductionsNondeterministic
         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
+    return ApplyWarpAggregates(reduction_op, warp_aggregate, num_valid);
   }
 
   /**
@@ -169,21 +169,21 @@ struct BlockReduceWarpReductionsNondeterministic
    * @param[in] reduction_op
    *   Binary reduction operator
    */
-  template <bool FULL_TILE, typename ReductionOp>
+  template <bool FullTile, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
     const int warp_offset = warp_id * LOGICAL_WARP_SIZE;
     const int warp_num_valid =
-      ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
+      ((FullTile && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
         ? LOGICAL_WARP_SIZE
         : num_valid - warp_offset;
 
     // Warp reduction in every warp
     const T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
-                               .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
+                               .template Reduce<(FullTile && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
+    return ApplyWarpAggregates(reduction_op, warp_aggregate, num_valid);
   }
 };
 } // namespace detail
