@@ -29,13 +29,13 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface, class _Tp = __remove_ireference_t<_Interface>>
-using __overrides_for _CCCL_NODEBUG_ALIAS = typename _Interface::template overrides<_Tp>;
+using __overrides_for_t _CCCL_NODEBUG_ALIAS = typename _Interface::template overrides<_Tp>;
 
 //!
-//! overrides_for
+//! __overrides_for
 //!
 template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
-struct overrides_for
+struct __overrides_for
 {
   static_assert(!_CUDA_VSTD::is_const_v<_InterfaceOrModel>, "expected a class type");
   using __vtable _CCCL_NODEBUG_ALIAS = __basic_vtable<_InterfaceOrModel, _VirtualFnsOrOverrides...>;
@@ -43,14 +43,14 @@ struct overrides_for
 };
 
 template <class... _Interfaces>
-struct overrides_for<__iset<_Interfaces...>>
+struct __overrides_for<__iset_<_Interfaces...>>
 {
-  using __vtable _CCCL_NODEBUG_ALIAS = __basic_vtable<__iset<_Interfaces...>>;
+  using __vtable _CCCL_NODEBUG_ALIAS = __basic_vtable<__iset_<_Interfaces...>>;
   using __vptr_t _CCCL_NODEBUG_ALIAS = __iset_vptr<_Interfaces...>;
 };
 
 template <>
-struct overrides_for<iunknown>
+struct __overrides_for<__iunknown>
 {
   using __vtable _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // no vtable, rtti is added explicitly in __vtable_tuple
   using __vptr_t _CCCL_NODEBUG_ALIAS = __rtti const*;

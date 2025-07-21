@@ -24,15 +24,6 @@
 #include <cuda/std/cstddef> // for max_align_t
 #include <cuda/std/cstdint> // for uint8_t
 
-// Some functions defined here have their addresses appear in public types
-// (e.g., in `cudax::overrides_for` specializations). If the function is declared
-// `__attribute__((visibility("hidden")))`, and if the address appears, say, in
-// the type of a member of a class that is declared
-// `__attribute__((visibility("default")))`, GCC complains bitterly. So we
-// avoid declaring those functions `hidden`. Instead of the typical `_CCCL_HOST_API`
-// macro, we use `_CUDAX_PUBLIC_API` for those functions.
-#define _CUDAX_PUBLIC_API _CCCL_HOST _CCCL_VISIBILITY_DEFAULT
-
 #include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -41,19 +32,19 @@ template <class _Interface>
 struct __ireference;
 
 template <class _Interface>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any;
 
 template <class _Interface>
-struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>;
+struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>;
 
 template <class _Interface>
-struct basic_any<_Interface*>;
+struct __basic_any<_Interface*>;
 
 template <class _Interface>
-struct basic_any<_Interface&>;
+struct __basic_any<_Interface&>;
 
 template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
-struct overrides_for;
+struct __overrides_for;
 
 template <class _Interface, auto... _Mbrs>
 struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable;
@@ -66,30 +57,30 @@ template <size_t NbrBases>
 struct __rtti_ex;
 
 template <class...>
-struct extends;
+struct __extends;
 
-template <template <class...> class, class = extends<>, size_t = 0, size_t = 0>
-struct interface;
+template <template <class...> class, class = __extends<>, size_t = 0, size_t = 0>
+struct __interface;
 
 template <class _Interface, class... _Super>
 using __rebind_interface _CCCL_NODEBUG_ALIAS = typename _Interface::template __rebind<_Super...>;
 
-struct iunknown;
+struct __iunknown;
 
 template <class...>
-struct __iset;
+struct __iset_;
 
 template <class...>
 struct __iset_vptr;
 
 template <class...>
-struct imovable;
+struct __imovable;
 
 template <class...>
-struct icopyable;
+struct __icopyable;
 
 template <class...>
-struct iequality_comparable;
+struct __iequality_comparable;
 
 template <class... _Tp>
 using __tag _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list_ptr<_Tp...>;
@@ -106,7 +97,7 @@ constexpr size_t __default_small_object_align = alignof(_CUDA_VSTD::max_align_t)
 
 using __make_type_list _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>;
 
-[[noreturn]] _CCCL_HOST_API void __throw_bad_any_cast();
+[[noreturn]] _CCCL_API void __throw_bad_any_cast();
 
 enum class __vtable_kind : uint8_t
 {

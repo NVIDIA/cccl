@@ -35,15 +35,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //!
 //! conversions
 //!
-//! Can one basic_any type convert to another? Implicitly? Explicitly?
+//! Can one __basic_any type convert to another? Implicitly? Explicitly?
 //! Statically? Dynamically? We answer these questions by mapping two
-//! cvref qualified basic_any types to archetype types, and then using
+//! cvref qualified __basic_any types to archetype types, and then using
 //! the built-in language rules to determine if the conversion is valid.
 //!
 template <bool _Movable, bool _Copyable>
 struct __archetype;
 
-// Archetype for interfaces that extend neither imovable nor icopyable
+// Archetype for interfaces that extend neither __imovable nor __icopyable
 template <>
 struct __archetype<false, false> // immovable archetype
 {
@@ -52,31 +52,31 @@ struct __archetype<false, false> // immovable archetype
   __archetype(const __archetype&) = delete;
 
   template <class _Value>
-  _CCCL_HOST_API __archetype(_Value) noexcept;
+  _CCCL_API __archetype(_Value) noexcept;
   template <class _Value>
-  _CCCL_HOST_API __archetype(_Value*) = delete;
+  _CCCL_API __archetype(_Value*) = delete;
 };
 
-// Archetype for interfaces that extend imovable but not icopyable
+// Archetype for interfaces that extend __imovable but not __icopyable
 template <>
 struct __archetype<true, false> : __archetype<false, false> // movable archetype
 {
   __archetype() = default;
-  _CCCL_HOST_API __archetype(__archetype&&) noexcept;
+  _CCCL_API __archetype(__archetype&&) noexcept;
   __archetype(const __archetype&) = delete;
 };
 
-// Archetype for interfaces that extend icopyable
+// Archetype for interfaces that extend __icopyable
 template <>
 struct __archetype<true, true> : __archetype<true, false>
 {
   __archetype() = default;
-  _CCCL_HOST_API __archetype(__archetype const&);
+  _CCCL_API __archetype(__archetype const&);
 };
 
 template <class _Interface>
 using __archetype_t _CCCL_NODEBUG_ALIAS =
-  __archetype<extension_of<_Interface, imovable<>>, extension_of<_Interface, icopyable<>>>;
+  __archetype<__extension_of<_Interface, __imovable<>>, __extension_of<_Interface, __icopyable<>>>;
 
 // Strip top-level cv- and ref-qualifiers from pointer types:
 template <class _Ty>
@@ -89,25 +89,25 @@ auto __normalize(_Ty*) -> _Ty*
 template <class _Ty>
 using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize(_CUDA_VSTD::declval<_Ty>()));
 
-// Used to map a basic_any specialization to a normalized interface type:
+// Used to map a __basic_any specialization to a normalized interface type:
 template <class _Ty>
 extern _CUDA_VSTD::__undefined<_Ty> __interface_from;
 template <class _Interface>
-extern _Interface __interface_from<basic_any<_Interface>>;
+extern _Interface __interface_from<__basic_any<_Interface>>;
 template <class _Interface>
-extern _Interface __interface_from<basic_any<__ireference<_Interface>>>;
+extern _Interface __interface_from<__basic_any<__ireference<_Interface>>>;
 template <class _Interface>
-extern _Interface& __interface_from<basic_any<_Interface>&>;
+extern _Interface& __interface_from<__basic_any<_Interface>&>;
 template <class _Interface>
-extern _Interface const& __interface_from<basic_any<_Interface> const&>;
+extern _Interface const& __interface_from<__basic_any<_Interface> const&>;
 template <class _Interface>
-extern _Interface* __interface_from<basic_any<_Interface>*>;
+extern _Interface* __interface_from<__basic_any<_Interface>*>;
 template <class _Interface>
-extern _Interface const* __interface_from<basic_any<_Interface> const*>;
+extern _Interface const* __interface_from<__basic_any<_Interface> const*>;
 template <class _Interface>
-extern _Interface* __interface_from<basic_any<__ireference<_Interface>>*>;
+extern _Interface* __interface_from<__basic_any<__ireference<_Interface>>*>;
 template <class _Interface>
-extern _Interface* __interface_from<basic_any<__ireference<_Interface>> const*>;
+extern _Interface* __interface_from<__basic_any<__ireference<_Interface>> const*>;
 
 // Used to map a normalized interface type to an archetype for conversion testing:
 template <class _Interface>
@@ -159,8 +159,8 @@ _CCCL_CONCEPT __any_castable_to =
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_convertible_to =
   __any_castable_to<_SrcCvAny, _DstCvAny> && //
-  extension_of<typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type,
-               typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;
+  __extension_of<typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type,
+                 typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

@@ -31,14 +31,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! \brief Casts one basic_any reference type to another basic_any type using
+//! \brief Casts one __basic_any reference type to another __basic_any type using
 //! runtime information to determine the validity of the conversion.
 //!
-//! \throws bad_any_cast when \c __src cannot be dynamically cast to a
-//! \c basic_any<_DstInterface>.
+//! \throws __bad_any_cast when \c __src cannot be dynamically cast to a
+//! \c __basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
-_CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>&& __src) -> basic_any<_DstInterface>
+_CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>&& __src) -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(_CUDA_VSTD::move(__src), __dst);
@@ -47,8 +47,8 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any<_DstInterfa
 
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
-_CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>&, basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>& __src) -> basic_any<_DstInterface>
+_CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>&, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>& __src) -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
@@ -57,28 +57,29 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>&, basic_any<_DstInterf
 
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
-_CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface> const& __src) -> basic_any<_DstInterface>
+_CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const&, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const& __src) -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
   return __dst;
 }
 
-//! \brief Casts a `basic_any<_SrcInterface>*` into a `basic_any<_DstInterface>`
+//! \brief Casts a `__basic_any<_SrcInterface>*` into a `__basic_any<_DstInterface>`
 //! using runtime information to determine the validity of the conversion.
 //!
 //! \pre \c _DstInterface must be a pointer type.
 //!
 //! \returns \c nullptr when \c __src cannot be dynamically cast to a
-//! \c basic_any<_DstInterface>.
+//! \c __basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
-_CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>*, basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface>* __src) -> basic_any<_DstInterface>
+_CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>*, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>* __src) -> __basic_any<_DstInterface>
 {
-  static_assert(_CUDA_VSTD::is_pointer_v<_DstInterface>,
-                "when dynamic_any_cast-ing from a pointer to a basic_any, the destination type must be a pointer to an "
-                "interface type.");
+  static_assert(
+    _CUDA_VSTD::is_pointer_v<_DstInterface>,
+    "when __dynamic_any_cast-ing from a pointer to a __basic_any, the destination type must be a pointer to an "
+    "interface type.");
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
   return __dst;
@@ -86,12 +87,13 @@ _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>*, basic_any<_DstInterf
 
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
-_CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const*, basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_HOST_API auto dynamic_any_cast(basic_any<_SrcInterface> const* __src) -> basic_any<_DstInterface>
+_CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const*, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const* __src) -> __basic_any<_DstInterface>
 {
-  static_assert(_CUDA_VSTD::is_pointer_v<_DstInterface>,
-                "when dynamic_any_cast-ing from a pointer to a basic_any, the destination type must be a pointer to an "
-                "interface type.");
+  static_assert(
+    _CUDA_VSTD::is_pointer_v<_DstInterface>,
+    "when __dynamic_any_cast-ing from a pointer to a __basic_any, the destination type must be a pointer to an "
+    "interface type.");
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
   return __dst;

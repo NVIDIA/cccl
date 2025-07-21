@@ -12,8 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__cccl/diagnostic.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -45,18 +43,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! virtual function call, the user must provide the member function pointer
 //! corresponding to the virtual, as in:
 //!
-//! @code
+//! \code{.cpp}
 //! template <class...>
 //! struct ifoo {
-//!   void meow(auto... __args) {
+//!   void meow(auto... args) {
 //!     // dispatch to the &ifoo<>::meow virtual function
 //!     // NB: the `<>` after `ifoo` is significant!
-//!     virtcall<&ifoo<>::meow>(this, __args...);
-//!     //            ^^
+//!     __virtcall<&ifoo<>::meow>(this, args...);
+//!     //              ^^
 //!   }
 //!  ...
 //! };
-//! @endcode
+//! \endcode
 //!
 //! When taking the address of the member, it is very easy to forget the `<>`
 //! after the interface name, which would result in a compilation error --
@@ -76,7 +74,7 @@ template <class, class>
 struct __virtuals_map;
 
 template <class _Interface, auto... _Mbrs, class _BoundInterface, auto... _BoundMbrs>
-struct __virtuals_map<overrides_for<_Interface, _Mbrs...>, overrides_for<_BoundInterface, _BoundMbrs...>>
+struct __virtuals_map<__overrides_for<_Interface, _Mbrs...>, __overrides_for<_BoundInterface, _BoundMbrs...>>
     : __virtuals_map_element<_Mbrs, _BoundMbrs>...
 {
   using __virtuals_map_element<_Mbrs, _BoundMbrs>::operator()...;
@@ -84,7 +82,7 @@ struct __virtuals_map<overrides_for<_Interface, _Mbrs...>, overrides_for<_BoundI
 
 template <class _Interface, class _Super>
 using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
-  __virtuals_map<__overrides_for<_Interface>, __overrides_for<__rebind_interface<_Interface, _Super>>>;
+  __virtuals_map<__overrides_for_t<_Interface>, __overrides_for_t<__rebind_interface<_Interface, _Super>>>;
 
 template <auto _Mbr, class _Interface, class _Super>
 extern _CUDA_VSTD::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ctag<_Mbr>> __virtual_fn_for_v;
@@ -95,7 +93,7 @@ template <auto _Mbr, class _Interface, class _Super>
 using __virtual_fn_for _CCCL_NODEBUG_ALIAS = decltype(__virtual_fn_for_v<_Mbr, _Interface, _Super>);
 
 //!
-//! virtcall
+//! __virtcall
 //!
 
 // If the interface is __ireference<MyInterface const>, then calls to non-const
@@ -107,7 +105,7 @@ template <auto _Mbr, class _Interface>
 inline constexpr bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
 
 template <auto _Mbr, class _Interface, class _Super, class _Self, class... _Args>
-_CCCL_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //
+_CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -120,31 +118,33 @@ _CCCL_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super>* __self, _Args&&... __args) //
+_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
-  return ::cuda::__virtcall<_Mbr, _Interface<>, _Super>(::cuda::basic_any_from(__self), static_cast<_Args&&>(__args)...);
+  return ::cuda::__virtcall<_Mbr, _Interface<>, _Super>(
+    ::cuda::__basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
+_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
-  return ::cuda::__virtcall<_Mbr, _Interface<>, _Super>(::cuda::basic_any_from(__self), static_cast<_Args&&>(__args)...);
+  return ::cuda::__virtcall<_Mbr, _Interface<>, _Super>(
+    ::cuda::__basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
 _CCCL_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
-_CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) //
+_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
   constexpr bool __const_correct_virtcall = __valid_virtcall<_Mbr, _Super...> || sizeof...(_Super) == 0;
   // If this static assert fires, then you have called a non-const member
-  // function on a `basic_any<I const&>`. This would violate const-correctness.
+  // function on a `__basic_any<I const&>`. This would violate const-correctness.
   static_assert(__const_correct_virtcall, "This function call is not const correct.");
   // This overload can also be selected when called from the thunks of
   // unspecialized interfaces. Those thunks should never be called, but they

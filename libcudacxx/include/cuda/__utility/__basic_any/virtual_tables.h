@@ -35,7 +35,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface>
-using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for<_Interface>::__vtable;
+using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for_t<_Interface>::__vtable;
 
 //!
 //! __basic_vtable
@@ -49,47 +49,47 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   static constexpr size_t __cbases    = _CUDA_VSTD::__type_list_size<__unique_interfaces<interface>>::value;
 
   template <class _VPtr, class _Tp, auto... _OtherMembers, class... _Interfaces>
-  _CCCL_HOST_API constexpr __basic_vtable(
-    _VPtr __vptr, overrides_for<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
+  _CCCL_API constexpr __basic_vtable(
+    _VPtr __vptr, __overrides_for<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
       : __rtti_base{__vtable_kind::__normal, __cbases, _CCCL_TYPEID(__basic_vtable)}
       , __virtual_fn<_Mbrs>{__override_tag<_Tp, _OtherMembers>{}}...
       , __vptr_map_{__base_vptr{__vptr->__query_interface(_Interfaces())}...}
   {}
 
   template <class _Tp, class _VPtr>
-  _CCCL_HOST_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
-      : __basic_vtable{
-          __vptr, __overrides_for<interface, _Tp>(), __unique_interfaces<interface, _CUDA_VSTD::__type_quote<__tag>>()}
+  _CCCL_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
+      : __basic_vtable{__vptr,
+                       __overrides_for_t<interface, _Tp>(),
+                       __unique_interfaces<interface, _CUDA_VSTD::__type_quote<__tag>>()}
   {}
 
-  [[nodiscard]] _CCCL_HOST_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
+  [[nodiscard]] _CCCL_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
   {
     return this;
   }
 
   template <class... _Others>
-  [[nodiscard]] _CCCL_HOST_API auto __query_interface(__iset<_Others...>) const noexcept
-    -> __vptr_for<__iset<_Others...>>
+  [[nodiscard]] _CCCL_API auto __query_interface(__iset_<_Others...>) const noexcept -> __vptr_for<__iset_<_Others...>>
   {
     using __remainder _CCCL_NODEBUG_ALIAS =
-      _CUDA_VSTD::__type_list_size<_CUDA_VSTD::__type_find<__unique_interfaces<interface>, __iset<_Others...>>>;
+      _CUDA_VSTD::__type_list_size<_CUDA_VSTD::__type_find<__unique_interfaces<interface>, __iset_<_Others...>>>;
     constexpr size_t __index = __cbases - __remainder::value;
     if constexpr (__index < __cbases)
     {
-      // `_Interface` extends __iset<_Others...> exactly. We can return an actual
+      // `_Interface` extends __iset_<_Others...> exactly. We can return an actual
       // vtable pointer.
-      return static_cast<__vtable_for<__iset<_Others...>> const*>(__vptr_map_[__index]);
+      return static_cast<__vtable_for<__iset_<_Others...>> const*>(__vptr_map_[__index]);
     }
     else
     {
       // Otherwise, we have to return a subset vtable pointer, which does
       // dynamic interface lookup.
-      return static_cast<__vptr_for<__iset<_Others...>>>(__query_interface(iunknown()));
+      return static_cast<__vptr_for<__iset_<_Others...>>>(__query_interface(__iunknown()));
     }
   }
 
   template <class _Other>
-  [[nodiscard]] _CCCL_HOST_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
+  [[nodiscard]] _CCCL_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
   {
     constexpr size_t __index = __index_of_base<_Other, interface>::value;
     static_assert(__index < __cbases);
@@ -111,11 +111,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
   static_assert((_CUDA_VSTD::is_class_v<_Interfaces> && ...), "expected class types");
 
   template <class _Tp, class _Super>
-  _CCCL_HOST_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
+  _CCCL_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
       : __rtti_ex<sizeof...(_Interfaces)>{__type, __tag<_Interfaces...>(), this}
 #if _CCCL_COMPILER(MSVC)
       // workaround for MSVC bug
-      , __overrides_for<_Interfaces>::__vtable{__tag<_Tp>(), this}...
+      , __overrides_for_t<_Interfaces>::__vtable{__tag<_Tp>(), this}...
 #else // ^^^ MSVC ^^^ / vvv !MSVC vvv
       , __vtable_for<_Interfaces>{__tag<_Tp>(), this}...
 #endif // !MSVC
@@ -125,7 +125,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
 
   _CCCL_TEMPLATE(class _Interface)
   _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
-  [[nodiscard]] _CCCL_HOST_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     return static_cast<__vptr_for<_Interface>>(this);
   }
