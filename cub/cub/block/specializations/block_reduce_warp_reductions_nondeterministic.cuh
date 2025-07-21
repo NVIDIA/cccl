@@ -46,24 +46,20 @@ namespace detail
 template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 struct BlockReduceWarpReductionsNondeterministic
 {
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
 
-    /// Number of warp threads
-    WARP_THREADS = warp_threads,
+  /// Number of warp threads
+  static constexpr int WARP_THREADS = warp_threads;
 
-    /// Number of active warps
-    WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  /// Number of active warps
+  static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = (BLOCK_THREADS < WARP_THREADS ? BLOCK_THREADS : WARP_THREADS), // MSVC bug with cuda::std::min
+  /// The logical warp size for warp reductions
+  static constexpr int LOGICAL_WARP_SIZE = ::cuda::std::min(BLOCK_THREADS, WARP_THREADS);
 
-    /// Whether or not the logical warp size evenly divides the thread block size
-    EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
-  };
+  /// Whether or not the logical warp size evenly divides the thread block size
+  static constexpr bool EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0);
 
   ///  WarpReduce utility type
   using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
