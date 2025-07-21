@@ -25,21 +25,21 @@ namespace detail
 struct TripleChevronFactory
 {
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
-    dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, cudaStream_t stream, bool dependent_launch = false) const
+    dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
   {
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 
-  CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& version)
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
     return cub::PtxVersion(version);
   }
 
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MultiProcessorCount(int& sm_count) const
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
-    cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
-    if (cudaSuccess != error)
+    ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
+    if (::cudaSuccess != error)
     {
       return error;
     }
@@ -49,17 +49,17 @@ struct TripleChevronFactory
   }
 
   template <typename Kernel>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
   MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0)
   {
     return ::cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxGridDimX(int& max_grid_dim_x) const
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     int device_ordinal;
-    cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
-    if (cudaSuccess != error)
+    ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
+    if (::cudaSuccess != error)
     {
       return error;
     }
@@ -68,14 +68,14 @@ struct TripleChevronFactory
     return ::cudaDeviceGetAttribute(&max_grid_dim_x, ::cudaDevAttrMaxGridDimX, device_ordinal);
   }
 
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
-  MemsetAsync(void* dst, int value, size_t num_elements, size_t element_size, cudaStream_t stream) const
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  MemsetAsync(void* dst, int value, size_t num_elements, size_t element_size, ::cudaStream_t stream) const
   {
     return ::cudaMemsetAsync(dst, value, num_elements * element_size, stream);
   }
 
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
-  MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, cudaStream_t stream) const
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
   {
     return ::cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
   }
