@@ -32,6 +32,7 @@ void stf_ctx_create(stf_ctx_handle* ctx)
 
 void stf_ctx_finalize(stf_ctx_handle ctx)
 {
+  ctx->ctx.finalize();
   assert(ctx);
   delete ctx;
 }
