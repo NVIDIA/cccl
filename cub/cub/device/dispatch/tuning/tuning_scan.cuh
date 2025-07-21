@@ -181,7 +181,26 @@ struct sm75_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes,
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-// Add sm89 tuning and verify it
+template <class ValueT,
+          class AccumT,
+          class OffsetT,
+          op_type OpTypeT,
+          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
+          offset_size OffsetSize               = classify_offset_size<OffsetT>(),
+          value_size ValueSize                 = classify_value_size<ValueT>()>
+struct sm89_tuning;
+
+template <class AccumT, class OffsetT>
+struct sm89_tuning<float, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_4>
+{
+  // ipt_7.tpb_192.ns_228.dcid_1.l2w_1070.trp_0.ld_0
+  static constexpr int threads                         = 192;
+  static constexpr int items                           = 7;
+  using delay_constructor                              = fixed_delay_constructor_t<228, 1070>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_DIRECT;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_DIRECT;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
 
 template <class AccumT,
           primitive_op PrimitiveOp,
@@ -565,7 +584,38 @@ struct policy_hub
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy890 : ChainedPolicy<890, Policy890, Policy860>
+  {
+    // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy860
+    template <typename Tuning,
+              typename IVT,
+              // In the tuning benchmarks the Initial-, Input- and OutputType are the same. Let's check that the
+              // accumulator type's size matches what we used during the benchmark since that has an impact (The
+              // tunings also check later that it's a primitive type, so arithmetic impact is also comparable to the
+              // benchmark). Input- and OutputType only impact loading and storing data (all arithmetic is done in the
+              // accumulator type), so let's check that they are the same size and dispatch the size in the tunings.
+              ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
+                                         && sizeof(IVT) == sizeof(OutputValueT),
+                                       int> = 0>
+    static auto select_agent_policy890(int)
+      -> AgentScanPolicy<Tuning::threads,
+                         Tuning::items,
+                         AccumT,
+                         Tuning::load_algorithm,
+                         Tuning::load_modifier,
+                         Tuning::store_algorithm,
+                         BLOCK_SCAN_WARP_SCANS,
+                         MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                         typename Tuning::delay_constructor>;
+    template <typename Tuning, typename IVT>
+    static auto select_agent_policy890(long) -> typename Policy860::ScanPolicyT;
+
+    using ScanPolicyT =
+      decltype(select_agent_policy890<sm89_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
+        0));
+  };
+
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy890>
   {
     using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
