@@ -35,20 +35,20 @@ namespace detail
  * @tparam T
  *   Data type being reduced
  *
- * @tparam BLOCK_DIM_X
+ * @tparam BlockDimX
  *   The thread block length in threads along the X dimension
  *
- * @tparam BLOCK_DIM_Y
+ * @tparam BlockDimY
  *   The thread block length in threads along the Y dimension
  *
- * @tparam BLOCK_DIM_Z
+ * @tparam BlockDimZ
  *   The thread block length in threads along the Z dimension
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
+template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>
 struct BlockReduceWarpReductionsNondeterministic
 {
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Number of warp threads
   static constexpr int WARP_THREADS = warp_threads;
@@ -57,7 +57,7 @@ struct BlockReduceWarpReductionsNondeterministic
   static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
   /// The logical warp size for warp reductions
-  static constexpr int LOGICAL_WARP_SIZE = ::cuda::std::min(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int LOGICAL_WARP_SIZE = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS);
 
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0);
@@ -89,7 +89,7 @@ struct BlockReduceWarpReductionsNondeterministic
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductionsNondeterministic(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
       , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
