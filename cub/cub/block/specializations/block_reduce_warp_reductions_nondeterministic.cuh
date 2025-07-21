@@ -23,6 +23,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/atomic>
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
@@ -118,7 +119,8 @@ struct BlockReduceWarpReductionsNondeterministic
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
-      atomicAdd(temp_storage.warp_aggregates, warp_aggregate);
+      ::cuda::atomic_ref<T> atomic_target(temp_storage.warp_aggregates[0]);
+      atomic_target += warp_aggregate;
     }
 
     __syncthreads();
@@ -136,20 +138,19 @@ struct BlockReduceWarpReductionsNondeterministic
    * @param[in] num_valid
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     ::cuda::std::plus<> reduction_op;
     const int warp_offset = (warp_id * LOGICAL_WARP_SIZE);
     const int warp_num_valid =
-      ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
+      ((FullTile && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
         ? LOGICAL_WARP_SIZE
         : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate =
-      WarpReduceInternal(temp_storage.warp_reduce[warp_id])
-        .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
+    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
+                         .template Reduce<(FullTile && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates(reduction_op, warp_aggregate, num_valid);
