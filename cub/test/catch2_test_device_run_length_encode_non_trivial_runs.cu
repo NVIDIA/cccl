@@ -60,6 +60,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
 // TODO (elstehle): Add back std::int64_t and std::uint32_t in the PR that adds support for large number of items
 using offset_types = c2h::type_list<std::int32_t>;
 
+// generates for [0, 1, 2, ...] the sequence [0, 1, 1, 2, 3, 3, 4, 5, 5, ...]
 struct index_to_item_op
 {
   template <typename OffsetT>
@@ -397,8 +398,8 @@ try
   using offset_type     = typename c2h::get<0, TestType>;
   using run_length_type = offset_type;
 
-  ::cuda::std::size_t random_range = GENERATE(take(1, random((1 << 20), (1 << 22))));
-  const auto num_items             = detail::make_large_offset<offset_type>(random_range);
+  ::cuda::std::size_t extra_items = GENERATE(take(1, random((1 << 20), (1 << 22))));
+  const auto num_items            = detail::make_large_offset<offset_type>(extra_items);
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
 
   auto counting_it = cuda::make_counting_iterator(offset_type{0});
@@ -414,7 +415,6 @@ try
   auto check_offset_out_it     = check_offset_out_helper.get_flagging_output_iterator(expected_offsets_it);
 
   // Prepare helper to check the run-lengths being written: i-th item corresponding to value i
-  // We repeat each number once for the first num_small_runs number of items and all subsequent numbers twice
   auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
   auto expected_run_lengths_it     = cuda::make_constant_iterator(run_length_type{2});
   auto check_run_length_out_it     = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
@@ -426,11 +426,11 @@ try
   run_length_encode(input_item_it, check_offset_out_it, check_run_length_out_it, out_num_runs.begin(), num_items);
 
   // Verify result
-  REQUIRE(out_num_runs[0] == num_uniques);
+  CHECK(out_num_runs[0] == num_uniques);
   check_offset_out_helper.check_all_results_correct();
   check_run_length_out_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (const std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
@@ -459,8 +459,8 @@ try
   auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
 
   // Allocate some memory for the results
-  c2h::device_vector<offset_type> offsets_out(num_uniques, offset_type{42});
-  c2h::device_vector<run_length_type> run_lengths_out(num_uniques, run_length_type{42});
+  c2h::device_vector<offset_type> offsets_out(num_uniques, thrust::no_init);
+  c2h::device_vector<run_length_type> run_lengths_out(num_uniques, thrust::no_init);
 
   // Allocate memory for the number of expected unique items
   c2h::device_vector<offset_type> out_num_runs(1);
@@ -475,11 +475,11 @@ try
   c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
 
   // Verify result
-  REQUIRE(out_num_runs[0] == num_uniques);
-  REQUIRE(expected_uniques == offsets_out);
-  REQUIRE(expected_run_lengths == run_lengths_out);
+  CHECK(out_num_runs[0] == num_uniques);
+  CHECK(expected_uniques == offsets_out);
+  CHECK(expected_run_lengths == run_lengths_out);
 }
-catch (std::bad_alloc& e)
+catch (const std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
