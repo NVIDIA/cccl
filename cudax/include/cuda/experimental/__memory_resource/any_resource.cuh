@@ -62,7 +62,7 @@ struct __with_property
   }
 
   template <class...>
-  struct __iproperty : __interface<__iproperty>
+  struct __iproperty : __basic_interface<__iproperty>
   {
     _CCCL_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
       -> __property_result_t<_Property>
@@ -106,7 +106,7 @@ __deallocate_async(_Resource& __mr, void* __pv, size_t __bytes, size_t __alignme
 }
 
 template <class...>
-struct __ibasic_resource : __interface<__ibasic_resource>
+struct __ibasic_resource : __basic_interface<__ibasic_resource>
 {
   _CCCL_PUBLIC_API void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
@@ -124,7 +124,7 @@ struct __ibasic_resource : __interface<__ibasic_resource>
 };
 
 template <class...>
-struct __ibasic_async_resource : __interface<__ibasic_async_resource>
+struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
 {
   _CCCL_PUBLIC_API void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
@@ -197,7 +197,7 @@ _CCCL_DIAG_POP
 // to the old cuda::mr::basic_resource_ref types.
 template <class... _Super>
 struct _CCCL_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
-    : __interface<__iresource_ref_conversions>
+    : __basic_interface<__iresource_ref_conversions>
     , _CUDA_VMR::_Resource_ref_base
 {
   using __self_t = __basic_any_from_t<__iresource_ref_conversions&>;

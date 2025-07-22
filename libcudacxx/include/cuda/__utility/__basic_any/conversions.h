@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -80,14 +81,13 @@ using __archetype_t _CCCL_NODEBUG_ALIAS =
 
 // Strip top-level cv- and ref-qualifiers from pointer types:
 template <class _Ty>
-auto __normalize(_Ty&&) -> _Ty
-{}
-template <class _Ty>
-auto __normalize(_Ty*) -> _Ty*
-{}
+_CCCL_API auto __normalize_interface(_Ty&&) -> _Ty;
 
 template <class _Ty>
-using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize(_CUDA_VSTD::declval<_Ty>()));
+_CCCL_API auto __normalize_interface(_Ty*) -> _Ty*;
+
+template <class _Ty>
+using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize_interface(_CUDA_VSTD::declval<_Ty>()));
 
 // Used to map a __basic_any specialization to a normalized interface type:
 template <class _Ty>

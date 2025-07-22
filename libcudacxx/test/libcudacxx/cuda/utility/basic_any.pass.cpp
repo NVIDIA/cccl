@@ -32,14 +32,14 @@ struct BasicAnyTestsFixture : TestCounters
 };
 
 template <class...>
-struct iempty : cuda::__interface<iempty>
+struct iempty : cuda::__basic_interface<iempty>
 {};
 
 static_assert(cuda::__extension_of<iempty<>, iempty<>>);
 static_assert(cuda::__extension_of<iempty<>, cuda::__iunknown>);
 
 template <class...>
-struct ibase : cuda::__interface<ibase, cuda::__extends<cuda::__imovable<>>>
+struct ibase : cuda::__basic_interface<ibase, cuda::__extends<cuda::__imovable<>>>
 {
   int foo(int i)
   {
@@ -51,7 +51,7 @@ struct ibase : cuda::__interface<ibase, cuda::__extends<cuda::__imovable<>>>
 };
 
 template <class...>
-struct iderived : cuda::__interface<iderived, cuda::__extends<ibase<>, cuda::__icopyable<>>>
+struct iderived : cuda::__basic_interface<iderived, cuda::__extends<ibase<>, cuda::__icopyable<>>>
 {
   int bar(int i)
   {
@@ -147,7 +147,8 @@ struct Bar : Foo<Small>
 };
 
 template <class...>
-struct iregular : cuda::__interface<iregular, cuda::__extends<cuda::__icopyable<>, cuda::__iequality_comparable<>>>
+struct iregular
+    : cuda::__basic_interface<iregular, cuda::__extends<cuda::__icopyable<>, cuda::__iequality_comparable<>>>
 {};
 
 struct Regular

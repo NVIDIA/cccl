@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -135,7 +136,7 @@ _CCCL_CONCEPT __extension_of = __extension_of_v<_Derived, _Base>;
 //! interface
 //!
 template <template <class...> class _Interface, class... _Bases, size_t Size, size_t Align>
-struct __interface<_Interface, __extends<_Bases...>, Size, Align>
+struct __basic_interface<_Interface, __extends<_Bases...>, Size, Align>
 {
   static constexpr size_t size  = (_CUDA_VSTD::max) ({Size, _Bases::size...});
   static constexpr size_t align = (_CUDA_VSTD::max) ({Align, _Bases::align...});
@@ -155,7 +156,7 @@ struct __interface<_Interface, __extends<_Bases...>, Size, Align>
 //! __is_interface
 //!
 template <template <class...> class _Interface, class _Extends, size_t _Size, size_t _Align>
-_CCCL_API auto __is_interface_test(__interface<_Interface, _Extends, _Size, _Align> const&) -> void;
+_CCCL_API auto __is_interface_test(__basic_interface<_Interface, _Extends, _Size, _Align> const&) -> void;
 
 // clang-format off
 template <class _Tp>
@@ -201,7 +202,7 @@ using __index_of_base _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__type_apply<__find_index_of_base<_Interface>, __unique_interfaces<_Super>>;
 
 template <class...>
-struct __iempty : __interface<__iempty>
+struct __iempty : __basic_interface<__iempty>
 {};
 
 #if _CCCL_COMPILER(NVHPC)

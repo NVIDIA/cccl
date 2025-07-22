@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -133,7 +134,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_From, _To>)
 //! semi-regular interfaces
 //!
 template <class...>
-struct __imovable : __interface<__imovable>
+struct __imovable : __basic_interface<__imovable>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
@@ -152,7 +153,7 @@ struct __imovable : __interface<__imovable>
 };
 
 template <class...>
-struct __icopyable : __interface<__icopyable, __extends<__imovable<>>>
+struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
@@ -170,7 +171,7 @@ _CCCL_CONCEPT __non_polymorphic = (!__is_basic_any<_Object>) && (!__is_interface
 template <class... _Super>
 struct __iequality_comparable;
 
-struct iequality_comparable_base : __interface<__iequality_comparable>
+struct iequality_comparable_base : __basic_interface<__iequality_comparable>
 {
   // These overloads are only necessary so that __iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
@@ -286,7 +287,7 @@ template <class _To>
 struct __iconvertible_to_<__self, _To>
 {
   template <class...>
-  struct __interface_ : __interface<__interface_>
+  struct __interface_ : __basic_interface<__interface_>
   {
     [[nodiscard]] _CCCL_API operator _To()
     {
@@ -302,7 +303,7 @@ template <class _To>
 struct __iconvertible_to_<__self&, _To>
 {
   template <class...>
-  struct __interface_ : __interface<__interface_>
+  struct __interface_ : __basic_interface<__interface_>
   {
     [[nodiscard]] _CCCL_API operator _To() &
     {
@@ -318,7 +319,7 @@ template <class _To>
 struct __iconvertible_to_<__self const&, _To>
 {
   template <class...>
-  struct __interface_ : __interface<__interface_>
+  struct __interface_ : __basic_interface<__interface_>
   {
     [[nodiscard]] _CCCL_API operator _To() const&
     {

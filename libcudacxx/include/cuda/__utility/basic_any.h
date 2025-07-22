@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -38,7 +39,7 @@
 //!
 //! \code{.cpp}
 //! template <class...>
-//! struct icat : cuda::__interface<icat>
+//! struct icat : cuda::__basic_interface<icat>
 //! {
 //!   void meow() const
 //!   {
@@ -111,7 +112,7 @@
 //! \code{.cpp}
 //! template <class...>
 //! struct icat
-//!   : cuda::__interface<icat, cuda::__extends<cuda::__icopyable<>>>
+//!   : cuda::__basic_interface<icat, cuda::__extends<cuda::__icopyable<>>>
 //! {
 //!   ... as before ...
 //! \endcode
@@ -199,7 +200,7 @@
 //! \code{.cpp}
 //! template <class...>
 //! struct icat
-//!   : cuda::__interface<icat,
+//!   : cuda::__basic_interface<icat,
 //!                      cuda::__extends<cuda::__icopyable<>>,
 //!                      2 * sizeof(void*),  // in-situ buffer size
 //!                      alignof(void*)>     // in-situ buffer alignment
@@ -254,7 +255,7 @@
 //!   // `cuda::interface` and contains the thunks.
 //!   template <class...>
 //!   struct _ifuntion
-//!     : cuda::__interface<_ifunction, cuda::__extends<cuda::__icopyable<>>>
+//!     : cuda::__basic_interface<_ifunction, cuda::__extends<cuda::__icopyable<>>>
 //!   {
 //!     Ret operator()(Args... args) const
 //!     {
@@ -310,7 +311,7 @@
 //! }
 //!
 //! template <class...>
-//! struct __iequality_comparable : cuda::__interface<__iequality_comparable>
+//! struct __iequality_comparable : cuda::__basic_interface<__iequality_comparable>
 //! {
 //!   friend bool operator==(__iequality_comparable const& lhs, __iequality_comparable const& rhs)
 //!   {
