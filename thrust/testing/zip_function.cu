@@ -38,7 +38,7 @@ struct TestZipFunctionCtor
 #endif // __cpp_deduction_guides
   }
 };
-SimpleUnitTest<TestZipFunctionCtor, type_list<int>> TestZipFunctionCtorInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, (type_list<int>) );
 
 template <typename T>
 struct TestZipFunctionTransform
@@ -111,7 +111,7 @@ struct TestZipFunctionMixed
     ASSERT_EQUAL(vecC, expected);
   }
 };
-SimpleUnitTest<TestZipFunctionMixed, type_list<int, float>> TestZipFunctionMixedInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, (type_list<int, float>) );
 
 struct NestedFunctionCall
 {
@@ -149,7 +149,7 @@ struct TestNestedZipFunction
     ASSERT_EQUAL(isMH, expected);
   }
 };
-SimpleUnitTest<TestNestedZipFunction, type_list<int, float>> TestNestedZipFunctionInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, (type_list<int, float>) );
 
 struct SortPred
 {
@@ -174,4 +174,4 @@ struct TestNestedZipFunction2
     thrust::sort(nestedTupleIt, nestedTupleIt + n, SortPred{});
   }
 };
-SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, (type_list<int, float>) );

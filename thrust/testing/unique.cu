@@ -299,4 +299,4 @@ struct TestUniqueMemoryAccess
     thrust::unique(v.begin(), v.end());
   }
 };
-SimpleUnitTest<TestUniqueMemoryAccess, unittest::type_list<int>> TestUniqueMemoryAccessInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueMemoryAccess, (unittest::type_list<int>) );
