@@ -66,5 +66,5 @@ struct TestTupleStableSort
     ASSERT_ALMOST_EQUAL(h_values, d_values);
   }
 };
-VariableUnitTest<TestTupleStableSort, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestTupleStableSortInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleStableSort,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

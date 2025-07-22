@@ -54,4 +54,4 @@ struct TestTupleReduce
     ASSERT_EQUAL_QUIET(h_result, d_result);
   }
 };
-VariableUnitTest<TestTupleReduce, IntegralTypes> TestTupleReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleReduce, IntegralTypes);

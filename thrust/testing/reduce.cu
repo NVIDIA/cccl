@@ -81,7 +81,7 @@ struct TestReduce
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestReduce, IntegralTypes> TestReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduce, IntegralTypes);
 
 template <class IntVector, class FloatVector>
 void TestReduceMixedTypes()
@@ -124,7 +124,7 @@ struct TestReduceWithOperator
     ASSERT_EQUAL(cpu_result, gpu_result);
   }
 };
-VariableUnitTest<TestReduceWithOperator, UnsignedIntegralTypes> TestReduceWithOperatorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceWithOperator, UnsignedIntegralTypes);
 
 template <typename T>
 struct plus_mod3

@@ -127,7 +127,7 @@ struct TestReverse
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestReverse, ReverseTypes> TestReverseInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverse, ReverseTypes);
 
 template <typename T>
 struct TestReverseCopy
@@ -146,7 +146,7 @@ struct TestReverseCopy
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestReverseCopy, ReverseTypes> TestReverseCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopy, ReverseTypes);
 
 template <typename T>
 struct TestReverseCopyToDiscardIterator
@@ -168,4 +168,4 @@ struct TestReverseCopyToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestReverseCopyToDiscardIterator, ReverseTypes> TestReverseCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopyToDiscardIterator, ReverseTypes);

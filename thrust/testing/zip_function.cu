@@ -79,7 +79,7 @@ struct TestZipFunctionTransform
     ASSERT_EQUAL(h_result_tuple, d_result_zip);
   }
 };
-VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipFunctionTransform, ThirtyTwoBitTypes);
 
 struct RemovePred
 {

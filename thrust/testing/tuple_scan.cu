@@ -63,4 +63,4 @@ struct TestTupleScan
     ASSERT_EQUAL_QUIET(h_output, d_output);
   }
 };
-VariableUnitTest<TestTupleScan, IntegralTypes> TestTupleScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleScan, IntegralTypes);

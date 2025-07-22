@@ -54,8 +54,8 @@ struct TestComparisonSortDeviceSeq
     TestComparisonSortDevice<T>(thrust::seq, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortDeviceSeq,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestComparisonSortDeviceDevice
@@ -65,8 +65,8 @@ struct TestComparisonSortDeviceDevice
     TestComparisonSortDevice<T>(thrust::device, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortDeviceDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T, typename ExecutionPolicy>
 void TestSortDevice(ExecutionPolicy exec, const size_t n)
@@ -82,7 +82,7 @@ struct TestSortDeviceSeq
     TestSortDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>> TestSortDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestSortDeviceDevice
@@ -92,8 +92,8 @@ struct TestSortDeviceDevice
     TestSortDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestSortDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestSortDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
 void TestSortCudaStreams()

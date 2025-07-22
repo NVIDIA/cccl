@@ -48,4 +48,4 @@ struct TestZipIteratorReduce
     ASSERT_EQUAL(get<1>(h_result), get<1>(d_result));
   }
 };
-VariableUnitTest<TestZipIteratorReduce, IntegralTypes> TestZipIteratorReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorReduce, IntegralTypes);

@@ -222,7 +222,7 @@ struct TestPartition
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
   }
 };
-VariableUnitTest<TestPartition, PartitionTypes> TestPartitionInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartition, PartitionTypes);
 
 template <typename T>
 struct TestPartitionStencil
@@ -260,7 +260,7 @@ struct TestPartitionStencil
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
   }
 };
-VariableUnitTest<TestPartitionStencil, PartitionTypes> TestPartitionStencilInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionStencil, PartitionTypes);
 
 template <typename T>
 struct TestPartitionCopy
@@ -303,7 +303,7 @@ struct TestPartitionCopy
     ASSERT_EQUAL(h_false_results, d_false_results);
   }
 };
-VariableUnitTest<TestPartitionCopy, PartitionTypes> TestPartitionCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopy, PartitionTypes);
 
 template <typename T>
 struct TestPartitionCopyStencil
@@ -348,7 +348,7 @@ struct TestPartitionCopyStencil
     ASSERT_EQUAL(h_false_results, d_false_results);
   }
 };
-VariableUnitTest<TestPartitionCopyStencil, PartitionTypes> TestPartitionCopyStencilInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyStencil, PartitionTypes);
 
 template <typename T>
 struct TestStablePartitionCopyStencil
@@ -393,7 +393,7 @@ struct TestStablePartitionCopyStencil
     ASSERT_EQUAL(h_false_results, d_false_results);
   }
 };
-VariableUnitTest<TestStablePartitionCopyStencil, PartitionTypes> TestStablePartitionCopyStencilInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyStencil, PartitionTypes);
 
 template <typename T>
 struct TestPartitionCopyToDiscardIterator
@@ -465,7 +465,7 @@ struct TestPartitionCopyToDiscardIterator
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
 };
-VariableUnitTest<TestPartitionCopyToDiscardIterator, PartitionTypes> TestPartitionCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyToDiscardIterator, PartitionTypes);
 
 template <typename T>
 struct TestPartitionCopyStencilToDiscardIterator
@@ -559,8 +559,7 @@ struct TestPartitionCopyStencilToDiscardIterator
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
 };
-VariableUnitTest<TestPartitionCopyStencilToDiscardIterator, PartitionTypes>
-  TestPartitionCopyStencilToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyStencilToDiscardIterator, PartitionTypes);
 
 // GCC 11 miscompiles and segfaults in this tests.
 #ifndef WAIVE_GCC11_FAILURES
@@ -583,7 +582,7 @@ struct TestStablePartition
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
   }
 };
-VariableUnitTest<TestStablePartition, PartitionTypes> TestStablePartitionInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartition, PartitionTypes);
 
 #endif // WAIVE_GCC11_FAILURES
 
@@ -610,7 +609,7 @@ struct TestStablePartitionStencil
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
   }
 };
-VariableUnitTest<TestStablePartitionStencil, PartitionTypes> TestStablePartitionStencilInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionStencil, PartitionTypes);
 
 #endif // WAIVE_GCC11_FAILURES
 
@@ -651,7 +650,7 @@ struct TestStablePartitionCopy
     ASSERT_EQUAL(h_false_results, d_false_results);
   }
 };
-VariableUnitTest<TestStablePartitionCopy, PartitionTypes> TestStablePartitionCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopy, PartitionTypes);
 
 template <typename T>
 struct TestStablePartitionCopyToDiscardIterator
@@ -723,8 +722,7 @@ struct TestStablePartitionCopyToDiscardIterator
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
 };
-VariableUnitTest<TestStablePartitionCopyToDiscardIterator, PartitionTypes>
-  TestStablePartitionCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyToDiscardIterator, PartitionTypes);
 
 template <typename T>
 struct TestStablePartitionCopyStencilToDiscardIterator
@@ -818,8 +816,7 @@ struct TestStablePartitionCopyStencilToDiscardIterator
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
 };
-VariableUnitTest<TestStablePartitionCopyStencilToDiscardIterator, PartitionTypes>
-  TestStablePartitionCopyStencilToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyStencilToDiscardIterator, PartitionTypes);
 
 struct is_ordered
 {

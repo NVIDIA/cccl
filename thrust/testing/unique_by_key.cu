@@ -263,7 +263,7 @@ struct TestUniqueByKey
     ASSERT_EQUAL(h_vals, d_vals);
   }
 };
-VariableUnitTest<TestUniqueByKey, IntegralTypes> TestUniqueByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueByKey, IntegralTypes);
 
 template <typename K>
 struct TestUniqueCopyByKey
@@ -309,7 +309,7 @@ struct TestUniqueCopyByKey
     ASSERT_EQUAL(h_vals_output, d_vals_output);
   }
 };
-VariableUnitTest<TestUniqueCopyByKey, IntegralTypes> TestUniqueCopyByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKey, IntegralTypes);
 
 template <typename K>
 struct TestUniqueCopyByKeyToDiscardIterator
@@ -386,7 +386,7 @@ struct TestUniqueCopyByKeyToDiscardIterator
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
 };
-VariableUnitTest<TestUniqueCopyByKeyToDiscardIterator, IntegralTypes> TestUniqueCopyByKeyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyToDiscardIterator, IntegralTypes);
 
 // OpenMP has issues with these tests, NVIDIA/cccl#1715
 #if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_OMP

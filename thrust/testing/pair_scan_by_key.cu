@@ -59,5 +59,5 @@ struct TestPairScanByKey
     ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
   }
 };
-VariableUnitTest<TestPairScanByKey, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestPairScanByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairScanByKey,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
