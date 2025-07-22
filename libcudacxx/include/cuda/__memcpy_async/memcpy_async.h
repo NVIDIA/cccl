@@ -24,13 +24,13 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
-#  include <cuda/__barrier/aligned_size.h>
 #  include <cuda/__barrier/async_contract_fulfillment.h>
 #  include <cuda/__barrier/barrier.h>
 #  include <cuda/__barrier/barrier_block_scope.h>
 #  include <cuda/__barrier/barrier_thread_scope.h>
 #  include <cuda/__memcpy_async/check_preconditions.h>
 #  include <cuda/__memcpy_async/memcpy_async_barrier.h>
+#  include <cuda/__memory/aligned_size.h>
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/cstddef>
