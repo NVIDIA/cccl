@@ -37,5 +37,5 @@ struct TestPairStableSort
     ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
   }
 };
-VariableUnitTest<TestPairStableSort, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestPairStableSortInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairStableSort,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

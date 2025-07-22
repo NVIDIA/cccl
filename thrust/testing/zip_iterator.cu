@@ -294,7 +294,7 @@ struct TestZipIteratorTransform
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);
 
 void TestZipIteratorCopyAoSToSoA()
 {

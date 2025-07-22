@@ -129,7 +129,7 @@ struct TestVectorRangeInsert
     ASSERT_EQUAL(h_dst, d_dst);
   }
 }; // end TestVectorRangeInsert
-VariableUnitTest<TestVectorRangeInsert, IntegralTypes> TestVectorRangeInsertInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorRangeInsert, IntegralTypes);
 
 template <class Vector>
 struct TestVectorFillInsertSimple
@@ -248,4 +248,4 @@ struct TestVectorFillInsert
     ASSERT_EQUAL(h_dst, d_dst);
   }
 }; // end TestVectorFillInsert
-VariableUnitTest<TestVectorFillInsert, IntegralTypes> TestVectorFillInsertInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorFillInsert, IntegralTypes);

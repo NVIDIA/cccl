@@ -152,4 +152,4 @@ struct TestReverseIteratorExclusiveScan
     ASSERT_EQUAL_QUIET(h_result, d_result);
   }
 };
-VariableUnitTest<TestReverseIteratorExclusiveScan, IntegralTypes> TestReverseIteratorExclusiveScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseIteratorExclusiveScan, IntegralTypes);
