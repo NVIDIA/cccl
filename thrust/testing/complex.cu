@@ -6,7 +6,6 @@
 #include <iostream>
 #include <sstream>
 
-#include <unittest/assertions.h>
 #include <unittest/unittest.h>
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
