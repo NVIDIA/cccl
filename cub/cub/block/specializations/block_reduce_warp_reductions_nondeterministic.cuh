@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-/**
- * @file
- * cub::BlockReduceWarpReductionsNondeterministic provides variants of warp-reduction-based parallel reduction
- * across a CUDA thread block. Supports non-commutative reduction operators.
- */
+//! @rst
+//! @file
+//! cub::BlockReduceWarpReductionsNondeterministic provides variants of warp-reduction-based parallel reduction
+//! across a CUDA thread block. Supports non-commutative reduction operators.
+//! @endrst
 
 #pragma once
 
@@ -29,21 +29,22 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-/**
- * @brief BlockReduceWarpReductionsNondeterministic provides variants of warp-reduction-based parallel reduction
- *        across a CUDA thread block. Supports non-commutative reduction operators.
- * @tparam T
- *   Data type being reduced
- *
- * @tparam BlockDimX
- *   The thread block length in threads along the X dimension
- *
- * @tparam BlockDimY
- *   The thread block length in threads along the Y dimension
- *
- * @tparam BlockDimZ
- *   The thread block length in threads along the Z dimension
- */
+//! @rst
+//! BlockReduceWarpReductionsNondeterministic provides variants of warp-reduction-based parallel reduction
+//! across a CUDA thread block. Supports non-commutative reduction operators.
+//! @endrst
+//!
+//! @tparam T
+//!   Data type being reduced
+//!
+//! @tparam BlockDimX
+//!   The thread block length in threads along the X dimension
+//!
+//! @tparam BlockDimY
+//!   The thread block length in threads along the Y dimension
+//!
+//! @tparam BlockDimZ
+//!   The thread block length in threads along the Z dimension
 template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>
 struct BlockReduceWarpReductionsNondeterministic
 {
@@ -51,7 +52,7 @@ struct BlockReduceWarpReductionsNondeterministic
   static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Number of active warps
-  static constexpr int warps = (block_threads + warp_threads - 1) / warp_threads;
+  static constexpr int warps = ::cuda::ceil_div(block_threads, warp_threads);
 
   /// The logical warp size for warp reductions
   static constexpr int logical_warp_size = _CUDA_VSTD::min(block_threads, warp_threads);
@@ -59,7 +60,6 @@ struct BlockReduceWarpReductionsNondeterministic
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (block_threads % logical_warp_size == 0);
 
-  ///  WarpReduce utility type
   using WarpReduceInternal = typename WarpReduce<T, logical_warp_size>::InternalWarpReduce;
 
   /// Shared memory storage layout type
@@ -83,7 +83,6 @@ struct BlockReduceWarpReductionsNondeterministic
   int warp_id;
   int lane_id;
 
-  /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductionsNondeterministic(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -91,18 +90,21 @@ struct BlockReduceWarpReductionsNondeterministic
       , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
 
-  /**
-   * @brief Returns block-wide aggregate in <em>thread</em><sub>0</sub>.
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than block_threads)
-   */
+  //! @rst
+  //! Returns block-wide aggregate in *thread*\ :sub:`0`.
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
+  //!
+  //! @param[in] warp_aggregate
+  //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
+  //!
+  //! @param[in] num_valid
+  //!   Number of valid elements (may be less than block_threads)
   template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
@@ -124,17 +126,20 @@ struct BlockReduceWarpReductionsNondeterministic
     return temp_storage.warp_aggregates[0];
   }
 
-  /**
-   * @brief Computes a thread block-wide reduction using addition (+) as the reduction operator.
-   *        The first num_valid threads each contribute one reduction partial. The return value is
-   *        only valid for thread<sub>0</sub>.
-   *
-   * @param[in] input
-   *   Calling thread's input partial reductions
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than block_threads)
-   */
+  //! @rst
+  //! Computes a thread block-wide reduction using addition (+) as the reduction operator.
+  //! The first num_valid threads each contribute one reduction partial. The return value is
+  //! only valid for *thread*\ :sub:`0`.
+  //! @endrst
+  //!
+  //! @tparam FullTile
+  //!   **[inferred]** Whether this is a full tile
+  //!
+  //! @param[in] input
+  //!   Calling thread's input partial reductions
+  //!
+  //! @param[in] num_valid
+  //!   Number of valid elements (may be less than block_threads)
   template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
@@ -153,20 +158,26 @@ struct BlockReduceWarpReductionsNondeterministic
     return ApplyWarpAggregates(reduction_op, warp_aggregate, num_valid);
   }
 
-  /**
-   * @brief Computes a thread block-wide reduction using the specified reduction operator.
-   *        The first num_valid threads each contribute one reduction partial.
-   *        The return value is only valid for thread<sub>0</sub>.
-   *
-   * @param[in] input
-   *   Calling thread's input partial reductions
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than block_threads)
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   */
+  //! @rst
+  //! Computes a thread block-wide reduction using the specified reduction operator.
+  //! The first num_valid threads each contribute one reduction partial.
+  //! The return value is only valid for *thread*\ :sub:`0`.
+  //! @endrst
+  //!
+  //! @tparam FullTile
+  //!   **[inferred]** Whether this is a full tile
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type
+  //!
+  //! @param[in] input
+  //!   Calling thread's input partial reductions
+  //!
+  //! @param[in] num_valid
+  //!   Number of valid elements (may be less than block_threads)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
   template <bool FullTile, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
