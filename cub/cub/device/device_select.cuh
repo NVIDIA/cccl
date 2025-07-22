@@ -19,6 +19,8 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/temporary_storage.cuh>
+#include <cub/device/device_reduce.cuh> // lift it to a top common header
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
@@ -28,6 +30,30 @@
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+namespace select
+{
+struct get_tuning_query_t
+{};
+
+template <class Derived>
+struct tuning
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  {
+    return static_cast<const Derived&>(*this);
+  }
+};
+
+struct default_tuning : tuning<default_tuning>
+{
+  template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
+  using fn = policy_hub<InputT, FlagT, OffsetT, DistinctPartitions, Impl>;
+};
+} // namespace select
+} // namespace detail
 
 //! @rst
 //! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
@@ -53,6 +79,57 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSelect
 {
+private:
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOpT_Functor,
+            typename EqualityOpT,
+            typename OffsetT,
+            SelectImpl SelectionMode,
+            ::cuda::execution::determinism::__determinism_t Determinism>
+  CUB_RUNTIME_FUNCTION static cudaError_t select_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    OffsetT num_items,
+    SelectOpT_Functor user_select_op_instance,
+    ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
+    cudaStream_t stream)
+  {
+    using select_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::select::get_tuning_query_t, detail::select::default_tuning>;
+
+    using policy_t =
+      typename select_tuning_t::template fn<detail::it_value_t<InputIteratorT>, NullType, OffsetT, false, SelectionMode>;
+
+    using dispatch_t =
+      DispatchSelectIf<InputIteratorT,
+                       NullType*,
+                       OutputIteratorT,
+                       NumSelectedIteratorT,
+                       SelectOpT_Functor,
+                       NullType,
+                       OffsetT,
+                       SelectionMode,
+                       policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      nullptr,
+      d_out,
+      d_num_selected_out,
+      user_select_op_instance,
+      EqualityOpT{},
+      num_items,
+      stream);
+  }
+
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
@@ -177,6 +254,112 @@ struct DeviceSelect
                                     EqualityOp(),
                                     num_items,
                                     stream);
+  }
+
+public:
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  If(InputIteratorT d_in,
+     OutputIteratorT d_out,
+     NumSelectedIteratorT d_num_selected_out,
+     ::cuda::std::int64_t num_items,
+     SelectOp select_op,
+     EnvT env = EnvT{})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
+
+    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t =
+      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+
+    // This `determinism_concrete_type` is the actual enum class type (e.g., run_to_run_t)
+    using determinism_concrete_type =
+      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
+                                          _CUDA_EXEC::determinism::__get_determinism_t,
+                                          _CUDA_EXEC::determinism::run_to_run_t>;
+
+    // Query relevant properties from the environment
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+
+    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
+    using FlagIterator = NullType*; // FlagT iterator type (not used)
+    using EqualityOp   = NullType; // Equality operator (not used)
+
+    // Construct the actual determinism holder object to pass as a function argument.
+    // The `operator()` of `__get_determinism_t` returns a `__determinism_holder_t` by value.
+    // So, `_CUDA_STD_EXEC::__query_or(env, ::cuda::get_determinism, ...) ` would yield `__determinism_holder_t<VAL>`.
+    // However, the `select_impl` expects a *bare* `__determinism_holder_t<VAL>` for its argument.
+    // The `determinism_concrete_type{}` syntax default-constructs `run_to_run_t`, which IS a
+    // `__determinism_holder_t<__determinism_t::__run_to_run>`. So, simply passing `determinism_concrete_type{}` should
+    // work for the function argument.
+
+    cudaError_t error =
+      select_impl<tuning_t,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  NumSelectedIteratorT,
+                  SelectOp,
+                  EqualityOp,
+                  ::cuda::std::int64_t,
+                  SelectImpl::Select,
+                  determinism_concrete_type::value>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        d_num_selected_out,
+        num_items,
+        select_op,
+        determinism_concrete_type{},
+        static_cast<cudaStream_t>(stream.get()));
+
+    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    error = select_impl<tuning_t,
+                        InputIteratorT,
+                        OutputIteratorT,
+                        NumSelectedIteratorT,
+                        SelectOp,
+                        EqualityOp,
+                        ::cuda::std::int64_t,
+                        SelectImpl::Select,
+                        determinism_concrete_type::value>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      d_num_selected_out,
+      num_items,
+      select_op,
+      determinism_concrete_type{},
+      static_cast<cudaStream_t>(stream.get()));
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+
+    if (error != cudaSuccess)
+    {
+      // Reduction error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
   }
 
   //! @rst
