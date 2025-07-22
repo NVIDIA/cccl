@@ -77,13 +77,11 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
   // Offset type large enough to represent the longest run in the sequence
   using run_length_t = RunLengthT;
-  // Offset type large enough to represent the total number of runs in the sequence
-  using num_runs_t = offset_t;
 
   using keys_input_it_t            = const T*;
   using offset_output_it_t         = offset_t*;
   using length_output_it_t         = run_length_t*;
-  using num_runs_output_iterator_t = num_runs_t*;
+  using num_runs_output_iterator_t = offset_t*;
   using equality_op_t              = ::cuda::std::equal_to<>;
 
 #if !TUNE_BASE
@@ -109,7 +107,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<num_runs_t> num_runs_out(1);
+  thrust::device_vector<offset_t> num_runs_out(1);
   thrust::device_vector<offset_t> out_offsets(elements);
   thrust::device_vector<run_length_t> out_lengths(elements);
   thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
@@ -117,7 +115,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   T* d_in_keys                = thrust::raw_pointer_cast(in_keys.data());
   offset_t* d_out_offsets     = thrust::raw_pointer_cast(out_offsets.data());
   run_length_t* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
-  num_runs_t* d_num_runs_out  = thrust::raw_pointer_cast(num_runs_out.data());
+  offset_t* d_num_runs_out    = thrust::raw_pointer_cast(num_runs_out.data());
 
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
