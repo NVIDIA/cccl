@@ -963,7 +963,7 @@ struct AgentRle
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     int tile_idx          = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
-    OffsetT tile_offset   = static_cast<OffsetT>(tile_idx) * TILE_ITEMS; // Global offset for the current tile
+    OffsetT tile_offset   = tile_idx * TILE_ITEMS; // Global offset for the current tile
     OffsetT num_remaining = num_items - tile_offset; // Remaining items (including this tile)
 
     if (tile_idx < num_tiles - 1)
