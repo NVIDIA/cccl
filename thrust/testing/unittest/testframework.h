@@ -542,16 +542,19 @@ public:
   TEST##UnitTest TEST##Instance
 
 #define DECLARE_GENERIC_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
-  ::SimpleUnitTest<TEST, TYPES> NAME##_instance(#NAME) /**/
+  ::detail::SimpleUnitTest<TEST, TYPES> NAME##_instance(#NAME) /**/
 
 #define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
   ::VariableUnitTest<TEST, TYPES> NAME##_instance(#NAME) /**/
 
-#define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, TYPES) ::SimpleUnitTest<TEST, TYPES> TEST##_instance(#TEST) /**/
+#define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, TYPES) \
+  ::detail::SimpleUnitTest<TEST, TYPES> TEST##_instance(#TEST) /**/
 
 #define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, TYPES) \
   ::VariableUnitTest<TEST, TYPES> TEST##_instance(#TEST) /**/
 
+namespace detail
+{
 template <template <typename> class TestName, typename TypeList>
 class SimpleUnitTest : public UnitTest
 {
@@ -575,6 +578,7 @@ public:
     for_each();
   }
 }; // end SimpleUnitTest
+} // namespace detail
 
 template <template <typename> class TestName, typename TypeList>
 class VariableUnitTest : public UnitTest

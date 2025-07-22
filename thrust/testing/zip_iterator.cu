@@ -70,8 +70,7 @@ struct TestZipIteratorConstructionFromIterators
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorConstructionFromIterators, type_list<int>>
-  TestZipIteratorConstructionFromIteratorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorConstructionFromIterators, type_list<int>);
 
 template <typename T>
 struct TestZipIteratorManipulation
@@ -161,7 +160,7 @@ struct TestZipIteratorManipulation
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorManipulation, type_list<int>> TestZipIteratorManipulationInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorManipulation, (type_list<int>) );
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<thrust::tuple<int*, int*>>>::value, "");
 
 template <typename T>
@@ -210,7 +209,7 @@ struct TestZipIteratorReference
     ASSERT_EQUAL(get<1>(ref2), get<1>(test2));
   } // end operator()()
 };
-SimpleUnitTest<TestZipIteratorReference, NumericTypes> TestZipIteratorReferenceInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
 
 template <typename Vector>
 void TestZipIteratorCopy()

@@ -71,7 +71,7 @@ struct TestPairManipulation
     ASSERT_EQUAL(T(9), p7.second);
   }
 };
-SimpleUnitTest<TestPairManipulation, NumericTypes> TestPairManipulationInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairManipulation, NumericTypes);
 
 template <typename T>
 struct TestPairComparison
@@ -221,7 +221,7 @@ struct TestPairComparison
     ASSERT_EQUAL(false, y >= x);
   }
 };
-SimpleUnitTest<TestPairComparison, NumericTypes> TestPairComparisonInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairComparison, NumericTypes);
 
 template <typename T>
 struct TestPairGet
@@ -236,7 +236,7 @@ struct TestPairGet
     ASSERT_EQUAL(data[1], thrust::get<1>(p));
   }
 };
-SimpleUnitTest<TestPairGet, BuiltinNumericTypes> TestPairGetInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairGet, BuiltinNumericTypes);
 
 using PairConstVolatileTypes =
   unittest::type_list<thrust::pair<int, float>, thrust::pair<int, float> const, thrust::pair<int, float> const volatile>;
@@ -249,7 +249,7 @@ struct TestPairTupleSize
     ASSERT_EQUAL(2, static_cast<int>(thrust::tuple_size<Pair>::value));
   }
 };
-SimpleUnitTest<TestPairTupleSize, PairConstVolatileTypes> TestPairTupleSizeInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairTupleSize, PairConstVolatileTypes);
 
 void TestPairTupleElement()
 {

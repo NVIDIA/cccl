@@ -424,7 +424,7 @@ struct TestUniqueCopyByKeyLargeInput
     ASSERT_EQUAL(reference_values, values_out);
   }
 };
-SimpleUnitTest<TestUniqueCopyByKeyLargeInput, IntegralTypes> TestUniqueCopyByKeyLargeInputInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeInput, IntegralTypes);
 
 template <typename K>
 struct TestUniqueCopyByKeyLargeOutCount
@@ -448,7 +448,7 @@ struct TestUniqueCopyByKeyLargeOutCount
     ASSERT_EQUAL(num_selected_out, ::cuda::std::distance(values_out, selected_aut_end.second));
   }
 };
-SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeOutCount, IntegralTypes);
 
 #  endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
