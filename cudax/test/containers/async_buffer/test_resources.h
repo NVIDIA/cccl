@@ -44,13 +44,13 @@ struct memory_resource_wrapper
   // https://github.com/NVIDIA/cccl/issues/4166
   cudax::any_async_resource<Properties...> resource_;
 
-  void* allocate(std::size_t size, std::size_t alignment)
+  void* allocate_sync(std::size_t size, std::size_t alignment)
   {
-    return resource_.allocate(size, alignment);
+    return resource_.allocate_sync(size, alignment);
   }
-  void deallocate(void* ptr, std::size_t size, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
   {
-    resource_.deallocate(ptr, size, alignment);
+    resource_.deallocate_sync(ptr, size, alignment);
   }
   void* allocate_async(std::size_t size, std::size_t alignment, cuda::stream_ref stream)
   {

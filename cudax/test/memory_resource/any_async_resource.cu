@@ -76,7 +76,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate and deallocate")
+  SECTION("allocate and deallocate_sync")
   {
     Counts expected{};
     CHECK(this->counts == expected);
@@ -87,12 +87,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, bytes(50), align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -146,11 +146,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
       cudax::resource_ref<cudax::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }

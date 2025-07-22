@@ -22,11 +22,11 @@ struct prop
 
 struct valid_resource_with_property
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const valid_resource_with_property&) const
   {
     return true;
@@ -41,11 +41,11 @@ static_assert(cuda::mr::synchronous_resource_with<valid_resource_with_property, 
 
 struct valid_resource_without_property
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const valid_resource_without_property&) const
   {
     return true;
@@ -65,11 +65,11 @@ static_assert(!cuda::mr::synchronous_resource_with<invalid_resource_with_propert
 
 struct resource_with_many_properties
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const resource_with_many_properties&) const
   {
     return true;

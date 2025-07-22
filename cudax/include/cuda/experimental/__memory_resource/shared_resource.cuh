@@ -140,18 +140,18 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return __control_block->__resource.allocate(__bytes, __alignment);
+    return __control_block->__resource.allocate_sync(__bytes, __alignment);
   }
 
-  //! @brief Deallocate memory pointed to by \p __ptr using the stored resource.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
+  //! @brief.deallocate_sync memory pointed to by \p __ptr using the stored resource.
+  //! @param __ptr Pointer to be.deallocate_syncd. Must have been allocated through a call to `allocate`
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
+  void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
   {
-    __control_block->__resource.deallocate(__ptr, __bytes, __alignment);
+    __control_block->__resource.deallocate_sync(__ptr, __bytes, __alignment);
   }
 
   //! @brief Enqueues an allocation of memory of size at least \p __bytes using

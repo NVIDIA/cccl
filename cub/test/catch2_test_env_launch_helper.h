@@ -174,13 +174,13 @@ struct device_memory_resource : cub::detail::device_memory_resource
   size_t* bytes_allocated    = nullptr;
   size_t* bytes_deallocated  = nullptr;
 
-  void* allocate(size_t /* bytes */, size_t /* alignment */)
+  void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
   {
     FAIL("CUB shouldn't use synchronous allocation");
     return nullptr;
   }
 
-  void deallocate(void* /* ptr */, size_t /* bytes */)
+  void deallocate_sync(void* /* ptr */, size_t /* bytes */)
   {
     FAIL("CUB shouldn't use synchronous deallocation");
   }

@@ -155,17 +155,17 @@ struct _Resource_vtable_builder
   template <class _Resource>
   static void* _Alloc(void* __object, size_t __bytes, size_t __alignment)
   {
-    return static_cast<_Resource*>(__object)->allocate(__bytes, __alignment);
+    return static_cast<_Resource*>(__object)->allocate_sync(__bytes, __alignment);
   }
 
   template <class _Resource>
   static void _Dealloc(void* __object, void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
     // TODO: this breaks RMM because their memory resources do not declare their
-    // deallocate functions to be noexcept. Comment out the check for now until
+    // deallocate_sync functions to be noexcept. Comment out the check for now until
     // we can fix RMM.
     // static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
-    return static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment);
+    return static_cast<_Resource*>(__object)->deallocate_sync(__ptr, __bytes, __alignment);
   }
 
   template <class _Resource>
@@ -387,12 +387,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _Alloc_base : _Resource_ref_base
       , __static_vtable(__static_vtabl_)
   {}
 
-  [[nodiscard]] void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return __static_vtable->__alloc_fn(_Get_object(), __bytes, __alignment);
   }
 
-  void deallocate(void* _Ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
+  void deallocate_sync(void* _Ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
   {
     __static_vtable->__dealloc_fn(_Get_object(), _Ptr, __bytes, __alignment);
   }

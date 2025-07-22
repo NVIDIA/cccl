@@ -144,14 +144,14 @@ private:
   {
     __async_resource* __resource_;
 
-    void* allocate(std::size_t __size, std::size_t __alignment)
+    void* allocate_sync(std::size_t __size, std::size_t __alignment)
     {
-      return __resource_->allocate(__size, __alignment);
+      return __resource_->allocate_sync(__size, __alignment);
     }
 
-    void deallocate(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
-      __resource_->deallocate(__ptr, __size, __alignment);
+      __resource_->deallocate_sync(__ptr, __size, __alignment);
     }
 
     void* allocate_async(std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream)
@@ -230,7 +230,7 @@ public:
 
   //! @brief Move-assigns a \c uninitialized_async_buffer from \p __other
   //! @param __other Another \c uninitialized_async_buffer
-  //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
+  //!.deallocate_syncs the current allocation and then takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer& operator=(uninitialized_async_buffer&& __other) noexcept
   {
     if (this == _CUDA_VSTD::addressof(__other))
@@ -249,7 +249,7 @@ public:
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that was
+  //! @brief Destroys an \c uninitialized_async_buffer,.deallocate_syncs the buffer in stream order on the stream that was
   //! used to create the buffer and destroys the memory resource.
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
@@ -264,7 +264,7 @@ public:
     auto __tmp_mr = _CUDA_VSTD::move(__mr_);
   }
 
-  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream that was
+  //! @brief Destroys an \c uninitialized_async_buffer and.deallocate_syncs the buffer in stream order on the stream that was
   //! used to create the buffer.
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.

@@ -21,7 +21,7 @@ void test_deallocate_async(ResourceType& resource)
   test::pinned<int> i(0);
   cuda::atomic_ref atomic_i(*i);
 
-  int* allocation = static_cast<int*>(resource.allocate(sizeof(int)));
+  int* allocation = static_cast<int*>(resource.allocate_sync(sizeof(int)));
 
   cudax::launch(stream, test::one_thread_dims, test::spin_until_80{}, i.get());
   cudax::launch(stream, test::one_thread_dims, test::assign_42{}, allocation);

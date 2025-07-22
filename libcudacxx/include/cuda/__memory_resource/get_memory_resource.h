@@ -36,10 +36,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 template <class _Resource>
 _CCCL_CONCEPT __internal_async_resource = _CCCL_REQUIRES_EXPR(
   (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
-  _Same_as(void*) __res.allocate(__bytes, __alignment),
+  _Same_as(void*) __res.allocate_sync(__bytes, __alignment),
   _Same_as(void*) __res.allocate_async(__bytes, __alignment, __stream),
   _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream),
-  _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment),
+  _Same_as(void) __res.deallocate_sync(__ptr, __bytes, __alignment),
   requires(_CUDA_VSTD::equality_comparable<_Resource>));
 
 struct __get_memory_resource_t;

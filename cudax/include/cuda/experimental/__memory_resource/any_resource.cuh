@@ -108,19 +108,19 @@ __deallocate_async(_Resource& __mr, void* __pv, size_t __bytes, size_t __alignme
 template <class...>
 struct __ibasic_resource : interface<__ibasic_resource>
 {
-  _CUDAX_PUBLIC_API void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CUDAX_PUBLIC_API void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return experimental::virtcall<&__ibasic_resource::allocate>(this, __bytes, __alignment);
+    return experimental::virtcall<&__ibasic_resource::allocate_sync>(this, __bytes, __alignment);
   }
 
-  _CUDAX_PUBLIC_API void deallocate(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CUDAX_PUBLIC_API void deallocate_sync(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return experimental::virtcall<&__ibasic_resource::deallocate>(this, __pv, __bytes, __alignment);
+    return experimental::virtcall<&__ibasic_resource::deallocate_sync>(this, __pv, __bytes, __alignment);
   }
 
   template <class _Ty>
   using overrides _CCCL_NODEBUG_ALIAS =
-    overrides_for<_Ty, _CUDAX_FNPTR_CONSTANT_WAR(&_Ty::allocate), _CUDAX_FNPTR_CONSTANT_WAR(&_Ty::deallocate)>;
+    overrides_for<_Ty, _CUDAX_FNPTR_CONSTANT_WAR(&_Ty::allocate_sync), _CUDAX_FNPTR_CONSTANT_WAR(&_Ty::deallocate_sync)>;
 };
 
 template <class...>
@@ -586,18 +586,18 @@ public:
   //! @brief Calls `allocate` on the wrapped object with the specified
   //! arguments.
   //! @pre `has_value()` is `true`.
-  //! @return `obj.allocate(__size, __align)`, where `obj` is the wrapped
+  //! @return `obj.allocate_sync(__size, __align)`, where `obj` is the wrapped
   //! object.
-  [[nodiscard]] void* allocate(size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  [[nodiscard]] void* allocate_sync(size_t __size, size_t __align = alignof(cuda::std::max_align_t));
 
-  //! @brief Calls `deallocate` on the wrapped object with the specified
+  //! @brief Calls .deallocate_sync` on the wrapped object with the specified
   //! arguments.
   //! @pre `has_value()` is `true`.
   //! @pre `__pv` must be a pointer that was previously returned by a call to \c
   //! allocate on the object wrapped by `*this`.
-  //! @return `obj.deallocate(__pv, __size, __align)`, where `obj` is the
+  //! @return `obj.deallocate_sync(__pv, __size, __align)`, where `obj` is the
   //! wrapped object.
-  void deallocate(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  void.deallocate_sync(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
 
   //! @brief Calls `allocate_async` on the wrapped object with the specified
   //! arguments.
@@ -751,17 +751,17 @@ public:
 
   //! @brief Calls `allocate` on the wrapped reference with the specified
   //! arguments.
-  //! @return `obj.allocate(__size, __align)`, where `obj` is the wrapped
+  //! @return `obj.allocate_sync(__size, __align)`, where `obj` is the wrapped
   //! reference.
-  [[nodiscard]] void* allocate(size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  [[nodiscard]] void* allocate_sync(size_t __size, size_t __align = alignof(cuda::std::max_align_t));
 
-  //! @brief Calls `deallocate` on the wrapped reference with the specified
+  //! @brief Calls .deallocate_sync` on the wrapped reference with the specified
   //! arguments.
   //! @pre `__pv` must be a pointer that was previously returned by a call to
   //! \c allocate on the object referenced by `*this`.
-  //! @return `obj.deallocate(__pv, __size, __align)`, where `obj` is the
+  //! @return `obj.deallocate_sync(__pv, __size, __align)`, where `obj` is the
   //! wrapped reference.
-  void deallocate(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  void.deallocate_sync(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
 
   //! @brief Calls `allocate_async` on the wrapped reference with the specified
   //! arguments.

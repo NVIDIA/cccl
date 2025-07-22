@@ -50,8 +50,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 template <class _Resource>
 _CCCL_CONCEPT synchronous_resource =
   _CCCL_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
-    _Same_as(void*) __res.allocate(__bytes, __alignment), //
-    _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment),
+    _Same_as(void*) __res.allocate_sync(__bytes, __alignment), //
+    _Same_as(void) __res.deallocate_sync(__ptr, __bytes, __alignment),
     requires(_CUDA_VSTD::equality_comparable<_Resource>));
 
 //! @brief The \c async_resource concept verifies that a type Resource satisfies the basic requirements of a

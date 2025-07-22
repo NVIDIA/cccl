@@ -62,19 +62,19 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
   cudax::stream stream{cuda::device_ref{0}};
 
   { // allocate / deallocate
-    auto* ptr = res.allocate(42);
+    auto* ptr = res.allocate_sync(42);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_managed_ptr(ptr);
 
-    res.deallocate(ptr, 42);
+    res.deallocate_sync(ptr, 42);
   }
 
-  { // allocate / deallocate with alignment
-    auto* ptr = res.allocate(42, 4);
+  { // allocate /.deallocate_sync with alignment
+    auto* ptr = res.allocate_sync(42, 4);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_managed_ptr(ptr);
 
-    res.deallocate(ptr, 42, 4);
+    res.deallocate_sync(ptr, 42, 4);
   }
 
   { // allocate_async / deallocate_async
@@ -103,7 +103,7 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        [[maybe_unused]] auto* ptr = res.allocate(5, 42);
+        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -118,7 +118,7 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
+        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -168,11 +168,11 @@ enum class AccessibilityType
 template <AccessibilityType Accessibility>
 struct resource
 {
-  void* allocate(size_t, size_t)
+  void* allocate_sync(size_t, size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
 
   bool operator==(const resource&) const
   {

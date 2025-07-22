@@ -22,11 +22,11 @@ struct invalid_argument
 
 struct valid_resource
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const valid_resource&) const
   {
     return true;
@@ -40,11 +40,11 @@ static_assert(cuda::mr::synchronous_resource<valid_resource>, "");
 
 struct invalid_allocate_argument
 {
-  void* allocate(invalid_argument, std::size_t)
+  void* allocate_sync(invalid_argument, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const invalid_allocate_argument&)
   {
     return true;
@@ -58,11 +58,11 @@ static_assert(!cuda::mr::synchronous_resource<invalid_allocate_argument>, "");
 
 struct invalid_allocate_return
 {
-  int allocate(std::size_t, std::size_t)
+  int allocate_sync(std::size_t, std::size_t)
   {
     return 42;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const invalid_allocate_return&)
   {
     return true;
@@ -76,11 +76,11 @@ static_assert(!cuda::mr::synchronous_resource<invalid_allocate_return>, "");
 
 struct invalid_deallocate_argument
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, invalid_argument, std::size_t) noexcept {}
+  void deallocate_sync(void*, invalid_argument, std::size_t) noexcept {}
   bool operator==(const invalid_deallocate_argument&)
   {
     return true;
@@ -94,21 +94,21 @@ static_assert(!cuda::mr::synchronous_resource<invalid_deallocate_argument>, "");
 
 struct non_comparable
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 };
 static_assert(!cuda::mr::synchronous_resource<non_comparable>, "");
 
 struct non_eq_comparable
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator!=(const non_eq_comparable&)
   {
     return false;
@@ -119,11 +119,11 @@ static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>, "");
 #if TEST_STD_VER < 2020
 struct non_neq_comparable
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const non_neq_comparable&)
   {
     return true;

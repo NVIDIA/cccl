@@ -23,9 +23,9 @@ struct async_resource_base
 {
   virtual ~async_resource_base() = default;
 
-  virtual void* allocate(std::size_t, std::size_t) = 0;
+  virtual void* allocate_sync(std::size_t, std::size_t) = 0;
 
-  virtual void deallocate(void* ptr, std::size_t, std::size_t) noexcept = 0;
+  virtual void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept = 0;
 
   virtual void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) = 0;
 
@@ -61,12 +61,12 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
       : _val(val)
   {}
 
-  void* allocate(std::size_t, std::size_t) override
+  void* allocate_sync(std::size_t, std::size_t) override
   {
     return &_val;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept override {}
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept override {}
 
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) override
   {
@@ -102,12 +102,12 @@ struct async_resource_derived_second : public async_resource_base<Properties...>
       : _val(val)
   {}
 
-  void* allocate(std::size_t, std::size_t) override
+  void* allocate_sync(std::size_t, std::size_t) override
   {
     return &_val->_val;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept override {}
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept override {}
 
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) override
   {

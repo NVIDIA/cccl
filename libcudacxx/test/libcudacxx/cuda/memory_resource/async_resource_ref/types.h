@@ -25,12 +25,12 @@ struct property_without_value
 template <class... Properties>
 struct async_resource
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);

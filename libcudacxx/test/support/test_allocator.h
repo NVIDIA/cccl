@@ -593,7 +593,7 @@ public:
   }
   void deallocate(pointer p, size_type n) noexcept
   {
-    handle_->deallocate(p, n);
+    handle_->deallocate_sync(p, n);
   }
   size_type max_size() const
   {
