@@ -16,8 +16,6 @@
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
-#include <iostream>
-
 #include "../cases.h"
 #include "test_macros.h"
 
@@ -71,10 +69,6 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        if (!(real(r) == real(z)))
-        {
-          std::cout << "FP real mismatch: " << r << " vs " << z << std::endl;
-        }
         assert(real(r) == real(z));
       }
       if (cuda::std::isnan(imag(r)))
@@ -83,10 +77,6 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        if (!(imag(r) == imag(z)))
-        {
-          std::cout << "FP imag mismatch: " << r << " vs " << z << std::endl;
-        }
         assert(imag(r) == imag(z));
       }
     }
