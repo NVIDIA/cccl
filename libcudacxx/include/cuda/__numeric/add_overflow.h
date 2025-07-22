@@ -188,7 +188,10 @@ _CCCL_REQUIRES((_CUDA_VSTD::is_void_v<_Result> || _CUDA_VSTD::__cccl_is_integer_
 [[nodiscard]] _CCCL_API constexpr overflow_result<_ActualResult>
 add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
-#if defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
+// (1) __builtin_add_overflow is not available in a constant expression with gcc + nvcc
+// (2) __builtin_add_overflow generates suboptimal code with nvc++ and clang-cuda for device code
+#if defined(_CCCL_BUILTIN_ADD_OVERFLOW) && _CCCL_HOST_COMPILATION() \
+  && !(_CCCL_COMPILER(GCC) && _CCCL_CUDA_COMPILER(NVCC))
   overflow_result<_ActualResult> __result;
   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
   return __result;
@@ -243,37 +246,44 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__lhs1 + __rhs1), true};
   }
   // Opposite signs
+  // * int < 0 + int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
+  // * int >= 0 + int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
+  else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
+  {
+    return ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs) + static_cast<_Common>(__rhs));
+  }
+  // Opposite signs
+  // * unsigned + int < 0
+  // * int < 0 + unsigned
   else
   {
-    const auto __lhs1 = static_cast<_Common>(__lhs);
-    const auto __rhs1 = static_cast<_Common>(__rhs);
-    const auto __sum  = static_cast<_Common>(__lhs1 + __rhs1); // no overflow because of opposite signs
-    // * int < 0 + int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
-    // * int >= 0 + int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
-    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
+    // skip checks in cmp_less, cmp_greater, uabs
+    if (is_unsigned_v<_Lhs>)
     {
-      return ::cuda::overflow_cast<_ActualResult>(__sum);
+      _CCCL_ASSUME(__rhs < 0);
     }
-    // * unsigned + int < 0
-    // * int < 0 + unsigned
     else
     {
-      // check if lhs + rhs is < 0 --> e.g. lhs >= 0 && lhs < |rhs|
-      if ((is_unsigned_v<_Lhs> && _CUDA_VSTD::cmp_less(__lhs, ::cuda::uabs(__rhs)))
-          || (is_unsigned_v<_Rhs> && _CUDA_VSTD::cmp_greater(::cuda::uabs(__lhs), __rhs)))
-      {
-        if constexpr (is_unsigned_v<_ActualResult>)
-        {
-          return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), true};
-        }
-        else
-        {
-          using _Sp = _CUDA_VSTD::make_signed_t<_Common>;
-          return ::cuda::overflow_cast<_ActualResult>(static_cast<_Sp>(__sum));
-        }
-      }
-      return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
+      _CCCL_ASSUME(__lhs < 0);
     }
+    const auto __lhs1 = static_cast<_CommonAll>(__lhs);
+    const auto __rhs1 = static_cast<_CommonAll>(__rhs);
+    const auto __sum  = static_cast<_CommonAll>(__lhs1 + __rhs1); // no overflow because of opposite signs
+    // check if lhs + rhs is < 0,  e.g. lhs >= 0 && lhs < |rhs|
+    if ((is_unsigned_v<_Lhs> && _CUDA_VSTD::cmp_less(__lhs, ::cuda::uabs(__rhs)))
+        || (is_unsigned_v<_Rhs> && _CUDA_VSTD::cmp_greater(::cuda::uabs(__lhs), __rhs)))
+    {
+      if constexpr (is_unsigned_v<_ActualResult>)
+      {
+        return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), true};
+      }
+      else
+      {
+        using _Sp = _CUDA_VSTD::make_signed_t<_Common>;
+        return ::cuda::overflow_cast<_ActualResult>(static_cast<_Sp>(__sum));
+      }
+    }
+    return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
   }
 #endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
 }
