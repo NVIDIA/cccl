@@ -63,7 +63,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
 {
   using type          = typename c2h::get<0, TestType>;
   const int num_items = 1 << 20;
-  c2h::device_vector<type> d_input(num_items);
+  c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
   c2h::device_vector<type> d_output(1);
@@ -91,7 +91,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   constexpr auto min_op = cuda::minimum<type>{};
   constexpr auto init   = cuda::std::numeric_limits<type>::max();
 
-  c2h::device_vector<type> d_input(num_items);
+  c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
   const int num_indices = GENERATE_COPY(take(2, random(1 << 10, num_items)));
@@ -138,7 +138,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   SECTION("device_vector iterators")
   {
-    c2h::device_vector<type> d_input(num_items);
+    c2h::device_vector<type> d_input(num_items, thrust::no_init);
     c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
     c2h::device_vector<type> d_output(1);
@@ -233,7 +233,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   const int num_items = 1 << 10;
 
-  c2h::device_vector<type> d_input(num_items);
+  c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
   c2h::device_vector<type> d_output(1);
@@ -274,7 +274,7 @@ C2H_TEST("Nondeterministic Device reduce works with various types on gpu with di
     max_value = static_cast<type>(50);
   }
 
-  c2h::device_vector<type> d_input(num_items);
+  c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, min_value, max_value);
 
   c2h::device_vector<type> d_output(1);
