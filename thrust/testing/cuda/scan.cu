@@ -117,7 +117,7 @@ struct TestScanDeviceSeq
     TestScanDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestScanDeviceSeq, IntegralTypes> TestScanDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanDeviceSeq, IntegralTypes);
 
 template <typename T>
 struct TestScanDeviceDevice
@@ -127,7 +127,7 @@ struct TestScanDeviceDevice
     TestScanDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestScanDeviceDevice, IntegralTypes> TestScanDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanDeviceDevice, IntegralTypes);
 #endif
 
 void TestScanCudaStreams()

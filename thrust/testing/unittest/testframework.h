@@ -545,16 +545,16 @@ public:
   TEST##UnitTest TEST##Instance
 
 #define DECLARE_GENERIC_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
-  ::detail::SimpleUnitTest<TEST, TYPES> NAME##_instance(#NAME) /**/
+  ::detail::SimpleUnitTest<TEST, TYPES> NAME##_instance(#NAME)
 
 #define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
-  ::VariableUnitTest<TEST, TYPES> NAME##_instance(#NAME) /**/
+  ::detail::VariableUnitTest<TEST, TYPES> NAME##_instance(#NAME)
 
-#define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, TYPES) \
-  ::detail::SimpleUnitTest<TEST, TYPES> TEST##_instance(#TEST) /**/
+#define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, ...) \
+  ::detail::SimpleUnitTest<TEST, __VA_ARGS__> TEST##_instance(#TEST)
 
-#define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, TYPES) \
-  ::VariableUnitTest<TEST, TYPES> TEST##_instance(#TEST) /**/
+#define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...) \
+  ::detail::VariableUnitTest<TEST, __VA_ARGS__> TEST##_instance(#TEST)
 
 namespace detail
 {
@@ -580,8 +580,7 @@ public:
     // loop over the types
     for_each();
   }
-}; // end SimpleUnitTest
-} // namespace detail
+};
 
 template <template <typename> class TestName, typename TypeList>
 class VariableUnitTest : public UnitTest
@@ -609,7 +608,8 @@ public:
       loop(size);
     }
   }
-}; // end VariableUnitTest
+};
+} // namespace detail
 
 template <template <typename> class TestName,
           typename TypeList,
