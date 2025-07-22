@@ -144,7 +144,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 1 << 10;
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 1 << 10}));
   const auto env      = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
   SECTION("device_vector iterators")
