@@ -22,6 +22,7 @@ cccl_build_compiler_targets()
 
 # Build and install C++ library first
 set(CCCL_ENABLE_C ON)
+set(CCCL_ENABLE_UNSTABLE ON)
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 add_subdirectory(${_cccl_root} _parent_cccl)
 
@@ -29,6 +30,7 @@ add_subdirectory(${_cccl_root} _parent_cccl)
 find_package(CUB REQUIRED)
 find_package(Thrust REQUIRED)
 find_package(libcudacxx REQUIRED)
+find_package(cudax REQUIRED)
 
 # Install headers
 set(_dest_incl_dir cuda/cccl/headers/include)
