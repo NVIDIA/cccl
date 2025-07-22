@@ -7,6 +7,9 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/random.h>
+#include <thrust/sequence.h>
+#include <thrust/shuffle.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
@@ -100,13 +103,17 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   CAPTURE(num_indices, num_items);
 
-  // generate random indices to scatter NaNs
-  c2h::device_vector<int> indices(num_indices);
+  // generate random indices to scatter NaNs (no duplicates)
+  c2h::device_vector<int> indices(num_items);
+  thrust::sequence(c2h::device_policy, indices.begin(), indices.end());
+  thrust::shuffle(c2h::device_policy, indices.begin(), indices.end(), thrust::default_random_engine{});
+
+  // Take only the first num_indices elements for scattering
+  indices.resize(num_indices);
   for (int i = 0; i < 2; ++i)
   {
     const type nan_val = i == 0 ? limits_t::signaling_NaN() : limits_t::quiet_NaN();
 
-    c2h::gen(C2H_SEED(2), indices, 0, num_items - 1);
     auto begin = thrust::make_constant_iterator(nan_val);
     auto end   = begin + num_indices;
 
