@@ -73,7 +73,7 @@ __host__ __device__ void test_edges()
       {
         if (!(real(r) == real(z)))
         {
-          std::cout << "FP real mismatch: " << r << " vs " z << std::endl;
+          std::cout << "FP real mismatch: " << r << " vs " << z << std::endl;
         }
         assert(real(r) == real(z));
       }
@@ -85,7 +85,7 @@ __host__ __device__ void test_edges()
       {
         if (!(imag(r) == imag(z)))
         {
-          std::cout << "FP imag mismatch: " << r << " vs " z << std::endl;
+          std::cout << "FP imag mismatch: " << r << " vs " << z << std::endl;
         }
         assert(imag(r) == imag(z));
       }
