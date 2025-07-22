@@ -126,10 +126,10 @@ inline const std::vector<size_t>& get_test_sizes()
     TEST();                                       \
   }
 
-#define DECLARE_UNITTEST_WITH_NAME(TEST, NAME)   \
-  TEST_CASE(NAME, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                              \
-    TEST();                                      \
+#define DECLARE_UNITTEST_WITH_NAME(TEST, NAME)    \
+  TEST_CASE(#NAME, THRUST_PP_STRINGIZE(__FILE__)) \
+  {                                               \
+    TEST();                                       \
   }
 
 // Macro to create host and device versions of a
