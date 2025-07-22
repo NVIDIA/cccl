@@ -27,7 +27,7 @@ void test_deallocate_async(ResourceType& resource)
   cudax::launch(stream, test::one_thread_dims, test::assign_42{}, allocation);
   cudax::launch(stream, test::one_thread_dims, test::verify_42{}, allocation);
 
-  resource.deallocate_async(allocation, sizeof(int), stream);
+  resource.deallocate(stream, allocation, sizeof(int));
 
   atomic_i.store(80);
   stream.sync();

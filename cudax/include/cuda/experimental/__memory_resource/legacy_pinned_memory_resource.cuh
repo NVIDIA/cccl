@@ -68,10 +68,10 @@ public:
     return __ptr;
   }
 
-  //! @brief.deallocate_sync memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be.deallocate_syncd. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
+  //! @brief deallocate_sync memory pointed to by \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`.
+  //! @param __bytes The number of bytes that was passed to the `allocate_sync` call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the `allocate_sync` call that returned \p __ptr.
   void deallocate_sync(
     void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_host_alignment) const noexcept
   {

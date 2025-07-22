@@ -171,7 +171,7 @@ public:
 
   //! @brief Move-assigns a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
-  //!.deallocate_syncs the current allocation and then takes ownership of the allocation in \p __other and resets it
+  //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept
   {
     if (this == _CUDA_VSTD::addressof(__other))
@@ -190,7 +190,7 @@ public:
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_buffer,.deallocate_syncs the buffer and destroys the memory resource
+  //! @brief Destroys an \c uninitialized_buffer, deallocates the buffer and destroys the memory resource
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
@@ -204,7 +204,7 @@ public:
     auto __tmp_mr = _CUDA_VSTD::move(__mr_);
   }
 
-  //! @brief Destroys an \c uninitialized_buffer,.deallocate_syncs the buffer and destroys the memory resource
+  //! @brief Destroys an \c uninitialized_buffer, deallocates the buffer and destroys the memory resource
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI ~uninitialized_buffer()

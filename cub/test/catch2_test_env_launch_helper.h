@@ -185,12 +185,12 @@ struct device_memory_resource : cub::detail::device_memory_resource
     FAIL("CUB shouldn't use synchronous deallocation");
   }
 
-  void* allocate_async(size_t bytes, size_t /* alignment */, ::cuda::stream_ref stream)
+  void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
-    return allocate_async(bytes, stream);
+    return allocate(stream, bytes);
   }
 
-  void* allocate_async(size_t bytes, ::cuda::stream_ref stream)
+  void* allocate(::cuda::stream_ref stream, size_t bytes)
   {
     REQUIRE(target_stream == stream.get());
 
@@ -198,10 +198,10 @@ struct device_memory_resource : cub::detail::device_memory_resource
     {
       *bytes_allocated += bytes;
     }
-    return cub::detail::device_memory_resource::allocate_async(bytes, stream);
+    return cub::detail::device_memory_resource::allocate(stream, bytes);
   }
 
-  void deallocate_async(void* ptr, size_t bytes, const ::cuda::stream_ref stream)
+  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t bytes)
   {
     REQUIRE(target_stream == stream.get());
 
@@ -209,7 +209,7 @@ struct device_memory_resource : cub::detail::device_memory_resource
     {
       *bytes_deallocated += bytes;
     }
-    cub::detail::device_memory_resource::deallocate_async(ptr, bytes, stream);
+    cub::detail::device_memory_resource::deallocate(stream, ptr, bytes);
   }
 };
 
@@ -226,17 +226,17 @@ struct throwing_memory_resource
     FAIL("CUB shouldn't use synchronous deallocation");
   }
 
-  void* allocate_async(size_t /* bytes */, size_t /* alignment */, ::cuda::stream_ref /* stream */)
+  void* allocate(::cuda::stream_ref /* stream */, size_t /* bytes */, size_t /* alignment */)
   {
     throw "test";
   }
 
-  void* allocate_async(size_t /* bytes */, ::cuda::stream_ref /* stream */)
+  void* allocate(::cuda::stream_ref /* stream */, size_t /* bytes */)
   {
     throw "test";
   }
 
-  void deallocate_async(void* /* ptr */, size_t /* bytes */, const ::cuda::stream_ref /* stream */)
+  void deallocate(const ::cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
   {
     throw "test";
   }
@@ -258,12 +258,12 @@ struct device_side_memory_resource
     cuda::std::terminate();
   }
 
-  __host__ __device__ void* allocate_async(size_t bytes, size_t /* alignment */, ::cuda::stream_ref stream)
+  __host__ __device__ void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
-    return allocate_async(bytes, stream);
+    return allocate(stream, bytes);
   }
 
-  __host__ __device__ void* allocate_async(size_t bytes, ::cuda::stream_ref /* stream */)
+  __host__ __device__ void* allocate(::cuda::stream_ref /* stream */, size_t bytes)
   {
     if (bytes_allocated)
     {
@@ -272,7 +272,7 @@ struct device_side_memory_resource
     return static_cast<void*>(static_cast<char*>(ptr) + *bytes_allocated);
   }
 
-  __host__ __device__ void deallocate_async(void* /* ptr */, size_t bytes, const ::cuda::stream_ref /* stream */)
+  __host__ __device__ void deallocate(const ::cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)
   {
     if (bytes_deallocated)
     {

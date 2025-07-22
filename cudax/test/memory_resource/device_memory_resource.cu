@@ -84,11 +84,11 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
                        current_device);
   }
 
-  using async_resource = cudax::device_memory_resource;
+  using test_resource = cudax::device_memory_resource;
   SECTION("Default construction")
   {
     {
-      async_resource default_constructed{cuda::device_ref{0}};
+      test_resource default_constructed{cuda::device_ref{0}};
       CHECK(default_constructed.get() == current_default_pool);
     }
 
@@ -104,7 +104,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to.deallocate_sync with pool passed to cudax::device_memory_resource", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync, "Failed to deallocate with pool passed to cudax::device_memory_resource", ptr, ::cudaStream_t{0});
   }
 
   SECTION("Construct from mempool handle")
@@ -118,7 +118,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &cuda_pool_handle, &pool_properties);
 
     {
-      async_resource from_cudaMemPool{cuda_pool_handle};
+      test_resource from_cudaMemPool{cuda_pool_handle};
       CHECK(from_cudaMemPool.get() == cuda_pool_handle);
       CHECK(from_cudaMemPool.get() != current_default_pool);
     }
@@ -135,7 +135,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to.deallocate_sync with pool passed to cudax::device_memory_resource", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync, "Failed to deallocate with pool passed to cudax::device_memory_resource", ptr, ::cudaStream_t{0});
   }
 
   SECTION("Construct with initial pool size")
@@ -144,7 +144,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
       42,
     };
     cudax::device_memory_pool pool{current_device, props};
-    async_resource from_initial_pool_size{pool};
+    test_resource from_initial_pool_size{pool};
 
     ::cudaMemPool_t get = from_initial_pool_size.get();
     CHECK(get != current_default_pool);
@@ -166,7 +166,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
       20,
     };
     cudax::device_memory_pool pool{current_device, props};
-    async_resource with_threshold{pool};
+    test_resource with_threshold{pool};
 
     ::cudaMemPool_t get = with_threshold.get();
     CHECK(get != current_default_pool);
@@ -190,7 +190,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
       cudax::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,
     };
     cudax::device_memory_pool pool{current_device, props};
-    async_resource with_allocation_handle{pool};
+    test_resource with_allocation_handle{pool};
 
     ::cudaMemPool_t get = with_allocation_handle.get();
     CHECK(get != current_default_pool);
@@ -224,7 +224,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
   }
   cudax::device_memory_resource res{cuda::device_ref{0}};
 
-  { // allocate / deallocate
+  { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_device_ptr(ptr);
@@ -232,7 +232,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
     res.deallocate_sync(ptr, 42);
   }
 
-  { // allocate /.deallocate_sync with alignment
+  { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_device_ptr(ptr);
@@ -240,28 +240,28 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
     res.deallocate_sync(ptr, 42, 4);
   }
 
-  { // allocate_async / deallocate_async
+  { // allocate / deallocate
     cuda::experimental::stream_ref stream{raw_stream};
 
-    auto* ptr = res.allocate_async(42, stream);
+    auto* ptr = res.allocate(stream, 42);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
     stream.sync();
     ensure_device_ptr(ptr);
 
-    res.deallocate_async(ptr, 42, stream);
+    res.deallocate(stream, ptr, 42);
   }
 
-  { // allocate_async / deallocate_async with alignment
+  { // allocate / deallocate with alignment
     cuda::experimental::stream_ref stream{raw_stream};
 
-    auto* ptr = res.allocate_async(42, 4, stream);
+    auto* ptr = res.allocate(stream, 42, 4);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
     stream.sync();
     ensure_device_ptr(ptr);
 
-    res.deallocate_async(ptr, 42, 4, stream);
+    res.deallocate(stream, ptr, 42, 4);
   }
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -294,12 +294,12 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-  { // allocate_async with too small alignment
+  { // allocate with too small alignment
     while (true)
     {
       try
       {
-        [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, raw_stream);
+        [[maybe_unused]] auto* ptr = res.allocate(raw_stream, 5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -309,12 +309,12 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
     }
   }
 
-  { // allocate_async with non matching alignment
+  { // allocate with non matching alignment
     while (true)
     {
       try
       {
-        [[maybe_unused]] auto* ptr = res.allocate_async(5, 1337, raw_stream);
+        [[maybe_unused]] auto* ptr = res.allocate(raw_stream, 5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -365,18 +365,18 @@ static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>
 static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, cudax::device_accessible>, "");
 
 template <AccessibilityType Accessibility>
-struct async_resource : public resource<Accessibility>
+struct test_resource : public resource<Accessibility>
 {
-  void* allocate_async(size_t, size_t, cuda::stream_ref)
+  void* allocate(cuda::stream_ref, size_t, size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, size_t, size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
 };
-static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::async_resource_with<async_resource<AccessibilityType::Host>, cudax::device_accessible>, "");
-static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::async_resource_with<async_resource<AccessibilityType::Device>, cudax::device_accessible>, "");
+static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
+static_assert(!cuda::mr::resource_with<test_resource<AccessibilityType::Host>, cudax::device_accessible>, "");
+static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::resource_with<test_resource<AccessibilityType::Device>, cudax::device_accessible>, "");
 
 C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 {
@@ -439,8 +439,8 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
   }
 
   { // comparison against a different resource through resource_ref
-    async_resource<AccessibilityType::Host> host_async_resource{};
-    async_resource<AccessibilityType::Device> device_async_resource{};
+    test_resource<AccessibilityType::Host> host_async_resource{};
+    test_resource<AccessibilityType::Device> device_async_resource{};
     CHECK(!(first == host_async_resource));
     CHECK((first != host_async_resource));
     CHECK(!(first == device_async_resource));
@@ -466,13 +466,13 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
       CUDAX_CHECK(resource.is_accessible_from(cuda::devices[0]));
 
       auto allocate_and_check_access = [&](auto& resource) {
-        auto* ptr1  = resource.allocate_async(sizeof(int), stream);
+        auto* ptr1  = resource.allocate(stream, sizeof(int));
         auto* ptr2  = resource.allocate_sync(sizeof(int));
         auto config = cudax::distribute<1>(1);
         cudax::launch(stream, config, test::assign_42{}, (int*) ptr1);
         cudax::launch(stream, config, test::assign_42{}, (int*) ptr2);
         stream.sync();
-        resource.deallocate_async(ptr1, sizeof(int), stream);
+        resource.deallocate(stream, ptr1, sizeof(int));
         resource.deallocate_sync(ptr2, sizeof(int));
       };
 

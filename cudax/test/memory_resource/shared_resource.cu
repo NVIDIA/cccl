@@ -18,7 +18,7 @@
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;
-  static_assert(cuda::mr::async_resource<cudax::shared_resource<TestResource>>);
+  static_assert(cuda::mr::resource<cudax::shared_resource<TestResource>>);
 
   SECTION("construct and destruct")
   {
@@ -76,7 +76,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate and.deallocate_sync")
+  SECTION("allocate_sync and deallocate_sync")
   {
     Counts expected{};
     CHECK(this->counts == expected);

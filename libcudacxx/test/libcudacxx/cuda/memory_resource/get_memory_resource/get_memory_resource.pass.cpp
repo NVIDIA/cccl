@@ -26,12 +26,12 @@ struct test_resource
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  __host__ __device__ void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
+  __host__ __device__ void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);

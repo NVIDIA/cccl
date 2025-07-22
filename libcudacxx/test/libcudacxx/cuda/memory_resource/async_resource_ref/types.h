@@ -23,7 +23,7 @@ struct property_without_value
 {};
 
 template <class... Properties>
-struct async_resource
+struct test_resource
 {
   void* allocate_sync(std::size_t, std::size_t)
   {
@@ -36,22 +36,22 @@ struct async_resource
     _val = *static_cast<int*>(ptr);
   }
 
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  bool operator==(const async_resource& other) const
+  bool operator==(const test_resource& other) const
   {
     return _val == other._val;
   }
-  bool operator!=(const async_resource& other) const
+  bool operator!=(const test_resource& other) const
   {
     return _val != other._val;
   }
@@ -60,11 +60,11 @@ struct async_resource
 
   _CCCL_TEMPLATE(class Property)
   _CCCL_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::__is_included_in_v<Property, Properties...>)
-  friend void get_property(const async_resource&, Property) noexcept {}
+  friend void get_property(const test_resource&, Property) noexcept {}
 
   _CCCL_TEMPLATE(class Property)
   _CCCL_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in_v<Property, Properties...>)
-  friend typename Property::value_type get_property(const async_resource& res, Property) noexcept
+  friend typename Property::value_type get_property(const test_resource& res, Property) noexcept
   {
     return static_cast<typename Property::value_type>(res._val);
   }

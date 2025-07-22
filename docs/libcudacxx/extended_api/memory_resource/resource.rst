@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-memory-resources-resource:
 
 The ``cuda::synchronous_resource`` concept
--------------------------------
+-------------------------------------------
 
 The `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__ feature provides only a
 single ``allocate`` interface, which is sufficient for homogeneous memory systems. However, CUDA provides both
@@ -68,20 +68,20 @@ To demonstrate, the following example defines several resources, only some of wh
    static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>, "");
 
 In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`_ interface the
-``cuda::mr::async_resource`` concept verifies that a memory resource also satisfies the ``allocate_async`` /
-``deallocate_async`` interface. Requiring both the PMR interface and the async interface is a deliberate design decision.
+``cuda::mr::resource`` concept verifies that a memory resource also satisfies the ``allocate`` /
+``deallocate`` interface. Requiring both the PMR interface and the async interface is a deliberate design decision.
 
 .. code:: cpp
 
    struct valid_resource {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
-     void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
-     void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+     void* allocate(cuda::stream_ref, std::size_t, std::size_t) { return nullptr; }
+     void deallocate(cuda::stream_ref, void*, std::size_t,  std::size_t) {}
      bool operator==(const valid_resource&) const { return true; }
      bool operator!=(const valid_resource&) const { return false; }
    };
-   static_assert(cuda::mr::async_resource<valid_resource>, "");
+   static_assert(cuda::mr::resource<valid_resource>, "");
 
 A library can easily decide whether to use the async interface:
 
@@ -89,9 +89,9 @@ A library can easily decide whether to use the async interface:
 
    template<class MemoryResource>
        requires cuda::mr::synchronous_resource<MemoryResource>
-   void* maybe_allocate_async(MemoryResource& resource, std::size_t size, std::size_t align, cuda::stream_ref stream) {
-       if constexpr(cuda::mr::async_resource<MemoryResource>) {
-           return resource.allocate_async(size, align, stream);
+   void* maybe_allocate(cuda::stream_ref stream, MemoryResource& resource, std::size_t size, std::size_t align) {
+       if constexpr(cuda::mr::resource<MemoryResource>) {
+           return resource.allocate(stream, size, align);
        } else {
            return resource.allocate_sync(size, align);
        }
@@ -99,8 +99,8 @@ A library can easily decide whether to use the async interface:
 
 .. rubric:: Putting them together
 
-Applications and libraries may want to combine type checks for arbitrary properties with the ``{async_}resource``
-concept. The ``{async_}resource_with`` concept allows checking resources for arbitrary properties.
+Applications and libraries may want to combine type checks for arbitrary properties with the ``{synchronous_}resource``
+concept. The ``{synchronous_}resource_with`` concept allows checking resources for arbitrary properties.
 
 .. code:: cpp
 
@@ -121,10 +121,10 @@ concept. The ``{async_}resource_with`` concept allows checking resources for arb
    template<class MemoryResource>
        requires cuda::mr::resource<MemoryResource>
    void* maybe_allocate_async_check_alignment(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
-       if constexpr(cuda::mr::async_resource_with<MemoryResource, required_alignment>) {
-           return resource.allocate_async(size, get_property(resource, required_alignment), stream);
-       } else if constexpr (cuda::mr::async_resource<MemoryResource>) {
-           return resource.allocate_async(size, my_default_alignment, stream);
+       if constexpr(cuda::mr::resource_with<MemoryResource, required_alignment>) {
+           return resource.allocate(stream, size, get_property(resource, required_alignment));
+       } else if constexpr (cuda::mr::resource<MemoryResource>) {
+           return resource.allocate(stream, size, my_default_alignment);
        } else if constexpr (cuda::mr::resource_with<MemoryResource, required_alignment>) {
            return resource.allocate_sync(size, get_property(resource, required_alignment));
        } else {
@@ -139,8 +139,8 @@ concept. The ``{async_}resource_with`` concept allows checking resources for arb
        constexpr std::size_t align = cuda::mr::resource_with<MemoryResource, required_alignment>
                                    ? get_property(resource, required_alignment)
                                    : my_default_alignment;
-       if constexpr(cuda::mr::async_resource<MemoryResource>) {
-           return resource.allocate_async(size, align, stream);
+       if constexpr(cuda::mr::resource<MemoryResource>) {
+           return resource.allocate(stream, size, align);
        } else {
            return resource.allocate_sync(size, align);
        }

@@ -21,7 +21,7 @@
 void test_allocate()
 {
   { // allocate_sync(size)
-    async_resource<cuda::mr::host_accessible> input{42};
+    test_resource<cuda::mr::host_accessible> input{42};
     cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
@@ -33,7 +33,7 @@ void test_allocate()
   }
 
   { // allocate_sync(size, alignment)
-    async_resource<cuda::mr::host_accessible> input{42};
+    test_resource<cuda::mr::host_accessible> input{42};
     cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
@@ -48,26 +48,26 @@ void test_allocate()
 void test_allocate_async()
 {
   { // allocate_sync(size)
-    async_resource<cuda::mr::host_accessible> input{42};
+    test_resource<cuda::mr::host_accessible> input{42};
     cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate_async(0, 0, ::cudaStream_t{}) == ref.allocate_async(0, ::cudaStream_t{}));
+    assert(input.allocate(::cudaStream_t{}, 0, 0) == ref.allocate(::cudaStream_t{}, 0, 0));
 
     int expected_after_deallocate = 1337;
-    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, ::cudaStream_t{});
+    ref.deallocate(::cudaStream_t{}, static_cast<void*>(&expected_after_deallocate), 0);
     assert(input._val == expected_after_deallocate);
   }
 
   { // allocate_sync(size, alignment)
-    async_resource<cuda::mr::host_accessible> input{42};
+    test_resource<cuda::mr::host_accessible> input{42};
     cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate_async(0, 0, ::cudaStream_t{}) == ref.allocate_async(0, 0, ::cudaStream_t{}));
+    assert(input.allocate(::cudaStream_t{}, 0, 0) == ref.allocate(::cudaStream_t{}, 0, 0));
 
     int expected_after_deallocate = 1337;
-    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, ::cudaStream_t{});
+    ref.deallocate(::cudaStream_t{}, static_cast<void*>(&expected_after_deallocate), 0, 0);
     assert(input._val == expected_after_deallocate);
   }
 }

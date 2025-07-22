@@ -104,7 +104,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate_async and deallocate_async")
+  SECTION("allocate_async and deallocate")
   {
     Counts expected{};
     CHECK(this->counts == expected);
@@ -116,12 +116,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate_async(bytes(50), align(8), ::cuda::stream_ref{stream});
+      void* ptr = mr.allocate(::cuda::stream_ref{stream}, bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_async_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate_async(ptr, bytes(50), align(8), ::cuda::stream_ref{stream});
+      mr.deallocate(::cuda::stream_ref{stream}, ptr, bytes(50), align(8));
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);
     }

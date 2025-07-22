@@ -122,12 +122,12 @@ struct device_memory_resource
     _CCCL_ASSERT_CUDA_API(::cudaFree, "deallocate failed", ptr);
   }
 
-  void* allocate_async(size_t bytes, size_t /* alignment */, ::cuda::stream_ref stream)
+  void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
-    return allocate_async(bytes, stream);
+    return allocate(stream, bytes);
   }
 
-  void* allocate_async(size_t bytes, ::cuda::stream_ref stream)
+  void* allocate(::cuda::stream_ref stream, size_t bytes)
   {
     void* ptr{nullptr};
     _CCCL_TRY_CUDA_API(
@@ -135,9 +135,9 @@ struct device_memory_resource
     return ptr;
   }
 
-  void deallocate_async(void* ptr, size_t /* bytes */, const ::cuda::stream_ref stream)
+  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t /* bytes */)
   {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate_async failed", ptr, stream.get());
+    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
   }
 };
 
@@ -497,7 +497,7 @@ public:
       }
 
       // TODO(gevtushenko): use uninitialized buffer whenit's available
-      error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
       if (error != cudaSuccess)
       {
         return error;
@@ -509,7 +509,7 @@ public:
 
       // Try to deallocate regardless of the error to avoid memory leaks
       cudaError_t deallocate_error =
-        CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+        CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
       if (error != cudaSuccess)
       {
@@ -622,7 +622,7 @@ public:
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
     if (error != cudaSuccess)
     {
       return error;
@@ -642,7 +642,7 @@ public:
 
     // Try to deallocate regardless of the error to avoid memory leaks
     cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
     {
