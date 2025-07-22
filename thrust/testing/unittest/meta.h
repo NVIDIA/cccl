@@ -45,52 +45,16 @@ using get_type_t = typename get_type<T, i>::type;
 // this type and its specialization provides a way to
 // iterate over a type_list, and
 // applying a unary function to each type
-template <typename TypeList, template <typename> class Function, typename T, unsigned int i = 0>
-struct for_each_type
+template <typename TypeList, template <typename> class Function>
+struct for_each_type;
+
+template <template <typename...> typename L, typename... Ts, template <typename> class Function>
+struct for_each_type<L<Ts...>, Function>
 {
-  template <typename U>
-  void operator()(U n)
+  template <typename... Us>
+  void operator()(Us... args)
   {
-    // run the function on type T
-    Function<T> f;
-    f(n);
-
-    // get the next type
-    using next_type = typename get_type<TypeList, i + 1>::type;
-
-    // recurse to i + 1
-    for_each_type<TypeList, Function, next_type, i + 1> loop;
-    loop(n);
-  }
-
-  void operator()(void)
-  {
-    // run the function on type T
-    Function<T> f;
-    f();
-
-    // get the next type
-    using next_type = typename get_type<TypeList, i + 1>::type;
-
-    // recurse to i + 1
-    for_each_type<TypeList, Function, next_type, i + 1> loop;
-    loop();
-  }
-};
-
-// terminal case: do nothing when encountering null_type
-template <typename TypeList, template <typename> class Function, unsigned int i>
-struct for_each_type<TypeList, Function, null_type, i>
-{
-  template <typename U>
-  void operator()(U)
-  {
-    // no-op
-  }
-
-  void operator()(void)
-  {
-    // no-op
+    (..., Function<Ts>{}(::cuda::std::forward<Us>(args)...));
   }
 };
 

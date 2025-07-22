@@ -8,7 +8,8 @@
 
 namespace unittest
 {
-
+namespace detail
+{
 inline unsigned int hash(unsigned int a)
 {
   a = (a + 0x7ed55d16) + (a << 12);
@@ -19,6 +20,7 @@ inline unsigned int hash(unsigned int a)
   a = (a ^ 0xb55a4f09) ^ (a >> 16);
   return a;
 }
+} // namespace detail
 
 template <typename T, typename = void>
 struct generate_random_integer;
@@ -30,7 +32,7 @@ struct generate_random_integer<
 {
   T operator()(unsigned int i) const
   {
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
 
     return static_cast<T>(rng());
   }
@@ -41,7 +43,7 @@ struct generate_random_integer<T, ::cuda::std::enable_if_t<THRUST_NS_QUALIFIER::
 {
   T operator()(unsigned int i) const
   {
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     THRUST_NS_QUALIFIER::uniform_int_distribution<T> dist;
 
     return static_cast<T>(dist(rng));
@@ -56,7 +58,7 @@ struct generate_random_integer<T, typename ::cuda::std::enable_if_t<::cuda::std:
     T const min = std::numeric_limits<T>::min();
     T const max = std::numeric_limits<T>::max();
 
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     THRUST_NS_QUALIFIER::uniform_real_distribution<T> dist(min, max);
 
     return static_cast<T>(dist(rng));
@@ -68,7 +70,7 @@ struct generate_random_integer<bool>
 {
   bool operator()(unsigned int i) const
   {
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 1);
 
     return dist(rng) == 1;
@@ -80,7 +82,7 @@ struct generate_random_sample
 {
   T operator()(unsigned int i) const
   {
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 20);
 
     return static_cast<T>(dist(rng));
