@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -79,7 +79,7 @@ public:
   //! @throws cuda_error if waiting for the event fails
   _CCCL_HOST_API void sync() const
   {
-    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
     _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
   }
 
@@ -90,7 +90,7 @@ public:
   //! @throws cuda_error if the event query fails
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
-    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
     cudaError_t __status = ::cudaEventQuery(__event_);
     if (__status == cudaSuccess)
     {
