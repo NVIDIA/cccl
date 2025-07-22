@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/limits>
 
 #include <cstdio>
@@ -7,9 +8,14 @@
 #include <vector>
 
 #include "catch2_test_helper.h"
-#include "meta.h"
 #include "special_types.h"
 #include "util.h"
+
+namespace unittest
+{
+template <typename... Ts>
+using type_list = ::cuda::std::__type_list<Ts...>;
+} // namespace unittest
 
 // define some common lists of types
 using ThirtyTwoBitTypes = unittest::type_list<int, unsigned int, float>;
@@ -190,13 +196,22 @@ inline const std::vector<size_t>& get_test_sizes()
     }                                             \
   }
 
-#define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...) \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))            \
-  {                                                          \
-    for (size_t s : get_test_sizes())                        \
-    {                                                        \
-      unittest::for_each_type<__VA_ARGS__, TEST>{}(s);       \
-    }                                                        \
+namespace unittest::detail
+{
+template <template <typename> typename TestFunc, template <typename...> typename L, typename... Ts, typename... Args>
+void for_each_type(L<Ts...>, Args&&... args)
+{
+  (..., TestFunc<Ts>{}(::cuda::std::forward<Args>(args)...));
+}
+} // namespace unittest::detail
+
+#define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...)   \
+  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))              \
+  {                                                            \
+    for (size_t s : get_test_sizes())                          \
+    {                                                          \
+      unittest::detail::for_each_type<TEST>(__VA_ARGS__{}, s); \
+    }                                                          \
   }
 
 // Macro to create instances of a test for several data types and array sizes
@@ -230,18 +245,29 @@ inline const std::vector<size_t>& get_test_sizes()
     }                                             \
   }
 
+namespace unittest::detail
+{
+template <template <typename> typename TestFunc,
+          template <typename...> typename Vector,
+          template <typename> typename Alloc,
+          template <typename...> typename L,
+          typename... Ts>
+void invoke_vector_unittest(L<Ts...>)
+{
+  (..., TestFunc<Vector<Ts, Alloc<Ts>>>{}(0));
+}
+} // namespace unittest::detail
+
 #define DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, VECTOR, ALLOC, NAME) \
   TEST_CASE(#NAME, THRUST_PP_STRINGIZE(__FILE__))                                     \
   {                                                                                   \
-    using AllocList  = typename unittest::transform1<TYPES, ALLOC>::type;             \
-    using VectorList = typename unittest::transform2<TYPES, AllocList, VECTOR>::type; \
-    unittest::for_each_type<VectorList, TestName>{}(0);                               \
+    unittest::detail::invoke_vector_unittest<TEST, VECTOR, ALLOC>(TYPES{});           \
   }
 
-#define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, ...) \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))      \
-  {                                                    \
-    unittest::for_each_type<__VA_ARGS__, TEST>{}();    \
+#define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, ...)    \
+  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))         \
+  {                                                       \
+    unittest::detail::for_each_type<TEST>(__VA_ARGS__{}); \
   }
 
 #define DECLARE_VECTOR_UNITTEST_WITH_TYPES(TEST, TYPES, VECTOR, ALLOC) \
