@@ -328,27 +328,15 @@ using cub_operator_integral_list =
 using cub_operator_fp_list =
   c2h::type_list<::cuda::std::plus<>, ::cuda::std::multiplies<>, ::cuda::minimum<>, ::cuda::maximum<>>;
 
-/***********************************************************************************************************************
- * Verify results and kernel launch
- **********************************************************************************************************************/
-
-_CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((::cuda::std::is_floating_point_v<T>) )
-void verify_results(const T& expected_data, const T& test_results)
-{
-  REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
-}
-
-_CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!::cuda::std::is_floating_point_v<T>) )
-void verify_results(const T& expected_data, const T& test_results)
-{
-  REQUIRE(expected_data == test_results);
-}
-
-template <typename T, typename ReduceOperator>
+template <typename ValueT,
+          typename ReduceOperator,
+          typename AccumT = ::cuda::std::__accumulator_t<ReduceOperator, ValueT>>
 void run_thread_reduce_partial_kernel(
-  int num_items, c2h::device_vector<T>& in, c2h::device_vector<T>& out, ReduceOperator reduce_operator, int valid_items)
+  int num_items,
+  c2h::device_vector<ValueT>& in,
+  c2h::device_vector<AccumT>& out,
+  ReduceOperator reduce_operator,
+  int valid_items)
 {
   auto const in_it  = unwrap_it(thrust::raw_pointer_cast(in.data()));
   auto const out_it = unwrap_it(thrust::raw_pointer_cast(out.data()));
@@ -418,8 +406,9 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
   using value_t                    = c2h::get<0, TestType>;
   using op_t                       = c2h::get<1, TestType>;
   using dist_param                 = dist_interval<value_t, op_t>;
+  using accum_t                    = ::cuda::std::__accumulator_t<op_t, value_t>;
   constexpr auto reduce_op         = op_t{};
-  constexpr auto operator_identity = cub_operator_to_identity<value_t, op_t>::value();
+  constexpr auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
   const int num_items              = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, ::cuda::std::max(2, num_items - 1))),
@@ -427,14 +416,14 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
     values({1, num_items, num_items + 1}));
   CAPTURE(c2h::type_name<value_t>(), num_items, c2h::type_name<decltype(reduce_op)>(), valid_items);
   c2h::device_vector<value_t> d_in(num_items);
-  c2h::device_vector<value_t> d_out(1);
+  c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   const int bounded_valid_items  = ::cuda::std::min(valid_items, num_items);
   auto reference_result =
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   run_thread_reduce_partial_kernel(num_items, d_in, d_out, reduce_op, valid_items);
-  verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
+  REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
 C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_list, cub_operator_fp_list)
@@ -442,8 +431,9 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
   using value_t                = c2h::get<0, TestType>;
   using op_t                   = c2h::get<1, TestType>;
   using dist_param             = dist_interval<value_t, op_t>;
+  using accum_t                = ::cuda::std::__accumulator_t<op_t, value_t>;
   constexpr auto reduce_op     = op_t{};
-  const auto operator_identity = cub_operator_to_identity<value_t, op_t>::value();
+  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
   const int num_items          = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, ::cuda::std::max(2, num_items - 1))),
@@ -451,14 +441,14 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
     values({1, num_items, num_items + 1}));
   CAPTURE(c2h::type_name<value_t>(), num_items, c2h::type_name<decltype(reduce_op)>(), valid_items);
   c2h::device_vector<value_t> d_in(num_items);
-  c2h::device_vector<value_t> d_out(1);
+  c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   const int bounded_valid_items  = ::cuda::std::min(valid_items, num_items);
   auto reference_result =
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   run_thread_reduce_partial_kernel(num_items, d_in, d_out, reduce_op, valid_items);
-  verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
+  REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
 #if TEST_HALF_T() || TEST_BF_T()
@@ -471,15 +461,16 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
   using value_t                = c2h::get<0, TestType>;
   using op_t                   = c2h::get<1, TestType>;
   using dist_param             = dist_interval<value_t, op_t>;
+  using accum_t                = ::cuda::std::__accumulator_t<op_t, value_t>;
   constexpr auto reduce_op     = unwrap_op(std::true_type{}, op_t{});
-  const auto operator_identity = cub_operator_to_identity<value_t, op_t>::value();
+  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
   const int num_items          = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, ::cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, ::cuda::std::numeric_limits<int>::max())),
     values({1, num_items, num_items + 1}));
   c2h::device_vector<value_t> d_in(num_items);
-  c2h::device_vector<value_t> d_out(1);
+  c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   CAPTURE(h_in, dist_param::min(), dist_param::max());
@@ -489,7 +480,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
 
   run_thread_reduce_partial_kernel(num_items, d_in, d_out, reduce_op, valid_items);
-  REQUIRE(reference_result == c2h::host_vector<value_t>(d_out)[0]);
+  REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
 #endif // TEST_HALF_T() || TEST_BF_T()
@@ -514,20 +505,20 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
+  REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 
   thread_reduce_partial_kernel_span<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
+  REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 
 #if _CCCL_STD_VER >= 2023
   thread_reduce_partial_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
+  REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 #endif // _CCCL_STD_VER >= 2023
 }
 
@@ -615,6 +606,6 @@ C2H_TEST("ThreadReducePartial Invalid Test", "[reduce][thread]")
   REQUIRE(error_flag.front() == false);
   if (valid_items > 0)
   {
-    verify_results(reference_result, c2h::host_vector<segment>(d_out)[0]);
+    REQUIRE(reference_result == c2h::host_vector<segment>(d_out)[0]);
   }
 }
