@@ -135,7 +135,7 @@ __host__ __device__ constexpr void test_type()
   test_type<T, R, unsigned>();
   test_type<T, R, int>();
   // instantiation of all tests is very expensive. clang hits "constexpr evaluation hit maximum step limit"
-#if _CCCL_COMPILER_GCC() && !_CCCL_COMPILER_CLANG()
+#if _CCCL_COMPILER(GCC)
   test_type<T, R, long long>();
   test_type<T, R, unsigned long long>();
   test_type<T, R, signed char>();
