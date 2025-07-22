@@ -429,7 +429,7 @@ void launch(ActionT action, Args... args)
   c2h::device_vector<std::size_t> d_deallocated(1, 0);
 
   // Host-side stream is unusable in device code, force it to be 0
-  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{static_cast<cudaStream_t>(0)}};
+  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{cudaStream_t{}}};
 
   static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::__get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
