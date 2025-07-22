@@ -19,7 +19,7 @@ def write_json_file(filename, json_object):
 
 
 def is_windows(job):
-    return job["runner"].startswith("windows")
+    return "windows" in job["runner"]
 
 
 def split_workflow(workflow):
