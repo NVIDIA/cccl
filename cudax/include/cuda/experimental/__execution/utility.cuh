@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__tuple_dir/ignore.h>
@@ -134,19 +135,19 @@ template <class _Ty>
 // This function can only be called from a catch handler.
 [[nodiscard]] _CCCL_HOST_API inline auto __get_cuda_error_from_active_exception() -> ::cudaError_t
 {
-  try
+  _CCCL_TRY
   {
-    throw; // rethrow the active exception
+    _CCCL_RETHROW; // rethrow the active exception
   }
-  catch (::cuda::cuda_error& __err)
+  _CCCL_CATCH (::cuda::cuda_error & __err)
   {
     return __err.status();
   }
-  catch (::std::bad_alloc&)
+  _CCCL_CATCH ([[maybe_unused]] ::std::bad_alloc & __e)
   {
     return ::cudaErrorMemoryAllocation;
   }
-  catch (...)
+  _CCCL_CATCH_ALL
   {
     return ::cudaErrorUnknown; // fallback if no cuda error is found
   }

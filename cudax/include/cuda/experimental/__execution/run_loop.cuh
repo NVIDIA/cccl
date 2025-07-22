@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__utility/immovable.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/atomic_intrusive_queue.cuh>

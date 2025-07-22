@@ -26,6 +26,7 @@
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
@@ -64,7 +65,7 @@ struct __bad_any_cast : ::std::bad_cast
 
 [[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))
+  _CCCL_THROW __bad_any_cast();
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 [[noreturn]] _CCCL_API inline void __throw_bad_any_cast()

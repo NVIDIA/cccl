@@ -44,6 +44,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -355,11 +356,11 @@ public:
   [[nodiscard]] virtual void_ptr
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    try
+    _CCCL_TRY
     {
       return do_allocate_impl(bytes, alignment);
     }
-    catch (std::bad_alloc&)
+    _CCCL_CATCH ([[maybe_unused]] std::bad_alloc & e)
     {
       this->squeeze();
     }
