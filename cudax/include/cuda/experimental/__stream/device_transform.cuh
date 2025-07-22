@@ -78,7 +78,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   // transform_device_argument that are find-able by ADL.
   template <typename _Arg>
   using __transform_result_t = __remove_rvalue_reference_t<decltype(transform_device_argument(
-    ::cuda::stream_ref{static_cast<::cudaStream_t>(0)}, _CUDA_VSTD::declval<_Arg>()))>;
+    ::cuda::stream_ref{::cudaStream_t{}}, _CUDA_VSTD::declval<_Arg>()))>;
 
   template <typename _Arg>
   using __transformed_argument_t =
