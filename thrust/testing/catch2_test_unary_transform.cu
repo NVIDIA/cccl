@@ -8,8 +8,7 @@
 #include <cuda/std/utility>
 
 #include "catch2_test_helper.h"
-#include "unittest/random.h"
-#include "unittest/special_types.h"
+#include "unittest/unittest.h"
 
 // There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
