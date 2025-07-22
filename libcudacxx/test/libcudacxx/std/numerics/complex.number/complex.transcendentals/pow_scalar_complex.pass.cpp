@@ -16,6 +16,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
+#include <iostream>
+
 #include "../cases.h"
 #include "test_macros.h"
 
@@ -52,14 +54,14 @@ __host__ __device__ void test_edges()
 #if _LIBCUDACXX_HAS_NVFP16()
       if constexpr (cuda::std::is_same_v<T, __half>)
       {
-        z = exp(cuda::std::complex<float>(testcases[j]) * log(cuda::std::complex<float>(testcases[i])));
+        z = exp(cuda::std::complex<float>(testcases[j]) * log(cuda::std::complex<float>(real(testcases[i]))));
       }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
       if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
       {
-        z = exp(cuda::std::complex<float>(testcases[j]) * log(cuda::std::complex<float>(testcases[i])));
+        z = exp(cuda::std::complex<float>(testcases[j]) * log(cuda::std::complex<float>(real(testcases[i]))));
       }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -69,6 +71,10 @@ __host__ __device__ void test_edges()
       }
       else
       {
+        if (!(real(r) == real(z)))
+        {
+          std::cout << "FP real mismatch: " << r << " vs " z << std::endl;
+        }
         assert(real(r) == real(z));
       }
       if (cuda::std::isnan(imag(r)))
@@ -77,6 +83,10 @@ __host__ __device__ void test_edges()
       }
       else
       {
+        if (!(imag(r) == imag(z)))
+        {
+          std::cout << "FP imag mismatch: " << r << " vs " z << std::endl;
+        }
         assert(imag(r) == imag(z));
       }
     }
