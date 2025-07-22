@@ -66,6 +66,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! semi-regular overrides
 //!
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
 _CCCL_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept -> void
@@ -73,6 +74,7 @@ _CCCL_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept -> void
   ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
 [[nodiscard]] _CCCL_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
@@ -89,6 +91,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
 [[nodiscard]] _CCCL_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
@@ -105,6 +108,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
 [[nodiscard]] _CCCL_PUBLIC_API auto
@@ -117,6 +121,7 @@ __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __
   return false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _From, class _To)
 _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_From, _To>)
 [[nodiscard]] _CCCL_PUBLIC_API _To __conversion_fn(_CUDA_VSTD::type_identity_t<_From> __self)
