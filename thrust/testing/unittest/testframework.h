@@ -547,11 +547,17 @@ public:
 #define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
   ::detail::VariableUnitTest<TEST, TYPES> NAME##_instance(#NAME)
 
+#define DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, VECTOR, ALLOC, NAME) \
+  ::detail::VectorUnitTest<TEST, TYPES, VECTOR, ALLOC> NAME##_instance(#NAME)
+
 #define DECLARE_GENERIC_UNITTEST_WITH_TYPES(TEST, ...) \
   ::detail::SimpleUnitTest<TEST, __VA_ARGS__> TEST##_instance(#TEST)
 
 #define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...) \
   ::detail::VariableUnitTest<TEST, __VA_ARGS__> TEST##_instance(#TEST)
+
+#define DECLARE_VECTOR_UNITTEST_WITH_TYPES(TEST, TYPES, VECTOR, ALLOC) \
+  ::detail::VectorUnitTest<TEST, TYPES, VECTOR, ALLOC> TEST##_instance(#TEST)
 
 namespace detail
 {
@@ -606,7 +612,6 @@ public:
     }
   }
 };
-} // namespace detail
 
 template <template <typename> class TestName,
           typename TypeList,
@@ -640,4 +645,5 @@ struct VectorUnitTest : public UnitTest
     // loop over the types
     loop(0);
   }
-}; // end VectorUnitTest
+};
+} // namespace detail
