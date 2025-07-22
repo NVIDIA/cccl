@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -147,7 +147,7 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     // Test that stream_ref also supports id()
     // NULL stream needs a device to be set
     cuda::__ensure_current_context guard(cuda::device_ref{0});
-    cuda::stream_ref ref1(static_cast<cudaStream_t>(NULL));
+    cuda::stream_ref ref1(::cudaStream_t{});
     cuda::stream_ref ref2(stream1);
 
     CCCLRT_REQUIRE(ref1.id() != ref2.id());
