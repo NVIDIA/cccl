@@ -1,9 +1,9 @@
-.. _libcudacxx-extended-api-functional-get-device-address:
+.. _libcudacxx-extended-api-memory-get-device-address:
 
 ``cuda::get_device_address``
 ============================
 
-Defined in the header ``<cuda/functional>``:
+Defined in the headers ``<cuda/memory>`` and ``<cuda/functional>``:
 
 ``cuda::get_device_address`` returns a valid pointer to a device object.
 It replaces uses of ``cudaGetSymbolAddress``, which requires an inout parameter.
@@ -13,7 +13,7 @@ Example
 
 .. code:: cuda
 
-  #include <cuda/functional>
+  #include <cuda/memory>
 
   __device__ int device_object[] = {42, 1337, -1, 0};
 

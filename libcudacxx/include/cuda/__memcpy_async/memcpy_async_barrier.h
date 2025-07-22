@@ -22,7 +22,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__barrier/barrier_thread_scope.h>
@@ -31,6 +30,7 @@
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
 #include <cuda/__memcpy_async/memcpy_completion.h>
 #include <cuda/__memcpy_async/try_get_barrier_handle.h>
+#include <cuda/__memory/aligned_size.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
