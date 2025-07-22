@@ -25,7 +25,7 @@ def cache_with_key(key):
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            cc = Device.current().compute_capability
+            cc = Device().compute_capability
             cache_key = (key(*args, **kwargs), tuple(cc))
             if cache_key not in cache:
                 result = func(*args, **kwargs)
