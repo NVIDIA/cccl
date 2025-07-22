@@ -175,11 +175,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
     REQUIRE(cudaSuccess
             == cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
-    c2h::host_vector<type> h_expected(1);
-    h_expected[0] = std::reduce(input, input + num_items, type{}, ::cuda::std::plus<type>());
-
     c2h::host_vector<type> h_output = d_output;
-    REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
+    REQUIRE(h_output[0] == static_cast<type>(num_items));
   }
 }
 
