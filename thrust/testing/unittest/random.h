@@ -8,6 +8,8 @@
 
 namespace unittest
 {
+namespace detail
+{
 inline unsigned int hash(unsigned int a)
 {
   a = (a + 0x7ed55d16) + (a << 12);
@@ -18,13 +20,14 @@ inline unsigned int hash(unsigned int a)
   a = (a ^ 0xb55a4f09) ^ (a >> 16);
   return a;
 }
+} // namespace detail
 
 template <typename T>
 struct generate_random_integer
 {
   T operator()(unsigned int i) const
   {
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     if constexpr (::cuda::std::is_same_v<T, bool>)
     {
       THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 1);
@@ -56,7 +59,7 @@ struct generate_random_sample
 {
   T operator()(unsigned int i) const
   {
-    THRUST_NS_QUALIFIER::default_random_engine rng(hash(i));
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 20);
 
     return static_cast<T>(dist(rng));
