@@ -69,7 +69,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   c2h::device_vector<type> d_output(1);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
-  cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
   c2h::host_vector<type> h_input = d_input;
 
@@ -121,8 +123,10 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   auto env2 = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed), cuda::execution::__tune(hub_t<2, 256>{})};
 
-  cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, min_op, init, env1);
-  cub::DeviceReduce::Reduce(d_input.begin(), d_output_p2.begin(), num_items, min_op, init, env2);
+  REQUIRE(
+    cudaSuccess == cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, min_op, init, env1));
+  REQUIRE(
+    cudaSuccess == cub::DeviceReduce::Reduce(d_input.begin(), d_output_p2.begin(), num_items, min_op, init, env2));
 
   REQUIRE_EQ_WITH_NAN_MATCHING(d_output_p1, d_output_p2);
 }
@@ -143,7 +147,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
     c2h::device_vector<type> d_output(1);
 
-    cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
     c2h::host_vector<type> h_input = d_input;
 
@@ -159,7 +165,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
     thrust::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
-    cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+    REQUIRE(cudaSuccess
+            == cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
     c2h::host_vector<type> h_expected(1);
     h_expected[0] = std::reduce(input, input + num_items, type{}, ::cuda::std::plus<type>());
@@ -241,7 +248,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   type init_value = GENERATE_COPY(static_cast<type>(42), static_cast<type>(-42), static_cast<type>(0));
 
   const auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
-  cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_value, env);
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Reduce(
+            d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_value, env));
 
   c2h::host_vector<type> h_input = d_input;
   c2h::host_vector<type> h_expected(1);
@@ -279,7 +288,9 @@ C2H_TEST("Nondeterministic Device reduce works with various types on gpu with di
 
   c2h::device_vector<type> d_output(1);
 
-  cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
   c2h::host_vector<type> h_input = d_input;
 
