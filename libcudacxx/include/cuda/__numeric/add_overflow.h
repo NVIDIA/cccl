@@ -258,11 +258,11 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
-    if (is_unsigned_v<_Lhs>)
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Lhs>)
     {
       _CCCL_ASSUME(__rhs < 0);
     }
-    else
+    else if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__lhs < 0);
     }
