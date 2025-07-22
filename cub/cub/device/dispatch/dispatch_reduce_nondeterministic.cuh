@@ -170,57 +170,52 @@ struct DispatchReduceNondeterministic
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeAtomicKernel(AtomicKernelT atomic_kernel, ActivePolicyT active_policy = {})
   {
-    cudaError error = cudaSuccess;
-    do
+    // This memory is not actually needed but we keep it to make sure the API is consistent
+    if (d_temp_storage == nullptr)
     {
-      // This memory is not actually needed but we keep it to make sure the API is consistent
-      if (d_temp_storage == nullptr)
-      {
-        temp_storage_bytes = 1;
-        return cudaSuccess;
-      }
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
 
-      // Init regular kernel configuration
-      detail::KernelConfig reduce_config;
-      error = CubDebug(reduce_config.Init(atomic_kernel, active_policy.ReduceNondeterministic(), launcher_factory));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Init regular kernel configuration
+    detail::KernelConfig reduce_config;
+    cudaError_t error =
+      CubDebug(reduce_config.Init(atomic_kernel, active_policy.ReduceNondeterministic(), launcher_factory));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      const int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
+    const int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%lu, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              (unsigned long) reduce_grid_size,
-              active_policy.ReduceNondeterministic().BlockThreads(),
-              (long long) stream,
-              active_policy.ReduceNondeterministic().ItemsPerThread(),
-              reduce_config.sm_occupancy);
+    _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+            "per thread, %d SM occupancy\n",
+            (unsigned long) reduce_grid_size,
+            active_policy.ReduceNondeterministic().BlockThreads(),
+            (long long) stream,
+            active_policy.ReduceNondeterministic().ItemsPerThread(),
+            reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-      // Invoke NondeterministicDeviceReduceAtomicKernel
-      launcher_factory(reduce_grid_size, active_policy.ReduceNondeterministic().BlockThreads(), 0, stream)
-        .doit(atomic_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
+    // Invoke NondeterministicDeviceReduceAtomicKernel
+    launcher_factory(reduce_grid_size, active_policy.ReduceNondeterministic().BlockThreads(), 0, stream)
+      .doit(atomic_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Check for failure to launch
+    if (error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
+    {
+      return error;
+    }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
+    // Sync the stream if specified to flush runtime errors
+    if (error = CubDebug(detail::DebugSyncStream(stream)); cudaSuccess != error)
+    {
+      return error;
+    }
 
-    return error;
+    return cudaSuccess;
   }
 
   // This function handles both pointers passed from C++ and indirect_arg_t. We pass the address of the
@@ -297,11 +292,9 @@ struct DispatchReduceNondeterministic
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    cudaError error = cudaSuccess;
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-    if (cudaSuccess != error)
+    if (cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
     {
       return error;
     }
