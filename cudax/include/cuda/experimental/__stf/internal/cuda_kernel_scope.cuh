@@ -68,7 +68,7 @@ struct cuda_kernel_desc
 
     // Ensure we are packing arguments of the proper types to call func (only
     // valid with the runtime API)
-      static_assert(reserved::is_function_or_kernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
+    static_assert(reserved::is_function_or_kernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
 
     // Get the address of every tuple entry
     ::std::apply(
