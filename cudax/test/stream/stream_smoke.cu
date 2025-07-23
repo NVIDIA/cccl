@@ -161,7 +161,7 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     // Test that stream_ref also supports id()
     // NULL stream needs a device to be set
     cudax::__ensure_current_device guard(cuda::device_ref{0});
-    cudax::stream_ref ref1(static_cast<cudaStream_t>(NULL));
+    cudax::stream_ref ref1(cudaStream_t{});
     cudax::stream_ref ref2(stream1);
 
     CUDAX_REQUIRE(ref1.id() != ref2.id());

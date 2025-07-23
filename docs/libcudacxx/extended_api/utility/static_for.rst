@@ -10,38 +10,36 @@ Defined in ``<cuda/utility>`` header.
     namespace cuda {
 
     template <auto Size, typename Operator, typename... TArgs>
-    __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args)
-        noexcept(noexcept(op(/*integral_constant*/, args...)))
+    __host__ __device__ constexpr
+    void static_for(Operator op, TArgs&&... args) noexcept(/*see-below*/); // (1)
 
-    template <auto Start, auto End, auto Step = 1, typename Operator, typename... TArgs>
-    __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args)
-        noexcept(noexcept(op(/*integral_constant*/, args...)))
+    template <auto Start, decltype(Start) End, decltype(Start) Step = 1, typename Operator, typename... TArgs>
+    __host__ __device__ constexpr
+    void static_for(Operator op, TArgs&&... args) noexcept(/*see-below*/); // (2)
 
     template <typename T, T Size, typename Operator, typename... TArgs>
-    __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args)
-        noexcept(noexcept(op(/*integral_constant*/, args...)))
+    __host__ __device__ constexpr
+    void static_for(Operator op, TArgs&&... args) noexcept(/*see-below*/); // (3)
 
     template <typename T, T Start, T End, T Step = 1, typename Operator, typename... TArgs>
-    __host__ __device__
-    constexpr void static_for(Operator op, TArgs&&... args)
-        noexcept(noexcept(op(/*integral_constant*/, args...)))
+    __host__ __device__ constexpr
+    void static_for(Operator op, TArgs&&... args) noexcept(/*see-below*/); // (4)
 
     } // namespace cuda
 
 | The functionality provides a ``for`` loop with compile-time indices.
 | ``static_for`` is available in two forms:
 
-- Executes ``op`` for each value in the range ``[0, Size)``.
-- Executes ``op`` for each value in the range ``[Start, End)`` with step ``Step``.
+- Executes ``op`` for each value in the range ``[0, Size)`` (1, 3).
+- Executes ``op`` for each value in the range ``[Start, End)`` with step ``Step`` (2, 4).
+
+| The function is ``noexcept`` if all invocations of ``op`` with ``integral_constant</*index-type*/, /*index-value*/>`` and the ``args...`` are *non-throwing*. Only visited indices participate in the ``noexcept`` evaluation.
 
 **Parameters**
 
-- ``Size``: the number of iterations.
-- ``Start``, ``End``, ``Step``: the start, end, and step of the range. Note that ``End`` and ``Step`` are converted to the type of ``Start``.
-- ``T``: type of the loop index.
+- ``Size``: the number of iterations (1, 3).
+- ``Start``, ``End``, ``Step``: the start, end, and step of the range. Note that ``End`` and ``Step`` are converted to the type of ``Start`` (2, 4).
+- ``T``: type of the loop index (3, 4).
 - ``op``: the function to execute.
 - ``args``: additional arguments to pass to ``op``.
 
