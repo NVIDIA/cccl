@@ -42,7 +42,7 @@ struct CudaDriverLauncher
       return status;
     }
 
-#if _CCCL_HAS_PDL
+#if _CCCL_HAS_PDL()
     if (dependent_launch)
     {
       CUlaunchAttribute attribute[1];
@@ -64,7 +64,7 @@ struct CudaDriverLauncher
       return static_cast<cudaError_t>(cuLaunchKernelEx(&config, kernel_fn, kernel_args, 0));
     }
     else
-#endif
+#endif // _CCCL_HAS_PDL()
     {
       return static_cast<cudaError_t>(cuLaunchKernel(
         kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
