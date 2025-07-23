@@ -74,7 +74,7 @@ struct cuda_kernel_desc
     ::std::apply(
       [this](auto&... elems) {
         // Push back the addresses of each tuple element into the args vector
-        ((args_ptr.push_back(&elems)), ...);
+        (args_ptr.push_back(&elems), ...);
       },
       *arg_tuple);
 
