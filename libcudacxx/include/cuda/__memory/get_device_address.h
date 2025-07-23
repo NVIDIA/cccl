@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___GET_DEVICE_ADDRESS_H
-#define _CUDA___GET_DEVICE_ADDRESS_H
+#ifndef _CUDA___MEMORY_GET_DEVICE_ADDRESS_H
+#define _CUDA___MEMORY_GET_DEVICE_ADDRESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -55,4 +55,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _CUDA___GET_DEVICE_ADDRESS_H
+#endif // _CUDA___MEMORY_GET_DEVICE_ADDRESS_H

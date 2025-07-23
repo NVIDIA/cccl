@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__memcpy_async/check_preconditions.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/memcpy_async_barrier.h>
+#include <cuda/__memory/aligned_size.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/barrier>

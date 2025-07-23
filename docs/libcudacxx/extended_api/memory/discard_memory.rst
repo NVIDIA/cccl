@@ -1,9 +1,9 @@
-.. _libcudacxx-extended-api-memory-access-properties-discard-memory:
+.. _libcudacxx-extended-api-memory-discard-memory:
 
 ``cuda::discard_memory``
 ========================
 
-Defined in header ``<cuda/discard_memory>``.
+Defined in header ``<cuda/memory>``, ``<cuda/discard_memory>``.
 
 .. code:: cuda
 
@@ -24,7 +24,7 @@ This kernel needs a scratch pad that does not fit in shared memory, so it uses a
 
 .. code:: cuda
 
-   #include <cuda/discard_memory>
+   #include <cuda/memory>
 
     __device__ int compute(int* scratch, size_t N);
 
