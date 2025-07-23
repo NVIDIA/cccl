@@ -31,7 +31,9 @@
 
 #include <nv/target>
 
-#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
+#if !_CCCL_COMPILER(NVRTC)
+#  include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,6 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 struct __iunknown : __basic_interface<_CUDA_VSTD::__type_always<__iunknown>::__call>
 {};
 
+#if _CCCL_HAS_EXCEPTIONS()
 //!
 //! __bad_any_cast
 //!
@@ -61,12 +64,14 @@ struct __bad_any_cast : ::std::bad_cast
 
 [[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
 {
-#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
 }
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+[[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
+{
+  _CUDA_VSTD_NOVERSION::terminate();
+}
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 struct __rtti_base : __immovable
 {
