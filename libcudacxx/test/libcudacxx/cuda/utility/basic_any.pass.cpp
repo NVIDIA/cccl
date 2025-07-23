@@ -28,7 +28,7 @@ struct TestCounters
 template <class TestType>
 struct BasicAnyTestsFixture : TestCounters
 {
-  BasicAnyTestsFixture() {}
+  BasicAnyTestsFixture() = default;
 };
 
 template <class...>
@@ -41,7 +41,7 @@ static_assert(cuda::__extension_of<iempty<>, cuda::__iunknown>);
 template <class...>
 struct ibase : cuda::__basic_interface<ibase, cuda::__extends<cuda::__imovable<>>>
 {
-  int foo(int i)
+  _CCCL_HOST_DEVICE int foo(int i)
   {
     return cuda::__virtcall<&ibase::foo>(this, i);
   }
@@ -53,7 +53,7 @@ struct ibase : cuda::__basic_interface<ibase, cuda::__extends<cuda::__imovable<>
 template <class...>
 struct iderived : cuda::__basic_interface<iderived, cuda::__extends<ibase<>, cuda::__icopyable<>>>
 {
-  int bar(int i)
+  _CCCL_HOST_DEVICE int bar(int i)
   {
     return cuda::__virtcall<&iderived::bar>(this, i);
   }
@@ -181,14 +181,14 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
 {
   static constexpr bool IsSmall = _CUDA_VSTD::is_same_v<TestType, SmallType>;
 
-  void test_type_traits()
+  _CCCL_HOST_DEVICE void test_type_traits()
   {
     static_assert(_CUDA_VSTD::is_standard_layout_v<cuda::__basic_any<iregular<>>>);
     static_assert(_CUDA_VSTD::is_standard_layout_v<cuda::__basic_any<iregular<>*>>);
     static_assert(_CUDA_VSTD::is_standard_layout_v<cuda::__basic_any<iregular<>&>>);
   }
 
-  void test_empty_interface_can_hold_anything()
+  _CCCL_HOST_DEVICE void test_empty_interface_can_hold_anything()
   {
     static_assert(!_CUDA_VSTD::move_constructible<cuda::__basic_any<iempty<>>>);
     cuda::__basic_any<iempty<>> a{42};
@@ -210,7 +210,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(a.interface() == _CCCL_TYPEID(iempty<>));
   }
 
-  void test_interface_with_one_member_function()
+  _CCCL_HOST_DEVICE void test_interface_with_one_member_function()
   {
     static_assert(_CUDA_VSTD::move_constructible<cuda::__basic_any<ibase<>>>);
     static_assert(!_CUDA_VSTD::copy_constructible<cuda::__basic_any<ibase<>>>);
@@ -234,7 +234,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(this->objects == 0);
   }
 
-  void test_single_interface_extension()
+  _CCCL_HOST_DEVICE void test_single_interface_extension()
   {
     static_assert(_CUDA_VSTD::move_constructible<cuda::__basic_any<iderived<>>>);
     static_assert(_CUDA_VSTD::copy_constructible<cuda::__basic_any<iderived<>>>);
@@ -271,7 +271,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(this->objects == 0);
   }
 
-  void test_any_iempty_pointer_to_model()
+  _CCCL_HOST_DEVICE void test_any_iempty_pointer_to_model()
   {
     static_assert(_CUDA_VSTD::regular<cuda::__basic_any<iempty<>*>>);
     static_assert(sizeof(cuda::__basic_any<iempty<>*>) == 2 * sizeof(void*));
@@ -321,7 +321,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<>>, decltype(*c)>);
   }
 
-  void test_any_ibase_pointer_to_model()
+  _CCCL_HOST_DEVICE void test_any_ibase_pointer_to_model()
   {
     Foo<IsSmall> foo{42, this};
     cuda::__basic_any<ibase<>*> a = &foo;
@@ -344,7 +344,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(this->objects == 2);
   }
 
-  void test_any_pointers_from_derived_to_base_conversions()
+  _CCCL_HOST_DEVICE void test_any_pointers_from_derived_to_base_conversions()
   {
     static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<ibase<>*>, cuda::__basic_any<iderived<>*>>);
     static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<ibase<> const*>, cuda::__basic_any<iderived<>*>>);
@@ -402,7 +402,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(this->objects == 2);
   }
 
-  void test_any_value_pointer_interop()
+  _CCCL_HOST_DEVICE void test_any_value_pointer_interop()
   {
     cuda::__basic_any<iderived<>> a{_CUDA_VSTD::in_place_type<Bar<IsSmall>>, 42, this};
     assert(a.__in_situ() == IsSmall);
@@ -450,7 +450,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(bar.j == INT_MAX); // bar is moved from
   }
 
-  void test_cuda_basic_any_references()
+  _CCCL_HOST_DEVICE void test_cuda_basic_any_references()
   {
     Bar<IsSmall> bar{42, this};
     cuda::__basic_any<iderived<>&> a{bar};
@@ -503,7 +503,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
                                                  cuda::__basic_any<cuda::__imovable<>>&>);
   }
 
-  void test_cuda_dynamic_any_cast()
+  _CCCL_HOST_DEVICE void test_cuda_dynamic_any_cast()
   {
     auto cast_to_derived_fn =
       [](auto&& arg) -> decltype(cuda::__dynamic_any_cast<iderived<>>(static_cast<decltype(arg)>(arg))) {
@@ -537,7 +537,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(cuda::__any_cast<Bar<IsSmall>>(&*pd)->j == 42);
   }
 
-  void test_equality_comparable()
+  _CCCL_HOST_DEVICE void test_equality_comparable()
   {
     cuda::__basic_any<iregular<>> a{42};
     cuda::__basic_any<iregular<>> b{42};
@@ -570,7 +570,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
     assert(43 != a);
   }
 
-  void test_basic_any_test_for_ambiguous_conversions()
+  _CCCL_HOST_DEVICE void test_basic_any_test_for_ambiguous_conversions()
   {
     int i = 42;
     any_regular_ref ref{i};
@@ -581,7 +581,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
 };
 
 template <class TestType>
-void test_basic_any()
+_CCCL_HOST_DEVICE void test_basic_any()
 {
   BasicAnyTest<TestType> test;
   test.test_type_traits();

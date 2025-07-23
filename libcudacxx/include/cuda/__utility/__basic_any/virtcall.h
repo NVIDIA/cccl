@@ -65,10 +65,10 @@ template <auto _Mbr, auto _BoundMbr>
 struct __virtuals_map_element
 {
   // map ifoo<>::meow to itself
-  auto operator()(__ctag<_Mbr>) const -> __virtual_fn<_Mbr>;
+  _CCCL_API auto operator()(__ctag<_Mbr>) const -> __virtual_fn<_Mbr>;
 
   // map ifoo<_Super>::meow to ifoo<>::meow
-  auto operator()(__ctag<_BoundMbr>) const -> __virtual_fn<_Mbr>;
+  _CCCL_API auto operator()(__ctag<_BoundMbr>) const -> __virtual_fn<_Mbr>;
 };
 
 template <class, class>
