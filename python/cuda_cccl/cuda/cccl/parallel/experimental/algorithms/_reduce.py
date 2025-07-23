@@ -9,7 +9,6 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba.cuda import device_array
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -17,6 +16,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -147,5 +147,5 @@ def reduce_into(
 ):
     reducer = make_reduce_into(d_in, d_out, op, h_init)
     tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
-    tmp_storage = device_array(tmp_storage_bytes, dtype=np.uint8)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)

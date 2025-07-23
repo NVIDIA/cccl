@@ -8,7 +8,11 @@ from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    validate_and_get_stream,
+)
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -193,9 +197,6 @@ def segmented_reduce(
     num_segments: int,
     stream=None,
 ):
-    import numpy as np
-    from numba.cuda import device_array
-
     reducer = make_segmented_reduce(
         d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
     )
@@ -209,7 +210,7 @@ def segmented_reduce(
         h_init,
         stream,
     )
-    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     reducer(
         tmp_storage,
         d_in,

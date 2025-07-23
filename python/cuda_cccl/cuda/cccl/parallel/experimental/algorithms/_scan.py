@@ -16,6 +16,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -155,11 +156,9 @@ def exclusive_scan(
     num_items: int,
     stream=None,
 ):
-    from numba.cuda import device_array
-
     scanner = make_exclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
-    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
 
 
@@ -203,9 +202,7 @@ def inclusive_scan(
     num_items: int,
     stream=None,
 ):
-    from numba.cuda import device_array
-
     scanner = make_inclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
-    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)

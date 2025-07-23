@@ -12,7 +12,11 @@ from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    validate_and_get_stream,
+)
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike
 
@@ -204,9 +208,6 @@ def unique_by_key(
         num_items: Number of items to process
         stream: CUDA stream for the operation (optional)
     """
-    import numpy as np
-    from numba.cuda import device_array
-
     uniquer = make_unique_by_key(
         d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
     )
@@ -220,7 +221,7 @@ def unique_by_key(
         num_items,
         stream,
     )
-    tmp_storage = device_array(shape=(tmp_storage_bytes,), dtype=np.uint8)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     uniquer(
         tmp_storage,
         d_in_keys,
