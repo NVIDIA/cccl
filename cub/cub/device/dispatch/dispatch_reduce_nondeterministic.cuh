@@ -63,15 +63,6 @@ struct DeviceReduceNondeterministicKernelSource
       InitT,
       TransformOpT>);
 
-  struct SingleThreadPolicy
-  {
-    static constexpr int BLOCK_THREADS = 1;
-    static constexpr int NUM_BLOCKS    = 1;
-  };
-
-  CUB_DEFINE_KERNEL_GETTER(InitOutputKernel,
-                           NondeterministicInitOutputKernel<SingleThreadPolicy, OutputIteratorT, InitT>);
-
   CUB_RUNTIME_FUNCTION static constexpr size_t InitSize()
   {
     return sizeof(InitT);
