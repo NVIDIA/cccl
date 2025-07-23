@@ -9,6 +9,15 @@ from cuda.core.experimental import Device, DeviceMemoryResource, Stream
 from cuda.core.experimental._utils.cuda_utils import handle_return
 
 
+class _PerDeviceMemoryResources(dict):
+    def __missing__(self, device_id: int):
+        out = self[device_id] = _DeviceMemoryResourceWithIncreasedThreshold(device_id)
+        return out
+
+
+_per_device_memory_resources = _PerDeviceMemoryResources()
+
+
 class TempStorageBuffer:
     """
     Simple wrapper type around the memory allocation used for temporary storage,
@@ -24,7 +33,7 @@ class TempStorageBuffer:
         # the create_stream() call fails without this:
         dev.set_current()
 
-        mr = _DeviceMemoryResourceWithIncreasedThreshold(dev.device_id)
+        mr = _per_device_memory_resources[dev.device_id]
         self._buf = mr.allocate(size, dev.create_stream(stream))
         self._ptr = int(self._buf.handle)
 
