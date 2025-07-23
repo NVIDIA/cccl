@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from cuda.cccl.cooperative.experimental.block._block_exchange import (
-    striped_to_blocked,
+    BlockExchangeType,
+    exchange,
 )
 from cuda.cccl.cooperative.experimental.block._block_load_store import load, store
 from cuda.cccl.cooperative.experimental.block._block_merge_sort import merge_sort_keys
@@ -21,17 +22,18 @@ from cuda.cccl.cooperative.experimental.block._block_scan import (
 )
 
 __all__ = [
-    "merge_sort_keys",
-    "reduce",
-    "sum",
-    "scan",
+    "BlockExchangeType",
+    "exchange",
     "exclusive_scan",
-    "inclusive_scan",
     "exclusive_sum",
+    "inclusive_scan",
     "inclusive_sum",
+    "load",
+    "merge_sort_keys",
     "radix_sort_keys",
     "radix_sort_keys_descending",
-    "load",
-    "striped_to_blocked",
+    "reduce",
+    "scan",
     "store",
+    "sum",
 ]

@@ -8,7 +8,7 @@ test_block_exchange.py
 This file contains unit tests for cuda.cooperative.block_exchange.
 """
 
-from functools import reduce
+from functools import partial, reduce
 from operator import mul
 
 import numba
@@ -26,6 +26,11 @@ from numba import cuda, types
 import cuda.cccl.cooperative.experimental as cudax
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+
+striped_to_blocked = partial(
+    cudax.block.exchange,
+    block_exchange_type=cudax.block.BlockExchangeType.StripedToBlocked,
+)
 
 
 @pytest.mark.parametrize("T", [types.int32, types.float64])
@@ -50,7 +55,7 @@ def test_striped_to_blocked(
         else reduce(mul, threads_per_block)
     )
 
-    block_exchange_op = cudax.block.striped_to_blocked(
+    block_exchange_op = striped_to_blocked(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -181,7 +186,7 @@ def test_striped_to_blocked_user_defined_type(
         else reduce(mul, threads_per_block)
     )
 
-    block_exchange_op = cudax.block.striped_to_blocked(
+    block_exchange_op = striped_to_blocked(
         dtype=T_complex,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,

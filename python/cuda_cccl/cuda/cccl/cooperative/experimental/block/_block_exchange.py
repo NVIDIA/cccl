@@ -56,6 +56,8 @@ The following :cpp:class:`cub.BlockExchange` APIs are not yet supported:
     WarpStripedToBlocked void (T (&)[ITEMS_PER_THREAD])
 """
 
+from enum import IntEnum, auto
+
 import numba
 
 from .._common import (
@@ -78,7 +80,17 @@ from .._typing import (
 )
 
 
-def striped_to_blocked(
+class BlockExchangeType(IntEnum):
+    """
+    Enum representing the type of block exchange operation.  Currently
+    only :py:attr:`StripedToBlocked` is supported.
+    """
+
+    StripedToBlocked = auto()
+
+
+def exchange(
+    block_exchange_type: BlockExchangeType,
     dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int,
@@ -86,7 +98,11 @@ def striped_to_blocked(
     methods: dict = None,
 ):
     """
-    Transpose data from a striped layout to a blocked layout.
+    Transpose data partitioned across CUDA thread blocks using the provided
+    block exchange type.
+
+    :param block_exchange_type: Supplies the type of block exchange to
+        perform.  Currently, only :py:attr:`StripedToBlocked` is supported.
 
     :param dtype: Supplies the data type of the input and output arrays.
     :type dtype: :py:class:`cuda.cccl.cooperative.experimental._typing.DtypeType`
@@ -113,6 +129,9 @@ def striped_to_blocked(
         user-defined types.  The default is *None*.
     :type  methods: dict, optional
 
+    :raises ValueError: If ``block_exchange_type`` is not a valid enum
+        value of :py:class:`BlockExchangeType`.
+
     :raises ValueError: If ``items_per_thread`` is less than 1.
 
     :raises ValueError: If ``items_per_thread`` is greater than 1 and
@@ -124,6 +143,17 @@ def striped_to_blocked(
 
     """
     # Validate initial parameters.
+    if block_exchange_type not in BlockExchangeType:
+        raise ValueError(
+            "block_exchange_type must be a valid BlockExchangeType enum "
+            f"value; got: {block_exchange_type!r}"
+        )
+    elif block_exchange_type != BlockExchangeType.StripedToBlocked:
+        raise ValueError(
+            "block_exchange_type must be BlockExchangeType.StripedToBlocked; "
+            f"got: {block_exchange_type!r}"
+        )
+
     if items_per_thread < 1:
         raise ValueError("items_per_thread must be greater than or equal to 1")
 
