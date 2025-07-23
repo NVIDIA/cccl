@@ -58,6 +58,11 @@ install(
     DESTINATION cuda/cccl/parallel/experimental/cccl
 )
 
+install(
+    TARGETS cccl.c.experimental.stf
+    DESTINATION cuda/cccl/experimental/stf/cccl
+)
+
 # Build and install Cython extension
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 

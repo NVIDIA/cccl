@@ -7,7 +7,7 @@ option(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING "Build cccl.experimental.c.stf tes
 # FIXME Ideally this would be handled by presets and install rules, but for now
 # consumers may override this to control the target location of cccl.c.experimental.stf.
 set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY "" CACHE PATH "Override output directory for the cccl.c.experimental.stf library")
-mark_as_advanced(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
+mark_as_advanced(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY)
 
 file(GLOB_RECURSE srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
