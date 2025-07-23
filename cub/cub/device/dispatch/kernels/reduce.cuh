@@ -569,8 +569,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   if (threadIdx.x == 0)
   {
     // TODO: replace this with other atomic operations when specified
-    ::cuda::atomic_ref<AccumT> atomic_target(d_out[0]);
-    atomic_target += block_aggregate;
+    ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
+    atomic_target.fetch_add(block_aggregate, ::cuda::memory_order_relaxed);
   }
 }
 
