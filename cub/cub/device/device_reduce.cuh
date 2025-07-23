@@ -520,17 +520,16 @@ public:
       // kernel. The output iterator must be a contiguous iterator and the
       // reduction operator must be plus (for now).
       constexpr auto is_contiguous_fallback =
-        !no_determinism
-        || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
       constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
 
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
-      using determinism_t = ::cuda::std::conditional_t<
-        (gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
-          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback)),
-        ::cuda::execution::determinism::run_to_run_t,
-        default_determinism_t>;
+      using determinism_t =
+        ::cuda::std::conditional_t<(gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
+                                     || (no_determinism && !(is_contiguous_fallback && is_plus_fallback)),
+                                   ::cuda::execution::determinism::run_to_run_t,
+                                   default_determinism_t>;
 
       // Query relevant properties from the environment
       auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
@@ -651,8 +650,7 @@ public:
     // The output iterator must be a contiguous iterator or we fall back to
     // run-to-run determinism.
     constexpr auto is_contiguous_fallback =
-    !no_determinism
-    || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+      !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
 
     using determinism_t =
       ::cuda::std::conditional_t<no_determinism && !is_contiguous_fallback,
