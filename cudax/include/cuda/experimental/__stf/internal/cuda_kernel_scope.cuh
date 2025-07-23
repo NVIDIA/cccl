@@ -97,72 +97,75 @@ struct cuda_kernel_desc
   // Helper to launch the kernel using CUDA stream based API
   void launch(cudaStream_t stream) const
   {
-    ::std::visit(
-      [&](auto&& kernel_func) {
-        using T = ::std::decay_t<decltype(kernel_func)>;
-        if constexpr (::std::is_same_v<T, const void*>)
-        {
-          cuda_safe_call(cudaLaunchKernel(kernel_func, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
-        }
-        else
-        {
-          static_assert(reserved::is_function_or_kernel_v<T>, "Unsupported function type in func_variant");
+    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
 
-          // If this is a CUkernel, the cast to a CUfunction is sufficient
-          cuda_safe_call(cuLaunchKernel(
-            (CUfunction) kernel_func,
-            gridDim.x,
-            gridDim.y,
-            gridDim.z,
-            blockDim.x,
-            blockDim.y,
-            blockDim.z,
-            sharedMem,
-            stream,
-            args_ptr.data(),
-            nullptr));
-        }
-      },
-      func_variant);
+    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    {
+      cuda_safe_call(cudaLaunchKernel(*f, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
+    }
+    else
+    {
+      auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
+      if (!ker_ptr)
+      {
+        // If this is a CUkernel, the cast to a CUfunction is sufficient
+        ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
+      }
+
+      cuda_safe_call(cuLaunchKernel(
+        *ker_ptr,
+        gridDim.x,
+        gridDim.y,
+        gridDim.z,
+        blockDim.x,
+        blockDim.y,
+        blockDim.z,
+        sharedMem,
+        stream,
+        args_ptr.data(),
+        nullptr));
+    }
   }
 
   void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
   {
-    ::std::visit(
-      [&](auto&& kernel_func) {
-        using T = ::std::decay_t<decltype(kernel_func)>;
+    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
 
-        if constexpr (reserved::is_function_or_kernel_v<T>)
-        {
-          CUDA_KERNEL_NODE_PARAMS params{
-            .func           = (CUfunction) kernel_func,
-            .gridDimX       = gridDim.x,
-            .gridDimY       = gridDim.y,
-            .gridDimZ       = gridDim.z,
-            .blockDimX      = blockDim.x,
-            .blockDimY      = blockDim.y,
-            .blockDimZ      = blockDim.z,
-            .sharedMemBytes = static_cast<unsigned>(sharedMem),
-            .kernelParams   = const_cast<void**>(args_ptr.data()),
-            .extra          = nullptr,
-            .kern           = nullptr,
-            .ctx            = nullptr};
-          cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
-        }
-        else
-        {
-          static_assert(::std::is_same_v<T, const void*>, "Unsupported kernel function type");
-          cudaKernelNodeParams params{
-            .func           = const_cast<void*>(kernel_func),
-            .gridDim        = gridDim,
-            .blockDim       = blockDim,
-            .sharedMemBytes = static_cast<unsigned>(sharedMem),
-            .kernelParams   = args_ptr.data(),
-            .extra          = nullptr};
-          cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
-        }
-      },
-      func_variant);
+    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    {
+      cudaKernelNodeParams params{
+        .func           = const_cast<void*>(*f),
+        .gridDim        = gridDim,
+        .blockDim       = blockDim,
+        .sharedMemBytes = static_cast<unsigned>(sharedMem),
+        .kernelParams   = args_ptr.data(),
+        .extra          = nullptr};
+      cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+    }
+    else
+    {
+      auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
+      if (!ker_ptr)
+      {
+        // If this is a CUkernel, the cast to a CUfunction is sufficient
+        ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
+      }
+
+      CUDA_KERNEL_NODE_PARAMS params{
+        .func           = *ker_ptr,
+        .gridDimX       = gridDim.x,
+        .gridDimY       = gridDim.y,
+        .gridDimZ       = gridDim.z,
+        .blockDimX      = blockDim.x,
+        .blockDimY      = blockDim.y,
+        .blockDimZ      = blockDim.z,
+        .sharedMemBytes = static_cast<unsigned>(sharedMem),
+        .kernelParams   = const_cast<void**>(args_ptr.data()),
+        .extra          = nullptr,
+        .kern           = nullptr,
+        .ctx            = nullptr};
+      cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+    }
   }
 
   // Utility to query the number of registers used by this kernel
