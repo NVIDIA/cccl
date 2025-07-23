@@ -60,6 +60,7 @@ struct DeviceReduceNondeterministicKernelSource
       OffsetT,
       ReductionOpT,
       AccumT,
+      InitT,
       TransformOpT>);
 
   struct SingleThreadPolicy
@@ -70,6 +71,11 @@ struct DeviceReduceNondeterministicKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(InitOutputKernel,
                            NondeterministicInitOutputKernel<SingleThreadPolicy, OutputIteratorT, InitT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t InitSize()
+  {
+    return sizeof(InitT);
+  }
 };
 } // namespace detail::reduce
 
@@ -186,10 +192,11 @@ struct DispatchReduceNondeterministic
 
     const int reduce_grid_size = static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size));
 
-    // Invoke NondeterministicInitOutputKernel
-    launcher_factory(
-      KernelSource::SingleThreadPolicy::NUM_BLOCKS, KernelSource::SingleThreadPolicy::BLOCK_THREADS, 0, stream)
-      .doit(kernel_source.InitOutputKernel(), d_out, init);
+    error = CubDebug(launcher_factory.MemsetAsync(d_out, 0, 1, kernel_source.InitSize(), stream));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -204,7 +211,7 @@ struct DispatchReduceNondeterministic
 
     // Invoke NondeterministicDeviceReduceAtomicKernel
     launcher_factory(reduce_grid_size, active_policy.ReduceNondeterministic().BlockThreads(), 0, stream)
-      .doit(atomic_kernel, d_in, d_out, num_items, reduction_op, transform_op);
+      .doit(atomic_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
 
     // Check for failure to launch
     if (error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
