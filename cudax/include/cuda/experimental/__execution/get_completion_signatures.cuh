@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -172,7 +173,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
 template <class... _Sndr>
 [[noreturn, nodiscard]] _CCCL_API consteval auto __dependent_sender() -> completion_signatures<>
 {
-  throw __dependent_sender_error<_Sndr...>{};
+  _CCCL_THROW __dependent_sender_error<_Sndr...>{};
 }
 
 #else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
@@ -319,18 +320,20 @@ _CCCL_DIAG_POP
 // will throw an exception of a type derived from `dependent_sender_error`.
 template <class _Sndr>
 [[nodiscard]] _CCCL_API consteval bool __is_dependent_sender() noexcept
-try
 {
-  (void) get_completion_signatures<_Sndr>();
-  return false; // didn't throw, not a dependent sender
-}
-catch (dependent_sender_error&)
-{
-  return true;
-}
-catch (...)
-{
-  return false; // different kind of exception was thrown; not a dependent sender
+  _CCCL_TRY
+  {
+    (void) get_completion_signatures<_Sndr>();
+    return false; // didn't throw, not a dependent sender
+  }
+  _CCCL_CATCH ([[maybe_unused]] dependent_sender_error & __e)
+  {
+    return true;
+  }
+  _CCCL_CATCH_ALL
+  {
+    return false; // different kind of exception was thrown; not a dependent sender
+  }
 }
 #else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
 template <class _Sndr>

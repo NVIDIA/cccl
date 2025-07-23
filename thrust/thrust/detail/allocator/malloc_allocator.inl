@@ -25,11 +25,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/allocator/malloc_allocator.h>
 #include <thrust/detail/malloc_and_free.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/detail/bad_alloc.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__exception/exception_macros.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -48,7 +51,7 @@ malloc_allocator<T, System, Pointer>::allocate(typename malloc_allocator<T, Syst
 
   if (result.get() == 0)
   {
-    throw thrust::system::detail::bad_alloc("malloc_allocator::allocate: malloc failed");
+    _CCCL_THROW thrust::system::detail::bad_alloc("malloc_allocator::allocate: malloc failed");
   } // end if
 
   return result;

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -628,11 +629,12 @@ template <class... _What, class... _Values>
 {
   if constexpr (sizeof...(_Values) == 1)
   {
-    throw __sender_type_check_failure<_Values..., _What...>(__values...);
+    _CCCL_THROW __sender_type_check_failure<_Values..., _What...>(__values...);
   }
   else
   {
-    throw __sender_type_check_failure<_CUDA_VSTD::__tuple<_Values...>, _What...>(_CUDA_VSTD::__tuple{__values...});
+    _CCCL_THROW __sender_type_check_failure<_CUDA_VSTD::__tuple<_Values...>, _What...>(
+      _CUDA_VSTD::__tuple{__values...});
   }
 }
 
