@@ -40,6 +40,7 @@ class stream_ctx;
 namespace reserved
 {
 
+template <typename T>
 inline constexpr bool is_function_or_kernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
 
 } // end namespace reserved
