@@ -168,22 +168,22 @@ struct cuda_kernel_desc
   // Utility to query the number of registers used by this kernel
   int get_num_registers() const
   {
-    return ::std::visit(
-      [](auto&& kernel_func) {
-        using T = ::std::decay_t<decltype(kernel_func)>;
-        if constexpr (reserved::is_function_or_kernel_v<T>)
-        {
-          return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, (CUfunction) kernel_func);
-        }
-        else
-        {
-          static_assert(::std::is_same_v<T, const void*>, "Unsupported kernel function type");
-          cudaFuncAttributes func_attr{};
-          cuda_safe_call(cudaFuncGetAttributes(&func_attr, kernel_func));
-          return func_attr.numRegs;
-        }
-      },
-      func_variant);
+    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+
+    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    {
+      cudaFuncAttributes func_attr{};
+      cuda_safe_call(cudaFuncGetAttributes(&func_attr, *f));
+      return func_attr.numRegs;
+    }
+
+    auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
+    if (!ker_ptr)
+    {
+      // If this is a CUkernel, the cast to a CUfunction is sufficient
+      ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
+    }
+    return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, *ker_ptr);
   }
 
 private:
