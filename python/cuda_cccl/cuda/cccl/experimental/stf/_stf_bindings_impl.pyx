@@ -36,3 +36,14 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
 
     void stf_ctx_create(stf_ctx_handle* ctx)
     void stf_ctx_finalize(stf_ctx_handle ctx)
+
+cdef class Ctx:
+    cdef stf_ctx_handle _ctx
+
+    def __cinit__(self):
+        stf_ctx_create(&self._ctx)
+
+    def __dealloc__(self):
+        if self._ctx != NULL:
+            stf_ctx_finalize(self._ctx)
+            self._ctx = NULL
