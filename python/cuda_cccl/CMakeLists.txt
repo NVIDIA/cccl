@@ -24,6 +24,7 @@ cccl_build_compiler_targets()
 set(CCCL_ENABLE_C ON)
 set(CCCL_ENABLE_UNSTABLE ON)
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
+set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 add_subdirectory(${_cccl_root} _parent_cccl)
 
 # Now we can find CUB and other components
