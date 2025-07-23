@@ -114,3 +114,26 @@ target_link_libraries(_bindings_impl PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
 install(TARGETS _bindings_impl DESTINATION cuda/cccl/parallel/experimental)
+
+message(STATUS "STF Using Cython ${CYTHON_VERSION}")
+set(stf_pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/cccl/experimental/stf/_stf_bindings_impl.pyx")
+set(_stf_generated_extension_src "${cuda_cccl_BINARY_DIR}/_stf_bindings_impl.c")
+set(_stf_depfile "${cuda_cccl_BINARY_DIR}/_stf_bindings_impl.c.dep")
+add_custom_command(
+    OUTPUT "${_stf_generated_extension_src}"
+    COMMAND "${Python3_EXECUTABLE}" -m cython
+    ARGS ${CYTHON_FLAGS_LIST} "${stf_pyx_source_file}" --output-file ${_stf_generated_extension_src}
+    DEPENDS "${stf_pyx_source_file}"
+    DEPFILE "${_stf_depfile}"
+)
+set_source_files_properties("${_stf_generated_extension_src}" PROPERTIES GENERATED TRUE)
+add_custom_target(cythonize_stf_bindings_impl ALL
+    DEPENDS "${_stf_generated_extension_src}"
+)
+
+Python3_add_library(_stf_bindings_impl MODULE WITH_SOABI "${_stf_generated_extension_src}")
+add_dependencies(_stf_bindings_impl cythonize_stf_bindings_impl)
+target_link_libraries(_stf_bindings_impl PRIVATE cccl.c.experimental.stf CUDA::cuda_driver)
+set_target_properties(_stf_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
+
+install(TARGETS _stf_bindings_impl DESTINATION cuda/cccl/experimental/stf)
