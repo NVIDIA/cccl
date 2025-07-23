@@ -21,7 +21,7 @@ cccl_configure_target(cccl.c.experimental.stf DIALECT 17)
 
 # Override the properties set by cccl_configure_target:
 if (CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY)
-  set_target_properties(cccl.c.parallel PROPERTIES
+  set_target_properties(cccl.c.experimental.stf PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY}"
     ARCHIVE_OUTPUT_DIRECTORY "${CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY}"
   )
