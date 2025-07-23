@@ -409,7 +409,9 @@ struct DeviceRleDispatch
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
-      (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+      (capped_num_items_per_invocation == 0)
+        ? global_offset_t{1}
+        : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
     // Number of input tiles
     int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));

@@ -157,6 +157,9 @@ namespace rle
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
+ *
+ * @tparam StreamingContextT
+ *   Type providing information about the partition for streaming invocations. NullType if not a streaming invocation.
  */
 template <typename AgentRlePolicyT,
           typename InputIteratorT,
@@ -368,24 +371,6 @@ struct AgentRle
     EqualityOpT equality_op,
     OffsetT num_items,
     StreamingContext streaming_context)
-      : temp_storage(temp_storage.Alias())
-      , d_in(d_in)
-      , d_offsets_out(d_offsets_out)
-      , d_lengths_out(d_lengths_out)
-      , equality_op(equality_op)
-      , scan_op(::cuda::std::plus<>{})
-      , num_items(num_items)
-      , streaming_context(streaming_context)
-  {}
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRle(
-    TempStorage& temp_storage,
-    InputIteratorT d_in,
-    OffsetsOutputIteratorT d_offsets_out,
-    LengthsOutputIteratorT d_lengths_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    NullType streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_offsets_out(d_offsets_out)
