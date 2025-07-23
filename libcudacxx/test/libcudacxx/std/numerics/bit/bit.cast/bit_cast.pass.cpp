@@ -89,7 +89,7 @@ __host__ __device__ void test_roundtrip_through(T from)
 }
 
 template <typename T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST cuda::std::array<T, 10> generate_signed_integral_values()
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST cuda::std::array<T, 10> generate_signed_integral_values()
 {
   return {cuda::std::numeric_limits<T>::min(),
           cuda::std::numeric_limits<T>::min() + 1,
@@ -104,7 +104,7 @@ __host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST cuda::std::array<T, 10> gener
 }
 
 template <typename T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST cuda::std::array<T, 6> generate_unsigned_integral_values()
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST cuda::std::array<T, 6> generate_unsigned_integral_values()
 {
   return {static_cast<T>(0),
           static_cast<T>(1),

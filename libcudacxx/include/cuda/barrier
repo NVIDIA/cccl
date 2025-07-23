@@ -25,7 +25,6 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
-#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_arrive_tx.h>
 #include <cuda/__barrier/barrier_block_scope.h>
@@ -34,6 +33,7 @@
 #include <cuda/__barrier/barrier_thread_scope.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
+#include <cuda/__memory/aligned_size.h>
 #include <cuda/ptx>
 #include <cuda/std/barrier>
 

@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -31,7 +32,7 @@ using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
 using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
 #endif
 
-C2H_CCCLRT_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buffer]", test_types)
 {
   using TestT           = c2h::get<0, TestType>;
   using Env             = typename extract_properties<TestT>::env;
@@ -43,7 +44,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access", "[container][async_buffer]", test_
   using pointer         = typename Buffer::pointer;
   using const_pointer   = typename Buffer::const_pointer;
 
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::get_unsynchronized")
@@ -85,5 +86,21 @@ C2H_CCCLRT_TEST("cudax::async_buffer access", "[container][async_buffer]", test_
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());
     }
+  }
+
+  SECTION("cudax::async_buffer::stream")
+  {
+    Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
+    CUDAX_CHECK(buf.stream() == stream);
+
+    {
+      cudax::stream other_stream{cuda::device_ref{0}};
+      buf.set_stream_unsynchronized(other_stream);
+      CUDAX_CHECK(buf.stream() == other_stream);
+      // TODO swap to synchronized setter one cudax::stream_ref is moved to cuda namespace
+      buf.set_stream_unsynchronized(stream);
+    }
+
+    CUDAX_CHECK(buf.stream() == stream);
   }
 }

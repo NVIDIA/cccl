@@ -55,8 +55,8 @@ C2H_TEST_LIST(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
 
-  cuda::experimental::device_memory_resource resource{cudax::device_ref{0}};
-  cuda::experimental::stream stream{cuda::experimental::device_ref{0}};
+  cuda::experimental::device_memory_resource resource{cuda::device_ref{0}};
+  cuda::experimental::stream stream{cuda::device_ref{0}};
 
   SECTION("construction")
   {
@@ -78,7 +78,7 @@ C2H_TEST_LIST(
       // Ensure that we properly reset the input buffer
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
-      CUDAX_CHECK(input.stream() == cuda::stream_ref{});
+      CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
   }
 
@@ -96,7 +96,7 @@ C2H_TEST_LIST(
     // Ensure that we properly reset the input buffer
     CUDAX_CHECK(input.data() == nullptr);
     CUDAX_CHECK(input.size() == 0);
-    CUDAX_CHECK(input.stream() == cuda::stream_ref{});
+    CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
   }
 
   SECTION("assignment")
@@ -104,7 +104,7 @@ C2H_TEST_LIST(
     static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
 
     {
-      cuda::experimental::stream other_stream{cuda::experimental::device_ref{0}};
+      cuda::experimental::stream other_stream{cuda::device_ref{0}};
       uninitialized_async_buffer input{resource, other_stream, 42};
       const TestType* ptr = input.data();
 
@@ -119,7 +119,7 @@ C2H_TEST_LIST(
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
       CUDAX_CHECK(input.size_bytes() == 0);
-      CUDAX_CHECK(input.stream() == cuda::stream_ref{});
+      CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
 
     { // Ensure self move assignment does not do anything
@@ -231,7 +231,7 @@ struct test_async_device_memory_resource : cudax::device_memory_resource
   static int count;
 
   test_async_device_memory_resource()
-      : cudax::device_memory_resource{cudax::device_ref{0}}
+      : cudax::device_memory_resource{cuda::device_ref{0}}
   {
     ++count;
   }
@@ -252,9 +252,9 @@ int test_async_device_memory_resource::count = 0;
 
 C2H_TEST("uninitialized_async_buffer's memory resource does not dangle", "[container]")
 {
-  cuda::experimental::stream stream{cuda::experimental::device_ref{0}};
+  cuda::experimental::stream stream{cuda::device_ref{0}};
   cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
-    cudax::device_memory_resource{cudax::device_ref{0}}, stream, 0};
+    cudax::device_memory_resource{cuda::device_ref{0}}, stream, 0};
 
   {
     CHECK(test_async_device_memory_resource::count == 0);

@@ -22,8 +22,8 @@ __host__ __device__ void test()
 {
   {
     using Iter = cuda::transform_output_iterator<int*, PlusOne>;
-    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::output_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
     static_assert(cuda::std::same_as<Iter::reference, void>);
     static_assert(cuda::std::same_as<Iter::value_type, void>);
@@ -33,8 +33,8 @@ __host__ __device__ void test()
 
   {
     using Iter = cuda::transform_output_iterator<random_access_iterator<int*>, PlusOne>;
-    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::output_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
     static_assert(cuda::std::same_as<Iter::reference, void>);
     static_assert(cuda::std::same_as<Iter::value_type, void>);
