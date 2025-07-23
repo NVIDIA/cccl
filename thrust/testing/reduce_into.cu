@@ -90,7 +90,7 @@ struct TestReduceInto
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestReduceInto, IntegralTypes> TestReduceIntoInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceInto, IntegralTypes);
 
 void TestReduceIntoMixedTypesHost()
 {
@@ -147,7 +147,7 @@ struct TestReduceIntoWithOperator
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestReduceIntoWithOperator, UnsignedIntegralTypes> TestReduceIntoWithOperatorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceIntoWithOperator, UnsignedIntegralTypes);
 
 template <typename T>
 struct plus_mod3

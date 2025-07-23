@@ -226,7 +226,7 @@ struct TestFind
     }
   }
 };
-VariableUnitTest<TestFind, SignedIntegralTypes> TestFindInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFind, SignedIntegralTypes);
 
 template <typename T>
 struct TestFindIf
@@ -252,7 +252,7 @@ struct TestFindIf
     }
   }
 };
-VariableUnitTest<TestFindIf, SignedIntegralTypes> TestFindIfInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFindIf, SignedIntegralTypes);
 
 template <typename T>
 struct TestFindIfNot
@@ -278,7 +278,7 @@ struct TestFindIfNot
     }
   }
 };
-VariableUnitTest<TestFindIfNot, SignedIntegralTypes> TestFindIfNotInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFindIfNot, SignedIntegralTypes);
 
 void TestFindWithBigIndexesHelper(int magnitude)
 {

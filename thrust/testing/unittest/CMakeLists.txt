@@ -4,19 +4,9 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
 
   set(framework_target ${config_prefix}.test.framework)
 
-  if ("CUDA" STREQUAL "${config_device}")
-    set(framework_srcs
-      testframework.cu
-      cuda/testframework.cu
-    )
-  else()
-    # Wrap the cu file inside a .cpp file for non-CUDA builds
-    thrust_wrap_cu_in_cpp(framework_srcs testframework.cu ${thrust_target})
-  endif()
-
-  add_library(${framework_target} STATIC ${framework_srcs})
-  target_link_libraries(${framework_target} PUBLIC ${thrust_target})
-  target_include_directories(${framework_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
+  add_library(${framework_target} INTERFACE)
+  target_link_libraries(${framework_target} INTERFACE ${thrust_target})
+  #target_include_directories(${framework_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
   thrust_clone_target_properties(${framework_target} ${thrust_target})
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${framework_target} RDC ${THRUST_FORCE_RDC})

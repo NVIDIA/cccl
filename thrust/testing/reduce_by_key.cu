@@ -149,7 +149,7 @@ struct TestReduceByKey
     ASSERT_EQUAL(h_vals_output, d_vals_output);
   }
 };
-VariableUnitTest<TestReduceByKey, IntegralTypes> TestReduceByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceByKey, IntegralTypes);
 
 template <typename K>
 struct TestReduceByKeyToDiscardIterator
@@ -192,7 +192,7 @@ struct TestReduceByKeyToDiscardIterator
     ASSERT_EQUAL(d_vals_output.size(), h_vals_output.size());
   }
 };
-VariableUnitTest<TestReduceByKeyToDiscardIterator, IntegralTypes> TestReduceByKeyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceByKeyToDiscardIterator, IntegralTypes);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(

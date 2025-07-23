@@ -92,10 +92,9 @@ struct TestVectorRangeInsertSimple
     ASSERT_EQUAL(10lu, v5.size());
   }
 }; // end TestVectorRangeInsertSimple
-VectorUnitTest<TestVectorRangeInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
-  TestVectorRangeInsertSimpleDeviceInstance;
-VectorUnitTest<TestVectorRangeInsertSimple, NumericTypes, thrust::host_vector, std::allocator>
-  TestVectorRangeInsertSimpleHostInstance;
+DECLARE_VECTOR_UNITTEST_WITH_TYPES(
+  TestVectorRangeInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES(TestVectorRangeInsertSimple, NumericTypes, thrust::host_vector, std::allocator)
 
 template <class T>
 struct TestVectorRangeInsert
@@ -129,7 +128,7 @@ struct TestVectorRangeInsert
     ASSERT_EQUAL(h_dst, d_dst);
   }
 }; // end TestVectorRangeInsert
-VariableUnitTest<TestVectorRangeInsert, IntegralTypes> TestVectorRangeInsertInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorRangeInsert, IntegralTypes);
 
 template <class Vector>
 struct TestVectorFillInsertSimple
@@ -219,10 +218,9 @@ struct TestVectorFillInsertSimple
     ASSERT_EQUAL(10lu, v4.size());
   }
 }; // end TestVectorFillInsertSimple
-VectorUnitTest<TestVectorFillInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
-  TestVectorFillInsertSimpleDeviceInstance;
-VectorUnitTest<TestVectorFillInsertSimple, NumericTypes, thrust::host_vector, std::allocator>
-  TestVectorFillInsertSimpleHostInstance;
+DECLARE_VECTOR_UNITTEST_WITH_TYPES(
+  TestVectorFillInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES(TestVectorFillInsertSimple, NumericTypes, thrust::host_vector, std::allocator);
 
 template <class T>
 struct TestVectorFillInsert
@@ -248,4 +246,4 @@ struct TestVectorFillInsert
     ASSERT_EQUAL(h_dst, d_dst);
   }
 }; // end TestVectorFillInsert
-VariableUnitTest<TestVectorFillInsert, IntegralTypes> TestVectorFillInsertInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorFillInsert, IntegralTypes);

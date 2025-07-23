@@ -46,5 +46,4 @@ struct TestTransformOutputIteratorReduceByKey
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestTransformOutputIteratorReduceByKey, SignedIntegralTypes>
-  TestTransformOutputIteratorReduceByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformOutputIteratorReduceByKey, SignedIntegralTypes);
