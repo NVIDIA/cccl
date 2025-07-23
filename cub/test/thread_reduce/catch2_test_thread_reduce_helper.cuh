@@ -5,6 +5,8 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <ostream>
+
 /***********************************************************************************************************************
  * CUB operator to identity
  **********************************************************************************************************************/
@@ -118,7 +120,7 @@ struct dist_interval<
 template <typename T, _CUDA_VSTD::ptrdiff_t MaxReductionLength>
 struct dist_interval<
   T,
-  ::cuda::std::multiplies<>,
+  _CUDA_VSTD::multiplies<>,
   MaxReductionLength,
   _CUDA_VSTD::enable_if_t<_CUDA_VSTD::__cccl_is_signed_integer_v<T> || _CUDA_VSTD::is_floating_point_v<T>>>
 {
@@ -142,7 +144,7 @@ struct dist_interval<
 template <typename Input,
           typename Operator,
           _CUDA_VSTD::ptrdiff_t MaxRedductionLength,
-          typename Accum  = ::cuda::std::__accumulator_t<Operator, Input>,
+          typename Accum  = _CUDA_VSTD::__accumulator_t<Operator, Input>,
           typename Output = Accum>
 struct dist_interval
 {
@@ -157,7 +159,7 @@ struct dist_interval
       res =
         _CUDA_VSTD::max(res, static_cast<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::min()));
     }
-    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Accum> || ::cuda::std::is_floating_point_v<Accum>)
+    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Accum> || _CUDA_VSTD::is_floating_point_v<Accum>)
     {
       res =
         _CUDA_VSTD::max(res, static_cast<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::min()));
@@ -172,7 +174,7 @@ struct dist_interval
       res =
         _CUDA_VSTD::min(res, static_cast<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::max()));
     }
-    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Accum> || ::cuda::std::is_floating_point_v<Accum>)
+    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Accum> || _CUDA_VSTD::is_floating_point_v<Accum>)
     {
       res =
         _CUDA_VSTD::min(res, static_cast<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::max()));
@@ -189,8 +191,8 @@ struct segment
 {
   using offset_t = int32_t;
   // Make sure that default constructed segments can not be merged
-  offset_t begin = ::cuda::std::numeric_limits<offset_t>::min();
-  offset_t end   = ::cuda::std::numeric_limits<offset_t>::max();
+  offset_t begin = _CUDA_VSTD::numeric_limits<offset_t>::min();
+  offset_t end   = _CUDA_VSTD::numeric_limits<offset_t>::max();
 
   __host__ __device__ friend bool operator==(segment left, segment right)
   {
@@ -207,7 +209,7 @@ struct segment
 // Needed for data input using fancy iterators
 struct tuple_to_segment_op
 {
-  __host__ __device__ segment operator()(::cuda::std::tuple<segment::offset_t, segment::offset_t> interval)
+  __host__ __device__ segment operator()(_CUDA_VSTD::tuple<segment::offset_t, segment::offset_t> interval)
   {
     const auto [begin, end] = interval;
     return {begin, end};
