@@ -37,7 +37,6 @@
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
 // TODO(bgruber): let's add __half and __nv_bfloat16 eventually when they compile, since we have fast paths for them.
-// using value_types = all_types;
-using value_types = nvbench::type_list<int32_t, float, double>;
+using value_types = all_types;
 using op_t        = ::cuda::std::plus<>;
 #include "base.cuh"
