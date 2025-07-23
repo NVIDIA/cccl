@@ -76,7 +76,7 @@ int main()
   };
   num_axpy++;
 
-#if CUDA_VERSION >= 12010
+#if _CCCL_CTK_AT_LEAST(12, 1)
   // CUkernel driver API
   CUkernel axpy_kernel;
   cuda_safe_call(cudaGetKernel(&axpy_kernel, (void*) axpy));
