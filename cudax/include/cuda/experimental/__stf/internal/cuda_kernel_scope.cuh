@@ -40,22 +40,7 @@ class stream_ctx;
 namespace reserved
 {
 
-template <typename T>
-struct is_function_or_kernel : ::std::false_type
-{};
-
-template <>
-struct is_function_or_kernel<CUfunction> : ::std::true_type
-{};
-
-#if CUDA_VERSION >= 12000
-template <>
-struct is_function_or_kernel<CUkernel> : ::std::true_type
-{};
-#endif
-
-template <typename T>
-inline constexpr bool is_function_or_kernel_v = is_function_or_kernel<T>::value;
+inline constexpr bool is_function_or_kernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
 
 } // end namespace reserved
 
