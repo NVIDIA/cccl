@@ -83,12 +83,7 @@ struct cuda_kernel_desc
   }
 
   /* CUfunction/CUkernel (CUDA driver API) or __global__ function (CUDA runtime API) */
-  using func_variant_t =
-    ::std::variant<CUfunction,
-#if CUDA_VERSION >= 12000
-                   CUkernel,
-#endif
-                   const void*>;
+  using func_variant_t = ::std::variant<CUfunction, CUkernel, const void*>;
   func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
@@ -198,12 +193,10 @@ private:
     return f;
   }
 
-#if CUDA_VERSION >= 12000
   static func_variant_t store_func(CUkernel k)
   {
     return k;
   }
-#endif
 
   template <typename T>
   static func_variant_t store_func(T* f)
