@@ -357,7 +357,7 @@ public:
 
     // If CUDASTF_CUDA_KERNEL_DEBUG is set, we display the number of registers
     // used by the kernel(s)
-    static bool display_register_cnt = [] {
+    static const bool display_register_cnt = [] {
       const char* env = ::std::getenv("CUDASTF_CUDA_KERNEL_DEBUG");
       return env && (atoi(env) != 0);
     }();
