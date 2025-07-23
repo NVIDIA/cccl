@@ -71,13 +71,14 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t    = cub::detail::choose_offset_t<OffsetT>;
   using output_t    = T;
   using init_t      = T;
-  using dispatch_t  = cub::DispatchReduce<
-     input_it_t,
-     output_it_t,
-     offset_t,
-     op_t,
-     init_t,
-     accum_t
+  using dispatch_t  = cub::detail::DispatchReduceNondeterministic<
+     // using dispatch_t = cub::DispatchReduce<
+    input_it_t,
+    output_it_t,
+    offset_t,
+    op_t,
+    init_t,
+    accum_t
 #if !TUNE_BASE
     ,
     policy_hub_t<accum_t, offset_t>

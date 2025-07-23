@@ -519,12 +519,20 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   }
 }
 
+template <typename SingleThreadPolicyT, typename OutputIteratorT, typename InitT>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
+  int(SingleThreadPolicyT::BLOCK_THREADS)) void NondeterministicInitOutputKernel(OutputIteratorT d_out, InitT init)
+{
+  static_assert(SingleThreadPolicyT::BLOCK_THREADS == 1 && SingleThreadPolicyT::NUM_BLOCKS == 1,
+                "NondeterministicInitOutputKernel must be used with a single-thread policy");
+  *d_out = init;
+}
+
 template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
           typename AccumT,
           typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
@@ -533,7 +541,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   OutputIteratorT d_out,
                                                                   OffsetT num_items,
                                                                   ReductionOpT reduction_op,
-                                                                  InitT init,
                                                                   TransformOpT transform_op)
 {
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
@@ -563,7 +570,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   {
     // TODO: replace this with other atomic operations when specified
     ::cuda::atomic_ref<AccumT> atomic_target(d_out[0]);
-    atomic_target += blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate;
+    atomic_target += block_aggregate;
   }
 }
 
