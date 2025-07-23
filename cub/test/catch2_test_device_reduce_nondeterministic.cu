@@ -79,7 +79,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   c2h::host_vector<type> h_input = d_input;
 
   c2h::host_vector<type> h_expected(1);
-  h_expected[0] = std::reduce(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+  // TODO: Use std::reduce once we drop support for GCC 7 and 8
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
 
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
@@ -161,7 +162,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
     c2h::host_vector<type> h_input = d_input;
 
     c2h::host_vector<type> h_expected(1);
-    h_expected[0]                   = std::reduce(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+    // TODO: Use std::reduce once we drop support for GCC 7 and 8
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
     c2h::host_vector<type> h_output = d_output;
 
     REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
@@ -222,7 +224,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   auto h_input = thrust::make_transform_iterator(input, transform_t{});
 
   c2h::host_vector<type> h_expected(1);
-  h_expected[0] = std::reduce(h_input, h_input + num_items, type{}, ::cuda::std::plus<type>());
+  // TODO: Use std::reduce once we drop support for GCC 7 and 8
+  h_expected[0] = std::accumulate(h_input, h_input + num_items, type{}, ::cuda::std::plus<type>());
 
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
@@ -249,7 +252,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   c2h::host_vector<type> h_input = d_input;
   c2h::host_vector<type> h_expected(1);
-  h_expected[0] = std::reduce(h_input.begin(), h_input.end(), init_value, ::cuda::std::plus<type>());
+  // TODO: Use std::reduce once we drop support for GCC 7 and 8
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_value, ::cuda::std::plus<type>());
 
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
@@ -290,7 +294,8 @@ C2H_TEST("Nondeterministic Device reduce works with various types on gpu with di
   c2h::host_vector<type> h_input = d_input;
 
   c2h::host_vector<type> h_expected(1);
-  h_expected[0] = std::reduce(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>{});
+  // TODO: Use std::reduce once we drop support for GCC 7 and 8
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>{});
 
   c2h::host_vector<type> h_output = d_output;
   if constexpr (::cuda::std::is_integral_v<type>)
