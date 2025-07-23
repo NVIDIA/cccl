@@ -29,6 +29,13 @@ fi
 if grep -q "GraphCapture" <<< "$consumers"; then
   preset_variants+=("lid_2")
 fi
+# Limited jobs run the entire test suite:
+if grep -q "SmallGMem" <<< "$consumers"; then
+  preset_variants+=("no_lid" "lid_0" "lid_1" "lid_2")
+fi
+
+# Remove duplicates:
+preset_variants=($(echo "${preset_variants[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
 artifact_prefix=z_cub-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
 
