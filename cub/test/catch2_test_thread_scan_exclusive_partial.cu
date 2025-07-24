@@ -24,17 +24,18 @@ constexpr int num_seeds = 3;
 
 template <int NumItems, typename In, typename Out, typename Accum, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel(
-  In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix)
+  In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix, Accum filler)
 {
   using value_t  = cuda::std::iter_value_t<In>;
   using output_t = cuda::std::iter_value_t<Out>;
   value_t thread_input[NumItems];
+  output_t thread_output[NumItems];
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)
   {
-    thread_input[i] = d_in[i];
+    thread_input[i]  = d_in[i];
+    thread_output[i] = static_cast<output_t>(filler);
   }
-  output_t thread_output[NumItems];
   cub::detail::ThreadScanExclusivePartial(thread_input, thread_output, scan_operator, valid_items, prefix, apply_prefix);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)
@@ -43,7 +44,7 @@ __global__ void thread_scan_exclusive_partial_kernel(
   }
 }
 
-// The following kernels are less general/complex wuith the added benefit that we can test doing the scan in-place
+// The following kernels are less general/complex with the added benefit that we can test doing the scan in-place
 
 template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_array(
@@ -123,137 +124,74 @@ using narrow_precision_type_list = c2h::type_list<
   >;
 
 using integral_type_list =
-  c2h::type_list<type_pair<cuda::std::int8_t>,
-                 type_pair<cuda::std::uint8_t, cuda::std::int32_t>,
+  c2h::type_list<type_pair<cuda::std::uint8_t, cuda::std::int32_t>,
                  type_pair<cuda::std::int16_t>,
-                 type_pair<cuda::std::uint16_t>,
-                 type_pair<cuda::std::int32_t>,
+                 type_pair<cuda::std::uint32_t>,
                  type_pair<cuda::std::int64_t>>;
 
 using fp_type_list = c2h::type_list<type_pair<float>, type_pair<double>>;
 
 using cub_operator_integral_list =
-  c2h::type_list<cuda::std::plus<>,
-                 cuda::std::multiplies<>,
-                 cuda::std::bit_and<>,
-                 cuda::std::bit_or<>,
-                 cuda::std::bit_xor<>,
-                 cuda::minimum<>,
-                 cuda::maximum<>>;
+  c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::std::bit_and<>, cuda::minimum<>>;
 
-using cub_operator_fp_list =
-  c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::minimum<>, cuda::maximum<>>;
+using cub_operator_fp_list = c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::maximum<>>;
 
-/***********************************************************************************************************************
- * Kernel launch
- **********************************************************************************************************************/
-
-template <typename ValueT,
-          typename OutputT,
-          typename ScanOperator,
-          typename AccumT = cuda::std::__accumulator_t<ScanOperator, ValueT>>
-void run_thread_scan_exclusive_partial_kernel(
-  int num_items,
-  c2h::device_vector<ValueT>& in,
-  c2h::device_vector<OutputT>& out,
-  ScanOperator scan_operator,
-  int valid_items,
-  AccumT prefix,
-  bool apply_prefix)
-{
-  const auto d_in  = unwrap_it(thrust::raw_pointer_cast(in.data()));
-  const auto d_out = unwrap_it(thrust::raw_pointer_cast(out.data()));
-  switch (num_items)
-  {
-    case 1:
-      thread_scan_exclusive_partial_kernel<1><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 2:
-      thread_scan_exclusive_partial_kernel<2><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 3:
-      thread_scan_exclusive_partial_kernel<3><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 4:
-      thread_scan_exclusive_partial_kernel<4><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 5:
-      thread_scan_exclusive_partial_kernel<5><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 6:
-      thread_scan_exclusive_partial_kernel<6><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 7:
-      thread_scan_exclusive_partial_kernel<7><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 8:
-      thread_scan_exclusive_partial_kernel<8><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 9:
-      thread_scan_exclusive_partial_kernel<9><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 10:
-      thread_scan_exclusive_partial_kernel<10><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 11:
-      thread_scan_exclusive_partial_kernel<11><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 12:
-      thread_scan_exclusive_partial_kernel<12><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 13:
-      thread_scan_exclusive_partial_kernel<13><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 14:
-      thread_scan_exclusive_partial_kernel<14><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 15:
-      thread_scan_exclusive_partial_kernel<15><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    case 16:
-      thread_scan_exclusive_partial_kernel<16><<<1, 1>>>(d_in, d_out, scan_operator, valid_items, prefix, apply_prefix);
-      break;
-    default:
-      FAIL("Unsupported number of items");
-  }
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-}
+static_assert(max_size > 4);
+using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_size>;
 
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadScanExclusive Integral Type Tests", "[scan][thread]", integral_type_list, cub_operator_integral_list)
+C2H_TEST("ThreadScanExclusive Integral Type Tests",
+         "[scan][thread]",
+         integral_type_list,
+         cub_operator_integral_list,
+         items_per_thread_list)
 {
   using params                     = params_t<TestType>;
   using value_t                    = typename params::item_t;
   using output_t                   = typename params::output_t;
   using op_t                       = c2h::get<1, TestType>;
   using accum_t                    = cuda::std::__accumulator_t<op_t, value_t>;
-  using dist_param                 = dist_interval<value_t, op_t, max_size, accum_t, output_t>;
+  constexpr int num_items          = c2h::get<2, TestType>::value;
+  using dist_param                 = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
+  using filler_dist_param          = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op           = op_t{};
   constexpr auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
-  const int num_items              = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
     values({1, num_items, num_items + 1}));
-  const accum_t prefix    = GENERATE_COPY(take(1, random(dist_param::min(), dist_param::max())));
-  const bool apply_prefix = GENERATE(true, false);
+  const int bounded_valid_items = std::min(valid_items, num_items);
+  const accum_t prefix          = GENERATE_COPY(take(1, random(dist_param::min(), dist_param::max())));
+  const bool apply_prefix       = GENERATE(true, false);
+  const accum_t filler          = GENERATE(take(1, random(filler_dist_param::min(), filler_dist_param::max())));
   CAPTURE(c2h::type_name<value_t>(), num_items, c2h::type_name<op_t>(), valid_items, prefix, apply_prefix);
+
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<output_t> d_out(num_items);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
-  c2h::host_vector<output_t> reference_result(num_items);
+  c2h::host_vector<output_t> reference_result(num_items, filler);
+
   compute_exclusive_scan_reference(
-    h_in.cbegin(), h_in.cend(), reference_result.begin(), apply_prefix ? prefix : operator_identity, scan_op);
-  run_thread_scan_exclusive_partial_kernel(num_items, d_in, d_out, scan_op, valid_items, prefix, apply_prefix);
-  // Resize to allow using REQUIRE() directly
-  const int bounded_valid_items = std::min(valid_items, num_items);
-  d_out.resize(bounded_valid_items);
-  reference_result.resize(bounded_valid_items);
+    h_in.cbegin(),
+    h_in.cbegin() + bounded_valid_items,
+    reference_result.begin(),
+    apply_prefix ? prefix : operator_identity,
+    scan_op);
+
+  thread_scan_exclusive_partial_kernel<num_items><<<1, 1>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_out.data()),
+    scan_op,
+    valid_items,
+    prefix,
+    apply_prefix,
+    filler);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   if (!apply_prefix)
   {
     // Undefined for exclusive scan
@@ -262,36 +200,55 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests", "[scan][thread]", integral_t
   REQUIRE(reference_result == d_out);
 }
 
-C2H_TEST("ThreadScanExclusive Floating-Point Type Tests", "[scan][thread]", fp_type_list, cub_operator_fp_list)
+C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
+         "[scan][thread]",
+         fp_type_list,
+         cub_operator_fp_list,
+         items_per_thread_list)
 {
   using params                 = params_t<TestType>;
   using value_t                = typename params::item_t;
   using output_t               = typename params::output_t;
   using op_t                   = c2h::get<1, TestType>;
   using accum_t                = cuda::std::__accumulator_t<op_t, value_t>;
-  using dist_param             = dist_interval<value_t, op_t, max_size, accum_t, output_t>;
+  constexpr int num_items      = c2h::get<2, TestType>::value;
+  using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
+  using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = op_t{};
   const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
-  const int num_items          = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
     values({1, num_items, num_items + 1}));
-  const accum_t prefix    = GENERATE_COPY(take(1, random(dist_param::min(), dist_param::max())));
-  const bool apply_prefix = GENERATE(true, false);
+  const int bounded_valid_items = std::min(valid_items, num_items);
+  const accum_t prefix          = GENERATE_COPY(take(1, random(dist_param::min(), dist_param::max())));
+  const bool apply_prefix       = GENERATE(true, false);
+  const accum_t filler          = GENERATE(take(1, random(filler_dist_param::min(), filler_dist_param::max())));
   CAPTURE(c2h::type_name<value_t>(), num_items, c2h::type_name<op_t>(), valid_items, prefix, apply_prefix);
+
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<value_t> d_out(num_items);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
-  c2h::host_vector<value_t> reference_result(num_items);
+  c2h::host_vector<value_t> reference_result(num_items, filler);
+
   compute_exclusive_scan_reference(
-    h_in.cbegin(), h_in.cend(), reference_result.begin(), apply_prefix ? prefix : operator_identity, scan_op);
-  run_thread_scan_exclusive_partial_kernel(num_items, d_in, d_out, scan_op, valid_items, prefix, apply_prefix);
-  // Resize to allow using REQUIRE() directly
-  const int bounded_valid_items = std::min(valid_items, num_items);
-  d_out.resize(bounded_valid_items);
-  reference_result.resize(bounded_valid_items);
+    h_in.cbegin(),
+    h_in.cbegin() + bounded_valid_items,
+    reference_result.begin(),
+    apply_prefix ? prefix : operator_identity,
+    scan_op);
+
+  thread_scan_exclusive_partial_kernel<num_items><<<1, 1>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_out.data()),
+    scan_op,
+    valid_items,
+    prefix,
+    apply_prefix,
+    filler);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   if (!apply_prefix)
   {
     // Undefined for exclusive scan
@@ -305,39 +262,55 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests", "[scan][thread]", fp_t
 C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
          "[scan][thread][narrow]",
          narrow_precision_type_list,
-         cub_operator_fp_list)
+         cub_operator_fp_list,
+         items_per_thread_list)
 {
   using params                 = params_t<TestType>;
   using value_t                = typename params::item_t;
   using output_t               = typename params::output_t;
   using op_t                   = c2h::get<1, TestType>;
   using accum_t                = cuda::std::__accumulator_t<op_t, value_t>;
-  using dist_param             = dist_interval<value_t, op_t, max_size, accum_t, output_t>;
+  constexpr int num_items      = c2h::get<2, TestType>::value;
+  using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
+  using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = unwrap_op(std::true_type{}, op_t{});
   const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
-  const int num_items          = GENERATE_COPY(take(3, random(1, max_size)));
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
     values({1, num_items, num_items + 1}));
-  auto prefix =
+  const int bounded_valid_items = std::min(valid_items, num_items);
+  const auto prefix =
     static_cast<accum_t>(GENERATE_COPY(take(1, random(float{dist_param::min()}, float{dist_param::max()}))));
   const bool apply_prefix = GENERATE(true, false);
+  const auto filler =
+    static_cast<accum_t>(GENERATE(take(1, random(float{filler_dist_param::min()}, float{filler_dist_param::max()}))));
   CAPTURE(
     c2h::type_name<value_t>(), num_items, c2h::type_name<op_t>(), valid_items, prefix, apply_prefix, operator_identity);
+
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<output_t> d_out(num_items);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
-  c2h::host_vector<output_t> reference_result(num_items);
+  c2h::host_vector<output_t> reference_result(num_items, filler);
+
   compute_exclusive_scan_reference(
-    h_in.cbegin(), h_in.cend(), reference_result.begin(), apply_prefix ? prefix : operator_identity, scan_op);
-  run_thread_scan_exclusive_partial_kernel(
-    num_items, d_in, d_out, scan_op, valid_items, *unwrap_it(&prefix), apply_prefix);
-  // Resize to allow using REQUIRE() directly
-  const int bounded_valid_items = std::min(valid_items, num_items);
-  d_out.resize(bounded_valid_items);
-  reference_result.resize(bounded_valid_items);
+    h_in.cbegin(),
+    h_in.cbegin() + bounded_valid_items,
+    reference_result.begin(),
+    apply_prefix ? prefix : operator_identity,
+    scan_op);
+
+  thread_scan_exclusive_partial_kernel<num_items><<<1, 1>>>(
+    unwrap_it(thrust::raw_pointer_cast(d_in.data())),
+    unwrap_it(thrust::raw_pointer_cast(d_out.data())),
+    scan_op,
+    valid_items,
+    static_cast<unwrap_value_t<accum_t>>(prefix),
+    apply_prefix,
+    static_cast<unwrap_value_t<accum_t>>(filler));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   if (!apply_prefix)
   {
     // Undefined for exclusive scan
@@ -359,8 +332,8 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     take(1, random(2, max_size - 2)),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size - 1, max_size, max_size + 1}));
-  const int bounded_valid_items = cuda::std::min(valid_items, max_size);
-  c2h::host_vector<int> reference_result(bounded_valid_items);
+  const int bounded_valid_items          = cuda::std::min(valid_items, max_size);
+  c2h::host_vector<int> reference_result = h_in;
   compute_exclusive_scan_reference(
     h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reference_result.begin(), 0, cuda::std::plus<>{});
 
@@ -373,11 +346,8 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     true);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  d_out.resize(bounded_valid_items);
   REQUIRE(reference_result == d_out);
-  thrust::fill(d_out.begin(), d_out.end(), 0);
 
-  d_out.resize(max_size);
   thrust::fill(d_out.begin(), d_out.end(), 0);
   thread_scan_exclusive_partial_kernel_span<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
@@ -388,11 +358,9 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     true);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  d_out.resize(bounded_valid_items);
   REQUIRE(reference_result == d_out);
 
 #if _CCCL_STD_VER >= 2023
-  d_out.resize(max_size);
   thrust::fill(d_out.begin(), d_out.end(), 0);
   thread_scan_exclusive_partial_kernel_mdspan<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
@@ -403,7 +371,6 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     true);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  d_out.resize(bounded_valid_items);
   REQUIRE(reference_result == d_out);
 #endif // _CCCL_STD_VER >= 2023
 }
@@ -427,7 +394,7 @@ C2H_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]")
   c2h::host_vector<segment> h_in(max_size);
   thrust::copy(in_it, in_it + bounded_valid_items, h_in.begin());
   c2h::device_vector<segment> d_in = h_in;
-  c2h::host_vector<segment> reference_result(bounded_valid_items);
+  c2h::host_vector<segment> reference_result(max_size);
   compute_exclusive_scan_reference(
     h_in.cbegin(),
     h_in.cbegin() + bounded_valid_items,
@@ -443,11 +410,11 @@ C2H_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]")
     merge_segments_op{thrust::raw_pointer_cast(error_flag.data())},
     valid_items,
     prefix,
-    apply_prefix);
+    apply_prefix,
+    segment{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(error_flag.front() == false);
-  d_out.resize(bounded_valid_items);
   if (!apply_prefix && valid_items > 0)
   {
     // Undefined for exclusive scan

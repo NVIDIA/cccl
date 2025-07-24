@@ -167,6 +167,7 @@ ThreadScanExclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T p
 /**
  * @brief Perform a sequential exclusive prefix scan over the first @p valid_items elements
  *        of the statically-sized @p input array, seeded with the specified @p prefix.
+ *        Only the first @p valid_items elements of @p output are modified.
  *
  * @tparam Input
  *   <b>[inferred]</b> The data type holding the input data having member
@@ -416,6 +417,7 @@ ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T p
 /**
  * @brief Perform a sequential inclusive prefix scan over the first @p valid_items elements
  *        of the statically-sized @p input array, seeded with the specified @p prefix.
+ *        Only the first @p valid_items elements of @p output are modified.
  *
  * @tparam Input
  *   <b>[inferred]</b> The data type holding the input data having member
