@@ -1,80 +1,22 @@
 import functools
+import weakref
 from types import SimpleNamespace
 from typing import Optional
 
-import numpy as np
-
-from cuda.bindings import driver
-from cuda.core.experimental import Device, DeviceMemoryResource, Stream
+from cuda.bindings import driver, runtime
+from cuda.core.experimental import Device
 from cuda.core.experimental._utils.cuda_utils import handle_return
 
-
-class _PerDeviceMemoryResources(dict):
-    def __missing__(self, device_id: int):
-        out = self[device_id] = _DeviceMemoryResourceWithIncreasedThreshold(device_id)
-        return out
-
-
-_per_device_memory_resources = _PerDeviceMemoryResources()
-
-
-class TempStorageBuffer:
-    """
-    Simple wrapper type around the memory allocation used for temporary storage,
-    exposing __cuda_array_interface__ and some other attributes for fast access.
-    """
-
-    def __init__(self, size: int, stream: Optional[Stream] = None):
-        # TODO: just use DeviceMemoryResource once cuda.core is updated
-        # to increase the default mempool threshold by default
-        dev = Device()
-
-        # TODO: shouldn't this be the current device already?
-        # the create_stream() call fails without this:
-        dev.set_current()
-
-        mr = _per_device_memory_resources[dev.device_id]
-        self._buf = mr.allocate(size, dev.create_stream(stream))
-        self._ptr = int(self._buf.handle)
-
-        # other cuda_array_interface attributes
-        self._shape = (size,)
-        self._strides = (1,)
-        self._dtype = np.uint8
-
-        # attributes for fast path access in protocols.py
-        self.nbytes = size
-        self.data = SimpleNamespace(
-            ptr=self._ptr,
-        )
-
-    def __cuda_array_interface__(self):
-        return {
-            "data": (self._ptr, False),
-            "shape": self._shape,
-            "strides": self._strides,
-            "typestr": "|u1",
-            "version": 3,
-        }
-
-
-class _DeviceMemoryResourceWithIncreasedThreshold(DeviceMemoryResource):
-    # cuda.core.experimental.DeviceMemoryResource currently uses
-    # cuMallocFromPoolAsync with the default memory pool, with a default
-    # release threshold of 0. This can be slow.
-    #
-    # This type sets the release threshold to UINT64_MAX, which prevents the
-    # driver from attempting to shrink the pool after every sync.
-    def __init__(self, device_id: int):
-        # set the release threshold for the default memory pool
-        # on this device, if we haven't already:
-        _set_default_mempool_threshold(device_id)
-
-        super().__init__(device_id)
+from ..typing import StreamLike
 
 
 @functools.cache
 def _set_default_mempool_threshold(device_id: int):
+    """
+    Set the release threshold for the default memory pool on this device,
+    if we haven't already done so. This prevents the driver from attempting
+    to shrink the pool after every sync, which can be slow.
+    """
     default_pool = handle_return(driver.cuDeviceGetDefaultMemPool(device_id))
     threshold = handle_return(
         driver.cuMemPoolGetAttribute(
@@ -89,3 +31,56 @@ def _set_default_mempool_threshold(device_id: int):
                 driver.cuuint64_t(0xFFFFFFFFFFFFFFFF),
             )
         )
+
+
+def _finalize_buffer(ptr: int, stream_handle: Optional[int] = None):
+    """Cleanup function for weakref finalizer."""
+    if ptr != 0:
+        try:
+            handle_return(runtime.cudaFreeAsync(ptr, stream_handle))
+        except Exception as e:
+            # Don't raise in finalizer, just print warning
+            print(f"Warning: Failed to free CUDA memory: {e}")
+
+
+class TempStorageBuffer:
+    """
+    Simple wrapper type around the memory allocation used for temporary storage,
+    exposing __cuda_array_interface__ and some other attributes for fast access.
+
+    This implementation uses cuda.bindings.runtime.cudaMallocAsync and
+    cudaFreeAsync for allocation and deallocation.
+    """
+
+    def __init__(self, size: int, stream: Optional[StreamLike] = None):
+        # Get the current device
+        dev = Device()
+
+        stream_handle = stream.__cuda_stream__()[1] if stream is not None else None
+
+        # Set the release threshold for the default memory pool on this device
+        _set_default_mempool_threshold(dev.device_id)
+
+        # Allocate memory using cudaMallocAsync
+        device_ptr_int = handle_return(runtime.cudaMallocAsync(size, stream_handle))
+        self._ptr = int(device_ptr_int)
+        self._stream_handle = stream_handle
+        self._size = size
+
+        # attributes for fast path access in protocols.py
+        self.nbytes = size
+        self.data = SimpleNamespace(ptr=self._ptr)
+
+        # Set up weakref finalizer for cleanup
+        self._finalizer = weakref.finalize(
+            self, _finalize_buffer, self._ptr, self._stream_handle
+        )
+
+    def __cuda_array_interface__(self):
+        return {
+            "data": (self._ptr, False),
+            "shape": (self._size,),
+            "strides": (1,),
+            "typestr": "|u1",
+            "version": 3,
+        }
