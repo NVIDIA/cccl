@@ -948,7 +948,6 @@ public:
   //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1222,7 +1221,6 @@ public:
   //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_min_out`` nor ``d_index_out``.
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1608,7 +1606,6 @@ public:
   //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -2007,7 +2004,6 @@ public:
   //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_max_out`` nor ``d_index_out``.
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -2654,7 +2650,6 @@ public:
   //!   ``d_num_runs_out``. The ranges represented by ``out`` shall not overlap
   //!   ``[d_keys_in, d_keys_in + num_items)``,
   //!   ``[d_values_in, d_values_in + num_items)`` nor ``out`` in any way.
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
