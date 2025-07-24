@@ -623,8 +623,6 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
 
 // We use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and fails
 // for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
-// The choice of attribute does not matter ('alignas(N)`, `__align__(N)` or `__attribute__((aligned(N)))`.
-// extern __shared__ char __align__(tile_padding) smem[];
 
 // However, any manual alignment of the shared memory start address outweighs the performance benefits of a faster
 // bulk copy by introducing about 7 additional SASS instructions at the start of the kernel. This also has to be done
@@ -651,7 +649,7 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
 // attribute, we also need to make sure the extern declaration produces a different symbol name. Therefore, we declare
 // the external shared memory as a variable template.
 template <int Alignment>
-extern __shared__ char hopefully_aligned_smem[] alignas(Alignment);
+extern __shared__ char __align__(Alignment) hopefully_aligned_smem[];
 
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
