@@ -18,6 +18,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
   "numba>=0.60.0",
+  "numba-cuda>=0.16.0",
   "numpy",
   "cuda-python==12.9.0",
   "cuda-core",
