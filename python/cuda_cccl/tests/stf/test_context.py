@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from cuda.cccl.experimental.stf._stf_bindings_impl import logical_data, context, AccessMode
+from cuda.cccl.experimental.stf._stf_bindings_impl import logical_data, context, AccessMode, read, rw, write
 import ctypes
 import numpy as np
 
@@ -18,11 +18,14 @@ def test_ctx2():
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
 
-    t = ctx.task()
-    t.add_dep(lX, AccessMode.READ.value)
-    t.add_dep(lY, AccessMode.RW.value)
+    t = ctx.task(read(lX), rw(lY))
     t.start()
     t.end()
+
+    t2 = ctx.task()
+    t2.add_dep(rw(lX))
+    t2.start()
+    t2.end()
 
     del ctx
 

@@ -90,6 +90,22 @@ cdef class logical_data:
             stf_logical_data_destroy(self._ld)
             self._ld = NULL
 
+class dep:
+    __slots__ = ("ld", "mode")
+    def __init__(self, logical_data ld, int mode):
+        self.ld   = ld
+        self.mode = mode
+    def __iter__(self):      # nice unpacking support
+        yield self.ld
+        yield self.mode
+    def __repr__(self):
+        return f"dep({self.ld!r}, {self.mode})"
+
+# optional sugar
+def read(ld):   return dep(ld, AccessMode.READ.value)
+def write(ld):  return dep(ld, AccessMode.WRITE.value)
+def rw(ld):     return dep(ld, AccessMode.RW.value)
+
 cdef class task:
     cdef stf_task_handle _t
 
@@ -106,8 +122,18 @@ cdef class task:
     def end(self):
         stf_task_end(self._t)
 
-    def add_dep(self, logical_data ld, int mode):
-        stf_task_add_dep(self._t, ld._ld, <stf_access_mode> mode)
+    def add_dep(self, object d):
+        """
+        Accept a `dep` instance created with read(ld), write(ld), or rw(ld).
+        """
+        if not isinstance(d, dep):
+            raise TypeError("add_dep expects read(ld), write(ld) or rw(ld)")
+
+        cdef logical_data ldata = <logical_data> d.ld
+        cdef int           mode_int  = int(d.mode)
+        cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
+
+        stf_task_add_dep(self._t, ldata._ld, mode_ce)
 
 cdef class context:
     cdef stf_ctx_handle _ctx
@@ -131,5 +157,17 @@ cdef class context:
         """
         return logical_data(self, buf)
 
-    def task(self):
-        return task(self)
+    def task(self, *deps):
+        """
+        Create a `task`
+
+        Example
+        -------
+        >>> t = ctx.task(read(lX), rw(lY))
+        >>> t.start()
+        >>> t.end()
+        """
+        t = task(self)          # construct with this context
+        for d in deps:
+            t.add_dep(d)        # your existing add_dep logic
+        return t
