@@ -15,17 +15,16 @@
 
 C2H_TEST("cub::DeviceReduce::Reduce accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin reduce-env-determinism
   auto op     = cuda::std::plus{};
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
   auto init   = 0.0f;
 
-  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+  auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
 
-  cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, init, env);
+  // OffsetT must be 4 bytes or less for deterministic reduction
+  cub::DeviceReduce::Reduce(input.begin(), output.begin(), static_cast<int>(input.size()), op, init, env);
 
   c2h::device_vector<float> expected{6.0f};
   // example-end reduce-env-determinism
@@ -54,15 +53,13 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
 
 C2H_TEST("cub::DeviceReduce::Sum accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin sum-env-determinism
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
+  cub::DeviceReduce::Sum(input.begin(), output.begin(), static_cast<int>(input.size()), env);
 
   c2h::device_vector<float> expected{6.0f};
   // example-end sum-env-determinism
@@ -240,8 +237,6 @@ struct square_t
 
 C2H_TEST("cub::DeviceReduce::TransformReduce accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin transform-reduce-env-determinism
   auto input  = c2h::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
   auto output = c2h::device_vector<float>(1);
@@ -249,7 +244,13 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts determinism requirements", 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
   cub::DeviceReduce::TransformReduce(
-    input.begin(), output.begin(), input.size(), ::cuda::std::plus<float>{}, square_t<float>{}, 0.0f, env);
+    input.begin(),
+    output.begin(),
+    static_cast<int>(input.size()), // OffsetT must be 4 bytes or less for deterministic reduction
+    ::cuda::std::plus<float>{},
+    square_t<float>{},
+    0.0f,
+    env);
 
   c2h::device_vector<float> expected{30.0f};
   // example-end transform-reduce-env-determinism
