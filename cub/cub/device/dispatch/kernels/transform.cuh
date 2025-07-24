@@ -621,6 +621,38 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
   return static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32), Alignment));
 }
 
+// We use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and fails
+// for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
+// The choice of attribute does not matter ('alignas(N)`, `__align__(N)` or `__attribute__((aligned(N)))`.
+// extern __shared__ char __align__(tile_padding) smem[];
+
+// However, any manual alignment of the shared memory start address outweighs the performance benefits of a faster
+// bulk copy by introducing about 7 additional SASS instructions at the start of the kernel. This also has to be done
+// carefully using a fake read on the address to prevent NVVM to pull the aligning deeper into the kernel.
+//   extern __shared__ char smem_base[]; // aligned to 16 bytes
+//   uint32_t smem32 = __cvta_generic_to_shared(smem_base);
+//   smem32 = cuda::round_up(smem32, bulk_copy_alignment);
+//   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
+//                                                                bulk_copy_alignment));
+
+// What gets closest to a working attribute is to rely on the following observations:
+// * static shared memory is aligned to 1KiB
+// * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
+// In this case we could:
+//   extern __shared__ char smem_base[];
+//   uint32_t smem32 = __cvta_generic_to_shared(smem_base) + bulk_copy_alignment - 16;
+//   asm("" : "+r"(smem32));
+//   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
+//                                                                bulk_copy_alignment));
+// However, CUDA currently does not provide this guarantee in any official document.
+
+// Furthermore, as required by the C++ language, any extern declaration of a variable with the same name must have the
+// same type and attributes. However, since different template instantiations produce different alignment values for the
+// attribute, we also need to make sure the extern declaration produces a different symbol name. Therefore, we declare
+// the external shared memory as a variable template.
+template <int Alignment>
+extern __shared__ char hopefully_aligned_smem[] alignas(Alignment);
+
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -638,39 +670,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   __shared__ uint64_t bar;
 
-  // We use an attribute to align the shared memory. This is not respected on all drivers though. The compiler correctly
-  // takes the alignment into account and even emits an alignment specifier into ptx. However, this sometimes randomly
-  // fails at runtime because the shared memory start pointer is not correctly provided by the driver/runtime. See also
-  // NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
-  extern __shared__ char __align__(tile_padding) smem_base_unaligned[];
-
-  // However, any manual alignment of the shared memory start address outweighs the performance benefits of a faster
-  // bulk copy by introducing about 7 additional SASS instructions at the start of the kernel. This also has to be done
-  // carefully using a fake read on the address to prevent NVVM to pull the aligning deeper into the kernel.
-  //   extern __shared__ char smem_base[];
-  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base);
-  //   smem32 = cuda::round_up(smem32, bulk_copy_alignment);
-  //   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
-  //                                                                bulk_copy_alignment));
-
-  // What gets closest to a working attribute is to rely on the following observations:
-  // * static shared memory is aligned to 1KiB
-  // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
-  // In this case we could:
-  //   extern __shared__ char smem_base[];
-  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base) + bulk_copy_alignment - 16;
-  //   asm("" : "+r"(smem32));
-  //   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
-  //                                                                bulk_copy_alignment));
-  // However, CUDA currently does not provide this guarantee.
-
+  char* smem_base = hopefully_aligned_smem<tile_padding>;
   // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems (e.g. with driver
   // 565.57.01 on RTX 2080 when cub::DeviceTransform is called from another kernel via CDP. See
   // thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1). This will lead to slightly reduced performance of bulk copy, but
   // correctness is maintained.
-  //_CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "");
+  //_CCCL_ASSERT(::cuda::is_aligned(smem_base, bulk_copy_alignment), "");
 
-  char* smem_base = smem_base_unaligned;
   // Since alignment via the attribute may not work, we have to align explicitly if it's larger than the default dynamic
   // shared memory alignment (16). This is not needed when the tile size does not retain the alignment, since we align
   // each tile separately later
