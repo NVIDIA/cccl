@@ -14,9 +14,7 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
-
-#undef interface
+#include "test_macros.h" // IWYU pragma: keep
 
 using immovable = cuda::__immovable;
 
@@ -177,7 +175,7 @@ struct any_regular_ref : cuda::__basic_any<iregular<>&>
 };
 
 template <class TestType>
-struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
+struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 {
   static constexpr bool IsSmall = _CUDA_VSTD::is_same_v<TestType, SmallType>;
 
@@ -503,14 +501,15 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType> // SmallType, LargeType)
                                                  cuda::__basic_any<cuda::__imovable<>>&>);
   }
 
+  struct cast_to_derived
+  {
+    template <class _Tp>
+    _CCCL_HOST_DEVICE auto operator()(_Tp&& arg) const
+      -> decltype(cuda::__dynamic_any_cast<iderived<>>(static_cast<_Tp&&>(arg)));
+  };
+
   _CCCL_HOST_DEVICE void test_cuda_dynamic_any_cast()
   {
-    auto cast_to_derived_fn =
-      [](auto&& arg) -> decltype(cuda::__dynamic_any_cast<iderived<>>(static_cast<decltype(arg)>(arg))) {
-      throw;
-    };
-    using cast_to_derived = decltype(cast_to_derived_fn);
-
     static_assert(!_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>>&>);
     static_assert(!_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>&>>);
     static_assert(_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<cuda::__ireference<ibase<>>>>);
