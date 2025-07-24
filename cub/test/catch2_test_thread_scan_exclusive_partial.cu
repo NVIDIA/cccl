@@ -280,10 +280,10 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
     values({1, num_items, num_items + 1}));
   const int bounded_valid_items = std::min(valid_items, num_items);
-  const auto prefix =
+  auto prefix =
     static_cast<accum_t>(GENERATE_COPY(take(1, random(float{dist_param::min()}, float{dist_param::max()}))));
   const bool apply_prefix = GENERATE(true, false);
-  const auto filler =
+  auto filler =
     static_cast<accum_t>(GENERATE(take(1, random(float{filler_dist_param::min()}, float{filler_dist_param::max()}))));
   CAPTURE(
     c2h::type_name<value_t>(), num_items, c2h::type_name<op_t>(), valid_items, prefix, apply_prefix, operator_identity);
@@ -306,9 +306,9 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
     unwrap_it(thrust::raw_pointer_cast(d_out.data())),
     scan_op,
     valid_items,
-    static_cast<unwrap_value_t<accum_t>>(prefix),
+    *unwrap_it(&prefix),
     apply_prefix,
-    static_cast<unwrap_value_t<accum_t>>(filler));
+    *unwrap_it(&filler));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   if (!apply_prefix)
