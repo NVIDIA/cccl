@@ -387,7 +387,6 @@ struct policy_hub
 
     using ReducePolicy = decltype(select_agent_policy<sm86_tuning<AccumT>>(0));
 
-    // SingleTilePolicy
     using SingleTilePolicy = ReducePolicy;
   };
 
