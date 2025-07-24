@@ -48,7 +48,7 @@ enum class address_space
   return __v >= 0 && __v < _CUDA_VSTD::to_underlying(address_space::__max);
 }
 
-[[nodiscard]] _CCCL_DEVICE_API bool is_address_from(address_space __space, const void* __ptr)
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(address_space __space, const void* __ptr)
 {
   _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
   _CCCL_ASSERT(_CUDA_DEVICE::__cccl_is_valid_address_space(__space), "invalid address space");
