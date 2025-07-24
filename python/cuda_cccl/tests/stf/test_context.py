@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from cuda.cccl.experimental.stf._stf_bindings_impl import logical_data, context, AccessMode, read, rw, write
-import ctypes
 import numpy as np
 
+from cuda.cccl.experimental.stf._stf_bindings_impl import context, read, rw
+
+
 def test_ctx():
-    ctx = _stf_bindings_impl.context()
+    ctx = context()
     del ctx
+
 
 def test_ctx2():
     X = np.ones(16, dtype=np.float32)
@@ -18,7 +20,7 @@ def test_ctx2():
     ctx = context()
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
-    lZ = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Z)
 
     t = ctx.task(rw(lX))
     t.start()
@@ -38,6 +40,7 @@ def test_ctx2():
 
     del ctx
 
+
 def test_ctx3():
     X = np.ones(16, dtype=np.float32)
     Y = np.ones(16, dtype=np.float32)
@@ -46,7 +49,7 @@ def test_ctx3():
     ctx = context()
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
-    lZ = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Z)
 
     with ctx.task(rw(lX)):
         pass
@@ -61,6 +64,7 @@ def test_ctx3():
         pass
 
     del ctx
+
 
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
