@@ -651,6 +651,20 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
 template <int Alignment>
 extern __shared__ char __align__(Alignment) hopefully_aligned_smem[];
 
+template <int Alignment>
+_CCCL_DEVICE auto aligned_smem() -> char*
+{
+  char* smem = hopefully_aligned_smem<Alignment>;
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 2) && (__CUDACC_RDC__ || __CUDACC_DEBUG__)
+  uint32_t smem32 = __cvta_generic_to_shared(smem);
+  smem32          = cuda::round_up(smem32, Alignment);
+  char* smem      = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32), Alignment));
+  asm("" : "+l"(smem)); // keep the compiler from pulling the alignment deeper into the kernel
+#endif
+  _CCCL_ASSERT(::cuda::is_aligned(smem, Alignment), "");
+  return smem;
+}
+
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -668,21 +682,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   __shared__ uint64_t bar;
 
-  char* smem_base = hopefully_aligned_smem<tile_padding>;
-  // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems (e.g. with driver
-  // 565.57.01 on RTX 2080 when cub::DeviceTransform is called from another kernel via CDP. See
-  // thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1). This will lead to slightly reduced performance of bulk copy, but
-  // correctness is maintained.
-  //_CCCL_ASSERT(::cuda::is_aligned(smem_base, bulk_copy_alignment), "");
-
-  // Since alignment via the attribute may not work, we have to align explicitly if it's larger than the default dynamic
-  // shared memory alignment (16). This is not needed when the tile size does not retain the alignment, since we align
-  // each tile separately later
-  if constexpr (tile_sizes_retain_max_alignment && max_alignment > 16)
-  {
-    smem_base = round_up_smem_ptr<tile_padding>(smem_base);
-    asm("" : "+l"(smem_base)); // keep the compiler from pulling the alignment deeper into the kernel
-  }
+  char* smem_base = aligned_smem<tile_padding>();
 
   namespace ptx = ::cuda::ptx;
 
