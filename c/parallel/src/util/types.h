@@ -62,6 +62,9 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
     case cccl_type_enum::CCCL_STORAGE:
       check(nvrtcGetTypeName<StorageT>(&result));
       break;
+    case cccl_type_enum::CCCL_BOOLEAN:
+      result = "bool";
+      break;
   }
 
   if (is_pointer)
