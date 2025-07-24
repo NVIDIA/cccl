@@ -75,7 +75,7 @@ static inline void stf_cuda_kernel_add_desc(
   const void** args)
 {
   CUfunction cufunc;
-  cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
+  [[maybe_unused]] cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
   assert(res == cudaSuccess);
 
   stf_cuda_kernel_add_desc_cufunc(k, cufunc, gridDim_, blockDim_, sharedMem_, arg_cnt, args);
