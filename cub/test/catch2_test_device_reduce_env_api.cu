@@ -87,13 +87,11 @@ C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
 
 C2H_TEST("cub::DeviceReduce::Min accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin min-env-determinism
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
 
-  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
   cub::DeviceReduce::Min(input.begin(), output.begin(), input.size(), env);
 
@@ -122,8 +120,6 @@ C2H_TEST("cub::DeviceReduce::Min accepts stream", "[reduce][env]")
 
 C2H_TEST("cub::DeviceReduce::Max accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin max-env-determinism
   auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = c2h::device_vector<float>(1);
@@ -157,8 +153,6 @@ C2H_TEST("cub::DeviceReduce::Max accepts stream", "[reduce][env]")
 
 C2H_TEST("cub::DeviceReduce::ArgMin accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin argmin-env-determinism
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto min_output   = c2h::device_vector<float>(1);
@@ -198,14 +192,12 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts stream", "[reduce][env]")
 
 C2H_TEST("cub::DeviceReduce::ArgMax accepts determinism requirements", "[reduce][env]")
 {
-  // TODO(gonidelis): replace `run_to_run` with `gpu_to_gpu` once RFA unwraps contiguous iterators
-
   // example-begin argmax-env-determinism
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto min_output   = c2h::device_vector<float>(1);
   auto index_output = c2h::device_vector<::cuda::std::int64_t>(1);
 
-  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
   cub::DeviceReduce::ArgMax(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
 
