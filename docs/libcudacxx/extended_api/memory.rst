@@ -11,6 +11,7 @@ Memory
    memory/align_up
    memory/align_down
    memory/ptr_rebind
+   memory/is_address_from
 
 .. list-table::
    :widths: 25 45 30 30
@@ -38,5 +39,10 @@ Memory
 
    * - :ref:`ptr_rebind <libcudacxx-extended-api-memory-ptr_rebind>`
      - Rebind a pointer to a different type
+     - CCCL 3.1.0
+     - CUDA 13.1
+
+   * - :ref:`is_address_from <libcudacxx-extended-api-memory-is_address_from>`
+     - Check if a pointer is from a specific address space
      - CCCL 3.1.0
      - CUDA 13.1
