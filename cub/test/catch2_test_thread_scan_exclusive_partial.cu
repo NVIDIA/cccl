@@ -173,7 +173,7 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
   c2h::device_vector<output_t> d_out(num_items);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
-  c2h::host_vector<output_t> reference_result(num_items, filler);
+  c2h::host_vector<output_t> reference_result(num_items, static_cast<output_t>(filler));
 
   compute_exclusive_scan_reference(
     h_in.cbegin(),
