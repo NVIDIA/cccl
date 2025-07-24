@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -61,13 +62,13 @@ __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 {
   if constexpr (_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
   {
-    [[maybe_unused]] bool __b = ::__isShared(__ptr);
+    [[maybe_unused]] bool __b = _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __ptr);
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
   else if constexpr (__is_global_access_property_v<_Property>)
   {
-    [[maybe_unused]] bool __b = ::__isGlobal(__ptr);
+    [[maybe_unused]] bool __b = _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __ptr);
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
