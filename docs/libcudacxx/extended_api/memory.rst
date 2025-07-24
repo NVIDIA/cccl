@@ -41,9 +41,9 @@ Memory
      - CUDA 12.9
 
    * - :ref:`is_address_from and is_object_from <libcudacxx-extended-api-memory-is_address_from>`
-     - Check if a pointer is from a specific address space
-     - CCCL 3.1.0 ``is_address_from``, CCCL 3.2.0 ``is_object_from``
-     - CUDA 13.1 ``is_address_from``, CUDA 13.2 ``is_object_from``
+     - Check if a pointer or object is from a specific address space
+     - CCCL 3.1.0
+     - CUDA 13.1
 
    * - :ref:`is_aligned <libcudacxx-extended-api-memory-is_aligned>`
      - Check if a pointer is aligned
