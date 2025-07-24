@@ -824,9 +824,9 @@ struct AgentRle
 
       if constexpr (is_streaming_invocation)
       {
-        if (streaming_context.is_first_partition())
+        if (streaming_context.first_partition)
         {
-          if (streaming_context.is_last_partition())
+          if (streaming_context.last_partition)
           {
             InitializeSelections<true, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
           }
@@ -837,7 +837,7 @@ struct AgentRle
         }
         else
         {
-          if (streaming_context.is_last_partition())
+          if (streaming_context.last_partition)
           {
             InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
           }
@@ -861,7 +861,7 @@ struct AgentRle
       if constexpr (is_streaming_invocation)
       {
         // If this is a streaming invocation, we need to incorporate the run-length of the previous partition's last run
-        if (!streaming_context.is_first_partition() && threadIdx.x == 0)
+        if (!streaming_context.first_partition && threadIdx.x == 0)
         {
           lengths_and_num_runs[0].value += streaming_context.prefix();
         }
@@ -945,7 +945,7 @@ struct AgentRle
 
       if constexpr (is_streaming_invocation)
       {
-        if (streaming_context.is_last_partition())
+        if (streaming_context.last_partition)
         {
           InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
         }
@@ -1084,7 +1084,7 @@ struct AgentRle
           auto total_uniques = streaming_context.add_num_uniques(running_total.key);
 
           // If this is the last partition, write out the number of unique items
-          if (streaming_context.is_last_partition())
+          if (streaming_context.last_partition)
           {
             // Output the total number of items selected
             *d_num_runs_out = total_uniques;
@@ -1096,7 +1096,7 @@ struct AgentRle
             }
           }
 
-          if (!streaming_context.is_last_partition())
+          if (!streaming_context.last_partition)
           {
             // Write the run-length of this partition as context for the subsequent partition
             streaming_context.write_prefix(running_total.value);

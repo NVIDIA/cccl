@@ -88,15 +88,6 @@ struct streaming_context
     return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
   };
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
-  {
-    return first_partition;
-  }
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
-  {
-    return last_partition;
-  }
-
   _CCCL_FORCEINLINE _CCCL_HOST_DEVICE RunLengthT prefix() const
   {
     return *preceding_length;
