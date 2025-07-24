@@ -293,6 +293,25 @@ struct sm90_tuning<float>
   static constexpr int threads = 224;
 };
 
+template <class AccumT>
+struct sm86_tuning;
+
+template <>
+struct sm86_tuning<float>
+{
+  // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
+  static constexpr int items   = 6;
+  static constexpr int threads = 224;
+};
+
+template <>
+struct sm86_tuning<double>
+{
+  // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
+  static constexpr int items   = 11;
+  static constexpr int threads = 128;
+};
+
 /**
  * @tparam AccumT
  *   Accumulator data type
@@ -352,8 +371,8 @@ struct policy_hub
     using SingleTilePolicy = ReducePolicy;
   };
 
-  /// SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy600>
+  /// SM86
+  struct Policy860 : ChainedPolicy<860, Policy860, Policy600>
   {
     static constexpr int items_per_vec_load = 4;
 
@@ -365,6 +384,25 @@ struct policy_hub
     // use Policy600 as DefaultPolicy
     template <typename Tuning>
     static auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
+
+    using ReducePolicy = decltype(select_agent_policy<sm86_tuning<AccumT>>(0));
+
+    using SingleTilePolicy = ReducePolicy;
+  };
+
+  /// SM90
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  {
+    static constexpr int items_per_vec_load = 4;
+
+    // Use values from tuning if a specialization exists, otherwise pick Policy860
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
+
+    // use Policy860 as DefaultPolicy
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy860::ReducePolicy;
 
     using ReducePolicy = decltype(select_agent_policy<sm90_tuning<AccumT>>(0));
 
