@@ -23,6 +23,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/to_underlying.h>
 
 #  include <nv/target>
@@ -74,6 +75,12 @@ enum class address_space
     default:
       return false;
   }
+}
+
+template <typename T>
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_object_from(T& __obj, address_space __space)
+{
+  return _CUDA_DEVICE::is_address_from(_CUDA_VSTD::addressof(__obj), __space);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
