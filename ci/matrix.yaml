@@ -1,3 +1,16 @@
+# Create an anchor that lists all GPUs for reuse as `gpu: *gpu_list`
+
+gpu_list: &gpu_list
+  - v100
+  - t4
+  - rtx2080
+  - rtxa6000
+  - l4
+  - rtx4090
+  - h100
+
+sm_list: &sm_list "70;75;86;89;90"
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -8,6 +21,19 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['test'],     project: 'cub'             }
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['test'],     project: 'libcudacxx'      }
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['test_gpu'], project: 'thrust'          }
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['test'],     project: 'cudax'           }
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['nvrtc'],    project: 'libcudacxx'      }
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['test'],     project: 'cccl_c_parallel' }
+    - {gpu: *gpu_list, sm: *sm_list, jobs: ['test'],     project: 'packaging'       }
+
+    # Arch agnositic:
+    - {gpu: *gpu_list,               jobs: ['test'],     project: 'python',         py_version: '3.13'}
+
+    # Same as lid0, but fewer test cases.
+    # - {gpu: *gpu_list, sm: *sm_list, jobs: ['limited'],  project: 'cub'             }
 
   pull_request:
     # Old CTK/compiler
