@@ -17,6 +17,49 @@ import cuda.cccl.cooperative.experimental as coop
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
+def test_block_histogram_histo_sort_two_phase00():
+    bins = 256
+    item_dtype = np.uint8
+    counter_dtype = np.uint32
+    items_per_thread = 4
+    threads_per_block = 128
+    # total_items = 1 << 15  # 32KB
+    algorithm = coop.BlockHistogramAlgorithm.SORT
+
+    block_load = coop.block.load(
+        item_dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    # block_histogram = coop.block.histogram(
+    block_histogram = coop.block.histogram(
+        item_dtype=item_dtype,
+        counter_dtype=counter_dtype,
+        dim=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
+        bins=bins,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.grid(1)
+
+        # Shared per-block histogram bin counts.
+        smem_histogram = coop.shared.array(bins, dtype=d_in.dtype)
+        thread_samples = coop.local.array(items_per_thread, dtype=item_dtype)
+
+        block_load(d_in, thread_samples)
+
+        block_histogram(thread_samples, smem_histogram)
+
+        cuda.syncthreads()
+
+        # Store the histogram bin counts to the output.
+        if tid < bins:
+            d_out[tid] = smem_histogram[tid]
+
+
 def test_block_histogram_histo_sort_two_phase0():
     bins = 256
     item_dtype = np.uint8

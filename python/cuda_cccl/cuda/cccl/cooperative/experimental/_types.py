@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
+import time
 from functools import cached_property
 from io import StringIO
 from textwrap import dedent
@@ -21,6 +22,7 @@ from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
 from numba.cuda import LTOIR
+from numba.cuda.cudadrv import driver
 
 import cuda.cccl.cooperative.experimental._nvrtc as nvrtc
 
@@ -32,6 +34,44 @@ from ._common import (
 from ._numba_extension import (
     _get_source_code_rewriter,
 )
+
+
+class ElapsedTimer:
+    """
+    Context manager and reusable timer to measure elapsed time.
+
+    Example:
+        timer = elapsed_timer()
+        with timer:
+            do_something()
+        print(f'Elapsed: {timer.elapsed:.3f}')
+
+        # Re-enterable:
+        with timer:
+            do_something_else()
+        print(f'Elapsed: {timer.elapsed:.3f}')
+    """
+
+    def __init__(self):
+        self.start = None
+        self._elapsed = None
+
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._elapsed = time.perf_counter() - self.start
+
+    @property
+    def elapsed(self):
+        """
+        Return the elapsed time for the most recent context.
+        """
+        if self._elapsed is None:
+            raise ValueError("Timer has not been used in a context yet.")
+        return self._elapsed
+
 
 if TYPE_CHECKING:
     from ._rewrite import CoopNode
@@ -194,7 +234,7 @@ class Pointer(Parameter):
     def __repr__(self) -> str:
         buf = StringIO()
         w = buf.write
-        w("Pointer(dtype={self.value_dtype}, out={self.is_output}, ")
+        w(f"Pointer(dtype={self.value_dtype}, out={self.is_output}, ")
         w(f"restrict={self.restrict}")
         if self.name is not None:
             w(f", name={self.name}")
@@ -743,7 +783,18 @@ class Algorithm:
                     method[:0] = injected
 
     def __repr__(self) -> str:
-        return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
+        if self.template_parameters:
+            template_params = ", ".join(
+                [f"{tp.name}" for tp in self.template_parameters]
+            )
+            template_params = f"<{template_params}>:"
+        else:
+            template_params = ""
+
+        return (
+            f"{self.struct_name}::{self.method_name}"
+            f"{template_params}({self.parameters})"
+        )
 
     @property
     def unique_id(self):
@@ -799,7 +850,7 @@ class Algorithm:
             )
         )
 
-        assert len(self.parameters) == 1
+        assert len(self.parameters) in (0, 1)
         specialized_parameters = []
         for method in self.parameters:
             specialized_signature = []
@@ -828,8 +879,8 @@ class Algorithm:
             threads=self.threads,
         )
 
-    @cached_property
-    def _size_and_alignment_info(self):
+    @property
+    def size_and_alignment_source_code(self):
         algorithm_name = self.struct_name
         includes = self.includes or []
         type_definitions = self.type_definitions or []
@@ -854,6 +905,11 @@ class Algorithm:
         w(f"{prefix}alignment = alignof(temp_storage_t);\n")
 
         src = buf.getvalue()
+
+        return src
+
+    def get_size_and_alignment_info(self):
+        src = self.size_and_alignment_source_code
         rewriter = _get_source_code_rewriter()
         if rewriter is not None:
             src = rewriter(src, self)
@@ -874,6 +930,10 @@ class Algorithm:
             temp_storage_bytes=temp_storage_bytes,
             temp_storage_alignment=temp_storage_alignment,
         )
+
+    @cached_property
+    def _size_and_alignment_info(self):
+        return self.get_size_and_alignment_info()
 
     @property
     def algorithm_struct_size(self):
@@ -952,8 +1012,18 @@ class Algorithm:
 
         n = self.names
 
+        # Write the algorithm instantiation with template specialization,
+        # and then corresponding size and alignment information.
         w(f"using {n.algorithm_t} = cub::{n.algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{n.algorithm_struct_size} = sizeof({n.algorithm_t});\n")
+        w(f"{prefix}{n.algorithm_struct_alignment} = alignof({n.algorithm_t});\n\n")
+
+        # Write the temporary storage type and size/alignment information.
         w(f"using {n.temp_storage_t} = typename {n.algorithm_t}::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{n.temp_storage_bytes} = sizeof({n.temp_storage_t});\n")
+        w(f"{prefix}{n.temp_storage_alignment} = alignof({n.temp_storage_t});\n\n")
 
         src = buf.getvalue()
 
@@ -1378,6 +1448,27 @@ class Algorithm:
             data=blob,
         )
         lto_irs.append(obj)
+
+        n = self.names
+        timer = ElapsedTimer()
+        with timer:
+            linker = driver._Linker.new(
+                cc=(cc_major, cc_minor),
+                additional_flags=["-ptx"],
+                lto=obj,
+            )
+            ltoir_bytes = obj.data
+            linker.add_ltoir(ltoir_bytes)
+            ptx = linker.get_linked_ptx()
+            ptx = ptx.decode("utf-8")
+            self._temp_storage_size = find_unsigned(f"{n.temp_storage_bytes}", ptx)
+            self._temp_storage_alignment = find_unsigned(
+                f"{n.temp_storage_alignment}", ptx
+            )
+            self._ptx = ptx
+        elapsed = timer.elapsed
+        print(f"LTO->PTX,extraction {self.c_name} took {elapsed:.6f} seconds")
+
         return lto_irs
 
     def create_codegens(self, parameters=None, func_to_overload=None):

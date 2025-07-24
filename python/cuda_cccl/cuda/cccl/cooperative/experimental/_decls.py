@@ -1208,8 +1208,8 @@ class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
             items_per_thread,
             # mode,
             # scan_op,
-            initial_value,
-            # block_prefix_callback_op=None,
+            # initial_value,
+            block_prefix_callback_op=None,
             # algorithm=None,
             # temp_storage=None,
         ):
@@ -1226,7 +1226,7 @@ class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
                 src,
                 dst,
                 items_per_thread,
-                initial_value,
+                # initial_value,
             ]
 
             # if initial_value is not None:
@@ -1238,8 +1238,8 @@ class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
             # if scan_op is not None:
             #    arglist.append(scan_op)
 
-            # if block_prefix_callback_op is not None:
-            #    arglist.append(block_prefix_callback_op)
+            if block_prefix_callback_op is not None:
+                arglist.append(block_prefix_callback_op)
 
             # if temp_storage is not None:
             #    arglist.append(temp_storage)
