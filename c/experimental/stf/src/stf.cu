@@ -121,7 +121,7 @@ void stf_task_end(stf_task_handle t)
 CUstream stf_task_get_custream(stf_task_handle t)
 {
   assert(t);
-  return (CUstream)t->t.get_stream();
+  return (CUstream) t->t.get_stream();
 }
 
 void stf_task_destroy(stf_task_handle t)

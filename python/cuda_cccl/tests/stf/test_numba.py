@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from cuda.cccl.experimental.stf._stf_bindings_impl import logical_data, context, AccessMode, read, rw, write
-import ctypes
 import numpy as np
 from numba import cuda
-from numba.cuda.cudadrv import driver, devicearray
+
+from cuda.cccl.experimental.stf._stf_bindings_impl import context, read, rw
+
 
 @cuda.jit
 def axpy(a, x, y):
@@ -14,11 +14,13 @@ def axpy(a, x, y):
     if i < x.size:
         y[i] = a * x[i] + y[i]
 
+
 @cuda.jit
 def scale(a, x):
     i = cuda.grid(1)
     if i < x.size:
         x[i] = a * x[i]
+
 
 def test_numba():
     X = np.ones(16, dtype=np.float32)
@@ -28,7 +30,7 @@ def test_numba():
     ctx = context()
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
-    lZ = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Z)
 
     with ctx.task(rw(lX)) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
@@ -60,6 +62,7 @@ def test_numba():
         pass
 
     del ctx
+
 
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
