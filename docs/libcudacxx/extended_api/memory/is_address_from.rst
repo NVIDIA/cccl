@@ -16,7 +16,7 @@
    };
 
    [[nodiscard]] __device__ inline
-   bool is_address_from(const void* ptr, address_space space)
+   bool is_address_from(address_space space, const void* ptr)
 
 The function checks if a pointer ``ptr`` with a generic address is from a ``space`` address state space.
 
@@ -24,8 +24,8 @@ Compared to the corresponding CUDA C functions ``__isGlobal()``, ``__isShared()`
 
 **Parameters**
 
-- ``space``: The address space.
 - ``ptr``: The pointer.
+- ``space``: The address space.
 
 **Return value**
 
@@ -55,11 +55,11 @@ Example
         __shared__ int shared_var;
         int local_var{};
 
-        assert(cuda::device::is_address_from(address_space::global,        &global_var));
-        assert(cuda::device::is_address_from(address_space::shared,        &shared_var));
-        assert(cuda::device::is_address_from(address_space::constant,      &constant_var));
-        assert(cuda::device::is_address_from(address_space::local,         &local_var));
-        assert(cuda::device::is_address_from(address_space::grid_constant, &grid_constant_var));
+        assert(cuda::device::is_address_from(&global_var, address_space::global));
+        assert(cuda::device::is_address_from(&shared_var, address_space::shared));
+        assert(cuda::device::is_address_from(&constant_var, address_space::constant));
+        assert(cuda::device::is_address_from(&local_var, address_space::local));
+        assert(cuda::device::is_address_from(&grid_constant_var, address_space::grid_constant));
     }
 
     int main(int, char**)
@@ -68,4 +68,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/jcqbdGKMn>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/fYWjbYqzo>`_
