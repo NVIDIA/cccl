@@ -227,6 +227,9 @@ cdef class context:
         stf_ctx_create(&self._ctx)
 
     def __dealloc__(self):
+        self.finalize()
+
+    def finalize(self):
         if self._ctx != NULL:
             stf_ctx_finalize(self._ctx)
             self._ctx = NULL
