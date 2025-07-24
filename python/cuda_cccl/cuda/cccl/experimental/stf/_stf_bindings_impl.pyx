@@ -135,6 +135,18 @@ cdef class task:
 
         stf_task_add_dep(self._t, ldata._ld, mode_ce)
 
+    # ---- context‑manager helpers -------------------------------
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, object exc_type, object exc, object tb):
+        """
+        Always called, even if an exception occurred inside the block.
+        """
+        self.end()
+        return False
+
 cdef class context:
     cdef stf_ctx_handle _ctx
 

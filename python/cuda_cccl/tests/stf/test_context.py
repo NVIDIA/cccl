@@ -13,22 +13,55 @@ def test_ctx():
 def test_ctx2():
     X = np.ones(16, dtype=np.float32)
     Y = np.ones(16, dtype=np.float32)
+    Z = np.ones(16, dtype=np.float32)
 
     ctx = context()
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Y)
 
-    t = ctx.task(read(lX), rw(lY))
+    t = ctx.task(rw(lX))
     t.start()
     t.end()
 
-    t2 = ctx.task()
-    t2.add_dep(rw(lX))
+    t2 = ctx.task(read(lX), rw(lY))
     t2.start()
     t2.end()
+
+    t3 = ctx.task(read(lX), rw(lZ))
+    t3.start()
+    t3.end()
+
+    t4 = ctx.task(read(lY), rw(lZ))
+    t4.start()
+    t4.end()
+
+    del ctx
+
+def test_ctx3():
+    X = np.ones(16, dtype=np.float32)
+    Y = np.ones(16, dtype=np.float32)
+    Z = np.ones(16, dtype=np.float32)
+
+    ctx = context()
+    lX = ctx.logical_data(X)
+    lY = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Y)
+
+    with ctx.task(rw(lX)):
+        pass
+
+    with ctx.task(read(lX), rw(lY)):
+        pass
+
+    with ctx.task(read(lX), rw(lZ)):
+        pass
+
+    with ctx.task(read(lY), rw(lZ)):
+        pass
 
     del ctx
 
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
-    test_ctx2()
+    test_ctx3()
