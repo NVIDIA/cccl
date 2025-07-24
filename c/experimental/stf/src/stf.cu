@@ -99,6 +99,13 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
   t->t.add_deps(task_dep_untyped(ld->ld, access_mode(m)));
 }
 
+void* stf_task_get(stf_task_handle t, int index)
+{
+  assert(t);
+  auto s = t->t.template get<slice<const char>>(index);
+  return (void*) s.data_handle();
+}
+
 void stf_task_start(stf_task_handle t)
 {
   assert(t);
@@ -109,6 +116,12 @@ void stf_task_end(stf_task_handle t)
 {
   assert(t);
   t->t.end();
+}
+
+CUstream stf_task_get_custream(stf_task_handle t)
+{
+  assert(t);
+  return (CUstream)t->t.get_stream();
 }
 
 void stf_task_destroy(stf_task_handle t)

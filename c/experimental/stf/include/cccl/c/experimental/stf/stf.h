@@ -43,8 +43,8 @@ void stf_task_set_symbol(stf_task_handle t, const char* symbol);
 void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
 void stf_task_start(stf_task_handle t);
 void stf_task_end(stf_task_handle t);
-cudaStream_t stf_task_get_stream(stf_task_handle t);
-void* stf_task_get(stf_task_handle t, size_t submitted_index);
+CUstream stf_task_get_custream(stf_task_handle t);
+void* stf_task_get(stf_task_handle t, int submitted_index);
 void stf_task_destroy(stf_task_handle t);
 
 typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
