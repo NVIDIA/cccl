@@ -395,12 +395,12 @@ struct policy_hub
   {
     static constexpr int items_per_vec_load = 4;
 
-    // Use values from tuning if a specialization exists, otherwise pick Policy600
+    // Use values from tuning if a specialization exists, otherwise pick Policy860
     template <typename Tuning>
     static auto select_agent_policy(int)
       -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
 
-    // use Policy600 as DefaultPolicy
+    // use Policy860 as DefaultPolicy
     template <typename Tuning>
     static auto select_agent_policy(long) -> typename Policy860::ReducePolicy;
 
