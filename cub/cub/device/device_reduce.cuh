@@ -941,8 +941,6 @@ public:
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
   //!   as the `env` parameter.
-  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
-  //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -996,13 +994,23 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    // Fallback from not_guaranteed to run_to_run determinism
+    using determinism_t = ::cuda::std::conditional_t<
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+      ::cuda::execution::determinism::run_to_run_t,
+      default_determinism_t>;
+
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
@@ -1214,8 +1222,6 @@ public:
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
   //!   as the `env` parameter.
-  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
-  //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_min_out`` nor ``d_index_out``.
   //!
   //! Snippet
@@ -1277,13 +1283,25 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    // determinism_t is not used at all given that only run_to_run is supported which was
+    // the deterministic requirement already used before. We add the machinery for potential
+    // future extension/support of more requirements.
+    using determinism_t = ::cuda::std::conditional_t<
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+      ::cuda::execution::determinism::run_to_run_t,
+      default_determinism_t>;
+
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
@@ -1594,8 +1612,6 @@ public:
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
   //!   as the `env` parameter.
-  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
-  //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -1649,13 +1665,23 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    // Fallback from not_guaranteed to run_to_run determinism
+    using determinism_t = ::cuda::std::conditional_t<
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+      ::cuda::execution::determinism::run_to_run_t,
+      default_determinism_t>;
+
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
@@ -1992,8 +2018,6 @@ public:
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
   //!   as the `env` parameter.
-  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
-  //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_max_out`` nor ``d_index_out``.
   //!
   //! Snippet
@@ -2055,13 +2079,25 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    // determinism_t is not used at all given that only run_to_run is supported which was
+    // the deterministic requirement already used before. We add the machinery for potential
+    // future extension/support of more requirements.
+    using determinism_t = ::cuda::std::conditional_t<
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+      ::cuda::execution::determinism::run_to_run_t,
+      default_determinism_t>;
+
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
@@ -2377,7 +2413,7 @@ public:
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
@@ -2732,7 +2768,7 @@ public:
                   "Determinism should be used inside requires to have an effect.");
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
