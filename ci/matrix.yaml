@@ -204,7 +204,7 @@ host_compilers:
     container_tag: 'nvhpc'
     exe: nvc++
     versions:
-      25.5: { stds: [17, 20 ] }
+      25.7: { stds: [17, 20 ] }
 
 # Jobs support the following properties:
 #
