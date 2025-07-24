@@ -251,6 +251,16 @@ public:
       };
     }
 
+    cudaStream_t get_stream() const
+    {
+      if (auto p = ::std::get_if<stream_task<Deps...>>(&payload))
+      {
+        return p->get_stream();
+      }
+
+      return nullptr;
+    }
+
   private:
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
@@ -1498,6 +1508,32 @@ UNITTEST("token vector")
   ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
   ctx.task(tokens[1].read(), tokens[2].read(), tokens[3].write())->*[](cudaStream_t) {};
 
+  ctx.finalize();
+};
+
+UNITTEST("get_stream")
+{
+  context ctx;
+
+  auto token = ctx.token();
+  auto t     = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  EXPECT(s != nullptr);
+  t.end();
+  ctx.finalize();
+};
+
+UNITTEST("get_stream graph")
+{
+  context ctx = graph_ctx();
+
+  auto token = ctx.token();
+  auto t     = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  EXPECT(s == nullptr);
+  t.end();
   ctx.finalize();
 };
 
