@@ -1,9 +1,19 @@
 #pragma once
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 /**
  * @brief RAII wrapper for GPU buffer registration
@@ -22,7 +32,7 @@ public:
      */
     template<typename T>
     explicit buffer_handle(span<T> buffer, int flags = 0);
-    
+
     /**
      * @brief Register GPU buffer using span - const version
      * @tparam T Element type (must be trivially copyable)
@@ -31,30 +41,30 @@ public:
      */
     template<typename T>
     explicit buffer_handle(span<const T> buffer, int flags = 0);
-    
+
     buffer_handle(buffer_handle&& other) noexcept;
     buffer_handle& operator=(buffer_handle&& other) noexcept;
-    
+
     /**
      * @brief Get the registered buffer pointer
      */
     const void* data() const noexcept;
-    
+
     /**
      * @brief Get the buffer size in bytes
      */
     size_t size() const noexcept;
-    
+
     /**
      * @brief Get the buffer as a span of bytes
      */
     span<const std::byte> as_bytes() const noexcept;
-    
+
     /**
      * @brief Get the buffer as a span of mutable bytes
      */
     span<std::byte> as_writable_bytes() const noexcept;
-    
+
     /**
      * @brief Get the buffer as a typed span
      * @tparam T Element type (must be trivially copyable)
@@ -62,7 +72,7 @@ public:
      */
     template<typename T>
     span<T> as_span() const noexcept;
-    
+
     /**
      * @brief Get the buffer as a typed const span
      * @tparam T Element type (must be trivially copyable)
@@ -73,13 +83,13 @@ public:
 
 private:
     friend class detail::raii_handle<buffer_handle>;
-    
+
     /**
      * @brief Cleanup method required by CRTP base class
      */
     void cleanup() noexcept;
 };
 
-} // namespace cuda::io
+} // namespace cuda::experimental
 
-#include "detail/buffer_handle_impl.hpp" 
+#include "detail/buffer_handle_impl.hpp"

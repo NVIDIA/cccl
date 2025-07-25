@@ -3,31 +3,31 @@
 // This file provides the implementation of buffer_handle methods
 // It's included after the class definition
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 // Constructor implementations
 template<typename T>
-buffer_handle::buffer_handle(span<T> buffer, int flags) 
+buffer_handle::buffer_handle(span<T> buffer, int flags)
     : detail::raii_handle<buffer_handle>(false), buffer_(buffer.data()), size_(buffer.size_bytes()) {
     static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
-    
+
     CUfileError_t error = cuFileBufRegister(buffer_, size_, flags);
     detail::check_cufile_result(error, "cuFileBufRegister");
     set_owns_resource(true);
 }
 
 template<typename T>
-buffer_handle::buffer_handle(span<const T> buffer, int flags) 
+buffer_handle::buffer_handle(span<const T> buffer, int flags)
     : detail::raii_handle<buffer_handle>(false), buffer_(buffer.data()), size_(buffer.size_bytes()) {
     static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
-    
+
     CUfileError_t error = cuFileBufRegister(buffer_, size_, flags);
     detail::check_cufile_result(error, "cuFileBufRegister");
     set_owns_resource(true);
 }
 
 // Move constructor and assignment
-inline buffer_handle::buffer_handle(buffer_handle&& other) noexcept 
+inline buffer_handle::buffer_handle(buffer_handle&& other) noexcept
     : detail::raii_handle<buffer_handle>(std::move(other)), buffer_(other.buffer_), size_(other.size_) {
     // Base class handles owns_resource_ transfer
 }
@@ -42,12 +42,12 @@ inline buffer_handle& buffer_handle::operator=(buffer_handle&& other) noexcept {
 }
 
 // Simple getter implementations
-inline const void* buffer_handle::data() const noexcept { 
-    return buffer_; 
+inline const void* buffer_handle::data() const noexcept {
+    return buffer_;
 }
 
-inline size_t buffer_handle::size() const noexcept { 
-    return size_; 
+inline size_t buffer_handle::size() const noexcept {
+    return size_;
 }
 
 inline span<const std::byte> buffer_handle::as_bytes() const noexcept {
@@ -76,4 +76,4 @@ inline void buffer_handle::cleanup() noexcept {
     cuFileBufDeregister(buffer_);
 }
 
-} // namespace cuda::io 
+} // namespace cuda::experimental

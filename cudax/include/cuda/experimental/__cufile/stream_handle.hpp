@@ -1,8 +1,18 @@
 #pragma once
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "detail/error_handling.hpp"
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 /**
  * @brief RAII wrapper for CUDA stream registration with cuFILE
@@ -18,10 +28,10 @@ public:
      * @param flags Stream flags (see CU_FILE_STREAM_* constants)
      */
     stream_handle(cudaStream_t stream, unsigned int flags = 0);
-    
+
     stream_handle(stream_handle&& other) noexcept;
     stream_handle& operator=(stream_handle&& other) noexcept;
-    
+
     /**
      * @brief Get the registered CUDA stream
      */
@@ -29,13 +39,13 @@ public:
 
 private:
     friend class detail::raii_handle<stream_handle>;
-    
+
     /**
      * @brief Cleanup method required by CRTP base class
      */
     void cleanup() noexcept;
 };
 
-} // namespace cuda::io
+} // namespace cuda::experimental
 
-#include "detail/stream_handle_impl.hpp" 
+#include "detail/stream_handle_impl.hpp"

@@ -1,10 +1,20 @@
 #pragma once
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
 #include <vector>
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 // Forward declarations
 class file_handle;
@@ -20,7 +30,7 @@ struct batch_io_params_span {
     off_t buffer_offset;        ///< Buffer offset (in bytes)
     CUfileOpcode_t opcode;      ///< CUFILE_READ or CUFILE_WRITE
     void* cookie;               ///< User data for tracking
-    
+
     // Constructor
     batch_io_params_span(span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr);
 };
@@ -32,7 +42,7 @@ struct batch_io_result {
     void* cookie;               ///< User data from operation
     CUfileStatus_t status;      ///< Operation status
     size_t result;              ///< Bytes transferred or error code
-    
+
     bool is_complete() const noexcept;
     bool is_failed() const noexcept;
     bool has_error() const noexcept;
@@ -52,10 +62,10 @@ public:
      * @param max_operations Maximum number of operations
      */
     explicit batch_handle(unsigned int max_operations);
-    
+
     batch_handle(batch_handle&& other) noexcept;
     batch_handle& operator=(batch_handle&& other) noexcept;
-    
+
     /**
      * @brief Submit batch operations using span
      * @tparam T Element type (must be trivially copyable)
@@ -67,20 +77,20 @@ public:
     void submit(const file_handle& file_handle_ref,
                span<const batch_io_params_span<T>> operations,
                unsigned int flags = 0);
-    
 
-    
+
+
     /**
      * @brief Get batch status
      */
     std::vector<batch_io_result> get_status(unsigned int min_completed,
                                            int timeout_ms = 0);
-    
+
     /**
      * @brief Cancel batch operations
      */
     void cancel();
-    
+
     /**
      * @brief Get maximum operations capacity
      */
@@ -88,7 +98,7 @@ public:
 
 private:
     friend class detail::raii_handle<batch_handle>;
-    
+
     /**
      * @brief Cleanup method required by CRTP base class
      */
@@ -104,7 +114,7 @@ private:
  * @param cookie User data for tracking
  */
 template<typename T>
-batch_io_params_span<T> make_read_operation(span<T> buffer, off_t file_offset, 
+batch_io_params_span<T> make_read_operation(span<T> buffer, off_t file_offset,
                                             off_t buffer_offset = 0, void* cookie = nullptr);
 
 /**
@@ -116,7 +126,7 @@ batch_io_params_span<T> make_read_operation(span<T> buffer, off_t file_offset,
  * @param cookie User data for tracking
  */
 template<typename T>
-batch_io_params_span<const T> make_write_operation(span<const T> buffer, off_t file_offset, 
+batch_io_params_span<const T> make_write_operation(span<const T> buffer, off_t file_offset,
                                                    off_t buffer_offset = 0, void* cookie = nullptr);
 
-} // namespace cuda::io 
+} // namespace cuda::experimental
