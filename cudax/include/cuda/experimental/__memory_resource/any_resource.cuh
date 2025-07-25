@@ -91,14 +91,15 @@ using __iproperty_set = ::cuda::__iset<__iproperty<_Properties>...>;
 // Wrap the calls of the allocate_async and deallocate_async member functions
 // because of NVBUG#4967486
 template <class _Resource>
-_CCCL_PUBLIC_API auto __allocate_async(_Resource& __mr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+_CCCL_PUBLIC_HOST_API auto
+__allocate_async(_Resource& __mr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   -> decltype(__mr.allocate_async(__bytes, __alignment, __stream))
 {
   return __mr.allocate_async(__bytes, __alignment, __stream);
 }
 
 template <class _Resource>
-_CCCL_PUBLIC_API auto
+_CCCL_PUBLIC_HOST_API auto
 __deallocate_async(_Resource& __mr, void* __pv, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   -> decltype(__mr.deallocate_async(__pv, __bytes, __alignment, __stream))
 {
@@ -108,12 +109,13 @@ __deallocate_async(_Resource& __mr, void* __pv, size_t __bytes, size_t __alignme
 template <class...>
 struct __ibasic_resource : __basic_interface<__ibasic_resource>
 {
-  _CCCL_PUBLIC_API void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CCCL_PUBLIC_HOST_API void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return ::cuda::__virtcall<&__ibasic_resource::allocate>(this, __bytes, __alignment);
   }
 
-  _CCCL_PUBLIC_API void deallocate(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CCCL_PUBLIC_HOST_API void
+  deallocate(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return ::cuda::__virtcall<&__ibasic_resource::deallocate>(this, __pv, __bytes, __alignment);
   }
@@ -125,23 +127,24 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
 template <class...>
 struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
 {
-  _CCCL_PUBLIC_API void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_PUBLIC_HOST_API void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
     return ::cuda::__virtcall<&__allocate_async<__ibasic_async_resource>>(this, __bytes, __alignment, __stream);
   }
 
-  _CCCL_PUBLIC_API void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
+  _CCCL_PUBLIC_HOST_API void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
   {
     return ::cuda::__virtcall<&__allocate_async<__ibasic_async_resource>>(
       this, __bytes, alignof(_CUDA_VSTD::max_align_t), __stream);
   }
 
-  _CCCL_PUBLIC_API void deallocate_async(void* __pv, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_PUBLIC_HOST_API void
+  deallocate_async(void* __pv, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(this, __pv, __bytes, __alignment, __stream);
   }
 
-  _CCCL_PUBLIC_API void deallocate_async(void* __pv, size_t __bytes, ::cuda::stream_ref __stream)
+  _CCCL_PUBLIC_HOST_API void deallocate_async(void* __pv, size_t __bytes, ::cuda::stream_ref __stream)
   {
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(
       this, __pv, __bytes, alignof(_CUDA_VSTD::max_align_t), __stream);
@@ -155,7 +158,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
 // from a new-style __basic_any resource type. It is used below by
 // __iresource_ref_conversions.
 template <class _Resource>
-_CCCL_PUBLIC_API const _CUDA_VMR::_Alloc_vtable* __get_resource_vptr(_Resource&) noexcept
+_CCCL_PUBLIC_HOST_API const _CUDA_VMR::_Alloc_vtable* __get_resource_vptr(_Resource&) noexcept
 {
   if constexpr (_CUDA_VMR::async_resource<_Resource>)
   {
