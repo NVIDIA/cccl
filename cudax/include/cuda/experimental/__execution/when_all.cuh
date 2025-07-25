@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__tuple_dir/ignore.h>
@@ -347,7 +348,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
         , __sub_ops_{_CUDA_VSTD::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     /// Start all the sub-operations.
     _CCCL_API constexpr void start() noexcept

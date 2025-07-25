@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H
-#define __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_PTRS_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_PTRS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,38 +21,37 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 struct __base_vptr
 {
   __base_vptr() = default;
 
-  _CCCL_TRIVIAL_HOST_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
+  _CCCL_TRIVIAL_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
       : __vptr_(__vptr)
   {}
 
   template <class _VTable>
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API explicit constexpr operator _VTable const*() const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API explicit constexpr operator _VTable const*() const noexcept
   {
     auto const* __vptr = static_cast<_VTable const*>(__vptr_);
     _CCCL_ASSERT(_CCCL_TYPEID(_VTable) == *__vptr->__typeid_, "bad vtable cast detected");
     return __vptr;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API explicit constexpr operator bool() const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API explicit constexpr operator bool() const noexcept
   {
     return __vptr_ != nullptr;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __rtti_base const*
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator->() const noexcept -> __rtti_base const*
   {
     return __vptr_;
   }
@@ -60,12 +59,12 @@ struct __base_vptr
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   bool operator==(__base_vptr const& __other) const noexcept = default;
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  [[nodiscard]] _CCCL_HOST_API friend constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
+  [[nodiscard]] _CCCL_API friend constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return __lhs.__vptr_ == __rhs.__vptr_;
   }
 
-  [[nodiscard]] _CCCL_HOST_API friend constexpr auto operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
+  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }
@@ -74,8 +73,8 @@ struct __base_vptr
   __rtti_base const* __vptr_{};
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_PTRS_H

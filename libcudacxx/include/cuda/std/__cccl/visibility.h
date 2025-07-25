@@ -106,6 +106,22 @@
 #define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 #define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 
+// Some functions have their addresses appear in public types (e.g., in
+// `cuda::__overrides_for` specializations). If the function is declared
+// `__attribute__((visibility("hidden")))`, and if the address appears, say, in the type
+// of a member of a class that is declared `__attribute__((visibility("default")))`, GCC
+// complains bitterly. So we avoid declaring those functions `hidden`. Instead of the
+// typical `_CCCL_API` macro, we use `_CCCL_PUBLIC_API` for those functions.
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_PUBLIC_API        _CCCL_HOST_DEVICE
+#  define _CCCL_PUBLIC_HOST_API   _CCCL_HOST
+#  define _CCCL_PUBLIC_DEVICE_API _CCCL_DEVICE
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_PUBLIC_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_DEFAULT
+#  define _CCCL_PUBLIC_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_DEFAULT
+#  define _CCCL_PUBLIC_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_DEFAULT
+#endif // !_CCCL_COMPILER(MSVC)
+
 //! _LIBCUDACXX_HIDE_FROM_ABI is for backwards compatibility for external projects.
 //! _CCCL_API and its variants are the preferred way to declare functions
 //! that should be hidden from the ABI.

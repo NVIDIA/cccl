@@ -56,6 +56,16 @@ CompileFlags:
 
 ---
 
+# For libcudacxx test files, add include path to test support headers
+If:
+  PathMatch: ".*libcudacxx/test/.*[.]cpp"
+
+CompileFlags:
+  Add:
+  - -I../../../libcudacxx/test/support
+
+---
+
 # Tweak the clangd parse settings for all files
 CompileFlags:
   Compiler: clang++
