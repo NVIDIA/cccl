@@ -6,7 +6,9 @@
 # It is responsible for defining the Numba templates for cuda.cooperative
 # primitives.
 
+import inspect
 import operator
+from typing import Union
 
 from numba.core import errors, types
 from numba.core.imputils import lower_constant
@@ -415,7 +417,7 @@ def validate_temp_storage(obj, temp_storage):
 # =============================================================================
 
 
-class CoopLoadStoreBaseTemplate(CallableTemplate):
+class CoopLoadStoreBaseTemplate(AbstractTemplate):
     """
     Base class for all cooperative load and store functions.  Subclasses must
     define the following attributes:
@@ -433,18 +435,12 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
     def __init__(self, context=None):
         super().__init__(context=context)
 
-    def _validate_args_and_create_signature(
-        self,
-        src,
-        dst,
-        items_per_thread=None,
-        algorithm=None,
-        num_valid_items=None,
-        temp_storage=None,
-        two_phase=False,
-    ):
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        dst = bound.arguments["dst"]
         validate_src_dst(self, src, dst)
 
+        items_per_thread = bound.arguments.get("items_per_thread", None)
         using_thread_data = isinstance(src, ThreadDataType) or isinstance(
             dst, ThreadDataType
         )
@@ -452,8 +448,10 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
             if not two_phase or items_per_thread is not None:
                 validate_items_per_thread(self, items_per_thread)
 
+        algorithm = bound.arguments.get("algorithm")
         validate_algorithm(self, algorithm)
 
+        temp_storage = bound.arguments.get("temp_storage")
         validate_temp_storage(self, temp_storage)
 
         # If we reach here, all arguments are valid.
@@ -470,6 +468,7 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
         if algorithm is not None:
             arglist.append(algorithm)
 
+        num_valid_items = bound.arguments.get("num_valid_items")
         if num_valid_items is not None:
             if not isinstance(num_valid_items, types.Integer):
                 raise errors.TypingError(
@@ -488,56 +487,64 @@ class CoopLoadStoreBaseTemplate(CallableTemplate):
 
         return sig
 
+    def _prevalidate_args(self, args):
+        if len(args) < 2:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires at least two positional arguments"
+            )
+
+    def generic(self, args, kwds):
+        self._prevalidate_args(args)
+        bound = self.signature(*args, **kwds)
+        return self._validate_args_and_create_signature(bound)
+
 
 class LoadMixin:
     src_first = True
 
-    def generic(self):
-        def typer(
+    @staticmethod
+    def signature(
+        src: types.Array,
+        dst: types.Array,
+        items_per_thread: int = None,
+        algorithm: coop.BlockLoadAlgorithm = None,
+        num_valid_items: int = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(LoadMixin.signature).bind(
             src,
             dst,
-            items_per_thread=None,
-            algorithm=None,
-            num_valid_items=None,
-            temp_storage=None,
-        ):
-            return self._validate_args_and_create_signature(
-                src,
-                dst,
-                items_per_thread,
-                algorithm,
-                num_valid_items,
-                temp_storage,
-            )
-
-        return typer
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
+            num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
 
 
 class StoreMixin:
     src_first = False
 
-    def generic(self):
-        def typer(
+    @staticmethod
+    def signature(
+        dst: types.Array,
+        src: types.Array,
+        items_per_thread: int = None,
+        algorithm: coop.BlockStoreAlgorithm = None,
+        num_valid_items: int = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(LoadMixin.signature).bind(
             dst,
             src,
-            items_per_thread=None,
-            algorithm=None,
-            num_valid_items=None,
-            temp_storage=None,
-        ):
-            return self._validate_args_and_create_signature(
-                src,
-                dst,
-                items_per_thread,
-                algorithm,
-                num_valid_items,
-                temp_storage,
-            )
-
-        return typer
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
+            num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
 
 
 # Load
+@register_global(coop.block.load)
 class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     key = coop.block.load
     primitive_name = "coop.block.load"
@@ -545,7 +552,7 @@ class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     default_algorithm = coop.BlockLoadAlgorithm.DIRECT
 
 
-register(CoopBlockLoadDecl)
+# register(CoopBlockLoadDecl)
 
 
 @infer_global(operator.getitem)
@@ -555,6 +562,7 @@ class CoopBlockLoadTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
 
 
 # Store
+@register_global(coop.block.store)
 class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     key = coop.block.store
     primitive_name = "coop.block.store"
@@ -562,7 +570,7 @@ class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     default_algorithm = coop.BlockStoreAlgorithm.DIRECT
 
 
-register(CoopBlockStoreDecl)
+# register(CoopBlockStoreDecl)
 
 
 @infer_global(operator.getitem)
@@ -614,15 +622,15 @@ class CoopLoadStoreInstanceBaseType(types.Type, CoopInstanceTypeMixin):
         num_valid_items=None,
         temp_storage=None,
     ):
-        return self.decl._validate_args_and_create_signature(
+        bound = inspect.signature(self.decl.signature).bind(
             src,
             dst,
             items_per_thread=items_per_thread,
             algorithm=None,
             num_valid_items=num_valid_items,
             temp_storage=temp_storage,
-            two_phase=True,
         )
+        return self.decl._validate_args_and_create_signature(bound)
 
 
 # Load
@@ -640,8 +648,18 @@ def typeof_block_load_instance(*args, **kwargs):
 
 @type_callable(block_load_instance_type)
 def type_block_load_instance_call(context):
-    decl = block_load_instance_type.decl
-    return decl.generic()
+    instance = block_load_instance_type
+
+    def typer(src, dst, items_per_thread=None, num_valid_items=None, temp_storage=None):
+        return instance._validate_args_and_create_signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
+
+    return typer
 
 
 @register_model(CoopBlockLoadInstanceType)
@@ -680,8 +698,18 @@ def typeof_block_store_instance(*args, **kwargs):
 
 @type_callable(block_store_instance_type)
 def type_block_store_instance_call(context):
-    decl = block_store_instance_type.decl
-    return decl.generic()
+    instance = block_store_instance_type
+
+    def typer(dst, src, items_per_thread=None, num_valid_items=None, temp_storage=None):
+        return instance._validate_args_and_create_signature(
+            dst,
+            src,
+            items_per_thread=items_per_thread,
+            num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
+
+    return typer
 
 
 @register_model(CoopBlockStoreInstanceType)
@@ -1206,12 +1234,12 @@ class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
             src,
             dst,
             items_per_thread,
-            # mode,
-            # scan_op,
-            # initial_value,
+            mode=None,
+            scan_op=None,
+            initial_value=None,
             block_prefix_callback_op=None,
-            # algorithm=None,
-            # temp_storage=None,
+            algorithm=None,
+            temp_storage=None,
         ):
             # block_prefix_callback_op = None
             algorithm = None
@@ -1226,23 +1254,22 @@ class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
                 src,
                 dst,
                 items_per_thread,
-                # initial_value,
             ]
 
-            # if initial_value is not None:
-            #    arglist.append(initial_value)
+            if initial_value is not None:
+                arglist.append(initial_value)
 
-            # if mode is not None:
-            #    arglist.append(mode)
+            if mode is not None:
+                arglist.append(mode)
 
-            # if scan_op is not None:
-            #    arglist.append(scan_op)
+            if scan_op is not None:
+                arglist.append(scan_op)
 
             if block_prefix_callback_op is not None:
                 arglist.append(block_prefix_callback_op)
 
-            # if temp_storage is not None:
-            #    arglist.append(temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
             sig = signature(
                 block_scan_instance_type,

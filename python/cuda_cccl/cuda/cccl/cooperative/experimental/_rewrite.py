@@ -779,16 +779,12 @@ class CoopNode:
         )
 
     @cached_property
-    def decl_typer(self):
-        """
-        Return the typer for the cooperative operation declaration.
-        """
-        return self.template.generic(self.template)
-
-    @cached_property
     def decl_signature(self):
-        typer = self.decl_typer
-        return inspect.signature(typer)
+        if hasattr(self.template, "signature"):
+            return inspect.signature(self.template.signature)
+        else:
+            typer = self.template.generic(self.template)
+            return inspect.signature(typer)
 
     @cached_property
     def bound(self):

@@ -78,7 +78,7 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
     return state._getvalue()
 
 
-def test_block_load_store_single_phase_num_valid_items_with_scan():
+def test_block_load_store_num_valid_items_with_single_phase_scan():
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread, num_total_items):
         threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
@@ -89,11 +89,11 @@ def test_block_load_store_single_phase_num_valid_items_with_scan():
 
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
 
-        block_prefix_op = cuda.local.array(
+        block_prefix_callback_op = cuda.local.array(
             shape=1,
             dtype=block_prefix_callback_op_type,
         )
-        block_prefix_op[0] = BlockPrefixCallbackOp(0)
+        block_prefix_callback_op[0] = BlockPrefixCallbackOp(0)
 
         while block_offset < num_total_items:
             # Calculate num_valid_items for current block
@@ -117,11 +117,13 @@ def test_block_load_store_single_phase_num_valid_items_with_scan():
                 if global_idx >= num_total_items:
                     thread_data[i] = 0
 
+            # cuda.syncthreads()
+
             coop.block.scan(
                 thread_data,
                 thread_data,
                 items_per_thread,
-                block_prefix_op=block_prefix_op,
+                block_prefix_callback_op=block_prefix_callback_op,
             )
 
             # Store only valid items back to global memory
