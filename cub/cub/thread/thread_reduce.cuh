@@ -156,7 +156,7 @@ CUB_NAMESPACE_BEGIN
 //!   <tt>T operator()(const T &a, const T &b)</tt>
 //!
 //! @param[in] input
-//!   Array=like input
+//!   Array-like input
 //!
 //! @param[in] reduction_op
 //!   Binary reduction operator
@@ -345,6 +345,44 @@ template <typename AccumT, typename Input, typename ReductionOp>
   return array[0];
 }
 
+template <typename AccumT, typename Input, typename ReductionOp>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int valid_items)
+{
+  auto retval = static_cast<AccumT>(input[0]);
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 1; i < static_size_v<Input>; ++i)
+  {
+    if (i < valid_items)
+    {
+      retval = reduction_op(retval, input[i]);
+    }
+  }
+  return retval;
+}
+
+// Currently unused
+template <typename AccumT, typename Input, typename ReductionOp>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+ThreadReduceBinaryTreePartial(const Input& input, ReductionOp reduction_op, int valid_items)
+{
+  constexpr auto length = static_size_v<Input>;
+  auto array            = cub::detail::to_array<AccumT>(input);
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 1; i < length; i *= 2)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j + i < length; j += i * 2)
+    {
+      if (j + i < valid_items)
+      {
+        array[j] = reduction_op(array[j], array[j + i]);
+      }
+    }
+  }
+  return array[0];
+}
+
 /***********************************************************************************************************************
  * SIMD Reduction
  **********************************************************************************************************************/
@@ -385,6 +423,31 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
 template <typename ReductionOp, typename T>
 inline constexpr bool enable_min_max_promotion_v =
   is_cuda_minimum_maximum_v<ReductionOp, T> && _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 2;
+
+/***********************************************************************************************************************
+ * Partial Reduction
+ **********************************************************************************************************************/
+
+template <typename Input,
+          typename ReductionOp,
+          typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
+          typename AccumT = _CUDA_VSTD::__accumulator_t<ReductionOp, ValueT>>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_items)
+{
+  using namespace cub::detail;
+  static_assert(is_fixed_size_random_access_range_v<Input>,
+                "Input must support the subscript operator[] and have a compile-time size");
+  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+                "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
+  if constexpr (static_size_v<Input> == 1)
+  {
+    return static_cast<AccumT>(input[0]);
+  }
+  using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
+
+  return ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
+}
 
 } // namespace detail
 
