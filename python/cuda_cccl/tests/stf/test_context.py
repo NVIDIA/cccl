@@ -12,6 +12,11 @@ def test_ctx():
     del ctx
 
 
+def test_graph_ctx():
+    ctx = context(use_graph=True)
+    ctx.finalize()
+
+
 def test_ctx2():
     X = np.ones(16, dtype=np.float32)
     Y = np.ones(16, dtype=np.float32)

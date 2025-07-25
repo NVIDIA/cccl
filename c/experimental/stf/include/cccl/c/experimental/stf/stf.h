@@ -18,6 +18,8 @@ typedef enum stf_access_mode
 typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
 void stf_ctx_create(stf_ctx_handle* ctx);
+// TODO stf_ctx_create_with_flags and an enum instead ?
+void stf_ctx_create_graph(stf_ctx_handle* ctx);
 void stf_ctx_finalize(stf_ctx_handle ctx);
 
 // TODO stf_ctx_set_mode() + define enum with GRAPH, STREAM, ...

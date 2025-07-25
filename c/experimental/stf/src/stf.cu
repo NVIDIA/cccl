@@ -30,6 +30,14 @@ void stf_ctx_create(stf_ctx_handle* ctx)
   }
 }
 
+void stf_ctx_create_graph(stf_ctx_handle* ctx)
+{
+  if (ctx)
+  {
+    *ctx = new stf_ctx_handle_t{context{graph_ctx()}};
+  }
+}
+
 void stf_ctx_finalize(stf_ctx_handle ctx)
 {
   ctx->ctx.finalize();

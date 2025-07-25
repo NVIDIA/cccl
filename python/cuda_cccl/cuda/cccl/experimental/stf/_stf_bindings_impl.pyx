@@ -45,6 +45,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_ctx_handle_t
     ctypedef stf_ctx_handle_t* stf_ctx_handle
     void stf_ctx_create(stf_ctx_handle* ctx)
+    void stf_ctx_create_graph(stf_ctx_handle* ctx)
     void stf_ctx_finalize(stf_ctx_handle ctx)
 
     ctypedef struct stf_logical_data_handle_t
@@ -223,8 +224,11 @@ cdef class task:
 cdef class context:
     cdef stf_ctx_handle _ctx
 
-    def __cinit__(self):
-        stf_ctx_create(&self._ctx)
+    def __cinit__(self, bint use_graph=False):
+        if use_graph:
+            stf_ctx_create_graph(&self._ctx)
+        else:
+            stf_ctx_create(&self._ctx)
 
     def __dealloc__(self):
         self.finalize()
