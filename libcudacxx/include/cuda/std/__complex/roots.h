@@ -110,7 +110,7 @@ template <class _Tp>
     // We also want C to be a power of 2, and for our algorithm, an odd power of 2.
 
     // Divide ~MAX_FLOAT by 2, sqrt.
-    // We also overshoot a little (by + 2), to allow error accumulation near the boundry
+    // We also overshoot a little (by + 2), to allow error accumulation near the boundary.
     // To not push us into intermediate INF territory.
     constexpr int __reduction_exponent = ((__max_exponent - 1) >> 1) + 2;
 
