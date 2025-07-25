@@ -148,6 +148,9 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
 endforeach()
 
+# Add cuFile tests
+add_subdirectory(cufile)
+
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
     NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

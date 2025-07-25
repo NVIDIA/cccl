@@ -133,7 +133,7 @@ private:
     void cleanup() noexcept;
 };
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile
 
 #include "detail/file_handle_impl.hpp"
 #include "detail/batch_handle_impl.hpp"

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace cuda::experimental::detail {
+namespace cuda::experimental::cufile::detail {
 
 /**
  * @brief CRTP base class for RAII handles with move semantics
@@ -154,4 +154,4 @@ public:
     }
 };
 
-} // namespace cuda::experimental::detail
+} // namespace cuda::experimental::cufile::detail

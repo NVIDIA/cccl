@@ -4,7 +4,7 @@ This directory contains comprehensive unit tests for the cuFile C++ utility func
 
 ## Overview
 
-The tests cover all utility functions in `cuda/io/utils.hpp`:
+The tests cover all utility functions in `cuda/experimental/__cufile/utils.hpp`:
 
 - **Memory Type Detection**: `is_gpu_memory()`, `is_cufile_compatible()`
 - **Device Management**: `get_device_id()`
@@ -147,10 +147,10 @@ To add tests for new utility functions:
 TEST(UtilsNewFeatureTest, NewFunction) {
     // Test setup
     test_utils::GPUMemoryRAII gpu_mem(1024);
-    
+
     // Test execution
     bool result = new_function(gpu_mem.get());
-    
+
     // Assertions
     EXPECT_TRUE(result);
 }
@@ -202,4 +202,4 @@ When contributing new tests:
 2. Use the provided RAII classes for memory management
 3. Include both positive and negative test cases
 4. Add appropriate comments explaining complex test scenarios
-5. Update this README if adding new test categories 
+5. Update this README if adding new test categories

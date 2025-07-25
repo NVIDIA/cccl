@@ -11,7 +11,7 @@
 #define CUDA_IO_HAS_STD_SPAN 0
 #endif
 
-namespace cuda::experimental::detail {
+namespace cuda::experimental::cufile::detail {
 
 #if CUDA_IO_HAS_STD_SPAN
     // Use standard std::span when available
@@ -139,10 +139,10 @@ namespace cuda::experimental::detail {
     span(const Container&) -> span<const typename Container::value_type>;
 #endif
 
-} // namespace cuda::experimental::detail
+} // namespace cuda::experimental::cufile::detail
 
 // Convenience aliases in cuda::experimental namespace
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
     template<typename T, std::size_t Extent = detail::dynamic_extent>
     using span = detail::span<T, Extent>;
 
