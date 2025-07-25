@@ -49,11 +49,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   using interface _CCCL_NODEBUG_ALIAS = _Interface;
   static constexpr size_t __cbases    = _CUDA_VSTD::__type_list_size<__unique_interfaces<interface>>::value;
 
-  template <class _VPtr, class _Tp, auto... _OtherMembers, class... _Interfaces>
+  template <class _VPtr, class _Tp, class... _OtherMembers, class... _Interfaces>
   _CCCL_API constexpr __basic_vtable(
-    _VPtr __vptr, __overrides_for<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
+    _VPtr __vptr, __overrides_list<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
       : __rtti_base{__vtable_kind::__normal, __cbases, _CCCL_TYPEID(__basic_vtable)}
-      , __virtual_fn<_Mbrs>{__override_tag<_Tp, _OtherMembers>{}}...
+      , __virtual_fn<_Mbrs>{__override_tag<_Tp, _OtherMembers::value>{}}...
       , __vptr_map_{__base_vptr{__vptr->__query_interface(_Interfaces())}...}
   {}
 

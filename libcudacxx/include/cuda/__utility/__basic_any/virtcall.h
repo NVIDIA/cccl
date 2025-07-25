@@ -74,11 +74,11 @@ struct __virtuals_map_element
 template <class, class>
 struct __virtuals_map;
 
-template <class _Interface, auto... _Mbrs, class _BoundInterface, auto... _BoundMbrs>
-struct __virtuals_map<__overrides_for<_Interface, _Mbrs...>, __overrides_for<_BoundInterface, _BoundMbrs...>>
-    : __virtuals_map_element<_Mbrs, _BoundMbrs>...
+template <class _Interface, class... _Mbrs, class _BoundInterface, auto... _BoundMbrs>
+struct __virtuals_map<__overrides_list<_Interface, _Mbrs...>, __overrides_for<_BoundInterface, _BoundMbrs...>>
+    : __virtuals_map_element<_Mbrs::value, _BoundMbrs>...
 {
-  using __virtuals_map_element<_Mbrs, _BoundMbrs>::operator()...;
+  using __virtuals_map_element<_Mbrs::value, _BoundMbrs>::operator()...;
 };
 
 template <class _Interface, class _Super>

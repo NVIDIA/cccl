@@ -44,22 +44,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CUDA_COMPILATION()
-// WAR for NVBUG #4924416
-#  define _CCCL_FNPTR_CONSTANT_WAR(...) ::cuda::__constant_war(__VA_ARGS__)
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp __constant_war(_Tp __val) noexcept
-{
-  return __val;
-}
-_LIBCUDACXX_END_NAMESPACE_CUDA
-
-#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ // vvv !_CCCL_CUDA_COMPILATION() vvv
-#  define _CCCL_FNPTR_CONSTANT_WAR(...) __VA_ARGS__
-#endif // !_CCCL_CUDA_COMPILATION()
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //!
@@ -137,8 +121,7 @@ struct __imovable : __basic_interface<__imovable>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS =
-    __overrides_for<_Tp, _CCCL_FNPTR_CONSTANT_WAR(&__try_move_fn<_Tp>), _CCCL_FNPTR_CONSTANT_WAR(&__move_fn<_Tp>)>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &__try_move_fn<_Tp>, &__move_fn<_Tp>>;
 
   _CCCL_API auto __move_to(void* __pv) noexcept -> void
   {
@@ -156,7 +139,7 @@ struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, _CCCL_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &__copy_fn<_Tp>>;
 
   [[nodiscard]] _CCCL_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
@@ -259,7 +242,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, _CCCL_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &__equal_fn<_Tp>>;
 };
 
 template <class... _Super>
@@ -294,7 +277,7 @@ struct __iconvertible_to_<__self, _To>
     }
 
     template <class _From>
-    using overrides = __overrides_for<_From, _CCCL_FNPTR_CONSTANT_WAR(&__conversion_fn<_From, _To>)>;
+    using overrides = __overrides_for<_From, &__conversion_fn<_From, _To>>;
   };
 };
 
@@ -310,7 +293,7 @@ struct __iconvertible_to_<__self&, _To>
     }
 
     template <class _From>
-    using overrides = __overrides_for<_From, _CCCL_FNPTR_CONSTANT_WAR(&__conversion_fn<_From&, _To>)>;
+    using overrides = __overrides_for<_From, &__conversion_fn<_From&, _To>>;
   };
 };
 
@@ -326,7 +309,7 @@ struct __iconvertible_to_<__self const&, _To>
     }
 
     template <class _From>
-    using overrides = __overrides_for<_From, _CCCL_FNPTR_CONSTANT_WAR(&__conversion_fn<_From const&, _To>)>;
+    using overrides = __overrides_for<_From, &__conversion_fn<_From const&, _To>>;
   };
 };
 

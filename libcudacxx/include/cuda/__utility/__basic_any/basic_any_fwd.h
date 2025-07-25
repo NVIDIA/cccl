@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef> // for max_align_t
 #include <cuda/std/cstdint> // for uint8_t
@@ -44,8 +45,14 @@ struct __basic_any<_Interface*>;
 template <class _Interface>
 struct __basic_any<_Interface&>;
 
+template <auto _Value>
+using __constant = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
+
+template <class _InterfaceOrModel, class... _VirtualFnsOrOverrides>
+struct __overrides_list;
+
 template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
-struct __overrides_for;
+using __overrides_for = __overrides_list<_InterfaceOrModel, __constant<_VirtualFnsOrOverrides>...>;
 
 template <class _Interface, auto... _Mbrs>
 struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable;

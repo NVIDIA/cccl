@@ -78,7 +78,7 @@ struct __with_property
     }
 
     template <class _Ty>
-    using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, _CCCL_FNPTR_CONSTANT_WAR(&__get_property<_Ty>)>;
+    using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__get_property<_Ty>>;
   };
 };
 
@@ -119,8 +119,7 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS =
-    __overrides_for<_Ty, _CCCL_FNPTR_CONSTANT_WAR(&_Ty::allocate), _CCCL_FNPTR_CONSTANT_WAR(&_Ty::deallocate)>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &_Ty::allocate, &_Ty::deallocate>;
 };
 
 template <class...>
@@ -149,10 +148,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS =
-    __overrides_for<_Ty,
-                    _CCCL_FNPTR_CONSTANT_WAR(&__allocate_async<_Ty>),
-                    _CCCL_FNPTR_CONSTANT_WAR(&__deallocate_async<_Ty>)>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__allocate_async<_Ty>, &__deallocate_async<_Ty>>;
 };
 
 // This is the pseudo-virtual override for getting an old-style vtable pointer
@@ -228,7 +224,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
   }
 
   template <class _Resource>
-  using overrides = __overrides_for<_Resource, _CCCL_FNPTR_CONSTANT_WAR(&__get_resource_vptr<_Resource>)>;
+  using overrides = __overrides_for<_Resource, &__get_resource_vptr<_Resource>>;
 };
 
 template <class... _Properties>
