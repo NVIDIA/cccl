@@ -191,7 +191,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   const int num_items = 1 << 10;
 
   using input_it_t = cuda::counting_iterator<int>;
-  auto input       = input_it_t(type{1});
+  auto input       = input_it_t(1);
   c2h::device_vector<type> d_output(1);
 
   auto* raw_ptr = thrust::raw_pointer_cast(d_output.data());
