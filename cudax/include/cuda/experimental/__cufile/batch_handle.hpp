@@ -14,7 +14,7 @@
 #include "detail/span_compat.hpp"
 #include <vector>
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 // Forward declarations
 class file_handle;
@@ -129,4 +129,4 @@ template<typename T>
 batch_io_params_span<const T> make_write_operation(span<const T> buffer, off_t file_offset,
                                                    off_t buffer_offset = 0, void* cookie = nullptr);
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile

@@ -12,7 +12,7 @@
 
 #include "detail/error_handling.hpp"
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 /**
  * @brief RAII wrapper for CUDA stream registration with cuFILE
@@ -46,6 +46,6 @@ private:
     void cleanup() noexcept;
 };
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile
 
 #include "detail/stream_handle_impl.hpp"

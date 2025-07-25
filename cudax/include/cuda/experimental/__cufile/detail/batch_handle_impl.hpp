@@ -3,7 +3,7 @@
 // This file provides the implementation of batch_handle methods
 // It's included after the class definition to avoid circular dependency issues
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 // Forward declaration to avoid including file_handle.hpp in batch_handle.hpp
 class file_handle;
@@ -142,4 +142,4 @@ batch_io_params_span<const T> make_write_operation(span<const T> buffer, off_t f
     return batch_io_params_span<const T>(buffer, file_offset, buffer_offset, CUFILE_WRITE, cookie);
 }
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile

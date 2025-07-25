@@ -13,7 +13,7 @@
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 /**
  * @brief RAII wrapper for GPU buffer registration
@@ -90,6 +90,6 @@ private:
     void cleanup() noexcept;
 };
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile
 
 #include "detail/buffer_handle_impl.hpp"
