@@ -260,10 +260,13 @@ class RawPointerKind(IteratorKind):
 class RawPointer(IteratorBase):
     iterator_kind_type = RawPointerKind
 
-    def __init__(self, ptr: int, value_type: types.Type, iterator_io: IteratorIOKind):
+    def __init__(
+        self, ptr: int, value_type: types.Type, iterator_io: IteratorIOKind, obj: object
+    ):
         cvalue = ctypes.c_void_p(ptr)
         state_type = types.CPointer(value_type)
         numba_type = types.CPointer(state_type)
+        self.obj = obj  # the container holding the data
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
@@ -304,7 +307,10 @@ class RawPointer(IteratorBase):
 
 def pointer(container, value_type: types.Type) -> RawPointer:
     return RawPointer(
-        container.__cuda_array_interface__["data"][0], value_type, IteratorIOKind.INPUT
+        container.__cuda_array_interface__["data"][0],
+        value_type,
+        IteratorIOKind.INPUT,
+        container,
     )
 
 
@@ -470,7 +476,9 @@ def make_reverse_iterator(
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)), iterator_io)
+        it = RawPointer(
+            last_element_ptr, numba.from_dtype(get_dtype(it)), iterator_io, it
+        )
 
     it_advance = cuda.jit(it.advance, device=True)
     it_dereference = cuda.jit(it.dereference, device=True)

@@ -22,33 +22,14 @@ def test_unique_by_key():
     d_out_items = cp.empty_like(d_in_items)
     d_out_num_selected = cp.empty(1, np.int32)
 
-    # Instantiate unique_by_key for the given keys, items, num items selected, and operator
-    unique_by_key = parallel.unique_by_key(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, compare_op
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = unique_by_key(
-        None,
+    # Run unique_by_key with automatic temp storage allocation
+    parallel.unique_by_key(
         d_in_keys,
         d_in_items,
         d_out_keys,
         d_out_items,
         d_out_num_selected,
-        d_in_keys.size,
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run unique_by_key
-    unique_by_key(
-        d_temp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
+        compare_op,
         d_in_keys.size,
     )
 
