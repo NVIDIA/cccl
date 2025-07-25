@@ -33,6 +33,24 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts determinism requirements", "[reduce]
   REQUIRE(output == expected);
 }
 
+C2H_TEST("cub::DeviceReduce::Reduce accepts not_guaranteed determinism requirements", "[reduce][env]")
+{
+  // example-begin reduce-env-non-determinism
+  auto op     = cuda::std::plus{};
+  auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
+  auto output = c2h::device_vector<float>(1);
+  auto init   = 0.0f;
+
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+
+  cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, init, env);
+
+  c2h::device_vector<float> expected{6.0f};
+  // example-end reduce-env-non-determinism
+
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
 {
   // example-begin reduce-env-stream
@@ -66,6 +84,22 @@ C2H_TEST("cub::DeviceReduce::Sum accepts determinism requirements", "[reduce][en
 
   c2h::device_vector<float> expected{6.0f};
   // example-end sum-env-determinism
+
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceReduce::Sum accepts not_guaranteed determinism requirements", "[reduce][env]")
+{
+  // example-begin sum-env-non-determinism
+  auto input  = c2h::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+
+  cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
+
+  c2h::device_vector<float> expected{6.0f};
+  // example-end sum-env-non-determinism
 
   REQUIRE(output == expected);
 }

@@ -517,6 +517,55 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 }
 
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename AccumT,
+          typename InitT,
+          typename TransformOpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy::
+    BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
+                                                                  OutputIteratorT d_out,
+                                                                  OffsetT num_items,
+                                                                  ReductionOpT reduction_op,
+                                                                  InitT init,
+                                                                  TransformOpT transform_op)
+{
+  static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
+                "Only plus is currently supported in nondeterministic reduce");
+  // Thread block type for reducing input tiles
+  using AgentReduceT = detail::reduce::AgentReduce<
+    typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
+    InputIteratorT,
+    AccumT*,
+    OffsetT,
+    ReductionOpT,
+    AccumT,
+    TransformOpT>;
+
+  // Shared memory storage
+  __shared__ typename AgentReduceT::TempStorage temp_storage;
+
+  // Consume input tiles
+  AccumT block_aggregate =
+    AgentReduceT(temp_storage, d_in, reduction_op, transform_op)
+      .ConsumeRange(static_cast<OffsetT>(blockIdx.x) * AgentReduceT::TILE_ITEMS,
+                    _CUDA_VSTD::min(static_cast<OffsetT>(blockIdx.x + 1) * AgentReduceT::TILE_ITEMS, num_items));
+
+  // Output result
+  // only thread 0 has valid value in block aggregate
+  if (threadIdx.x == 0)
+  {
+    // TODO: replace this with other atomic operations when specified
+    ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
+    atomic_target.fetch_add(blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate,
+                            ::cuda::memory_order_relaxed);
+  }
+}
+
 } // namespace reduce
 } // namespace detail
 

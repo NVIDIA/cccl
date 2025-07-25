@@ -44,9 +44,9 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
@@ -172,7 +172,6 @@ struct device_memory_resource
 struct DeviceReduce
 {
 private:
-  // TODO(gevtushenko): dispatch to atomic reduce once merged
   template <typename TuningEnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
@@ -233,6 +232,46 @@ private:
 
     return dispatch_t::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
+  }
+
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    ::cuda::execution::determinism::not_guaranteed_t,
+    cudaStream_t stream)
+  {
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+
+    using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
+
+    using transform_t     = ::cuda::std::identity;
+    using reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
+    using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t = detail::
+      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+      static_cast<offset_t>(num_items),
+      reduction_op,
+      init,
+      stream);
   }
 
 public:
@@ -474,8 +513,21 @@ public:
     }
     else
     {
+      constexpr auto no_determinism =
+        ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+
+      // Certain conditions must be met to be able to use the non-deterministic
+      // kernel. The output iterator must be a contiguous iterator and the
+      // reduction operator must be plus (for now).
+      constexpr auto is_contiguous_fallback =
+        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+
+      // If the conditions for gpu-to-gpu determinism or non-deterministic
+      // reduction are not met, we fall back to run-to-run determinism.
       using determinism_t =
-        ::cuda::std::conditional_t<integral_fallback || fp_min_max_fallback,
+        ::cuda::std::conditional_t<(gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
+                                     || (no_determinism && !(is_contiguous_fallback && is_plus_fallback)),
                                    ::cuda::execution::determinism::run_to_run_t,
                                    default_determinism_t>;
 
@@ -587,10 +639,23 @@ public:
                   "Determinism should be used inside requires to have an effect.");
     using requirements_t =
       _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
-    using determinism_t =
+    using default_determinism_t =
       _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
+
+    constexpr auto no_determinism =
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+
+    // The output iterator must be a contiguous iterator or we fall back to
+    // run-to-run determinism.
+    constexpr auto is_contiguous_fallback =
+      !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+
+    using determinism_t =
+      ::cuda::std::conditional_t<no_determinism && !is_contiguous_fallback,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 default_determinism_t>;
 
     // Query relevant properties from the environment
     auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
