@@ -402,7 +402,7 @@ C2H_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]")
     apply_prefix ? prefix : segment{1, 1},
     merge_segments_op{nullptr});
 
-  c2h::device_vector<segment> d_out(max_size, thrust::no_init);
+  c2h::device_vector<segment> d_out(max_size);
   c2h::device_vector<bool> error_flag(1, false);
   thread_scan_exclusive_partial_kernel<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
