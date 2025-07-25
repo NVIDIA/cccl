@@ -1,12 +1,22 @@
 #pragma once
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "detail/error_handling.hpp"
 #include <memory>
 #include <vector>
 #include <string>
 #include <cufile.h>
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 /**
  * @brief C++ wrapper for CUfileDrvProps_t with convenient accessor methods
@@ -38,49 +48,49 @@ public:
     unsigned int get_max_batch_io_timeout_msecs() const noexcept;
 
     // Filesystem Support
-    bool lustre_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_LUSTRE_SUPPORTED)) != 0; 
+    bool lustre_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_LUSTRE_SUPPORTED)) != 0;
     }
-    bool wekafs_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_WEKAFS_SUPPORTED)) != 0; 
+    bool wekafs_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_WEKAFS_SUPPORTED)) != 0;
     }
-    bool nfs_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_NFS_SUPPORTED)) != 0; 
+    bool nfs_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_NFS_SUPPORTED)) != 0;
     }
-    bool gpfs_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_GPFS_SUPPORTED)) != 0; 
+    bool gpfs_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_GPFS_SUPPORTED)) != 0;
     }
-    bool nvme_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_NVME_SUPPORTED)) != 0; 
+    bool nvme_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_NVME_SUPPORTED)) != 0;
     }
-    bool nvmeof_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_NVMEOF_SUPPORTED)) != 0; 
+    bool nvmeof_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_NVMEOF_SUPPORTED)) != 0;
     }
-    bool scsi_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_SCSI_SUPPORTED)) != 0; 
+    bool scsi_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_SCSI_SUPPORTED)) != 0;
     }
-    bool beegfs_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_BEEGFS_SUPPORTED)) != 0; 
+    bool beegfs_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_BEEGFS_SUPPORTED)) != 0;
     }
-    bool scatefs_supported() const noexcept { 
-        return (props_.nvfs.dstatusflags & (1 << CU_FILE_SCATEFS_SUPPORTED)) != 0; 
+    bool scatefs_supported() const noexcept {
+        return (props_.nvfs.dstatusflags & (1 << CU_FILE_SCATEFS_SUPPORTED)) != 0;
     }
-    
+
     // Driver Features
-    bool has_poll_mode() const noexcept { 
-        return (props_.nvfs.dcontrolflags & (1 << CU_FILE_USE_POLL_MODE)) != 0; 
+    bool has_poll_mode() const noexcept {
+        return (props_.nvfs.dcontrolflags & (1 << CU_FILE_USE_POLL_MODE)) != 0;
     }
-    bool has_compat_mode() const noexcept { 
-        return (props_.nvfs.dcontrolflags & (1 << CU_FILE_ALLOW_COMPAT_MODE)) != 0; 
+    bool has_compat_mode() const noexcept {
+        return (props_.nvfs.dcontrolflags & (1 << CU_FILE_ALLOW_COMPAT_MODE)) != 0;
     }
-    bool dynamic_routing_supported() const noexcept { 
-        return (props_.fflags & (1 << CU_FILE_DYN_ROUTING_SUPPORTED)) != 0; 
+    bool dynamic_routing_supported() const noexcept {
+        return (props_.fflags & (1 << CU_FILE_DYN_ROUTING_SUPPORTED)) != 0;
     }
-    bool batch_io_supported() const noexcept { 
-        return (props_.fflags & (1 << CU_FILE_BATCH_IO_SUPPORTED)) != 0; 
+    bool batch_io_supported() const noexcept {
+        return (props_.fflags & (1 << CU_FILE_BATCH_IO_SUPPORTED)) != 0;
     }
-    bool streams_supported() const noexcept { 
-        return (props_.fflags & (1 << CU_FILE_STREAMS_SUPPORTED)) != 0; 
+    bool streams_supported() const noexcept {
+        return (props_.fflags & (1 << CU_FILE_STREAMS_SUPPORTED)) != 0;
     }
 
     /**
@@ -139,16 +149,16 @@ bool is_stream_api_available() noexcept;
 class driver_handle {
 public:
     driver_handle() { driver_open(); }
-    ~driver_handle() noexcept { 
-        try { driver_close(); } catch(...) {} 
+    ~driver_handle() noexcept {
+        try { driver_close(); } catch(...) {}
     }
-    
+
     driver_handle(const driver_handle&) = delete;
     driver_handle& operator=(const driver_handle&) = delete;
     driver_handle(driver_handle&&) = default;
     driver_handle& operator=(driver_handle&&) = default;
 };
 
-} // namespace cuda::io
+} // namespace cuda::experimental
 
-#include "detail/driver_impl.hpp" 
+#include "detail/driver_impl.hpp"
