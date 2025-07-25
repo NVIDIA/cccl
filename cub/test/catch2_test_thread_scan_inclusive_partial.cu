@@ -8,12 +8,12 @@
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 
-#include "c2h/catch2_test_helper.h"
-#include "c2h/extended_types.h"
-#include "c2h/generators.h"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
+#include <c2h/generators.h>
 
 constexpr int max_size  = 16;
 constexpr int num_seeds = 3;
@@ -177,8 +177,8 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests",
           prefix,
           apply_prefix);
 
-  c2h::device_vector<value_t> d_in(num_items);
-  c2h::device_vector<output_t> d_out(num_items);
+  c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
+  c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, static_cast<output_t>(filler));
@@ -237,8 +237,8 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests",
           prefix,
           apply_prefix);
 
-  c2h::device_vector<value_t> d_in(num_items);
-  c2h::device_vector<output_t> d_out(num_items);
+  c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
+  c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
@@ -293,8 +293,8 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
     static_cast<accum_t>(GENERATE(take(1, random(float{filler_dist_param::min()}, float{filler_dist_param::max()}))));
   CAPTURE(c2h::type_name<value_t>(), num_items, c2h::type_name<op_t>(), valid_items, prefix, apply_prefix);
 
-  c2h::device_vector<value_t> d_in(num_items);
-  c2h::device_vector<output_t> d_out(num_items);
+  c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
+  c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
@@ -323,8 +323,8 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
 
 C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
 {
-  c2h::device_vector<int> d_in(max_size);
-  c2h::device_vector<int> d_out(max_size);
+  c2h::device_vector<int> d_in(max_size, thrust::no_init);
+  c2h::device_vector<int> d_out(max_size, thrust::no_init);
   using dist_param = dist_interval<int, cuda::std::plus<>, max_size>;
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
   c2h::host_vector<int> h_in = d_in;
@@ -402,7 +402,7 @@ C2H_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]")
     merge_segments_op{nullptr},
     apply_prefix ? prefix : segment{1, 1});
 
-  c2h::device_vector<segment> d_out(max_size);
+  c2h::device_vector<segment> d_out(max_size, thrust::no_init);
   c2h::device_vector<bool> error_flag(1, false);
   thread_scan_inclusive_partial_kernel<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),

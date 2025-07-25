@@ -21,7 +21,7 @@ template <typename T, typename Operator, typename = void>
 struct cub_operator_to_identity;
 
 template <typename T>
-struct cub_operator_to_identity<T, _CUDA_VSTD::plus<>>
+struct cub_operator_to_identity<T, cuda::std::plus<>>
 {
   static constexpr T value()
   {
@@ -30,7 +30,7 @@ struct cub_operator_to_identity<T, _CUDA_VSTD::plus<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, _CUDA_VSTD::multiplies<>>
+struct cub_operator_to_identity<T, cuda::std::multiplies<>>
 {
   static constexpr T value()
   {
@@ -39,7 +39,7 @@ struct cub_operator_to_identity<T, _CUDA_VSTD::multiplies<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, _CUDA_VSTD::bit_and<>>
+struct cub_operator_to_identity<T, cuda::std::bit_and<>>
 {
   static constexpr T value()
   {
@@ -48,7 +48,7 @@ struct cub_operator_to_identity<T, _CUDA_VSTD::bit_and<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, _CUDA_VSTD::bit_or<>>
+struct cub_operator_to_identity<T, cuda::std::bit_or<>>
 {
   static constexpr T value()
   {
@@ -57,7 +57,7 @@ struct cub_operator_to_identity<T, _CUDA_VSTD::bit_or<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, _CUDA_VSTD::bit_xor<>>
+struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
 {
   static constexpr T value()
   {
@@ -66,20 +66,20 @@ struct cub_operator_to_identity<T, _CUDA_VSTD::bit_xor<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, ::cuda::minimum<>>
+struct cub_operator_to_identity<T, cuda::minimum<>>
 {
   static constexpr T value()
   {
-    return _CUDA_VSTD::numeric_limits<T>::max();
+    return cuda::std::numeric_limits<T>::max();
   }
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, ::cuda::maximum<>>
+struct cub_operator_to_identity<T, cuda::maximum<>>
 {
   static constexpr T value()
   {
-    return _CUDA_VSTD::numeric_limits<T>::lowest();
+    return cuda::std::numeric_limits<T>::lowest();
   }
 };
 
@@ -90,57 +90,57 @@ struct cub_operator_to_identity<T, ::cuda::maximum<>>
 namespace detail
 {
 
-template <typename T, typename Operator, _CUDA_VSTD::ptrdiff_t MaxReductionLength, typename = void>
+template <typename T, typename Operator, cuda::std::ptrdiff_t MaxReductionLength, typename = void>
 struct dist_interval
 {
   static constexpr T min()
   {
-    return _CUDA_VSTD::numeric_limits<T>::lowest();
+    return cuda::std::numeric_limits<T>::lowest();
   }
   static constexpr T max()
   {
-    return _CUDA_VSTD::numeric_limits<T>::max();
+    return cuda::std::numeric_limits<T>::max();
   }
 };
 
-template <typename T, _CUDA_VSTD::ptrdiff_t MaxReductionLength>
+template <typename T, cuda::std::ptrdiff_t MaxReductionLength>
 struct dist_interval<
   T,
-  _CUDA_VSTD::plus<>,
+  cuda::std::plus<>,
   MaxReductionLength,
-  _CUDA_VSTD::enable_if_t<_CUDA_VSTD::__cccl_is_signed_integer_v<T> || _CUDA_VSTD::is_floating_point_v<T>>>
+  cuda::std::enable_if_t<cuda::std::__cccl_is_signed_integer_v<T> || cuda::std::is_floating_point_v<T>>>
 {
   // signed_integer: Avoid possibility of over-/underflow causing UB
   // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
   static constexpr T min()
   {
-    return static_cast<T>(_CUDA_VSTD::numeric_limits<T>::lowest() / MaxReductionLength);
+    return static_cast<T>(cuda::std::numeric_limits<T>::lowest() / MaxReductionLength);
   }
   static constexpr T max()
   {
-    return static_cast<T>(_CUDA_VSTD::numeric_limits<T>::max() / MaxReductionLength);
+    return static_cast<T>(cuda::std::numeric_limits<T>::max() / MaxReductionLength);
   }
 };
 
-template <typename T, _CUDA_VSTD::ptrdiff_t MaxReductionLength>
+template <typename T, cuda::std::ptrdiff_t MaxReductionLength>
 struct dist_interval<
   T,
-  _CUDA_VSTD::multiplies<>,
+  cuda::std::multiplies<>,
   MaxReductionLength,
-  _CUDA_VSTD::enable_if_t<_CUDA_VSTD::__cccl_is_signed_integer_v<T> || _CUDA_VSTD::is_floating_point_v<T>>>
+  cuda::std::enable_if_t<cuda::std::__cccl_is_signed_integer_v<T> || cuda::std::is_floating_point_v<T>>>
 {
   // signed_integer: Avoid possibility of over-/underflow causing UB
   // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
   // Use floating point arithmetic to avoid unnecessarily small interval.
   static constexpr T min()
   {
-    const double log2_abs_min = _CUDA_VSTD::log2(_CUDA_VSTD::fabs(_CUDA_VSTD::numeric_limits<T>::lowest()));
-    return static_cast<T>(-_CUDA_VSTD::exp2(log2_abs_min / MaxReductionLength));
+    const double log2_abs_min = cuda::std::log2(cuda::std::fabs(cuda::std::numeric_limits<T>::lowest()));
+    return static_cast<T>(-cuda::std::exp2(log2_abs_min / MaxReductionLength));
   }
   static constexpr T max()
   {
-    const double log2_max = _CUDA_VSTD::log2(_CUDA_VSTD::numeric_limits<T>::max());
-    return static_cast<T>(_CUDA_VSTD::exp2(log2_max / MaxReductionLength));
+    const double log2_max = cuda::std::log2(cuda::std::numeric_limits<T>::max());
+    return static_cast<T>(cuda::std::exp2(log2_max / MaxReductionLength));
   }
 };
 
@@ -148,8 +148,8 @@ struct dist_interval<
 
 template <typename Input,
           typename Operator,
-          _CUDA_VSTD::ptrdiff_t MaxRedductionLength,
-          typename Accum  = _CUDA_VSTD::__accumulator_t<Operator, Input>,
+          cuda::std::ptrdiff_t MaxRedductionLength,
+          typename Accum  = cuda::std::__accumulator_t<Operator, Input>,
           typename Output = Accum>
 struct dist_interval
 {
@@ -158,31 +158,29 @@ struct dist_interval
   // If Accum is FP, we also want to avoid overflow b/c it breaks down pseudo-associativity.
   static constexpr Input min()
   {
-    auto res = _CUDA_VSTD::numeric_limits<Input>::lowest();
-    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Output>)
+    auto res = cuda::std::numeric_limits<Input>::lowest();
+    if constexpr (cuda::std::__cccl_is_signed_integer_v<Output>)
     {
       res =
-        _CUDA_VSTD::max(res, static_cast<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::min()));
+        cuda::std::max(res, static_cast<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::min()));
     }
-    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Accum> || _CUDA_VSTD::is_floating_point_v<Accum>)
+    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum> || cuda::std::is_floating_point_v<Accum>)
     {
-      res =
-        _CUDA_VSTD::max(res, static_cast<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::min()));
+      res = cuda::std::max(res, static_cast<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::min()));
     }
     return res;
   }
   static constexpr Input max()
   {
-    auto res = _CUDA_VSTD::numeric_limits<Input>::max();
-    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Output>)
+    auto res = cuda::std::numeric_limits<Input>::max();
+    if constexpr (cuda::std::__cccl_is_signed_integer_v<Output>)
     {
       res =
-        _CUDA_VSTD::min(res, static_cast<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::max()));
+        cuda::std::min(res, static_cast<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::max()));
     }
-    if constexpr (_CUDA_VSTD::__cccl_is_signed_integer_v<Accum> || _CUDA_VSTD::is_floating_point_v<Accum>)
+    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum> || cuda::std::is_floating_point_v<Accum>)
     {
-      res =
-        _CUDA_VSTD::min(res, static_cast<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::max()));
+      res = cuda::std::min(res, static_cast<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::max()));
     }
     return res;
   }
@@ -196,8 +194,8 @@ struct segment
 {
   using offset_t = int32_t;
   // Make sure that default constructed segments can not be merged
-  offset_t begin = _CUDA_VSTD::numeric_limits<offset_t>::min();
-  offset_t end   = _CUDA_VSTD::numeric_limits<offset_t>::max();
+  offset_t begin = cuda::std::numeric_limits<offset_t>::min();
+  offset_t end   = cuda::std::numeric_limits<offset_t>::max();
 
   __host__ __device__ friend bool operator==(segment left, segment right)
   {
@@ -214,7 +212,7 @@ struct segment
 // Needed for data input using fancy iterators
 struct tuple_to_segment_op
 {
-  __host__ __device__ segment operator()(_CUDA_VSTD::tuple<segment::offset_t, segment::offset_t> interval)
+  __host__ __device__ segment operator()(cuda::std::tuple<segment::offset_t, segment::offset_t> interval)
   {
     const auto [begin, end] = interval;
     return {begin, end};
