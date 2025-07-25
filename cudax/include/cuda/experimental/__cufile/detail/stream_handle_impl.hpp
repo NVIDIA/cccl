@@ -3,7 +3,7 @@
 // This file provides the implementation of stream_handle methods
 // It's included after the class definition
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile::detail {
 
 // Constructor implementation
 inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
@@ -37,4 +37,4 @@ inline void stream_handle::cleanup() noexcept {
     cuFileStreamDeregister(stream_);
 }
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile::detail

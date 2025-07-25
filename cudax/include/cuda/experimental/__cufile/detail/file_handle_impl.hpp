@@ -12,7 +12,7 @@
 #include <system_error>
 #include <unistd.h>
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 // Static method implementations
 inline int file_handle::convert_ios_mode(std::ios_base::openmode mode) {
@@ -191,4 +191,4 @@ inline void file_handle::cleanup() noexcept {
     cuFileHandleDeregister(handle_);
 }
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile

@@ -3,7 +3,7 @@
 // This file provides the implementation of buffer_handle methods
 // It's included after the class definition
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 // Constructor implementations
 template<typename T>
@@ -76,4 +76,4 @@ inline void buffer_handle::cleanup() noexcept {
     cuFileBufDeregister(buffer_);
 }
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile

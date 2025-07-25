@@ -19,7 +19,7 @@
  * - Strong type safety with zero-cost abstractions
  */
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 /**
  * @brief Initialize the complete cuFILE library
@@ -37,12 +37,12 @@ inline bool is_initialized() noexcept {
     return driver_use_count() > 0;
 }
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile
 
 // Convenience aliases
-namespace cufile = cuda::experimental;
+namespace cufile = cuda::experimental::cufile;
 
-using cufile_handle = cuda::experimental::file_handle;
-using cufile_buffer = cuda::experimental::buffer_handle;
-using cufile_batch = cuda::experimental::batch_handle;
-using cufile_stream = cuda::experimental::stream_handle;
+using cufile_handle = cuda::experimental::cufile::file_handle;
+using cufile_buffer = cuda::experimental::cufile::buffer_handle;
+using cufile_batch = cuda::experimental::cufile::batch_handle;
+using cufile_stream = cuda::experimental::cufile::stream_handle;

@@ -16,7 +16,7 @@
 #include <string>
 #include <cufile.h>
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 /**
  * @brief C++ wrapper for CUfileDrvProps_t with convenient accessor methods
@@ -159,6 +159,6 @@ public:
     driver_handle& operator=(driver_handle&&) = default;
 };
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile
 
 #include "detail/driver_impl.hpp"

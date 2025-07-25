@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 namespace utils {
 
@@ -77,4 +77,4 @@ inline bool is_cufile_compatible(const void* ptr) {
 
 } // namespace utils
 
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile

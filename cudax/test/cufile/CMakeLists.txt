@@ -2,21 +2,32 @@
 # cuFile Tests - Modern CMake Configuration
 # ================================================================================================
 
-cmake_minimum_required(VERSION 3.18)
+# Only build cufile tests if the cufile library is available
+if(NOT TARGET cufile_cpp)
+  # Try to find or build the cufile library
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__cufile/CMakeLists.txt")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__cufile cufile_lib)
+  else()
+    message(STATUS "cuFile library not available, skipping cuFile tests")
+    return()
+  endif()
+endif()
 
 # ================================================================================================
 # Dependencies
 # ================================================================================================
 
 # Find required packages
-find_package(GTest REQUIRED)
+find_package(GTest QUIET)
+if(NOT GTest_FOUND)
+  message(STATUS "Google Test not found, skipping cuFile tests")
+  return()
+endif()
+
 find_package(CUDAToolkit REQUIRED)
 
 # Include Google Test discovery module
 include(GoogleTest)
-
-# Enable testing
-enable_testing()
 
 # ================================================================================================
 # Test Utilities Library
@@ -28,7 +39,7 @@ add_library(test_utils STATIC
 
 target_include_directories(test_utils PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__cufile
 )
 
 target_link_libraries(test_utils PUBLIC
@@ -41,7 +52,7 @@ target_link_libraries(test_utils PUBLIC
 target_compile_features(test_utils PUBLIC cxx_std_17)
 
 # Modern CMake: Use generator expressions for build-type-specific flags
-target_compile_options(test_utils PRIVATE 
+target_compile_options(test_utils PRIVATE
     -Wall -Wextra
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:RelWithDebInfo>:-g -O2>
@@ -63,7 +74,7 @@ target_link_libraries(test_utils_functions PRIVATE
 target_compile_features(test_utils_functions PRIVATE cxx_std_17)
 
 # Apply same modern compiler options pattern
-target_compile_options(test_utils_functions PRIVATE 
+target_compile_options(test_utils_functions PRIVATE
     -Wall -Wextra
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:RelWithDebInfo>:-g -O2>
@@ -81,7 +92,7 @@ target_link_libraries(test_driver_functions PRIVATE
 target_compile_features(test_driver_functions PRIVATE cxx_std_17)
 
 # Apply same modern compiler options pattern
-target_compile_options(test_driver_functions PRIVATE 
+target_compile_options(test_driver_functions PRIVATE
     -Wall -Wextra
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:RelWithDebInfo>:-g -O2>
@@ -99,7 +110,7 @@ target_link_libraries(test_file_handle_functions PRIVATE
 target_compile_features(test_file_handle_functions PRIVATE cxx_std_17)
 
 # Apply same modern compiler options pattern
-target_compile_options(test_file_handle_functions PRIVATE 
+target_compile_options(test_file_handle_functions PRIVATE
     -Wall -Wextra
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:RelWithDebInfo>:-g -O2>
@@ -141,4 +152,4 @@ add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose --output-on-failure
     DEPENDS test_utils_functions test_driver_functions test_file_handle_functions
     COMMENT "Running all cuFile tests"
-) 
+)
