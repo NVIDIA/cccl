@@ -29,10 +29,10 @@ using different_properties =
                                property_with_value<int>,
                                property_without_value<std::size_t>>;
 
-using res = async_resource<cuda::mr::host_accessible,
-                           property_with_value<int>,
-                           property_with_value<double>,
-                           property_without_value<std::size_t>>;
+using res = test_resource<cuda::mr::host_accessible,
+                          property_with_value<int>,
+                          property_with_value<double>,
+                          property_without_value<std::size_t>>;
 
 void test_equality()
 {
