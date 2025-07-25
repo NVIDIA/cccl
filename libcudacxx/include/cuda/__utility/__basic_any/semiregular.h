@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if 0 //_CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
+#if _CCCL_CUDA_COMPILATION()
 // WAR for NVBUG #4924416
 #  define _CCCL_FNPTR_CONSTANT_WAR(...) ::cuda::__constant_war(__VA_ARGS__)
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -56,10 +56,9 @@ template <class _Tp>
 }
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC) ^^^ /
-      // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC) vvv
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ // vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CCCL_FNPTR_CONSTANT_WAR(...) __VA_ARGS__
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC)
+#endif // !_CCCL_CUDA_COMPILATION()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
