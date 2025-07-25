@@ -1,16 +1,16 @@
 #pragma once
 
-#include <cuda/io/cufile.hpp>
-#include <cuda/io/file_handle.hpp>
-#include <cuda/io/driver.hpp>
-#include <cuda/io/utils.hpp>
+#include "cufile.hpp"
+#include "file_handle.hpp"
+#include "driver.hpp"
+#include "utils.hpp"
 
 /**
  * @file io.hpp
  * @brief Complete CUDA I/O Library - Modern C++ bindings for NVIDIA cuFILE
- * 
+ *
  * Provides complete access to all cuFILE functionality through modern C++ interfaces.
- * 
+ *
  * Core features:
  * - Direct file operations with RAII resource management
  * - Batch I/O operations for high throughput
@@ -19,11 +19,11 @@
  * - Strong type safety with zero-cost abstractions
  */
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 /**
  * @brief Initialize the complete cuFILE library
- * 
+ *
  * Must be called before using any cuFILE operations. Use driver_handle for RAII management.
  */
 inline void initialize() {
@@ -37,12 +37,12 @@ inline bool is_initialized() noexcept {
     return driver_use_count() > 0;
 }
 
-} // namespace cuda::io
+} // namespace cuda::experimental
 
 // Convenience aliases
-namespace cufile = cuda::io;
+namespace cufile = cuda::experimental;
 
-using cufile_handle = cuda::io::file_handle;
-using cufile_buffer = cuda::io::buffer_handle;
-using cufile_batch = cuda::io::batch_handle;
-using cufile_stream = cuda::io::stream_handle; 
+using cufile_handle = cuda::experimental::file_handle;
+using cufile_buffer = cuda::experimental::buffer_handle;
+using cufile_batch = cuda::experimental::batch_handle;
+using cufile_stream = cuda::experimental::stream_handle;

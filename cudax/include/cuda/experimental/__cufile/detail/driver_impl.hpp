@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cuda/io/driver.hpp>
+#include "../driver.hpp"
 #include "error_handling.hpp"
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 // ================================================================================================
 // driver_properties Implementation (using C struct with C++ accessors)
@@ -264,4 +264,4 @@ inline bool is_stream_api_available() noexcept {
     }
 }
 
-} // namespace cuda::io 
+} // namespace cuda::experimental

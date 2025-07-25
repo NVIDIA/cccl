@@ -1,10 +1,20 @@
 #pragma once
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cuda_runtime.h>
 #include <stdexcept>
 #include <string>
 
-namespace cuda::io {
+namespace cuda::experimental {
 
 namespace utils {
 
@@ -59,12 +69,12 @@ inline bool is_cufile_compatible(const void* ptr) {
     if (err != cudaSuccess) {
         return false;
     }
-    
+
     // cuFile works with device memory and registered host memory
-    return (attrs.type == cudaMemoryTypeDevice) || 
+    return (attrs.type == cudaMemoryTypeDevice) ||
            (attrs.type == cudaMemoryTypeHost);
 }
 
 } // namespace utils
 
-} // namespace cuda::io 
+} // namespace cuda::experimental
