@@ -45,7 +45,7 @@ template <class _Tp>
 }
 
 template <>
-[[nodiscard]] _CCCL_API inline float __internal_rsqrt<float>(float __x)
+_CCCL_API inline float __internal_rsqrt<float>(float __x)
 {
   // Use device optimized rsqrt when better.
   float __sqrt_x;
