@@ -101,6 +101,72 @@ from .._typing import (
 )
 
 
+def _validate_initial_value(
+    initial_value: Any,
+    dtype: DtypeType,
+    items_per_thread: int,
+    mode: Literal["exclusive", "inclusive"],
+    scan_op: ScanOpType,
+    block_prefix_callback_op: Callable = None,
+) -> Any:
+    """
+    Validates the initial value for a block scan operation.  Returns the
+    initial value with any defaulting or type casting applied.
+    """
+    # An initial value is not supported for inclusive and exclusive sums.
+    if initial_value is not None and scan_op.is_sum:
+        raise ValueError(
+            "initial_value is not supported for inclusive and exclusive sums"
+        )
+
+    # An initial value is not supported for inclusive scans with a single
+    # item per thread.
+    invalid_initial_value = (
+        initial_value is not None and items_per_thread == 1 and mode == "inclusive"
+    )
+    if invalid_initial_value:
+        raise ValueError(
+            "initial_value is not supported for inclusive scans with "
+            "items_per_thread == 1"
+        )
+
+    # An initial value is not supported for exclusive scans with a
+    # single item per thread and a block prefix callback operator.
+    invalid_initial_value = (
+        items_per_thread == 1
+        and initial_value is not None
+        and mode == "exclusive"
+        and block_prefix_callback_op is not None
+    )
+    if invalid_initial_value:
+        raise ValueError(
+            "initial_value is not supported for exclusive scans with "
+            "items_per_thread == 1 and a block prefix callback operator"
+        )
+
+    # An initial value is required for both inclusive and exclusive scans
+    # when items_per_thread > 1 and a block prefix callback operator is
+    # not supplied by the caller.
+    initial_value_required = items_per_thread > 1 and block_prefix_callback_op is None
+    if initial_value_required and initial_value is None:
+        # We require an initial value, but one was not supplied.
+        # Attempt to create a default value for the given dtype.
+        # If we can't, raise an error.
+        try:
+            initial_value = dtype.cast_python_value(0)
+        except (TypeError, NotImplementedError) as e:
+            # We can't create a default value for the given dtype.
+            # Raise an error.
+            msg = (
+                "initial_value is required for both inclusive and "
+                "exclusive scans when items_per_thread > 1 and no "
+                "block prefix callback operator has been supplied; "
+                "attempted to create a default value for the given "
+                f"dtype, but failed: {e}"
+            )
+            raise ValueError(msg) from e
+
+
 class scan(BasePrimitive):
     is_one_shot = True
     default_algorithm = BlockScanAlgorithm.RAKING
@@ -226,60 +292,14 @@ class scan(BasePrimitive):
         else:
             cpp_function_name = f"{cpp_func_prefix}Scan"
 
-        # An initial value is not supported for inclusive and exclusive sums.
-        if initial_value is not None and scan_op.is_sum:
-            raise ValueError(
-                "initial_value is not supported for inclusive and exclusive sums"
-            )
-
-        # An initial value is not supported for inclusive scans with a single
-        # item per thread.
-        invalid_initial_value = (
-            initial_value is not None and items_per_thread == 1 and mode == "inclusive"
+        initial_value = _validate_initial_value(
+            initial_value,
+            dtype,
+            items_per_thread,
+            mode,
+            scan_op,
+            block_prefix_callback_op,
         )
-        if invalid_initial_value:
-            raise ValueError(
-                "initial_value is not supported for inclusive scans with "
-                "items_per_thread == 1"
-            )
-
-        # An initial value is not supported for exclusive scans with a
-        # single item per thread and a block prefix callback operator.
-        invalid_initial_value = (
-            items_per_thread == 1
-            and initial_value is not None
-            and mode == "exclusive"
-            and block_prefix_callback_op is not None
-        )
-        if invalid_initial_value:
-            raise ValueError(
-                "initial_value is not supported for exclusive scans with "
-                "items_per_thread == 1 and a block prefix callback operator"
-            )
-
-        # An initial value is required for both inclusive and exclusive scans
-        # when items_per_thread > 1 and a block prefix callback operator is
-        # not supplied by the caller.
-        initial_value_required = (
-            items_per_thread > 1 and block_prefix_callback_op is None
-        )
-        if initial_value_required and initial_value is None:
-            # We require an initial value, but one was not supplied.
-            # Attempt to create a default value for the given dtype.
-            # If we can't, raise an error.
-            try:
-                initial_value = dtype.cast_python_value(0)
-            except (TypeError, NotImplementedError) as e:
-                # We can't create a default value for the given dtype.
-                # Raise an error.
-                msg = (
-                    "initial_value is required for both inclusive and "
-                    "exclusive scans when items_per_thread > 1 and no "
-                    "block prefix callback operator has been supplied; "
-                    "attempted to create a default value for the given "
-                    f"dtype, but failed: {e}"
-                )
-                raise ValueError(msg) from e
 
         specialization_kwds = {
             "T": dtype,

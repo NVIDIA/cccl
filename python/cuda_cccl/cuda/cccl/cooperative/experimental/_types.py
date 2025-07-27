@@ -4,6 +4,7 @@
 
 import re
 import time
+from dataclasses import dataclass, field
 from functools import cached_property
 from io import StringIO
 from textwrap import dedent
@@ -13,7 +14,7 @@ from types import (
 from types import (
     SimpleNamespace,
 )
-from typing import TYPE_CHECKING, BinaryIO, List, Literal, Sequence
+from typing import TYPE_CHECKING, Any, BinaryIO, List, Literal, Optional, Sequence
 
 import numba
 from llvmlite import ir
@@ -22,12 +23,13 @@ from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
 from numba.cuda import LTOIR
-from numba.cuda.cudadrv import driver
+from numba.cuda.cudadrv import driver as cuda_driver
 
 import cuda.cccl.cooperative.experimental._nvrtc as nvrtc
 
 from ._common import (
     find_unsigned,
+    find_unsigned_ints_in_ptx_by_suffix,
     make_binary_tempfile,
     normalize_dtype_param,
 )
@@ -172,17 +174,7 @@ def numba_type_to_wrapper(
     return TypeWrapper(numba_type, methods)
 
 
-class Parameter:
-    def __init__(self, is_output=False, name=None):
-        self.is_output = is_output
-        self.name = name
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return f"Parameter(name={self.name}, out={self.is_output})"
-        else:
-            return f"Parameter(out={self.is_output})"
-
+class ParameterMixin:
     def specialize(self, _):
         return self
 
@@ -190,20 +182,11 @@ class Parameter:
         return not self.is_output
 
 
-class Value(Parameter):
-    def __init__(self, value_type, is_output=False, name=None):
-        self.value_type = value_type
-        super().__init__(is_output, name)
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return (
-                f"Value(name={self.name}, "
-                f"dtype={self.value_type}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return f"Value(dtype={self.value_type}, out={self.is_output})"
+@dataclass
+class Value(ParameterMixin):
+    value_type: numba.types.Type
+    is_output: bool = False
+    name: Optional[str] = None
 
     def dtype(self):
         return self.value_type
@@ -215,34 +198,7 @@ class Value(Parameter):
         return f"{self.value_type}"
 
 
-class Pointer(Parameter):
-    def __init__(
-        self,
-        value_dtype,
-        is_output=False,
-        name=None,
-        type_name=None,
-        restrict=False,
-        is_array_pointer=True,
-    ):
-        self.value_dtype = value_dtype
-        self.type_name = type_name
-        self.restrict = restrict
-        self.is_array_pointer = is_array_pointer
-        super().__init__(is_output, name)
-
-    def __repr__(self) -> str:
-        buf = StringIO()
-        w = buf.write
-        w(f"Pointer(dtype={self.value_dtype}, out={self.is_output}, ")
-        w(f"restrict={self.restrict}")
-        if self.name is not None:
-            w(f", name={self.name}")
-        if self.type_name is not None:
-            w(f", type_name={self.type_name}")
-        w(f", is_array_pointer={self.is_array_pointer})")
-        return buf.getvalue()
-
+class PointerMixin:
     def cpp_decl(self, name):
         var_name = name
         type_name = self.type_name or numba_type_to_cpp(self.value_dtype)
@@ -259,53 +215,40 @@ class Pointer(Parameter):
         return f"P{self.value_dtype}"
 
 
+@dataclass
+class Pointer(ParameterMixin, PointerMixin):
+    value_dtype: numba.types.Type
+    type_name: Optional[str] = None
+    restrict: bool = False
+    is_array_pointer: bool = False
+    is_output: bool = False
+    name: Optional[str] = None
+
+
+@dataclass
 class TempStoragePointer(Pointer):
-    def __init__(self, name=None):
-        if name is None:
-            name = "temp_storage"
-        super().__init__(numba.uint8, name=name)
-
-    def __repr__(self) -> str:
-        return f"TempStoragePointer(name={self.name})"
+    pass
 
 
-class DependentPointer(Parameter):
-    def __init__(self, value_dtype, is_output=False, name=None):
-        self.value_dtype = value_dtype
-        super().__init__(is_output, name)
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return (
-                f"DependentPointer(name={self.name}, "
-                f"dep={self.value_dtype}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return f"DependentPointer(dep={self.value_dtype}, out={self.is_output})"
-
+@dataclass
+class DependentPointer(Pointer):
     def specialize(self, template_arguments):
+        value_dtype = self.value_dtype.resolve(template_arguments)
         return Pointer(
-            self.value_dtype.resolve(template_arguments),
-            self.is_output,
+            value_dtype,
+            type_name=self.type_name,
+            restrict=self.restrict,
+            is_array_pointer=self.is_array_pointer,
+            is_output=self.is_output,
             name=self.name,
         )
 
 
-class Reference(Parameter):
-    def __init__(self, value_dtype, is_output=False, name=None):
-        self.value_dtype = value_dtype
-        super().__init__(is_output, name)
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return (
-                f"Reference(name={self.name}, "
-                f"dtype={self.value_dtype}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return f"Reference(dtype={self.value_dtype}, out={self.is_output})"
+@dataclass
+class Reference(ParameterMixin):
+    value_dtype: numba.types.Type
+    is_output: bool = False
+    name: Optional[str] = None
 
     def cpp_decl(self, name):
         return numba_type_to_cpp(self.value_dtype) + "& " + name
@@ -317,20 +260,9 @@ class Reference(Parameter):
         return f"R{self.value_dtype}"
 
 
-class DependentReference(Parameter):
-    def __init__(self, value_dtype, is_output=False, name=None):
-        self.value_dtype = value_dtype
-        super().__init__(is_output, name)
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return (
-                f"DependentReference(name={self.name}, "
-                f"dep={self.value_dtype}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return f"DependentReference(dep={self.value_dtype}, out={self.is_output})"
+@dataclass
+class DependentReference(Reference):
+    value_dtype: numba.types.Type
 
     def specialize(self, template_arguments):
         return Reference(
@@ -340,25 +272,15 @@ class DependentReference(Parameter):
         )
 
 
-class Array(Pointer):
-    def __init__(self, value_dtype, size, is_output=False, name=None):
-        self.size = size
-        super().__init__(value_dtype, is_output, name)
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return (
-                f"Array(name={self.name}, "
-                f"dtype={self.value_dtype}, "
-                f"size={self.size}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return (
-                f"Array(dtype={self.value_dtype}, "
-                f"size={self.size}, "
-                f"out={self.is_output})"
-            )
+@dataclass
+class Array(ParameterMixin):
+    value_dtype: numba.types.Type
+    size: int
+    type_name: Optional[str] = None
+    restrict: bool = False
+    is_array_pointer: bool = False
+    is_output: bool = False
+    name: Optional[str] = None
 
     def cpp_decl(self, name):
         return f"{numba_type_to_cpp(self.value_dtype)} (&{name})[{self.size}]"
@@ -376,9 +298,9 @@ class SubstitutionFailure(Exception):
         super().__init__(self.message)
 
 
+@dataclass
 class Dependency:
-    def __init__(self, dep):
-        self.dep = dep
+    dep: str
 
     def resolve(self, template_arguments):
         if self.dep not in template_arguments:
@@ -388,28 +310,31 @@ class Dependency:
         return template_arguments[self.dep]
 
 
+@dataclass
 class Constant:
-    def __init__(self, val):
-        self.val = val
+    val: Any
 
     def resolve(self, _):
         return self.val
 
 
+@dataclass
 class StatefulFunction:
-    def __init__(self, op, dtype):
-        self.op = op
-        self.dtype = dtype
+    op: Any
+    dtype: numba.types.Type
+    name: Optional[str]
+    is_output: bool = False
 
 
+@dataclass
 class StatefulOperator:
-    def __init__(self, mangled_name, op_type, ret_cpp_type, arg_cpp_types, ltoir):
-        self.op_type = op_type
-        self.name = mangled_name
-        self.ltoir = ltoir
-        self.ret_cpp_type = ret_cpp_type
-        self.arg_cpp_types = arg_cpp_types
-        self.is_output = False
+    name: str
+    op_type: numba.types.Type
+    ret_cpp_type: str
+    arg_cpp_types: List[str]
+    ltoir: LTOIR
+    op_name: Optional[str] = None
+    is_output: bool = False
 
     def mangled_name(self):
         return f"{self.name}"
@@ -456,18 +381,22 @@ class StatefulOperator:
             w(f"        {state_name}, {param_refs_csv});\n")
         w("};\n")
         src = buf.getvalue()
+        print(f"BEGIN StatefulOperator: {self!r}")
+        print(src)
+        print(f"END StatefulOperator: {self!r}")
         return src
 
     def is_provided_by_user(self):
         return True
 
 
+@dataclass
 class StatelessOperator:
-    def __init__(self, mangled_name, ret_cpp_type, arg_cpp_types, ltoir):
-        self.name = mangled_name
-        self.ltoir = ltoir
-        self.ret_cpp_type = ret_cpp_type
-        self.arg_cpp_types = arg_cpp_types
+    name: str
+    ret_cpp_type: str
+    arg_cpp_types: List[str]
+    ltoir: LTOIR
+    op_name: Optional[str]
 
     def mangled_name(self):
         return f"{self.name}"
@@ -508,18 +437,21 @@ class StatelessOperator:
             w(f"    return {mangled_name}({param_refs_csv});\n")
         w("};\n")
         src = buf.getvalue()
+        print(f"BEGIN StatelessOperator SOURCE for {self.name!r}")
+        print(src)
+        print(f"END StatelessOperator SOURCE for {self.name!r}")
         return src
 
     def is_provided_by_user(self):
         return False
 
 
+@dataclass
 class DependentPythonOperator:
-    def __init__(self, ret_dtype, arg_dtypes, op, name=None):
-        self.ret_dtype = ret_dtype
-        self.arg_dtypes = arg_dtypes
-        self.op = op
-        self.name = name
+    ret_dtype: numba.types.Type
+    arg_dtypes: List[numba.types.Type]
+    op: Any
+    name: Optional[str]
 
     def specialize(self, template_arguments):
         op = self.op.resolve(template_arguments)
@@ -543,6 +475,7 @@ class DependentPythonOperator:
         if isinstance(op, StatefulFunction):
             binary_op = op.op.__call__
             mangled_name = f"F{binary_op.__name__}_{ret_dtype}__" + "_".join(arg_dtypes)
+            # name = f"F{op.name}"
             if ret_cpp_type == "storage_t":
                 binary_op_signature = signature(
                     types.void,
@@ -555,11 +488,13 @@ class DependentPythonOperator:
                     ret_numba_type, types.CPointer(op.dtype), *arg_numba_types
                 )
             abi_info = {"abi_name": mangled_name}
+            # abi_info = {"abi_name": name}
             ltoir_blob, _ = cuda.compile(
                 binary_op, sig=binary_op_signature, output="ltoir", abi_info=abi_info
             )
             ltoir = LTOIR(
                 name=f"udf_{mangled_name}",
+                # name=f"{name}",
                 data=ltoir_blob,
             )
             return StatefulOperator(
@@ -568,11 +503,12 @@ class DependentPythonOperator:
                 ret_cpp_type,
                 arg_cpp_types,
                 ltoir,
-                name=self.name,
+                op_name=self.name,
             )
         else:
             binary_op = op
             mangled_name = f"F{binary_op.__name__}_{ret_dtype}__" + "_".join(arg_dtypes)
+            # name = f'F{op.name}'
             if ret_cpp_type == "storage_t":
                 binary_op_signature = signature(
                     types.void, *arg_numba_types, ret_numba_type
@@ -580,27 +516,31 @@ class DependentPythonOperator:
             else:
                 binary_op_signature = signature(ret_numba_type, *arg_numba_types)
             abi_info = {"abi_name": mangled_name}
+            # abi_info = {"abi_name": name}
             ltoir_blob, _ = cuda.compile(
                 binary_op, sig=binary_op_signature, output="ltoir", abi_info=abi_info
             )
             ltoir = LTOIR(
                 name=f"udf_{mangled_name}",
+                # name=f"udf_{name}",
+                # name=f"{name}",
                 data=ltoir_blob,
             )
             return StatelessOperator(
                 mangled_name,
+                # name,
                 ret_cpp_type,
                 arg_cpp_types,
                 ltoir,
-                name=self.name,
+                op_name=self.name,
             )
 
 
-class CxxFunction(Parameter):
-    def __init__(self, cpp, func_dtype):
-        super().__init__()
-        self.cpp = cpp
-        self.func_dtype = func_dtype
+@dataclass
+class CxxFunction:
+    cpp: str
+    func_dtype: numba.types.Type
+    name: Optional[str] = None
 
     def __repr__(self) -> str:
         return f"CxxFunction(cpp={self.cpp})"
@@ -615,11 +555,11 @@ class CxxFunction(Parameter):
         return False
 
 
+@dataclass
 class DependentCxxOperator:
-    def __init__(self, dep: Dependency, cpp: str, name=None):
-        self.dep = dep
-        self.cpp = cpp
-        self.name = name
+    dep: Dependency
+    cpp: str
+    name: Optional[str]
 
     def specialize(self, template_arguments):
         dtype = self.dep.resolve(template_arguments)
@@ -634,37 +574,30 @@ class DependentCxxOperator:
         )
 
 
-class DependentArray(Parameter):
-    def __init__(self, value_dtype, size, is_output=False, name=None):
-        self.value_dtype = value_dtype
-        self.size = size
-        super().__init__(is_output, name)
-
-    def __repr__(self) -> str:
-        if self.name is not None:
-            return (
-                f"DependentArray(name={self.name}, "
-                f"dep={self.value_dtype}, "
-                f"out={self.is_output})"
-            )
-        else:
-            return f"DependentArray(dep={self.value_dtype}, out={self.is_output})"
+@dataclass
+class DependentArray(ParameterMixin):
+    value_dtype: numba.types.Type
+    size: int
+    is_output: bool = field(default=False)
+    name: Optional[str] = field(default=None)
 
     def specialize(self, template_arguments):
+        value_dtype = self.value_dtype.resolve(template_arguments)
+        size = self.size.resolve(template_arguments)
         return Array(
-            self.value_dtype.resolve(template_arguments),
-            self.size.resolve(template_arguments),
-            self.is_output,
+            value_dtype,
+            size,
+            is_output=self.is_output,
             name=self.name,
         )
 
 
+@dataclass
 class TemplateParameter:
-    def __init__(self, name):
-        self.name = name
+    name: str
 
     def __repr__(self) -> str:
-        return f"{self.name}"
+        return self.name
 
 
 def internal_mangle_cpp(cpp_name: str):
@@ -781,6 +714,16 @@ class Algorithm:
                 ]
                 for method in self.parameters:
                     method[:0] = injected
+
+            if False:
+                # Collect any LTO-IRs that may already be present.
+                for method in self.parameters:
+                    for param in method:
+                        try:
+                            ltoir = param.ltoir
+                        except AttributeError:
+                            continue
+                        self._lto_irs.append(ltoir)
 
     def __repr__(self) -> str:
         if self.template_parameters:
@@ -958,13 +901,18 @@ class Algorithm:
 
         primitive = self.primitive
         if primitive.is_one_shot:
-            return self.source_code_one_shot
+            src = self.source_code_one_shot
         elif primitive.is_parent:
-            return self.source_code_parent
+            src = self.source_code_parent
         elif primitive.is_child:
-            return self.source_code_child
+            src = self.source_code_child
         else:
             raise RuntimeError("Invalid primitive state: {primitive!r}")
+
+        print(f"----- BEGIN Source code for {self!r}:")
+        print(src)
+        print(f"----- END Source code for {self!r}")
+        return src
 
     @property
     def source_code_one_shot(self):
@@ -1045,8 +993,10 @@ class Algorithm:
                     func_decls.append(param.wrap_decl(param_name))
                     param_args.append(param_name)
                 elif isinstance(param, StatefulOperator):
+                    param_name = f"param_{pid}"
                     func_decls.append(param.wrap_decl(param_name))
                     param_args.append(param_name)
+                    param_decls.append(param.cpp_decl(param_name))
                 elif isinstance(param, CxxFunction):
                     param_args.append(param.cpp)
                 else:
@@ -1247,6 +1197,7 @@ class Algorithm:
             elif isinstance(param, StatefulOperator):
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
+                param_decls.append(param.cpp_decl(param_name))
             elif isinstance(param, CxxFunction):
                 param_args.append(param.cpp)
             else:
@@ -1364,6 +1315,7 @@ class Algorithm:
             elif isinstance(param, StatefulOperator):
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
+                param_decls.append(param.cpp_decl(param_name))
             elif isinstance(param, CxxFunction):
                 param_args.append(param.cpp)
             else:
@@ -1414,13 +1366,11 @@ class Algorithm:
 
     @cached_property
     def lto_irs(self):
-        # Pick up any LTO IRs from type definitions.
-        lto_irs = self._lto_irs
-
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
         src = self.source_code
+
         primitive = self.primitive
         if primitive.is_parent:
             children = primitive.node.children
@@ -1433,6 +1383,8 @@ class Algorithm:
         rewriter = _get_source_code_rewriter()
         if rewriter is not None:
             src = rewriter(src, self)
+
+        lto_irs = self._lto_irs
 
         print(f"-------- BEGIN {self.c_name} --------")
         print(src)
@@ -1449,27 +1401,41 @@ class Algorithm:
         )
         lto_irs.append(obj)
 
-        n = self.names
-        timer = ElapsedTimer()
-        with timer:
-            linker = driver._Linker.new(
-                cc=(cc_major, cc_minor),
-                additional_flags=["-ptx"],
-                lto=obj,
-            )
-            ltoir_bytes = obj.data
-            linker.add_ltoir(ltoir_bytes)
-            ptx = linker.get_linked_ptx()
-            ptx = ptx.decode("utf-8")
-            self._temp_storage_size = find_unsigned(f"{n.temp_storage_bytes}", ptx)
-            self._temp_storage_alignment = find_unsigned(
-                f"{n.temp_storage_alignment}", ptx
-            )
-            self._ptx = ptx
-        elapsed = timer.elapsed
-        print(f"LTO->PTX,extraction {self.c_name} took {elapsed:.6f} seconds")
+        # Convert the LTO into PTX in order to extract the size and alignment
+        # variables.
+        linker = cuda_driver._Linker.new(
+            cc=device.compute_capability,
+            additional_flags=["-ptx"],
+            lto=obj,
+        )
+        ltoir_bytes = obj.data
+        linker.add_ltoir(ltoir_bytes)
+        ptx = linker.get_linked_ptx()
+        ptx = ptx.decode("utf-8")
+        suffixes = (
+            "temp_storage_t_bytes",
+            "temp_storage_t_alignment",
+            "t_struct_size",
+            "t_struct_alignment",
+        )
+        ui = find_unsigned_ints_in_ptx_by_suffix(suffixes, ptx)
+        self._temp_storage_bytes = ui.temp_storage_t_bytes
+        self._temp_storage_alignment = ui.temp_storage_t_alignment
+        self._algorithm_struct_size = ui.t_struct_size
+        self._algorithm_struct_alignment = ui.t_struct_alignment
 
         return lto_irs
+
+    def _load_unsigned_ints_from_ptx(self, ptx, names):
+        """
+        Helper function to find unsigned integers in the PTX code.
+        """
+        found = {}
+        for name in names:
+            value = find_unsigned(name, ptx)
+            if value is not None:
+                found[name] = value
+        return found
 
     def create_codegens(self, parameters=None, func_to_overload=None):
         if len(self.template_parameters):
@@ -1501,7 +1467,7 @@ class Algorithm:
         # This logic can be removed once all the primitives have been updated
         # to have their `Pointer(numba.uint8)` first parameter removed.
         first_param_is_temp_storage = False
-        if parameters:
+        if parameters and len(parameters) > 1:
             for method in parameters:
                 first = method[0]
                 if isinstance(first, Pointer):
@@ -1568,15 +1534,43 @@ class Algorithm:
 
                     dtype = param.dtype()
                     if isinstance(param, StatefulOperator):
+                        # Dereference the local array of 1 element.
+                        # if isinstance(dtype, numba.types.Array):
+                        #    dtype = dtype.dtype
+
                         arg = args[arg_id]
-                        state_ptr = cgutils.create_struct_proxy(dtype)(
-                            context, builder, arg
-                        ).data
-                        void_ptr = builder.bitcast(
-                            state_ptr, ir.PointerType(ir.IntType(8))
-                        )
-                        types.append(ir.PointerType(ir.IntType(8)))
-                        arguments.append(void_ptr)
+
+                        try:
+                            state_ptr_proxy = cgutils.create_struct_proxy(dtype)(
+                                context, builder, arg
+                            )
+                        except AssertionError:
+                            dtype = dtype.dtype
+                            state_ptr_proxy = cgutils.create_struct_proxy(dtype)(
+                                context, builder, arg
+                            )
+
+                        is_data_ptr = None
+                        try:
+                            state_ptr = state_ptr_proxy.data
+                            is_data_ptr = True
+                        except KeyError:
+                            state_ptr = state_ptr_proxy._getpointer()
+                            is_data_ptr = False
+
+                        if is_data_ptr:
+                            void_ptr = builder.bitcast(
+                                state_ptr, ir.PointerType(ir.IntType(8))
+                            )
+                            types.append(ir.PointerType(ir.IntType(8)))
+                            arguments.append(void_ptr)
+                        else:
+                            void_ptr = builder.bitcast(
+                                state_ptr, ir.PointerType(ir.IntType(8))
+                            )
+                            types.append(ir.PointerType(ir.IntType(8)))
+                            arguments.append(void_ptr)
+
                     elif isinstance(param, Reference):
                         if param.is_output:
                             ptr = cgutils.alloca_once(

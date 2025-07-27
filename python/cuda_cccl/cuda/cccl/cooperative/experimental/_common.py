@@ -6,6 +6,7 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
+from types import SimpleNamespace
 from typing import BinaryIO, Type, Union
 
 import numba
@@ -99,6 +100,32 @@ def find_unsigned(name, txt):
             raise ValueError(f"{name} not found in text")
     else:
         return int(found.group(1))
+
+
+def find_unsigned_ints_in_ptx_by_suffix(suffixes, txt, raise_on_missing=True):
+    suffix_pattern = "|".join(re.escape(suffix) for suffix in suffixes)
+    pattern = (
+        r"^\.global \.align 4 \.u32 ([a-zA-Z_][a-zA-Z0-9_]*)"
+        rf"({suffix_pattern})(?: = ([0-9]+))?;"
+    )
+    regex = re.compile(pattern, re.MULTILINE)
+
+    matches = regex.findall(txt)
+    result_dict = {}
+
+    for prefix, suffix, value in matches:
+        key = suffix.lstrip("_")
+        if value:
+            result_dict[key] = int(value)
+        else:
+            result_dict[key] = 0
+
+    if raise_on_missing:
+        for suffix in suffixes:
+            if suffix not in result_dict:
+                raise ValueError(f"{suffix} not found in text")
+
+    return SimpleNamespace(**result_dict)
 
 
 def find_mangled_name(name, txt):

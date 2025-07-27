@@ -25,11 +25,15 @@ from numba.core.typing.templates import (
     AbstractTemplate,
     Signature,
 )
+from numba.cuda import LTOIR
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 
 try:
-    from numba.cuda.launchconfig import ensure_current_launch_config
+    from numba.cuda.launchconfig import (
+        current_launch_config,
+        ensure_current_launch_config,
+    )
 except ModuleNotFoundError:
     msg = (
         "cuda.cccl.cooperative currently requires a customized version of\n"
@@ -77,6 +81,14 @@ if False:
 CUDA_CCCL_COOP_MODULE_NAME = "cuda.cccl.cooperative.experimental"
 CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
 NUMBA_CUDA_ARRAY_MODULE_NAME = "numba.cuda.stubs"
+
+
+def add_ltoirs(context, ltoirs):
+    # Add all the LTO-IRs to the current code library.
+    lib = context.active_code_library
+    for ltoir in ltoirs:
+        assert isinstance(ltoir, LTOIR), f"Expected LTOIR, got {type(ltoir)}: {ltoir!r}"
+        lib.add_linking_file(ltoir)
 
 
 def get_element_count(shape):
@@ -1014,11 +1026,8 @@ class CoopNode:
 
                     if not node.is_child:
                         # Add all the LTO-IRs to the current code library.
-                        lib = context.active_code_library
                         algo = node.instance.specialization
-                        # algo.generate_source(node.threads)
-                        for ltoir in algo.lto_irs:
-                            lib.add_linking_file(ltoir)
+                        add_ltoirs(context, algo.lto_irs)
 
                     return res
 
@@ -1221,12 +1230,8 @@ class CoopLoadStoreNode(CoopNode):
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
 
-                    # Add all the LTO-IRs to the current code library.
-                    lib = context.active_code_library
                     algo = node.instance.specialization
-                    # algo.generate_source(node.threads)
-                    for ltoir in algo.lto_irs:
-                        lib.add_linking_file(ltoir)
+                    add_ltoirs(context, algo.lto_irs)
 
                     return res
 
@@ -1338,11 +1343,8 @@ class CoopLoadStoreNode(CoopNode):
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
 
-                    # Add all the LTO-IRs to the current code library
-                    lib = context.active_code_library
                     algo = node.instance.specialization
-                    for ltoir in algo.lto_irs:
-                        lib.add_linking_file(ltoir)
+                    add_ltoirs(context, algo.lto_irs)
 
                     return res
 
@@ -1908,12 +1910,8 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
 
-                    # Add all the LTO-IRs to the current code library.
-                    lib = context.active_code_library
                     algo = node.instance.specialization
-                    # algo.generate_source(node.threads)
-                    for ltoir in algo.lto_irs:
-                        lib.add_linking_file(ltoir)
+                    add_ltoirs(context, algo.lto_irs)
 
                     return res
 
@@ -2245,7 +2243,63 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         if initial_value is not None:
             if isinstance(initial_value, ir.Var):
                 initial_value = self.typemap[initial_value.name]
+
         block_prefix_callback_op = bound.get("block_prefix_callback_op")
+        if block_prefix_callback_op is not None:
+            if not isinstance(block_prefix_callback_op, ir.Var):
+                raise RuntimeError(
+                    f"Expected a variable for block_prefix_callback_op, "
+                    f"got {block_prefix_callback_op!r}"
+                )
+
+            dtype = self.typemap[block_prefix_callback_op.name]
+            runtime_dtype = dtype
+            prefix_op_root_def = rewriter.get_root_def(block_prefix_callback_op)
+            if prefix_op_root_def is None:
+                raise RuntimeError(
+                    "Expected a root definition for "
+                    "{block_prefix_callback_op!r}, got None"
+                )
+            instance = prefix_op_root_def.instance
+            if instance is None:
+                raise RuntimeError(
+                    f"Expected an instance for {block_prefix_callback_op!r}, got None"
+                )
+            if instance.__class__.__name__ == "module":
+                # Assume we've got the array-style invocation.
+                call_def = prefix_op_root_def.leaf_constructor_call
+                if not isinstance(call_def, ArrayCallDefinition):
+                    raise RuntimeError(
+                        f"Expected a leaf array call definition for "
+                        f"{block_prefix_callback_op!r}, got {call_def!r}"
+                    )
+                assert isinstance(dtype, types.Array)
+                runtime_dtype = dtype
+                dtype = dtype.dtype
+                modulename = dtype.__module__
+                module = sys.modules[modulename]
+                instance = getattr(module, dtype.name)
+
+            op = instance
+
+            from ._types import StatefulFunction
+
+            callback_name = f"block_scan_{self.unique_id}_callback"
+            if callback_name in self.typemap:
+                raise RuntimeError(
+                    f"Callback name {callback_name} already exists in typemap."
+                )
+            self.typemap[callback_name] = runtime_dtype
+
+            block_prefix_callback_op = StatefulFunction(
+                op,
+                dtype,
+                name=callback_name,
+            )
+            runtime_args.append(block_prefix_callback_op)
+            runtime_arg_types.append(runtime_dtype)
+            runtime_arg_names.append("block_prefix_callback_op")
+
         algorithm = bound.get("algorithm")
         temp_storage = bound.get("temp_storage")
 
@@ -2617,9 +2671,13 @@ class CoopNodeRewriter(Rewrite):
 
         launch_config.pre_launch_callbacks.append(custom.pre_launch_callback)
 
-    @cached_property
+    @property
     def launch_config(self):
         return ensure_current_launch_config()
+
+    @property
+    def launch_config_safe(self):
+        return current_launch_config()
 
     @cached_property
     def all_assignments(self) -> dict[ir.Assign, ir.Block]:
@@ -2671,13 +2729,19 @@ class CoopNodeRewriter(Rewrite):
         if num_calltypes == 0:
             return False
 
+        launch_config = self.launch_config_safe
+        # If we don't have a launch config yet, we're presumably being invoked
+        # as part of a two-phase one-shot primitive instantiation where one
+        # of the parameters is something user-defined (custom type, stateful
+        # callback, etc.).  We can skip processing in these cases.
+        if not launch_config:
+            return False
+
         self.func_ir = func_ir
         self.typemap = typemap
         self.calltypes = calltypes
 
         self.current_block = block
-
-        launch_config = None
 
         # We return this value at the end of the routine.  A true value
         # indicates that we want `apply()` to be called after we return
@@ -2687,7 +2751,6 @@ class CoopNodeRewriter(Rewrite):
         decl_classes = self._decl_classes
         node_classes = self._node_classes
         type_instances = self._instances
-        launch_config = self.launch_config
         interesting_modules = self.interesting_modules
 
         # N.B. I keep thinking I need these, but then never end up using them.
@@ -2728,6 +2791,12 @@ class CoopNodeRewriter(Rewrite):
         )
 
         for i, instr in enumerate(block.body):
+            if False and isinstance(instr, (ir.SetItem, ir.StaticSetItem)):
+                import debugpy
+
+                debugpy.breakpoint()
+                print(f"Found: {instr!r} at {instr.loc}")
+
             # We're only interested in ir.Assign nodes.  Skip the rest.
             if not isinstance(instr, ir.Assign):
                 continue
@@ -2832,6 +2901,13 @@ class CoopNodeRewriter(Rewrite):
                 continue
 
             expr = rhs
+
+            if False and expr.op in ("getitem", "static_getitem"):
+                import debugpy
+
+                debugpy.breakpoint()
+                print(f"Found: {expr!r} at {expr.loc}")
+                # We can ignore these; they are not function calls.
 
             # We can ignore nodes that aren't function calls herein.
             if expr.op != "call":

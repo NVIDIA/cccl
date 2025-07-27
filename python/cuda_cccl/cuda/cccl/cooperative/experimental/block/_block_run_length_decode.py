@@ -15,7 +15,6 @@ from .._types import (
     DependentArray,
     DependentReference,
     TemplateParameter,
-    TempStoragePointer,
 )
 from .._typing import (
     DimType,
@@ -205,7 +204,10 @@ class BlockRunLength(BasePrimitive):
             )
 
         if temp_storage is not None:
-            (method.insert(0, TempStoragePointer()),)
+            raise NotImplementedError(
+                "Temporary storage is not yet supported for BlockRunLengthDecode."
+            )
+            # method.insert(0, TempStoragePointer())
 
         if method:
             self.parameters = [

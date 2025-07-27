@@ -502,6 +502,7 @@ public:
   template <typename BlockPrefixCallbackOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
+    printf("Entered ExclusiveSum with BlockPrefixCallbackOp\n");
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 

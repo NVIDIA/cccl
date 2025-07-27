@@ -35,16 +35,12 @@ from numba.core.extending import (
     typeof_impl,
 )
 
-# from pynvjitlink import patch
 import cuda.cccl.cooperative.experimental as coop
 from cuda.cccl.cooperative.experimental.block._block_scan import (
     ScanOp,
 )
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-# Patching the Numba linker to enable LTO as needed.
-# patch.patch_numba_linker(lto=True)
 
 
 class BlockPrefixCallbackOp:
@@ -202,29 +198,34 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
     num_elements = segment_size * num_segments
 
     prefix_op = coop.StatefulFunction(
-        BlockPrefixCallbackOp, block_prefix_callback_op_type
+        BlockPrefixCallbackOp,
+        block_prefix_callback_op_type,
+        name="block_prefix_callback_op",
     )
 
     if mode == "inclusive":
         sum_func = coop.block.inclusive_sum
     else:
         sum_func = coop.block.exclusive_sum
+        sum_func = coop.block.scan
 
     block_sum = sum_func(
         dtype=numba.int32,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
-        prefix_op=prefix_op,
+        block_prefix_callback_op=prefix_op,
+        scan_op="+",
         algorithm=algorithm,
     )
     temp_storage_bytes = block_sum.temp_storage_bytes
 
-    @cuda.jit(link=block_sum.files)
+    @cuda.jit
     def kernel(input_arr, output_arr):
         segment_offset = cuda.blockIdx.x * segment_size
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
         block_prefix_op = cuda.local.array(shape=1, dtype=block_prefix_callback_op_type)
         block_prefix_op[0] = BlockPrefixCallbackOp(0)
+        # block_prefix_op = BlockPrefixCallbackOp(0)
         thread_in = cuda.local.array(items_per_thread, dtype=numba.int32)
         thread_out = cuda.local.array(items_per_thread, dtype=numba.int32)
 
@@ -242,7 +243,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
             if items_per_thread == 1:
                 thread_out[0] = block_sum(temp_storage, thread_in[0], block_prefix_op)
             else:
-                block_sum(temp_storage, thread_in, thread_out, block_prefix_op)
+                block_sum(thread_in, thread_out, block_prefix_op)
 
             for item in range(items_per_thread):
                 item_offset = tile_offset + tid * items_per_thread + item

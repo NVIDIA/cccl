@@ -6,9 +6,16 @@
 # It is responsible for defining the Numba templates for cuda.cooperative
 # primitives.
 
+import enum
 import inspect
 import operator
-from typing import Union
+from typing import (
+    Any,
+    Callable,
+    Literal,
+    Optional,
+    Union,
+)
 
 from numba.core import errors, types
 from numba.core.imputils import lower_constant
@@ -34,6 +41,11 @@ from numba.extending import (
 
 import cuda.cccl.cooperative.experimental as coop
 
+from ._scan_op import ScanOp
+from ._typing import (
+    ScanOpType,
+)
+
 registry = Registry()
 register = registry.register
 register_attr = registry.register_attr
@@ -42,7 +54,7 @@ register_global = registry.register_global
 
 # =============================================================================
 # Utils/Helpers
-# =================================================================================
+# =============================================================================
 class CoopDeclMixin:
     """
     This is a dummy class that must be inherited by all cooperative methods
@@ -123,9 +135,41 @@ class CoopInstanceTypeMixin:
         _register_coop_instance_of_instance_type(self)
 
 
+class CoopAbstractTemplate(AbstractTemplate):
+    """
+    A base class for cooperative templates that provides a common interface
+    for validating arguments and creating signatures.
+    """
+
+    unsafe_casting = False
+    exact_match_required = True
+    prefer_literal = True
+
+    def __init__(self, context=None):
+        super().__init__(context=context)
+
+    def _prevalidate_args(self, args):
+        if len(args) < self.minimum_num_args:
+            suffix = "s" if self.minimum_num_args >= 2 else ""
+            msg = (
+                f"{self.primitive_name} requires at least "
+                f"{self.minimum_num_args} positional argument{suffix}"
+            )
+            raise errors.TypingError(msg)
+
+    def generic(self, args, kwds):
+        """
+        Validate the arguments and create a signature for the cooperative
+        primitive.
+        """
+        self._prevalidate_args(args)
+        bound = self.signature(*args, **kwds)
+        return self._validate_args_and_create_signature(bound)
+
+
 # =============================================================================
 # Temp Storage
-# =================================================================================
+# =============================================================================
 class TempStorageType(types.Type):
     def __init__(self):
         super().__init__(name="coop.TempStorage")
@@ -195,7 +239,7 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
 
 # =============================================================================
 # Thread Data
-# =================================================================================
+# =============================================================================
 
 # Our ThreadData type simplifies this code:
 #
@@ -252,7 +296,7 @@ def type_thread_data(context):
 
 # =============================================================================
 # Arrays
-# =================================================================================
+# =============================================================================
 
 # N.B. The upstream cuda.(local|shared).array() functions in numba-cuda don't
 #      support being called with non-IntegerLiteral shapes, so we provide our
@@ -385,6 +429,16 @@ def validate_algorithm(obj, algorithm):
     enum_name = enum_cls.__name__
     user_facing_name = f"cuda.{enum_name}"
 
+    if isinstance(algorithm, enum.IntEnum):
+        # If the algorithm is an IntEnum, we can directly check its value.
+        if algorithm not in enum_cls:
+            msg = (
+                f"algorithm for {obj.primitive_name} must be a member "
+                f"of {user_facing_name}, got {algorithm}"
+            )
+            raise errors.TypingError(msg)
+        return
+
     if not isinstance(algorithm, types.EnumMember):
         msg = (
             f"algorithm for {obj.primitive_name} must be a member "
@@ -440,13 +494,13 @@ class CoopLoadStoreBaseTemplate(AbstractTemplate):
         dst = bound.arguments["dst"]
         validate_src_dst(self, src, dst)
 
-        items_per_thread = bound.arguments.get("items_per_thread", None)
+        items_per_thread = bound.arguments.get("items_per_thread")
         using_thread_data = isinstance(src, ThreadDataType) or isinstance(
             dst, ThreadDataType
         )
         if not using_thread_data:
             if not two_phase or items_per_thread is not None:
-                validate_items_per_thread(self, items_per_thread)
+                items_per_thread = validate_items_per_thread(self, items_per_thread)
 
         algorithm = bound.arguments.get("algorithm")
         validate_algorithm(self, algorithm)
@@ -735,7 +789,7 @@ def codegen_block_store_call(context, builder, sig, args):
 
 # =============================================================================
 # Histogram
-# =================================================================================
+# =============================================================================
 
 
 class CoopBlockHistogramInitDecl(CallableTemplate, CoopDeclMixin):
@@ -862,7 +916,7 @@ class CoopBlockHistogramDecl(CallableTemplate, CoopDeclMixin):
                     f"got {smem_histogram.layout!r}"
                 )
 
-            validate_items_per_thread(self, items_per_thread)
+            items_per_thread = validate_items_per_thread(self, items_per_thread)
             validate_algorithm(self, algorithm)
             validate_temp_storage(self, temp_storage)
 
@@ -972,7 +1026,7 @@ def codegen_block_histogram_call(context, builder, sig, args):
 
 # =============================================================================
 # RunLengthDecode
-# =================================================================================
+# =============================================================================
 
 # N.B. Because `RunLengthDecodeRunLengthDecode` is an awfully-ugly name in
 #      Python, we use `RunLength` to represent the `cub::BlockRunLengthDecode`
@@ -1207,78 +1261,120 @@ def codegen_block_run_length_call(context, builder, sig, args):
 
 # =============================================================================
 # Scan
-# =================================================================================
+# =============================================================================
 
 
 @register
-class CoopBlockScanDecl(CallableTemplate, CoopDeclMixin):
+class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.scan
     primitive_name = "coop.block.scan"
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
     is_constructor = False
+    minimum_num_args = 3
 
-    unsafe_casting = True
-    exact_match_required = False
-    prefer_literal = True
-
-    def __init__(self, context=None):
-        super().__init__(context=context)
+    @staticmethod
+    def signature(
+        src: types.Array,
+        dst: types.Array,
+        items_per_thread: int = None,
+        initial_value: Optional[Any] = None,
+        mode: Literal["exclusive", "inclusive"] = "exclusive",
+        scan_op: ScanOpType = "+",
+        block_prefix_callback_op: Optional[Callable] = None,
+        algorithm: coop.BlockScanAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        """
+        This method defines the signature of the cooperative block scan
+        function. It validates the parameters and returns a signature object.
+        """
+        return inspect.signature(CoopBlockScanDecl.signature).bind(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            mode=mode,
+            scan_op=scan_op,
+            initial_value=initial_value,
+            block_prefix_callback_op=block_prefix_callback_op,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
 
     @staticmethod
     def get_instance_type():
-        return block_run_length_instance_type
+        return block_scan_instance_type
 
-    def generic(self):
-        def typer(
-            src,
-            dst,
-            items_per_thread,
-            mode=None,
-            scan_op=None,
-            initial_value=None,
-            block_prefix_callback_op=None,
-            algorithm=None,
-            temp_storage=None,
-        ):
-            # block_prefix_callback_op = None
-            algorithm = None
-            temp_storage = None
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        dst = bound.arguments["dst"]
+        validate_src_dst(self, src, dst)
+        arglist = [src, dst]
 
-            validate_src_dst(self, src, dst)
-            validate_items_per_thread(self, items_per_thread)
-            validate_algorithm(self, algorithm)
-            validate_temp_storage(self, temp_storage)
+        items_per_thread = bound.arguments.get("items_per_thread")
+        using_thread_data = isinstance(src, ThreadDataType) or isinstance(
+            dst, ThreadDataType
+        )
+        if not using_thread_data:
+            if not two_phase or items_per_thread is not None:
+                maybe_literal = validate_items_per_thread(
+                    self,
+                    items_per_thread,
+                )
+                if maybe_literal is not None:
+                    items_per_thread = maybe_literal
+                if items_per_thread is not None:
+                    arglist.append(items_per_thread)
 
-            arglist = [
-                src,
-                dst,
-                items_per_thread,
-            ]
-
-            if initial_value is not None:
-                arglist.append(initial_value)
-
-            if mode is not None:
-                arglist.append(mode)
-
-            if scan_op is not None:
-                arglist.append(scan_op)
-
-            if block_prefix_callback_op is not None:
-                arglist.append(block_prefix_callback_op)
-
-            if temp_storage is not None:
-                arglist.append(temp_storage)
-
-            sig = signature(
-                block_scan_instance_type,
-                *arglist,
+        mode = bound.arguments.get("mode")
+        if mode is None:
+            mode = "exclusive"
+        if mode not in ("inclusive", "exclusive"):
+            raise errors.TypingError(
+                f"Invalid mode '{mode}' for {self.primitive_name}; expected "
+                "'inclusive' or 'exclusive'"
             )
+        arglist.append(mode)
 
-            return sig
+        scan_op = bound.arguments.get("scan_op", "+")
+        try:
+            scan_op = ScanOp(scan_op)
+        except ValueError as e:
+            raise errors.TypingError(
+                f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+            )
+        arglist.append(scan_op)
 
-        return typer
+        block_prefix_callback_op = bound.arguments.get("block_prefix_callback_op")
+        if block_prefix_callback_op is not None:
+            # We can't do much validation here.
+            arglist.append(block_prefix_callback_op)
+
+        initial_value = bound.arguments.get("initial_value")
+        if isinstance(initial_value, types.IntegerLiteral):
+            # If initial_value is an IntegerLiteral, we can use it directly.
+            initial_value = initial_value.literal_value
+        if initial_value is not None:
+            arglist.append(initial_value)
+
+        algorithm = bound.arguments.get("algorithm")
+        if algorithm is None:
+            algorithm = self.default_algorithm
+        validate_algorithm(self, algorithm)
+        if algorithm is not None:
+            arglist.append(algorithm)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
+
+        sig = signature(
+            block_scan_instance_type,
+            *arglist,
+        )
+
+        return sig
 
 
 class CoopBlockScanInstanceType(types.Type, CoopInstanceTypeMixin):
@@ -1289,6 +1385,31 @@ class CoopBlockScanInstanceType(types.Type, CoopInstanceTypeMixin):
         name = self.decl_class.primitive_name
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
+
+    def _validate_args_and_create_signature(
+        self,
+        src,
+        dst,
+        items_per_thread=None,
+        initial_value=None,
+        mode=None,
+        scan_op=None,
+        block_prefix_callback_op=None,
+        algorithm=None,
+        temp_storage=None,
+    ):
+        bound = inspect.signature(self.decl.signature).bind(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode=mode,
+            scan_op=scan_op,
+            block_prefix_callback_op=block_prefix_callback_op,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+        return self.decl._validate_args_and_create_signature(bound)
 
 
 block_scan_instance_type = CoopBlockScanInstanceType()
@@ -1301,8 +1422,36 @@ def typeof_block_scan_instance(*args, **kwargs):
 
 @type_callable(block_scan_instance_type)
 def type_block_scan_instance_call(context):
-    decl = block_scan_instance_type.decl
-    return decl.generic()
+    instance = block_scan_instance_type
+
+    def typer(
+        src,
+        dst,
+        items_per_thread=None,
+        initial_value=None,
+        mode=None,
+        scan_op=None,
+        block_prefix_callback_op=None,
+        algorithm=None,
+        temp_storage=None,
+    ):
+        """
+        This function is called to infer the type of the coop.block.scan
+        instance type. It checks that the parameters are of the expected types.
+        """
+        return instance._validate_args_and_create_signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode=mode,
+            scan_op=scan_op,
+            block_prefix_callback_op=block_prefix_callback_op,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    return typer
 
 
 @register_model(CoopBlockScanInstanceType)

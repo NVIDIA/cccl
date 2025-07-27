@@ -78,10 +78,21 @@ class BaseLoadStore(BasePrimitive):
             algorithm,
         )
 
+        input_is_array_pointer = items_per_thread > 1
+
         parameters = [
             [
-                DependentPointer(Dependency("T")),
-                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                DependentPointer(
+                    value_dtype=Dependency("T"),
+                    restrict=True,
+                    is_array_pointer=input_is_array_pointer,
+                    name="src",
+                ),
+                DependentArray(
+                    value_dtype=Dependency("T"),
+                    size=Dependency("ITEMS_PER_THREAD"),
+                    name="dst",
+                ),
             ]
         ]
         if num_valid_items is not None:

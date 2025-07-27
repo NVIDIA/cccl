@@ -9,11 +9,8 @@ import numba
 import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
-from pynvjitlink import patch
 
 import cuda.cccl.cooperative.experimental as coop
-
-patch.patch_numba_linker(lto=True)
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -24,18 +21,16 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 @pytest.mark.parametrize(
     "algorithm",
     [
-        "direct",
-        "striped",
-        "vectorize",
-        "transpose",
-        "warp_transpose",
-        "warp_transpose_timesliced",
+        coop.BlockLoadAlgorithm.DIRECT,
+        coop.BlockLoadAlgorithm.STRIPED,
+        coop.BlockLoadAlgorithm.VECTORIZE,
+        coop.BlockLoadAlgorithm.TRANSPOSE,
+        coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+        coop.BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
     ],
 )
 def test_block_load(T, threads_per_block, items_per_thread, algorithm):
-    block_load = cudax.block.load.create(
-        T, threads_per_block, items_per_thread, algorithm
-    )
+    block_load = coop.block.load(T, threads_per_block, items_per_thread, algorithm)
     temp_storage_bytes = block_load.temp_storage_bytes
 
     num_threads_per_block = (

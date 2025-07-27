@@ -28,17 +28,17 @@ class BlockHistogramInit(BasePrimitive):
     c_name = "init"
     method_name = "InitHistogram"
 
-    template_parameters = [
-        TemplateParameter("CounterT"),
-    ]
-
-    parameters = [
-        DependentArray(Dependency("CounterT"), Dependency("BINS")),
-    ]
-
     def __init__(
         self, struct: "BlockHistogram", histogram_bins, temp_storage=None
     ) -> None:
+        self.template_parameters = [
+            TemplateParameter("CounterT"),
+        ]
+
+        self.parameters = [
+            DependentArray(Dependency("CounterT"), Dependency("BINS")),
+        ]
+
         c_name = "init"
         method_name = "InitHistogram"
 
