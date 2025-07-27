@@ -42,7 +42,7 @@ struct CudaDriverLauncher
       return status;
     }
 
-#if _CCCL_HAS_PDL
+#if _CCCL_HAS_PDL()
     if (dependent_launch)
     {
       CUlaunchAttribute attribute[1];
@@ -64,7 +64,7 @@ struct CudaDriverLauncher
       return static_cast<cudaError_t>(cuLaunchKernelEx(&config, kernel_fn, kernel_args, 0));
     }
     else
-#endif
+#endif // _CCCL_HAS_PDL()
     {
       return static_cast<cudaError_t>(cuLaunchKernel(
         kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
@@ -109,6 +109,12 @@ struct CudaDriverLauncherFactory
   _CCCL_HIDE_FROM_ABI cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     return static_cast<cudaError_t>(cuDeviceGetAttribute(&max_grid_dim_x, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, device));
+  }
+
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
+  {
+    return static_cast<cudaError_t>(
+      cuDeviceGetAttribute(&max_shared_memory, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, device));
   }
 
   CUdevice device;

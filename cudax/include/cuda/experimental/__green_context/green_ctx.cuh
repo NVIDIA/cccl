@@ -21,18 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/all_devices.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
-
-#include <cuda/experimental/__device/all_devices.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CTK_AT_LEAST(12, 5)
 namespace cuda::experimental
 {
-struct device_ref;
 
 struct green_context
 {

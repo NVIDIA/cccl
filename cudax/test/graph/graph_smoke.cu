@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/event.cuh>
 #include <cuda/experimental/graph.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
@@ -84,7 +83,7 @@ C2H_TEST("can instantiate and launch a graph", "[graph]")
   CUDAX_REQUIRE(exec.get() != nullptr);
 
   // Create a stream and launch the graph
-  cuda::experimental::stream s{cuda::experimental::device_ref{0}};
+  cuda::experimental::stream s{cuda::device_ref{0}};
   exec.launch(s);
 
   // Wait for completion
@@ -159,7 +158,7 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
 
 C2H_TEST("Path builder with kernel nodes", "[graph]")
 {
-  cudax::stream s{cudax::device_ref{0}};
+  cudax::stream s{cuda::device_ref{0}};
   cudax::managed_memory_resource mr;
   int* ptr = static_cast<int*>(mr.allocate(sizeof(int)));
   *ptr     = 0;
@@ -272,27 +271,27 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
 
-  if (cudax::devices.size() > 1)
+  if (cuda::devices.size() > 1)
   {
     SECTION("Multi-device graph")
     {
-      cudax::device_memory_resource dev0_mr(cudax::devices[0]);
+      cudax::device_memory_resource dev0_mr(cuda::devices[0]);
       int* dev0_ptr = static_cast<int*>(dev0_mr.allocate(sizeof(int)));
-      cudax::device_memory_resource dev1_mr(cudax::devices[1]);
+      cudax::device_memory_resource dev1_mr(cuda::devices[1]);
       int* dev1_ptr = static_cast<int*>(dev1_mr.allocate(sizeof(int)));
 
-      cudax::graph_builder g(cudax::devices[0]);
+      cudax::graph_builder g(cuda::devices[0]);
       cudax::path_builder dev0_pb = cudax::start_path(g);
 
       cudax::launch(dev0_pb, test::one_thread_dims, test::assign_42{}, dev0_ptr);
       cudax::launch(dev0_pb, test::one_thread_dims, test::assign_42{}, ptr);
 
-      cudax::path_builder dev1_pb = cudax::start_path(cudax::devices[1], dev0_pb);
+      cudax::path_builder dev1_pb = cudax::start_path(cuda::devices[1], dev0_pb);
       cudax::launch(dev1_pb, test::one_thread_dims, test::assign_42{}, dev1_ptr);
       cudax::launch(dev1_pb, test::one_thread_dims, test::verify_42{}, ptr);
       cudax::launch(dev1_pb, test::one_thread_dims, test::atomic_add_one{}, ptr);
 
-      cudax::path_builder back_to_dev0 = cudax::start_path(cudax::devices[0], dev1_pb);
+      cudax::path_builder back_to_dev0 = cudax::start_path(cuda::devices[0], dev1_pb);
       cudax::launch(back_to_dev0, test::one_thread_dims, test::verify_n<43>{}, ptr);
       cudax::launch(back_to_dev0, test::one_thread_dims, test::verify_42{}, dev0_ptr);
 
