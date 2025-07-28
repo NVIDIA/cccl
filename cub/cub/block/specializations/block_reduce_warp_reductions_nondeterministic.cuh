@@ -130,7 +130,7 @@ struct BlockReduceWarpReductionsNondeterministic
   }
 
   //! @rst
-  //! Computes a thread block-wide reduction using addition (+) as the reduction operator.
+  //! Computes a thread block-wide reduction using addition (+/cuda::std::plus<>) as the reduction operator.
   //! The first num_valid threads each contribute one reduction partial. The return value is
   //! only valid for *thread*\ :sub:`0`.
   //! @endrst
