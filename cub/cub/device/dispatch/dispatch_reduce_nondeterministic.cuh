@@ -30,9 +30,9 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-#include <cuda/std/functional>
-
-#include <stdio.h>
+#include <cuda/cmath>
+#include <cuda/std/functional> // ::cuda::std::identity
+#include <cuda/std/iterator> // _CUDA_VSTD::iter_value_t
 
 CUB_NAMESPACE_BEGIN
 
@@ -94,8 +94,8 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, _CUDA_VSTD::iter_value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, _CUDA_VSTD::iter_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceNondeterministicKernelSource<
@@ -191,9 +191,9 @@ struct DispatchReduceNondeterministic
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+    _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
             "per thread, %d SM occupancy\n",
-            (unsigned long) reduce_grid_size,
+            (unsigned long long) reduce_grid_size,
             active_policy.ReduceNondeterministic().BlockThreads(),
             (long long) stream,
             active_policy.ReduceNondeterministic().ItemsPerThread(),
@@ -209,13 +209,11 @@ struct DispatchReduceNondeterministic
     {
       return error;
     }
-
     // Sync the stream if specified to flush runtime errors
     if (error = CubDebug(detail::DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }
-
     return cudaSuccess;
   }
 
