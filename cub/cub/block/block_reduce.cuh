@@ -153,18 +153,21 @@ enum BlockReduceAlgorithm
   //!
   //! A quick "tiled warp-reductions" reduction algorithm that supports commutative
   //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
-  //! operators. This variant is non-deterministic, meaning that the order of
+  //! operators. This variant uses atomic operations to reduce the warp-wide
+  //! reduction results, making it non-deterministic, i.e. the order of
   //! reduction operations is not guaranteed to be the same across different
   //! invocations of the same kernel.
   //!
-  //! Execution is comprised of four phases:
+  //! Execution is comprised of three phases:
   //!   #. Upsweep sequential reduction in registers (if threads contribute more
   //!      than one input each). Each thread then places the partial reduction
   //!      of its item(s) into shared memory.
   //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
   //!      reduction within each warp.
-  //!   #. A propagation phase where the warp reduction outputs in each warp are
-  //!      updated with the aggregate from each preceding warp.
+  //!   #. Lane 0 of warp 0 stores its warp aggregate, while lane 0 of other warps
+  //!      use atomic operations to accumulate their warp aggregates into a shared
+  //!      location, making the final order non-deterministic.
+  //!   #. The final block-wide result is available to all threads.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
