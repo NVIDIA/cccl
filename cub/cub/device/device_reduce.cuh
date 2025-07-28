@@ -65,6 +65,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+
+template <typename DeterminismT>
+inline constexpr bool is_non_deterministic_v =
+  ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
+
 namespace reduce
 {
 
@@ -513,8 +518,7 @@ public:
     }
     else
     {
-      constexpr auto no_determinism =
-        ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
 
       // Certain conditions must be met to be able to use the non-deterministic
       // kernel. The output iterator must be a contiguous iterator and the
@@ -644,8 +648,7 @@ public:
                                           _CUDA_EXEC::determinism::__get_determinism_t,
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
-    constexpr auto no_determinism =
-      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
 
     // The output iterator must be a contiguous iterator or we fall back to
     // run-to-run determinism.

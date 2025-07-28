@@ -238,7 +238,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             init_t,
             accumulator_t>)};
     }
-    else if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
       using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
@@ -369,7 +369,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             init_t,
             accumulator_t>)};
     }
-    else if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
       using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
