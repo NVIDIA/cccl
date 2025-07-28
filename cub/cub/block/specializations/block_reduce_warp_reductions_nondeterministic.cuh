@@ -25,6 +25,8 @@
 
 #include <cuda/atomic>
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
+#include <cuda/std/cmath>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
