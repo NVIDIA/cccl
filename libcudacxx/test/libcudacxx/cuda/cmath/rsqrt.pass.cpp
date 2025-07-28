@@ -56,9 +56,9 @@ __host__ __device__ bool test()
 #if _LIBCUDACXX_HAS_NVFP16()
   test_rsqrt<__half>();
 #endif // _LIBCUDACXX_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_rsqrt<__nv_bfloat16>();
-#endif // _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   test_rsqrt<signed char>();
   test_rsqrt<signed short>();
