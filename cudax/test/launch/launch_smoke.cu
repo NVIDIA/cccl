@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/atomic>
+#include <cuda/memory>
 
 #include <cuda/experimental/graph.cuh>
 #include <cuda/experimental/launch.cuh>
@@ -83,7 +84,7 @@ struct dynamic_smem_single
   {
     auto& dynamic_smem = cudax::dynamic_smem_ref(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CUDAX_REQUIRE(__isShared(&dynamic_smem));
+    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -98,7 +99,7 @@ struct dynamic_smem_span
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CUDAX_REQUIRE(dynamic_smem.size() == size);
-    CUDAX_REQUIRE(__isShared(&dynamic_smem[1]));
+    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };

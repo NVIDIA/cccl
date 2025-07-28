@@ -27,6 +27,7 @@
 
 #    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
+#    include <cuda/__memory/address_space.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>
@@ -40,8 +41,9 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_befor
 _CCCL_DEVICE inline void
 barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __transaction_count_update)
 {
-  _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
-               "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(
+    _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::barrier_native_handle(__b), _CUDA_DEVICE::address_space::shared),
+    "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
   _CCCL_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
