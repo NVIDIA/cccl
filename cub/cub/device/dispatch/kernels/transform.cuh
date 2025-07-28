@@ -23,6 +23,7 @@
 
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/cmath>
+#include <cuda/memory>
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
@@ -621,6 +622,12 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
   return static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32), Alignment));
 }
 
+template <int Alignment>
+struct alignas(Alignment) BarHolder
+{
+  uint64_t bar;
+};
+
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -636,13 +643,16 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int tile_padding =
     tile_sizes_retain_max_alignment ? ::cuda::std::max(bulk_copy_alignment, max_alignment) : bulk_copy_alignment;
 
-  __shared__ uint64_t bar;
+  // We make sure the static shared memory size is a multiple of the alignment required for the dynamic shared memory
+  __shared__ BarHolder<tile_padding> barh;
+  uint64_t& bar = barh.bar;
 
   // We use an attribute to align the shared memory. This is not respected on all drivers though. The compiler correctly
   // takes the alignment into account and even emits an alignment specifier into ptx. However, this sometimes randomly
   // fails at runtime because the shared memory start pointer is not correctly provided by the driver/runtime. See also
   // NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
-  extern __shared__ char __align__(tile_padding) smem_base_unaligned[];
+  extern __shared__ char smem_base_unaligned[];
+  _CCCL_ASSERT(::cuda::is_aligned(smem_base_unaligned, tile_padding), "");
 
   // However, any manual alignment of the shared memory start address outweighs the performance benefits of a faster
   // bulk copy by introducing about 7 additional SASS instructions at the start of the kernel. This also has to be done
