@@ -182,6 +182,16 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   }
 }
 
+// Transform that composes casting with thrust::square
+template <class T>
+struct square_t
+{
+  _CCCL_HOST_DEVICE T operator()(int x) const
+  {
+    return thrust::square<T>{}(static_cast<T>(x));
+  }
+};
+
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][nondeterministic]",
          float_type_list)
@@ -199,7 +209,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   using output_it_t = decltype(raw_ptr);
   using init_t      = type;
   using accum_t     = type;
-  using transform_t = thrust::square<type>;
+  using transform_t = square_t<type>;
 
   using nondeterministic_dispatch_t = cub::detail::
     DispatchReduceNondeterministic<input_it_t, output_it_t, int, cuda::std::plus<type>, init_t, accum_t, transform_t>;
