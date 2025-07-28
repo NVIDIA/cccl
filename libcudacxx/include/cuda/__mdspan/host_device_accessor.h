@@ -240,12 +240,12 @@ class __device_accessor : public _Accessor
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static constexpr bool
   __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
   {
-    return _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::global, __p)
-        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::shared, __p)
-        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::constant, __p)
-        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::local, __p)
-        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::grid_constant, __p)
-        || _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::address_space::cluster_shared, __p);
+    return _CUDA_DEVICE::is_address_from(__p, _CUDA_DEVICE::address_space::global)
+        || _CUDA_DEVICE::is_address_from(__p, _CUDA_DEVICE::address_space::shared)
+        || _CUDA_DEVICE::is_address_from(__p, _CUDA_DEVICE::address_space::constant)
+        || _CUDA_DEVICE::is_address_from(__p, _CUDA_DEVICE::address_space::local)
+        || _CUDA_DEVICE::is_address_from(__p, _CUDA_DEVICE::address_space::grid_constant)
+        || _CUDA_DEVICE::is_address_from(__p, _CUDA_DEVICE::address_space::cluster_shared);
   }
 
 #endif // _CCCL_DEVICE_COMPILATION()
