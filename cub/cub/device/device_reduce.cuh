@@ -60,6 +60,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
