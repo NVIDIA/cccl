@@ -117,6 +117,7 @@ struct BlockReduceWarpReductionsNondeterministic
 
     __syncthreads();
 
+    // Warp 0 already contributed its aggregate above since its also linear_tid == 0
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
