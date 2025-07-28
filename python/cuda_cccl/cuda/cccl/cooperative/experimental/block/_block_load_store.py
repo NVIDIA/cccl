@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+from typing import TYPE_CHECKING
+
 import numba
 
 from .._common import (
@@ -27,6 +29,9 @@ from .._typing import (
     DimType,
     DtypeType,
 )
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopNode
 
 CUB_BLOCK_LOAD_ALGOS = {
     "direct": "::cub::BLOCK_LOAD_DIRECT",
@@ -67,8 +72,10 @@ class BaseLoadStore(BasePrimitive):
         algorithm=None,
         num_valid_items=None,
         unique_id: int = None,
+        node: "CoopNode" = None,
         temp_storage=None,
     ) -> None:
+        self.node = node
         self.dtype = normalize_dtype_param(dtype)
         self.dim = normalize_dim_param(dim)
         self.items_per_thread = items_per_thread

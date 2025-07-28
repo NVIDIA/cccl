@@ -421,6 +421,29 @@ def validate_items_per_thread(obj, items_per_thread):
     )
 
 
+def process_items_per_thread(obj, bound, arglist, two_phase, target_array=None):
+    items_per_thread = bound.arguments.get("items_per_thread")
+    if items_per_thread is None:
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires 'items_per_thread' to be specified"
+        )
+    if target_array is not None:
+        using_thread_data = isinstance(target_array, ThreadDataType)
+    else:
+        using_thread_data = False
+
+    if not using_thread_data:
+        if not two_phase or items_per_thread is not None:
+            maybe_literal = validate_items_per_thread(obj, items_per_thread)
+            if maybe_literal is not None:
+                items_per_thread = maybe_literal
+            if items_per_thread is not None:
+                arglist.append(items_per_thread)
+                return items_per_thread
+
+    return items_per_thread
+
+
 def validate_algorithm(obj, algorithm):
     if algorithm is None:
         return
@@ -453,6 +476,23 @@ def validate_algorithm(obj, algorithm):
             f"of {user_facing_name}, got {name} "
         )
         raise errors.TypingError(msg)
+
+
+def process_algorithm(obj, bound, arglist):
+    algorithm = bound.arguments.get("algorithm")
+    if algorithm is None:
+        # If no algorithm is specified, use the default.
+        algorithm = obj.default_algorithm
+    if algorithm is None:
+        raise RuntimeError(
+            f"{obj.primitive_name} requires an algorithm to be specified, "
+            "either via the 'algorithm' argument or by setting a default "
+            "algorithm in the class definition."
+        )
+    validate_algorithm(obj, algorithm)
+    arglist.append(algorithm)
+
+    return algorithm
 
 
 def validate_temp_storage(obj, temp_storage):
@@ -792,152 +832,147 @@ def codegen_block_store_call(context, builder, sig, args):
 # =============================================================================
 
 
-class CoopBlockHistogramInitDecl(CallableTemplate, CoopDeclMixin):
+@register
+class CoopBlockHistogramInitDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.histogram.init
     primitive_name = "coop.block.histogram.init"
+    minimum_num_args = 0
 
-    def generic(self):
-        def typer(array):
-            # template<CounterT>
-            # InitHistogram(CounterT histogram[BINS])
+    @staticmethod
+    def signature(*args, **kwargs):
+        return inspect.signature(
+            CoopBlockHistogramInitDecl.signature,
+        ).bind()
 
-            if not isinstance(array, types.Array):
-                raise errors.TypingError(
-                    f"array must be a device array, got {type(array).__name__}"
-                )
+    @staticmethod
+    def get_instance_type():
+        return block_histogram_instance_type
 
-            if array.ndim != 1:
-                raise errors.TypingError(
-                    "array must be a one-dimensional device array, "
-                    f"got {array.ndim} dimensions"
-                )
-
-            if array.layout != "C":
-                raise errors.TypingError(
-                    f"array must be a C-contiguous device array, got {array.layout!r}"
-                )
-
-            # Verify the array has an integer dtype.
-            if not isinstance(array.dtype, types.Integer):
-                raise errors.TypingError(
-                    f"array must have an integer dtype, got {array.dtype!r}"
-                )
-
-            return types.void
-
-        return typer
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        sig = signature(types.void, None)
+        return sig
 
 
-class CoopBlockHistogramCompositeDecl(CallableTemplate, CoopDeclMixin):
+@register
+class CoopBlockHistogramCompositeDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.histogram.composite
     primitive_name = "coop.block.histogram.composite"
+    minimum_num_args = 1
 
-    unsafe_casting = False
-    exact_match_required = True
-    prefer_literal = True
+    @staticmethod
+    def signature(items: types.Array):
+        return inspect.signature(
+            CoopBlockHistogramCompositeDecl.signature,
+        ).bind(items)
 
-    def generic(self):
-        def typer(thread_samples, histogram_bins):
-            if not isinstance(thread_samples, types.Array):
-                raise errors.TypingError(
-                    "thread_samples must be a device array, "
-                    f"got: {type(thread_samples).__name__}"
-                )
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        if not isinstance(items, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device array, "
+                f"got {type(items).__name__}"
+            )
 
-            if not isinstance(histogram_bins, types.Array):
-                raise errors.TypingError(
-                    "histogram_bins must be a device array, "
-                    f"got: {type(histogram_bins).__name__}"
-                )
+        sig = signature(types.void, items)
 
-            if thread_samples.ndim != 1:
-                raise errors.TypingError(
-                    "thread_samples must be a one-dimensional array; "
-                    f"got: {thread_samples.ndim} dimensions"
-                )
-
-            if histogram_bins.ndim != 1:
-                raise errors.TypingError(
-                    "histogram_bins must be a one-dimensional array; "
-                    f"got: {histogram_bins.ndim} dimensions"
-                )
-
-            if thread_samples.layout != "C":
-                raise errors.TypingError(
-                    "thread_samples must be a C-contiguous array; "
-                    f"got: {thread_samples.layout!r}"
-                )
-
-            if histogram_bins.layout != "C":
-                raise errors.TypingError(
-                    "histogram_bins must be a C-contiguous array; "
-                    f"got: {histogram_bins.layout!r}"
-                )
-
-            return types.void
-
-        return typer
+        return sig
 
 
-class CoopBlockHistogramDecl(CallableTemplate, CoopDeclMixin):
+@register
+class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.histogram
     primitive_name = "coop.block.histogram"
     algorithm_enum = coop.BlockHistogramAlgorithm
     default_algorithm = coop.BlockHistogramAlgorithm.ATOMIC
+    minimum_num_args = 2
 
-    def __init__(self, context=None):
-        super().__init__(context=context)
+    @staticmethod
+    def get_instance_type():
+        return block_histogram_instance_type
 
-    def generic(self):
-        def typer(
+    @classmethod
+    def signature(
+        cls: type,
+        items: types.Array,
+        histogram: types.Array,
+        algorithm: Optional[coop.BlockHistogramAlgorithm] = None,
+        temp_storage: Optional[Union[types.Array, TempStorageType]] = None,
+    ):
+        return inspect.signature(cls.signature).bind(
+            items,
+            histogram,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def signature_two_phase(
+        item_dtype: types.Type,
+        counter_dtype: types.Type,
+        items_per_thread: Union[types.Integer, types.IntegerLiteral],
+        bins: Union[types.Integer, types.IntegerLiteral],
+        algorithm: Optional[coop.BlockHistogramAlgorithm] = None,
+        temp_storage: Optional[Union[types.Array, TempStorageType]] = None,
+    ):
+        return inspect.signature(
+            CoopBlockHistogramDecl.signature,
+        ).bind(
             item_dtype,
-            smem_histogram,
+            counter_dtype,
             items_per_thread,
-            algorithm=None,
-            temp_storage=None,
-        ):
-            if not isinstance(item_dtype, types.Type):
-                raise errors.TypingError("item_dtype must be a type")
+            bins,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
 
-            if not isinstance(smem_histogram, types.Array):
-                raise errors.TypingError(
-                    "smem_histogram must be a device array, "
-                    f"got {type(smem_histogram).__name__}"
-                )
-
-            if smem_histogram.ndim != 1:
-                raise errors.TypingError(
-                    "smem_histogram must be a one-dimensional device array, "
-                    f"got {smem_histogram.ndim} dimensions"
-                )
-            if smem_histogram.layout != "C":
-                raise errors.TypingError(
-                    "smem_histogram must be a C-contiguous device array, "
-                    f"got {smem_histogram.layout!r}"
-                )
-
-            items_per_thread = validate_items_per_thread(self, items_per_thread)
-            validate_algorithm(self, algorithm)
-            validate_temp_storage(self, temp_storage)
-
-            arglist = [
-                item_dtype,
-                smem_histogram,
-                items_per_thread,
-            ]
-
-            if algorithm is not None:
-                arglist.append(algorithm)
-
-            if temp_storage is not None:
-                arglist.append(temp_storage)
-
-            sig = signature(
-                block_histogram_instance_type,
-                *arglist,
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        if not isinstance(items, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device array, "
+                f"got {type(items).__name__}"
             )
 
-            return sig
+        histogram = bound.arguments["histogram"]
+        if not isinstance(histogram, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'histogram' to be a device array, "
+                f"got {type(histogram).__name__}"
+            )
+
+        arglist = [
+            items,
+            histogram,
+        ]
+
+        # Validate algorithm next.  If it's of type ATOMIC, we need to ensure
+        # the counter_dtype is a 32-bit or 64-bit integer, as other types
+        # won't compile.
+        algorithm = process_algorithm(self, bound, arglist)
+        if algorithm == coop.BlockHistogramAlgorithm.ATOMIC:
+            valid_atomic_dtypes = (
+                types.int32,
+                types.int64,
+                types.uint32,
+                types.uint64,
+            )
+            print(f"histogram.dtype: {histogram.dtype}")
+            if histogram.dtype not in valid_atomic_dtypes:
+                raise errors.TypingError(
+                    "histogram array type must be a 32-bit or 64-bit integer "
+                    f"when using the ATOMIC algorithm: got: {histogram.dtype}"
+                )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            arglist.append(temp_storage)
+
+        sig = signature(
+            block_histogram_instance_type,
+            *arglist,
+        )
+
+        return sig
 
 
 # =============================================================================
@@ -1311,20 +1346,13 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         validate_src_dst(self, src, dst)
         arglist = [src, dst]
 
-        items_per_thread = bound.arguments.get("items_per_thread")
-        using_thread_data = isinstance(src, ThreadDataType) or isinstance(
-            dst, ThreadDataType
+        process_items_per_thread(
+            self,
+            bound,
+            arglist,
+            two_phase,
+            target_array=src,
         )
-        if not using_thread_data:
-            if not two_phase or items_per_thread is not None:
-                maybe_literal = validate_items_per_thread(
-                    self,
-                    items_per_thread,
-                )
-                if maybe_literal is not None:
-                    items_per_thread = maybe_literal
-                if items_per_thread is not None:
-                    arglist.append(items_per_thread)
 
         mode = bound.arguments.get("mode")
         if mode is None:
@@ -1357,12 +1385,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         if initial_value is not None:
             arglist.append(initial_value)
 
-        algorithm = bound.arguments.get("algorithm")
-        if algorithm is None:
-            algorithm = self.default_algorithm
-        validate_algorithm(self, algorithm)
-        if algorithm is not None:
-            arglist.append(algorithm)
+        process_algorithm(self, bound, arglist)
 
         temp_storage = bound.arguments.get("temp_storage")
         validate_temp_storage(self, temp_storage)

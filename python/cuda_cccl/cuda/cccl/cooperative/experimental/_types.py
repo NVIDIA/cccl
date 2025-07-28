@@ -37,6 +37,18 @@ from ._numba_extension import (
     _get_source_code_rewriter,
 )
 
+PRINT_SOURCE = False
+
+
+def maybe_print_src(src: str, name: str):
+    """
+    Print the source code if PRINT_SOURCE is True.
+    """
+    if PRINT_SOURCE:
+        print(f"----- BEGIN Source code for {name}:")
+        print(src)
+        print(f"----- END Source code for {name}")
+
 
 class ElapsedTimer:
     """
@@ -381,9 +393,7 @@ class StatefulOperator:
             w(f"        {state_name}, {param_refs_csv});\n")
         w("};\n")
         src = buf.getvalue()
-        print(f"BEGIN StatefulOperator: {self!r}")
-        print(src)
-        print(f"END StatefulOperator: {self!r}")
+        maybe_print_src(src, f"StatefulOperator {self.name!r}")
         return src
 
     def is_provided_by_user(self):
@@ -437,9 +447,7 @@ class StatelessOperator:
             w(f"    return {mangled_name}({param_refs_csv});\n")
         w("};\n")
         src = buf.getvalue()
-        print(f"BEGIN StatelessOperator SOURCE for {self.name!r}")
-        print(src)
-        print(f"END StatelessOperator SOURCE for {self.name!r}")
+        maybe_print_src(src, f"StatelessOperator {self.name!r}")
         return src
 
     def is_provided_by_user(self):
@@ -686,21 +694,26 @@ class Algorithm:
                 # Inject the void *addr and size parameters for structs.
                 injected = [
                     Pointer(
-                        numba.types.voidptr,
+                        # numba.types.voidptr,
+                        numba.types.int8,
                         name="addr",
                         restrict=True,
                         is_array_pointer=False,
                     ),
                     Value(numba.types.uint32, name="size"),
                 ]
-                for method in self.parameters:
-                    method[:0] = injected
+                if not self.parameters:
+                    self.parameters = [injected]
+                else:
+                    # Insert the injected parameters at the beginning of each
+                    # method's parameters.
+                    for method in self.parameters:
+                        method[:0] = injected
             elif primitive.is_child:
                 # Inject the typed pointer to the parent instance type as
                 # the first parameter.
                 parent_node = primitive.parent.node
-                template = parent_node.template
-                parent_instance_type = template.get_instance_type()
+                parent_instance_type = parent_node.return_type
                 parent_algo = parent_node.instance.specialization
                 parent_names = parent_algo.names
                 injected = [
@@ -712,8 +725,13 @@ class Algorithm:
                         is_array_pointer=False,
                     )
                 ]
-                for method in self.parameters:
-                    method[:0] = injected
+                if not self.parameters:
+                    self.parameters = [injected]
+                else:
+                    # Insert the injected parameter at the beginning of each
+                    # method's parameters.
+                    for method in self.parameters:
+                        method[:0] = injected
 
             if False:
                 # Collect any LTO-IRs that may already be present.
@@ -815,7 +833,7 @@ class Algorithm:
             self.includes,
             [],
             specialized_parameters,
-            self.primitive,
+            primitive=self.primitive,
             unique_id=self.unique_id,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
@@ -909,9 +927,7 @@ class Algorithm:
         else:
             raise RuntimeError("Invalid primitive state: {primitive!r}")
 
-        print(f"----- BEGIN Source code for {self!r}:")
-        print(src)
-        print(f"----- END Source code for {self!r}")
+        maybe_print_src(src, f"Algorithm {self!r}")
         return src
 
     @property
@@ -1176,9 +1192,13 @@ class Algorithm:
 
         src = buf.getvalue()
 
-        assert len(self.parameters) == 1
+        parameters = self.parameters
+        num_params = len(parameters)
+        assert num_params in (0, 1), (
+            f"Expected 0 or 1 parameters, got {num_params}. Parameters: {parameters}"
+        )
 
-        method = self.parameters[0]
+        method = [] if not parameters else parameters[0]
 
         param_decls = []
         func_decls = []
@@ -1386,9 +1406,7 @@ class Algorithm:
 
         lto_irs = self._lto_irs
 
-        print(f"-------- BEGIN {self.c_name} --------")
-        print(src)
-        print(f"-------- END   {self.c_name} --------\n\n\n")
+        maybe_print_src(src, f"Algorithm {self!r}")
         _, blob = nvrtc.compile(
             cpp=src,
             cc=cc,
@@ -1481,9 +1499,15 @@ class Algorithm:
                         first_param_is_temp_storage = True
                         first_dtype = first_dtype.dtype
 
-        assert len(parameters) == 1
+        num_params = len(parameters)
+        assert num_params in (0, 1), (
+            f"Expected 0 or 1 parameters, got {num_params}. Parameters: {parameters}"
+        )
+
+        unique_name = self.unique_name
+        if not parameters:
+            parameters = [[]]
         for method in parameters:
-            unique_name = self.unique_name
             if first_param_is_temp_storage:
                 params = method[1:]
             else:
@@ -1688,10 +1712,7 @@ class Algorithm:
 
             params = []
             primitive = self.primitive
-            if primitive.is_parent:
-                ret = primitive.node.template.get_instance_type()
-            else:
-                ret = numba.types.void
+            ret = primitive.node.return_type
 
             for pid, param in enumerate(method):
                 if ignore_param(param, pid):

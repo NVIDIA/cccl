@@ -167,6 +167,7 @@ def register_kernel_extension(kernel, instance):
 
 VarType = Union[ir.Arg, ir.Const, ir.Expr, ir.FreeVar, ir.Global, ir.Var]
 RootVarType = Union[ir.Arg, ir.Const, ir.FreeVar, ir.Global]
+CallDefinitionType = Union["CallDefinition", "ArrayCallDefinition"]
 
 
 @dataclass
@@ -174,8 +175,41 @@ class CallDefinition:
     instr: VarType
     func: VarType
     func_name: str
+    rewriter: "CoopNodeRewriter"
     assign: Optional[ir.Assign] = None
     order: Optional[int] = None
+
+    def get_argument_root_defs(
+        self,
+        signature: Signature,
+    ) -> dict[str, CallDefinitionType]:
+        """
+        Return a dictionary of argument names to their corresponding
+        root definitions, using the supplied signature to assist in
+        determining the argument names.
+        """
+        if not isinstance(self.instr, ir.Expr):
+            raise RuntimeError(
+                f"Expected instr to be an ir.Expr, got {type(self.instr)}: {self.instr!r}"
+            )
+
+        rewriter = self.rewriter
+        args = self.instr.args
+        kwds = self.instr.kws
+        if isinstance(kwds, tuple):
+            kwds = dict(kwds)
+        bound = signature.bind(*args, **kwds)
+        arg_root_defs = {}
+        for name, arg in bound.arguments.items():
+            if isinstance(arg, ir.Var):
+                root_def = rewriter.get_root_def(arg)
+                if root_def is None:
+                    raise RuntimeError(f"Expected root definition for arg {arg!r}")
+                arg_root_defs[name] = root_def
+            else:
+                raise RuntimeError(f"Unexpected argument type: {type(arg)}: {arg!r}")
+
+        return arg_root_defs
 
 
 @dataclass
@@ -191,6 +225,7 @@ class ArrayCallDefinition(CallDefinition):
     array_type: Optional[types.Array] = None
     array_dtype: Optional[types.DType] = None
     is_coop_array: bool = False
+    shape: Optional[int] = None
 
 
 @dataclass
@@ -198,6 +233,7 @@ class GetAttrDefinition:
     instr: VarType
     instance_name: str
     attr_name: str
+    rewriter: "CoopNodeRewriter"
     assign: Optional[ir.Assign] = None
     instance: Optional[Any] = None
     attr_instance: Optional[Any] = None
@@ -215,6 +251,7 @@ class ConstDefinition:
 
     instr: ir.Const
     value: Any
+    rewriter: "CoopNodeRewriter"
 
 
 @dataclass
@@ -226,6 +263,7 @@ class RootDefinition:
     needs_pre_launch_callback: bool
     all_instructions: list[VarType]
     all_assignments: list[ir.Assign]
+    rewriter: "CoopNodeRewriter"
     definitions: list[Union[GetAttrDefinition, CallDefinition]] = None
     attr_instance: Optional[Any] = None
 
@@ -314,6 +352,7 @@ def get_root_definition(
     calltypes: dict[ir.Expr, types.Type],
     launch_config: "LaunchConfig",
     assignments_map: dict[ir.Var, ir.Assign],
+    rewriter: Optional["CoopNodeRewriter"],
 ) -> Optional[RootDefinition]:
     """
     Recursively find the root definition of an instruction in the function IR.
@@ -323,6 +362,7 @@ def get_root_definition(
     attr_name = None
     attr_instance = None
     root_instr = None
+    root_assign = None
     original_instr = instr
     needs_pre_launch_callback = False
 
@@ -346,6 +386,28 @@ def get_root_definition(
         # The list should be empty at this point.
         assert not instructions, (instr, instructions)
 
+        if isinstance(instr, ir.Assign):
+            # If the instruction is an assignment, the caller has probably
+            # inadvertently passed an `ir.Assign` instruction instead of
+            # the instructions `.value` attribute.  Capture this assignment
+            # as the root (which saves traversal at the end of this routine),
+            # then just continue with the underlying value.
+            if counter != 1:
+                # Invariant check: I don't *think* we should ever encounter
+                # an `ir.Assign` instruction that isn't the first one
+                raise RuntimeError(
+                    "Unexpectedly encountered an ir.Assign instr that wasn't "
+                    "the first instruction."
+                )
+            assert root_assign is None, (
+                f"Expected root_assign to be None, but got {root_assign!r}."
+            )
+            root_assign = instr
+            # I don't think we need to add the root assignment to the
+            # all_instructions list.  I might be wrong, but until otherwise,
+            # just continue with the value of the instruction.
+            instructions.append(instr.value)
+            continue
         if isinstance(instr, (ir.Global, ir.FreeVar)):
             # Globals and free variables are easy; we can get the
             # instance directly from the instruction's value.
@@ -358,7 +420,11 @@ def get_root_definition(
             root_instr = instr
             instance = instr.value
             assert not instructions, (root_instr, instructions)
-            const_def = ConstDefinition(instr=instr, value=instance)
+            const_def = ConstDefinition(
+                instr=instr,
+                value=instance,
+                rewriter=rewriter,
+            )
             definitions.append(const_def)
             break
         elif isinstance(instr, ir.Arg):
@@ -426,6 +492,7 @@ def get_root_definition(
                     instance_name=var_obj.name,
                     attr_name=attr_name,
                     assign=assign,
+                    rewriter=rewriter,
                 )
                 definitions.append(getattr_def)
                 continue
@@ -457,6 +524,7 @@ def get_root_definition(
                         instr=instr,
                         func=func,
                         func_name=func.name,
+                        rewriter=rewriter,
                         assign=assign,
                         order=-1,
                     )
@@ -470,15 +538,32 @@ def get_root_definition(
                         )
                     array_dtype = array_type.dtype
                     is_coop_array = func_modname == CUDA_CCCL_COOP_ARRAY_MODULE_NAME
+                    # If this isn't a coop array (i.e. it's a cuda local or
+                    # shared array), we'll be able to obtain the shape as
+                    # a literal value from the first argument of the instr,
+                    # by way of another get root def call.
+                    if not is_coop_array:
+                        shape_arg = instr.args[0]
+                        shape_root = rewriter.get_root_def(shape_arg)
+                        if shape_root is None:
+                            raise RuntimeError(
+                                f"Expected shape root for {shape_arg!r}, but got None."
+                            )
+                        shape = get_element_count(shape_root.root_instr.value)
+                    else:
+                        shape = None
+
                     defn = ArrayCallDefinition(
                         instr=instr,
                         func=func,
                         func_name=func.name,
+                        rewriter=rewriter,
                         assign=assign,
                         order=-1,
                         array_type=array_type,
                         array_dtype=array_dtype,
                         is_coop_array=is_coop_array,
+                        shape=shape,
                     )
                     assert isinstance(defn, CallDefinition)
                 definitions.append(defn)
@@ -525,11 +610,11 @@ def get_root_definition(
                     # its instance as the instance for this call definition.
                     preceeding_defn.subsequent_call = defn
 
-    root_assign = None
-    for assign in all_assignments:
-        if assign:
-            root_assign = assign
-            break
+    if root_assign is None:
+        for assign in all_assignments:
+            if assign:
+                root_assign = assign
+                break
     if not root_assign:
         raise RuntimeError(
             "Expected to find at least one assignment for the "
@@ -544,6 +629,7 @@ def get_root_definition(
         needs_pre_launch_callback=needs_pre_launch_callback,
         all_instructions=all_instructions,
         all_assignments=all_assignments,
+        rewriter=rewriter,
         definitions=definitions,
         attr_instance=attr_instance,
     )
@@ -562,6 +648,9 @@ class Granularity(IntEnum):
     OTHER = auto()
 
 
+# TODO: Rename to PrimitiveType and the attributes to primitive_type to
+#       avoid confusion with the `primitive` usage where the underlying
+#       instance is a derived class of `BasePrimitive`.
 class Primitive(IntEnum):
     """
     Enum for the primitive type of the cooperative operation.
@@ -664,15 +753,17 @@ class CoopNode:
     codegens: list = None
     children: list = None
     temp_storage: Optional[Any] = None
+    root_def: Optional["RootDefinition"] = None
     parent_node: Optional["CoopNode"] = None
     parent_root_def: Optional["RootDefinition"] = None
     rewriter: Optional[Any] = None
     child_expr: Optional[ir.Expr] = None
     child_template: Optional[Any] = None
-    wants_rewrite: bool = None
+    wants_rewrite: bool = True
     has_been_rewritten: bool = False
     wants_codegen: bool = None
     has_been_codegened: bool = False
+    return_type: types.Type = None
 
     @property
     def shortname(self):
@@ -692,6 +783,21 @@ class CoopNode:
 
         if self.parent_node is not None:
             self.parent_node.add_child(self)
+
+        if self.is_parent:
+            # We can default the parent return type to the corresponding
+            # template's `get_instance_type()`.
+            self.return_type = self.template.get_instance_type()
+
+    def set_no_runtime_args(self):
+        """
+        Helper function for indicating that this primitive does not take
+        any runtime args.  Sets default values of empty lists to pacify
+        the `do_rewrite()` implementation.
+        """
+        self.runtime_args = None
+        self.runtime_arg_types = None
+        self.runtime_arg_names = None
 
     def pre_launch_callback(self, kernel, launch_config):
         register_kernel_extension(kernel, self)
@@ -715,6 +821,10 @@ class CoopNode:
         # sane here that'll pacify _Kernel._prepare_args().
         addr = id(val)
         return (types.uint64, addr)
+
+    def add_child(self, child):
+        assert self.is_parent, f"Cannot add child {child!r} to non-parent node {self!r}"
+        self.children.append(child)
 
     @property
     def implicit_temp_storage(self):
@@ -939,11 +1049,36 @@ class CoopNode:
 
     def do_rewrite(self):
         if self.is_two_phase:
+            assert not self.instance
             instance = self.two_phase_instance
             algo = instance.specialization
             algo.unique_id = self.unique_id
-        else:
+        elif self.is_one_shot:
+            # One-shot instances should not have an instance yet.
+            if self.instance is not None:
+                raise RuntimeError(
+                    f"One-shot instance {self!r} already has an instance: "
+                    f"{self.instance!r}"
+                )
             instance = self.instance = self.impl_class(**self.impl_kwds)
+        elif self.is_parent:
+            # Parent instances should have an instance.
+            instance = self.instance
+            if instance is None:
+                raise RuntimeError(
+                    f"Parent instance {self!r} already has an instance: "
+                    f"{self.instance!r}"
+                )
+        else:
+            # Child instances should have an instance (created from the
+            # appropriate parent instance method, e.g. `run_length.decode()`).
+            assert self.is_child, self
+            instance = self.instance
+            if instance is None:
+                raise RuntimeError(
+                    f"Child instance {self!r} does not have an instance set, "
+                    "but should have been created from a parent instance."
+                )
 
         expr = self.expr
         assign = self.instr
@@ -970,6 +1105,9 @@ class CoopNode:
         self.invocable = instance.invocable = invocable
         invocable.node = self
 
+        runtime_args = self.runtime_args or tuple()
+        runtime_arg_types = self.runtime_arg_types or tuple()
+
         g_assign = ir.Assign(
             value=ir.Global(g_var_name, invocable, expr.loc),
             target=g_var,
@@ -978,7 +1116,7 @@ class CoopNode:
 
         new_call = ir.Expr.call(
             func=g_var,
-            args=self.runtime_args,
+            args=runtime_args,
             kws=(),
             loc=expr.loc,
         )
@@ -989,36 +1127,70 @@ class CoopNode:
             loc=assign.loc,
         )
 
-        if self.is_parent:
-            template = self.template
-            return_type = template.get_instance_type()
-        else:
+        return_type = self.return_type
+        if return_type is None:
             return_type = types.void
-
         existing_type = self.typemap[assign.target.name]
         if existing_type != return_type:
+            # I don't fully understand or appreciate why some primitives need
+            # this but others don't, i.e. load/store will have a void return
+            # type in the typemap... but coop.block.scan() calls will have a
+            # `coop.block.scan` return type.  Regardless, if the existing type
+            # differs, we need to clear it and set the new return type; if we
+            # don't, we'll hit a numba casting error.
             del self.typemap[assign.target.name]
             self.typemap[assign.target.name] = return_type
 
+        algo = instance.specialization
+        parameters = algo.parameters
+        num_params = len(parameters)
+        assert num_params == 1, parameters
+        parameters = parameters[0]
+        param_dtypes = [p.dtype() for p in parameters]
+        print(f"param_dtypes: {param_dtypes}")
+
+        # if len(parameters) != len(self.runtime_arg_types):
+        #    import debugpy; debugpy.breakpoint()
+        #    raise RuntimeError(
+        #        f"Expected {len(self.runtime_arg_types)} parameters, "
+        #        f"but got {len(parameters)} for {self!r}."
+        #    )
+
         sig = Signature(
             return_type,
-            args=self.runtime_arg_types,
+            args=runtime_arg_types,
             recvr=None,
             pysig=None,
         )
 
         self.calltypes[new_call] = sig
 
-        algo = instance.specialization
         self.codegens = algo.create_codegens()
+
+        outer_node = self
 
         @register_global(invocable)
         class ImplDecl(AbstractTemplate):
             key = invocable
 
             def generic(self, outer_args, outer_kws):
+                msg = (
+                    f"{outer_node.primitive_name}:generic("
+                    f"outer_args={outer_args}, "
+                    f"outer_kws={outer_kws})"
+                )
+                print(msg)
+
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
+                    msg = (
+                        f"{outer_node.primitive_name}:codegen("
+                        f"context={context}, "
+                        f"builder={builder}, "
+                        f"sig={sig}, "
+                        f"args={args})"
+                    )
+                    print(msg)
                     node = invocable.node
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
@@ -1038,7 +1210,7 @@ class CoopNode:
         typingctx = self.typingctx
         result = func_ty.get_call_type(
             typingctx,
-            args=self.runtime_arg_types,
+            args=runtime_arg_types,
             kws={},
         )
         assert result is not None, result
@@ -1063,7 +1235,7 @@ class CoopNode:
 class CoopLoadStoreNode(CoopNode):
     threads_per_block = None
     disposition = Disposition.ONE_SHOT
-    wants_rewrite: bool = True
+    # return_type = types.void
 
     def refine_match(self, rewriter):
         """
@@ -1170,6 +1342,7 @@ class CoopLoadStoreNode(CoopNode):
             algorithm=self.algorithm_id,
             num_valid_items=self.num_valid_items,
             unique_id=self.unique_id,
+            node=self,
             temp_storage=self.temp_storage,
         )
 
@@ -1266,6 +1439,7 @@ class CoopLoadStoreNode(CoopNode):
         #      However, try as I might, I couldn't get the lowering to kick
         #      in with all the other attempted variants.
         instance = self.two_phase_instance
+        instance.node = self
         algo = instance.specialization
         algo.unique_id = self.unique_id
 
@@ -1383,7 +1557,7 @@ class CoopArrayNode(CoopNode):
     dtype = None
     alignment = None
     disposition = Disposition.ONE_SHOT
-    wants_rewrite: bool = True
+    return_type = types.Array
 
     @cached_property
     def is_shared(self):
@@ -1629,52 +1803,129 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.PARENT
 
     def refine_match(self, rewriter):
-        expr = self.expr
-        expr_args = self.expr_args = list(expr.args)
-        if len(expr_args) not in (0, 1):
+        bound = self.bound.arguments
+
+        # Infer `items_per_thread` and `bins` from the shapes of the items and
+        # histogram arrays, respectively.
+        items_var = bound["items"]
+        items_root = rewriter.get_root_def(items_var)
+        items_leaf = items_root.leaf_constructor_call
+        if not isinstance(items_leaf, ArrayCallDefinition):
             raise RuntimeError(
-                f"Invalid number of arguments for {self!r}: "
-                f"{expr_args}; expected 0 or 1."
+                f"Expected items to be an array call, got {items_leaf!r}"
             )
+        items_per_thread = items_leaf.shape
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError("Could not determine shape of items array.")
 
-        if len(expr_args) == 1:
-            temp_storage = expr_args[0]
-            runtime_args = [temp_storage]
-            runtime_arg_types = (self.typemap[temp_storage.name],)
-            runtime_arg_names = ("temp_storage",)
-            self.implicit_temp_storage = False
-        else:
-            temp_storage = None
-            runtime_args = []
-            runtime_arg_types = ()
-            runtime_arg_names = ()
-            self.implicit_temp_storage = True
+        histogram_var = bound["histogram"]
+        histogram_root = rewriter.get_root_def(histogram_var)
+        histogram_leaf = histogram_root.leaf_constructor_call
+        if not isinstance(histogram_leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                f"Expected histogram to be an array call, got {histogram_leaf!r}"
+            )
+        bins = histogram_leaf.shape
+        if not isinstance(bins, int):
+            raise RuntimeError("Could not determine shape of histogram array.")
 
-        self.temp_storage = temp_storage
-        self.runtime_args = runtime_args
-        self.runtime_arg_types = runtime_arg_types
-        self.runtime_arg_names = runtime_arg_names
+        self.algorithm = bound.get("algorithm")
+        self.temp_storage = bound.get("temp_storage")
 
-        # Initialize a list for our init and composite children.
+        items_ty = self.typemap[items_var.name]
+        histogram_ty = self.typemap[histogram_var.name]
+
+        self.items = items_var
+        self.items_ty = items_ty
+        self.items_root = items_root
+        self.item_dtype = items_ty.dtype
+        self.items_per_thread = items_per_thread
+
+        self.histogram = histogram_var
+        self.histogram_ty = histogram_ty
+        self.histogram_root = histogram_root
+        self.histogram_dtype = histogram_ty.dtype
+
+        self.counter_dtype = histogram_ty.dtype
+        self.bins = bins
+
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        # Instantiate an instance now so our children can access it.
+        self.instance = self.impl_class(
+            item_dtype=self.item_dtype,
+            counter_dtype=self.counter_dtype,
+            items_per_thread=self.items_per_thread,
+            bins=self.bins,
+            dim=self.threads_per_block,
+            algorithm=self.algorithm,
+            unique_id=self.unique_id,
+            node=self,
+            temp_storage=self.temp_storage,
+        )
         self.children = []
 
+        algo = self.instance.specialization
+        assert len(algo.parameters) == 1, algo.parameters
+        # self.set_no_runtime_args()
+        self.runtime_args = tuple()
+        self.runtime_arg_types = tuple()
+        self.runtime_arg_names = tuple()
+        return
+        self.runtime_args = algo.parameters[0]
+        self.runtime_arg_types = [p.dtype() for p in self.runtime_args]
+        self.runtime_arg_names = [
+            (p.name or f"param_{i}") for (i, p) in enumerate(self.runtime_args)
+        ]
+
+        # self.runtime_args = [ items_var, histogram_var ]
+        # self.runtime_arg_types = [ items_ty, histogram_ty ]
+        # self.runtime_arg_names = [ "items", "histogram" ]
+
     def rewrite(self, rewriter):
-        print(self)
-        return ()
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
 
 
 @dataclass
 class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram.init"
     disposition = Disposition.CHILD
+    # return_type = types.void
 
     def refine_match(self, rewriter):
-        print(self)
-        pass
+        parent_node = self.parent_node
+        parent_instance = parent_node.instance
+
+        histogram = parent_node.histogram
+        histogram_ty = parent_node.histogram_ty
+        if histogram_ty != self.typemap[histogram.name]:
+            raise RuntimeError(
+                f"Expected histogram type {parent_node.histogram_ty!r}, "
+                f"got {histogram_ty!r} for {self!r}"
+            )
+
+        self.instance = parent_instance.init(self)
+
+        self.runtime_args = [histogram]
+        self.runtime_arg_types = [histogram_ty]
+        self.runtime_arg_names = ["histogram"]
 
     def rewrite(self, rewriter):
-        print(self)
-        return ()
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
 
 
 @dataclass
@@ -1683,17 +1934,85 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.CHILD
 
     def refine_match(self, rewriter):
-        print(self)
-        pass
+        parent_node = self.parent_node
+        parent_instance = parent_node.instance
+        parent_root_def = parent_node.root_def
+        assert self.parent_root_def is parent_root_def, (
+            self.parent_root_def,
+            parent_root_def,
+        )
+
+        bound = self.bound.arguments
+        items = bound["items"]
+        items_ty = self.typemap[items.name]
+        if items_ty != parent_node.items_ty:
+            raise RuntimeError(
+                f"Expected items type {parent_node.items_ty!r}, "
+                f"got {items_ty!r} for {self!r}"
+            )
+
+        histogram = parent_node.histogram
+        histogram_ty = parent_node.histogram_ty
+        if histogram_ty != self.typemap[histogram.name]:
+            raise RuntimeError(
+                f"Expected histogram type {parent_node.histogram_ty!r}, "
+                f"got {histogram_ty!r} for {self!r}"
+            )
+
+        # parent_rewrite_details = parent_node.rewrite_details
+        self.instance = parent_instance.composite(self, items)
+
+        self.runtime_args = [items, histogram]
+        self.runtime_arg_types = [items_ty, histogram_ty]
+        self.runtime_arg_names = ["items", "histogram"]
+
+        return
+
+        algo = self.instance.specialization
+
+        assert len(algo.parameters) == 1, algo.parameters
+        # self.set_no_runtime_args()
+        # self.runtime_args = tuple()
+        # self.runtime_arg_types = tuple()
+        # self.runtime_arg_names = tuple()
+        # return
+
+        parent_var = parent_root_def.root_assign.target
+        parent_ty = self.typemap[parent_var.name]
+
+        # self.runtime_args = algo.parameters[0]
+        self.runtime_args = [parent_var, items, histogram]
+        self.runtime_arg_types = [parent_ty, items_ty, histogram_ty]
+        self.runtime_arg_names = ["parent", "items", "histogram"]
+
+        return
+
+        self.runtime_arg_types = [p.dtype() for p in self.runtime_args]
+        self.runtime_arg_names = [
+            (p.name or f"param_{i}") for (i, p) in enumerate(self.runtime_args)
+        ]
+
+        self.runtime_args.append(items)
+        self.runtime_arg_types.append(items_ty)
+        self.runtime_arg_names.append("items")
+
+        # self.runtime_args = [ items ]
+        # self.runtime_arg_types = [ items_ty ]
+        # self.runtime_arg_names = [ "items" ]
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
 
 
 @dataclass
 class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length"
     disposition = Disposition.PARENT
-    wants_rewrite: bool = True
-    # wants_rewrite: bool = False
-    # wants_codegen: bool = False
 
     def refine_match(self, rewriter):
         # The caller has invoked us with something like this:
@@ -1739,8 +2058,8 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         runtime_arg_types.append(run_lengths_ty)
         runtime_arg_names.append("run_lengths")
 
-        # Would our new get_root_definition() work here instead of raw-dogging
-        # self.get_arg_value()?
+        # XXX: Would our new get_root_definition() work here instead of
+        # raw-dogging self.get_arg_value()?
         runs_per_thread_var = expr_args.pop(0)
         assert isinstance(runs_per_thread_var, ir.Var)
         assert runs_per_thread_var.name == "runs_per_thread"
@@ -1823,9 +2142,6 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
             temp_storage=temp_storage_ty,
         )
         self.instance.node = self
-
-    def add_child(self, child):
-        self.children.append(child)
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -1950,7 +2266,6 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
 class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.run_length.decode"
     disposition = Disposition.CHILD
-    wants_rewrite: bool = True
 
     def refine_match(self, rewriter):
         # Possible call invocation types:
@@ -2183,7 +2498,6 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
 class CoopBlockScanNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.scan"
     disposition = Disposition.ONE_SHOT
-    wants_rewrite: bool = True
     threads_per_block: int = None
     codegen_return_type2: types.Type = None
     codegen_return_type3: types.Type = types.void
@@ -2415,6 +2729,7 @@ class CoopNodeRewriter(Rewrite):
         self._decl_classes = maps.decls
         self._node_classes = maps.nodes
         self._instances = maps.instances
+        self._roots = {}
 
         # Map of fully-qualified module names to the ir.Assign instruction
         # for loading the module as a global variable.
@@ -2549,7 +2864,7 @@ class CoopNodeRewriter(Rewrite):
         )
 
     @cached_property
-    def get_root_def(self):
+    def _get_root_def(self):
         """
         Returns a function that retrieves the root definition for a given
         variable in the function IR, using the current launch configuration.
@@ -2561,7 +2876,24 @@ class CoopNodeRewriter(Rewrite):
             calltypes=self.calltypes,
             launch_config=self.launch_config,
             assignments_map=self.assignments_map,
+            rewriter=self,
         )
+
+    def get_root_def(self, instr: ir.Inst) -> RootDefinition:
+        """
+        Returns the root definition for the given instruction, creating it
+        if it does not already exist.
+        """
+        root_def = self._roots.get(instr, None)
+        if root_def is not None:
+            return root_def
+
+        # Create a new root definition for the instruction.
+        root_def = self._get_root_def(instr)
+        if root_def is None:
+            raise RuntimeError(f"Could not find root definition for {instr!r}")
+        self._roots[instr] = root_def
+        return root_def
 
     def next_unique_id(self):
         return next(self._unique_id_counter)
@@ -2623,6 +2955,7 @@ class CoopNodeRewriter(Rewrite):
             rewriter=self,
             child_expr=child_expr,
             child_template=child_template,
+            root_def=parent_root_def,
         )
 
         self.nodes[parent_target_name] = node
@@ -2781,10 +3114,14 @@ class CoopNodeRewriter(Rewrite):
 
         all_match_invocations_count = self._all_match_invocations_count
         invocation_count = self._match_invocations_per_block_offset[block_offset]
+        num_block_instructions = len(block.body)
+        block_hash = hash(block)
 
         print(
             f"Processing rewriter.match(): block_no: {block_no}, "
             f"block_offset: {block_offset}, "
+            f"num_block_instructions: {num_block_instructions}, "
+            f"block_hash: {block_hash}, "
             f"invocation_count for block offset: {invocation_count}, "
             f"all_match_invocations_count: {all_match_invocations_count}, "
             f"num nodes: {len(self.nodes)}"
@@ -3195,22 +3532,21 @@ class CoopNodeRewriter(Rewrite):
                 )
                 raise RuntimeError(msg)
 
-            # If we already have a node for this target name, it must have
-            # been created by a preceding block containing a child primitive
-            # invocation against a parent struct, for which the child will
-            # have called `get_or_create_parent_node()`.
             node = self.nodes.get(target_name, None)
             if node is not None:
-                assert False
-                # Verify that this is a parent node, then continue.
-                if not node.instance.is_parent:
-                    raise RuntimeError(
-                        f"Node for target name {target_name!r} already "
-                        f"exists, but it is not a parent node: {node!r}"
-                    )
-                # We still want an opportunity to rewrite this block.
-                we_want_apply = True
-                continue
+                # We shouldn't ever hit this due to our invariant checks
+                # earlier in the routine.
+                raise RuntimeError(
+                    f"Node for target name {target_name!r} already exists: {node!r}"
+                )
+
+            # Get our root definition, plus the parent root definition if
+            # applicable.
+            root_def = self.get_root_def(instr)
+            if parent_node is not None:
+                parent_root_def = parent_node.root_def
+            else:
+                parent_root_def = None
 
             node = node_class(
                 index=i,
@@ -3231,8 +3567,10 @@ class CoopNodeRewriter(Rewrite):
                 unique_id=self.next_unique_id(),
                 type_instance=type_instance,
                 two_phase_instance=two_phase_instance,
+                root_def=root_def,
                 parent_struct_instance_type=parent_struct_instance_type,
                 parent_node=parent_node,
+                parent_root_def=parent_root_def,
                 rewriter=self,
             )
 
@@ -3257,15 +3595,32 @@ class CoopNodeRewriter(Rewrite):
             f"we_want_apply: {we_want_apply}, "
             f"num nodes: {len(self.nodes)}"
         )
+        self.current_block_no = block_no
         return we_want_apply
 
     def apply(self):
+        block = self.current_block
+        num_block_instructions = len(block.body)
+        block_hash = hash(block)
+        print(
+            f"Entered rewriter.apply(): block_no: {self.current_block_no!r}, "
+            f"num_block_instructions: {num_block_instructions}, "
+            f"block_hash: {block_hash}, "
+            f"num nodes: {len(self.nodes)}"
+        )
+
         new_block = ir.Block(self.current_block.scope, self.current_block.loc)
+
+        skipped = 0
+        ignored = 0
+        rewrote = 0
+        no_new_instructions = 0
 
         for instr in self.current_block.body:
             if not isinstance(instr, ir.Assign):
                 # If the instruction is not an assignment, copy it verbatim.
                 new_block.append(instr)
+                ignored += 1
                 continue
 
             # We're dealing with an assignment instruction.  See if we
@@ -3274,6 +3629,7 @@ class CoopNodeRewriter(Rewrite):
             node = self.nodes.get(target_name, None)
             if not node:
                 new_block.append(instr)
+                ignored += 1
                 continue
 
             if not node.wants_rewrite or node.has_been_rewritten:
@@ -3281,16 +3637,27 @@ class CoopNodeRewriter(Rewrite):
                 # been rewritten, we can just copy the instruction
                 # verbatim.
                 new_block.append(instr)
+                skipped += 1
                 continue
 
             results = node.rewrite(self)
             node.has_been_rewritten = True
             if results:
+                rewrote += 1
                 for new_instr in results:
                     new_block.append(new_instr)
             else:
+                no_new_instructions += 1
                 new_block.append(instr)
 
+        print(
+            f"Rewriter.apply() results: "
+            f"skipped: {skipped}, "
+            f"ignored: {ignored}, "
+            f"rewrote: {rewrote}, "
+            f"no_new_instructions: {no_new_instructions}, "
+            f"num nodes: {len(self.nodes)}"
+        )
         return new_block
 
 

@@ -34,11 +34,10 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     from cuda.cccl import get_include_paths
 
     include_paths = get_include_paths()
-    print(f"NVRTC include paths: {include_paths}")
+    # print(f"NVRTC include paths: {include_paths}")
     # include_paths.cub = '/home/trentn/src/cccl/cub'
     # include_paths.thrust = '/home/trentn/src/cccl/thrust'
     # include_paths.libcudacxx = '/home/trentn/src/cccl/libcudacxx'
-
     for path in include_paths.as_tuple():
         if path is not None:
             opts += [f"--include-path={path}".encode("ascii")]
