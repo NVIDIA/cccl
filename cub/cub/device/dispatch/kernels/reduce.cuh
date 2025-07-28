@@ -43,6 +43,8 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/atomic>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
