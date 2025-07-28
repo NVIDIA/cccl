@@ -68,7 +68,7 @@ rsqrt(_Tp __v) noexcept
   }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 #if _LIBCUDACXX_HAS_NVBF16()
-  else if constexpr (_CUDA_VSTD::is_same_v<_Tp, ::__bfloat16>)
+  else if constexpr (_CUDA_VSTD::is_same_v<_Tp, ::__nv_bfloat16>)
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::hrsqrt(__v);),
