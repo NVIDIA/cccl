@@ -50,6 +50,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm/clamp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -145,6 +146,35 @@ struct WarpScanSmem
   /// Basic inclusive scan iteration(template unrolled, base-case specialization)
   template <bool HAS_IDENTITY, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, constant_t<STEPS> /*step*/)
+  {}
+
+  /// Basic partial inclusive scan iteration (template unrolled, inductive-case specialization)
+  template <int STEP, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanStepPartial(T& partial, ScanOp scan_op, int valid_items, constant_t<STEP> /*step*/)
+  {
+    constexpr int OFFSET = 1 << STEP;
+
+    // Share partial into buffer
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) partial);
+
+    __syncwarp(member_mask);
+
+    // Update partial if addend is in range
+    if ((lane_id >= OFFSET) && (static_cast<int>(lane_id) < valid_items))
+    {
+      T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
+      partial  = scan_op(addend, partial);
+    }
+    __syncwarp(member_mask);
+
+    ScanStepPartial(partial, scan_op, valid_items, constant_v<STEP + 1>);
+  }
+
+  /// Basic inclusive scan iteration(template unrolled, base-case specialization)
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanStepPartial(T& /*partial*/, ScanOp /*scan_op*/, int /*valid_items*/, constant_t<STEPS> /*step*/)
   {}
 
   /**
@@ -276,6 +306,67 @@ struct WarpScanSmem
     __syncwarp(member_mask);
 
     warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+
+    __syncwarp(member_mask);
+  }
+
+  /**
+   * @brief Partial inclusive scan
+   *
+   * @param[in] input
+   *   Calling thread's input item.
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item. May be aliased with @p input
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
+  {
+    // Iterate scan steps
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive_output = input;
+    }
+    ScanStepPartial(inclusive_output, scan_op, valid_items, constant_v<0>);
+  }
+
+  /**
+   * @brief Partial inclusive scan with aggregate
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item. May be aliased with @p input
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of input items.
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
+  {
+    InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    // Retrieve aggregate
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive_output);
+
+    __syncwarp(member_mask);
+
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(
+      &temp_storage[HALF_WARP_THREADS + _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)]);
 
     __syncwarp(member_mask);
   }
@@ -427,6 +518,210 @@ struct WarpScanSmem
     exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
 
     if (lane_id == 0)
+    {
+      exclusive = initial_value;
+    }
+  }
+
+  /**
+   * @brief Update inclusive and exclusive using input and inclusive
+   *
+   * @param[in] input
+   *
+   * @param[in, out] inclusive
+   *
+   * @param[out] exclusive
+   *
+   * @param[in] scan_op
+   *
+   * @param[in] valid_items
+   *
+   * @param[in] is_integer
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T /*input*/, T& inclusive, T& exclusive, ScanOpT /*scan_op*/, int valid_items, IsIntegerT /*is_integer*/)
+  {
+    // initial value unknown
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
+
+    __syncwarp(member_mask);
+
+    T temp = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      exclusive = temp;
+    }
+  }
+
+  /**
+   * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
+   *        integer types)
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> /*scan_op*/,
+    int valid_items,
+    ::cuda::std::true_type /*is_integer*/)
+  {
+    // initial value presumed 0
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      exclusive = inclusive - input;
+    }
+  }
+
+  /**
+   * @brief Update inclusive and exclusive using initial value using input, inclusive, and initial
+   *        value
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T /*input*/,
+    T& inclusive,
+    T& exclusive,
+    ScanOpT scan_op,
+    int valid_items,
+    T initial_value,
+    IsIntegerT /*is_integer*/)
+  {
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive = scan_op(initial_value, inclusive);
+    }
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
+
+    __syncwarp(member_mask);
+
+    T temp = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      exclusive = temp;
+    }
+    if (lane_id == 0 && valid_items > 0)
+    {
+      exclusive = initial_value;
+    }
+  }
+
+  /**
+   * @brief Update inclusive and exclusive using initial value using input and inclusive
+   *        (specialized for summation of integer types)
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> scan_op,
+    int valid_items,
+    T initial_value,
+    ::cuda::std::true_type /*is_integer*/)
+  {
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive = scan_op(initial_value, inclusive);
+      exclusive = inclusive - input;
+    }
+  }
+
+  /**
+   * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T /*input*/,
+    T& inclusive,
+    T& exclusive,
+    T& warp_aggregate,
+    ScanOpT /*scan_op*/,
+    int valid_items,
+    IsIntegerT /*is_integer*/)
+  {
+    // Initial value presumed to be unknown or identity (either way our padding is correct)
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
+
+    __syncwarp(member_mask);
+
+    T temp = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      exclusive = temp;
+    }
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(
+      &temp_storage[HALF_WARP_THREADS + _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)]);
+  }
+
+  /**
+   * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive (specialized
+   *        for summation of integer types)
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input,
+    T& inclusive,
+    T& exclusive,
+    T& warp_aggregate,
+    ::cuda::std::plus<> /*scan_o*/,
+    int valid_items,
+    ::cuda::std::true_type /*is_integer*/)
+  {
+    // Initial value presumed to be unknown or identity (either way our padding is correct)
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
+
+    __syncwarp(member_mask);
+
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(
+      &temp_storage[HALF_WARP_THREADS + _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)]);
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      exclusive = inclusive - input;
+    }
+  }
+
+  /**
+   * @brief Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial
+   *        value
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T /*input*/,
+    T& inclusive,
+    T& exclusive,
+    T& warp_aggregate,
+    ScanOpT scan_op,
+    int valid_items,
+    T initial_value,
+    IsIntegerT /*is_integer*/)
+  {
+    // Broadcast warp aggregate
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
+
+    __syncwarp(member_mask);
+
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(
+      &temp_storage[HALF_WARP_THREADS + _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)]);
+
+    __syncwarp(member_mask);
+
+    // Update inclusive with initial value
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive = scan_op(initial_value, inclusive);
+    }
+
+    // Get exclusive from inclusive
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
+
+    __syncwarp(member_mask);
+
+    T temp = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      exclusive = temp;
+    }
+
+    if (lane_id == 0 && valid_items > 0)
     {
       exclusive = initial_value;
     }
