@@ -25,9 +25,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
-#include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/std/__algorithm_> // cuda::std::min
+#include <cuda/std/cstddef>
+
+#ifndef __CUDACC_RTC__
+#  include <cuda/experimental/__stf/utility/hash.cuh>
+#  include <cuda/experimental/__stf/utility/unittest.cuh>
+#else
+#  include <cuda/experimental/__stf/utility/to_tuple.cuh>
+#endif // __CUDACC_RTC__
+
+#include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
+#include <cuda/experimental/__stf/utility/to_tuple.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -96,12 +105,14 @@ public:
     return x == rhs.x && y == rhs.y && z == rhs.z && t == rhs.t;
   }
 
+#ifndef __CUDACC_RTC__
   /// Convert the pos4 to a string
   ::std::string to_string() const
   {
     return ::std::string("pos4(" + ::std::to_string(x) + "," + ::std::to_string(y) + "," + ::std::to_string(z) + ","
                          + ::std::to_string(t) + ")");
   }
+#endif
 
   int x = 0;
   int y = 0;
@@ -126,7 +137,7 @@ public:
   /// Get the total size (multiply all dimensions)
   _CCCL_HOST_DEVICE constexpr size_t size() const
   {
-    const ::std::ptrdiff_t result = ::std::ptrdiff_t(x) * y * z * t;
+    const ::cuda::std::ptrdiff_t result = ::cuda::std::ptrdiff_t(x) * y * z * t;
     assert(result >= 0);
     return result;
   }
@@ -134,7 +145,8 @@ public:
   /// Compute the dim4 class obtained by taking the minimum of two dim4 along each axis
   _CCCL_HOST_DEVICE static constexpr dim4 min(const dim4& a, const dim4& b)
   {
-    return dim4(::std::min(a.x, b.x), ::std::min(a.y, b.y), ::std::min(a.z, b.z), ::std::min(a.t, b.t));
+    return dim4(
+      ::cuda::std::min(a.x, b.x), ::cuda::std::min(a.y, b.y), ::cuda::std::min(a.z, b.z), ::cuda::std::min(a.t, b.t));
   }
 
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
@@ -177,12 +189,30 @@ template <size_t dimensions>
 class box
 {
 public:
+  box() = default;
+
+#ifndef __CUDACC_RTC__
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
-  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& s)
-      : s(s)
-  {}
+  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& _s)
+  {
+    for (size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = _s[ind].first;
+      s[ind].second = _s[ind].second;
+    }
+  }
+
+  template <typename Int1, typename Int2>
+  _CCCL_HOST_DEVICE box(const ::cuda::std::array<::cuda::std::pair<Int1, Int2>, dimensions>& _s)
+  {
+    for (size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = _s[ind].first;
+      s[ind].second = _s[ind].second;
+    }
+  }
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename Int>
@@ -206,7 +236,7 @@ public:
     static_assert(sizeof...(Int) == dimensions, "Number of dimensions must match");
     each_in_pack(
       [&](auto i, const auto& e) {
-        if constexpr (::std::is_arithmetic_v<::std::remove_reference_t<decltype(e)>>)
+        if constexpr (::cuda::std::is_arithmetic_v<::cuda::std::remove_reference_t<decltype(e)>>)
         {
           s[i].first  = 0;
           s[i].second = e;
@@ -242,7 +272,6 @@ public:
       },
       args...);
   }
-
   // _CCCL_HOST_DEVICE box(const typename ::std::experimental::dextents<size_t, dimensions>& extents) {
   //     for (size_t i: each(0, dimensions)) {
   //         s[i].first = 0;
@@ -259,27 +288,28 @@ public:
       printf("    %ld -> %ld\n", s[ind].first, s[ind].second);
     }
   }
+#endif // !__CUDACC_RTC__
 
   /// Get the number of elements along a dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_extent(size_t dim) const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t get_extent(size_t dim) const
   {
     return s[dim].second - s[dim].first;
   }
 
   /// Get the first coordinate (included) in a specific dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_begin(size_t dim) const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t get_begin(size_t dim) const
   {
     return s[dim].first;
   }
 
   /// Get the last coordinate (excluded) in a specific dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_end(size_t dim) const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t get_end(size_t dim) const
   {
     return s[dim].second;
   }
 
   /// Get the total number of elements in this explicit shape
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t size() const
+  _CCCL_HOST_DEVICE ::cuda::std::ptrdiff_t size() const
   {
     if constexpr (dimensions == 1)
     {
@@ -302,6 +332,7 @@ public:
     return dimensions;
   }
 
+#ifndef __CUDACC_RTC__
   // Iterator class for box
   class iterator
   {
@@ -420,6 +451,8 @@ public:
     return !(*this == rhs);
   }
 
+#endif // !__CUDACC_RTC__
+
   using coords_t = array_tuple<size_t, dimensions>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
@@ -427,11 +460,11 @@ public:
   {
     // Help the compiler which may not detect that a device lambda is calling a device lambda
     CUDASTF_NO_DEVICE_STACK
-    return make_tuple_indexwise<dimensions>([&](auto i) {
+    return make_cuda_tuple_indexwise<dimensions>([&](auto i) {
       // included
-      const ::std::ptrdiff_t begin_i  = get_begin(i);
-      const ::std::ptrdiff_t extent_i = get_extent(i);
-      auto result                     = begin_i + (index % extent_i);
+      const ::cuda::std::ptrdiff_t begin_i  = get_begin(i);
+      const ::cuda::std::ptrdiff_t extent_i = get_extent(i);
+      auto result                           = begin_i + (index % extent_i);
       index /= extent_i;
       return result;
     });
@@ -439,10 +472,11 @@ public:
   }
 
 private:
-  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> s;
+  ::cuda::std::array<::cuda::std::pair<::cuda::std::ptrdiff_t, ::cuda::std::ptrdiff_t>, dimensions> s;
 };
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef __CUDACC_RTC__
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // Deduction guides
 template <typename... Int>
 box(Int...) -> box<sizeof...(Int)>;
@@ -450,7 +484,8 @@ template <typename... E>
 box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
 template <typename E, size_t dimensions>
 box(::std::array<E, dimensions>) -> box<dimensions>;
-#endif // !_CCCL_DOXYGEN_INVOKED
+#  endif // !_CCCL_DOXYGEN_INVOKED
+#endif // !__CUDACC_RTC__
 
 #ifdef UNITTESTED_FILE
 UNITTEST("box<3>")
@@ -522,6 +557,7 @@ UNITTEST("mix of integrals and pairs")
 
 #endif // UNITTESTED_FILE
 
+#ifndef __CUDACC_RTC__
 // So that we can create unordered_map of pos4 entries
 template <>
 struct hash<pos4>
@@ -536,5 +572,131 @@ struct hash<pos4>
 template <>
 struct hash<dim4> : hash<pos4>
 {};
+#endif // !__CUDACC_RTC__
+
+//
+//  static_box - the whole shape is encoded in the template parameter list
+//               Usage examples:
+//                   static_box<10, 20>                 // 1-D  [10,20)
+//                   static_box<0, 20, 0, 10>           // 2-D  [0,20)x[0,10)
+//
+template <::cuda::std::ptrdiff_t... Bounds>
+class static_box
+{
+  static_assert(sizeof...(Bounds) % 2 == 0, "static_box needs begin/end pairs (2 dimensions values)");
+
+  //----------------------------------------------------------------------
+  // compile-time constants
+  //----------------------------------------------------------------------
+  static constexpr size_t dimensions = sizeof...(Bounds) / 2;
+
+  // fold expression checks every pair "upper > lower"
+  static constexpr bool all_pairs_valid = ([]() constexpr {
+    constexpr ::cuda::std::ptrdiff_t b[] = {Bounds...};
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      if (b[2 * i + 1] <= b[2 * i])
+      {
+        return false;
+      }
+    }
+    return true;
+  })();
+  static_assert(all_pairs_valid, "each upper bound must be strictly larger than its lower");
+
+  //----------------------------------------------------------------------
+  // public aliases
+  //----------------------------------------------------------------------
+  using coords_t = array_tuple<size_t, dimensions>;
+
+  //----------------------------------------------------------------------
+  // helpers that work both at run time and at compile time
+  //----------------------------------------------------------------------
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::ptrdiff_t get_begin(size_t dim)
+  {
+    constexpr ::cuda::std::ptrdiff_t b[] = {Bounds...};
+    return b[2 * dim];
+  }
+
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::ptrdiff_t get_extent(size_t dim)
+  {
+    constexpr ::cuda::std::ptrdiff_t b[] = {Bounds...};
+    return b[2 * dim + 1] - b[2 * dim];
+  }
+
+  template <size_t Dim>
+  static constexpr ::cuda::std::ptrdiff_t get_begin_c() // compile-time
+  {
+    constexpr ::cuda::std::ptrdiff_t b[] = {Bounds...};
+    return b[2 * Dim];
+  }
+
+  template <size_t Dim>
+  static constexpr ::cuda::std::ptrdiff_t get_extent_c() // compile-time
+  {
+    constexpr ::cuda::std::ptrdiff_t b[] = {Bounds...};
+    return b[2 * Dim + 1] - b[2 * Dim];
+  }
+
+public:
+  //--------------------------------------------------------------------------
+  // index -> coordinate explosion (unchanged algorithm, but everything static)
+  //--------------------------------------------------------------------------
+  _CCCL_HOST_DEVICE static coords_t index_to_coords(size_t index)
+  {
+    CUDASTF_NO_DEVICE_STACK
+    return make_cuda_tuple_indexwise<dimensions>([&](auto dim_cst) {
+      constexpr size_t dim = decltype(dim_cst)::value;
+      const auto extent_i  = get_extent_c<dim>();
+      auto result          = get_begin_c<dim>() + (index % extent_i);
+      index /= extent_i;
+      return result;
+    });
+    CUDASTF_NO_DEVICE_STACK
+  }
+
+  _CCCL_HOST_DEVICE static ::cuda::std::ptrdiff_t size()
+  {
+    if constexpr (dimensions == 1)
+    {
+      return get_extent(0);
+    }
+    else
+    {
+      size_t res = 1;
+      for (size_t d = 0; d < dimensions; d++)
+      {
+        res *= get_extent(d);
+      }
+      return res;
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // explicit conversion from a dynamic box<dimensions> (run-time assert only)
+  //--------------------------------------------------------------------------
+  template <size_t DynDims>
+  _CCCL_HOST_DEVICE explicit constexpr static_box([[maybe_unused]] const box<DynDims>& dyn)
+  {
+    static_assert(DynDims == dimensions, "dimension mismatch between static_box and box");
+
+#ifndef __CUDA_ARCH__ // run-time checks only on the host
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      assert(dyn.get_begin(i) == get_begin(i) && dyn.get_extent(i) == get_extent(i)
+             && "dynamic box does not match the compile-time extents");
+    }
+#endif
+  }
+
+  //--------------------------------------------------------------------------
+  // default constructor: nothing to store, the shape is in the type
+  //--------------------------------------------------------------------------
+  constexpr static_box() = default;
+};
+
+// deduction guide : allows static_box b{ box_obj };   to work
+template <::cuda::std::ptrdiff_t... B>
+static_box(const box<sizeof...(B) / 2>&) -> static_box<B...>;
 
 } // end namespace cuda::experimental::stf

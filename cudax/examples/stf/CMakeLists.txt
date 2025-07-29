@@ -29,6 +29,7 @@ set(stf_example_codegen_sources
   graph_algorithms/pagerank.cu
   graph_algorithms/tricount.cu
   heat.cu
+  heat_task.cu
   heat_mgpu.cu
   jacobi.cu
   jacobi_pfor.cu
