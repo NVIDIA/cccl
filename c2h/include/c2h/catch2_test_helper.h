@@ -329,6 +329,24 @@ struct Catch::StringMaker<cudaError>
 #include <c2h/custom_type.h>
 #include <c2h/generators.h>
 
+namespace detail
+{
+struct nvtx_c2h_domain
+{
+  static constexpr const char* name = "C2H";
+};
+
+template <typename T>
+struct nvtx_fixture
+{
+  nvtx_fixture()
+      : r(Catch::getResultCapture().getCurrentTestName())
+  {}
+
+  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> r;
+};
+} // namespace detail
+
 #define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 
 #define C2H_TEST_NAME(NAME) C2H_TEST_NAME_IMPL(NAME, VAR_IDX)
@@ -338,7 +356,7 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE(C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
@@ -351,7 +369,7 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE(C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
