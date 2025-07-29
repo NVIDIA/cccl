@@ -361,28 +361,6 @@ ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int 
   return retval;
 }
 
-// Currently unused
-template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceBinaryTreePartial(const Input& input, ReductionOp reduction_op, int valid_items)
-{
-  constexpr auto length = static_size_v<Input>;
-  auto array            = cub::detail::to_array<AccumT>(input);
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 1; i < length; i *= 2)
-  {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j + i < length; j += i * 2)
-    {
-      if (j + i < valid_items)
-      {
-        array[j] = reduction_op(array[j], array[j + i]);
-      }
-    }
-  }
-  return array[0];
-}
-
 /***********************************************************************************************************************
  * SIMD Reduction
  **********************************************************************************************************************/
@@ -435,7 +413,6 @@ template <typename Input,
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_items)
 {
-  using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,

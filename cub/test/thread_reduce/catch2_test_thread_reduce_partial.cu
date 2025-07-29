@@ -20,70 +20,70 @@
 #include <c2h/generators.h>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-constexpr int max_size  = 16;
-constexpr int num_seeds = 3;
+inline constexpr int max_size  = 16;
+inline constexpr int num_seeds = 3;
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
-template <int NUM_ITEMS, typename In, typename Out, typename ReduceOperator>
+template <int NumItems, typename In, typename Out, typename ReduceOperator>
 __global__ void thread_reduce_partial_kernel(In d_in, Out d_out, ReduceOperator reduce_operator, int valid_items)
 {
   using value_t = cuda::std::iter_value_t<In>;
-  value_t thread_data[NUM_ITEMS];
+  value_t thread_data[NumItems];
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
   *d_out = cub::detail::ThreadReducePartial(thread_data, reduce_operator, valid_items);
 }
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void
 thread_reduce_partial_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator, int valid_items)
 {
-  cuda::std::array<T, NUM_ITEMS> thread_data;
+  cuda::std::array<T, NumItems> thread_data;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
   *d_out = cub::detail::ThreadReducePartial(thread_data, reduce_operator, valid_items);
 }
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void
 thread_reduce_partial_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce_operator, int valid_items)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  cuda::std::span<T, NUM_ITEMS> span(thread_data);
+  cuda::std::span<T, NumItems> span(thread_data);
   *d_out = cub::detail::ThreadReducePartial(span, reduce_operator, valid_items);
 }
 
 #if _CCCL_STD_VER >= 2023
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void
 thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator, int valid_items)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  using Extent = cuda::std::extents<int, NUM_ITEMS>;
-  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
+  using Extent = cuda::std::extents<int, NumItems>;
+  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
   *d_out = cub::detail::ThreadReducePartial(mdspan, reduce_operator, valid_items);
 }
 
@@ -261,7 +261,7 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
 #endif // _CCCL_STD_VER >= 2023
 }
 
-C2H_TEST("ThreadReducePartial Invalid Test", "[reduce][thread]")
+C2H_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]")
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},
