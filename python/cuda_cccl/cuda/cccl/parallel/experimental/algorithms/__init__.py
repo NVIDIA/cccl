@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._histogram import histogram_even as histogram_even
-from ._histogram import make_histogram as make_histogram
+from ._histogram import make_histogram_even as make_histogram_even
 from ._merge_sort import make_merge_sort as make_merge_sort
 from ._merge_sort import merge_sort as merge_sort
 from ._radix_sort import DoubleBuffer, SortOrder
@@ -25,9 +25,9 @@ from ._unique_by_key import make_unique_by_key as make_unique_by_key
 from ._unique_by_key import unique_by_key as unique_by_key
 
 __all__ = [
-    "make_histogram",
     "make_binary_transform",
     "make_exclusive_scan",
+    "make_histogram_even",
     "make_inclusive_scan",
     "make_merge_sort",
     "make_radix_sort",

@@ -133,7 +133,7 @@ class _Histogram:
 
 
 @cache_with_key(make_cache_key)
-def make_histogram(
+def make_histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
     d_histogram: DeviceArrayLike,
     h_num_output_levels: np.ndarray,
@@ -182,7 +182,7 @@ def histogram_even(
     num_samples: int,
     stream=None,
 ):
-    histogram = make_histogram(
+    histogram = make_histogram_even(
         d_samples,
         d_histogram,
         h_num_output_levels,
