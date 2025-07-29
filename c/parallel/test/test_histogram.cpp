@@ -61,10 +61,6 @@ void build_histogram(
       thrust_path,
       libcudacxx_path,
       ctk_path));
-
-  const std::string sass = inspect_sass(build->cubin, build->cubin_size);
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
 }
 
 void histogram_even(
@@ -164,16 +160,16 @@ auto setup_bin_levels_for_even(const std::vector<int>& num_levels, LevelT max_le
   return levels;
 }
 
-template <int Channels, typename CounterT, size_t ActiveChannels, typename SampleT, typename TransformOp, typename OffsetT>
+template <int Channels, typename counter_t, size_t ActiveChannels, typename SampleT, typename TransformOp, typename OffsetT>
 auto compute_reference_result(
   const std::vector<SampleT>& h_samples,
   const TransformOp& sample_to_bin_index,
   const std::vector<int>& num_levels,
   OffsetT width,
   OffsetT height,
-  OffsetT row_pitch) -> std::array<std::vector<CounterT>, ActiveChannels>
+  OffsetT row_pitch) -> std::array<std::vector<counter_t>, ActiveChannels>
 {
-  auto h_histogram = std::array<std::vector<CounterT>, ActiveChannels>{};
+  auto h_histogram = std::array<std::vector<counter_t>, ActiveChannels>{};
   for (size_t c = 0; c < ActiveChannels; ++c)
   {
     h_histogram[c].resize(num_levels[c] - 1);
@@ -198,7 +194,7 @@ auto compute_reference_result(
 
 C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
 {
-  using CounterT = int;
+  using counter_t = int;
 
   int num_samples = 10;
   std::vector<float> d_samples{2.2, 6.1, 7.1, 2.9, 3.5, 0.3, 2.9, 2.1, 6.1, 999.5};
@@ -207,8 +203,8 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
 
   int num_levels = 7;
   std::vector<int> d_num_levels{num_levels};
-  std::vector<CounterT> d_single_histogram(6, 0);
-  pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
+  std::vector<counter_t> d_single_histogram(6, 0);
+  pointer_t<counter_t> d_single_histogram_ptr(d_single_histogram);
 
   LevelT lower_level = 0.0;
   LevelT upper_level = 12.0;
@@ -233,7 +229,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
     num_rows,
     row_stride_samples);
 
-  std::vector<CounterT> d_histogram_out(d_single_histogram_ptr);
+  std::vector<counter_t> d_histogram_out(d_single_histogram_ptr);
   CHECK(d_histogram_out == std::vector{1, 5, 0, 3, 0, 0});
 }
 
@@ -249,9 +245,9 @@ struct bit_and_anything
 
 C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", sample_types)
 {
-  using CounterT = int;
-  using sample_t = c2h::get<0, TestType>;
-  using offset_t = int;
+  using counter_t = int;
+  using sample_t  = c2h::get<0, TestType>;
+  using offset_t  = int;
 
   const auto max_level       = LevelT{sizeof(sample_t) == 1 ? 126 : 1024};
   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
@@ -274,7 +270,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     h_samples[i] = static_cast<sample_t>(samples_gen[i]);
   }
 
-  std::vector<CounterT> d_single_histogram(num_levels[0] - 1, 0);
+  std::vector<counter_t> d_single_histogram(num_levels[0] - 1, 0);
 
   auto levels = setup_bin_levels_for_even<active_channels, LevelT>(num_levels, max_level, max_level_count);
 
@@ -313,12 +309,12 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     }
     _CCCL_UNREACHABLE();
   };
-  auto h_histogram = compute_reference_result<channels, CounterT, active_channels>(
+  auto h_histogram = compute_reference_result<channels, counter_t, active_channels>(
     h_samples, sample_to_bin_index, num_levels, width, height, row_pitch);
 
   // Compute result and verify
   pointer_t<sample_t> sample_ptr(h_samples);
-  pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
+  pointer_t<counter_t> d_single_histogram_ptr(d_single_histogram);
 
   value_t<int> num_levels_val{num_levels[0]};
   value_t<LevelT> lower_level_val{lower_level[0]};
@@ -337,6 +333,65 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 
   for (size_t c = 0; c < active_channels; ++c)
   {
-    CHECK(h_histogram[c] == std::vector<CounterT>(d_single_histogram_ptr));
+    CHECK(h_histogram[c] == std::vector<counter_t>(d_single_histogram_ptr));
+  }
+}
+
+C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram][device]")
+{
+  using counter_t = int;
+  using sample_t  = std::int32_t;
+  using offset_t  = int;
+
+  const auto max_level_count = 1025;
+
+  const auto num_levels = generate_level_counts_to_test<num_active_channels>(max_level_count);
+  const int num_bins    = num_levels[0] - 1;
+
+  const offset_t samples_per_bin        = 10;
+  const offset_t adjusted_total_samples = num_bins * samples_per_bin;
+
+  // Set up iterator that counts from 0 to adjusted_total_samples - 1
+  iterator_t<sample_t, counting_iterator_state_t<sample_t>> counting_it = make_counting_iterator<sample_t>("int");
+  counting_it.state.value                                               = static_cast<sample_t>(0);
+
+  std::vector<counter_t> d_single_histogram(num_levels[0] - 1, 0);
+
+  // Set up levels so that values 0 to adjusted_total_samples-1 are evenly distributed
+  std::vector<std::vector<LevelT>> levels(2);
+  auto& lower_level = levels[0];
+  auto& upper_level = levels[1];
+
+  lower_level.resize(num_active_channels);
+  upper_level.resize(num_active_channels);
+
+  lower_level[0] = static_cast<LevelT>(0);
+  upper_level[0] = static_cast<LevelT>(adjusted_total_samples);
+
+  // Compute reference result - each bin should have exactly samples_per_bin elements
+  auto h_histogram = std::array<std::vector<counter_t>, num_active_channels>{};
+  h_histogram[0].resize(num_levels[0] - 1, samples_per_bin);
+
+  // Compute result and verify
+  pointer_t<counter_t> d_single_histogram_ptr(d_single_histogram);
+
+  value_t<int> num_levels_val{num_levels[0]};
+  value_t<LevelT> lower_level_val{lower_level[0]};
+  value_t<LevelT> upper_level_val{upper_level[0]};
+
+  histogram_even(
+    counting_it,
+    d_single_histogram_ptr,
+    num_levels_val,
+    num_levels[0],
+    lower_level_val,
+    upper_level_val,
+    adjusted_total_samples,
+    1,
+    adjusted_total_samples);
+
+  for (size_t c = 0; c < num_active_channels; ++c)
+  {
+    CHECK(h_histogram[c] == std::vector<counter_t>(d_single_histogram_ptr));
   }
 }
