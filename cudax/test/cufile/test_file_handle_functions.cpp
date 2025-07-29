@@ -9,7 +9,7 @@
 #include <cstring>
 #include <unistd.h>
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 class FileHandleTest : public ::testing::Test {
 protected:

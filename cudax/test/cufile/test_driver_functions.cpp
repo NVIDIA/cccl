@@ -4,7 +4,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace cuda::experimental {
+namespace cuda::experimental::cufile {
 
 class DriverTest : public ::testing::Test {
 
