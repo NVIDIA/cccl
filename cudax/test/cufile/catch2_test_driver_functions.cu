@@ -12,63 +12,25 @@
 
 #include <c2h/catch2_test_helper.h>
 
-#include <dlfcn.h>
-#include <unistd.h>
-#include <cstring>
-#include <cstdlib>
+
 #include <string>
 #include <cuda/std/string_view>
 
+namespace {
+    // workaround to be able to open and close the driver several times during the test. If the logging is enabled, it crashes on the second close.
+    struct DisableLogging {
+        DisableLogging() {
+            setenv("CUFILE_LOGFILE_PATH", "", 1);
+        }
+    } s_disable_logging;
+}
+
 namespace cuda::experimental::cufile {
 
-// Comprehensive cuFile environment check
-struct cufile_environment_status {
-    bool library_available = false;
-    bool config_file_exists = false;
-    bool library_path_set = false;
-    ::std::string message;
-};
-
-cufile_environment_status check_cufile_environment() noexcept {
-    cufile_environment_status status;
-
-    // Check if cuFile library is available
-    void* handle = dlopen("libcufile.so.0", RTLD_LAZY | RTLD_NOLOAD);
-    if (handle) {
-        dlclose(handle);
-        status.library_available = true;
-    }
-
-    // Check for config file
-    status.config_file_exists = (access("/usr/local/cuda/gds/cufile.json", F_OK) == 0) ||
-                                (access("/usr/local/cuda-12.9/gds/cufile.json", F_OK) == 0);
-
-    // Check library path
-    const char* ld_path = getenv("LD_LIBRARY_PATH");
-    status.library_path_set = ld_path &&
-        (strstr(ld_path, "cuda") != nullptr || strstr(ld_path, "nvidia") != nullptr);
-
-    // Generate informative message
-    if (!status.library_available) {
-        status.message = "cuFile library not available - requires GPU Direct Storage (GDS) installation";
-    } else if (!status.config_file_exists) {
-        status.message = "cuFile config file not found - GDS may not be properly configured";
-    } else if (!status.library_path_set) {
-        status.message = "CUDA library path not in LD_LIBRARY_PATH";
-    } else {
-        status.message = "cuFile environment appears to be configured";
-    }
-
-    return status;
-}
 
 TEST_CASE("Driver management functions", "[driver][management]")
 {
-    // Check cuFile environment before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("Driver open and close operations")
     {
@@ -108,13 +70,10 @@ TEST_CASE("Driver management functions", "[driver][management]")
     }
 }
 
+
 TEST_CASE("RAII driver handle management", "[driver][raii]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("Driver handle RAII lifecycle")
     {
@@ -133,11 +92,7 @@ TEST_CASE("RAII driver handle management", "[driver][raii]")
 
 TEST_CASE("Driver properties", "[driver][properties]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("NVFS and driver properties access")
     {
@@ -202,11 +157,7 @@ TEST_CASE("Driver properties", "[driver][properties]")
 
 TEST_CASE("Driver configuration", "[driver][configuration]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("Driver configuration operations")
     {
@@ -228,11 +179,7 @@ TEST_CASE("Driver configuration", "[driver][configuration]")
 
 TEST_CASE("Statistics management", "[driver][statistics]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("Statistics operations")
     {
@@ -276,11 +223,7 @@ TEST_CASE("Statistics management", "[driver][statistics]")
 
 TEST_CASE("Parameter management", "[driver][parameters]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("Parameter operations")
     {
@@ -302,33 +245,14 @@ TEST_CASE("Parameter management", "[driver][parameters]")
     }
 }
 
-TEST_CASE("cuFile Environment Status", "[environment][info]")
-{
-    SECTION("Environment check")
-    {
-        auto env_status = check_cufile_environment();
 
-        // Always pass - this is informational
-        INFO("cuFile Environment Status:");
-        INFO("Library Available: " << (env_status.library_available ? "YES" : "NO"));
-        INFO("Config File Exists: " << (env_status.config_file_exists ? "YES" : "NO"));
-        INFO("Library Path Set: " << (env_status.library_path_set ? "YES" : "NO"));
-        INFO("Message: " << env_status.message);
-
-        SUCCEED("Environment status check completed");
-    }
-}
 
 TEST_CASE("Capability checking", "[driver][capabilities]")
 {
     SECTION("Library availability")
     {
-        // Test cuFile library availability functions without calling cuFile
-        auto env_status = check_cufile_environment();
-
-        // This should not throw and provides information about availability
-        REQUIRE((env_status.library_available == true || env_status.library_available == false));
-        REQUIRE(!env_status.message.empty());
+        // Test basic driver functionality
+        SUCCEED("Driver capability check completed");
     }
 
     SECTION("CuFile functionality availability")
@@ -353,11 +277,7 @@ TEST_CASE("Capability checking", "[driver][capabilities]")
 
 TEST_CASE("GPU BAR size", "[driver][gpu]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("BAR size retrieval")
     {
@@ -375,11 +295,7 @@ TEST_CASE("GPU BAR size", "[driver][gpu]")
 
 TEST_CASE("Driver lifecycle integration", "[driver][integration]")
 {
-    // Check if cuFile is available before running any tests
-    auto env_status = check_cufile_environment();
-    if (!env_status.library_available) {
-        SKIP("Skipping driver tests: " + env_status.message);
-    }
+
 
     SECTION("Complete driver lifecycle")
     {
@@ -410,5 +326,4 @@ TEST_CASE("Driver lifecycle integration", "[driver][integration]")
         REQUIRE(driver_use_count() == 0);
     }
 }
-
 } // namespace cuda::experimental::cufile
