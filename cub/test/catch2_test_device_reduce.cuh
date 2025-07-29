@@ -54,7 +54,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
@@ -65,7 +65,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));
@@ -215,13 +215,13 @@ std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   return {};
 }
 
-inline ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
+inline constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
 {
   return {};
 }
 
 template <bool V, class OpT>
-inline OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
+inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
 {
   return op;
 }
@@ -247,10 +247,19 @@ inline void init_default_constant(uchar3& val)
   val = uchar3{2, 2, 2};
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 inline void init_default_constant(ulonglong4& val)
 {
   val = ulonglong4{2, 2, 2, 2};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+inline void init_default_constant(ulonglong4_16a& val)
+{
+  val = ulonglong4_16a{2, 2, 2, 2};
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename InputItT,
           typename OffsetItT,

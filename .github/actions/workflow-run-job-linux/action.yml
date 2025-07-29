@@ -20,46 +20,46 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
-  producer_id:
-    description: "The producer job's ID, if downloading a wheelhouse from a producer."
-    required: false
 
 runs:
   using: "composite"
   steps:
-    - name: Install dependencies
-      shell: sh
+    - name: Define and log job details
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
+        COMMAND: "${{inputs.command}}"
       run: |
-        # Install script dependencies
-        sudo apt update
-        sudo apt install -y --no-install-recommends tree git
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        path: ${{github.event.repository.name}}
-        persist-credentials: false
+        echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
+
+        echo "::group::️🔍 Job Inputs"
+        # Define the job input parameters as JOB_* environment variables that are visible in all steps:
+        echo "JOB_ID=${{inputs.id}}"               | tee -a $GITHUB_ENV
+        echo "JOB_RUNNER=${{inputs.runner}}"       | tee -a $GITHUB_ENV
+        echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
+        echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
+        echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
+        echo
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+        echo "::endgroup::"
+
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
+        echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
     - name: Get AWS credentials for sccache bucket
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-    - name: Download wheelhouse artifact if it exists
-      uses: actions/download-artifact@v4
-      with:
-        name: wheelhouse-${{ inputs.producer_id || inputs.id }}
-        path: ${{github.event.repository.name}}/wheelhouse/
-      continue-on-error: true
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+      id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        GH_TOKEN: ${{ github.token }}
         CI: true
-        RUNNER: "${{inputs.runner}}"
-        IMAGE: "${{inputs.image}}"
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
@@ -67,15 +67,16 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        mkdir -p artifacts
-
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
+
         set -euo pipefail
+
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
+        echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
-        eval "${COMMAND}"
-        exit_code=$?
+        exit_code=0
+        eval "${COMMAND}" || exit_code=$?
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
@@ -88,30 +89,17 @@ runs:
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
-          exit $exit_code
         fi
 
-        # Copy any artifacts we want to preserve out of the container:
-        results_dir=/artifacts
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
 
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          filename="$1"
-          filepath="$(find . -name "${filename}" -print -quit)"
-          if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
-            return 1
-          fi
-          cp -v "$filepath" "$results_dir"
-        }
-
-        find_and_copy "sccache_stats.json" || :
+        exit $exit_code
         EOF
 
         chmod +x ci.sh
 
         # The devcontainer will mount this path to the home directory:
-        readonly aws_dir="${{github.event.repository.name}}/.aws"
+        readonly aws_dir="${{github.workspace}}/.aws"
         mkdir "${aws_dir}";
 
         cat <<EOF > "${aws_dir}/config"
@@ -133,71 +121,56 @@ runs:
         declare -a gpu_request=()
 
         # Explicitly pass which GPU to use if on a GPU runner
-        if [[ "${RUNNER}" = *"-gpu-"* ]]; then
+        if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
           gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
 
         # If the image contains "cudaXX.Yext"...
-        if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
+        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+ext ]]; then
           cuda_ext_request="--cuda-ext"
         fi
 
+        # Initialize artifact paths, vars, etc shared with the devcontainer:
+        source ci/util/artifacts/common.sh
+        source ci/util/workflow/common.sh
+
         # Launch this container using the host's docker daemon
-        set -x
-        ${{github.event.repository.name}}/.devcontainer/launch.sh \
-          --docker \
-          --cuda ${{inputs.cuda}} \
-          --host ${{inputs.host}} \
-          ${cuda_ext_request:-} \
-          "${gpu_request[@]}" \
-          --env "CI=$CI" \
-          --env "AWS_ROLE_ARN=" \
-          --env "COMMAND=$COMMAND" \
-          --env "SCCACHE_IDLE_TIMEOUT=0" \
-          --env "GITHUB_ENV=$GITHUB_ENV" \
-          --env "GITHUB_SHA=$GITHUB_SHA" \
-          --env "GITHUB_PATH=$GITHUB_PATH" \
-          --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
-          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-          --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
-          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-          --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-          --env "HOST_WORKSPACE=${{github.workspace}}" \
-          --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
-          --volume "${{github.workspace}}/ci.sh:/ci.sh" \
-          --volume "${{github.workspace}}/artifacts:/artifacts" \
-          -- /ci.sh
+        ( # Subshell to contain the set -x log
+          set -x
+          .devcontainer/launch.sh \
+            --docker \
+            --cuda $JOB_CUDA \
+            --host $JOB_HOST \
+            ${cuda_ext_request:-} \
+            "${gpu_request[@]}" \
+            --env "AWS_ROLE_ARN=" \
+            --env "COMMAND=$COMMAND" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --env "GH_TOKEN=${{ github.token }}" \
+            --env "HOST_WORKSPACE=${{github.workspace}}" \
+            --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
+            --env "JOB_ID=$JOB_ID" \
+            --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
+            --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
+            --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
+            -- ./ci.sh
+        )
 
-    - name: Prepare job artifacts
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        echo "Prepare job artifacts"
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
-
-        touch "$result_dir/success"
-
-        artifacts_exist="$(ls -A artifacts)"
-        if [ "$artifacts_exist" ]; then
-          cp -rv artifacts/* "$result_dir"
-        fi
-
-        echo "::group::Job artifacts"
-        tree "$result_dir"
-        echo "::endgroup::"
+        # Dump artifact matrix for upload step:
+        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
 
     - name: Upload job artifacts
-      uses: actions/upload-artifact@v4
+      if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
+      uses: ./.github/actions/upload-artifacts
       with:
-        name: jobs-${{inputs.id}}
-        path: jobs
-        compression-level: 0
-
-    - name: Upload wheelhouse
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: wheelhouse-${{inputs.id}}
-        path: ${{github.event.repository.name}}/wheelhouse/
-        compression-level: 0
+        artifacts: ${{ steps.run.outputs.ARTIFACTS }}

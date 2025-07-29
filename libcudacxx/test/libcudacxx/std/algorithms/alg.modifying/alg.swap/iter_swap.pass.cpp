@@ -39,7 +39,7 @@ struct with_ambiguous_iter_swap
 };
 
 template <class Iter1, class Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void iter_swap(Iter1 __a, Iter2 __b)
+_CCCL_API constexpr void iter_swap(Iter1 __a, Iter2 __b)
 {
   // do nothing to check whether its preferred
 }

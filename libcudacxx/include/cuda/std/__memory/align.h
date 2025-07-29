@@ -22,6 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/pow2.h>
+#include <cuda/std/__memory/assume_aligned.h>
+#include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -32,22 +35,27 @@ _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type,
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
+_CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
+  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "cuda::std::align: alignment must be a power of two!");
   if (__space < __size)
   {
     return nullptr;
   }
 
-  const auto __intptr  = reinterpret_cast<uintptr_t>(__ptr);
-  const auto __aligned = (__intptr - 1u + __alignment) & -__alignment;
-  const auto __diff    = __aligned - __intptr;
+  char* __char_ptr = static_cast<char*>(__ptr);
+  char* __aligned_ptr =
+    reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(__char_ptr + (__alignment - 1)) & -__alignment);
+  const size_t __diff = static_cast<size_t>(__aligned_ptr - __char_ptr);
   if (__diff > (__space - __size))
   {
     return nullptr;
   }
+
+  //! We need to avoid using __aligned_ptr here, as nvcc looses track of the execution space otherwise
+  __ptr = reinterpret_cast<void*>(__char_ptr + __diff);
   __space -= __diff;
-  return __ptr = reinterpret_cast<void*>(__aligned);
+  return _CUDA_VSTD::__runtime_assume_aligned(__ptr, __alignment);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

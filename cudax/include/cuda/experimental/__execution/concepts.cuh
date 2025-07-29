@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONCEPTS
-#define __CUDAX_ASYNC_DETAIL_CONCEPTS
+#ifndef __CUDAX_EXECUTION_CONCEPTS
+#define __CUDAX_EXECUTION_CONCEPTS
 
 #include <cuda/std/detail/__config>
 
@@ -25,13 +25,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 
-#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -106,7 +106,7 @@ inline constexpr bool enable_sender = __enable_sender<_Sndr>();
 template <class... _Env>
 struct __completions_tester
 {
-  template <class _Sndr, bool EnableIfConstexpr = (get_completion_signatures<_Sndr, _Env...>(), true)>
+  template <class _Sndr, bool EnableIfConstexpr = ((void) get_completion_signatures<_Sndr, _Env...>(), true)>
   _CCCL_API static constexpr auto __is_valid(int) -> bool
   {
     return __valid_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>>;
@@ -134,7 +134,7 @@ _CCCL_CONCEPT sender_in = //
   ( //
     requires(sender<_Sndr>), //
     requires(sizeof...(_Env) <= 1), //
-    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>), //
+    requires((__queryable<_Env> && ... && true)), //
     requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
   );
 
@@ -150,4 +150,4 @@ _CCCL_CONCEPT dependent_sender = //
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_CONCEPTS
+#endif // __CUDAX_EXECUTION_CONCEPTS

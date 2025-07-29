@@ -1,37 +1,16 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
 #include <thrust/detail/config/device_system.h>
 
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <iostream>
+
+#include <c2h/extended_types.h>
 
 /******************************************************************************
  * Console printing utilities
@@ -70,7 +49,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector1 overloads
  */
-#  define C2H_VEC_OVERLOAD_1(T, BaseT)                                        \
+#  define C2H_VEC_OVERLOAD_1(T)                                               \
     /* Ostream output */                                                      \
     inline std::ostream& operator<<(std::ostream& os, const T& val)           \
     {                                                                         \
@@ -107,7 +86,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector2 overloads
  */
-#  define C2H_VEC_OVERLOAD_2(T, BaseT)                                        \
+#  define C2H_VEC_OVERLOAD_2(T)                                               \
     /* Ostream output */                                                      \
     inline std::ostream& operator<<(std::ostream& os, const T& val)           \
     {                                                                         \
@@ -152,7 +131,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector3 overloads
  */
-#  define C2H_VEC_OVERLOAD_3(T, BaseT)                                                         \
+#  define C2H_VEC_OVERLOAD_3(T)                                                                \
     /* Ostream output */                                                                       \
     inline std::ostream& operator<<(std::ostream& os, const T& val)                            \
     {                                                                                          \
@@ -205,7 +184,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector4 overloads
  */
-#  define C2H_VEC_OVERLOAD_4(T, BaseT)                                                                           \
+#  define C2H_VEC_OVERLOAD_4(T)                                                                                  \
     /* Ostream output */                                                                                         \
     inline std::ostream& operator<<(std::ostream& os, const T& val)                                              \
     {                                                                                                            \
@@ -260,34 +239,56 @@ inline int CoutCast(signed char val)
     /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                    \
     inline __host__ __device__ T operator+(T a, T b)                                                             \
     {                                                                                                            \
-      T retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);                                           \
+      const auto retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);                                  \
       return retval;                                                                                             \
     }
 
 /**
  * All vector overloads
  */
-#  define C2H_VEC_OVERLOAD(COMPONENT_T, BaseT) \
-    C2H_VEC_OVERLOAD_1(COMPONENT_T##1, BaseT)  \
-    C2H_VEC_OVERLOAD_2(COMPONENT_T##2, BaseT)  \
-    C2H_VEC_OVERLOAD_3(COMPONENT_T##3, BaseT)  \
-    C2H_VEC_OVERLOAD_4(COMPONENT_T##4, BaseT)
+#  define C2H_VEC_OVERLOAD(VecName) \
+    C2H_VEC_OVERLOAD_1(VecName##1)  \
+    C2H_VEC_OVERLOAD_2(VecName##2)  \
+    C2H_VEC_OVERLOAD_3(VecName##3)  \
+    C2H_VEC_OVERLOAD_4(VecName##4)
 
 /**
  * Define for types
  */
-C2H_VEC_OVERLOAD(char, char)
-C2H_VEC_OVERLOAD(short, short)
-C2H_VEC_OVERLOAD(int, int)
-C2H_VEC_OVERLOAD(long, long)
-C2H_VEC_OVERLOAD(longlong, long long)
-C2H_VEC_OVERLOAD(uchar, unsigned char)
-C2H_VEC_OVERLOAD(ushort, unsigned short)
-C2H_VEC_OVERLOAD(uint, unsigned int)
-C2H_VEC_OVERLOAD(ulong, unsigned long)
-C2H_VEC_OVERLOAD(ulonglong, unsigned long long)
-C2H_VEC_OVERLOAD(float, float)
-C2H_VEC_OVERLOAD(double, double)
+C2H_VEC_OVERLOAD(char)
+C2H_VEC_OVERLOAD(short)
+C2H_VEC_OVERLOAD(int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+C2H_VEC_OVERLOAD(long)
+C2H_VEC_OVERLOAD(longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD_4(long4_16a)
+C2H_VEC_OVERLOAD_4(long4_32a)
+C2H_VEC_OVERLOAD_4(longlong4_16a)
+C2H_VEC_OVERLOAD_4(longlong4_32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD(uchar)
+C2H_VEC_OVERLOAD(ushort)
+C2H_VEC_OVERLOAD(uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+C2H_VEC_OVERLOAD(ulong)
+C2H_VEC_OVERLOAD(ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD_4(ulong4_16a)
+C2H_VEC_OVERLOAD_4(ulong4_32a)
+C2H_VEC_OVERLOAD_4(ulonglong4_16a)
+C2H_VEC_OVERLOAD_4(ulonglong4_32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD(float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+C2H_VEC_OVERLOAD(double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_OVERLOAD_4(double4_16a)
+C2H_VEC_OVERLOAD_4(double4_32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // Specialize cuda::std::numeric_limits for vector types.
 
@@ -328,15 +329,32 @@ C2H_VEC_OVERLOAD(double, double)
 C2H_VEC_TRAITS_OVERLOAD(char, signed char)
 C2H_VEC_TRAITS_OVERLOAD(short, short)
 C2H_VEC_TRAITS_OVERLOAD(int, int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(long, long)
 C2H_VEC_TRAITS_OVERLOAD(longlong, long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
 C2H_VEC_TRAITS_OVERLOAD(uchar, unsigned char)
 C2H_VEC_TRAITS_OVERLOAD(ushort, unsigned short)
 C2H_VEC_TRAITS_OVERLOAD(uint, unsigned int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
 C2H_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
 C2H_VEC_TRAITS_OVERLOAD(float, float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(double, double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(long4_16a, long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(long4_32a, long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulong4_16a, unsigned long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulong4_32a, unsigned long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(longlong4_16a, long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(longlong4_32a, long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulonglong4_16a, unsigned long long, 4)
+C2H_VEC_TRAITS_OVERLOAD_IMPL(ulonglong4_32a, unsigned long long, 4)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 #  undef C2H_VEC_TRAITS_OVERLOAD
 #  undef C2H_VEC_TRAITS_OVERLOAD_IMPL
@@ -345,5 +363,53 @@ C2H_VEC_TRAITS_OVERLOAD(double, double)
 #  undef REPEAT_TO_LIST_3
 #  undef REPEAT_TO_LIST_4
 #  undef REPEAT_TO_LIST
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 type traits
+
+template <typename T>
+inline constexpr bool is_vector2_type_v = cuda::std::__is_one_of_v<
+  cuda::std::remove_cv_t<T>,
+  char2,
+  short2,
+  int2,
+  long2,
+  longlong2,
+  uchar2,
+  ushort2,
+  uint2,
+  ulong2,
+  ulonglong2,
+  float2,
+  double2
+#  if TEST_HALF_T()
+  ,
+  __half2
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+  ,
+  __nv_bfloat162
+#  endif // TEST_BF_T()
+  >;
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 floating point type traits
+
+template <typename T>
+inline constexpr bool is_vector2_fp_type_v = cuda::std::__is_one_of_v<cuda::std::remove_cv_t<T>, float2, double2>;
+
+#  if TEST_HALF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_v<__half2> = true;
+
+#  endif // TEST_HALF_T()
+
+#  if TEST_BF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_v<__nv_bfloat162> = true;
+
+#  endif // TEST_BF_T()
 
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

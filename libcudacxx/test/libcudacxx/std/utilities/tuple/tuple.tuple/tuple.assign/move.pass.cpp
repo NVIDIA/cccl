@@ -12,6 +12,7 @@
 
 // tuple& operator=(tuple&& u);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -61,21 +62,21 @@ struct CountAssign
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<> T;
+    using T = cuda::std::tuple<>;
     T t0;
     T t;
     t = cuda::std::move(t0);
     unused(t);
   }
   {
-    typedef cuda::std::tuple<MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly>;
     T t0(MoveOnly(0));
     T t;
     t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly, MoveOnly>;
     T t0(MoveOnly(0), MoveOnly(1));
     T t;
     t = cuda::std::move(t0);
@@ -83,7 +84,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t) == 1);
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly, MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly, MoveOnly, MoveOnly>;
     T t0(MoveOnly(0), MoveOnly(1), MoveOnly(2));
     T t;
     t = cuda::std::move(t0);
@@ -106,16 +107,15 @@ int main(int, char**)
     assert(cuda::std::get<1>(t) == y2);
     assert(&cuda::std::get<1>(t) == &y);
   }
-  // cuda::std::unique_ptr not supported
-  /*
+
   {
-      // test that the implicitly generated move assignment operator
-      // is properly deleted
-      using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
-      static_assert(cuda::std::is_move_assignable<T>::value, "");
-      static_assert(!cuda::std::is_copy_assignable<T>::value, "");
+    // test that the implicitly generated move assignment operator
+    // is properly deleted
+    using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
+    static_assert(cuda::std::is_move_assignable<T>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<T>::value, "");
   }
-  */
+
   {
     using T = cuda::std::tuple<int, NonAssignable>;
     static_assert(!cuda::std::is_move_assignable<T>::value, "");

@@ -77,8 +77,10 @@
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
-#  define _CCCL_NO_CONCEPTS
-#endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
+#  define _CCCL_HAS_CONCEPTS() 0
+#else // ^^^ no concepts ^^^ / vvv has concepts vvv
+#  define _CCCL_HAS_CONCEPTS() 1
+#endif // ^^^ has concepts ^^^
 
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
@@ -87,9 +89,11 @@
 
 // Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
 // available.
-#if !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
-#  define _CCCL_NO_PACK_INDEXING
-#endif // !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
+#if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
+#  define _CCCL_HAS_PACK_INDEXING() 1
+#else // ^^^ has pack indexing ^^^ / vvv no pack indexing vvv
+#  define _CCCL_HAS_PACK_INDEXING() 0
+#endif // no pack indexing
 
 #if _CCCL_STD_VER <= 2017 || __cpp_consteval < 201811L
 #  define _CCCL_NO_CONSTEVAL

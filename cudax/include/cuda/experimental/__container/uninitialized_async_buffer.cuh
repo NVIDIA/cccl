@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -82,7 +82,7 @@ private:
   using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
 
   __async_resource __mr_;
-  ::cuda::stream_ref __stream_ = {};
+  ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
   size_t __count_              = 0;
   void* __buf_                 = nullptr;
 
@@ -118,7 +118,7 @@ private:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
+  transform_device_argument(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
@@ -130,7 +130,7 @@ private:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
+  transform_device_argument(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
@@ -211,7 +211,7 @@ public:
   //! Takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
+      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
@@ -223,7 +223,7 @@ public:
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
+      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
@@ -243,7 +243,7 @@ public:
       __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
     }
     __mr_     = _CUDA_VSTD::move(__other.__mr_);
-    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, {});
+    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
     __count_  = _CUDA_VSTD::exchange(__other.__count_, 0);
     __buf_    = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
@@ -326,13 +326,13 @@ public:
   //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& memory_resource() const noexcept
   {
     return __mr_;
   }
 
   //! @brief Returns the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
   {
     return __stream_;
   }
@@ -340,7 +340,7 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(::cuda::stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(::cuda::stream_ref __new_stream)
   {
     if (__new_stream != __stream_)
     {
@@ -353,7 +353,7 @@ public:
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
   {
     __stream_ = __new_stream;
   }

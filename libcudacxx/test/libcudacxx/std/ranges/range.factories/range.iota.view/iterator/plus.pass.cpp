@@ -71,10 +71,10 @@ __host__ __device__ constexpr bool test()
     auto iter1 = io.begin();
     auto iter2 = io.begin();
     assert(iter1 == iter2);
-    assert(iter1 + 5 != iter2);
-    assert(iter1 + 5 == cuda::std::ranges::next(iter2, 5));
+    assert(iter1 + (-5) != iter2);
+    assert(iter1 + (-5) == cuda::std::ranges::prev(iter2, 5));
 
-    static_assert(cuda::std::is_reference_v<decltype(iter2 += 5)>);
+    static_assert(cuda::std::is_reference_v<decltype(iter2 += (-5))>);
   }
 
   return true;

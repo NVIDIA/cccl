@@ -29,7 +29,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint64_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[4],
+                               const uint32_t (&)[4],
                                bool,
                                cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
@@ -41,7 +41,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool,
                                    cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
@@ -59,7 +59,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint64_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[8],
+                               const uint32_t (&)[8],
                                bool,
                                cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
@@ -71,7 +71,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool,
                                    cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
@@ -88,7 +88,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint64_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[4],
+                               const uint32_t (&)[4],
                                bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -98,7 +98,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -108,7 +108,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -118,7 +118,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_101a,
@@ -131,7 +131,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint64_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[4],
+                               const uint32_t (&)[4],
                                bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -141,7 +141,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -151,7 +151,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -161,7 +161,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -177,7 +177,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint64_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[8],
+                               const uint32_t (&)[8],
                                bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -187,7 +187,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -197,7 +197,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -207,7 +207,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_101a,
@@ -220,7 +220,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint64_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[8],
+                               const uint32_t (&)[8],
                                bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -230,7 +230,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -240,7 +240,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma));
           // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -250,7 +250,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint64_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -402,7 +402,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint32_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[4],
+                               const uint32_t (&)[4],
                                bool,
                                cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
@@ -414,7 +414,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool,
                                    cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
@@ -432,7 +432,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint32_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[8],
+                               const uint32_t (&)[8],
                                bool,
                                cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
@@ -444,7 +444,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool,
                                    cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
@@ -461,7 +461,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint32_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[4],
+                               const uint32_t (&)[4],
                                bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -471,7 +471,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
           // enable_input_d;
@@ -482,7 +482,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -492,7 +492,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_101a,
@@ -505,7 +505,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint32_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[4],
+                               const uint32_t (&)[4],
                                bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -515,7 +515,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
           // enable_input_d;
@@ -526,7 +526,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -536,7 +536,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[4],
+                                   const uint32_t (&)[4],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -552,7 +552,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint32_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[8],
+                               const uint32_t (&)[8],
                                bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -562,7 +562,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
           // enable_input_d;
@@ -573,7 +573,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -583,7 +583,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_101a,
@@ -596,7 +596,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                uint32_t,
                                uint64_t,
                                uint32_t,
-                               const uint32_t(&)[8],
+                               const uint32_t (&)[8],
                                bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -606,7 +606,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
           // enable_input_d;
@@ -617,7 +617,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));
           // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
             * fn_ptr++ = reinterpret_cast<void*>(
@@ -627,7 +627,7 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
                                    uint32_t,
                                    uint64_t,
                                    uint32_t,
-                                   const uint32_t(&)[8],
+                                   const uint32_t (&)[8],
                                    bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 

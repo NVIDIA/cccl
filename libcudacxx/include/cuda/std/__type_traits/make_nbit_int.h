@@ -30,7 +30,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _NBits, bool _IsSigned>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
+_CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 {
   if constexpr (_IsSigned)
   {
@@ -94,11 +94,11 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
   }
 }
 
-template <size_t _NBytes, bool _IsSigned = true>
-using __make_nbit_int_t = decltype(__make_nbit_int_impl<_NBytes, _IsSigned>());
+template <size_t _NBits, bool _IsSigned = true>
+using __make_nbit_int_t = decltype(__make_nbit_int_impl<_NBits, _IsSigned>());
 
-template <size_t _NBytes>
-using __make_nbit_uint_t = __make_nbit_int_t<_NBytes, false>;
+template <size_t _NBits>
+using __make_nbit_uint_t = __make_nbit_int_t<_NBits, false>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

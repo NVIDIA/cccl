@@ -30,11 +30,11 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
+#include <cuda/devices>
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
-#include <cuda/experimental/device.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -61,17 +61,17 @@ void print_peer_accessibility()
   // Check possibility for peer access
   printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
 
-  for (auto& dev_i : cudax::devices)
+  for (auto& dev_i : cuda::devices)
   {
-    for (auto& dev_j : cudax::devices)
+    for (auto& dev_j : cuda::devices)
     {
       if (dev_i != dev_j)
       {
         bool can_access_peer = dev_i.has_peer_access_to(dev_j);
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
-               dev_i.get_name().c_str(),
+               dev_i.name().c_str(),
                dev_i.get(),
-               dev_j.get_name().c_str(),
+               dev_j.name().c_str(),
                dev_j.get(),
                can_access_peer ? "Yes" : "No");
       }
@@ -103,8 +103,8 @@ void benchmark_cross_device_ping_pong_copy(
   dev1_stream.sync();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
-         dev0_stream.get_device().get(),
-         dev1_stream.get_device().get(),
+         dev0_stream.device().get(),
+         dev1_stream.device().get(),
          (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / (1024 * 1024 * 1024) / duration.count()));
 }
 
@@ -112,8 +112,8 @@ template <typename BufferType>
 void test_cross_device_access_from_kernel(
   cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
-  cudax::device_ref dev0 = dev0_stream.get_device();
-  cudax::device_ref dev1 = dev1_stream.get_device();
+  cuda::device_ref dev0 = dev0_stream.device();
+  cuda::device_ref dev1 = dev1_stream.device();
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and copy to GPU%d...\n", dev0.get());
@@ -184,9 +184,9 @@ try
 
   // Number of GPUs
   printf("Checking for multiple GPUs...\n");
-  printf("CUDA-capable device count: %zu\n", cudax::devices.size());
+  printf("CUDA-capable device count: %zu\n", cuda::devices.size());
 
-  if (cudax::devices.size() < 2)
+  if (cuda::devices.size() < 2)
   {
     printf("Two or more GPUs with Peer-to-Peer access capability are required for %s.\n", argv[0]);
     printf("Waiving test.\n");
@@ -197,10 +197,10 @@ try
   print_peer_accessibility();
 
   // But use a shorthand to find all peers of a device
-  std::vector<cudax::device_ref> peers;
-  for (auto& dev : cudax::devices)
+  std::vector<cuda::device_ref> peers;
+  for (auto& dev : cuda::devices)
   {
-    peers = dev.get_peers();
+    peers = dev.peer_devices();
     if (peers.size() != 0)
     {
       peers.insert(peers.begin(), dev);

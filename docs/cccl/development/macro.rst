@@ -342,7 +342,7 @@ Visibility Macros
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 | ``_CCCL_HIDE_FROM_ABI``       | Hidden visibility (i.e. ``inline``, not exported, not instantiated)                                 |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
-| ``_LIBCUDACXX_HIDE_FROM_ABI`` | Host/device function with hidden visibility. Most libcu++ functions are hidden with this attribute  |
+| ``_CCCL_API``                 | Host/device function with hidden visibility. Most CCCL functions are hidden with this attribute     |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 
 ----
@@ -390,17 +390,19 @@ Warning Suppression Macros
 
 **Compiler-specific Suppression Macros**:
 
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``  | Suppress clang warning, e.g. ``"-Wattributes"``             |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_GCC(X)``    | Suppress gcc warning, e.g. ``"-Wattributes"``               |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``  | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``   | Suppress msvc warning, e.g. ``4127``                        |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_NV_DIAG_SUPPRESS(X)``     | Suppress nvcc warning, e.g. ``177``                         |
-+-----------------------------------+-------------------------------------------------------------+
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``    | Suppress clang warning, e.g. ``"-Wattributes"``             |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_GCC(X)``      | Suppress gcc warning, e.g. ``"-Wattributes"``               |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``    | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``     | Suppress msvc warning, e.g. ``4127``                        |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_BEGIN_NV_DIAG_SUPPRESS(X)`` | Start to suppress nvcc warning, e.g. ``177``                |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_END_NV_DIAG_SUPPRESS()``    | End to suppress nvcc warning                                |
++-------------------------------------+-------------------------------------------------------------+
 
 Usage example:
 

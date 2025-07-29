@@ -21,30 +21,29 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
 #include <cuda/std/__exception/cuda_error.h>
 
-#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                \
-  {                                                         \
-    const ::cudaError_t __status = _NAME(__VA_ARGS__);      \
-    switch (__status)                                       \
-    {                                                       \
-      case ::cudaSuccess:                                   \
-        break;                                              \
-      default:                                              \
-        ::cudaGetLastError();                               \
-        ::cuda::__throw_cuda_error(__status, _MSG, #_NAME); \
-    }                                                       \
-  }
+#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                        \
+  do                                                                \
+  {                                                                 \
+    const ::cudaError_t __status = _NAME(__VA_ARGS__);              \
+    switch (__status)                                               \
+    {                                                               \
+      case ::cudaSuccess:                                           \
+        break;                                                      \
+      default:                                                      \
+        /* CUDA error state is cleared inside __throw_cuda_error */ \
+        ::cuda::__throw_cuda_error(__status, _MSG, #_NAME);         \
+    }                                                               \
+  } while (0)
 
 #define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)                         \
+  do                                                                    \
   {                                                                     \
     [[maybe_unused]] const ::cudaError_t __status = _NAME(__VA_ARGS__); \
+    ::cudaGetLastError(); /* clear CUDA error state */                  \
     _CCCL_ASSERT(__status == cudaSuccess, _MSG);                        \
-  }
+  } while (0)
 
 #define _CCCL_LOG_CUDA_API(_NAME, _MSG, ...)                                       \
   [&]() {                                                                          \
@@ -56,6 +55,7 @@
       ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                            \
       ::fflush(stderr);                                                            \
     }                                                                              \
+    ::cudaGetLastError(); /* clear CUDA error state */                             \
     return __status;                                                               \
   }()
 

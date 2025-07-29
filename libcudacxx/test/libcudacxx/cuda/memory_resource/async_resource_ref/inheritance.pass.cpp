@@ -139,12 +139,12 @@ void test_async_resource_ref()
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
 
   // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate_async(0, 0, {}) == first.allocate_async(0, 0, {}));
-  assert(ref_second.allocate_async(0, 0, {}) == second.allocate_async(0, 0, {}));
+  assert(ref_first.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
+  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == second.allocate_async(0, 0, ::cudaStream_t{}));
 
   // Ensure that assignment still works
   ref_second = ref_first;
-  assert(ref_second.allocate_async(0, 0, {}) == first.allocate_async(0, 0, {}));
+  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
 }
 
 template <class... Properties>
@@ -165,12 +165,12 @@ void test_async_resource_ref_from_pointer()
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
 
   // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate_async(0, 0, {}) == first.allocate_async(0, 0, {}));
-  assert(ref_second.allocate_async(0, 0, {}) == second.allocate_async(0, 0, {}));
+  assert(ref_first.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
+  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == second.allocate_async(0, 0, ::cudaStream_t{}));
 
   // Ensure that assignment still works
   ref_second = ref_first;
-  assert(ref_second.allocate_async(0, 0, {}) == first.allocate_async(0, 0, {}));
+  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
 }
 
 // clang complains about pure virtual functions being called, so ensure that we properly crash if so

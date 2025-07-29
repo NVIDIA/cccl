@@ -69,17 +69,6 @@ extern "C++" {
 #    else
 #      error Supported values for _LIBCUDACXX_DEBUG are 0 and 1
 #    endif
-#    if !defined(_LIBCUDACXX_BUILDING_LIBRARY)
-#      define _LIBCUDACXX_EXTERN_TEMPLATE(...)
-#    endif
-#  endif
-
-#  ifdef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
-#    define _LIBCUDACXX_EXTERN_TEMPLATE(...)
-#  endif
-
-#  ifndef _LIBCUDACXX_EXTERN_TEMPLATE
-#    define _LIBCUDACXX_EXTERN_TEMPLATE(...) extern template __VA_ARGS__;
 #  endif
 
 // Deprecation macros.
@@ -130,7 +119,8 @@ extern "C++" {
 
 #  if !defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD) && !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32) \
     && !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
-#    if defined(__linux__) || defined(__GNU__) || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
+#    if defined(__linux__) || defined(__GNU__) || defined(__APPLE__) \
+      || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
 #      define _LIBCUDACXX_HAS_THREAD_API_PTHREAD
 #    elif defined(_WIN32)
 #      define _LIBCUDACXX_HAS_THREAD_API_WIN32
@@ -163,9 +153,9 @@ extern "C++" {
 // #  endif // _CCCL_CUDACC_BELOW(12, 2)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_HAS_CUDA_COMPILER()
+#  if _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
-#  endif
+#  endif // _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
 
 #  if (!defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP) && !defined(_LIBCUDACXX_HAS_GCC_ATOMIC_IMP) \
        && !_LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP())
@@ -212,17 +202,6 @@ extern "C++" {
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) static_assert(true, "")
 #  endif
 
-// Older nvcc do not handle the constraint of `construct_at` in earlier std modes
-// So to preserve our performance optimization we default to the unconstrained
-// `__construct_at` and only in C++20 use `construct_at`
-#  if _CCCL_STD_VER > 2017
-#    define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
-      _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
-#  else
-#    define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
-#  endif
-
 // We can only expose constexpr allocations if the compiler supports it
 // For now disable constexpr allocation support until we can actually use
 #  if 0 && defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) \
@@ -236,14 +215,13 @@ extern "C++" {
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #  if _CCCL_COMPILER(NVRTC, <, 12, 6)
-#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)       \
-      using __base = __baseclass<__VA_ARGS__>;                                 \
-      _CCCL_TEMPLATE(class... _Args)                                           \
-      _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, __base, _Args...))          \
-      _LIBCUDACXX_HIDE_FROM_ABI constexpr __class(_Args&&... __args) noexcept( \
-        _CCCL_TRAIT(is_nothrow_constructible, __base, _Args...))               \
-          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                      \
-      {}                                                                       \
+#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                               \
+      using __base = __baseclass<__VA_ARGS__>;                                                                         \
+      _CCCL_TEMPLATE(class... _Args)                                                                                   \
+      _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, __base, _Args...))                                                  \
+      _CCCL_API constexpr __class(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, __base, _Args...)) \
+          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                              \
+      {}                                                                                                               \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  else // ^^^ workaround ^^^ / vvv no workaround vvv
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \

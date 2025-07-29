@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 extern "C" _CCCL_DEVICE void __atomic_try_wait_unsupported_before_SM_70__();
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HIDE_FROM_ABI void
+_CCCL_API inline void
 __atomic_try_wait_slow(_Tp const volatile* __a, __atomic_underlying_remove_cv_t<_Tp> __val, memory_order __order, _Sco)
 {
   NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
@@ -42,29 +42,29 @@ __atomic_try_wait_slow(_Tp const volatile* __a, __atomic_underlying_remove_cv_t<
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HIDE_FROM_ABI void __atomic_notify_one(_Tp const volatile*, _Sco)
+_CCCL_API inline void __atomic_notify_one(_Tp const volatile*, _Sco)
 {
   NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, , NV_IS_HOST, , NV_ANY_TARGET, __atomic_try_wait_unsupported_before_SM_70__(););
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HIDE_FROM_ABI void __atomic_notify_all(_Tp const volatile*, _Sco)
+_CCCL_API inline void __atomic_notify_all(_Tp const volatile*, _Sco)
 {
   NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, , NV_IS_HOST, , NV_ANY_TARGET, __atomic_try_wait_unsupported_before_SM_70__(););
 }
 
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs)
+_CCCL_API inline bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs)
 {
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
   return __lhs == __rhs;
-#else
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
   return _CUDA_VSTD::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
-#endif
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HIDE_FROM_ABI void __atomic_wait(
+_CCCL_API inline void __atomic_wait(
   _Tp const volatile* __a, __atomic_underlying_remove_cv_t<_Tp> const __val, memory_order __order, _Sco = {})
 {
   for (int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i)

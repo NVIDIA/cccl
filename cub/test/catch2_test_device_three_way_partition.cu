@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_partition.cuh>
 
@@ -469,13 +468,9 @@ try
 {
   using offset_t = typename c2h::get<0, TestType>;
 
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
+  const offset_t num_items     = GENERATE_COPY(
     values(
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));

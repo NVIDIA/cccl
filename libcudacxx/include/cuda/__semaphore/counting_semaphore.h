@@ -34,7 +34,7 @@ class counting_semaphore : public _CUDA_VSTD::__atomic_semaphore<_Sco, __least_m
   static_assert(__least_max_value <= _CUDA_VSTD::__atomic_semaphore<_Sco, __least_max_value>::max(), "");
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_semaphore(ptrdiff_t __count = 0)
+  _CCCL_API constexpr counting_semaphore(ptrdiff_t __count = 0)
       : _CUDA_VSTD::__atomic_semaphore<_Sco, __least_max_value>(__count)
   {}
   _CCCL_HIDE_FROM_ABI ~counting_semaphore() = default;

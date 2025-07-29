@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,9 +31,9 @@ namespace cuda::experimental
 {
 //! @brief internal stream used for memory allocations, no real blocking work
 //! should ever be pushed into it
-inline ::cuda::stream_ref __cccl_allocation_stream()
+inline ::cuda::experimental::stream_ref __cccl_allocation_stream()
 {
-  static ::cuda::experimental::stream __stream{};
+  static ::cuda::experimental::stream __stream{device_ref{0}};
   return __stream;
 }
 

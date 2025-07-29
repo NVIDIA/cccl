@@ -533,9 +533,9 @@ namespace detail
 {
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  if defined(_CCCL_NO_CONCEPTS)
+#  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
-#  endif // defined(_CCCL_NO_CONCEPTS)
+#  endif // !_CCCL_HAS_CONCEPTS()
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
@@ -587,7 +587,7 @@ namespace detail
       from_json(const nlohmann::json& json, std::string_view subpolicy_name)                                           \
       {                                                                                                                \
         auto subpolicy = json[subpolicy_name];                                                                         \
-        assert(subpolicy);                                                                                             \
+        assert(!subpolicy.is_null());                                                                                  \
         Runtime##concept_name ap;                                                                                      \
         _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                            \
         return std::make_pair(                                                                                         \
@@ -645,7 +645,17 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 namespace detail
 {
 
+// Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
+
+// By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
+// The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
+// in CUB tests. This allows us to:
+//   1. retrieve kernel pointers on the usage side of the API, and
+//   2. validate use of specified CUDA stream by accelerated algorithms.
+#  ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY
+#    define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY cub::detail::TripleChevronFactory
+#  endif
 
 /**
  * Kernel dispatch configuration
@@ -657,7 +667,9 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {

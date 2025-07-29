@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from)
 {
   // Cast away cv-qualifiers to allow modifying elements of a range through const iterators.
   return const_cast<void*>(static_cast<const volatile void*>(_CUDA_VSTD::addressof(__from)));
