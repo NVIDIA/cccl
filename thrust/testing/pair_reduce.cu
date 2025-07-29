@@ -54,4 +54,4 @@ struct TestPairReduce
     ASSERT_EQUAL_QUIET(h_result, d_result);
   }
 }; // end TestPairReduce
-VariableUnitTest<TestPairReduce, SignedIntegralTypes> TestPairReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairReduce, SignedIntegralTypes);

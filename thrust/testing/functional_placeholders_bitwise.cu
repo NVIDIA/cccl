@@ -66,10 +66,9 @@ struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
       ASSERT_ALMOST_EQUAL(reference, result);                                                                     \
     }                                                                                                             \
   };                                                                                                              \
-  VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::device_vector, thrust::device_allocator>    \
-    TestFunctionalPlaceholders##name##DeviceInstance;                                                             \
-  VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::host_vector, std::allocator>                \
-    TestFunctionalPlaceholders##name##HostInstance;
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES(                                                                             \
+    TestFunctionalPlaceholders##name, type_list, thrust::device_vector, thrust::device_allocator);                \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES(TestFunctionalPlaceholders##name, type_list, thrust::host_vector, std::allocator);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Ty', possible loss of data
