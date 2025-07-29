@@ -421,9 +421,12 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
   {
     return static_cast<AccumT>(input[0]);
   }
-  using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
+  else
+  {
+    using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
 
-  return ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
+    return cub::detail::ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
+  }
 }
 
 } // namespace detail
