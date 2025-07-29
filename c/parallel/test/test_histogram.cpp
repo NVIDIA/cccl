@@ -128,12 +128,6 @@ void histogram_even(
 }
 
 // Copied from catch2_test_device_histogram.cu (With some modifications)
-template <typename T>
-auto cast_if_half_pointer(T* p) -> T*
-{
-  return p;
-}
-
 template <size_t ActiveChannels>
 auto generate_level_counts_to_test(int max_level_count) -> std::vector<int>
 {
@@ -207,17 +201,6 @@ auto compute_reference_result(
     }
   }
   return h_histogram;
-}
-
-template <typename T, size_t N>
-auto to_array_of_ptrs(std::array<c2h::device_vector<T>, N>& in)
-{
-  std::array<decltype(cast_if_half_pointer(std::declval<T*>())), N> r;
-  for (size_t i = 0; i < N; i++)
-  {
-    r[i] = cast_if_half_pointer(thrust::raw_pointer_cast(in[i].data()));
-  }
-  return r;
 }
 
 C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
@@ -341,28 +324,26 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     h_samples, sample_to_bin_index, num_levels, width, height, row_pitch);
 
   // Compute result and verify
+  pointer_t<sample_t> sample_ptr(h_samples);
+  pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
+
+  value_t<int> num_levels_val{num_levels[0]};
+  value_t<LevelT> lower_level_val{lower_level[0]};
+  value_t<LevelT> upper_level_val{upper_level[0]};
+
+  histogram_even(
+    sample_ptr,
+    d_single_histogram_ptr,
+    num_levels_val,
+    num_levels[0],
+    lower_level_val,
+    upper_level_val,
+    width,
+    height,
+    row_pitch / sizeof(sample_t));
+
+  for (size_t c = 0; c < active_channels; ++c)
   {
-    pointer_t<sample_t> sample_ptr(h_samples);
-    pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
-
-    value_t<int> num_levels_val{num_levels[0]};
-    value_t<LevelT> lower_level_val{lower_level[0]};
-    value_t<LevelT> upper_level_val{upper_level[0]};
-
-    histogram_even(
-      sample_ptr,
-      d_single_histogram_ptr,
-      num_levels_val,
-      num_levels[0],
-      lower_level_val,
-      upper_level_val,
-      width,
-      height,
-      row_pitch / sizeof(sample_t));
-
-    for (size_t c = 0; c < active_channels; ++c)
-    {
-      CHECK(h_histogram[c] == std::vector<CounterT>(d_single_histogram_ptr));
-    }
+    CHECK(h_histogram[c] == std::vector<CounterT>(d_single_histogram_ptr));
   }
 }
