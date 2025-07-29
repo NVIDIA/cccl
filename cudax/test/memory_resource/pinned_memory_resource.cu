@@ -17,9 +17,10 @@
 
 #include <stdexcept>
 
-#include "common_tests.cuh"
 #include <testing.cuh>
 #include <utility.cuh>
+
+#include "common_tests.cuh"
 
 namespace cudax = cuda::experimental;
 
@@ -63,7 +64,7 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
 {
   using pinned_resource = TestType;
   pinned_resource res{};
-  cudax::stream stream{};
+  cudax::stream stream{cuda::device_ref{0}};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);

@@ -32,6 +32,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Op, class _Indices, class... _BoundArgs>
@@ -50,7 +52,7 @@ private:
 public:
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __perfect_forward_impl(_Args&&... __bound_args) noexcept(
+  _CCCL_API explicit constexpr __perfect_forward_impl(_Args&&... __bound_args) noexcept(
     __noexcept_constructible<_Args...>)
       : __bound_args_(_CUDA_VSTD::forward<_Args>(__bound_args)...)
   {}
@@ -63,7 +65,7 @@ public:
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_invocable_v<_Op, _BoundArgs&..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) & noexcept(
+  _CCCL_API constexpr auto operator()(_Args&&... __args) & noexcept(
     noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
   {
@@ -72,11 +74,11 @@ public:
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((!is_invocable_v<_Op, _BoundArgs&..., _Args...>) )
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) & = delete;
+  _CCCL_API inline auto operator()(_Args&&...) & = delete;
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_invocable_v<_Op, _BoundArgs const&..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) const& noexcept(
+  _CCCL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
   {
@@ -85,11 +87,11 @@ public:
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((!is_invocable_v<_Op, _BoundArgs const&..., _Args...>) )
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) const& = delete;
+  _CCCL_API inline auto operator()(_Args&&...) const& = delete;
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_invocable_v<_Op, _BoundArgs..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) && noexcept(
+  _CCCL_API constexpr auto operator()(_Args&&... __args) && noexcept(
     noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
   {
@@ -98,11 +100,11 @@ public:
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((!is_invocable_v<_Op, _BoundArgs..., _Args...>) )
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) && = delete;
+  _CCCL_API inline auto operator()(_Args&&...) && = delete;
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_invocable_v<_Op, _BoundArgs const..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) const&& noexcept(
+  _CCCL_API constexpr auto operator()(_Args&&... __args) const&& noexcept(
     noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
   {
@@ -111,7 +113,7 @@ public:
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((!is_invocable_v<_Op, _BoundArgs const..., _Args...>) )
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) const&& = delete;
+  _CCCL_API inline auto operator()(_Args&&...) const&& = delete;
 };
 
 // __perfect_forward implements a perfect-forwarding call wrapper as explained in [func.require].
@@ -119,5 +121,7 @@ template <class _Op, class... _Args>
 using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_PERFECT_FORWARD_H

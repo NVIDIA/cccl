@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t...>
@@ -193,7 +195,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 {
   using value_type = _Tp;
   static_assert(is_integral<_Tp>::value, "std::integer_sequence can only be instantiated with an integral type");
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() noexcept
+  static _CCCL_API constexpr size_t size() noexcept
   {
     return sizeof...(_Ip);
   }
@@ -243,5 +245,7 @@ template <class... _Tp>
 using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_INTEGER_SEQUENCE_H

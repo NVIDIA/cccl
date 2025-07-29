@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_VOLATILE) && !defined(_LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK)
@@ -50,5 +52,7 @@ using remove_volatile_t _CCCL_NODEBUG_ALIAS = typename remove_volatile<_Tp>::typ
 #endif // defined(_CCCL_BUILTIN_REMOVE_VOLATILE) && !defined(_LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_VOLATILE_H

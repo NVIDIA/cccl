@@ -36,6 +36,8 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [mdspan.sub.map]
@@ -57,7 +59,7 @@ template <class _Extents, class... _Slices>
 _CCCL_CONCEPT __matching_number_of_slices = sizeof...(_Slices) == _Extents::rank();
 
 template <size_t _SliceIndex, class _LayoutMapping, class... _Slices>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __get_submdspan_strides(const _LayoutMapping& __mapping, _Slices... __slices) noexcept
 {
   using _SliceType = __get_slice_type<_SliceIndex, _Slices...>;
@@ -81,7 +83,7 @@ __get_submdspan_strides(const _LayoutMapping& __mapping, _Slices... __slices) no
 }
 
 template <class _LayoutMapping, class... _Slices, size_t... _SliceIndices>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __submdspan_strides(index_sequence<_SliceIndices...>, const _LayoutMapping& __mapping, _Slices... __slices) noexcept
 {
   using _Extents    = typename _LayoutMapping::extents_type;
@@ -93,8 +95,7 @@ __submdspan_strides(index_sequence<_SliceIndices...>, const _LayoutMapping& __ma
 
 _CCCL_TEMPLATE(class _LayoutMapping, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<typename _LayoutMapping::extents_type, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-__submdspan_strides(const _LayoutMapping& __mapping, _Slices... __slices)
+[[nodiscard]] _CCCL_API constexpr auto __submdspan_strides(const _LayoutMapping& __mapping, _Slices... __slices)
 {
   using _Extents                = typename _LayoutMapping::extents_type;
   using _IndexType              = typename _Extents::index_type;
@@ -105,7 +106,7 @@ __submdspan_strides(const _LayoutMapping& __mapping, _Slices... __slices)
 
 // [mdspan.sub.map.common-8]
 template <class _LayoutMapping, class... _Slices, size_t... _SliceIndices>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t
+[[nodiscard]] _CCCL_API constexpr size_t
 __submdspan_offset(index_sequence<_SliceIndices...>, const _LayoutMapping& __mapping, _Slices... __slices)
 {
   using _Extents   = typename _LayoutMapping::extents_type;
@@ -130,8 +131,7 @@ __submdspan_offset(index_sequence<_SliceIndices...>, const _LayoutMapping& __map
 
 _CCCL_TEMPLATE(class _LayoutMapping, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<typename _LayoutMapping::extents_type, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t
-__submdspan_offset(const _LayoutMapping& __mapping, _Slices... __slices)
+[[nodiscard]] _CCCL_API constexpr size_t __submdspan_offset(const _LayoutMapping& __mapping, _Slices... __slices)
 {
   return _CUDA_VSTD::__submdspan_offset(_CUDA_VSTD::index_sequence_for<_Slices...>(), __mapping, __slices...);
 }
@@ -145,7 +145,7 @@ _CCCL_CONCEPT __is_strided_slice_stride_of_one = _CCCL_REQUIRES_EXPR((_SliceType
   requires(_SliceType::stride_type::value == 1));
 
 template <class _LayoutMapping, class _SliceType>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_unit_stride_slice()
+_CCCL_API constexpr bool __is_unit_stride_slice()
 {
   // [mdspan.sub.map.common-9.1]
   if constexpr (__is_strided_slice_stride_of_one<_SliceType>)
@@ -171,7 +171,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_unit_stride_slice()
 
 // [mdspan.sub.map.left]
 template <class _LayoutMapping, class _SubExtents, class _Slice, class... _OtherSlices>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_layout_left()
+_CCCL_API constexpr bool __can_layout_left()
 {
   // [mdspan.sub.map.left-1.2]
   if constexpr (_SubExtents::rank() == 0)
@@ -197,7 +197,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_layout_left()
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<_Extents, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mapping, _Slices... __slices)
 {
   // [mdspan.sub.map.left-1.1]
@@ -231,7 +231,7 @@ __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mappin
 }
 
 template <class _LayoutMapping, class _SubExtents, class _Slice, class... _OtherSlices>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_layout_right()
+_CCCL_API constexpr bool __can_layout_right()
 {
   // [mdspan.sub.map.right-1.2]
   if constexpr (_SubExtents::rank() == 0)
@@ -257,7 +257,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_layout_right()
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<_Extents, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __submdspan_mapping_impl(const typename layout_right::mapping<_Extents>& __mapping, _Slices... __slices)
 {
   // [mdspan.sub.map.right-1.1]
@@ -292,7 +292,7 @@ __submdspan_mapping_impl(const typename layout_right::mapping<_Extents>& __mappi
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<_Extents, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __submdspan_mapping_impl(const typename layout_stride::mapping<_Extents>& __mapping, _Slices... __slices)
 {
   // [mdspan.sub.map.stride-1.1]
@@ -314,8 +314,7 @@ __submdspan_mapping_impl(const typename layout_stride::mapping<_Extents>& __mapp
 
 _CCCL_TEMPLATE(class _LayoutMapping, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<typename _LayoutMapping::extents_type, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-submdspan_mapping(const _LayoutMapping& __mapping, _Slices... __slices)
+[[nodiscard]] _CCCL_API constexpr auto submdspan_mapping(const _LayoutMapping& __mapping, _Slices... __slices)
 {
   return _CUDA_VSTD::__submdspan_mapping_impl(__mapping, __slices...);
 }
@@ -329,7 +328,7 @@ _CCCL_CONCEPT __can_submdspan_mapping =
 _CCCL_TEMPLATE(class _Tp, class _Extents, class _Layout, class _Accessor, class... _Slices)
 _CCCL_REQUIRES(__matching_number_of_slices<_Extents, _Slices...> _CCCL_AND
                  __can_submdspan_mapping<typename _Layout::template mapping<_Extents>, _Slices...>)
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 submdspan(const mdspan<_Tp, _Extents, _Layout, _Accessor>& __src, _Slices... __slices)
 {
   auto __sub_map_result = _CUDA_VSTD::submdspan_mapping(__src.mapping(), __slices...);
@@ -339,5 +338,7 @@ submdspan(const mdspan<_Tp, _Extents, _Layout, _Accessor>& __src, _Slices... __s
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_MAPPING_H

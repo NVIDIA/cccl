@@ -28,10 +28,12 @@
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Align, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
   static_assert(_CUDA_VSTD::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2");
   static_assert(_Align >= alignof(_Tp), "Alignment must be greater than or equal to the alignment of the input type");
@@ -52,5 +54,7 @@ template <size_t _Align, class _Tp>
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H

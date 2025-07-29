@@ -24,6 +24,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_evict_t : uint32_t
@@ -38,7 +40,7 @@ enum class __l2_evict_t : uint32_t
  * PTX MAPPING
  **********************************************************************************************************************/
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 template <typename = void>
 [[nodiscard]] _CCCL_CONST _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __createpolicy_range_ptx(
@@ -174,16 +176,16 @@ template <typename T = void>
 [[nodiscard]] _CCCL_CONST _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __createpolicy_range(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_size, uint32_t __total_size)
 {
-  _CCCL_ASSERT(__isGlobal(__ptr), "ptr must be global");
+  _CCCL_ASSERT(::__isGlobal(__ptr), "ptr must be global");
   _CCCL_ASSERT(__primary_size > 0, "primary_size  must be greater than zero");
   _CCCL_ASSERT(__primary_size <= __total_size, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
-  [[maybe_unused]] auto __gmem_ptr = __cvta_generic_to_global(__ptr);
+  [[maybe_unused]] auto __gmem_ptr = ::__cvta_generic_to_global(__ptr);
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (return ::cuda::__createpolicy_range_ptx(__primary, __secondary, __gmem_ptr, __primary_size, __total_size);),
-    (__createpolicy_is_not_supported_before_SM_80(); return 0;))
+    (::cuda::__createpolicy_is_not_supported_before_SM_80(); return 0;))
 }
 
 template <typename T = void>
@@ -195,11 +197,13 @@ __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float 
                "secondary policy must be evict_first or evict_unchanged");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                     (return ::cuda::__createpolicy_fraction_ptx(__primary, __secondary, __fraction);),
-                    (__createpolicy_is_not_supported_before_SM_80(); return 0;))
+                    (::cuda::__createpolicy_is_not_supported_before_SM_80(); return 0;))
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_CREATEPOLICY

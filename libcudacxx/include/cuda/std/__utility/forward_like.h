@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
@@ -39,8 +41,7 @@ template <class _Ap, class _Bp>
 using _ForwardLike = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
 
 template <class _Tp, class _Up>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr auto forward_like(_Up&& __ux) noexcept
-  -> _ForwardLike<_Tp, _Up>
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>
 {
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
@@ -48,5 +49,7 @@ template <class _Tp, class _Up>
 #endif // _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_FORWARD_LIKE_H

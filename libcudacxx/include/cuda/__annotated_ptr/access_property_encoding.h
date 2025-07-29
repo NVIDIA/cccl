@@ -32,6 +32,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_descriptor_mode_t : uint32_t
@@ -101,7 +103,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 
 #endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t __block_encoding(
+[[nodiscard]] _CCCL_API inline uint64_t __block_encoding(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, size_t __primary_bytes, size_t __total_bytes)
 {
   _CCCL_ASSERT(__primary_bytes <= size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
@@ -133,7 +135,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 //   uint32_t                          : 1;
 // };
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t
+[[nodiscard]] _CCCL_API constexpr uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -164,5 +166,7 @@ inline constexpr auto __l2_interleave_persisting = uint64_t{0x14F0000000000000};
 inline constexpr auto __l2_interleave_normal_demote = uint64_t{0x16F0000000000000};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING

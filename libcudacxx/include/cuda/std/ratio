@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -412,6 +412,6 @@ inline constexpr bool ratio_greater_equal_v = ratio_greater_equal<_R1, _R2>::val
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_RATIO

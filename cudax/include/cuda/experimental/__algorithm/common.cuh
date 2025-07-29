@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,37 +21,48 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__launch/launch_transform.cuh>
+#include <cuda/experimental/__stream/device_transform.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
+template <typename _Tp>
+using __as_span_t = _CUDA_VSTD::span<_CUDA_VSTD::remove_reference_t<_CUDA_VRANGES::range_reference_t<_Tp>>>;
+
+//! @brief A concept that checks if the type can be converted to a `cuda::std::span`.
+//! The type must be a contiguous range.
+template <typename _Tp>
+_CCCL_CONCEPT __spannable = _CCCL_REQUIRES_EXPR((_Tp))( //
+  requires(_CUDA_VRANGES::contiguous_range<_Tp>), //
+  requires(_CUDA_VSTD::convertible_to<_Tp, __as_span_t<_Tp>>));
 
 template <typename _Tp>
-_CCCL_CONCEPT __valid_1d_copy_fill_argument = _CUDA_VRANGES::contiguous_range<kernel_arg_t<_Tp>>;
-
-template <typename _Tp, typename _Decayed = _CUDA_VSTD::decay_t<_Tp>>
 using __as_mdspan_t =
-  _CUDA_VSTD::mdspan<typename _Decayed::value_type,
-                     typename _Decayed::extents_type,
-                     typename _Decayed::layout_type,
-                     typename _Decayed::accessor_type>;
+  _CUDA_VSTD::mdspan<typename _CUDA_VSTD::decay_t<_Tp>::value_type,
+                     typename _CUDA_VSTD::decay_t<_Tp>::extents_type,
+                     typename _CUDA_VSTD::decay_t<_Tp>::layout_type,
+                     typename _CUDA_VSTD::decay_t<_Tp>::accessor_type>;
 
-template <typename _Tp, typename = int>
-inline constexpr bool __convertible_to_mdspan = false;
+//! @brief A concept that checks if the type can be converted to a `cuda::std::mdspan`.
+//! The type must have a conversion to `__as_mdspan_t<_Tp>`.
+template <typename _Tp>
+_CCCL_CONCEPT __mdspannable = _CCCL_REQUIRES_EXPR((_Tp))(requires(_CUDA_VSTD::convertible_to<_Tp, __as_mdspan_t<_Tp>>));
 
 template <typename _Tp>
-inline constexpr bool
-  __convertible_to_mdspan<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_convertible_v<_Tp, __as_mdspan_t<_Tp>>, int>> =
-    true;
-
-template <typename _Tp>
-inline constexpr bool __valid_nd_copy_fill_argument =
-  __convertible_to_mdspan<__kernel_transform_result_t<__launch_transform_result_t<_Tp>>>;
-
+[[nodiscard]] _CCCL_HOST_API constexpr auto __as_mdspan(_Tp&& __value) noexcept -> __as_mdspan_t<_Tp>
+{
+  return _CUDA_VSTD::forward<_Tp>(__value);
+}
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif //__CUDAX_ALGORITHM_COMMON

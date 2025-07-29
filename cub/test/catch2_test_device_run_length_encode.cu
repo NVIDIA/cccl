@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_run_length_encode.cuh>
 
@@ -290,7 +289,9 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode works for a large number of items", "[device][run_length_encode]", offset_types)
+C2H_TEST("DeviceRunLengthEncode::Encode works for a large number of items",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
 try
 {
   using offset_type     = typename c2h::get<0, TestType>;
@@ -348,7 +349,7 @@ catch (std::bad_alloc& e)
 }
 
 C2H_TEST("DeviceRunLengthEncode::Encode works for large runs of equal items",
-         "[device][run_length_encode]",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 try
 {

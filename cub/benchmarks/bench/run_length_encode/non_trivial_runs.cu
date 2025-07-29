@@ -70,16 +70,19 @@ struct device_rle_policy_hub
 };
 #endif // !TUNE_BASE
 
-template <class T, class OffsetT>
-static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <class T, class OffsetT, class RunLengthT>
+static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
-  using offset_t                   = OffsetT;
+  // Offset type large enough to represent any offset into the input sequence
+  using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
+  // Offset type large enough to represent the longest run in the sequence
+  using run_length_t = RunLengthT;
+
   using keys_input_it_t            = const T*;
   using offset_output_it_t         = offset_t*;
-  using length_output_it_t         = offset_t*;
+  using length_output_it_t         = run_length_t*;
   using num_runs_output_iterator_t = offset_t*;
   using equality_op_t              = ::cuda::std::equal_to<>;
-  using accum_t                    = offset_t;
 
 #if !TUNE_BASE
   using dispatch_t =
@@ -106,13 +109,13 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   thrust::device_vector<offset_t> num_runs_out(1);
   thrust::device_vector<offset_t> out_offsets(elements);
-  thrust::device_vector<offset_t> out_lengths(elements);
+  thrust::device_vector<run_length_t> out_lengths(elements);
   thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  T* d_in_keys             = thrust::raw_pointer_cast(in_keys.data());
-  offset_t* d_out_offsets  = thrust::raw_pointer_cast(out_offsets.data());
-  offset_t* d_out_lengths  = thrust::raw_pointer_cast(out_lengths.data());
-  offset_t* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
+  T* d_in_keys                = thrust::raw_pointer_cast(in_keys.data());
+  offset_t* d_out_offsets     = thrust::raw_pointer_cast(out_offsets.data());
+  run_length_t* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
+  offset_t* d_num_runs_out    = thrust::raw_pointer_cast(num_runs_out.data());
 
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
@@ -164,10 +167,10 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-using some_offset_types = nvbench::type_list<nvbench::int32_t>;
+using run_length_types = nvbench::type_list<nvbench::int32_t, nvbench::int64_t>;
 
-NVBENCH_BENCH_TYPES(rle, NVBENCH_TYPE_AXES(all_types, some_offset_types))
+NVBENCH_BENCH_TYPES(rle, NVBENCH_TYPE_AXES(all_types, offset_types, run_length_types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "RunLengthT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});

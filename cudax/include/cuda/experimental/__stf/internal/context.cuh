@@ -35,6 +35,40 @@
 namespace cuda::experimental::stf
 {
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+/**
+ * @brief Invokes the provided callable on the value of the given variant.
+ *
+ * This function applies the callable `f` to the current value stored in
+ * the `std::variant` object `v`. The callable is forwarded as an rvalue
+ * reference. This is applicable to both non-const and const variants.
+ *
+ * @tparam Ts... Types of the variant's possible stored types.
+ * @tparam F Type of the callable (function, lambda, or functor).
+ *
+ * @param v A `std::variant` object containing one of the types `Ts...`.
+ * @param f The callable to invoke on the value stored in the variant.
+ *
+ * @return The result of the callable invocation on the variant's value.
+ *
+ * @overload
+ */
+template <typename... Ts, typename F>
+decltype(auto) operator->*(::std::variant<Ts...>& v, F&& f)
+{
+  return ::std::visit(::std::forward<F>(f), v);
+}
+
+/**
+ * @overload
+ */
+template <typename... Ts, typename F>
+decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
+{
+  return ::std::visit(::std::forward<F>(f), v);
+}
+#endif // !_CCCL_DOXYGEN_INVOKED
+
 /**
  * @brief Generic context implementation
  *
@@ -55,66 +89,50 @@ class context
     /// Get the string attached to the task for debugging purposes
     const ::std::string& get_symbol() const
     {
-      return ::std::visit(
-        [&](auto& self) {
-          return self.get_symbol();
-        },
-        payload);
+      return payload->*[&](auto& self) {
+        return self.get_symbol();
+      };
     }
 
     auto& set_symbol(::std::string s) &
     {
-      ::std::visit(
-        [&](auto& self) {
-          self.set_symbol(mv(s));
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self.set_symbol(mv(s));
+      };
       return *this;
     }
 
     auto&& set_symbol(::std::string s) &&
     {
-      ::std::visit(
-        [&](auto& self) {
-          self.set_symbol(mv(s));
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self.set_symbol(mv(s));
+      };
       return mv(*this);
     }
 
     template <typename Fun>
     void operator->*(Fun&& f)
     {
-      if (payload.index() == 0)
-      {
-        ::std::get<0>(payload)->*::std::forward<Fun>(f);
-      }
-      else
-      {
-        EXPECT(payload.index() == 1UL, "Uninitialized scope.");
-        ::std::get<1>(payload)->*::std::forward<Fun>(f);
-      }
+      payload->*[&](auto& self) {
+        self->*::std::forward<Fun>(f);
+      };
     }
 
     template <typename... Args>
     auto& add_deps(Args&&... args)
     {
-      ::std::visit(
-        [&](auto& self) {
-          self.add_deps(::std::forward<Args>(args)...);
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self.add_deps(::std::forward<Args>(args)...);
+      };
       return *this;
     }
 
     template <typename T>
     decltype(auto) get(size_t submitted_index) const
     {
-      return ::std::visit(
-        [&](auto& self) {
-          return self.template get<T>(submitted_index);
-        },
-        payload);
+      return payload->*[&](auto& self) {
+        return self.template get<T>(submitted_index);
+      };
     }
 
   private:
@@ -135,22 +153,19 @@ class context
         : payload(mv(task))
     {}
 
-    void set_symbol(::std::string s) &
+    auto& set_symbol(::std::string s) &
     {
-      ::std::visit(
-        [&](auto& self) {
-          self.set_symbol(mv(s));
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self.set_symbol(mv(s));
+      };
+      return *this;
     }
 
     auto&& set_symbol(::std::string s) &&
     {
-      ::std::visit(
-        [&](auto& self) {
-          self.set_symbol(mv(s));
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self.set_symbol(mv(s));
+      };
       return mv(*this);
     }
 
@@ -164,11 +179,9 @@ class context
     template <typename... Args>
     unified_task& add_deps(Args&&... args)
     {
-      ::std::visit(
-        [&](auto& self) {
-          self.add_deps(::std::forward<Args>(args)...);
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self.add_deps(::std::forward<Args>(args)...);
+      };
       return *this;
     }
 
@@ -183,21 +196,17 @@ class context
     template <typename T>
     decltype(auto) get(size_t submitted_index) const
     {
-      return ::std::visit(
-        [&](auto& self) -> decltype(auto) {
-          return self.template get<T>(submitted_index);
-        },
-        payload);
+      return payload->*[&](auto& self) -> decltype(auto) {
+        return self.template get<T>(submitted_index);
+      };
     }
 
     template <typename Fun>
     void operator->*(Fun&& f)
     {
-      ::std::visit(
-        [&](auto& self) {
-          self->*f;
-        },
-        payload);
+      payload->*[&](auto& self) {
+        self->*f;
+      };
     }
 
   private:
@@ -273,11 +282,9 @@ public:
   ::std::string to_string() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.to_string();
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.to_string();
+    };
   }
 
   /**
@@ -285,41 +292,33 @@ public:
    */
   auto stream_to_event_list(cudaStream_t stream, ::std::string str) const
   {
-    return ::std::visit(
-      [&](auto& self) {
-        return self.stream_to_event_list(stream, mv(str));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.stream_to_event_list(stream, mv(str));
+    };
   }
 
   void set_graph_cache_policy(::std::function<bool()> policy)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [&](auto& self) {
-        self.set_graph_cache_policy(mv(policy));
-      },
-      payload);
+    payload->*[&](auto& self) {
+      self.set_graph_cache_policy(mv(policy));
+    };
   }
 
   auto get_graph_cache_policy() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.get_graph_cache_policy();
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.get_graph_cache_policy();
+    };
   }
 
   executable_graph_cache_stat* graph_get_cache_stat()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.graph_get_cache_stat();
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.graph_get_cache_stat();
+    };
   }
 
   /**
@@ -328,11 +327,9 @@ public:
   size_t task_count() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.task_count();
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.task_count();
+    };
   }
 
   /**
@@ -347,11 +344,9 @@ public:
   auto logical_data(size_t elements, Sizes... othersizes)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.template logical_data<T>(elements, othersizes...);
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.template logical_data<T>(elements, othersizes...);
+    };
   }
 
   /**
@@ -375,34 +370,30 @@ public:
     else
     {
       // Forward all parameters to the homonym function in the context.
-      return ::std::visit(
-        [&](auto& self) {
-          return self.logical_data(::std::forward<P0>(p0), ::std::forward<Ps>(ps)...);
-        },
-        payload);
+      return payload->*[&](auto& self) {
+        return self.logical_data(::std::forward<P0>(p0), ::std::forward<Ps>(ps)...);
+      };
     }
   }
 
   auto token()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.token();
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.token();
+    };
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(::cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
-    return ::std::visit(
-      [&](auto& self) {
-        return self.freeze(mv(d), m, mv(where));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.freeze(mv(d), m, mv(where), user_freeze);
+    };
   }
 
   /**
@@ -419,11 +410,9 @@ public:
   {
     _CCCL_ASSERT(!dplace.is_invalid(), "");
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.logical_data(make_slice(p, n), mv(dplace));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.logical_data(make_slice(p, n), mv(dplace));
+    };
   }
 
   template <typename... Deps>
@@ -431,11 +420,9 @@ public:
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     // Workaround: For some obscure reason `mv(deps)...` fails to compile
-    return ::std::visit(
-      [&](auto& self) {
-        return unified_task<Deps...>(self.task(mv(e_place), ::std::move(deps)...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return unified_task<Deps...>(self.task(mv(e_place), ::std::move(deps)...));
+    };
   }
 
   template <typename... Deps>
@@ -454,14 +441,19 @@ public:
             typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place_t, S, null_partition, Deps...>,
-                                   reserved::parallel_for_scope<graph_ctx, exec_place_t, S, null_partition, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
+      using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place_t, S, null_partition, Deps...>,
+                                     reserved::parallel_for_scope<graph_ctx, exec_place_t, S, null_partition, Deps...>>;
+      return payload->*[&](auto& self) {
         return result_t(self.parallel_for(mv(e_place), mv(shape), deps...));
-      },
-      payload);
+      };
+    }
   }
 
   template <typename partitioner_t,
@@ -474,15 +466,13 @@ public:
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place_t, S, partitioner_t, Deps...>,
                                    reserved::parallel_for_scope<graph_ctx, exec_place_t, S, partitioner_t, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
+    };
   }
 
-  template <typename S, typename... Deps, typename... Ops, bool... flags>
-  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
+  template <typename S, typename... Deps>
+  auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
@@ -494,11 +484,9 @@ public:
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     using result_t = unified_scope<reserved::host_launch_scope<stream_ctx, false, Deps...>,
                                    reserved::host_launch_scope<graph_ctx, false, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.host_launch(deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.host_launch(deps...));
+    };
   }
 
   template <typename... Deps>
@@ -508,11 +496,9 @@ public:
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.cuda_kernel(deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.cuda_kernel(deps...));
+    };
   }
 
   template <typename... Deps>
@@ -522,11 +508,9 @@ public:
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.cuda_kernel(e_place, deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.cuda_kernel(e_place, deps...));
+    };
   }
 
   template <typename... Deps>
@@ -536,11 +520,9 @@ public:
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.cuda_kernel_chain(deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.cuda_kernel_chain(deps...));
+    };
   }
 
   template <typename... Deps>
@@ -550,11 +532,9 @@ public:
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.cuda_kernel_chain(e_place, deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.cuda_kernel_chain(e_place, deps...));
+    };
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -563,12 +543,9 @@ public:
   {
     using result_t = unified_scope<reserved::launch_scope<stream_ctx, thread_hierarchy_spec_t, Deps...>,
                                    reserved::launch_scope<graph_ctx, thread_hierarchy_spec_t, Deps...>>;
-    return ::std::visit(
-      [&](auto& self) {
-        using Self = ::std::remove_reference_t<decltype((self))>;
-        return result_t(self.launch(mv(spec), mv(e_place), deps...));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.launch(mv(spec), mv(e_place), deps...));
+    };
   }
 
   // /* Default execution policy, explicit place */
@@ -596,111 +573,89 @@ public:
   auto repeat(size_t count)
   {
     using result_t = unified_scope<reserved::repeat_scope<stream_ctx>, reserved::repeat_scope<graph_ctx>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.repeat(count));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.repeat(count));
+    };
   }
 
   auto repeat(::std::function<bool()> condition)
   {
     using result_t = unified_scope<reserved::repeat_scope<stream_ctx>, reserved::repeat_scope<graph_ctx>>;
-    return ::std::visit(
-      [&](auto& self) {
-        return result_t(self.repeat(mv(condition)));
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return result_t(self.repeat(mv(condition)));
+    };
   }
 
-  cudaStream_t task_fence()
+  cudaStream_t fence()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&](auto& self) {
-        return self.task_fence();
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.fence();
+    };
   }
 
   void finalize()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [](auto& self) {
-        self.finalize();
-      },
-      payload);
+    payload->*[](auto& self) {
+      self.finalize();
+    };
   }
 
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [](auto& self) {
-        self.submit();
-      },
-      payload);
+    payload->*[](auto& self) {
+      self.submit();
+    };
   }
 
   void set_allocator(block_allocator_untyped custom_allocator)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [&](auto& self) {
-        self.set_allocator(mv(custom_allocator));
-      },
-      payload);
+    payload->*[&](auto& self) {
+      self.set_allocator(mv(custom_allocator));
+    };
   }
 
   void attach_allocator(block_allocator_untyped custom_allocator)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [&](auto& self) {
-        self.attach_allocator(mv(custom_allocator));
-      },
-      payload);
+    payload->*[&](auto& self) {
+      self.attach_allocator(mv(custom_allocator));
+    };
   }
 
   void update_uncached_allocator(block_allocator_untyped custom)
   {
-    ::std::visit(
-      [&](auto& self) {
-        self.update_uncached_allocator(mv(custom));
-      },
-      payload);
+    payload->*[&](auto& self) {
+      self.update_uncached_allocator(mv(custom));
+    };
   }
 
-  void change_epoch()
+  void change_stage()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [](auto& self) {
-        self.change_epoch();
-      },
-      payload);
+    payload->*[](auto& self) {
+      self.change_stage();
+    };
   }
 
   ::std::shared_ptr<reserved::per_ctx_dot> get_dot()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [](auto& self) {
-        return self.get_dot();
-      },
-      payload);
+    return payload->*[](auto& self) {
+      return self.get_dot();
+    };
   }
 
   template <typename T>
   auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&ldata](auto& self) {
-        return self.wait(ldata);
-      },
-      payload);
+    return payload->*[&ldata](auto& self) {
+      return self.wait(ldata);
+    };
   }
 
   template <typename parent_ctx_t>
@@ -708,21 +663,17 @@ public:
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
-    ::std::visit(
-      [&](auto& self) {
-        self.set_parent_ctx(parent_ctx.get_dot());
-      },
-      payload);
+    payload->*[&](auto& self) {
+      self.set_parent_ctx(parent_ctx.get_dot());
+    };
   }
 
   void enable_logical_data_stats()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [&](auto& self) {
-        self.enable_logical_data_stats();
-      },
-      payload);
+    payload->*[&](auto& self) {
+      self.enable_logical_data_stats();
+    };
   }
 
   /**
@@ -731,11 +682,9 @@ public:
   auto dot_section(::std::string symbol) const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [&symbol](auto& self) {
-        return self.dot_section(symbol);
-      },
-      payload);
+    return payload->*[&](auto& self) {
+      return self.dot_section(mv(symbol));
+    };
   }
 
   /* Indicates whether the underlying context is a graph context, so that we
@@ -753,11 +702,9 @@ public:
     // }
     // EXPECT(payload.index() == 1, "Uninitialized context.");
     // return ::std::get<1>(payload).async_resources();
-    return ::std::visit(
-      [&](auto& self) -> async_resources_handle& {
-        return self.async_resources();
-      },
-      payload);
+    return payload->*[&](auto& self) -> async_resources_handle& {
+      return self.async_resources();
+    };
   }
 
   // Shortcuts to manipulate the current affinity stored in the async_resources_handle of the ctx
@@ -826,20 +773,9 @@ public:
   cudaStream_t pick_stream()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [](auto& self) {
-        return self.pick_stream();
-      },
-      payload);
-  }
-
-private:
-  template <typename Fun>
-  auto visit(Fun&& fun)
-    -> decltype(::std::visit(::std::forward<Fun>(fun), ::std::declval<::std::variant<stream_ctx, graph_ctx>&>()))
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(::std::forward<Fun>(fun), payload);
+    return payload->*[](auto& self) {
+      return self.pick_stream();
+    };
   }
 
 public:
@@ -850,7 +786,7 @@ public:
 UNITTEST("context")
 {
   context ctx;
-  ctx.task_fence();
+  ctx.fence();
   ctx.submit();
   ctx.finalize();
 };
@@ -865,7 +801,7 @@ UNITTEST("context from existing contexts")
 UNITTEST("context to make generic code")
 {
   auto f = [](context ctx) {
-    ctx.task_fence();
+    ctx.fence();
   };
 
   stream_ctx ctx1;

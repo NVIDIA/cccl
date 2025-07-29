@@ -21,26 +21,31 @@
 #  pragma system_header
 #endif // no system header
 
-// CUDA headers might not be present when using NVRTC, see NVIDIA/cccl#2095 for detail
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cuda_runtime_api.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__cccl/cuda_toolkit.h>
 
 #include <nv/target>
 
-// True, when programmatic dependent launch is available, otherwise false.
-#define _CCCL_HAS_PDL _CCCL_CUDACC_AT_LEAST(12, 0)
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
+//! When this macro is defined, Programmatic Dependent Launch (PDL) is disabled across CCCL
+#  define CCCL_DISABLE_PDL
+#endif // _CCCL_DOXYGEN_INVOKED
 
-#if _CCCL_HAS_PDL
+#ifdef CCCL_DISABLE_PDL
+#  define _CCCL_HAS_PDL() 0
+#else // CCCL_DISABLE_PDL
+#  define _CCCL_HAS_PDL() _CCCL_CTK_AT_LEAST(12, 0)
+#endif // CCCL_DISABLE_PDL
+
+#if _CCCL_HAS_PDL()
 // Waits for the previous kernel to complete (when it reaches its final membar). Should be put before the first global
 // memory access in a kernel.
 #  define _CCCL_PDL_GRID_DEPENDENCY_SYNC() NV_IF_TARGET(NV_PROVIDES_SM_90, cudaGridDependencySynchronize();)
 // Allows the subsequent kernel in the same stream to launch. Can be put anywhere in a kernel.
 // Heuristic(ahendriksen): put it after the last load.
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH() NV_IF_TARGET(NV_PROVIDES_SM_90, cudaTriggerProgrammaticLaunchCompletion();)
-#else
+#else // _CCCL_HAS_PDL()
 #  define _CCCL_PDL_GRID_DEPENDENCY_SYNC()
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH()
-#endif // _CCCL_HAS_PDL
+#endif // _CCCL_HAS_PDL()
 
 #endif // __CCCL_CUDA_CAPABILITIES

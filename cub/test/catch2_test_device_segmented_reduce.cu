@@ -26,11 +26,11 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_segmented_reduce.cuh>
 
 #include <cuda/std/limits>
+#include <cuda/std/utility>
 
 #include <numeric>
 
@@ -62,7 +62,15 @@ using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::in
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_pair<uchar3>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
@@ -90,8 +98,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   constexpr int max_items = 1000000;
 
   // Number of items
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const int num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,
@@ -231,31 +240,6 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   }
 }
 
-/**
- * @brief Helper function to compute the reference solution for result verification, taking a
- * c2h::device_vector of input items, num_segments and segment_size.
- */
-template <typename ItemT, typename ReductionOpT, typename AccumulatorT, typename ResultItT>
-void compute_fixed_size_segmented_problem_reference(
-  const c2h::device_vector<ItemT>& d_in,
-  const int num_segments,
-  const int segment_size,
-  ReductionOpT reduction_op,
-  AccumulatorT init,
-  ResultItT h_results)
-{
-  c2h::host_vector<ItemT> h_items(d_in);
-  auto h_begin = h_items.cbegin();
-
-  for (int segment = 0; segment < num_segments; segment++)
-  {
-    auto seg_begin = h_begin + segment * segment_size;
-    auto seg_end   = seg_begin + segment_size;
-    h_results[segment] =
-      static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
-  }
-}
-
 C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
          "[segmented][reduce][device]",
          full_type_list)
@@ -267,11 +251,12 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   const int max_items = 1 << 22;
 
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const segment_size_t segment_size = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)),
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)),
-    take(2, random(1 << 15, 1 << 20)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)),
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
+    take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   const int num_segments = max_items / segment_size;
   const int num_items    = num_segments * segment_size;
@@ -309,5 +294,111 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);
+  }
+
+// Skip DeviceReduce::Sum tests for extended floating-point types because of unbounded epsilon due
+// to pseudo associativity of the addition operation over floating point numbers
+#if TEST_TYPES != 3
+  SECTION("sum")
+  {
+    using op_t    = ::cuda::std::plus<>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
+
+    // Prepare verification data
+    c2h::host_vector<output_t> h_expected_result(num_segments);
+    compute_fixed_size_segmented_problem_reference(
+      in_items, num_segments, segment_size, op_t{}, accum_t{}, h_expected_result.begin());
+
+    // Run test
+    c2h::device_vector<output_t> d_out_result(num_segments);
+    auto d_out_it = unwrap_it(thrust::raw_pointer_cast(d_out_result.data()));
+    device_segmented_sum(d_in_it, d_out_it, num_segments, segment_size);
+
+    c2h::host_vector<output_t> h_out_result(d_out_result);
+    // Verify result
+    REQUIRE(h_expected_result == h_out_result);
+  }
+#endif
+
+  SECTION("min")
+  {
+    using op_t = ::cuda::minimum<>;
+
+    // Prepare verification data
+    c2h::host_vector<output_t> h_expected_result(num_segments);
+    compute_fixed_size_segmented_problem_reference(
+      in_items,
+      num_segments,
+      segment_size,
+      op_t{},
+      ::cuda::std::numeric_limits<input_t>::max(),
+      h_expected_result.begin());
+
+    // Run test
+    c2h::device_vector<output_t> d_out_result(num_segments);
+    auto d_out_it = thrust::raw_pointer_cast(d_out_result.data());
+    device_segmented_min(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size);
+
+    c2h::host_vector<output_t> h_out_result(d_out_result);
+    // Verify result
+    REQUIRE(h_expected_result == h_out_result);
+  }
+
+  SECTION("argmin")
+  {
+    using result_t = ::cuda::std::pair<int, output_t>;
+
+    // Prepare verification data
+    c2h::host_vector<result_t> h_expected_result(num_segments);
+    compute_fixed_size_segmented_argmin_reference(in_items, num_segments, segment_size, h_expected_result.begin());
+
+    // Run test
+    c2h::device_vector<result_t> d_out_result(num_segments);
+    device_segmented_arg_min(d_in_it, thrust::raw_pointer_cast(d_out_result.data()), num_segments, segment_size);
+
+    c2h::host_vector<result_t> h_out_result(d_out_result);
+    // Verify result
+    REQUIRE(h_expected_result == h_out_result);
+  }
+
+  SECTION("max")
+  {
+    using op_t = ::cuda::maximum<>;
+
+    // Prepare verification data
+    c2h::host_vector<output_t> h_expected_result(num_segments);
+    compute_fixed_size_segmented_problem_reference(
+      in_items,
+      num_segments,
+      segment_size,
+      op_t{},
+      ::cuda::std::numeric_limits<input_t>::lowest(),
+      h_expected_result.begin());
+
+    // Run test
+    c2h::device_vector<output_t> d_out_result(num_segments);
+    auto d_out_it = thrust::raw_pointer_cast(d_out_result.data());
+    device_segmented_max(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size);
+
+    c2h::host_vector<output_t> h_out_result(d_out_result);
+    // Verify result
+    REQUIRE(h_expected_result == h_out_result);
+  }
+
+  SECTION("argmax")
+  {
+    using result_t = ::cuda::std::pair<int, output_t>;
+
+    // Prepare verification data
+    c2h::host_vector<result_t> h_expected_result(num_segments);
+    compute_fixed_size_segmented_argmax_reference(in_items, num_segments, segment_size, h_expected_result.begin());
+
+    // Run test
+    c2h::device_vector<result_t> d_out_result(num_segments);
+    device_segmented_arg_max(d_in_it, thrust::raw_pointer_cast(d_out_result.data()), num_segments, segment_size);
+
+    c2h::host_vector<result_t> h_out_result(d_out_result);
+    // Verify result
+    REQUIRE(h_expected_result == h_out_result);
   }
 }

@@ -36,6 +36,8 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 
+#include <nv/target>
+
 #include <iostream>
 #include <numeric>
 #include <type_traits>
@@ -44,7 +46,6 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
-#include <nv/target>
 
 #if TEST_HALF_T()
 // Half support is provided by SM53+. We currently test against a few older architectures.
@@ -53,7 +54,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
@@ -64,7 +65,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));
@@ -214,13 +215,13 @@ std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   return {};
 }
 
-inline ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
+inline constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
 {
   return {};
 }
 
 template <bool V, class OpT>
-inline OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
+inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
 {
   return op;
 }
@@ -246,10 +247,19 @@ inline void init_default_constant(uchar3& val)
   val = uchar3{2, 2, 2};
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 inline void init_default_constant(ulonglong4& val)
 {
   val = ulonglong4{2, 2, 2, 2};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+inline void init_default_constant(ulonglong4_16a& val)
+{
+  val = ulonglong4_16a{2, 2, 2, 2};
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename InputItT,
           typename OffsetItT,
@@ -414,6 +424,87 @@ void compute_segmented_argmax_reference(
       int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
+    }
+  }
+}
+
+/**
+ * @brief Helper function to compute the reference solution for result verification, taking a
+ * c2h::device_vector of input items, num_segments and segment_size.
+ */
+template <typename ItemT, typename ReductionOpT, typename AccumulatorT, typename ResultItT>
+void compute_fixed_size_segmented_problem_reference(
+  const c2h::device_vector<ItemT>& d_in,
+  const int num_segments,
+  const int segment_size,
+  ReductionOpT reduction_op,
+  AccumulatorT init,
+  ResultItT h_results)
+{
+  c2h::host_vector<ItemT> h_items(d_in);
+  auto h_begin = h_items.cbegin();
+
+  for (int segment = 0; segment < num_segments; segment++)
+  {
+    auto seg_begin = h_begin + segment * segment_size;
+    auto seg_end   = seg_begin + segment_size;
+    h_results[segment] =
+      static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
+  }
+}
+
+/**
+ * @brief Helper function to compute the reference solution for result verification, taking a
+ * c2h::device_vector of input items, num_segments and segment_size.
+ */
+template <typename ItemT, typename ResultItT>
+void compute_fixed_size_segmented_argmax_reference(
+  const c2h::device_vector<ItemT>& d_in, const int num_segments, const int segment_size, ResultItT h_results)
+{
+  c2h::host_vector<ItemT> h_items(d_in);
+  auto h_begin = h_items.begin();
+
+  for (int seg = 0; seg < num_segments; seg++)
+  {
+    if (segment_size == 0)
+    {
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::lowest()};
+    }
+    else
+    {
+      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_end            = seg_begin + segment_size;
+      auto expected_result_it = std::max_element(seg_begin, seg_end);
+      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      h_results[seg]          = {result_offset, *expected_result_it};
+    }
+  }
+}
+
+/**
+ * @brief Helper function to compute the reference solution for result verification, taking a
+ * c2h::device_vector of input items, num_segments and segment_size.
+ */
+template <typename ItemT, typename ResultItT>
+void compute_fixed_size_segmented_argmin_reference(
+  const c2h::device_vector<ItemT>& d_in, const int num_segments, const int segment_size, ResultItT h_results)
+{
+  c2h::host_vector<ItemT> h_items(d_in);
+  auto h_begin = h_items.begin();
+
+  for (int seg = 0; seg < num_segments; seg++)
+  {
+    if (segment_size == 0)
+    {
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::lowest()};
+    }
+    else
+    {
+      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_end            = seg_begin + segment_size;
+      auto expected_result_it = std::min_element(seg_begin, seg_end);
+      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
 }

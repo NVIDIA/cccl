@@ -26,9 +26,11 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.constructible]
 template <class _Tp, class... _Args>
@@ -52,7 +54,7 @@ concept copy_constructible =
   && constructible_from<_Tp, const _Tp&> && convertible_to<const _Tp&, _Tp> && constructible_from<_Tp, const _Tp>
   && convertible_to<const _Tp, _Tp>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(__constructible_from_,
@@ -96,8 +98,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT copy_constructible = _CCCL_FRAGMENT(__copy_constructible_, _Tp);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_CONSTRUCTIBLE_H

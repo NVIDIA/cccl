@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,8 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__device/all_devices.cuh>
+#include <cuda/__device/all_devices.h>
+
 #include <cuda/experimental/__green_context/green_ctx.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -43,20 +46,20 @@ public:
 
   // We might want to make this private depending on how this type ends up looking like long term,
   // not documenting it for now
-  [[nodiscard]] constexpr CUcontext get_context() const noexcept
+  [[nodiscard]] constexpr CUcontext context() const noexcept
   {
     return __ctx;
   }
 
   //! @brief Retrieve the device on which this logical device resides
-  [[nodiscard]] constexpr device_ref get_underlying_device() const noexcept
+  [[nodiscard]] constexpr device_ref underlying_device() const noexcept
   {
     return __dev_id;
   }
 
   //! @brief Retrieve the kind of logical device stored in this object
   //! The kind indicates if this logical_device holds a device or green_context
-  [[nodiscard]] constexpr kinds get_kind() const noexcept
+  [[nodiscard]] constexpr kinds kind() const noexcept
   {
     return __kind;
   }
@@ -67,7 +70,7 @@ public:
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __kind(kinds::device)
-      , __ctx(devices[__id].get_primary_context())
+      , __ctx(devices[__id].primary_context())
   {}
 
   //! @brief Construct logical_device from a device_ref
@@ -80,27 +83,27 @@ public:
   // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
   //!
   //! Constructing a logical_device for a given device has a side effect of initializing that device
-  logical_device(const ::cuda::experimental::device& __dev)
+  logical_device(const ::cuda::physical_device& __dev)
       : __dev_id(__dev.get())
       , __kind(kinds::device)
-      , __ctx(__dev.get_primary_context())
+      , __ctx(__dev.primary_context())
   {}
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
   //! @brief Construct logical_device from a green_context
   logical_device(const green_context& __gctx)
       : __dev_id(__gctx.__dev_id)
       , __kind(kinds::green_context)
       , __ctx(__gctx.__transformed)
   {}
-#endif // CUDART_VERSION >= 12050
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
 
   //! @brief Compares two logical_devices for equality
   //!
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the same logical device
-  _CCCL_NODISCARD_FRIEND bool operator==(logical_device __lhs, logical_device __rhs) noexcept
+  [[nodiscard]] friend bool operator==(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx == __rhs.__ctx;
   }
@@ -111,7 +114,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the different logical device
-  _CCCL_NODISCARD_FRIEND bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
+  [[nodiscard]] friend bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx != __rhs.__ctx;
   }
@@ -140,5 +143,7 @@ struct __logical_device_access
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE_REF

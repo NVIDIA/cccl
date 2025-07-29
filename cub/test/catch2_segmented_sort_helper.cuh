@@ -44,6 +44,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <nv/target>
+
 #include <cstdio>
 
 #include "catch2_test_launch_helper.h"
@@ -51,7 +53,6 @@
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
-#include <nv/target>
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
   inline c2h::seed_t make_##name##_seed(const c2h::seed_t seed) \

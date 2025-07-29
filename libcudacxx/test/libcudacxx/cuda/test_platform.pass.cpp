@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "test_macros.h"
 #include <nv/target>
+
+#include "test_macros.h"
 
 #if !TEST_COMPILER(NVRTC)
 #  include <assert.h>
@@ -191,7 +192,7 @@ __host__ __device__ void test()
        nv::target::detail::toint(NV_TARGET_MINIMUM_SM_SELECTOR) == (__CUDA_MINIMUM_ARCH__ / 10), "arch mismatch");))
 }
 
-#elif !TEST_HAS_CUDA_COMPILER
+#elif !TEST_HAS_CUDA_COMPILER()
 
 void test()
 {

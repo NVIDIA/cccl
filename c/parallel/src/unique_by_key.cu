@@ -382,16 +382,16 @@ struct device_unique_by_key_vsmem_helper {{
     appender.add_iterator_definition(output_num_selected_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({compact_init_kernel_name})
-        .add_expression({sweep_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({compact_init_kernel_name, compact_init_kernel_lowered_name})
-        .get_name({sweep_kernel_name, sweep_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_expression({compact_init_kernel_name})
+        ->add_expression({sweep_kernel_name})
+        ->compile_program({args, num_args})
+        ->get_name({compact_init_kernel_name, compact_init_kernel_lowered_name})
+        ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(ltoir_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(

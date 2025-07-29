@@ -104,7 +104,7 @@ __host__ __device__ inline bool float_eq(__nv_fp8_e8m0 x, __nv_fp8_e8m0 y)
 #if _CCCL_HAS_NVFP16()
 __host__ __device__ inline bool float_eq(__half x, __half y)
 {
-#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   return __heq(x, y);
 #  else
   return __half2float(x) == __half2float(y);
@@ -115,7 +115,7 @@ __host__ __device__ inline bool float_eq(__half x, __half y)
 #if _CCCL_HAS_NVBF16()
 __host__ __device__ inline bool float_eq(__nv_bfloat16 x, __nv_bfloat16 y)
 {
-#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   return __heq(x, y);
 #  else
   return __bfloat162float(x) == __bfloat162float(y);

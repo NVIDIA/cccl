@@ -26,13 +26,15 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _AccessProperty>
 class __annotated_ptr_base
 {
 protected:
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint64_t __default_property() noexcept
+  _CCCL_API static constexpr uint64_t __default_property() noexcept
   {
     return _CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>     ? __l2_interleave_normal
          : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::normal>     ? __l2_interleave_normal_demote
@@ -46,18 +48,18 @@ protected:
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(_AccessProperty) noexcept {}
+  _CCCL_API constexpr __annotated_ptr_base(_AccessProperty) noexcept {}
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__associate(__p, _AccessProperty{});
   }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _AccessProperty __get_property() const noexcept
+  [[nodiscard]] _CCCL_API constexpr _AccessProperty __get_property() const noexcept
   {
     return _AccessProperty{};
   }
@@ -72,25 +74,27 @@ class __annotated_ptr_base<access_property>
 protected:
   uint64_t __prop = static_cast<uint64_t>(access_property{});
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property __property) noexcept
+  _CCCL_API constexpr __annotated_ptr_base(access_property __property) noexcept
       : __prop{static_cast<uint64_t>(__property)}
   {}
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__associate_raw_descriptor(__p, __prop);
   }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property __get_property() const noexcept
+  [[nodiscard]] _CCCL_API constexpr access_property __get_property() const noexcept
   {
     return access_property{__prop};
   }
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE

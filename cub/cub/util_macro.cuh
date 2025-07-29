@@ -74,10 +74,10 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #endif
 
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
-#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                                                 \
-    CUB_RUNTIME_FUNCTION static constexpr detail::PolicyWrapper<typename StaticPolicyT::name##Policy> name() \
-    {                                                                                                        \
-      return detail::MakePolicyWrapper(typename StaticPolicyT::name##Policy());                              \
+#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                            \
+    CUB_RUNTIME_FUNCTION static constexpr auto name()                   \
+    {                                                                   \
+      return MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
     }
 #endif
 
@@ -87,5 +87,13 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
 #  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_UNROLL_FULL()
 #endif // !CCCL_AVOID_SORT_UNROLL
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)
+#  define CUB_DETAIL_CONSTEXPR_ISH
+#else // ^^^ CUB_DEFINE_RUNTIME_POLICIES ^^^ / vvv !CUB_DEFINE_RUNTIME_POLICIES vvv
+#  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) static_assert(expr, msg);
+#  define CUB_DETAIL_CONSTEXPR_ISH                constexpr
+#endif // !(CUB_DEFINE_RUNTIME_POLICIES)
 
 CUB_NAMESPACE_END

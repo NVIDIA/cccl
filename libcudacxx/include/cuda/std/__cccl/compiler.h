@@ -164,6 +164,7 @@
 #  define _CCCL_CUDACC() _CCCL_VERSION_INVALID()
 #endif // !_CCCL_CUDACC || !_CCCL_CUDA_COMPILATION()
 
+#define _CCCL_CUDACC_EQUAL(...)    _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, ==, __VA_ARGS__)
 #define _CCCL_CUDACC_BELOW(...)    _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, <, __VA_ARGS__)
 #define _CCCL_CUDACC_AT_LEAST(...) _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, >=, __VA_ARGS__)
 
@@ -197,7 +198,8 @@
 // when compiling device code, and #pragma GCC unroll when compiling host code, but we need to suppress the warning
 // about the unknown pragma for nvcc.
 // #pragma GCC unroll does not support full unrolling, so we use the maximum value that it supports.
-#  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_NV_DIAG_SUPPRESS(1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_NV_DIAG_DEFAULT(1675)
+#  define _CCCL_PRAGMA_UNROLL(_N) \
+    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_END_NV_DIAG_SUPPRESS()
 #  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA_UNROLL(65534)
 #else // ^^^ has pragma unroll support ^^^ / vvv no pragma unroll support vvv
 #  define _CCCL_PRAGMA_UNROLL(_N)

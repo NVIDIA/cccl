@@ -26,14 +26,18 @@
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _ByteAlignment, class _ElementType>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
+[[nodiscard]] _CCCL_API inline bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
 {
   return _CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _ByteAlignment == 0;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H

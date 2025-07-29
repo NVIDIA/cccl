@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT piecewise_construct_t
@@ -29,5 +31,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT piecewise_construct_t
 _CCCL_GLOBAL_CONSTANT piecewise_construct_t piecewise_construct = piecewise_construct_t();
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_PIECEWISE_CONSTRUCT_H

@@ -1,36 +1,10 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
-
-#define C2H_EXPORTS
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_copy.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/distance.h>
+#include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
 #include <thrust/find.h>
 #include <thrust/for_each.h>
@@ -40,12 +14,13 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/complex>
+#include <cuda/std/cstdint>
 #include <cuda/type_traits>
-
-#include <cstdint>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/fill_striped.h>
@@ -59,7 +34,7 @@
 #  include <thrust/random.h>
 #endif
 
-namespace c2h
+namespace c2h::detail
 {
 
 #if !C2H_HAS_CURAND
@@ -80,138 +55,30 @@ struct i_to_rnd_t
 };
 #endif // !C2H_HAS_CURAND
 
-class generator_t
-{
-private:
-  generator_t();
-
-public:
-  static generator_t& instance();
-  ~generator_t();
-
-  template <typename T>
-  void operator()(seed_t seed,
-                  c2h::device_vector<T>& data,
-                  T min = std::numeric_limits<T>::min(),
-                  T max = std::numeric_limits<T>::max());
-
-  template <typename T>
-  void operator()(modulo_t modulo, c2h::device_vector<T>& data);
-
-  float* distribution();
-
-#if C2H_HAS_CURAND
-  curandGenerator_t& gen()
-  {
-    return m_gen;
-  }
-#endif // C2H_HAS_CURAND
-
-  float* prepare_random_generator(seed_t seed, std::size_t num_items);
-
-  void generate();
-
-private:
-#if C2H_HAS_CURAND
-  curandGenerator_t m_gen;
-#else
-  thrust::default_random_engine m_re;
-#endif
-  c2h::device_vector<float> m_distribution;
-};
-
-template <typename T, bool = ::cuda::is_floating_point_v<T>>
-struct random_to_item_t
-{
-  float m_min;
-  float m_max;
-
-  __host__ __device__ random_to_item_t(T min, T max)
-      : m_min(static_cast<float>(min))
-      , m_max(static_cast<float>(max))
-  {}
-
-  __device__ T operator()(float random_value)
-  {
-    return static_cast<T>((m_max - m_min) * random_value + m_min);
-  }
-};
-
 template <typename T>
-struct random_to_item_t<T, true>
+struct random_to_item_t<cuda::std::complex<T>, false>
 {
-  using storage_t = ::cuda::std::_If<(sizeof(T) > 4), double, float>;
-  storage_t m_min;
-  storage_t m_max;
+  cuda::std::complex<T> m_min;
+  cuda::std::complex<T> m_max;
 
-  __host__ __device__ random_to_item_t(T min, T max)
-      : m_min(static_cast<storage_t>(min))
-      , m_max(static_cast<storage_t>(max))
+  __host__ __device__ random_to_item_t(cuda::std::complex<T> min, cuda::std::complex<T> max)
+      : m_min(min)
+      , m_max(max)
   {}
 
-  __device__ T operator()(float random_value)
+  __device__ cuda::std::complex<T> operator()(float random_value) const
   {
-    return static_cast<T>(m_max * random_value + m_min * (1.0f - random_value));
+    return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
-
-template <typename T, int VecItem>
-struct random_to_vec_item_t;
-
-#define RANDOM_TO_VEC_ITEM_SPEC(VEC_ITEM, VEC_FIELD)                               \
-  template <typename T>                                                            \
-  struct random_to_vec_item_t<T, VEC_ITEM>                                         \
-  {                                                                                \
-    __device__ void operator()(std::size_t idx)                                    \
-    {                                                                              \
-      auto min             = m_min.VEC_FIELD;                                      \
-      auto max             = m_max.VEC_FIELD;                                      \
-      m_out[idx].VEC_FIELD = random_to_item_t<decltype(min)>(min, max)(m_in[idx]); \
-    }                                                                              \
-    random_to_vec_item_t(T min, T max, float* in, T* out)                          \
-        : m_min(min)                                                               \
-        , m_max(max)                                                               \
-        , m_in(in)                                                                 \
-        , m_out(out)                                                               \
-    {}                                                                             \
-    T m_min;                                                                       \
-    T m_max;                                                                       \
-    float* m_in{};                                                                 \
-    T* m_out{};                                                                    \
-  }
-
-RANDOM_TO_VEC_ITEM_SPEC(0, x);
-RANDOM_TO_VEC_ITEM_SPEC(1, y);
-RANDOM_TO_VEC_ITEM_SPEC(2, z);
-RANDOM_TO_VEC_ITEM_SPEC(3, w);
-#undef RANDOM_TO_VEC_ITEM_SPEC
-
-generator_t::generator_t()
-{
-#if C2H_HAS_CURAND
-  curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
-#endif
-}
-
-generator_t::~generator_t()
-{
-#if C2H_HAS_CURAND
-  curandDestroyGenerator(m_gen);
-#endif
-}
-
-float* generator_t::distribution()
-{
-  return thrust::raw_pointer_cast(m_distribution.data());
-}
 
 void generator_t::generate()
 {
 #if C2H_HAS_CURAND
-  curandGenerateUniform(m_gen, this->distribution(), this->m_distribution.size());
+  curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
 #else
-  thrust::tabulate(c2h::device_policy, this->m_distribution.begin(), this->m_distribution.end(), i_to_rnd_t{m_re});
-  m_re.discard(this->m_distribution.size());
+  thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_re});
+  m_re.discard(m_distribution.size());
 #endif
 }
 
@@ -227,100 +94,39 @@ float* generator_t::prepare_random_generator(seed_t seed, std::size_t num_items)
 
   generate();
 
-  return this->distribution();
+  return thrust::raw_pointer_cast(m_distribution.data());
 }
 
-template <bool SetKeys>
 struct random_to_custom_t
 {
   static constexpr std::size_t m_max_key = std::numeric_limits<std::size_t>::max();
 
-  __device__ void operator()(std::size_t idx)
+  __device__ void operator()(std::size_t idx) const
   {
-    std::size_t in = static_cast<std::size_t>(static_cast<float>(m_max_key) * m_in[idx]);
-
-    custom_type_state_t* out = reinterpret_cast<custom_type_state_t*>(m_out + idx * m_element_size);
-
-    if (SetKeys)
-    {
-      out->key = in;
-    }
-    else
-    {
-      out->val = in;
-    }
+    auto out = reinterpret_cast<custom_type_state_t*>(m_out + idx * m_element_size);
+    out->key = static_cast<std::size_t>(static_cast<float>(m_max_key) * m_in[idx * 2 + 0]);
+    out->val = static_cast<std::size_t>(static_cast<float>(m_max_key) * m_in[idx * 2 + 1]);
   }
-
-  random_to_custom_t(float* in, char* out, std::size_t element_size)
-      : m_in(in)
-      , m_out(out)
-      , m_element_size(element_size)
-  {}
 
   float* m_in{};
   char* m_out{};
   std::size_t m_element_size{};
 };
 
-template <class T>
-void generator_t::operator()(seed_t seed, c2h::device_vector<T>& data, T min, T max)
+void gen_custom_type_state(
+  seed_t seed,
+  char* d_out,
+  custom_type_state_t /* min */,
+  custom_type_state_t /* max */,
+  std::size_t elements,
+  std::size_t element_size)
 {
-  prepare_random_generator(seed, data.size());
-
-  thrust::transform(
-    c2h::device_policy, m_distribution.begin(), m_distribution.end(), data.begin(), random_to_item_t<T>(min, max));
-}
-
-template <typename T>
-struct count_to_item_t
-{
-  unsigned long long int n;
-
-  count_to_item_t(unsigned long long int n)
-      : n(n)
-  {}
-
-  template <typename CounterT>
-  __device__ T operator()(CounterT id)
-  {
-    // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<float>(static_cast<unsigned long long int>(id) % n));
-  }
-};
-
-template <typename T>
-void generator_t::operator()(modulo_t mod, c2h::device_vector<T>& data)
-{
-  thrust::tabulate(c2h::device_policy, data.begin(), data.end(), count_to_item_t<T>{mod.get()});
-}
-
-generator_t& generator_t::instance()
-{
-  static generator_t generator;
-  return generator;
-}
-
-namespace detail
-{
-
-void gen(seed_t seed,
-         char* d_out,
-         custom_type_state_t /* min */,
-         custom_type_state_t /* max */,
-         std::size_t elements,
-         std::size_t element_size)
-{
-  thrust::counting_iterator<std::size_t> cnt_begin(0);
-  thrust::counting_iterator<std::size_t> cnt_end(elements);
-
-  generator_t& generator = generator_t::instance();
-  float* d_in            = generator.prepare_random_generator(seed, elements);
-
-  thrust::for_each(c2h::device_policy, cnt_begin, cnt_end, random_to_custom_t<true>{d_in, d_out, element_size});
-
-  generator.generate();
-
-  thrust::for_each(c2h::device_policy, cnt_begin, cnt_end, random_to_custom_t<false>{d_in, d_out, element_size});
+  // FIXME(bgruber): implement min/max handling for custom_type_state_t
+  float* d_in = generator.prepare_random_generator(seed, elements * 2);
+  thrust::for_each(device_policy,
+                   thrust::counting_iterator<std::size_t>{0},
+                   thrust::counting_iterator<std::size_t>{elements},
+                   random_to_custom_t{d_in, d_out, element_size});
 }
 
 template <class T>
@@ -404,10 +210,10 @@ struct offset_to_size_t
  * `gen_uniform_offset`.
  */
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT* d_out, std::size_t element_size)
+void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d_out, std::size_t element_size)
 {
   OffsetT total_segments   = static_cast<OffsetT>(segment_offsets.size() - 1);
-  const OffsetT* d_offsets = thrust::raw_pointer_cast(segment_offsets.data());
+  const OffsetT* d_offsets = segment_offsets.data();
 
   thrust::counting_iterator<int> iota(0);
   offset_to_iterator_t<KeyT> dst_transform_op{reinterpret_cast<char*>(d_out), element_size};
@@ -423,7 +229,7 @@ void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT*
   cub::DeviceCopy::Batched(
     d_temp_storage, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes, total_segments);
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // TODO(bgruber): replace by a non-CUB implementation
@@ -449,63 +255,91 @@ void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT*
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 }
 
-template void init_key_segments(
-  const c2h::device_vector<std::uint32_t>& segment_offsets, std::int32_t* out, std::size_t element_size);
-template void init_key_segments(
-  const c2h::device_vector<std::uint32_t>& segment_offsets, std::uint8_t* out, std::size_t element_size);
 template void
-init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, float* out, std::size_t element_size);
+init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, std::int32_t* out, std::size_t element_size);
+template void
+init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, std::uint8_t* out, std::size_t element_size);
+template void
+init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, float* out, std::size_t element_size);
 template void init_key_segments(
-  const c2h::device_vector<std::uint32_t>& segment_offsets, custom_type_state_t* out, std::size_t element_size);
+  ::cuda::std::span<const std::uint32_t> segment_offsets, custom_type_state_t* out, std::size_t element_size);
 #if TEST_HALF_T()
 template void
-init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, half_t* out, std::size_t element_size);
+init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, half_t* out, std::size_t element_size);
 #endif // TEST_HALF_T()
 
 #if TEST_BF_T()
 template void
-init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, bfloat16_t* out, std::size_t element_size);
+init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, bfloat16_t* out, std::size_t element_size);
 #endif // TEST_BF_T()
-} // namespace detail
 
 template <typename T>
-c2h::device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+std::size_t gen_uniform_offsets(
+  seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size)
 {
-  c2h::device_vector<T> segment_offsets(total_elements + 2);
-  gen(seed, segment_offsets, min_segment_size, max_segment_size);
-  segment_offsets[total_elements] = total_elements + 1;
-  thrust::exclusive_scan(c2h::device_policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
-  typename c2h::device_vector<T>::iterator iter = thrust::find_if(
-    c2h::device_policy, segment_offsets.begin(), segment_offsets.end(), detail::greater_equal_op<T>{total_elements});
-  *iter = total_elements;
-  segment_offsets.erase(iter + 1, segment_offsets.end());
-  return segment_offsets;
+  gen_values_between(seed, segment_offsets, min_segment_size, max_segment_size);
+  *thrust::device_ptr<T>(&segment_offsets[total_elements]) = total_elements + 1;
+  thrust::exclusive_scan(device_policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
+  const auto iter =
+    thrust::find_if(device_policy, segment_offsets.begin(), segment_offsets.end(), greater_equal_op<T>{total_elements});
+  *thrust::device_ptr<T>(&*iter) = total_elements;
+  return iter - segment_offsets.begin() + 1;
 }
 
-template c2h::device_vector<int32_t>
-gen_uniform_offsets(seed_t seed, int32_t total_elements, int32_t min_segment_size, int32_t max_segment_size);
-
-template c2h::device_vector<uint32_t>
-gen_uniform_offsets(seed_t seed, uint32_t total_elements, uint32_t min_segment_size, uint32_t max_segment_size);
-template c2h::device_vector<int64_t>
-gen_uniform_offsets(seed_t seed, int64_t total_elements, int64_t min_segment_size, int64_t max_segment_size);
-template c2h::device_vector<uint64_t>
-gen_uniform_offsets(seed_t seed, uint64_t total_elements, uint64_t min_segment_size, uint64_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  seed_t seed,
+  cuda::std::span<int32_t> segment_offsets,
+  int32_t total_elements,
+  int32_t min_segment_size,
+  int32_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  seed_t seed,
+  cuda::std::span<uint32_t> segment_offsets,
+  uint32_t total_elements,
+  uint32_t min_segment_size,
+  uint32_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  seed_t seed,
+  cuda::std::span<int64_t> segment_offsets,
+  int64_t total_elements,
+  int64_t min_segment_size,
+  int64_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  seed_t seed,
+  cuda::std::span<uint64_t> segment_offsets,
+  uint64_t total_elements,
+  uint64_t min_segment_size,
+  uint64_t max_segment_size);
 
 template <typename T>
-void gen(seed_t seed, c2h::device_vector<T>& data, T min, T max)
+void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  generator_t::instance()(seed, data, min, max);
+  const auto* dist = generator.prepare_random_generator(seed, data.size());
+  thrust::transform(device_policy, dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
 }
 
 template <typename T>
-void gen(modulo_t mod, c2h::device_vector<T>& data)
+struct counter_to_cyclic_item_t
 {
-  generator_t::instance()(mod, data);
+  std::size_t n;
+
+  template <typename CounterT>
+  __device__ T operator()(CounterT id)
+  {
+    // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
+    return static_cast<T>(static_cast<float>(static_cast<uint64_t>(id) % n));
+  }
+};
+
+template <typename T>
+void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data)
+{
+  thrust::tabulate(device_policy, data.begin(), data.end(), counter_to_cyclic_item_t<T>{mod.get()});
 }
 
-#define INSTANTIATE_RND(TYPE) template void gen<TYPE>(seed_t, c2h::device_vector<TYPE> & data, TYPE min, TYPE max)
-#define INSTANTIATE_MOD(TYPE) template void gen<TYPE>(modulo_t, c2h::device_vector<TYPE> & data)
+#define INSTANTIATE_RND(TYPE) \
+  template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
+#define INSTANTIATE_MOD(TYPE) template void gen_values_cyclic<TYPE>(modulo_t, ::cuda::std::span<TYPE> data)
 
 #define INSTANTIATE(TYPE) \
   INSTANTIATE_RND(TYPE);  \
@@ -527,6 +361,8 @@ INSTANTIATE(__nv_fp8_e4m3);
 #endif // _CCCL_HAS_NVFP8()
 INSTANTIATE(float);
 INSTANTIATE(double);
+INSTANTIATE(cuda::std::complex<float>);
+INSTANTIATE(cuda::std::complex<double>);
 
 INSTANTIATE(bool);
 INSTANTIATE(char);
@@ -534,131 +370,25 @@ INSTANTIATE(char);
 #if TEST_HALF_T()
 INSTANTIATE(half_t);
 INSTANTIATE(__half);
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+INSTANTIATE(cuda::std::complex<__half>);
+#  endif
 #endif // TEST_HALF_T()
 
 #if TEST_BF_T()
 INSTANTIATE(bfloat16_t);
 INSTANTIATE(__nv_bfloat16);
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+INSTANTIATE(cuda::std::complex<__nv_bfloat16>);
+#  endif
 #endif // TEST_BF_T()
+
+#if TEST_INT128()
+INSTANTIATE(__int128_t);
+INSTANTIATE(__uint128_t);
+#endif // TEST_INT128()
 
 #undef INSTANTIATE_RND
 #undef INSTANTIATE_MOD
 #undef INSTANTIATE
-
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-template <typename T, int VecItem>
-struct vec_gen_helper_t;
-
-template <typename T>
-struct vec_gen_helper_t<T, -1>
-{
-  static void gen(c2h::device_vector<T>&, T, T) {}
-};
-
-template <typename T, int VecItem>
-struct vec_gen_helper_t
-{
-  static void gen(c2h::device_vector<T>& data, T min, T max)
-  {
-    thrust::counting_iterator<std::size_t> cnt_begin(0);
-    thrust::counting_iterator<std::size_t> cnt_end(data.size());
-
-    generator_t& generator = generator_t::instance();
-    float* d_in            = generator.distribution();
-    T* d_out               = thrust::raw_pointer_cast(data.data());
-
-    generator.generate();
-
-    thrust::for_each(c2h::device_policy, cnt_begin, cnt_end, random_to_vec_item_t<T, VecItem>{min, max, d_in, d_out});
-
-    vec_gen_helper_t<T, VecItem - 1>::gen(data, min, max);
-  }
-};
-
-#  define VEC_SPECIALIZATION(TYPE, SIZE)                                                                     \
-    template <>                                                                                              \
-    void gen<TYPE##SIZE>(seed_t seed, c2h::device_vector<TYPE##SIZE> & data, TYPE##SIZE min, TYPE##SIZE max) \
-    {                                                                                                        \
-      generator_t& generator = generator_t::instance();                                                      \
-      generator.prepare_random_generator(seed, data.size());                                                 \
-      vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
-    }
-
-VEC_SPECIALIZATION(char, 2);
-VEC_SPECIALIZATION(char, 3);
-VEC_SPECIALIZATION(char, 4);
-
-// VEC_SPECIALIZATION(uchar, 2);
-VEC_SPECIALIZATION(uchar, 3);
-// VEC_SPECIALIZATION(uchar, 4);
-
-VEC_SPECIALIZATION(short, 2);
-VEC_SPECIALIZATION(short, 3);
-VEC_SPECIALIZATION(short, 4);
-
-// VEC_SPECIALIZATION(ushort, 2);
-// VEC_SPECIALIZATION(ushort, 3);
-// VEC_SPECIALIZATION(ushort, 4);
-
-VEC_SPECIALIZATION(int, 2);
-VEC_SPECIALIZATION(int, 3);
-VEC_SPECIALIZATION(int, 4);
-
-// VEC_SPECIALIZATION(uint, 2);
-// VEC_SPECIALIZATION(uint, 3);
-// VEC_SPECIALIZATION(uint, 4);
-
-VEC_SPECIALIZATION(long, 2);
-VEC_SPECIALIZATION(long, 3);
-VEC_SPECIALIZATION(long, 4);
-
-// VEC_SPECIALIZATION(ulong, 2);
-// VEC_SPECIALIZATION(ulong, 3);
-// VEC_SPECIALIZATION(ulong, 4);
-
-VEC_SPECIALIZATION(longlong, 2);
-VEC_SPECIALIZATION(longlong, 3);
-VEC_SPECIALIZATION(longlong, 4);
-
-VEC_SPECIALIZATION(ulonglong, 2);
-// VEC_SPECIALIZATION(ulonglong, 3);
-VEC_SPECIALIZATION(ulonglong, 4);
-
-VEC_SPECIALIZATION(float, 2);
-VEC_SPECIALIZATION(float, 3);
-VEC_SPECIALIZATION(float, 4);
-
-VEC_SPECIALIZATION(double, 2);
-VEC_SPECIALIZATION(double, 3);
-VEC_SPECIALIZATION(double, 4);
-
-template <typename VecType, typename Type>
-struct vec_gen_t
-{
-  std::size_t n;
-  scalar_to_vec_t<VecType> convert;
-
-  vec_gen_t(std::size_t n)
-      : n(n)
-  {}
-
-  template <typename CounterT>
-  __device__ VecType operator()(CounterT id)
-  {
-    return convert(static_cast<Type>(id) % n);
-  }
-};
-
-#  define VEC_GEN_MOD_SPECIALIZATION(VEC_TYPE, SCALAR_TYPE)                                                        \
-    template <>                                                                                                    \
-    void gen<VEC_TYPE>(modulo_t mod, c2h::device_vector<VEC_TYPE> & data)                                          \
-    {                                                                                                              \
-      thrust::tabulate(c2h::device_policy, data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()}); \
-    }
-
-VEC_GEN_MOD_SPECIALIZATION(short2, short);
-VEC_GEN_MOD_SPECIALIZATION(uchar3, unsigned char);
-VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
-VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
-#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-} // namespace c2h
+} // namespace c2h::detail

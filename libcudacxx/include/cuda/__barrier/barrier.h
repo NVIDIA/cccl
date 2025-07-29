@@ -28,6 +28,8 @@
 #include <cuda/std/__new_>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <thread_scope _Sco, class _CompletionF>
@@ -39,18 +41,17 @@ public:
   barrier(const barrier&)            = delete;
   barrier& operator=(const barrier&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr barrier(_CUDA_VSTD::ptrdiff_t __expected,
-                                              _CompletionF __completion = _CompletionF())
+  _CCCL_API constexpr barrier(_CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
       : _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>(__expected, __completion)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected)
+  _CCCL_API inline friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected)
   {
     _CCCL_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
     new (__b) barrier(__expected);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion)
+  _CCCL_API inline friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion)
   {
     _CCCL_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
     new (__b) barrier(__expected, __completion);
@@ -58,5 +59,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_BARRIER_H

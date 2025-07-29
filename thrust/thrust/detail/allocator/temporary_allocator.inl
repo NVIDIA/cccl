@@ -34,9 +34,9 @@
 #include <nv/target>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  if (defined(_NVHPC_CUDA) || defined(__CUDA_ARCH__))
+#  if _CCCL_DEVICE_COMPILATION()
 #    include <thrust/system/cuda/detail/terminate.h>
-#  endif // NVCC device pass or NVC++
+#  endif // _CCCL_DEVICE_COMPILATION()
 #endif // CUDA
 
 THRUST_NAMESPACE_BEGIN

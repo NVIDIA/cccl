@@ -24,12 +24,13 @@
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
-__max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
+_CCCL_API constexpr _ForwardIterator __max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
                 "_CUDA_VSTD::max_element requires a ForwardIterator");
@@ -48,19 +49,20 @@ __max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp
 }
 
 template <class _ForwardIterator, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__max_element<__comp_ref_type<_Compare>>(__first, __last, __comp);
 }
 
 template <class _ForwardIterator>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
-max_element(_ForwardIterator __first, _ForwardIterator __last)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator max_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::max_element(__first, __last, __less{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MAX_ELEMENT_H

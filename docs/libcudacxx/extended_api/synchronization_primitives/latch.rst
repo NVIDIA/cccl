@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-latch:
 
-cuda::latch
+``cuda::latch``
 ===============
 
 Defined in header ``<cuda/latch>``:

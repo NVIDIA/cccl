@@ -1,0 +1,111 @@
+name: Build and Test Python Wheels
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+
+  build-workflow:
+    name: Build workflow from matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      workflow: ${{ steps.build-workflow.outputs.workflow }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build workflow
+        id: build-workflow
+        uses: ./.github/actions/workflow-build
+        with:
+          workflows: python-wheels
+
+  dispatch-groups-linux-two-stage:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-two-stage:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-linux-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+
+  verify-workflow:
+    name: Verify and summarize workflow results
+    if: ${{ always() && !cancelled() }}
+    needs:
+      - build-workflow
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-windows-two-stage
+      - dispatch-groups-linux-standalone
+      - dispatch-groups-windows-standalone
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check workflow success
+        id: check-workflow
+        uses: ./.github/actions/workflow-results

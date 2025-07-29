@@ -46,10 +46,12 @@
 #  define _CCCL_MOVE(...) _CUDA_VSTD::move(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE()
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
 {
   using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
   return static_cast<_Up&&>(__t);
@@ -60,12 +62,13 @@ using __move_if_noexcept_result_t =
   conditional_t<!is_nothrow_move_constructible<_Tp>::value && is_copy_constructible<_Tp>::value, const _Tp&, _Tp&&>;
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr __move_if_noexcept_result_t<_Tp>
-move_if_noexcept(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
 {
   return _CUDA_VSTD::move(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_MOVE_H

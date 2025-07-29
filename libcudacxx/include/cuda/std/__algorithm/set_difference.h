@@ -31,11 +31,13 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Comp, class _InIter1, class _Sent1, class _InIter2, class _Sent2, class _OutIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>> __set_difference(
+_CCCL_API constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>> __set_difference(
   _InIter1&& __first1, _Sent1&& __last1, _InIter2&& __first2, _Sent2&& __last2, _OutIter&& __result, _Comp&& __comp)
 {
   while (__first1 != __last1 && __first2 != __last2)
@@ -61,7 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_difference(
+_CCCL_API constexpr _OutputIterator set_difference(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -75,7 +77,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_difference(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_difference(
+_CCCL_API constexpr _OutputIterator set_difference(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -87,5 +89,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_difference(
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SET_DIFFERENCE_H

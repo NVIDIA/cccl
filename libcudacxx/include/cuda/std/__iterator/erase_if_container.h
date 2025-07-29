@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Container, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI typename _Container::size_type __cccl_erase_if_container(_Container& __c, _Predicate& __pred)
+_CCCL_API inline typename _Container::size_type __cccl_erase_if_container(_Container& __c, _Predicate& __pred)
 {
   typename _Container::size_type __old_size = __c.size();
 
@@ -45,5 +47,7 @@ _LIBCUDACXX_HIDE_FROM_ABI typename _Container::size_type __cccl_erase_if_contain
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ERASE_IF_CONTAINER_H

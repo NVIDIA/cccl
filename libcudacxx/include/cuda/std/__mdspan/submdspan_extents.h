@@ -38,18 +38,20 @@
 #include <cuda/std/array>
 #include <cuda/std/tuple>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Helper to get an index_sequence of all slices that are not convertible to index_type
 template <class _IndexType, class... _Slices, size_t... _FilteredIndices>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __filter_slices_convertible_to_index(index_sequence<_FilteredIndices...>, index_sequence<>) noexcept
 {
   return index_sequence<_FilteredIndices...>{};
 }
 
 template <class _IndexType, class... _Slices, size_t... _SliceIndices, size_t _CurrentIndex, size_t... _Remaining>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __filter_slices_convertible_to_index(
+[[nodiscard]] _CCCL_API constexpr auto __filter_slices_convertible_to_index(
   index_sequence<_SliceIndices...>, index_sequence<_CurrentIndex, _Remaining...>) noexcept
 {
   using _SliceType = __get_slice_type<_CurrentIndex, _Slices...>;
@@ -91,7 +93,7 @@ _CCCL_CONCEPT __subextents_is_strided_slice = _CCCL_REQUIRES_EXPR((_SliceType))(
 struct __get_subextent
 {
   template <class _Extents, size_t _SliceIndex, class _SliceType>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __get_static_subextents() noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t __get_static_subextents() noexcept
   {
     // [mdspan.sub.extents-4.2.1]
     if constexpr (convertible_to<_SliceType, full_extent_t>)
@@ -125,7 +127,7 @@ struct __get_subextent
   }
 
   template <size_t _SliceIndex, class _Extents, class... _Slices>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr typename _Extents::index_type
+  [[nodiscard]] _CCCL_API static constexpr typename _Extents::index_type
   __get_dynamic_subextents(const _Extents& __src, _Slices... __slices) noexcept
   {
     using _SliceType = __get_slice_type<_SliceIndex, _Slices...>;
@@ -147,7 +149,7 @@ struct __get_subextent
   }
 
   template <class _Extents, class... _Slices, size_t... _SliceIndices>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _CCCL_API constexpr auto
   __impl(index_sequence<_SliceIndices...>, const _Extents& __src, _Slices... __slices) noexcept
   {
     using _IndexType = typename _Extents::index_type;
@@ -158,7 +160,7 @@ struct __get_subextent
   }
 
   template <class _Extents, class... _Slices>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Extents& __src, _Slices... __slices) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Extents& __src, _Slices... __slices) noexcept
   {
     const auto __filtered_indices = __filter_slices_convertible_to_index<typename _Extents::index_type, _Slices...>(
       index_sequence<>{}, _CUDA_VSTD::index_sequence_for<_Slices...>());
@@ -173,7 +175,7 @@ inline constexpr bool __is_valid_subextents =
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
 _CCCL_REQUIRES((_Extents::rank() == sizeof...(_Slices)))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto submdspan_extents(const _Extents& __src, _Slices... __slices)
+[[nodiscard]] _CCCL_API constexpr auto submdspan_extents(const _Extents& __src, _Slices... __slices)
 {
   static_assert(((__is_valid_subextents<typename _Extents::index_type, _Slices>) && ... && true),
                 "[mdspan.sub.extents] For each rank index k of src.extents(), exactly one of the following is true:");
@@ -185,5 +187,7 @@ using __get_subextents_t =
   decltype(_CUDA_VSTD::submdspan_extents(_CUDA_VSTD::declval<_Extents>(), _CUDA_VSTD::declval<_Slices>()...));
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_EXTENTS_H

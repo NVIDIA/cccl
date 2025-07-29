@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/neg.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -28,10 +29,12 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_rotr_impl(_Tp __v, int __cnt) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __cccl_rotr_impl(_Tp __v, int __cnt) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
@@ -46,7 +49,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_rotl_impl(_Tp __v, int __cnt) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __cccl_rotl_impl(_Tp __v, int __cnt) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
@@ -62,12 +65,11 @@ template <typename _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __v, int __cnt) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp rotl(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
-    // todo: replace with cuda::__neg when available
-    __cnt = static_cast<int>((~static_cast<unsigned>(__cnt) + 1) % numeric_limits<_Tp>::digits);
+    __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
     return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
   }
   return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
@@ -75,17 +77,18 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotr(_Tp __v, int __cnt) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp rotr(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
-    // todo: replace with cuda::__neg when available
-    __cnt = static_cast<int>((~static_cast<unsigned>(__cnt) + 1) % numeric_limits<_Tp>::digits);
+    __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
     return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
   }
   return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_ROTATE_H

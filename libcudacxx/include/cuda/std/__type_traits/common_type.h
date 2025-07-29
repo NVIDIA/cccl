@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class... _Tp>
@@ -152,8 +154,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up> : __common_type2<_Tp,
 // bullet 4 - sizeof...(Tp) > 2
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up, _Vp, _Rest...>
-    : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+common_type<_Tp, _Up, _Vp, _Rest...> : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
 {};
 
 template <class... _Tp>
@@ -166,5 +168,7 @@ template <class _Tp, class _Up>
 inline constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H

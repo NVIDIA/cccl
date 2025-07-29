@@ -219,7 +219,7 @@ protected:
     _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(MSVC)
 
-    virtual size_t epoch() const
+    virtual size_t stage() const
     {
       return size_t(-1);
     }
@@ -491,7 +491,7 @@ protected:
     };
 
     // Insert a fence with all pending asynchronous operations on the current context
-    [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
+    [[nodiscard]] inline event_list insert_fence(reserved::per_ctx_dot& dot)
     {
       auto prereqs = event_list();
       // Create a node in the DOT output (if any)
@@ -515,7 +515,7 @@ protected:
           // Add an edge between that leaf task and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(t_id, fence_unique_id, 1);
+            dot.add_edge(t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -540,7 +540,7 @@ protected:
           // Add an edge between that freeze and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(fake_t_id, fence_unique_id, 1);
+            dot.add_edge(fake_t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -766,9 +766,9 @@ public:
     return pimpl->stream_to_event_list(stream, mv(event_symbol));
   }
 
-  size_t epoch() const
+  size_t stage() const
   {
-    return pimpl->epoch();
+    return pimpl->stage();
   }
 
   ::std::string to_string() const
@@ -963,11 +963,13 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
-    return frozen_logical_data<T>(*this, mv(d), m, mv(where));
+    return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
 
   /**

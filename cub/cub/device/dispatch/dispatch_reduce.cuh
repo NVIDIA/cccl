@@ -59,6 +59,7 @@
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 #include <cuda/std/functional>
+#include <cuda/std/iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -136,7 +137,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
-          typename TransformOpT = ::cuda::std::__identity,
+          typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
@@ -147,7 +148,7 @@ template <typename InputIteratorT,
             InitT,
             AccumT,
             TransformOpT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchReduce
 {
   //---------------------------------------------------------------------------
@@ -404,13 +405,8 @@ struct DispatchReduce
 
       // Invoke DeviceReduceSingleTileKernel
       launcher_factory(1, active_policy.SingleTile().BlockThreads(), 0, stream)
-        .doit(single_tile_kernel,
-              d_block_reductions,
-              d_out,
-              reduce_grid_size,
-              reduction_op,
-              init,
-              ::cuda::std::__identity{});
+        .doit(
+          single_tile_kernel, d_block_reductions, d_out, reduce_grid_size, reduction_op, init, ::cuda::std::identity{});
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -572,7 +568,7 @@ template <
   typename InitT,
   typename AccumT =
     ::cuda::std::__accumulator_t<ReductionOpT,
-                                 cub::detail::invoke_result_t<TransformOpT, cub::detail::it_value_t<InputIteratorT>>,
+                                 _CUDA_VSTD::invoke_result_t<TransformOpT, _CUDA_VSTD::iter_value_t<InputIteratorT>>,
                                  InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<
@@ -584,7 +580,7 @@ template <
     InitT,
     AccumT,
     TransformOpT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory>
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
@@ -683,7 +679,7 @@ template <typename InputIteratorT,
             ReductionOpT,
             InitT,
             AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -995,6 +991,26 @@ struct DispatchSegmentedReduce
 namespace detail::reduce
 {
 
+// @brief Functor to generate a key-value pair from an index and value
+template <typename Iterator, typename OutputValueT>
+struct generate_idx_value
+{
+private:
+  Iterator it;
+  int segment_size;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+      : it(it)
+      , segment_size(segment_size)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  {
+    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+  }
+};
+
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -1029,7 +1045,7 @@ template <typename InputIteratorT,
             ReductionOpT,
             InitT,
             AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchFixedSizeSegmentedReduce
 {
   //---------------------------------------------------------------------------

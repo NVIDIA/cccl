@@ -30,6 +30,8 @@
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Round the number \p __a to the previous multiple of \p __b
@@ -39,8 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _Up>
-round_down(const _Tp __a, const _Up __b) noexcept
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_Tp, _Up> round_down(const _Tp __a, const _Up __b) noexcept
 {
   _CCCL_ASSERT(__b > _Up{0}, "cuda::round_down: 'b' must be positive");
   if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
@@ -61,7 +62,7 @@ round_down(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _CUDA_VSTD::underlying_type_t<_Up>>
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_Tp, _CUDA_VSTD::underlying_type_t<_Up>>
 round_down(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::round_down(__a, _CUDA_VSTD::to_underlying(__b));
@@ -74,7 +75,7 @@ round_down(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>, _Up>
+[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>, _Up>
 round_down(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::round_down(_CUDA_VSTD::to_underlying(__a), __b);
@@ -88,13 +89,14 @@ round_down(const _Tp __a, const _Up __b) noexcept
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
 [[nodiscard]]
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>,
-                                                              _CUDA_VSTD::underlying_type_t<_Up>>
+_CCCL_API constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>, _CUDA_VSTD::underlying_type_t<_Up>>
 round_down(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::round_down(_CUDA_VSTD::to_underlying(__a), _CUDA_VSTD::to_underlying(__b));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___CMATH_ROUND_DOWN_H

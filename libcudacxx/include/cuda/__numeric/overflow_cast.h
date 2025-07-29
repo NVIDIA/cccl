@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__utility/cmp.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Casts a number \p __from to a number of type \p _To with overflow detection
@@ -36,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _To)
                  _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _From))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
+[[nodiscard]] _CCCL_API constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
 {
   bool __overflow = false;
   if constexpr (_CUDA_VSTD::cmp_greater(_CUDA_VSTD::numeric_limits<_From>::max(), _CUDA_VSTD::numeric_limits<_To>::max())
@@ -49,5 +51,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _To)
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___NUMERIC_OVERFLOW_CAST_H

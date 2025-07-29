@@ -32,11 +32,25 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // cosh
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float cosh(float __x) noexcept
+#if _CCCL_CHECK_BUILTIN(builtin_cosh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSHF(...) __builtin_coshf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSH(...)  __builtin_cosh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSHL(...) __builtin_coshl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cosh)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_COSHF
+#  undef _CCCL_BUILTIN_COSH
+#  undef _CCCL_BUILTIN_COSHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+[[nodiscard]] _CCCL_API inline float cosh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSHF)
   return _CCCL_BUILTIN_COSHF(__x);
@@ -45,7 +59,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // !_CCCL_BUILTIN_COSHF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float coshf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline float coshf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSHF)
   return _CCCL_BUILTIN_COSHF(__x);
@@ -54,7 +68,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // !_CCCL_BUILTIN_COSHF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double cosh(double __x) noexcept
+[[nodiscard]] _CCCL_API inline double cosh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSH)
   return _CCCL_BUILTIN_COSH(__x);
@@ -64,7 +78,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double cosh(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double cosh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSHL)
   return _CCCL_BUILTIN_COSHL(__x);
@@ -73,7 +87,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  endif // !_CCCL_BUILTIN_COSHL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double coshl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double coshl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSHL)
   return _CCCL_BUILTIN_COSHL(__x);
@@ -84,28 +98,40 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline __half cosh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::coshf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 cosh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 cosh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::coshf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double cosh(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline double cosh(_Integer __x) noexcept
 {
   return _CUDA_VSTD::cosh((double) __x);
 }
 
 // sinh
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float sinh(float __x) noexcept
+#if _CCCL_CHECK_BUILTIN(builtin_sinh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINHF(...) __builtin_sinhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINH(...)  __builtin_sinh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINHL(...) __builtin_sinhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SINHF
+#  undef _CCCL_BUILTIN_SINH
+#  undef _CCCL_BUILTIN_SINHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+[[nodiscard]] _CCCL_API inline float sinh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINHF)
   return _CCCL_BUILTIN_SINHF(__x);
@@ -114,7 +140,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_SINHF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float sinhf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline float sinhf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINHF)
   return _CCCL_BUILTIN_SINHF(__x);
@@ -123,7 +149,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_SINHF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double sinh(double __x) noexcept
+[[nodiscard]] _CCCL_API inline double sinh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINH)
   return _CCCL_BUILTIN_SINH(__x);
@@ -133,7 +159,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double sinh(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double sinh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINHL)
   return _CCCL_BUILTIN_SINHL(__x);
@@ -142,7 +168,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  endif // !_CCCL_BUILTIN_SINHL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double sinhl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double sinhl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINHL)
   return _CCCL_BUILTIN_SINHL(__x);
@@ -153,28 +179,40 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline __half sinh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::sinhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sinh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 sinh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::sinhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double sinh(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline double sinh(_Integer __x) noexcept
 {
   return _CUDA_VSTD::sinh((double) __x);
 }
 
 // tanh
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float tanh(float __x) noexcept
+#if _CCCL_CHECK_BUILTIN(builtin_tanh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANHF(...) __builtin_tanhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANH(...)  __builtin_tanh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANHL(...) __builtin_tanhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TANHF
+#  undef _CCCL_BUILTIN_TANH
+#  undef _CCCL_BUILTIN_TANHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+[[nodiscard]] _CCCL_API inline float tanh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANHF)
   return _CCCL_BUILTIN_TANHF(__x);
@@ -183,7 +221,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_TANHF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float tanhf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline float tanhf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANHF)
   return _CCCL_BUILTIN_TANHF(__x);
@@ -192,7 +230,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_TANHF
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double tanh(double __x) noexcept
+[[nodiscard]] _CCCL_API inline double tanh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANH)
   return _CCCL_BUILTIN_TANH(__x);
@@ -202,7 +240,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double tanh(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double tanh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANHL)
   return _CCCL_BUILTIN_TANHL(__x);
@@ -211,7 +249,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #  endif // !_CCCL_BUILTIN_TANHL
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double tanhl(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline long double tanhl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANHL)
   return _CCCL_BUILTIN_TANHL(__x);
@@ -222,25 +260,27 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half tanh(__half __x) noexcept
+[[nodiscard]] _CCCL_API inline __half tanh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::tanhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 tanh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 tanh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::tanhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double tanh(_Integer __x) noexcept
+[[nodiscard]] _CCCL_API inline double tanh(_Integer __x) noexcept
 {
   return _CUDA_VSTD::tanh((double) __x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_HYPERBOLIC_FUNCTIONS_H

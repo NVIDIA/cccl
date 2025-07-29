@@ -37,8 +37,10 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -50,7 +52,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 template <class _Tp>
 void swap(_Tp&, _Tp&) = delete;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp, class _Up>
 concept __unqualified_swappable_with =
   (__class_or_enum<remove_cvref_t<_Tp>> || __class_or_enum<remove_cvref_t<_Up>>)
@@ -60,7 +62,7 @@ template <class _Tp>
 concept __exchangeable =
   !__unqualified_swappable_with<_Tp&, _Tp&> && move_constructible<_Tp> && assignable_from<_Tp&, _Tp>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
@@ -78,22 +80,22 @@ _CCCL_CONCEPT_FRAGMENT(__exchangeable_,
 
 template <class _Tp>
 _CCCL_CONCEPT __exchangeable = _CCCL_FRAGMENT(__exchangeable_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-#if !defined(_CCCL_NO_CONCEPTS) && !_CCCL_COMPILER(NVHPC) // nvbug4051640
+#if _CCCL_HAS_CONCEPTS() && !_CCCL_COMPILER(NVHPC) // nvbug4051640
 struct __fn;
 
-_CCCL_NV_DIAG_SUPPRESS(2642)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2642)
 template <class _Tp, class _Up, size_t _Size>
 concept __swappable_arrays =
   !__unqualified_swappable_with<_Tp (&)[_Size], _Up (&)[_Size]> && extent_v<_Tp> == extent_v<_Up>
   && requires(_Tp (&__t)[_Size], _Up (&__u)[_Size], const __fn& __swap) { __swap(__t[0], __u[0]); };
-_CCCL_NV_DIAG_DEFAULT(2642)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
-#else // ^^^ !_CCCL_NO_CONCEPTS && !_CCCL_COMPILER(NVHPC) ^^^ / vvv _CCCL_NO_CONCEPTS || _CCCL_COMPILER(NVHPC) vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() && !_CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVHPC) vvv
 template <class _Tp, class _Up, size_t _Size, class = void>
 inline constexpr bool __swappable_arrays = false;
-#endif // _CCCL_NO_CONCEPTS || _CCCL_COMPILER(NVHPC)
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^ || _CCCL_COMPILER(NVHPC)
 
 template <class _Tp, class _Up, class = void>
 inline constexpr bool __noexcept_swappable_arrays = false;
@@ -104,7 +106,7 @@ struct __fn
   // *The name `swap` is used here unqualified.
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(__unqualified_swappable_with<_Tp, _Up>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp&& __t, _Up&& __u) const
+  _CCCL_API constexpr void operator()(_Tp&& __t, _Up&& __u) const
     noexcept(noexcept(swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u))))
   {
     swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
@@ -113,7 +115,7 @@ struct __fn
   // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...
   _CCCL_TEMPLATE(class _Tp, class _Up, size_t _Size)
   _CCCL_REQUIRES(__swappable_arrays<_Tp, _Up, _Size>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp (&__t)[_Size], _Up (&__u)[_Size]) const
+  _CCCL_API constexpr void operator()(_Tp (&__t)[_Size], _Up (&__u)[_Size]) const
     noexcept(__noexcept_swappable_arrays<_Tp, _Up>)
   {
     // TODO(cjdb): replace with `_CUDA_VRANGES::swap_ranges`.
@@ -126,14 +128,14 @@ struct __fn
   // 2.3   Otherwise, if `E1` and `E2` are lvalues of the same type `T` that models...
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__exchangeable<_Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp& __x, _Tp& __y) const
+  _CCCL_API constexpr void operator()(_Tp& __x, _Tp& __y) const
     noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
     __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));
   }
 };
 
-#if defined(_CCCL_NO_CONCEPTS) || _CCCL_COMPILER(NVHPC)
+#if !_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVHPC)
 template <class _Tp, class _Up, class _Size>
 _CCCL_CONCEPT_FRAGMENT(
   __swappable_arrays_,
@@ -145,7 +147,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp, class _Up, size_t _Size>
 inline constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
   _CCCL_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
-#endif // _CCCL_NO_CONCEPTS || _CCCL_COMPILER(NVHPC)
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^ || _CCCL_COMPILER(NVHPC)
 
 template <class _Tp, class _Up>
 inline constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =
@@ -161,7 +163,7 @@ _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept swappable = requires(_Tp& __a, _Tp& __b) { _CUDA_VRANGES::swap(__a, __b); };
 
@@ -172,7 +174,7 @@ concept swappable_with = common_reference_with<_Tp, _Up> && requires(_Tp&& __t, 
   _CUDA_VRANGES::swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
   _CUDA_VRANGES::swap(_CUDA_VSTD::forward<_Up>(__u), _CUDA_VSTD::forward<_Tp>(__t));
 };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__swappable_, requires(_Tp& __a, _Tp& __b)((_CUDA_VRANGES::swap(__a, __b))));
 
@@ -191,12 +193,14 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT swappable_with = _CCCL_FRAGMENT(__swappable_with_, _Tp, _Up);
-#endif // ^^^ _CCCL_NO_CONCEPTS ^^^
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
+_CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

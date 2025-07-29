@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_scan.cuh>
 
@@ -64,7 +63,17 @@ using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, floa
 using full_type_list = c2h::type_list<type_quad<std::int32_t>, type_quad<std::uint64_t>>;
 #elif TEST_TYPES == 2
 using full_type_list =
-  c2h::type_list<type_quad<uchar3, uchar3, custom_t>, type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
+  c2h::type_list<type_quad<uchar3, uchar3, custom_t>,
+                 type_quad<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a,
+                   ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4,
+                   ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   std::uint8_t,
+                   Mod2Equality>>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
@@ -92,8 +101,9 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,
@@ -278,8 +288,9 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,

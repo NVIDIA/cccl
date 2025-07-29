@@ -23,13 +23,15 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_scalar.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>
@@ -53,18 +55,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, _Tp&&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible<_Tp, _Tp&&> : integral_constant<bool, is_scalar<_Tp>::value>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, const _Tp&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible<_Tp, const _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, _Tp&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible<_Tp, _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
 {};
 
 template <class _Tp, class... _Args>
@@ -74,5 +76,7 @@ inline constexpr bool is_trivially_constructible_v = is_trivially_constructible<
        // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_CONSTRUCTIBLE_H

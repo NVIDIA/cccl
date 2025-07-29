@@ -24,10 +24,12 @@
 
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
@@ -38,7 +40,7 @@ inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOperation1, class _BinaryOperation2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp inner_product(
+[[nodiscard]] _CCCL_API constexpr _Tp inner_product(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -54,5 +56,7 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_INNER_PRODUCT_H

@@ -22,7 +22,12 @@ macro(cccl_get_fmt)
   CPMAddPackage("gh:fmtlib/fmt#11.0.1")
 endmacro()
 
-set(CCCL_NVBENCH_SHA "89bec09b82ca062ef61f5a52a139a48dde8072b5" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
+macro(cccl_get_json)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage("gh:nlohmann/json@3.12.0")
+endmacro()
+
+set(CCCL_NVBENCH_SHA "0c24f0250bf4414ab5ad19709090c6396e76516b" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
 mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")

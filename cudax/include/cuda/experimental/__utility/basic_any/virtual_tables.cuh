@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,8 +32,7 @@
 
 #include <nv/target>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -52,7 +51,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   static constexpr size_t __cbases    = _CUDA_VSTD::__type_list_size<__unique_interfaces<interface>>::value;
 
   template <class _VPtr, class _Tp, auto... _OtherMembers, class... _Interfaces>
-  _CUDAX_HOST_API constexpr __basic_vtable(
+  _CCCL_HOST_API constexpr __basic_vtable(
     _VPtr __vptr, overrides_for<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
       : __rtti_base{__vtable_kind::__normal, __cbases, _CCCL_TYPEID(__basic_vtable)}
       , __virtual_fn<_Mbrs>{__override_tag<_Tp, _OtherMembers>{}}...
@@ -60,18 +59,18 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   {}
 
   template <class _Tp, class _VPtr>
-  _CUDAX_HOST_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
+  _CCCL_HOST_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
       : __basic_vtable{
           __vptr, __overrides_for<interface, _Tp>(), __unique_interfaces<interface, _CUDA_VSTD::__type_quote<__tag>>()}
   {}
 
-  [[nodiscard]] _CUDAX_HOST_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
+  [[nodiscard]] _CCCL_HOST_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
   {
     return this;
   }
 
   template <class... _Others>
-  [[nodiscard]] _CUDAX_HOST_API auto __query_interface(__iset<_Others...>) const noexcept
+  [[nodiscard]] _CCCL_HOST_API auto __query_interface(__iset<_Others...>) const noexcept
     -> __vptr_for<__iset<_Others...>>
   {
     using __remainder _CCCL_NODEBUG_ALIAS =
@@ -92,7 +91,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   }
 
   template <class _Other>
-  [[nodiscard]] _CUDAX_HOST_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
+  [[nodiscard]] _CCCL_HOST_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
   {
     constexpr size_t __index = __index_of_base<_Other, interface>::value;
     static_assert(__index < __cbases);
@@ -114,7 +113,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
   static_assert((_CUDA_VSTD::is_class_v<_Interfaces> && ...), "expected class types");
 
   template <class _Tp, class _Super>
-  _CUDAX_HOST_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
+  _CCCL_HOST_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
       : __rtti_ex<sizeof...(_Interfaces)>{__type, __tag<_Interfaces...>(), this}
 #if _CCCL_COMPILER(MSVC)
       // workaround for MSVC bug
@@ -128,7 +127,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
 
   _CCCL_TEMPLATE(class _Interface)
   _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
-  [[nodiscard]] _CUDAX_HOST_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_HOST_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     return static_cast<__vptr_for<_Interface>>(this);
   }
@@ -145,13 +144,13 @@ template <class _Interface, class _Tp>
 _CCCL_GLOBAL_CONSTANT __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>()};
 
 template <class _Interface, class _Tp>
-_CUDAX_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
+_CCCL_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (_CUDA_VSTD_NOVERSION::terminate();))
 }
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_TABLES_H

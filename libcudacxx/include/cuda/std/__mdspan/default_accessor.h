@@ -34,6 +34,8 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ElementType>
@@ -52,19 +54,20 @@ struct default_accessor
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
+  _CCCL_API constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  [[nodiscard]] _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return __p[__i];
   }
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type
-  offset(data_handle_type __p, size_t __i) const noexcept
+  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __p + __i;
   }
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_DEFAULT_ACCESSOR_H

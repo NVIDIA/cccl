@@ -32,31 +32,6 @@
 
 #include <nvbench_helper.cuh>
 
-template <class T>
-struct less_then_t
-{
-  T m_val;
-
-  __host__ __device__ bool operator()(const T& val) const
-  {
-    return val < m_val;
-  }
-};
-
-template <typename T>
-T value_from_entropy(double percentage)
-{
-  if (percentage == 1)
-  {
-    return std::numeric_limits<T>::max();
-  }
-
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
-  const auto result  = min_val + percentage * max_val - percentage * min_val;
-  return static_cast<T>(result);
-}
-
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -65,7 +40,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  T val = value_from_entropy<T>(entropy_to_probability(entropy));
+  const T val = lerp_min_max<T>(entropy_to_probability(entropy));
   select_op_t select_op{val};
 
   thrust::device_vector<T> input = generate(elements);
