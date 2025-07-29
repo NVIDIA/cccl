@@ -146,10 +146,31 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     algorithm/copy.cu
   )
 
+  option(CUDAX_ENABLE_CUFILE_TESTS "Enable cuFile tests (may fail due to cuFile library issues)" ON)
+  if(CUDAX_ENABLE_CUFILE_TESTS)
+    cudax_add_catch2_test(test_target cufile ${cn_target}
+      cufile/catch2_test_driver_functions.cu
+    )
+
+    # Link cuFile library for cufile tests
+    find_library(CUFILE_LIBRARY cufile
+      HINTS ${CUDAToolkit_LIBRARY_DIR}
+      PATH_SUFFIXES lib64 lib
+    )
+    if(CUFILE_LIBRARY)
+      message(STATUS "Found cuFile library: ${CUFILE_LIBRARY}")
+      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
+    else()
+      message(STATUS "cuFile library not found via find_library, trying direct linking")
+      # Try direct linking to cufile
+      target_link_libraries(${test_target} PRIVATE cufile)
+    endif()
+  else()
+    message(STATUS "cuFile tests disabled - set CUDAX_ENABLE_CUFILE_TESTS=ON to enable")
+  endif()
+
 endforeach()
 
-# Add cuFile tests
-add_subdirectory(cufile)
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND

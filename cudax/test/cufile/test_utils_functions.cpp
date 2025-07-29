@@ -3,7 +3,7 @@
 #include "test_utils.h"
 #include <memory>
 
-namespace cuda::experimental::utils {
+namespace cuda::experimental::cufile {
 
 class UtilsTest : public ::testing::Test {
 protected:
