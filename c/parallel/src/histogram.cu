@@ -165,7 +165,7 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_type_enum d_level_type,
+  cccl_value_t lower_level,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -186,7 +186,7 @@ CUresult cccl_device_histogram_build(
     const auto policy      = histogram::get_policy(cc, d_samples.value_type, num_active_channels);
     const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
     const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
-    const auto level_cpp   = cccl_type_enum_to_name(d_level_type);
+    const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
 
     const std::string offset_cpp =
       ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)

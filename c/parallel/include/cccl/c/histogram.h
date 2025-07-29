@@ -42,7 +42,7 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_type_enum d_levels,
+  cccl_value_t lower_level,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,

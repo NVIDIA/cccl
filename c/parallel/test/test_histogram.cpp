@@ -26,7 +26,7 @@ void build_histogram(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_type_enum d_levels,
+  cccl_value_t d_levels,
   uint64_t num_rows,
   uint64_t row_stride_samples,
   bool is_evenly_segmented)
@@ -80,14 +80,7 @@ void histogram_even(
 {
   cccl_device_histogram_build_result_t build;
   build_histogram(
-    &build,
-    d_samples,
-    num_output_levels_val,
-    d_output_histograms,
-    lower_level.type.type,
-    num_rows,
-    row_stride_samples,
-    true);
+    &build, d_samples, num_output_levels_val, d_output_histograms, lower_level, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
