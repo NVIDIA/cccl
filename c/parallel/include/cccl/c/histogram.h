@@ -53,19 +53,6 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
-CCCL_C_API CUresult cccl_device_histogram_range(
-  cccl_device_histogram_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_samples,
-  cccl_iterator_t d_output_histograms,
-  cccl_value_t num_output_levels,
-  cccl_iterator_t d_levels,
-  int64_t num_row_pixels,
-  int64_t num_rows,
-  int64_t row_stride_samples,
-  CUstream stream);
-
 CCCL_C_API CUresult cccl_device_histogram_even(
   cccl_device_histogram_build_result_t build,
   void* d_temp_storage,
