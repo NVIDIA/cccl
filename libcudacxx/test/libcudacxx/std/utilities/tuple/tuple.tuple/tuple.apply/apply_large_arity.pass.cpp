@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-
 // UNSUPPORTED: gcc-6
 // UNSUPPORTED: windows
 // We run out of heap space with windows
@@ -29,7 +27,7 @@
 template <class T, cuda::std::size_t Dummy = 0>
 struct always_imp
 {
-  typedef T type;
+  using type = T;
 };
 
 template <class T, cuda::std::size_t Dummy = 0>

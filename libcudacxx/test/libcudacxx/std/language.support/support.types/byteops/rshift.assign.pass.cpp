@@ -15,7 +15,7 @@
 // This function shall not participate in overload resolution unless
 //   is_integral_v<IntegerType> is true.
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 cuda::std::byte test(cuda::std::byte b)
+__host__ __device__ constexpr cuda::std::byte test(cuda::std::byte b)
 {
   return b >>= 2;
 }
@@ -31,10 +31,8 @@ int main(int, char**)
   assert(cuda::std::to_integer<int>(test(b16)) == 4);
   assert(cuda::std::to_integer<int>(test(b192)) == 48);
 
-#if TEST_STD_VER >= 2014
   static_assert(cuda::std::to_integer<int>(test(b16)) == 4, "");
   static_assert(cuda::std::to_integer<int>(test(b192)) == 48, "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

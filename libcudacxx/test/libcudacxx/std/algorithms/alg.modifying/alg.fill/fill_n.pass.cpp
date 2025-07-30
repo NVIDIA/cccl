@@ -23,7 +23,7 @@
 using UDI = UserDefinedIntegral<unsigned>;
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_char()
+__host__ __device__ constexpr void test_char()
 {
   char a[4] = {};
   Iter it   = cuda::std::fill_n(Iter(a), UDI(4), char(1));
@@ -35,7 +35,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char()
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_int()
+__host__ __device__ constexpr void test_int()
 {
   int a[4] = {};
   Iter it  = cuda::std::fill_n(Iter(a), UDI(4), 1);
@@ -46,7 +46,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_int()
   assert(a[3] == 1);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_int_array()
+__host__ __device__ constexpr void test_int_array()
 {
   int a[4] = {};
   assert(cuda::std::fill_n(a, UDI(4), static_cast<char>(1)) == a + 4);
@@ -91,7 +91,7 @@ struct test1
   char c;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_struct_array()
+__host__ __device__ constexpr void test_struct_array()
 {
   test1 test1a[4] = {};
   assert(cuda::std::fill_n(test1a, UDI(4), static_cast<char>(10)) == test1a + 4);
@@ -123,7 +123,7 @@ public:
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test5()
+__host__ __device__ constexpr void test5()
 {
   A a[3];
   assert(cuda::std::fill_n(&a[0], UDI(3), A('a')) == a + 3);
@@ -141,13 +141,13 @@ struct Storage
   };
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test6()
+__host__ __device__ constexpr void test6()
 {
   Storage foo[5] = {};
   cuda::std::fill_n(&foo[0], UDI(5), Storage());
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_char<cpp17_output_iterator<char*>>();
   test_char<forward_iterator<char*>>();
@@ -174,9 +174,7 @@ int main(int, char**)
 {
   test();
   test_int_array_struct_source();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

@@ -98,7 +98,7 @@ int main()
   }
 
   // Check result
-  ctx.task(exec_place::host, var_handle.read())->*[&](cudaStream_t stream, auto h_var) {
+  ctx.task(exec_place::host(), var_handle.read())->*[&](cudaStream_t stream, auto h_var) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     int expected = (N * (N - 1)) / 2;
     EXPECT(h_var(0) == expected);

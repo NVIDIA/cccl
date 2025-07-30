@@ -9,3 +9,4 @@ Containers
 
    ${repo_docs_api_path}/*host__vector*
    ${repo_docs_api_path}/*device__vector*
+   ${repo_docs_api_path}/typedef_group__containers*

@@ -73,11 +73,12 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include <cmpxchg_loop.h>
-#if !defined(TEST_COMPILER_MSVC)
+
+#include "test_macros.h"
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
@@ -87,8 +88,7 @@ __host__ __device__ void do_test()
   Selector<T, constructor_initializer> sel;
   T& val = *sel.construct(T(0));
   A obj(val);
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   assert(obj == T(0));
   obj.store(T(0));
   assert(obj == T(0));

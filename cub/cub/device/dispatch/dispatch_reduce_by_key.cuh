@@ -53,16 +53,80 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdio>
-#include <iterator>
-
-#include <nv/target>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
+
+namespace detail::reduce
+{
+
+template <typename PrecedingKeyItT, typename AccumT, typename GlobalOffsetT>
+struct streaming_context
+{
+  bool first_partition;
+  bool last_partition;
+  PrecedingKeyItT preceding_key_it;
+
+  // We use a double-buffer to track the aggregate of the last run of the previous partition
+  AccumT* preceding_prefix;
+  AccumT* prefix_out;
+
+  // We use a double-buffer to track the number of runs of previous partition
+  GlobalOffsetT* d_num_previous_uniques_in;
+  GlobalOffsetT* d_num_accumulated_uniques_out;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  {
+    return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
+  };
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  {
+    return first_partition;
+  }
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  {
+    return last_partition;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE auto predecessor_key() const
+  {
+    return *preceding_key_it;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  {
+    return *preceding_prefix;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(AccumT prefix) const
+  {
+    *prefix_out = prefix;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  {
+    return d_num_previous_uniques_in;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  {
+    return num_accumulated_uniques_out();
+  }
+
+  template <typename NumUniquesT>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  {
+    GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
+
+    // Otherwise, just write out the number of unique items in this partition
+    *d_num_accumulated_uniques_out = total_uniques;
+
+    return total_uniques;
+  }
+};
 
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
@@ -138,7 +202,8 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          typename StreamingContextT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     KeysInputIteratorT d_keys_in,
@@ -150,31 +215,43 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   using AgentReduceByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT;
 
   // Thread block type for reducing tiles of value segments
-  using AgentReduceByKeyT =
-    AgentReduceByKey<AgentReduceByKeyPolicyT,
-                     KeysInputIteratorT,
-                     UniqueOutputIteratorT,
-                     ValuesInputIteratorT,
-                     AggregatesOutputIteratorT,
-                     NumRunsOutputIteratorT,
-                     EqualityOpT,
-                     ReductionOpT,
-                     OffsetT,
-                     AccumT>;
+  using AgentReduceByKeyT = AgentReduceByKey<
+    AgentReduceByKeyPolicyT,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>;
 
   // Shared memory for AgentReduceByKey
   __shared__ typename AgentReduceByKeyT::TempStorage temp_storage;
 
   // Process tiles
   AgentReduceByKeyT(
-    temp_storage, d_keys_in, d_unique_out, d_values_in, d_aggregates_out, d_num_runs_out, equality_op, reduction_op)
+    temp_storage,
+    d_keys_in,
+    d_unique_out,
+    d_values_in,
+    d_aggregates_out,
+    d_num_runs_out,
+    equality_op,
+    reduction_op,
+    streaming_context)
     .ConsumeRange(num_items, tile_state, start_tile);
 }
+
+} // namespace detail::reduce
 
 /******************************************************************************
  * Dispatch
@@ -221,12 +298,12 @@ template <typename KeysInputIteratorT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
-                                                            cub::detail::value_t<ValuesInputIteratorT>,
-                                                            cub::detail::value_t<ValuesInputIteratorT>>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>>,
           typename PolicyHub = detail::reduce_by_key::policy_hub<
             ReductionOpT,
             AccumT,
-            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<KeysInputIteratorT>>>>
+            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -234,7 +311,7 @@ struct DispatchReduceByKey
   //-------------------------------------------------------------------------
 
   // The input values type
-  using ValueInputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using ValueInputT = cub::detail::it_value_t<ValuesInputIteratorT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -317,7 +394,7 @@ struct DispatchReduceByKey
       // the necessary size of the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -339,14 +416,14 @@ struct DispatchReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(init_kernel, tile_state, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
@@ -363,7 +440,7 @@ struct DispatchReduceByKey
         break;
       }
 
-      // Return if empty problem
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in init_kernel above
       if (num_items == 0)
       {
         break;
@@ -387,11 +464,11 @@ struct DispatchReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = CUB_MIN(num_tiles, max_dim_x);
+      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log reduce_by_key_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d "
                 "items per thread, %d SM occupancy\n",
                 start_tile,
@@ -400,10 +477,10 @@ struct DispatchReduceByKey
                 (long long) stream,
                 items_per_thread,
                 reduce_by_key_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke reduce_by_key_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
           .doit(reduce_by_key_kernel,
                 d_keys_in,
                 d_unique_out,
@@ -414,7 +491,8 @@ struct DispatchReduceByKey
                 start_tile,
                 equality_op,
                 reduction_op,
-                num_items);
+                num_items,
+                NullType{});
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -439,8 +517,8 @@ struct DispatchReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceReduceByKeyKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::reduce::DeviceReduceByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         UniqueOutputIteratorT,
@@ -451,7 +529,8 @@ struct DispatchReduceByKey
         EqualityOpT,
         ReductionOpT,
         OffsetT,
-        AccumT>);
+        AccumT,
+        NullType>);
   }
 
   /**

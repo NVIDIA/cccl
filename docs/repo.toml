@@ -27,15 +27,95 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative", "cuda_parallel" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python", "cccl"]
 
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "cudax", "_build/docs/cudax/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
-    [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
-    [ "cuda_parallel", "_build/docs/cuda_parallel/latest" ],
+    [ "python", "_build/docs/python/latest" ],
+]
+
+# doxygen sometimes gets confused by macros. the array below allows the user to
+# tell doxygen how to expand a macro. defaults to an empty list.
+#
+# more information on the format can be found at:
+#     https://www.doxygen.nl/manual/config.html#cfg_predefined
+doxygen_predefined = [
+    "__device__=",
+    "__host__=",
+    "__global__=",
+    "__forceinline__=",
+    "__declspec(x)=",
+    "__align__(x)=",
+    "__cccl_lib_mdspan",
+    "_CCCL_AND=&&",
+    "_CCCL_CONCEPT=constexpr bool ",
+    "_CCCL_CONSTEXPR_FRIEND=friend ",
+    "_CCCL_CONSTEXPR_CXX20=constexpr",
+    "_CCCL_CONSTEXPR_CXX23=constexpr",
+    "_CCCL_CTK_AT_LEAST(x, y)=1",
+    "_CCCL_CTK_BELOW(x, y)=0",
+    "_CCCL_CUDACC_AT_LEAST(x, y)=1",
+    "_CCCL_CUDACC_BELOW(x, y)=0",
+    "_CCCL_DEVICE=",
+    "_CCCL_DIAG_PUSH=",
+    "_CCCL_DIAG_POP=",
+    "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
+    "_CCCL_DIAG_SUPPRESS_GCC(x)=",
+    "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
+    "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+    "_CCCL_DOXYGEN_INVOKED",
+    "_CCCL_EXEC_CHECK_DISABLE=",
+    "_CCCL_FORCEINLINE=",
+    "_CCCL_GLOBAL_CONSTANT=inline constexpr",
+    "_CCCL_HAS_CTK()=1",
+    "_CCCL_HIDE_FROM_ABI=",
+    "_CCCL_HOST=",
+    "_CCCL_HOST_DEVICE=",
+    "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
+    "_CCCL_STD_VER=2020",
+    "_CCCL_SUPPRESS_DEPRECATED_PUSH=",
+    "_CCCL_SUPPRESS_DEPRECATED_POP=",
+    "_CCCL_TEMPLATE(x)=template<x, ",
+    "_CCCL_TRAIT(x, y)=x<y>::value",
+    "_CCCL_TRAILING_REQUIRES(x)=-> x requires ",
+    "_CCCL_TYPE_VISIBILITY_DEFAULT=",
+    "_CCCL_API=inline",
+    "_CCCL_DEVICE_API=inline",
+    "_CCCL_HOST_API=inline",
+    "_CCCL_TRIVIAL_API=inline",
+    "_CCCL_TRIVIAL_DEVICE_API=inline",
+    "_CCCL_TRIVIAL_HOST_API=inline",
+    "_CCCL_VISIBILITY_DEFAULT=",
+    "_CCCL_VISIBILITY_HIDDEN=",
+    "_CCCL_TRY=try",
+    "_CCCL_CATCH=catch",
+    "_CCCL_CATCH_ALL=catch (...)",
+    "_CUDA_VMR=cuda::mr",
+    "_CUDA_VRANGES=cuda::std::ranges",
+    "_CUDA_VSTD=cuda::std",
+    "_CUDAX_PUBLIC_API=inline",
+    "_CUDAX_CONSTEXPR_FRIEND=friend",
+    "_LIBCUDACXX_BEGIN_NAMESPACE_STD=namespace cuda::std {",
+    "_LIBCUDACXX_END_NAMESPACE_STD=}",
+    "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1",
+    "CCCL_DEPRECATED=",
+    "CCCL_DEPRECATED_BECAUSE(x)=",
+    "CCCL_IGNORE_DEPRECATED_CPP_DIALECT",
+    "CUB_DISABLE_NAMESPACE_MAGIC",
+    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
+    "CUB_NAMESPACE_BEGIN=namespace cub {",
+    "CUB_NAMESPACE_END=}",
+    "CUB_STATIC_ASSERT(cond,msg)=",
+    "CUB_RUNTIME_FUNCTION=",
+    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE",
+    "THRUST_NAMESPACE_BEGIN=namespace thrust {",
+    "THRUST_NAMESPACE_END=}",
+    "THRUST_PREVENT_MACRO_SUBSTITUTION",
+    "THRUST_FWD(x)=x",
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -115,7 +195,7 @@ doxygen_aliases = [
   "smemstorage{1}=The operations exposed by \\1 require a temporary memory allocation of this nested type for thread communication. This opaque storage can be allocated directly using the ``__shared__`` keyword. Alternatively, it can be aliased to externally allocated memory (shared or global) or ``union``'d with other storage allocation types to facilitate memory reuse.",
   "granularity=Efficiency is increased with increased granularity ``ITEMS_PER_THREAD``. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of ``cub::BlockLoad`` for efficiently gathering a :ref:`blocked arrangement <flexible-data-arrangement>` of elements across threads.",
   "blocksize=The number of threads in the block is a multiple of the architecture's warp size",
-  "ptxversion=The PTX compute capability for which to to specialize this collective, formatted as per the ``__CUDA_ARCH__`` macro (e.g., 350 for sm_35). Useful for determining the collective's storage requirements for a given device from the host. (Default: the value of ``__CUDA_ARCH__`` during the current compiler pass)",
+  "ptxversion=The PTX compute capability for which to to specialize this collective, formatted as per the ``__CUDA_ARCH__`` macro (e.g., 750 for sm_75). Useful for determining the collective's storage requirements for a given device from the host. (Default: the value of ``__CUDA_ARCH__`` during the current compiler pass)",
   "blockcollective{1}=Every thread in the block uses the \\1 class by first specializing the \\1 type, then instantiating an instance with parameters for communication, and finally invoking one or more collective member functions.",
   "warpcollective{1}=Every thread in the warp uses the \\1 class by first specializing the \\1 type, then instantiating an instance with parameters for communication, and finally invoking or more collective member functions.",
   "devicestorage=When ``d_temp_storage`` is ``nullptr``, no work is done and the required allocation size is returned in ``temp_storage_bytes``.",
@@ -134,54 +214,6 @@ doxygen_aliases = [
   "plots_below=Performance plots for other scenarios can be found in the detailed method descriptions below.",
   "identityzero=This operation assumes the value of obtained by the ``T``'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value \"zero\" for addition.",
   "lookback=`decoupled look-back <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_"
-]
-
-# doxygen sometimes gets confused by macros. the array below allows the user to
-# tell doxygen how to expand a macro. defaults to an empty list.
-#
-# more information on the format can be found at:
-#     https://www.doxygen.nl/manual/config.html#cfg_predefined
-doxygen_predefined = [
-    "_CCCL_AND=&&",
-    "_CCCL_ALIAS_ATTRIBUTE(x)=",
-    "_CCCL_HOST",
-    "_CCCL_DEVICE",
-    "_CCCL_EAT_REST(x)=",
-    "_CCCL_HOST_DEVICE",
-    "_CCCL_FORCEINLINE",
-    "_CCCL_STD_VER",
-    "_CCCL_NODISCARD",
-    "_CCCL_NTTP_AUTO=auto",
-    "_CCCL_VISIBILITY_HIDDEN",
-    "_CCCL_SUPPRESS_DEPRECATED_PUSH",
-    "_CCCL_SUPPRESS_DEPRECATED_POP",
-    "_CCCL_DIAG_PUSH=",
-    "_CCCL_DIAG_POP=",
-    "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
-    "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-    "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
-    "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
-    "_CCCL_DOXYGEN_INVOKED",
-    "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
-    "_CCCL_TEMPLATE(x)=template<x, ",
-    "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
-    "__device__",
-    "__host__",
-    "__forceinline__",
-    "__declspec(x)=",
-    "__align__(x)=",
-    "CCCL_IGNORE_DEPRECATED_CPP_DIALECT",
-    "CUB_DISABLE_NAMESPACE_MAGIC",
-    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
-    "CUB_NAMESPACE_BEGIN=namespace cub {",
-    "CUB_NAMESPACE_END=}",
-    "CCCL_DEPRECATED_BECAUSE(x)=",
-    "CCCL_DEPRECATED=",
-    "CUB_STATIC_ASSERT(cond,msg)=",
-    "CUB_RUNTIME_FUNCTION",
-    "CUDASTF_HOST",
-    "CUDASTF_DEVICE",
-    "CUDASTF_HOST_DEVICE"
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -249,49 +281,6 @@ doxygen_input = [
 #     https://www.doxygen.nl/manual/config.html#cfg_aliases
 doxygen_aliases = []
 
-# doxygen sometimes gets confused by macros. the array below allows the user to
-# tell doxygen how to expand a macro. defaults to an empty list.
-#
-# more information on the format can be found at:
-#     https://www.doxygen.nl/manual/config.html#cfg_predefined
-doxygen_predefined = [
-  "_CCCL_ALIAS_ATTRIBUTE(x)=",
-  "_CCCL_DEVICE=",
-  "_CCCL_EXEC_CHECK_DISABLE=",
-  "_CCCL_FORCEINLINE=",
-  "_CCCL_HOST=",
-  "_CCCL_HOST_DEVICE=",
-  "_CCCL_NODISCARD=[[nodiscard]]",
-  "_CCCL_NTTP_AUTO=auto",
-  "_CCCL_STD_VER",
-  "_CCCL_SUPPRESS_DEPRECATED_PUSH",
-  "_CCCL_SUPPRESS_DEPRECATED_POP",
-  "_CCCL_DIAG_PUSH=",
-  "_CCCL_DIAG_POP=",
-  "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
-  "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
-  "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
-  "_CCCL_GLOBAL_CONSTANT=constexpr",
-  "CUDASTF_HOST=",
-  "CUDASTF_DEVICE=",
-  "CUDASTF_HOST_DEVICE=",
-  "_CCCL_DOXYGEN_INVOKED",
-  "_LIBCUDACXX_DEPRECATED_IN_CXX11",
-  "THRUST_DISABLE_NAMESPACE_MAGIC",
-  "THRUST_IGNORE_NAMESPACE_MAGIC_ERROR",
-  "THRUST_NAMESPACE_BEGIN=namespace thrust {",
-  "THRUST_NAMESPACE_END=}",
-  "THRUST_INLINE_CONSTANT",
-  "THRUST_PREVENT_MACRO_SUBSTITUTION",
-  "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(x,y)=",
-  "THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
-  "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
-  "THRUST_FWD(x)=x",
-  "CCCL_DEPRECATED_BECAUSE(x)=",
-  "CCCL_DEPRECATED="
-]
-
 # make sure to use ./fetch_imgs.sh
 doxygen_conf_extra = """
   IMAGE_PATH             = ${config_root}/img
@@ -308,9 +297,10 @@ doxygen_conf_extra = """
   STRIP_FROM_PATH        = ../../thrust
 """
 
-[repo_docs.projects.cuda_cooperative]
-name = "cuda.cooperative"
-docs_root = "cuda_cooperative"
+[repo_docs.projects.python]
+name = "cuda.cccl.python"
+
+docs_root = "python"
 logo = "../img/logo.png"
 
 repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
@@ -323,37 +313,16 @@ autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
     "cuda.bindings",
+    "cuda.core",
     "llvmlite",
     "numpy",
+    "cupy",
+    "cuda.cccl.parallel.experimental._bindings"
 ]
 
 enhanced_search_enabled = true
 python_paths = [
-    "${root}/../python/cuda_cooperative"
-]
-
-[repo_docs.projects.cuda_parallel]
-name = "cuda.parallel"
-docs_root = "cuda_parallel"
-logo = "../img/logo.png"
-
-repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
-social_media_set = ""
-social_media     = [
-    [ "github", "https://github.com/NVIDIA/cccl" ],
-]
-
-autodoc.mock_imports = [
-    "numba",
-    "pynvjitlink",
-    "cuda.bindings",
-    "llvmlite",
-    "numpy",
-]
-
-enhanced_search_enabled = true
-python_paths = [
-    "${root}/../python/cuda_parallel"
+    "${root}/../python/cuda_cccl"
 ]
 
 [repo_docs.projects.cudax]
@@ -383,6 +352,8 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__container/*.cuh",
     "../../cudax/include/cuda/experimental/__device/*.cuh",
     "../../cudax/include/cuda/experimental/__event/*.cuh",
+    "../../cudax/include/cuda/experimental/graph.cuh",
+    "../../cudax/include/cuda/experimental/__graph/*.cuh",
     "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
     "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
@@ -404,50 +375,8 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
 ]
 
-doxygen_predefined = [
-  "__device__",
-  "__host__",
-  "__global__",
-  "_CCCL_AND=&&",
-  "_CCCL_CUDACC_AT_LEAST(x, y)=1",
-  "_CCCL_CUDACC_BELOW(x, y)=0",
-  "_CCCL_DEVICE=",
-  "_CCCL_DOXYGEN_INVOKED",
-  "_CCCL_EAT_REST(x)=",
-  "_CCCL_EXEC_CHECK_DISABLE=",
-  "_CCCL_FORCEINLINE=",
-  "_CCCL_GLOBAL_CONSTANT=constexpr",
-  "_CCCL_HIDE_FROM_ABI=",
-  "_CCCL_HOST=",
-  "_CCCL_HOST_DEVICE=",
-  "_CCCL_IF_CONSTEXPR=if constexpr",
-  "_CCCL_INLINE_VAR=inline",
-  "_CCCL_NODISCARD=[[nodiscard]]",
-  "_CCCL_NODISCARD_FRIEND=",
-  "_CCCL_NTTP_AUTO=auto",
-  "_CCCL_STD_VER=2020",
-  "_CCCL_TRAIT(x, y)=x<y>::value",
-  "_CUDA_VMR=cuda::mr",
-  "_CUDA_VSTD=cuda::std",
-  "_CCCL_SUPPRESS_DEPRECATED_PUSH",
-  "_CCCL_SUPPRESS_DEPRECATED_POP",
-  "_CCCL_DIAG_PUSH=",
-  "_CCCL_DIAG_POP=",
-  "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
-  "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
-  "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
-  "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
-  "_CCCL_TEMPLATE(x)=template<x, ",
-  "_CCCL_TRAILING_REQUIRES(x)=-> x _CCCL_EAT_REST",
-  "_CUDAX_API",
-  "_CUDAX_HOST_API",
-  "_CUDAX_DEVICE_API",
-  "_CUDAX_TRIVIAL_API",
-  "_CUDAX_TRIVIAL_HOST_API",
-  "_CUDAX_TRIVIAL_DEVICE_API",
-  "_CUDAX_PUBLIC_API",
-  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
+doxygen_exclude = [
+    "../../cudax/include/cuda/experimental/__graph/fwd.cuh",
 ]
 
 # make sure to use ./fetch_imgs.sh

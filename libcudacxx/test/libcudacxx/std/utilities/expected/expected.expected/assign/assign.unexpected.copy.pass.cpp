@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // template<class G>
@@ -63,7 +61,6 @@ struct MoveMayThrow
 // Test constraints
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, const cuda::std::unexpected<int>&>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyConstructible>&,
                                           const cuda::std::unexpected<NotCopyConstructible>&>,
@@ -73,7 +70,6 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyConstr
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyAssignable>&,
                                           const cuda::std::unexpected<NotCopyAssignable>&>,
               "");
-#endif // TEST_COMPILER_MSVC_2017
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept
@@ -102,13 +98,11 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true,
                                          const cuda::std::unexpected<int>&>,
               "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&,
                                           const cuda::std::unexpected<int>&>,
               "");
-#endif // TEST_COMPILER_MSVC_2017
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -198,7 +192,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
   cuda::std::expected<int, ThrowOnConvert> e1(cuda::std::in_place, 5);
@@ -214,7 +208,7 @@ void test_exceptions()
     assert(*e1 == 5);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -222,8 +216,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

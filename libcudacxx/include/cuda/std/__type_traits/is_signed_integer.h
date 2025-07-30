@@ -20,34 +20,40 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __cccl_is_signed_integer : public false_type
-{};
+inline constexpr bool __cccl_is_signed_integer_v = false;
+
 template <>
-struct __cccl_is_signed_integer<signed char> : public true_type
-{};
+inline constexpr bool __cccl_is_signed_integer_v<signed char> = true;
+
 template <>
-struct __cccl_is_signed_integer<signed short> : public true_type
-{};
+inline constexpr bool __cccl_is_signed_integer_v<signed short> = true;
+
 template <>
-struct __cccl_is_signed_integer<signed int> : public true_type
-{};
+inline constexpr bool __cccl_is_signed_integer_v<signed int> = true;
+
 template <>
-struct __cccl_is_signed_integer<signed long> : public true_type
-{};
+inline constexpr bool __cccl_is_signed_integer_v<signed long> = true;
+
 template <>
-struct __cccl_is_signed_integer<signed long long> : public true_type
-{};
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+inline constexpr bool __cccl_is_signed_integer_v<signed long long> = true;
+
+#if _CCCL_HAS_INT128()
 template <>
-struct __cccl_is_signed_integer<__int128_t> : public true_type
-{};
-#endif
+inline constexpr bool __cccl_is_signed_integer_v<__int128_t> = true;
+#endif // _CCCL_HAS_INT128()
+
+template <class _Tp>
+inline constexpr bool __cccl_is_cv_signed_integer_v = __cccl_is_signed_integer_v<remove_cv_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SIGNED_INTEGER_H

@@ -36,9 +36,9 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER > 2011
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Err>
 class unexpected;
@@ -46,13 +46,13 @@ class unexpected;
 namespace __unexpected
 {
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_unexpected = false;
+inline constexpr bool __is_unexpected = false;
 
 template <class _Err>
-_CCCL_INLINE_VAR constexpr bool __is_unexpected<unexpected<_Err>> = true;
+inline constexpr bool __is_unexpected<unexpected<_Err>> = true;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __valid_unexpected =
+inline constexpr bool __valid_unexpected =
   _CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_array, _Tp) && !__is_unexpected<_Tp> && !_CCCL_TRAIT(is_const, _Tp)
   && !_CCCL_TRAIT(is_volatile, _Tp);
 } // namespace __unexpected
@@ -73,28 +73,28 @@ public:
   _CCCL_HIDE_FROM_ABI unexpected(const unexpected&) = default;
   _CCCL_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Error = _Err)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, unexpected)
                   && !_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t)
                   && _CCCL_TRAIT(is_constructible, _Err, _Error)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(_Error&& __error) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Error))
+  _CCCL_API constexpr explicit unexpected(_Error&& __error) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, _Error))
       : __unex_(_CUDA_VSTD::forward<_Error>(__error))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
+  _CCCL_API constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(
-    in_place_t,
-    initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
+  _CCCL_API constexpr explicit unexpected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
       : __unex_(__il, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
@@ -102,37 +102,39 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
+  [[nodiscard]] _CCCL_API constexpr _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
+  [[nodiscard]] _CCCL_API constexpr _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
   // [expected.un.swap]
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(unexpected& __other) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err))
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr void swap(unexpected& __other) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err))
   {
     static_assert(_CCCL_TRAIT(is_swappable, _Err), "E must be swappable");
     using _CUDA_VSTD::swap;
     swap(__unex_, __other.__unex_);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void
+  friend _CCCL_API constexpr void
   swap(unexpected& __lhs, unexpected& __rhs) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err2))
   {
     __lhs.swap(__rhs);
@@ -140,34 +142,34 @@ public:
   }
 
   // [expected.un.eq]
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() == __rhs.error())))
   {
     return __lhs.error() == __rhs.error();
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() != __rhs.error())))
   {
     return __lhs.error() != __rhs.error();
   }
-#  endif
+#endif // _CCCL_STD_VER < 2020
 
 private:
   _Err __unex_;
 };
 
-#  if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#  endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXPECTED_UNEXPECTED_H

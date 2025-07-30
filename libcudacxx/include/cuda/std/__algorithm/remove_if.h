@@ -24,10 +24,13 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 remove_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   __first = _CUDA_VSTD::find_if<_ForwardIterator, add_lvalue_reference_t<_Predicate>>(__first, __last, __pred);
@@ -47,5 +50,7 @@ remove_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_REMOVE_IF_H

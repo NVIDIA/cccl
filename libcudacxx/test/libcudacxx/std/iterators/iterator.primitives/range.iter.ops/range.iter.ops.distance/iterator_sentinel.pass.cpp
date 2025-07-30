@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // template<class I, sentinel_for<I> S>
@@ -35,7 +34,8 @@ __host__ __device__ constexpr void test_unsized()
     assert(cuda::std::ranges::distance(It(a), last) == 0);
     assert(cuda::std::ranges::distance(first, Sent(It(a))) == 0);
     assert(cuda::std::ranges::distance(It(a), Sent(It(a))) == 0);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(It(a), Sent(It(a)))), cuda::std::iter_difference_t<It>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::distance(It(a), Sent(It(a)))), cuda::std::iter_difference_t<It>>);
   }
   {
     It first  = It(a);
@@ -97,7 +97,8 @@ __host__ __device__ constexpr void test_sized()
     assert(cuda::std::ranges::distance(It(a), last) == 0);
     assert(cuda::std::ranges::distance(first, Sent(It(a))) == 0);
     assert(cuda::std::ranges::distance(It(a), Sent(It(a))) == 0);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(It(a), Sent(It(a)))), cuda::std::iter_difference_t<It>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::distance(It(a), Sent(It(a)))), cuda::std::iter_difference_t<It>>);
   }
   {
     It first  = It(a);

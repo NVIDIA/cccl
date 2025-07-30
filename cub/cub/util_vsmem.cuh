@@ -43,14 +43,12 @@
 #endif // no system header
 
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
+#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/discard_memory>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -79,16 +77,16 @@ class vsmem_helper_impl
 {
 private:
   // Per-block virtual shared memory may be padded to make sure vsmem is an integer multiple of `line_size`
-  static constexpr std::size_t line_size = 128;
+  static constexpr ::cuda::std::size_t line_size = 128;
 
   // The amount of shared memory or virtual shared memory required by the algorithm's agent
-  static constexpr std::size_t required_smem = sizeof(typename AgentT::TempStorage);
+  static constexpr ::cuda::std::size_t required_smem = sizeof(typename AgentT::TempStorage);
 
   // Whether we need to allocate global memory-backed virtual shared memory
   static constexpr bool needs_vsmem = required_smem > max_smem_per_block;
 
   // Padding bytes to an integer multiple of `line_size`. Only applies to virtual shared memory
-  static constexpr std::size_t padding_bytes =
+  static constexpr ::cuda::std::size_t padding_bytes =
     (required_smem % line_size == 0) ? 0 : (line_size - (required_smem % line_size));
 
 public:
@@ -96,7 +94,7 @@ public:
   using static_temp_storage_t = ::cuda::std::_If<needs_vsmem, cub::NullType, typename AgentT::TempStorage>;
 
   // The amount of global memory-backed virtual shared memory needed, padded to an integer multiple of 128 bytes
-  static constexpr std::size_t vsmem_per_block = needs_vsmem ? (required_smem + padding_bytes) : 0;
+  static constexpr ::cuda::std::size_t vsmem_per_block = needs_vsmem ? (required_smem + padding_bytes) : 0;
 
   /**
    * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
@@ -115,7 +113,7 @@ public:
    * storage and taking a linear block id.
    */
   static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
-  get_temp_storage(typename AgentT::TempStorage& static_temp_storage, vsmem_t&, std::size_t)
+  get_temp_storage(typename AgentT::TempStorage& static_temp_storage, vsmem_t&, ::cuda::std::size_t)
   {
     return static_temp_storage;
   }
@@ -138,7 +136,7 @@ public:
    * virtual shared memory as temporary storage and taking a linear block id.
    */
   static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
-  get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem, std::size_t linear_block_id)
+  get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
   {
     return *reinterpret_cast<typename AgentT::TempStorage*>(
       static_cast<char*>(vsmem.gmem_ptr) + (vsmem_per_block * linear_block_id));
@@ -151,7 +149,7 @@ public:
    * @note Needs to be followed by `__syncthreads()` if the function returns true and the virtual shared memory is
    * supposed to be reused after this function call.
    */
-  template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<!needs_vsmem_, int>::type = 0>
+  template <bool needs_vsmem_ = needs_vsmem, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     return false;
@@ -164,14 +162,14 @@ public:
    * @note Needs to be followed by `__syncthreads()` if the function returns true and the virtual shared memory is
    * supposed to be reused after this function call.
    */
-  template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<needs_vsmem_, int>::type = 0>
+  template <bool needs_vsmem_ = needs_vsmem, ::cuda::std::enable_if_t<needs_vsmem_, int> = 0>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
     __syncthreads();
 
-    const std::size_t linear_tid   = threadIdx.x;
-    const std::size_t block_stride = line_size * blockDim.x;
+    const ::cuda::std::size_t linear_tid   = threadIdx.x;
+    const ::cuda::std::size_t block_stride = line_size * blockDim.x;
 
     char* ptr    = reinterpret_cast<char*>(&temp_storage);
     auto ptr_end = ptr + vsmem_per_block;
@@ -179,14 +177,14 @@ public:
     // 128 byte-aligned virtual shared memory discard
     for (auto thread_ptr = ptr + (linear_tid * line_size); thread_ptr < ptr_end; thread_ptr += block_stride)
     {
-      cuda::discard_memory(thread_ptr, line_size);
+      ::cuda::discard_memory(thread_ptr, line_size);
     }
     return true;
   }
 };
 
 template <class DefaultAgentT, class FallbackAgentT>
-constexpr bool use_fallback_agent()
+_CCCL_HOST_DEVICE constexpr bool use_fallback_agent()
 {
   return (sizeof(typename DefaultAgentT::TempStorage) > max_smem_per_block)
       && (sizeof(typename FallbackAgentT::TempStorage) <= max_smem_per_block);

@@ -26,30 +26,37 @@ The results of every job in the CI pipeline are summarized on the bottom of the 
 
 ### Special CI Commands
 
-Special commands are provided that can be included in commit messages to direct the CI pipeline execution:
+Special commands can be included in the most recent commit message to control which jobs are spawned for the next pull-request CI run.
+These commands can be combined with the [override matrix](#temporarily-overriding-the-pull-request-matrix) for even more fine-grained control.
 
-- `[skip ci]`: Skips the entire CI pipeline. Useful for documentation changes or others that don't require CI validation.
+- `[skip-<component>]`: Skips a subset of the CI jobs. These commands will block the PR from being merged while present in the last commit message of the branch. Recognized components are:
+  - `[skip-matrix]`: Skip all build and test jobs specified in `ci/matrix.yaml`.
+  - `[skip-vdc]`: Skip all "Validate Devcontainer" jobs.
+  - `[skip-docs]`: Skip the documentation verification build.
+  - `[skip-rapids]`: Skip all RAPIDS canary builds.
+  - `[skip-matx]`: Skip all MatX canary builds.
+  - **Example:** `git commit -m "Fix RAPIDS failures [skip-matrix][skip-vdc][skip-docs][skip-matx]"`
 
-   - **Example:** `git commit -m "[skip ci] Update README."`
-
-- `[skip-tests]`: Skips CI jobs that execute tests, but runs all other jobs. Useful to avoid time-consuming tests when changes are unlikely to affect them.
-- `[all-projects]`: CI normally skips projects that don't have changes in themselves or their dependencies. This forces all projects to build.
 - `[workflow:<workflow>]`:  Execute jobs from the named workflow. Example: `[workflow:nightly]` runs all jobs defined in `matrix.yaml`'s `workflows.nightly` list.
-
-Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
 
 ### Temporarily Overriding the Pull Request Matrix
 
-If a workflow named `override` exists in the matrix.yaml file, this matrix will be used for pull requests instead of the `pull_request` matrix.
-This is useful for reducing resource usage when launching many CI workflows from a PR (for example, while testing CI features).
-The overridden CI job will be marked as a failure until the override is removed.
+If a non-empty workflow named `override` exists in the `ci/matrix.yaml` file, this matrix will be used for pull requests instead of the `pull_request` matrix.
+This is useful for reducing resource usage and turn-around time when a full run is not needed, for example:
+
+- Testing changes that only apply to a specific compiler, OS, etc.
+- Testing fixes to nightly CI failures by only running the nightly jobs that failed.
+- Testing changes to CI infrastructure that only require a few jobs to run.
+
+The PR will be blocked from merging until the override matrix is removed, ensuring that the full CI suite runs before landing the PR.
+The override matrix can be combined with the `[skip-<...>]` commands detailed in [Special CI Commands](#special-ci-commands) to reduce unnecessary resource usage even further.
 
 Example:
 
 ```
 workflows:
   override:
-    - {jobs: ['test'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16, *msvc2022]}
+    - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'all', cxx: ['msvc14.39', 'gcc10', 'clang14']}
   pull_request:
     - <...>
 ```
@@ -93,13 +100,13 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
 
 CCCL uses [NVIDIA's self-hosted action runners](https://docs.gha-runners.nvidia.com/runners/) for CI jobs. For security, PR workflows are triggered using the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/), which copies code to a prefixed branch to ensure only vetted code runs on the runners.
 
-The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test` comment.
+The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test [commit SHA]` comment.
 
 ### SSH Signing Keys
 
 [Signed commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) are required for any internal NVIDIA contributors who want the convenience of CI running automatically whenever a commit is pushed to a branch (i.e., doesn't require using `/ok to test`).
 
-This is not required for external contributions, which will always require an explicit `/ok to test` comment from an approved account for each CI run.
+This is not required for external contributions, which will always require an explicit `/ok to test [commit SHA]` comment from an approved account for each CI run.
 
 To enable commit signing using your existing ssh key, set the following git options:
 
@@ -123,6 +130,49 @@ gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
 
 Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
 The same key may be used for both.
+
+## Artifact Scripts: ci/util/artifacts/
+
+These scripts can be used to upload/download artifacts from CI job runners.
+They are meant to be used from Github Actions jobs launched via `ci/matrix.yaml`.
+They can be run locally using `ci/create_mock_job_env.sh` to fake the environment of a single job of a specific CI run.
+
+Note that uploading doesn't immediately upload anything, but rather stages the files and adds the artifact information to a registry.
+The registry is parsed once the job completes and all registered artifacts are uploaded at once.
+This approach is used to work around a lack of convenient artifact uploading options provided by github.
+
+The `stage.sh` and `unstage.sh` scripts may be used to build up a set of files that will be uploaded as a single artifact.
+All calls to these scripts for a particular artifact must be made from the same working directory and specify relative paths to artifact files in subdirectories of the working directory.
+
+The upload scripts with `stage` in the name will pull files from an existing stage, rather than the command line.
+Non-`stage` upload scripts are convenience wrappers meant for simpler artifacts that don't require intricate staging.
+
+The `packed` upload and download scripts are best for large artifacts that are not meant to be used outside of the workflow.
+They store an archive inside of a zip wrapper, and the double archive is inconvenient, but useful for large artifacts.
+They are intended for temporary artifacts, such as passing test executables from build to test jobs, while the non-`packed` versions offer a more convenient raw-zip file downloads for things like python wheels.
+
+For best performance of the `packed` variants of the scripts, install `pbzip2` prior to packing anything.
+This can reduce the compression time from minutes to seconds for very large artifacts.
+
+- `stage.sh` / `unstage.sh` are useful for uploading a partial set of files from a filesystem directory.
+- `upload[_stage]_packed.sh` / `download_packed.sh` are good for large test artifacts that are ephemeral and only used by another job in this workflow.
+- `upload[_stage].sh` / `download.sh` are good for small artifacts that users/developers may want download for use/debugging somewhat regularly, like python wheels or installation archives.
+
+## Workflow job lookup scripts: ci/util/workflow/
+
+These scripts can be used to query information about a CI job's current workflow.
+They are meant to only be used from Github Actions jobs launched via `ci/matrix.yaml`.
+They can be run locally using `ci/create_mock_job_env.sh` to fake the environment of a single job of a specific CI run.
+
+These scripts interact with the `workflow` artifact uploaded by the `build-workflow` github action.
+This artifact holds files containing details about all `ci/matrix.yaml` jobs launched in the current workflow run.
+
+Of particular use are the queries for producer and consumer information.
+These can be used to determine which, if any, test artifacts need to be built/uploaded by producers.
+Consumers can query their producer's ID to locate the test artifacts the need to use.
+
+The `get_wheel_artifact_name.sh` script queries the workflow definitions to get detailed information about the current job.
+It's a good example of how these scripts can be used to carry out other packaging, etc related tasks.
 
 ## Troubleshooting CI Failures
 

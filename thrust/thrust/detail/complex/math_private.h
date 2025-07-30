@@ -35,7 +35,7 @@
 
 #include <thrust/complex.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

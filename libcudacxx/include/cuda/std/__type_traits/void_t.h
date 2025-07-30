@@ -20,14 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class...>
 using void_t = void;
 
-template <class...>
-using __void_t _LIBCUDACXX_DEPRECATED = void;
-
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_VOID_T_H

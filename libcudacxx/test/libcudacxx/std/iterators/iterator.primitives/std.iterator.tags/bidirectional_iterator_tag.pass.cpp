@@ -18,8 +18,8 @@
 
 int main(int, char**)
 {
-  cuda::std::bidirectional_iterator_tag tag;
-  ((void) tag); // Prevent unused warning
+  [[maybe_unused]] cuda::std::bidirectional_iterator_tag tag;
+
   static_assert((cuda::std::is_base_of<cuda::std::forward_iterator_tag, cuda::std::bidirectional_iterator_tag>::value),
                 "");
   static_assert((!cuda::std::is_base_of<cuda::std::output_iterator_tag, cuda::std::bidirectional_iterator_tag>::value),

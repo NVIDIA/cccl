@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // iter_common_reference_t
 
 #include <cuda/std/concepts>
@@ -67,16 +65,9 @@ struct T3
 static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>, "");
 
 // Make sure we're SFINAE-friendly
-#if TEST_STD_VER > 2017
 template <class T>
-constexpr bool has_common_reference = requires { typename cuda::std::iter_common_reference_t<T>; };
-#else
-template <class T>
-_CCCL_CONCEPT_FRAGMENT(has_common_reference_, requires()(typename(cuda::std::iter_common_reference_t<T>)));
+_CCCL_CONCEPT has_common_reference = _CCCL_REQUIRES_EXPR((T))(typename(cuda::std::iter_common_reference_t<T>));
 
-template <class T>
-_CCCL_CONCEPT has_common_reference = _CCCL_FRAGMENT(has_common_reference_, T);
-#endif
 struct NotIndirectlyReadable
 {};
 static_assert(!has_common_reference<NotIndirectlyReadable>, "");

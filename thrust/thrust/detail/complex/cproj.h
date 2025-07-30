@@ -22,7 +22,8 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cmath>
+#include <cuda/std/cmath>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -37,8 +38,8 @@ _CCCL_HOST_DEVICE inline complex<float> cprojf(const complex<float>& z)
   }
   else
   {
-    // std::numeric_limits<T>::infinity() doesn't run on the GPU
-    return complex<float>(infinity<float>(), copysignf(0.0, z.imag()));
+    // ::cuda::std::numeric_limits<T>::infinity() doesn't run on the GPU
+    return complex<float>(::cuda::std::numeric_limits<float>::infinity(), copysignf(0.0, z.imag()));
   }
 }
 
@@ -50,8 +51,8 @@ _CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
   }
   else
   {
-    // std::numeric_limits<T>::infinity() doesn't run on the GPU
-    return complex<double>(infinity<double>(), copysign(0.0, z.imag()));
+    // ::cuda::std::numeric_limits<T>::infinity() doesn't run on the GPU
+    return complex<double>(::cuda::std::numeric_limits<double>::infinity(), copysign(0.0, z.imag()));
   }
 }
 

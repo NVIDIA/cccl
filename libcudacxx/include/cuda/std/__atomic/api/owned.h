@@ -29,12 +29,14 @@
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__type_traits/conditional.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp, typename _Sco>
 struct __atomic_common
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_common(_Tp __v)
+  _CCCL_API constexpr __atomic_common(_Tp __v)
       : __a(__v)
   {}
 
@@ -53,7 +55,7 @@ struct __atomic_common
 template <typename _Tp, typename _Sco>
 struct __atomic_arithmetic
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_arithmetic(_Tp __v)
+  _CCCL_API constexpr __atomic_arithmetic(_Tp __v)
       : __a(__v)
   {}
 
@@ -75,7 +77,7 @@ struct __atomic_arithmetic
 template <typename _Tp, typename _Sco>
 struct __atomic_bitwise
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_bitwise(_Tp __v)
+  _CCCL_API constexpr __atomic_bitwise(_Tp __v)
       : __a(__v)
   {}
 
@@ -100,7 +102,7 @@ struct __atomic_bitwise
 template <typename _Tp, typename _Sco>
 struct __atomic_pointer
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_pointer(_Tp __v)
+  _CCCL_API constexpr __atomic_pointer(_Tp __v)
       : __a(__v)
   {}
 
@@ -130,5 +132,7 @@ using __atomic_impl =
               __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_API_OWNED_H

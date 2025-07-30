@@ -1,50 +1,41 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
-
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 #pragma once
 
 #include <cuda/__cccl_config>
 
 #ifndef TEST_HALF_T
-#  define TEST_HALF_T _CCCL_HAS_NVFP16
-#endif
+#  if _CCCL_HAS_NVFP16()
+#    define TEST_HALF_T() 1
+#  else
+#    define TEST_HALF_T() 0
+#  endif
+#endif // TEST_HALF_T
 
 #ifndef TEST_BF_T
-#  define TEST_BF_T _CCCL_HAS_NVBF16
-#endif
+#  if _CCCL_HAS_NVBF16()
+#    define TEST_BF_T() 1
+#  else
+#    define TEST_BF_T() 0
+#  endif
+#endif // TEST_BF_T
 
-#ifdef TEST_HALF_T
+#ifndef TEST_INT128
+#  if _CCCL_HAS_INT128() && !_CCCL_CUDA_COMPILER(CLANG) // clang-cuda crashes with int128 in generator.cu
+#    define TEST_INT128() 1
+#  else
+#    define TEST_INT128() 0
+#  endif
+#endif // TEST_INT128
+
+#if TEST_HALF_T()
 #  include <cuda_fp16.h>
 
 #  include <c2h/half.cuh>
-#endif
+#endif // TEST_HALF_T()
 
-#ifdef TEST_BF_T
+#if TEST_BF_T()
 #  include <cuda_bf16.h>
 
 #  include <c2h/bfloat16.cuh>
-#endif
+#endif // TEST_BF_T()

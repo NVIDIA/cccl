@@ -41,7 +41,7 @@ static void ensure_managed_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeManaged);
 }
 
-TEST_CASE("managed_memory_resource construction", "[memory_resource]")
+C2H_TEST("managed_memory_resource construction", "[memory_resource]")
 {
   SECTION("Default construction")
   {
@@ -56,10 +56,10 @@ TEST_CASE("managed_memory_resource construction", "[memory_resource]")
   }
 }
 
-TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
+C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
 {
   managed_resource res{};
-  cudax::stream stream{};
+  cudax::stream stream{cuda::device_ref{0}};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);
@@ -81,7 +81,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     auto* ptr = res.allocate_async(42, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
+    stream.sync();
     ensure_managed_ptr(ptr);
 
     res.deallocate_async(ptr, 42, stream);
@@ -91,20 +91,19 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     auto* ptr = res.allocate_async(42, 4, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
+    stream.sync();
     ensure_managed_ptr(ptr);
 
     res.deallocate_async(ptr, 42, 4, stream);
   }
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   { // allocate with too small alignment
     while (true)
     {
       try
       {
-        auto* ptr = res.allocate(5, 42);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -119,8 +118,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 1337);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -134,8 +132,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate_async(5, 42, stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, stream);
       }
       catch (std::invalid_argument&)
       {
@@ -150,8 +147,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate_async(5, 1337, stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 1337, stream);
       }
       catch (std::invalid_argument&)
       {
@@ -160,7 +156,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 }
 
 enum class AccessibilityType
@@ -209,7 +205,7 @@ struct derived_managed_resource : cudax::managed_memory_resource
 };
 static_assert(cuda::mr::resource<derived_managed_resource>, "");
 
-TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
+C2H_TEST("managed_memory_resource comparison", "[memory_resource]")
 {
   managed_resource first{};
   { // comparison against a plain managed_memory_resource
@@ -226,7 +222,7 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a managed_memory_resource wrapped inside a resource_ref<device_accessible>
     managed_resource second{};
-    cuda::mr::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::resource_ref<cudax::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -235,7 +231,7 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a managed_memory_resource wrapped inside a async_resource_ref
     managed_resource second{};
-    cuda::mr::async_resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));

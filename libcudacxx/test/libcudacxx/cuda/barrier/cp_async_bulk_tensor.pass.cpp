@@ -10,7 +10,7 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
-// UNSUPPORTED: nvcc-11
+
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
 
@@ -22,9 +22,9 @@
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
@@ -68,10 +68,15 @@ __device__ void test(int base_i, int base_j)
 
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[buf_len];
-  __shared__ barrier* bar;
+#if _CCCL_CUDA_COMPILER(CLANG)
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
+  __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
-    init(bar, blockDim.x);
+    init(&bar, blockDim.x);
   }
   __syncthreads();
 
@@ -80,14 +85,14 @@ __device__ void test(int base_i, int base_j)
   if (threadIdx.x == 0)
   {
     // Fastest moving coordinate first.
-    cde::cp_async_bulk_tensor_2d_global_to_shared(smem_buffer, global_tensor_map, base_j, base_i, *bar);
-    token = cuda::device::barrier_arrive_tx(*bar, 1, sizeof(smem_buffer));
+    cde::cp_async_bulk_tensor_2d_global_to_shared(smem_buffer, global_tensor_map, base_j, base_i, bar);
+    token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
   }
   else
   {
-    token = bar->arrive();
+    token = bar.arrive();
   }
-  bar->wait(cuda::std::move(token));
+  bar.wait(cuda::std::move(token));
 
   // Check smem
   for (int i = 0; i < SMEM_HEIGHT; ++i)
@@ -134,7 +139,8 @@ __device__ void test(int base_i, int base_j)
   __syncthreads();
 }
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
+#  if _CCCL_CTK_BELOW(12, 5)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -143,7 +149,18 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif // ! TEST_COMPILER_NVRTC
+#  else // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
+PFN_cuTensorMapEncodeTiled_v12000 get_cuTensorMapEncodeTiled()
+{
+  void* driver_ptr = nullptr;
+  cudaDriverEntryPointQueryResult driver_status;
+  auto code =
+    cudaGetDriverEntryPointByVersion("cuTensorMapEncodeTiled", &driver_ptr, 12000, cudaEnableDefault, &driver_status);
+  assert(code == cudaSuccess && "Could not get driver API");
+  return reinterpret_cast<PFN_cuTensorMapEncodeTiled_v12000>(driver_ptr);
+}
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
+#endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {

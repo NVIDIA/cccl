@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr explicit operator bool() const noexcept;
 
 #include <cuda/std/cassert>

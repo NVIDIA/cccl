@@ -32,7 +32,8 @@
 #include <thrust/random/detail/linear_congruential_engine_discard.h>
 #include <thrust/random/detail/random_core_access.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
+
 #include <iostream>
 
 THRUST_NAMESPACE_BEGIN

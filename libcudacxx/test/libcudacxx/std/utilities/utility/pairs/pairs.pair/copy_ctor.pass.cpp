@@ -26,7 +26,6 @@ int main(int, char**)
     assert(p2.first == 3);
     assert(p2.second == 4);
   }
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::pair<int, short> P1;
     constexpr P1 p1(3, static_cast<short>(4));
@@ -34,7 +33,6 @@ int main(int, char**)
     static_assert(p2.first == 3, "");
     static_assert(p2.second == 4, "");
   }
-#endif
 
   return 0;
 }

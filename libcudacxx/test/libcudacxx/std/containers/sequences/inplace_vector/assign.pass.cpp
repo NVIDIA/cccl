@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -20,15 +18,14 @@
 #include "test_macros.h"
 #include "types.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  include <stdexcept>
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_ranges()
 {
@@ -65,7 +62,6 @@ __host__ __device__ constexpr void test_ranges()
     assert(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
   }
 }
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 
 template <class T>
 __host__ __device__ constexpr void test()
@@ -221,12 +217,10 @@ __host__ __device__ constexpr void test()
     assert(equal_range(vec, expected));
   }
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
   test_ranges<T, input_range>();
   test_ranges<T, uncommon_range>();
   test_ranges<T, sized_uncommon_range>();
   test_ranges<T, cuda::std::array>();
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 }
 
 __host__ __device__ constexpr bool test()
@@ -244,16 +238,15 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
-#  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
+#if TEST_HAS_EXCEPTIONS()
 template <template <class, size_t> class Range>
 void test_exceptions()
 { // assign_range throws std::bad_alloc
   constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
-  inplace_vector too_small{};
+  using inplace_vector      = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
   try
   {
+    [[maybe_unused]] inplace_vector too_small{};
     too_small.assign_range(Range<int, 2 + capacity>{0, 1, 2, 3, 4, 5});
     assert(false);
   }
@@ -264,14 +257,13 @@ void test_exceptions()
     assert(false);
   }
 }
-#  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 
 void test_exceptions()
 { // assign throws std::bad_alloc
   constexpr size_t capacity = 4;
   using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
-  inplace_vector too_small{};
-  const cuda::std::array<int, 7> input{0, 1, 2, 3, 4, 5, 6};
+  [[maybe_unused]] inplace_vector too_small{};
+  [[maybe_unused]] const cuda::std::array<int, 7> input{0, 1, 2, 3, 4, 5, 6};
 
   try
   {
@@ -322,14 +314,12 @@ void test_exceptions()
     assert(false);
   }
 
-#  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
   test_exceptions<input_range>();
   test_exceptions<uncommon_range>();
   test_exceptions<sized_uncommon_range>();
   test_exceptions<cuda::std::array>();
-#  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -338,8 +328,8 @@ int main(int, char**)
   static_assert(test(), "");
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

@@ -1,5 +1,18 @@
 .. _cmake-options:
 
+Notice
+------
+
+This document details the CMake options used for **developer builds**
+of the Thrust tests and examples included in the CCCL repository.
+The options presented here are not available when using Thrust as an
+end-user via our installed CMake packages, or when using
+``add_subdirectory`` / CPM to add CCCL/Thrust to your project's build system.
+For details and examples of using Thrust as an end-user, please refer
+to the following resources:
+
+- `Thrust + CMake example <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`__
+
 CMake Options
 =============
 
@@ -93,7 +106,7 @@ Single Config CMake Options
 
    -  Selects the device system. Default: ``CUDA``
 
--  ``THRUST_CPP_DIALECT={11, 14, 17}``
+-  ``THRUST_CPP_DIALECT={17, 20}``
 
    -  Selects the C++ standard dialect to use. Default is ``14``
       (C++14).
@@ -106,7 +119,7 @@ Multi Config CMake Options
 -  ``THRUST_MULTICONFIG_ENABLE_DIALECT_CPPXX={ON, OFF}``
 
    -  Toggle whether a specific C++ dialect will be targeted.
-   -  Possible values of ``XX`` are ``{11, 14, 17}``.
+   -  Possible values of ``XX`` are ``{17, 20}``.
    -  By default, only C++14 is enabled.
 
 -  ``THRUST_MULTICONFIG_ENABLE_SYSTEM_XXXX={ON, OFF}``

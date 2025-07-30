@@ -51,9 +51,11 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [iterator.concept.readable]
 template <class _In>
@@ -77,12 +79,12 @@ using iter_common_reference_t = common_reference_t<iter_reference_t<_Tp>, iter_v
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
-  *__o                            = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  *_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be
-                                                                                    // equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
-    _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
+  *__o                       = static_cast<_Tp &&>(__t); // not required to be equality-preserving
+  *static_cast<_Out &&>(__o) = static_cast<_Tp &&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out> &&>(*__o) = static_cast<_Tp &&>(__t); // not required to be
+                                                                                // equality-preserving
+  const_cast<const iter_reference_t<_Out> &&>(*static_cast<_Out &&>(__o)) =
+    static_cast<_Tp &&>(__t); // not required to be equality-preserving
 };
 
 // [iterator.concept.winc]
@@ -140,7 +142,7 @@ concept input_iterator = input_or_output_iterator<_Ip> && indirectly_readable<_I
 template <class _Ip, class _Tp>
 concept output_iterator =
   input_or_output_iterator<_Ip> && indirectly_writable<_Ip, _Tp> && requires(_Ip __it, _Tp&& __t) {
-    *__it++ = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
+    *__it++ = static_cast<_Tp &&>(__t); // not required to be equality-preserving
   };
 
 // [iterator.concept.forward]
@@ -149,24 +151,52 @@ concept forward_iterator = input_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip
                         && incrementable<_Ip> && sentinel_for<_Ip, _Ip>;
 
 // [iterator.concept.bidir]
-template <class _Ip>
-concept bidirectional_iterator =
-  forward_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip>, bidirectional_iterator_tag> && requires(_Ip __i) {
-    { --__i } -> same_as<_Ip&>;
-    { __i-- } -> same_as<_Ip>;
-  };
+template <class _Iter>
+concept __iter_can_decrement = requires(_Iter __iter) {
+  { --__iter } -> same_as<_Iter&>;
+  { __iter-- } -> same_as<_Iter>;
+};
 
-template <class _Ip>
+template <class _Iter>
+concept bidirectional_iterator =
+  forward_iterator<_Iter> && derived_from<_ITER_CONCEPT<_Iter>, bidirectional_iterator_tag>
+  && __iter_can_decrement<_Iter>;
+
+template <class _Iter>
+concept __iter_can_plus_equal = requires(_Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter += __n } -> same_as<_Iter&>;
+};
+
+template <class _Iter>
+concept __iter_can_plus = requires(const _Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter + __n } -> same_as<_Iter>;
+  { __n + __iter } -> same_as<_Iter>;
+};
+
+template <class _Iter>
+concept __iter_can_minus_equal = requires(_Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter -= __n } -> same_as<_Iter&>;
+};
+
+template <class _Iter>
+concept __iter_can_minus = requires(const _Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter - __n } -> same_as<_Iter>;
+};
+
+template <class _Iter>
+concept __iter_can_subscript = requires(const _Iter __iter, const iter_difference_t<_Iter> __n) {
+  { __iter[__n] } -> same_as<iter_reference_t<_Iter>>;
+};
+
+template <class _Iter>
+concept __random_access_operations =
+  __iter_can_plus_equal<_Iter> && __iter_can_plus<_Iter> && __iter_can_minus_equal<_Iter> && __iter_can_minus<_Iter>
+  && __iter_can_subscript<_Iter>;
+
+template <class _Iter>
 concept random_access_iterator =
-  bidirectional_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip>, random_access_iterator_tag> && totally_ordered<_Ip>
-  && sized_sentinel_for<_Ip, _Ip> && requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n) {
-       { __i += __n } -> same_as<_Ip&>;
-       { __j + __n } -> same_as<_Ip>;
-       { __n + __j } -> same_as<_Ip>;
-       { __i -= __n } -> same_as<_Ip&>;
-       { __j - __n } -> same_as<_Ip>;
-       { __j[__n] } -> same_as<iter_reference_t<_Ip>>;
-     };
+  bidirectional_iterator<_Iter> && derived_from<_ITER_CONCEPT<_Iter>, random_access_iterator_tag>
+  && totally_ordered<_Iter> && sized_sentinel_for<_Iter, _Iter> && __random_access_operations<_Iter>;
 
 template <class _Ip>
 concept contiguous_iterator =
@@ -254,7 +284,7 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
-#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [iterator.concept.readable]
 template <class _In>
@@ -276,19 +306,14 @@ _CCCL_CONCEPT indirectly_readable = _CCCL_FRAGMENT(__indirectly_readable_impl_, 
 template <class _Tp>
 using iter_common_reference_t =
   enable_if_t<indirectly_readable<_Tp>, common_reference_t<iter_reference_t<_Tp>, iter_value_t<_Tp>&>>;
+
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __indirectly_writable_,
-  requires(_Out&& __o, _Tp&& __t)(
-    typename(decltype(*__o = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(*_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
-                        _CUDA_VSTD::forward<_Tp>(__t)))));
-
-template <class _Out, class _Tp>
-_CCCL_CONCEPT indirectly_writable = _CCCL_FRAGMENT(__indirectly_writable_, _Out, _Tp);
+_CCCL_CONCEPT indirectly_writable = _CCCL_REQUIRES_EXPR((_Out, _Tp), _Out&& __o, _Tp&& __t)(
+  (*__o = static_cast<_Tp&&>(__t)),
+  (*static_cast<_Out&&>(__o) = static_cast<_Tp&&>(__t)),
+  (const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t)),
+  (const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) = static_cast<_Tp&&>(__t)));
 
 // [iterator.concept.winc]
 template <class _Tp>
@@ -340,7 +365,7 @@ template <class _Sp, class _Ip>
 _CCCL_CONCEPT sentinel_for = _CCCL_FRAGMENT(__sentinel_for_, _Sp, _Ip);
 
 template <class, class>
-_CCCL_INLINE_VAR constexpr bool disable_sized_sentinel_for = false;
+inline constexpr bool disable_sized_sentinel_for = false;
 
 template <class _Sp, class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
@@ -373,7 +398,7 @@ template <class _Ip, class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__output_iterator_,
                        requires(_Ip __it, _Tp&& __t)(requires(input_or_output_iterator<_Ip>),
                                                      requires(indirectly_writable<_Ip, _Tp>),
-                                                     (*__it++ = _CUDA_VSTD::forward<_Tp>(__t))));
+                                                     (*__it++ = static_cast<_Tp&&>(__t))));
 
 template <class _Ip, class _Tp>
 _CCCL_CONCEPT output_iterator = _CCCL_FRAGMENT(__output_iterator_, _Ip, _Tp);
@@ -391,56 +416,52 @@ template <class _Ip>
 _CCCL_CONCEPT forward_iterator = _CCCL_FRAGMENT(__forward_iterator_, _Ip);
 
 // [iterator.concept.bidir]
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __bidirectional_iterator_,
-  requires(_Ip __i)(requires(forward_iterator<_Ip>),
-                    requires(derived_from<_ITER_CONCEPT<_Ip>, bidirectional_iterator_tag>),
-                    requires(same_as<_Ip&, decltype(--__i)>),
-                    requires(same_as<_Ip, decltype(__i--)>)));
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_decrement =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter)(_Same_as(_Iter&)(--__iter), _Same_as(_Iter) __iter--);
 
-template <class _Ip>
-_CCCL_CONCEPT bidirectional_iterator = _CCCL_FRAGMENT(__bidirectional_iterator_, _Ip);
+template <class _Iter>
+_CCCL_CONCEPT bidirectional_iterator = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(forward_iterator<_Iter>),
+  requires(derived_from<_ITER_CONCEPT<_Iter>, bidirectional_iterator_tag>),
+  requires(__iter_can_decrement<_Iter>));
 
 // [iterator.concept.random.access]
-#  if _CCCL_COMPILER(MSVC2017)
-// For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __random_access_iterator_operations_,
-  requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
-    requires(same_as<_Ip&, decltype(__i += __n)>),
-    requires(same_as<_Ip, decltype(__j + __n)>),
-    typename(decltype(__n + __j)),
-    requires(same_as<_Ip&, decltype(__i -= __n)>),
-    requires(same_as<_Ip, decltype(__j - __n)>),
-    requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
-#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __random_access_iterator_operations_,
-  requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
-    requires(same_as<_Ip&, decltype(__i += __n)>),
-    requires(same_as<_Ip, decltype(__j + __n)>),
-    requires(same_as<_Ip, decltype(__n + __j)>),
-    requires(same_as<_Ip&, decltype(__i -= __n)>),
-    requires(same_as<_Ip, decltype(__j - __n)>),
-    requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
-#  endif // !_CCCL_COMPILER(MSVC2017)
-template <class _Ip>
-_CCCL_CONCEPT __random_access_iterator_operations = _CCCL_FRAGMENT(__random_access_iterator_operations_, _Ip);
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_plus_equal =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(_Iter&) __iter += __n);
 
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __random_access_iterator_,
-  requires()(requires(bidirectional_iterator<_Ip>),
-             requires(derived_from<_ITER_CONCEPT<_Ip>, random_access_iterator_tag>),
-             requires(totally_ordered<_Ip>),
-             requires(sized_sentinel_for<_Ip, _Ip>),
-             requires(__random_access_iterator_operations<_Ip>)));
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_plus = _CCCL_REQUIRES_EXPR((_Iter), const _Iter __iter, const iter_difference_t<_Iter> __n)(
+  _Same_as(_Iter) __iter + __n, _Same_as(_Iter) __n + __iter);
 
-template <class _Ip>
-_CCCL_CONCEPT random_access_iterator = _CCCL_FRAGMENT(__random_access_iterator_, _Ip);
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_minus_equal =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(_Iter&) __iter -= __n);
+
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_minus =
+  _CCCL_REQUIRES_EXPR((_Iter), const _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(_Iter) __iter - __n);
+
+template <class _Iter>
+_CCCL_CONCEPT __iter_can_subscript = _CCCL_REQUIRES_EXPR(
+  (_Iter), const _Iter __iter, const iter_difference_t<_Iter> __n)(_Same_as(iter_reference_t<_Iter>) __iter[__n]);
+
+template <class _Iter>
+_CCCL_CONCEPT __random_access_iterator_operations = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(__iter_can_plus_equal<_Iter>),
+  requires(__iter_can_plus<_Iter>),
+  requires(__iter_can_minus_equal<_Iter>),
+  requires(__iter_can_minus<_Iter>),
+  requires(__iter_can_subscript<_Iter>));
+
+template <class _Iter>
+_CCCL_CONCEPT random_access_iterator = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(bidirectional_iterator<_Iter>),
+  requires(derived_from<_ITER_CONCEPT<_Iter>, random_access_iterator_tag>),
+  requires(totally_ordered<_Iter>),
+  requires(sized_sentinel_for<_Iter, _Iter>),
+  requires(__random_access_iterator_operations<_Iter>));
 
 // [iterator.concept.contiguous]
 template <class _Ip>
@@ -556,16 +577,9 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Fp, class _It1, class _It2 = _It1>
 _CCCL_CONCEPT indirect_strict_weak_order = _CCCL_FRAGMENT(__indirect_strict_weak_order_, _Fp, _It1, _It2);
 
-#  if _CCCL_STD_VER > 2014
 template <class _Fp, class... _Its>
 using indirect_result_t = enable_if_t<(indirectly_readable<_Its> && ...) && invocable<_Fp, iter_reference_t<_Its>...>,
                                       invoke_result_t<_Fp, iter_reference_t<_Its>...>>;
-#  else
-template <class _Fp, class... _Its>
-using indirect_result_t =
-  enable_if_t<conjunction_v<bool_constant<indirectly_readable<_Its>>...> && invocable<_Fp, iter_reference_t<_Its>...>,
-              invoke_result_t<_Fp, iter_reference_t<_Its>...>>;
-#  endif // _CCCL_STD_VER > 2014
 
 template <class _In, class _Out>
 _CCCL_CONCEPT_FRAGMENT(
@@ -611,19 +625,21 @@ template <class _In, class _Out>
 _CCCL_CONCEPT indirectly_copyable_storable = _CCCL_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
 
 template <class _Ip, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_iter_category = false;
+inline constexpr bool __has_iter_category = false;
 
 template <class _Ip>
-_CCCL_INLINE_VAR constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
+inline constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
 
 template <class _Ip, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_iter_concept = false;
+inline constexpr bool __has_iter_concept = false;
 
 template <class _Ip>
-_CCCL_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
+inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
-#endif // _CCCL_STD_VER > 2014
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_CONCEPTS_H

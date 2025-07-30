@@ -27,7 +27,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::reference_wrapper<int> ri(i);
     cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::ref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>>);
+    static_assert(cuda::std::is_same_v<decltype(rrj), cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>>>);
     assert(&rrj.get() == &ri);
   }
   {
@@ -35,7 +35,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::reference_wrapper<int> ri(i);
     cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::ref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>>);
     assert(&rrj.get() == &ri);
   }
   {
@@ -43,7 +44,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::reference_wrapper<int> ri(i);
     cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::cref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>>);
     assert(&rrj.get() == &ri);
   }
   {
@@ -51,7 +53,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::reference_wrapper<int> ri(i);
     cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::cref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>>);
     assert(&rrj.get() == &ri);
   }
   return true;
@@ -60,9 +63,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !defined(TEST_COMPILER_NVRTC)
+#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif
+#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
   return 0;
 }

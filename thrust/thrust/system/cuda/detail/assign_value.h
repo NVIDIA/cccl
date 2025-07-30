@@ -26,72 +26,99 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
-#  include <thrust/system/cuda/config.h>
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/detail/raw_pointer_cast.h>
-#  include <thrust/system/cuda/detail/copy.h>
+#  include <thrust/system/cuda/detail/cross_system.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/util.h>
 
 #  include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+namespace detail
+{
+template <typename T, typename U>
+CCCL_DETAIL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
+{
+  *dst = *src;
+}
+} // namespace detail
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void
-assign_value(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
 {
-  // XXX war nvbugs/881631
-  struct war_nvbugs_881631
+  using V1 = thrust::detail::it_value_t<Pointer1>;
+  using V2 = thrust::detail::it_value_t<Pointer2>;
+  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
+  // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
+  // NV_IF_TARGET switch. See also NVBug 881631.
+  struct HostPath
   {
-    _CCCL_HOST inline static void
-    host_path(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
-    {
-      cuda_cub::copy(exec, src, src + 1, dst);
-    }
+    execution_policy<DerivedPolicy>& exec;
+    Pointer1 dst;
+    Pointer2 src;
 
-    _CCCL_DEVICE inline static void
-    device_path(thrust::cuda::execution_policy<DerivedPolicy>&, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST void operator()() const
     {
-      *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);
+      if constexpr (::cuda::std::is_same_v<V1, V2>)
+      {
+        const cudaError status = trivial_copy_device_to_device(exec, raw_pointer_cast(dst), raw_pointer_cast(src), 1);
+        throw_on_error(status, "__copy:: D->D: failed");
+      }
+      else
+      {
+        const cudaError status =
+          cuda_cub::detail::triple_chevron(1, 1, 0, stream(exec))
+            .doit(detail::assign_value_kernel<V1, V2>, raw_pointer_cast(dst), raw_pointer_cast(src));
+        throw_on_error(status, "__copy:: D->D with different data types: kernel failed");
+        throw_on_error(synchronize_optional(exec), "__copy:: D->D with different data types: sync failed");
+      }
     }
   };
+  NV_IF_TARGET(NV_IS_HOST,
+               // on host, perform device -> device memcpy
+               (HostPath{exec, dst, src}();),
+               // on device, simply assign
+               *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src););
+}
 
-  NV_IF_TARGET(
-    NV_IS_HOST, (war_nvbugs_881631::host_path(exec, dst, src);), (war_nvbugs_881631::device_path(exec, dst, src);));
+namespace detail
+{
+struct cross_system_assign_host_path
+{
+  // device -> host copy executed from host
+  template <typename System1, typename DerivedPolicy2, typename Pointer1, typename Pointer2>
+  _CCCL_HOST void operator()(System1&, execution_policy<DerivedPolicy2>& system2, Pointer1 dst, Pointer2 src)
+  {
+    thrust::detail::it_value_t<Pointer2> copy_dst;
+    const cudaError status = trivial_copy_from_device(&copy_dst, raw_pointer_cast(src), 1, stream(system2));
+    *dst                   = copy_dst; // may convert type
+    throw_on_error(status, "__copy:: D->H: failed");
+  }
 
-} // end assign_value()
+  // host -> device copy executed from host
+  template <typename DerivedPolicy1, typename System2, typename Pointer1, typename Pointer2>
+  _CCCL_HOST void operator()(execution_policy<DerivedPolicy1>& system1, System2&, Pointer1 dst, Pointer2 src)
+  {
+    thrust::detail::it_value_t<Pointer1> copy_src = *src; // may convert type
+    const cudaError status = trivial_copy_to_device(raw_pointer_cast(dst), &copy_src, 1, stream(system1));
+    throw_on_error(status, "__copy:: H->D: failed");
+  }
+};
+} // namespace detail
 
 template <typename System1, typename System2, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
 {
-  // XXX war nvbugs/881631
-  struct war_nvbugs_881631
-  {
-    _CCCL_HOST inline static void host_path(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
-    {
-      // rotate the systems so that they are ordered the same as (src, dst)
-      // for the call to thrust::copy
-      cross_system<System2, System1> rotated_systems = systems.rotate();
-      cuda_cub::copy(rotated_systems, src, src + 1, dst);
-    }
-
-    _CCCL_DEVICE inline static void device_path(cross_system<System1, System2>&, Pointer1 dst, Pointer2 src)
-    {
-      // XXX forward the true cuda::execution_policy inside systems here
-      //     instead of materializing a tag
-      thrust::cuda::tag cuda_tag;
-      thrust::cuda_cub::assign_value(cuda_tag, dst, src);
-    }
-  };
-
   NV_IF_TARGET(NV_IS_HOST,
-               (war_nvbugs_881631::host_path(systems, dst, src);),
-               (war_nvbugs_881631::device_path(systems, dst, src);));
-} // end assign_value()
-
+               (detail::cross_system_assign_host_path{}(
+                  thrust::detail::derived_cast(systems.sys1), thrust::detail::derived_cast(systems.sys2), dst, src);),
+               (*thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);));
+}
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

@@ -1,3 +1,4 @@
+
 /*
  *  Copyright 2008-2021 NVIDIA Corporation
  *
@@ -36,35 +37,22 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/type_traits/remove_cvref.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
+
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>
 class pointer;
-
-// Specialize `thrust::iterator_traits` to avoid problems with the name of
-// pointer's constructor shadowing its nested pointer type. We do this before
-// pointer is defined so the specialization is correctly used inside the
-// definition.
-template <typename Element, typename Tag, typename Reference, typename Derived>
-struct iterator_traits<thrust::pointer<Element, Tag, Reference, Derived>>
-{
-  using pointer           = thrust::pointer<Element, Tag, Reference, Derived>;
-  using iterator_category = typename pointer::iterator_category;
-  using value_type        = typename pointer::value_type;
-  using difference_type   = typename pointer::difference_type;
-  using reference         = typename pointer::reference;
-};
-
 THRUST_NAMESPACE_END
 
+// Specialize `std::iterator_traits` (picked up by cuda::std::iterator_traits) to avoid problems with the name of
+// pointer's constructor shadowing its nested pointer type. We do this before pointer is defined so the specialization
+// is correctly used inside the definition.
 namespace std
 {
-
 template <typename Element, typename Tag, typename Reference, typename Derived>
 struct iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>>
 {
@@ -74,7 +62,6 @@ struct iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Der
   using difference_type   = typename pointer::difference_type;
   using reference         = typename pointer::reference;
 };
-
 } // namespace std
 
 THRUST_NAMESPACE_BEGIN
@@ -88,25 +75,24 @@ struct pointer_base
 {
   // void pointers should have no element type
   // note that we remove_cv from the Element type to get the value_type
-  using value_type =
-    typename thrust::detail::eval_if<::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
-                                     thrust::detail::identity_<void>,
-                                     ::cuda::std::remove_cv<Element>>::type;
+  using value_type = typename thrust::detail::eval_if<::cuda::std::is_void<::cuda::std::remove_cvref_t<Element>>::value,
+                                                      ::cuda::std::type_identity<void>,
+                                                      ::cuda::std::remove_cv<Element>>::type;
 
   // if no Derived type is given, just use pointer
   using derived_type =
     typename thrust::detail::eval_if<::cuda::std::is_same<Derived, use_default>::value,
-                                     thrust::detail::identity_<pointer<Element, Tag, Reference, Derived>>,
-                                     thrust::detail::identity_<Derived>>::type;
+                                     ::cuda::std::type_identity<pointer<Element, Tag, Reference, Derived>>,
+                                     ::cuda::std::type_identity<Derived>>::type;
 
   // void pointers should have no reference type
   // if no Reference type is given, just use reference
   using reference_type = typename thrust::detail::eval_if<
-    ::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
-    thrust::detail::identity_<void>,
+    ::cuda::std::is_void<::cuda::std::remove_cvref_t<Element>>::value,
+    ::cuda::std::type_identity<void>,
     thrust::detail::eval_if<::cuda::std::is_same<Reference, use_default>::value,
-                            thrust::detail::identity_<reference<Element, derived_type>>,
-                            thrust::detail::identity_<Reference>>>::type;
+                            ::cuda::std::type_identity<reference<Element, derived_type>>,
+                            ::cuda::std::type_identity<Reference>>>::type;
 
   using type =
     thrust::iterator_adaptor<derived_type,

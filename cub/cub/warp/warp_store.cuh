@@ -223,18 +223,15 @@ enum WarpStoreAlgorithm
 //!   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
 //!   power of two.
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   Unused.
 template <typename T,
           int ITEMS_PER_THREAD,
           WarpStoreAlgorithm ALGORITHM = WARP_STORE_DIRECT,
-          int LOGICAL_WARP_THREADS     = CUB_PTX_WARP_THREADS,
-          int LEGACY_PTX_ARCH          = 0>
+          int LOGICAL_WARP_THREADS     = detail::warp_threads>
 class WarpStore
 {
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
 
 private:
   /// Store helper

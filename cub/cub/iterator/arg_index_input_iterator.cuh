@@ -43,14 +43,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/version.h>
 
-#include <ostream>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -106,7 +105,7 @@ CUB_NAMESPACE_BEGIN
  */
 template <typename InputIteratorT,
           typename OffsetT      = ptrdiff_t,
-          typename OutputValueT = cub::detail::value_t<InputIteratorT>>
+          typename OutputValueT = detail::it_value_t<InputIteratorT>>
 class ArgIndexInputIterator
 {
 public:
@@ -246,11 +245,12 @@ public:
     offset = 0;
   }
 
-  /// ostream operator
-  friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END

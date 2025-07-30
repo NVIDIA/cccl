@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_index()
+__host__ __device__ constexpr void test_index()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -44,11 +44,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_index()
       assert(r == false);
       assert(v1.test(N / 2) == false);
     }
-    ASSERT_SAME_TYPE(decltype(v1[0]), typename cuda::std::bitset<N>::reference);
+    static_assert(cuda::std::is_same_v<decltype(v1[0]), typename cuda::std::bitset<N>::reference>);
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_index<0>();
   test_index<1>();
@@ -72,10 +72,7 @@ int main(int, char**)
 {
   test();
   test_index<1000>(); // not in constexpr because of constexpr evaluation step limits
-// 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && _CCCL_CUDACC_AT_LEAST(11, 4)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

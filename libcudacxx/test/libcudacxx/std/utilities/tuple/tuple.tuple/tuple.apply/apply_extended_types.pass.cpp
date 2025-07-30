@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: gcc-6
 
 // <cuda/std/tuple>
@@ -17,20 +16,19 @@
 // named by INVOKE but that are not actual callable objects. These include
 // bullets 1-4 of invoke.
 
-#include <cuda/std/tuple>
-
-// Array tests are disabled
-// #include <cuda/std/array>
-
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/tuple>
 #include <cuda/std/utility>
+
+#include "test_macros.h"
 
 // std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
-#include "test_macros.h"
+TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
-STATIC_TEST_GLOBAL_VAR int count = 0;
+TEST_GLOBAL_VARIABLE int count = 0;
 
 struct A_int_0
 {
@@ -97,9 +95,9 @@ struct A_wrap
   A m_a;
 };
 
-typedef A_wrap<A_int_0> A_wrap_0;
-typedef A_wrap<A_int_1> A_wrap_1;
-typedef A_wrap<A_int_2> A_wrap_2;
+using A_wrap_0 = A_wrap<A_int_0>;
+using A_wrap_1 = A_wrap<A_int_1>;
+using A_wrap_2 = A_wrap<A_int_2>;
 
 template <class A>
 struct A_base : public A
@@ -112,9 +110,9 @@ struct A_base : public A
   {}
 };
 
-typedef A_base<A_int_0> A_base_0;
-typedef A_base<A_int_1> A_base_1;
-typedef A_base<A_int_2> A_base_2;
+using A_base_0 = A_base<A_int_0>;
+using A_base_1 = A_base<A_int_1>;
+using A_base_2 = A_base<A_int_2>;
 
 template <class Tuple,
           class ConstTuple,
@@ -126,19 +124,19 @@ template <class Tuple,
           class ConstTupleBase>
 __host__ __device__ void test_ext_int_0()
 {
-  count = 0;
-  typedef A_int_0 T;
-  typedef A_wrap_0 Wrap;
-  typedef A_base_0 Base;
+  count      = 0;
+  using T    = A_int_0;
+  using Wrap = A_wrap_0;
+  using Base = A_base_0;
 
-  typedef int (T::*mem1_t)();
-  mem1_t mem1 = &T::mem1;
+  using mem1_t = int (T::*)();
+  mem1_t mem1  = &T::mem1;
 
-  typedef int (T::*mem2_t)() const;
-  mem2_t mem2 = &T::mem2;
+  using mem2_t = int (T::*)() const;
+  mem2_t mem2  = &T::mem2;
 
-  typedef int const T::* obj1_t;
-  obj1_t obj1 = &T::obj1;
+  using obj1_t = int const T::*;
+  obj1_t obj1  = &T::obj1;
 
   // member function w/ref
   {
@@ -239,16 +237,16 @@ template <class Tuple,
           class ConstTupleBase>
 __host__ __device__ void test_ext_int_1()
 {
-  count = 0;
-  typedef A_int_1 T;
-  typedef A_wrap_1 Wrap;
-  typedef A_base_1 Base;
+  count      = 0;
+  using T    = A_int_1;
+  using Wrap = A_wrap_1;
+  using Base = A_base_1;
 
-  typedef int (T::*mem1_t)(int);
-  mem1_t mem1 = &T::mem1;
+  using mem1_t = int (T::*)(int);
+  mem1_t mem1  = &T::mem1;
 
-  typedef int (T::*mem2_t)(int) const;
-  mem2_t mem2 = &T::mem2;
+  using mem2_t = int (T::*)(int) const;
+  mem2_t mem2  = &T::mem2;
 
   // member function w/ref
   {
@@ -325,16 +323,16 @@ template <class Tuple,
           class ConstTupleBase>
 __host__ __device__ void test_ext_int_2()
 {
-  count = 0;
-  typedef A_int_2 T;
-  typedef A_wrap_2 Wrap;
-  typedef A_base_2 Base;
+  count      = 0;
+  using T    = A_int_2;
+  using Wrap = A_wrap_2;
+  using Base = A_base_2;
 
-  typedef int (T::*mem1_t)(int, int);
-  mem1_t mem1 = &T::mem1;
+  using mem1_t = int (T::*)(int, int);
+  mem1_t mem1  = &T::mem1;
 
-  typedef int (T::*mem2_t)(int, int) const;
-  mem2_t mem2 = &T::mem2;
+  using mem2_t = int (T::*)(int, int) const;
+  mem2_t mem2  = &T::mem2;
 
   // member function w/ref
   {
@@ -420,14 +418,14 @@ int main(int, char**)
                    cuda::std::tuple<A_wrap_0 const>,
                    cuda::std::tuple<A_base_0>,
                    cuda::std::tuple<A_base_0 const>>();
-    /*
-            test_ext_int_0<
-                cuda::std::array<A_int_0, 1>, cuda::std::array<A_int_0 const, 1>
-              , cuda::std::array<A_int_0*, 1>, cuda::std::array<A_int_0 const*, 1>
-              , cuda::std::array<A_wrap_0, 1>, cuda::std::array<A_wrap_0 const, 1>
-              , cuda::std::array<A_base_0, 1>, cuda::std::array<A_base_0 const, 1>
-              >();
-    */
+    test_ext_int_0<cuda::std::array<A_int_0, 1>,
+                   cuda::std::array<A_int_0 const, 1>,
+                   cuda::std::array<A_int_0*, 1>,
+                   cuda::std::array<A_int_0 const*, 1>,
+                   cuda::std::array<A_wrap_0, 1>,
+                   cuda::std::array<A_wrap_0 const, 1>,
+                   cuda::std::array<A_base_0, 1>,
+                   cuda::std::array<A_base_0 const, 1>>();
   }
   {
     test_ext_int_1<cuda::std::tuple<A_int_1&, int>,

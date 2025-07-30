@@ -25,12 +25,12 @@
 struct Counted
 {
   int* counter_ = nullptr;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(int* counter)
+  __host__ __device__ constexpr Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(Counted const& other)
+  __host__ __device__ constexpr Counted(Counted const& other)
       : counter_(other.counter_)
   {
     ++*counter_;
@@ -50,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3);
 
     cuda::std::destroy(pool, pool + 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy(pool, pool + 3)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy(pool, pool + 3)), void>);
     assert(counter == 0);
 
     // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -66,7 +66,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3 * 2);
 
     cuda::std::destroy(pool, pool + 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy(pool, pool + 3)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy(pool, pool + 3)), void>);
     assert(counter == 0);
 
     // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -90,7 +90,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test()
   assert(counter == 5);
 
   cuda::std::destroy(It(pool), It(pool + 5));
-  ASSERT_SAME_TYPE(decltype(cuda::std::destroy(It(pool), It(pool + 5))), void);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy(It(pool), It(pool + 5))), void>);
   assert(counter == 0);
 
   // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -112,15 +112,14 @@ int main(int, char**)
   tests();
   test_arrays();
 #if TEST_STD_VER > 2017
-#  if !defined(TEST_COMPILER_NVRTC)
-#    if (defined(TEST_COMPILER_CLANG) && __clang_major__ > 10) || (defined(TEST_COMPILER_GCC) && __GNUC__ > 9) \
-      || defined(TEST_COMPILER_MSVC_2022) || defined(TEST_COMPILER_NVHPC)
+#  if !TEST_COMPILER(NVRTC)
+#    if TEST_COMPILER(CLANG, >, 10) || TEST_COMPILER(GCC, >, 9) || TEST_COMPILER(MSVC2022) || TEST_COMPILER(NVHPC)
   static_assert(tests());
   // TODO: Until cuda::std::__construct_at has support for arrays, it's impossible to test this
   //       in a constexpr context (see https://reviews.llvm.org/D114903).
   // static_assert(test_arrays());
 #    endif
-#  endif // TEST_COMPILER_NVRTC
+#  endif // TEST_COMPILER(NVRTC)
 #endif // TEST_STD_VER > 2017
   return 0;
 }

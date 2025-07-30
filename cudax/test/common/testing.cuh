@@ -12,44 +12,22 @@
 #define __COMMON_TESTING_H__
 
 #include <cuda/__cccl_config>
+#include <cuda/__driver/driver_api.h>
 
-#include <cuda/experimental/launch.cuh>
+#include <nv/target>
 
 #include <exception> // IWYU pragma: keep
 #include <iostream>
 #include <sstream>
 
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
-#include <nv/target>
+#include <c2h/catch2_test_helper.h>
 
-// workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
-#if _CCCL_COMPILER(NVHPC)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
-#endif
-// workaround for error
-// * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
-// * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
-//              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
-// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
-#if _CCCL_COMPILER(MSVC)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
-#endif
-
-namespace cuda::experimental::__async
+namespace cuda::experimental::execution
 {
 }
 
 namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
-namespace cudax_async = cuda::experimental::__async; // NOLINT: misc-unused-alias-decls
+namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-alias-decls
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
@@ -58,6 +36,7 @@ __device__ inline void cudax_require_impl(
 {
   if (!condition)
   {
+#if !_CCCL_CUDA_COMPILER(CLANG)
     // TODO do warp aggregate prints for easier readability?
     printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
            filename,
@@ -70,6 +49,7 @@ __device__ inline void cudax_require_impl(
            threadIdx.y,
            threadIdx.z,
            condition_text);
+#endif
     __trap();
   }
 }
@@ -108,6 +88,63 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
+
 } // namespace Catch
+
+namespace
+{
+namespace test
+{
+inline int count_driver_stack()
+{
+  if (cuda::__driver::__ctxGetCurrent() != nullptr)
+  {
+    auto ctx    = cuda::__driver::__ctxPop();
+    auto result = 1 + count_driver_stack();
+    cuda::__driver::__ctxPush(ctx);
+    return result;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+inline void empty_driver_stack()
+{
+  while (cuda::__driver::__ctxGetCurrent() != nullptr)
+  {
+    cuda::__driver::__ctxPop();
+  }
+}
+
+inline int cuda_driver_version()
+{
+  return cuda::__driver::__getVersion();
+}
+
+// Needs to be a template because we use template catch2 macro
+template <typename Dummy = void>
+struct ccclrt_test_fixture
+{
+  ccclrt_test_fixture()
+  {
+    empty_driver_stack();
+  }
+  ~ccclrt_test_fixture()
+  {
+    CUDAX_CHECK(count_driver_stack() == 0);
+  }
+};
+
+} // namespace test
+} // namespace
+
+// Test macro that should be used in all cccl-rt tests
+// It first empties the driver stack in case some other test has left it non-empty
+// and then runs the test. At the end it checks if it remained empty, which ensures
+// we don't accidentally initialize device 0 through CUDART usage and makes sure
+// our APIs work with empty driver stack.
+#define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __COMMON_TESTING_H__

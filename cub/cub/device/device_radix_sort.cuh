@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -43,19 +43,24 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
-//! @brief DeviceRadixSort provides device-wide, parallel operations for
-//!        computing a radix sort across a sequence of data items residing
-//!        within device-accessible memory. ![](sorting_logo.png)
+//! @rst
+//! DeviceRadixSort provides device-wide, parallel operations for
+//! computing a radix sort across a sequence of data items residing
+//! within device-accessible memory.
 //!
-//! @par Overview
-//! The [*radix sorting method*](http://en.wikipedia.org/wiki/Radix_sort)
+//! .. image:: ../../img/sorting_logo.png
+//!     :align: center
+//!
+//! Overview
+//! --------------------------------------------------
+//!
+//! The `radix sorting method <http://en.wikipedia.org/wiki/Radix_sort>`_
 //! arranges items into ascending (or descending) order. The algorithm relies
 //! upon a positional representation for keys, i.e., each key is comprised of an
 //! ordered sequence of symbols (e.g., digits, characters, etc.) specified from
@@ -63,32 +68,41 @@ CUB_NAMESPACE_BEGIN
 //! and a set of rules specifying a total ordering of the symbolic alphabet, the
 //! radix sorting method produces a lexicographic ordering of those keys.
 //!
-//! @par Supported Types
-//! DeviceRadixSort can sort all of the built-in C++ numeric primitive types
-//! (`unsigned char`, `int`, `double`, etc.) as well as CUDA's `__half`
-//! and `__nv_bfloat16` 16-bit floating-point types. User-defined types are
-//! supported as long as decomposer object is provided.
+//! @rowmajor
 //!
-//! @par Floating-Point Special Cases
+//! Supported Types
+//! --------------------------------------------------
+//!
+//! DeviceRadixSort can sort all of the built-in C++ numeric primitive types
+//! (``unsigned char``, ``int``, ``double``, etc.) as well as CUDA's ``__half``
+//! and ``__nv_bfloat16`` 16-bit floating-point types. User-defined types are
+//! supported as long as a decomposer object is provided.
+//!
+//! Floating-Point Special Cases
+//! --------------------------------------------------
 //!
 //! - Positive and negative zeros are considered equivalent, and will be treated
 //!   as such in the output.
 //! - No special handling is implemented for NaN values; these are sorted
 //!   according to their bit representations after any transformations.
 //!
-//! @par Transformations
+//! Transformations
+//! --------------------------------------------------
+//!
 //! Although the direct radix sorting method can only be applied to unsigned
 //! integral types, DeviceRadixSort is able to sort signed and floating-point
 //! types via simple bit-wise transformations that ensure lexicographic key
 //! ordering. Additional transformations occur for descending sorts. These
 //! transformations must be considered when restricting the
-//! `[begin_bit, end_bit)` range, as the bitwise transformations will occur
+//! ``[begin_bit, end_bit)`` range, as the bitwise transformations will occur
 //! before the bit-range truncation.
 //!
 //! Any transformations applied to the keys prior to sorting are reversed
 //! while writing to the final output buffer.
 //!
-//! @par Type Specific Bitwise Transformations
+//! Type Specific Bitwise Transformations
+//! --------------------------------------------------
+//!
 //! To convert the input values into a radix-sortable bitwise representation,
 //! the following transformations take place prior to sorting:
 //!
@@ -100,30 +114,35 @@ CUB_NAMESPACE_BEGIN
 //! For floating point types, positive and negative zero are a special case and
 //! will be considered equivalent during sorting.
 //!
-//! @par Descending Sort Bitwise Transformations
+//! Descending Sort Bitwise Transformations
+//! --------------------------------------------------
+//!
 //! If descending sort is used, the keys are inverted after performing any
 //! type-specific transformations, and the resulting keys are sorted in ascending
 //! order.
 //!
-//! @par Stability
-//! DeviceRadixSort is stable. For floating-point types, `-0.0` and `+0.0` are
+//! Stability
+//! --------------------------------------------------
+//!
+//! DeviceRadixSort is stable. For floating-point types, ``-0.0`` and ``+0.0`` are
 //! considered equal and appear in the result in the same order as they appear in
 //! the input.
 //!
-//! @par Usage Considerations
+//! Usage Considerations
+//! --------------------------------------------------
+//!
 //! @cdp_class{DeviceRadixSort}
 //!
-//! @par Performance
-//! @linear_performance{radix sort} The following chart illustrates
-//! DeviceRadixSort::SortKeys performance across different CUDA architectures
-//! for uniform-random `uint32` keys.
-//! @plots_below
+//! Performance
+//! --------------------------------------------------
 //!
-//! @image html lsb_radix_sort_int32_keys.png
+//! @linear_performance{radix sort}
+//!
+//! @endrst
 struct DeviceRadixSort
 {
 private:
-  template <bool IsDescending, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
+  template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
     ::cuda::std::false_type,
     void* d_temp_storage,
@@ -137,7 +156,7 @@ private:
     int end_bit,
     cudaStream_t stream);
 
-  template <bool IsDescending, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
+  template <SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
     ::cuda::std::true_type,
     void* d_temp_storage,
@@ -151,21 +170,20 @@ private:
     int end_bit,
     cudaStream_t stream)
   {
-    return DispatchRadixSort<IsDescending, KeyT, ValueT, OffsetT, DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>, DecomposerT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        static_cast<OffsetT>(num_items),
-        begin_bit,
-        end_bit,
-        is_overwrite_okay,
-        stream,
-        decomposer);
+    return DispatchRadixSort<Order, KeyT, ValueT, OffsetT, DecomposerT>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream,
+      decomposer);
   }
 
-  template <bool IsDescending, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
+  template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
     ::cuda::std::false_type,
     void* d_temp_storage,
@@ -177,7 +195,7 @@ private:
     DecomposerT decomposer,
     cudaStream_t stream);
 
-  template <bool IsDescending, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
+  template <SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
     ::cuda::std::true_type,
     void* d_temp_storage,
@@ -192,7 +210,7 @@ private:
     constexpr int begin_bit = 0;
     const int end_bit       = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
 
-    return DeviceRadixSort::custom_radix_sort<IsDescending>(
+    return DeviceRadixSort::custom_radix_sort<Order>(
       ::cuda::std::true_type{},
       d_temp_storage,
       temp_storage_bytes,
@@ -214,41 +232,36 @@ private:
 
 public:
   //! @name KeyT-value pairs
-  //@{
+  //! @{
 
-  //! @brief Sorts key-value pairs into ascending order.
-  //!        (`~2N` auxiliary storage required)
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
-  //! @par
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys_in,    d_keys_in    + num_items)`
-  //!   - `[d_keys_out,   d_keys_out   + num_items)`
-  //!   - `[d_values_in,  d_values_in  + num_items)`
-  //!   - `[d_values_out, d_values_out + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!
+  //!   - ``[d_keys_in,    d_keys_in    + num_items)``
+  //!   - ``[d_keys_out,   d_keys_out   + num_items)``
+  //!   - ``[d_values_in,  d_values_in  + num_items)``
+  //!   - ``[d_values_out, d_values_out + num_items)``
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP For sorting using only `O(P)` temporary storage, see
+  //! - @devicestorageNP For sorting using only ``O(P)`` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! The following charts illustrate saturated sorting performance across
-  //! different CUDA architectures for uniform-random `uint32, uint32` and
-  //! `uint64, uint64` pairs, respectively.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @image html lsb_radix_sort_int32_pairs.png
-  //! @image html lsb_radix_sort_int64_pairs.png
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
   //!
-  //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
-  //! @code
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -288,12 +301,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -317,7 +330,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., sizeof(unsigned int) * 8)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -335,7 +348,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -343,14 +356,14 @@ public:
     //      assert that the key type is fundamental.
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchRadixSort<false, KeyT, ValueT, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Ascending, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -384,7 +397,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -425,12 +438,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -460,16 +473,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               const KeyT* d_keys_in,
@@ -482,7 +495,7 @@ public:
               int end_bit,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -492,15 +505,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -533,7 +545,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -574,12 +586,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -608,9 +620,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               const KeyT* d_keys_in,
@@ -621,7 +633,7 @@ public:
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -631,15 +643,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -651,10 +662,9 @@ public:
       stream);
   }
 
-  //! @brief Sorts key-value pairs into ascending order.
-  //!        (`~N` auxiliary storage required)
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
   //!
-  //! @par
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -663,32 +673,29 @@ public:
   //!   sorting operation.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys.Current(),     d_keys.Current()     + num_items)`
-  //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
-  //!   - `[d_values.Current(),   d_values.Current()   + num_items)`
-  //!   - `[d_values.Alternate(), d_values.Alternate() + num_items)`
+  //!
+  //!   - ``[d_keys.Current(),     d_keys.Current()     + num_items)``
+  //!   - ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
+  //!   - ``[d_values.Current(),   d_values.Current()   + num_items)``
+  //!   - ``[d_values.Alternate(), d_values.Alternate() + num_items)``
+  //!
   //! - Upon completion, the sorting operation will update the "current"
   //!   indicator within each DoubleBuffer wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! The following charts illustrate saturated sorting performance across
-  //! different CUDA architectures for uniform-random `uint32, uint32` and
-  //! `uint64, uint64` pairs, respectively.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @image html lsb_radix_sort_int32_pairs.png
-  //! @image html lsb_radix_sort_int64_pairs.png
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
   //!
-  //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
   //! @code
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
@@ -734,11 +741,11 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -759,7 +766,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -775,14 +782,14 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
-    return DispatchRadixSort<false, KeyT, ValueT, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Ascending, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -811,7 +818,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -852,12 +859,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -883,9 +890,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               DoubleBuffer<KeyT>& d_keys,
@@ -894,7 +901,7 @@ public:
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -905,9 +912,8 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -947,7 +953,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -988,12 +994,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1020,16 +1026,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               DoubleBuffer<KeyT>& d_keys,
@@ -1040,7 +1046,7 @@ public:
               int end_bit,
               cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1051,9 +1057,8 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1067,34 +1072,35 @@ public:
       stream);
   }
 
-  //! @brief Sorts key-value pairs into descending order.
-  //!        (`~2N` auxiliary storage required).
+  //! @rst
+  //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
   //!
-  //! @par
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys_in,    d_keys_in    + num_items)`
-  //!   - `[d_keys_out,   d_keys_out   + num_items)`
-  //!   - `[d_values_in,  d_values_in  + num_items)`
-  //!   - `[d_values_out, d_values_out + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!
+  //!   - ``[d_keys_in,    d_keys_in    + num_items)``
+  //!   - ``[d_keys_out,   d_keys_out   + num_items)``
+  //!   - ``[d_values_in,  d_values_in  + num_items)``
+  //!   - ``[d_values_out, d_values_out + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP  For sorting using only `O(P)` temporary storage, see
+  //! - @devicestorageNP  For sorting using only ``O(P)`` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! Performance is similar to DeviceRadixSort::SortPairs.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
-  //! @code
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
+  //!
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -1136,12 +1142,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1165,7 +1171,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1183,20 +1189,20 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchRadixSort<true, KeyT, ValueT, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Descending, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -1222,7 +1228,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1263,12 +1269,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1298,16 +1304,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1321,7 +1327,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1332,15 +1338,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1373,7 +1378,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1414,12 +1419,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1448,9 +1453,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1462,7 +1467,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1473,15 +1478,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1493,10 +1497,9 @@ public:
       stream);
   }
 
-  //! @brief Sorts key-value pairs into descending order.
-  //!        (`~N` auxiliary storage required).
+  //! @rst
+  //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
   //!
-  //! @par
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -1505,28 +1508,30 @@ public:
   //!   sorting operation.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys.Current(),     d_keys.Current()     + num_items)`
-  //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
-  //!   - `[d_values.Current(),   d_values.Current()   + num_items)`
-  //!   - `[d_values.Alternate(), d_values.Alternate() + num_items)`
+  //!
+  //!   - ``[d_keys.Current(),     d_keys.Current()     + num_items)``
+  //!   - ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
+  //!   - ``[d_values.Current(),   d_values.Current()   + num_items)``
+  //!   - ``[d_values.Alternate(), d_values.Alternate() + num_items)``
+  //!
   //! - Upon completion, the sorting operation will update the "current"
   //!   indicator within each DoubleBuffer wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! Performance is similar to DeviceRadixSort::SortPairs.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int`
-  //! keys with associated vector of `int` values.
-  //! @par
-  //! @code
+  //! The code snippet below illustrates the sorting of a device vector of ``int``
+  //! keys with associated vector of ``int`` values.
+  //! @endrst
+  //!
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -1570,12 +1575,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1596,7 +1601,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -1612,14 +1617,14 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
-    return DispatchRadixSort<true, KeyT, ValueT, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Descending, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -1648,7 +1653,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1689,12 +1694,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1720,9 +1725,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1732,7 +1737,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1743,9 +1748,8 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1785,7 +1789,7 @@ public:
   //! - @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -1826,12 +1830,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -1858,16 +1862,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1879,7 +1883,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1890,9 +1894,8 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1906,43 +1909,37 @@ public:
       stream);
   }
 
-  //@}  end member group
-  /******************************************************************/ /**
-                                                                        * @name Keys-only
-                                                                        *********************************************************************/
-  //@{
+  //! @}  end member group
+  //! @name Keys-only
+  //! @{
 
-  //! @brief Sorts keys into ascending order.
-  //!        (`~2N` auxiliary storage required)
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
-  //! @par
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys_in,    d_keys_in    + num_items)`
-  //!   - `[d_keys_out,   d_keys_out   + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!
+  //!   - ``[d_keys_in,    d_keys_in    + num_items)``
+  //!   - ``[d_keys_out,   d_keys_out   + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP  For sorting using only `O(P)` temporary storage, see
+  //! - @devicestorageNP  For sorting using only ``O(P)`` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! The following charts illustrate saturated sorting performance across
-  //! different CUDA architectures for uniform-random `uint32` and `uint64`
-  //! keys, respectively.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @image html lsb_radix_sort_int32_keys.png
-  //! @image html lsb_radix_sort_int64_keys.png
-  //!
-  //! @par Snippet
   //! The code snippet below illustrates the sorting of a device vector of
-  //! `int` keys.
-  //! @par
-  //! @code
+  //! ``int`` keys.
+  //! @endrst
+  //!
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -1979,12 +1976,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2001,7 +1998,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2017,21 +2014,21 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<false, KeyT, NullType, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Ascending, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2063,7 +2060,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2101,12 +2098,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2129,16 +2126,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              const KeyT* d_keys_in,
@@ -2149,7 +2146,7 @@ public:
              int end_bit,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2160,15 +2157,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2202,7 +2198,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2240,12 +2236,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2267,9 +2263,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              const KeyT* d_keys_in,
@@ -2278,7 +2274,7 @@ public:
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2289,15 +2285,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2309,40 +2304,37 @@ public:
       stream);
   }
 
-  //! @brief Sorts keys into ascending order. (`~N` auxiliary storage required).
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
   //!
-  //! @par
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys.Current(),     d_keys.Current()     + num_items)`
-  //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!
+  //!   - ``[d_keys.Current(),     d_keys.Current()     + num_items)``
+  //!   - ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
+  //!
   //! - Upon completion, the sorting operation will update the "current"
   //!   indicator within the DoubleBuffer wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! The following charts illustrate saturated sorting performance across
-  //! different CUDA architectures for uniform-random `uint32` and `uint64`
-  //! keys, respectively.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @image html lsb_radix_sort_int32_keys.png
-  //! @image html lsb_radix_sort_int64_keys.png
-  //!
-  //! @par Snippet
   //! The code snippet below illustrates the sorting of a device vector of
-  //! `int` keys.
-  //! @par
-  //! @code
+  //! ``int`` keys.
+  //! @endrst
+  //!
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -2379,12 +2371,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -2400,7 +2392,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2415,7 +2407,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2425,7 +2417,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<false, KeyT, NullType, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Ascending, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -2450,7 +2442,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2488,12 +2480,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -2514,9 +2506,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              DoubleBuffer<KeyT>& d_keys,
@@ -2524,7 +2516,7 @@ public:
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2535,10 +2527,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2574,7 +2565,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2612,12 +2603,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -2639,16 +2630,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              DoubleBuffer<KeyT>& d_keys,
@@ -2658,7 +2649,7 @@ public:
              int end_bit,
              cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2669,10 +2660,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2686,32 +2676,32 @@ public:
       stream);
   }
 
-  //! @brief Sorts keys into descending order.
-  //!        (`~2N` auxiliary storage required).
+  //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
   //!
-  //! @par
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys_in,    d_keys_in    + num_items)`
-  //!   - `[d_keys_out,   d_keys_out   + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!
+  //!   - ``[d_keys_in,    d_keys_in    + num_items)``
+  //!   - ``[d_keys_out,   d_keys_out   + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP For sorting using only `O(P)` temporary storage, see
+  //! - @devicestorageNP For sorting using only ``O(P)`` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! Performance is similar to DeviceRadixSort::SortKeys.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @par Snippet
   //! The code snippet below illustrates the sorting of a device vector of
-  //! `int` keys.
-  //! @par
-  //! @code
+  //! ``int`` keys.
+  //! @endrst
+  //!
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -2739,7 +2729,6 @@ public:
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
   //!
   //! // d_keys_out            <-- [9, 8, 7, 6, 5, 3, 0]s
-  //!
   //! @endcode
   //!
   //! @tparam KeyT
@@ -2749,12 +2738,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2771,7 +2760,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -2787,20 +2776,20 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Descending, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -2824,7 +2813,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2862,12 +2851,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2890,16 +2879,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -2911,7 +2900,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -2922,15 +2911,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2961,7 +2949,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -2999,12 +2987,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -3026,9 +3014,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -3038,7 +3026,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3049,15 +3037,14 @@ public:
                   "arithmetic types");
 
     // We cast away const-ness, but will *not* write to these arrays.
-    // `DispatchRadixSort::Dispatch` will allocate temporary storage and
-    // create a new double-buffer internally when the `is_overwrite_ok` flag
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -3069,35 +3056,36 @@ public:
       stream);
   }
 
-  //! @brief Sorts keys into descending order.
-  //!        (`~N` auxiliary storage required).
+  //! @rst
+  //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
   //!
-  //! @par
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
-  //!   - `[d_keys.Current(),     d_keys.Current()     + num_items)`
-  //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!
+  //!   - ``[d_keys.Current(),     d_keys.Current()     + num_items)``
+  //!   - ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
+  //!
   //! - Upon completion, the sorting operation will update the "current"
   //!   indicator within the DoubleBuffer wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
   //!
-  //! @par Performance
-  //! Performance is similar to DeviceRadixSort::SortKeys.
+  //! Snippet
+  //! --------------------------------------------------
   //!
-  //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `i`nt keys.
-  //! @par
-  //! @code
+  //! The code snippet below illustrates the sorting of a device vector of ``int`` keys.
+  //! @endrst
+  //!
+  //! @code{.cpp}
   //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
@@ -3134,12 +3122,12 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -3155,7 +3143,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `sizeof(unsigned int) * 8`)
+  //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
@@ -3170,7 +3158,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -3180,7 +3168,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
+    return DispatchRadixSort<SortOrder::Descending, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -3205,7 +3193,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -3243,12 +3231,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -3269,9 +3257,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -3280,7 +3268,7 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3291,10 +3279,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -3330,7 +3317,7 @@ public:
   //! * @devicestorage
   //!
   //! Snippet
-  //! ==========================================================================
+  //! --------------------------------------------------
   //!
   //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
   //! ``custom_t`` objects, we have to tell CUB about relevant members of the
@@ -3368,12 +3355,12 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
+  //!   required allocation size is written to ``temp_storage_bytes`` and no work
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
@@ -3395,16 +3382,16 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
-  //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
+  //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
   //! @param[in] stream
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -3415,7 +3402,7 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3426,10 +3413,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,

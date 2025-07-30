@@ -10,7 +10,6 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
-// UNSUPPORTED: nvcc-11
 
 // <cuda/barrier>
 
@@ -29,18 +28,23 @@ namespace cde = cuda::device::experimental;
 __global__ void test_bulk_tensor(CUtensorMap* map)
 {
   __shared__ int smem;
-  __shared__ barrier* bar;
+#if _CCCL_CUDA_COMPILER(CLANG)
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
+  __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
-    init(bar, blockDim.x);
+    init(&bar, blockDim.x);
   }
   __syncthreads();
 
-  cde::cp_async_bulk_tensor_1d_global_to_shared(&smem, map, 0, *bar);
-  cde::cp_async_bulk_tensor_2d_global_to_shared(&smem, map, 0, 0, *bar);
-  cde::cp_async_bulk_tensor_3d_global_to_shared(&smem, map, 0, 0, 0, *bar);
-  cde::cp_async_bulk_tensor_4d_global_to_shared(&smem, map, 0, 0, 0, 0, *bar);
-  cde::cp_async_bulk_tensor_5d_global_to_shared(&smem, map, 0, 0, 0, 0, 0, *bar);
+  cde::cp_async_bulk_tensor_1d_global_to_shared(&smem, map, 0, bar);
+  cde::cp_async_bulk_tensor_2d_global_to_shared(&smem, map, 0, 0, bar);
+  cde::cp_async_bulk_tensor_3d_global_to_shared(&smem, map, 0, 0, 0, bar);
+  cde::cp_async_bulk_tensor_4d_global_to_shared(&smem, map, 0, 0, 0, 0, bar);
+  cde::cp_async_bulk_tensor_5d_global_to_shared(&smem, map, 0, 0, 0, 0, 0, bar);
 
   cde::cp_async_bulk_tensor_1d_shared_to_global(map, 0, &smem);
   cde::cp_async_bulk_tensor_2d_shared_to_global(map, 0, 0, &smem);
@@ -52,14 +56,15 @@ __global__ void test_bulk_tensor(CUtensorMap* map)
 __global__ void test_bulk(void* gmem)
 {
   __shared__ int smem;
-  __shared__ barrier* bar;
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
   if (threadIdx.x == 0)
   {
-    init(bar, blockDim.x);
+    init(&bar, blockDim.x);
   }
   __syncthreads();
 
-  cde::cp_async_bulk_global_to_shared(&smem, gmem, 1024, *bar);
+  cde::cp_async_bulk_global_to_shared(&smem, gmem, 1024, bar);
   cde::cp_async_bulk_shared_to_global(gmem, &smem, 1024);
 }
 

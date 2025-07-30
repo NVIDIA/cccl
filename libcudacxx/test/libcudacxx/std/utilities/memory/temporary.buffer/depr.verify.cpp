@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // Ensure allocator<void> is deprecated
 
 #include <cuda/std/__algorithm_>

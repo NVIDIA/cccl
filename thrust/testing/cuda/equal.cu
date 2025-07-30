@@ -59,7 +59,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
 
     // different predicates
     equal_kernel<<<1, 1>>>(
-      exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), thrust::less<T>(), d_result.begin());
+      exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::less<T>(), d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
       ASSERT_EQUAL(cudaSuccess, err);
@@ -68,7 +68,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
     ASSERT_EQUAL(d_result[0], true);
 
     equal_kernel<<<1, 1>>>(
-      exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), thrust::greater<T>(), d_result.begin());
+      exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::greater<T>(), d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
       ASSERT_EQUAL(cudaSuccess, err);
@@ -110,9 +110,10 @@ void TestEqualCudaStreams()
   ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 3, v2.begin()), true);
   ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 4, v2.begin()), false);
 
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), thrust::less_equal<int>()),
+  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<int>()),
                true);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), thrust::greater<int>()), false);
+  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<int>()),
+               false);
 
   cudaStreamDestroy(s);
 }

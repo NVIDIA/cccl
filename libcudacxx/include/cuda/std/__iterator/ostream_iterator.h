@@ -21,23 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT ostream_iterator
-#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
-#endif
+#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 public:
   using iterator_category = output_iterator_tag;
   using value_type        = void;
@@ -57,15 +58,15 @@ private:
   const char_type* __delim_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator(ostream_type& __s) noexcept
+  _CCCL_API inline ostream_iterator(ostream_type& __s) noexcept
       : __out_stream_(_CUDA_VSTD::addressof(__s))
       , __delim_(nullptr)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
+  _CCCL_API inline ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
       : __out_stream_(_CUDA_VSTD::addressof(__s))
       , __delim_(__delimiter)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator=(const _Tp& __value)
+  _CCCL_API inline ostream_iterator& operator=(const _Tp& __value)
   {
     *__out_stream_ << __value;
     if (__delim_)
@@ -75,20 +76,23 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator*()
+  _CCCL_API inline ostream_iterator& operator*()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator++()
+  _CCCL_API inline ostream_iterator& operator++()
   {
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator++(int)
+  _CCCL_API inline ostream_iterator& operator++(int)
   {
     return *this;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_OSTREAM_ITERATOR_H

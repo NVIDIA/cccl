@@ -44,15 +44,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use cuda::std::swap")
-_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
-{
-  T temp = lhs;
-  lhs    = rhs;
-  rhs    = temp;
-}
-
 /**
  * @brief Sorts data using odd-even sort method
  *
@@ -86,12 +77,12 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THRE
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
-  constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-#pragma unroll
+  _CCCL_SORT_MAYBE_UNROLL()
   for (int i = 0; i < ITEMS_PER_THREAD; ++i)
   {
-#pragma unroll
+    _CCCL_SORT_MAYBE_UNROLL()
     for (int j = 1 & i; j < ITEMS_PER_THREAD - 1; j += 2)
     {
       if (compare_op(keys[j + 1], keys[j]))

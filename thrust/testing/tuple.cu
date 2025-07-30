@@ -498,7 +498,6 @@ void TestTupleSwap()
 }
 DECLARE_UNITTEST(TestTupleSwap);
 
-#if _CCCL_STD_VER >= 2017
 void TestTupleStructuredBindings()
 {
   const int a = 0;
@@ -526,104 +525,20 @@ void TestTupleCTAD(void)
   ASSERT_EQUAL(c, c2);
 }
 DECLARE_UNITTEST(TestTupleCTAD);
-#endif // _CCCL_STD_VER >= 2017
 
-// Ensure that we are backwards compatible with the old thrust::tuple implementation
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-static_assert(
-  thrust::tuple_size<thrust::tuple<thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type>>::value
-    == 0,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type>>::value
-    == 1,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int,
-                                   int,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type>>::value
-    == 2,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int,
-                                   int,
-                                   int,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type>>::value
-    == 3,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int,
-                                   int,
-                                   int,
-                                   int,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type>>::value
-    == 4,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int,
-                                   int,
-                                   int,
-                                   int,
-                                   int,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type,
-                                   thrust::null_type>>::value
-    == 5,
-  "");
-static_assert(
-  thrust::tuple_size<
-    thrust::
-      tuple<int, int, int, int, int, int, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value
-    == 6,
-  "");
-static_assert(
-  thrust::tuple_size<
-    thrust::tuple<int, int, int, int, int, int, int, thrust::null_type, thrust::null_type, thrust::null_type>>::value
-    == 7,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, thrust::null_type, thrust::null_type>>::value
-    == 8,
-  "");
-static_assert(
-  thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, int, thrust::null_type>>::value == 9, "");
-static_assert(thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, int, int>>::value == 10, "");
-_CCCL_SUPPRESS_DEPRECATED_POP
+void TestTupleOfIteratorReferenceAssignsFromConst()
+{
+  // tuple of mutable references
+  thrust::device_vector<int> v(10);
+  using devref = decltype(v[0]);
+  auto refs    = thrust::detail::tuple_of_iterator_references<devref>{thrust::tuple<devref>(v[0])};
+
+  // tuple of const references
+  const thrust::device_vector<int> cv(10);
+  using devcref = decltype(cv[0]);
+  auto crefs    = thrust::detail::tuple_of_iterator_references<devcref>{thrust::tuple<devcref>(cv[0])};
+
+  // should compile:
+  refs = crefs;
+}
+DECLARE_UNITTEST(TestTupleOfIteratorReferenceAssignsFromConst);

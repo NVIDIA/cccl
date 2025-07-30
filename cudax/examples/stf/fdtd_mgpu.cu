@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf;
 
 // FIXME : MSVC has trouble with box constructors
 #if !_CCCL_COMPILER(MSVC)
-void write_vtk_2D(const std::string& filename, slice<double, 3> Ez, double dx, double dy, double /*unused*/)
+void write_vtk_2D(const std::string& filename, slice<const double, 3> Ez, double dx, double dy, double /*unused*/)
 {
   FILE* f = fopen(filename.c_str(), "w");
 
@@ -128,7 +128,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     switch (atoi(argv[3]))
     {
       case 0:
-        where = exec_place::host;
+        where = exec_place::host();
         break;
       case 1:
         where = exec_place::current_device();

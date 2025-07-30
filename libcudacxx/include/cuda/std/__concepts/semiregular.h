@@ -24,16 +24,18 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.object]
 
 template <class _Tp>
 concept semiregular = copyable<_Tp> && default_initializable<_Tp>;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [concept.object]
 
@@ -43,8 +45,10 @@ _CCCL_CONCEPT_FRAGMENT(__semiregular_, requires()(requires(copyable<_Tp>), requi
 template <class _Tp>
 _CCCL_CONCEPT semiregular = _CCCL_FRAGMENT(__semiregular_, _Tp);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_SEMIREGULAR_H

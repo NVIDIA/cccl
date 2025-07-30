@@ -21,28 +21,22 @@
 template <class T, class U>
 __host__ __device__ void test_add_lvalue_reference()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::add_lvalue_reference<T>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(U, cuda::std::add_lvalue_reference_t<T>);
-#endif
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::add_lvalue_reference<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::add_lvalue_reference_t<T>>);
 }
 
 template <class F>
 __host__ __device__ void test_function0()
 {
-  ASSERT_SAME_TYPE(F&, typename cuda::std::add_lvalue_reference<F>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(F&, cuda::std::add_lvalue_reference_t<F>);
-#endif
+  static_assert(cuda::std::is_same_v<F&, typename cuda::std::add_lvalue_reference<F>::type>);
+  static_assert(cuda::std::is_same_v<F&, cuda::std::add_lvalue_reference_t<F>>);
 }
 
 template <class F>
 __host__ __device__ void test_function1()
 {
-  ASSERT_SAME_TYPE(F, typename cuda::std::add_lvalue_reference<F>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(F, cuda::std::add_lvalue_reference_t<F>);
-#endif
+  static_assert(cuda::std::is_same_v<F, typename cuda::std::add_lvalue_reference<F>::type>);
+  static_assert(cuda::std::is_same_v<F, cuda::std::add_lvalue_reference_t<F>>);
 }
 
 struct Foo
@@ -52,7 +46,7 @@ int main(int, char**)
 {
   test_add_lvalue_reference<void, void>();
   test_add_lvalue_reference<int, int&>();
-  test_add_lvalue_reference<int[3], int(&)[3]>();
+  test_add_lvalue_reference<int[3], int (&)[3]>();
   test_add_lvalue_reference<int&, int&>();
   test_add_lvalue_reference<const int&, const int&>();
   test_add_lvalue_reference<int*, int*&>();
@@ -63,7 +57,7 @@ int main(int, char**)
   //  The term of art is "a referenceable type", which a cv- or ref-qualified function is not.
   test_function0<void()>();
   test_function1<void() const>();
-  test_function1<void()&>();
+  test_function1<void() &>();
   test_function1<void() &&>();
   test_function1<void() const&>();
   test_function1<void() const&&>();
@@ -71,7 +65,7 @@ int main(int, char**)
   //  But a cv- or ref-qualified member function *is* "a referenceable type"
   test_function0<void (Foo::*)()>();
   test_function0<void (Foo::*)() const>();
-  test_function0<void (Foo::*)()&>();
+  test_function0<void (Foo::*)() &>();
   test_function0<void (Foo::*)() &&>();
   test_function0<void (Foo::*)() const&>();
   test_function0<void (Foo::*)() const&&>();

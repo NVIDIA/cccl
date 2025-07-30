@@ -42,13 +42,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
-#include <iterator>
-#include <limits>
-
-#include <stdio.h>
+#include <cuda/std/array>
+#include <cuda/std/iterator>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -190,15 +188,15 @@ struct DeviceHistogram
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      &d_histogram,
-      &num_levels,
-      &lower_level,
-      &upper_level,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{lower_level},
+      ::cuda::std::array{upper_level},
       num_samples,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * num_samples,
@@ -346,10 +344,10 @@ struct DeviceHistogram
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      &d_histogram,
-      &num_levels,
-      &lower_level,
-      &upper_level,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{lower_level},
+      ::cuda::std::array{upper_level},
       num_row_samples,
       num_rows,
       row_stride_bytes,
@@ -501,15 +499,15 @@ struct DeviceHistogram
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_pixels,
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
     return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -522,6 +520,49 @@ struct DeviceHistogram
       num_pixels,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * NUM_CHANNELS * num_pixels,
+      stream);
+  }
+
+private:
+  template <size_t N, typename T>
+  _CCCL_HOST_DEVICE static auto to_array(T* ptr)
+  {
+    ::cuda::std::array<::cuda::std::remove_const_t<T>, N> a{};
+    ::cuda::std::copy(ptr, ptr + N, a.begin());
+    return a;
+  }
+
+public:
+  //! Deprecate [Since 3.0]
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
+  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    OffsetT num_pixels,
+    cudaStream_t stream = 0)
+  {
+    /// The sample value type of the input iterator
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
+      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
+      to_array<NUM_ACTIVE_CHANNELS>(lower_level),
+      to_array<NUM_ACTIVE_CHANNELS>(upper_level),
+      num_pixels,
       stream);
   }
 
@@ -688,22 +729,22 @@ struct DeviceHistogram
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
-    Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
+    if constexpr (sizeof(OffsetT) > sizeof(int))
     {
       if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
       {
@@ -737,6 +778,41 @@ struct DeviceHistogram
       (OffsetT) (row_stride_bytes / sizeof(SampleT)),
       stream,
       is_byte_sample);
+  }
+
+  //! Deprecate [Since 3.0]
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
+  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    size_t row_stride_bytes,
+    cudaStream_t stream = 0)
+  {
+    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
+      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
+      to_array<NUM_ACTIVE_CHANNELS>(lower_level),
+      to_array<NUM_ACTIVE_CHANNELS>(upper_level),
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      stream);
   }
 
   //! @}  end member group
@@ -850,14 +926,14 @@ struct DeviceHistogram
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      &d_histogram,
-      &num_levels,
-      &d_levels,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{d_levels},
       num_samples,
       (OffsetT) 1,
       (size_t) (sizeof(SampleT) * num_samples),
@@ -993,9 +1069,9 @@ struct DeviceHistogram
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      &d_histogram,
-      &num_levels,
-      &d_levels,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{d_levels},
       num_row_samples,
       num_rows,
       row_stride_bytes,
@@ -1138,14 +1214,14 @@ struct DeviceHistogram
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_pixels,
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -1157,6 +1233,35 @@ struct DeviceHistogram
       num_pixels,
       (OffsetT) 1,
       (size_t) (sizeof(SampleT) * NUM_CHANNELS * num_pixels),
+      stream);
+  }
+
+  //! Deprecate [Since 3.0]
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
+  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    OffsetT num_pixels,
+    cudaStream_t stream = 0)
+  {
+    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
+      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
+      to_array<NUM_ACTIVE_CHANNELS>(d_levels),
+      num_pixels,
       stream);
   }
 
@@ -1315,21 +1420,21 @@ struct DeviceHistogram
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
-    Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
+    if constexpr (sizeof(OffsetT) > sizeof(int))
     {
       if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
       {
@@ -1361,6 +1466,39 @@ struct DeviceHistogram
       (OffsetT) (row_stride_bytes / sizeof(SampleT)),
       stream,
       is_byte_sample);
+  }
+
+  //! Deprecate [Since 3.0]
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
+  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    size_t row_stride_bytes,
+    cudaStream_t stream = 0)
+  {
+    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
+      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
+      to_array<NUM_ACTIVE_CHANNELS>(d_levels),
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      stream);
   }
 
   //@}  end member group

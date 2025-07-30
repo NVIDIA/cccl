@@ -6,8 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 // <functional>
 
@@ -45,7 +44,7 @@ int main(int, char**)
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
   static_assert((cuda::std::is_same<F::result_type, int>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert((f(0xEA95) & 0xFFFF) == 0x156A);
   assert((f(0x58D3) & 0xFFFF) == 0xA72C);
   assert((f(0) & 0xFFFF) == 0xFFFF);

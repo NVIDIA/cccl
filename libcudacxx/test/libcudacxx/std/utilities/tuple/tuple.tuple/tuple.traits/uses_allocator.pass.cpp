@@ -13,8 +13,6 @@
 // template <class... Types, class Alloc>
 //   struct uses_allocator<tuple<Types...>, Alloc> : true_type { };
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
@@ -26,19 +24,19 @@ struct A
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<> T;
+    using T = cuda::std::tuple<>;
     static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
   }
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
   }
   {
-    typedef cuda::std::tuple<char, int> T;
+    using T = cuda::std::tuple<char, int>;
     static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
   }
   {
-    typedef cuda::std::tuple<double&, char, int> T;
+    using T = cuda::std::tuple<double&, char, int>;
     static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
   }
 

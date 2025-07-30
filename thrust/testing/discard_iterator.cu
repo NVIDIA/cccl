@@ -4,6 +4,34 @@
 
 #include <unittest/unittest.h>
 
+// ensure that we properly support thrust::discard_iterator from cuda::std
+void TestDiscardIteratorTraits()
+{
+  using it       = thrust::discard_iterator<>;
+  using traits   = cuda::std::iterator_traits<it>;
+  using category = thrust::detail::iterator_category_with_system_and_traversal<::cuda::std::random_access_iterator_tag,
+                                                                               thrust::any_system_tag,
+                                                                               thrust::random_access_traversal_tag>;
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, thrust::detail::any_assign>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::any_assign&>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
+
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(cuda::std::output_iterator<it, int>);
+  static_assert(cuda::std::input_iterator<it>);
+  static_assert(cuda::std::forward_iterator<it>);
+  static_assert(cuda::std::bidirectional_iterator<it>);
+  static_assert(cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
+}
+DECLARE_UNITTEST(TestDiscardIteratorTraits);
+
 void TestDiscardIteratorIncrement()
 {
   thrust::discard_iterator<> lhs(0);
@@ -93,7 +121,7 @@ void TestZippedDiscardIterator()
   using IteratorTuple2 = tuple<int*, discard_iterator<>>;
   using ZipIterator2   = zip_iterator<IteratorTuple2>;
 
-  ZipIterator2 z_iter_first = thrust::make_zip_iterator(thrust::make_tuple((int*) 0, thrust::make_discard_iterator()));
+  ZipIterator2 z_iter_first = thrust::make_zip_iterator((int*) 0, thrust::make_discard_iterator());
   ZipIterator2 z_iter_last  = z_iter_first + 10;
 
   for (; z_iter_first != z_iter_last; ++z_iter_first)

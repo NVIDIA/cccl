@@ -16,16 +16,16 @@ void TestScalarLowerBoundDescendingSimple()
 
   Vector vec{8, 7, 5, 2, 0};
 
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::lower_bound(vec.begin(), vec.end(), T{0}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::lower_bound(vec.begin(), vec.end(), T{1}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::lower_bound(vec.begin(), vec.end(), T{2}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::lower_bound(vec.begin(), vec.end(), T{3}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::lower_bound(vec.begin(), vec.end(), T{4}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::lower_bound(vec.begin(), vec.end(), T{5}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::lower_bound(vec.begin(), vec.end(), T{6}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 1, thrust::lower_bound(vec.begin(), vec.end(), T{7}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::lower_bound(vec.begin(), vec.end(), T{8}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::lower_bound(vec.begin(), vec.end(), T{9}, thrust::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::lower_bound(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::lower_bound(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::lower_bound(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::lower_bound(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::lower_bound(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::lower_bound(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::lower_bound(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 1, thrust::lower_bound(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::lower_bound(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::lower_bound(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestScalarLowerBoundDescendingSimple);
 
@@ -36,16 +36,16 @@ void TestScalarUpperBoundDescendingSimple()
 
   Vector vec{8, 7, 5, 2, 0};
 
-  ASSERT_EQUAL_QUIET(vec.begin() + 5, thrust::upper_bound(vec.begin(), vec.end(), T{0}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::upper_bound(vec.begin(), vec.end(), T{1}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::upper_bound(vec.begin(), vec.end(), T{2}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::upper_bound(vec.begin(), vec.end(), T{3}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::upper_bound(vec.begin(), vec.end(), T{4}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::upper_bound(vec.begin(), vec.end(), T{5}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::upper_bound(vec.begin(), vec.end(), T{6}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::upper_bound(vec.begin(), vec.end(), T{7}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 1, thrust::upper_bound(vec.begin(), vec.end(), T{8}, thrust::greater<T>()));
-  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::upper_bound(vec.begin(), vec.end(), T{9}, thrust::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 5, thrust::upper_bound(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::upper_bound(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::upper_bound(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::upper_bound(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::upper_bound(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::upper_bound(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::upper_bound(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::upper_bound(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 1, thrust::upper_bound(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::upper_bound(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestScalarUpperBoundDescendingSimple);
 
@@ -56,16 +56,16 @@ void TestScalarBinarySearchDescendingSimple()
 
   Vector vec{8, 7, 5, 2, 0};
 
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{0}, thrust::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{1}, thrust::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{2}, thrust::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{3}, thrust::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{4}, thrust::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{5}, thrust::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{6}, thrust::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{7}, thrust::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{8}, thrust::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{9}, thrust::greater<T>()));
+  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
+  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestScalarBinarySearchDescendingSimple);
 
@@ -76,26 +76,46 @@ void TestScalarEqualRangeDescendingSimple()
 
   Vector vec{8, 7, 5, 2, 0};
 
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::equal_range(vec.begin(), vec.end(), T{0}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::equal_range(vec.begin(), vec.end(), T{1}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::equal_range(vec.begin(), vec.end(), T{2}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::equal_range(vec.begin(), vec.end(), T{3}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::equal_range(vec.begin(), vec.end(), T{4}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::equal_range(vec.begin(), vec.end(), T{5}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::equal_range(vec.begin(), vec.end(), T{6}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 1, thrust::equal_range(vec.begin(), vec.end(), T{7}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::equal_range(vec.begin(), vec.end(), T{8}, thrust::greater<T>()).first);
-  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::equal_range(vec.begin(), vec.end(), T{9}, thrust::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 4,
+                     thrust::equal_range(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 4,
+                     thrust::equal_range(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 3,
+                     thrust::equal_range(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 3,
+                     thrust::equal_range(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 3,
+                     thrust::equal_range(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 2,
+                     thrust::equal_range(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 2,
+                     thrust::equal_range(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 1,
+                     thrust::equal_range(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 0,
+                     thrust::equal_range(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()).first);
+  ASSERT_EQUAL_QUIET(vec.begin() + 0,
+                     thrust::equal_range(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()).first);
 
-  ASSERT_EQUAL_QUIET(vec.begin() + 5, thrust::equal_range(vec.begin(), vec.end(), T{0}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::equal_range(vec.begin(), vec.end(), T{1}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 4, thrust::equal_range(vec.begin(), vec.end(), T{2}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::equal_range(vec.begin(), vec.end(), T{3}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::equal_range(vec.begin(), vec.end(), T{4}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 3, thrust::equal_range(vec.begin(), vec.end(), T{5}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::equal_range(vec.begin(), vec.end(), T{6}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 2, thrust::equal_range(vec.begin(), vec.end(), T{7}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 1, thrust::equal_range(vec.begin(), vec.end(), T{8}, thrust::greater<T>()).second);
-  ASSERT_EQUAL_QUIET(vec.begin() + 0, thrust::equal_range(vec.begin(), vec.end(), T{9}, thrust::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 5,
+                     thrust::equal_range(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 4,
+                     thrust::equal_range(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 4,
+                     thrust::equal_range(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 3,
+                     thrust::equal_range(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 3,
+                     thrust::equal_range(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 3,
+                     thrust::equal_range(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 2,
+                     thrust::equal_range(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 2,
+                     thrust::equal_range(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 1,
+                     thrust::equal_range(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()).second);
+  ASSERT_EQUAL_QUIET(vec.begin() + 0,
+                     thrust::equal_range(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()).second);
 }
 DECLARE_VECTOR_UNITTEST(TestScalarEqualRangeDescendingSimple);

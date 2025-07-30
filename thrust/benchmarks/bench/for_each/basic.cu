@@ -53,9 +53,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   square_t<T> op{};
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::for_each(policy(alloc, launch), in.begin(), in.end(), op);
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::for_each(policy(alloc, launch), in.begin(), in.end(), op);
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

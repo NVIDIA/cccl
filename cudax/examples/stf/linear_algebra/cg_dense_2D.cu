@@ -34,7 +34,7 @@ public:
 
   void fill(const std::function<double(int, int)>& f)
   {
-    ctx.task(exec_place::host, handle->write())->*[&f](cudaStream_t stream, auto ds) {
+    ctx.task(exec_place::host(), handle->write())->*[&f](cudaStream_t stream, auto ds) {
       cuda_safe_call(cudaStreamSynchronize(stream));
 
       for (size_t col = 0; col < ds.extent(1); col++)
@@ -65,7 +65,7 @@ public:
     if (is_tmp)
     {
       // There is no physical backing for this temporary vector
-      for (int b = 0; b < nblocks; b++)
+      for (size_t b = 0; b < nblocks; b++)
       {
         size_t bs  = std::min(N - block_size * b, block_size);
         handles[b] = to_shared(ctx.logical_data(shape_of<slice<double>>(bs)));
@@ -91,7 +91,7 @@ public:
   {
     handles.resize(nblocks);
 
-    for (int b = 0; b < nblocks; b++)
+    for (size_t b = 0; b < nblocks; b++)
     {
       size_t bs  = std::min(N - block_size * b, block_size);
       handles[b] = to_shared(ctx.logical_data(shape_of<slice<double>>(bs)));
@@ -107,12 +107,12 @@ public:
   void fill(const std::function<double(int)>& f)
   {
     size_t bs = block_size;
-    for (int b = 0; b < nblocks; b++)
+    for (size_t b = 0; b < nblocks; b++)
     {
-      ctx.task(exec_place::host, handles[b]->write())->*[&f, b, bs](cudaStream_t stream, auto ds) {
+      ctx.task(exec_place::host(), handles[b]->write())->*[&f, b, bs](cudaStream_t stream, auto ds) {
         cuda_safe_call(cudaStreamSynchronize(stream));
 
-        for (int local_row = 0; local_row < ds.extent(0); local_row++)
+        for (size_t local_row = 0; local_row < ds.extent(0); local_row++)
         {
           ds(local_row) = f(local_row + b * bs);
         }
@@ -216,7 +216,7 @@ public:
   double get_value()
   {
     double val;
-    ctx.task(exec_place::host, handle->read())->*[&val](cudaStream_t stream, auto ds) {
+    ctx.task(exec_place::host(), handle->read())->*[&val](cudaStream_t stream, auto ds) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       val = ds(0);
     };
@@ -234,7 +234,7 @@ class scalar DOT(vector& a, class vector& b)
   scalar global_res(true);
 
   // Loop over all blocks,
-  for (int bid = 0; bid < a.nblocks; bid++)
+  for (size_t bid = 0; bid < a.nblocks; bid++)
   {
     scalar res(true);
 
@@ -267,7 +267,7 @@ void AXPY(const class scalar& alpha, class vector& x, class vector& y)
   assert(x.N == y.N);
   assert(x.nblocks == y.nblocks);
 
-  for (int b = 0; b < x.nblocks; b++)
+  for (size_t b = 0; b < x.nblocks; b++)
   {
     ctx.task(alpha.handle->read(), x.handles[b]->read(), y.handles[b]->rw())
         ->*
@@ -286,7 +286,7 @@ void SCALE_AXPY(const scalar& alpha, const class vector& x, class vector& y)
   assert(x.N == y.N);
   assert(x.nblocks == y.nblocks);
 
-  for (int b = 0; b < x.nblocks; b++)
+  for (size_t b = 0; b < x.nblocks; b++)
   {
     ctx.task(alpha.handle->read(), x.handles[b]->read(), y.handles[b]->rw())
         ->*[](cudaStream_t stream, auto dalpha, auto dx, auto dy) {
@@ -315,9 +315,9 @@ void GEMV(double alpha, class matrix& a, class vector& x, double beta, class vec
   size_t block_size = x.block_size;
   assert(block_size == y.block_size);
 
-  for (int row_y = 0; row_y < y.nblocks; row_y++)
+  for (size_t row_y = 0; row_y < y.nblocks; row_y++)
   {
-    for (int row_x = 0; row_x < x.nblocks; row_x++)
+    for (size_t row_x = 0; row_x < x.nblocks; row_x++)
     {
       double local_beta = (row_x == 0) ? beta : 1.0;
 
@@ -397,7 +397,7 @@ void cg(matrix& A, vector& X, vector& B)
     // Read the residual on the CPU, and halt the iterative process if we have converged
     {
       double err;
-      ctx.task(exec_place::host, rsnew.handle->read())->*[&err](cudaStream_t stream, auto dres) {
+      ctx.task(exec_place::host(), rsnew.handle->read())->*[&err](cudaStream_t stream, auto dres) {
         cuda_safe_call(cudaStreamSynchronize(stream));
         err = sqrt(dres(0));
       };

@@ -10,21 +10,27 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <string>
 #include <string_view>
-#include <tuple>
-#include <vector>
 
-#include <nvJitLink.h>
 #include <nvrtc.h>
+
+#include <nvrtc/command_list_mixins.h>
+#include <nvrtc/nvjitlink_helper.h>
 #include <util/errors.h>
 
-struct nvrtc_cubin
+struct nvrtc_ptx
 {
-  std::unique_ptr<char[]> cubin{};
+  std::unique_ptr<char[]> ptx{};
+  size_t size;
+};
+struct nvrtc_link_result
+{
+  std::unique_ptr<char[]> data{};
   size_t size;
 };
 
@@ -41,207 +47,248 @@ struct nvrtc_get_name
 {
   std::string_view name;
   std::string& lowered_name;
+
+  nvrtc_get_name() = delete;
+  nvrtc_get_name(std::string_view name, std::string& lowered_name)
+      : name(name)
+      , lowered_name(lowered_name)
+  {}
+  ~nvrtc_get_name() noexcept {};
+
+  nvrtc_get_name(const nvrtc_get_name&) = delete;
+  nvrtc_get_name(nvrtc_get_name&& other) noexcept
+      : name(other.name)
+      , lowered_name(other.lowered_name)
+  {}
+
+  nvrtc_get_name& operator=(const nvrtc_get_name&) = delete;
+  nvrtc_get_name& operator=(nvrtc_get_name&&)      = delete;
 };
 struct nvrtc_compile
 {
   const char** args;
   size_t num_args;
 };
-struct nvrtc_program_cleanup
-{};
+struct nvrtc_get_ptx
+{
+  nvrtc_ptx& ptx_ref;
+};
 struct nvrtc_ltoir
 {
   const char* ltoir;
-  int ltsz;
+  size_t ltsz;
 };
 using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
 struct nvrtc_jitlink_cleanup
 {
-  nvrtc_cubin& cubin_ref;
+  nvrtc_link_result& link_result_ref;
 };
-
 struct nvrtc_jitlink
 {
-  nvJitLinkHandle handle;
+  nvJitLinkHandle handle{};
+
+  nvrtc_jitlink()                     = delete;
+  nvrtc_jitlink(const nvrtc_jitlink&) = delete;
+  nvrtc_jitlink(nvrtc_jitlink&& rhs)
+  {
+    handle     = rhs.handle;
+    rhs.handle = nullptr;
+  };
 
   nvrtc_jitlink(uint32_t numOpts, const char** opts)
+      : handle(nullptr)
   {
-    nvJitLinkCreate(&handle, numOpts, opts);
+    if (opts)
+    {
+      nvJitLinkCreate(&handle, numOpts, opts);
+    }
   }
 
   ~nvrtc_jitlink()
   {
-    nvJitLinkDestroy(&handle);
+    if (handle)
+    {
+      nvJitLinkDestroy(&handle);
+    }
   }
 };
 
-struct nvrtc_command_list_visitor
+struct nvrtc2_top_level;
+struct nvrtc2_link_result;
+struct nvrtc2_pre_build;
+struct nvrtc2_post_build;
+
+struct nvrtc2_lto_context
 {
-  nvrtc_jitlink& jitlink;
-  std::string_view program_name = "test";
+  nvrtc_jitlink jit;
   nvrtcProgram program{};
+  std::string_view program_name = "test";
+};
 
-  template <typename T, typename... Tx>
-  void operator()(T&& t, Tx&&... rest)
-  {
-    execute(std::forward<T>(t));
-    operator()(std::forward<Tx>(rest)...);
-  }
-  void operator()() {}
+using nvrtc2_top_level_nl   = node_list<nvrtc2_lto_context, nvrtc2_top_level>;
+using nvrtc2_pre_build_nl   = node_list<nvrtc2_lto_context, nvrtc2_pre_build>;
+using nvrtc2_link_result_nl = node_list<nvrtc2_lto_context, nvrtc2_link_result>;
+using nvrtc2_post_build_nl  = node_list<nvrtc2_lto_context, nvrtc2_post_build>;
 
-  void execute(nvrtc_translation_unit p)
-  {
-    check(nvrtcCreateProgram(&program, p.program.data(), p.name.data(), 0, nullptr, nullptr));
-  }
-  void execute(nvrtc_expression e)
-  {
-    check(nvrtcAddNameExpression(program, e.expression.data()));
-  }
-  void execute(nvrtc_compile c)
-  {
-    auto result = nvrtcCompileProgram(program, c.num_args, c.args);
+struct nvrtc2_post_build
+{
+  nvrtc2_lto_context& context;
+  nvrtc2_post_build(nvrtc2_lto_context& c_)
+      : context(c_)
+  {}
 
-    size_t log_size{};
-    check(nvrtcGetProgramLogSize(program, &log_size));
-    if (log_size > 1)
-    {
-      std::unique_ptr<char[]> log{new char[log_size]};
-      check(nvrtcGetProgramLog(program, log.get()));
-      std::cerr << log.get() << std::endl;
-    }
-
-    check(result);
-  }
-  void execute(nvrtc_get_name gn)
+  inline nvrtc2_post_build_nl get_name(nvrtc_get_name gn)
   {
     const char* lowered_name;
-    check(nvrtcGetLoweredName(program, gn.name.data(), &lowered_name));
+    check(nvrtcGetLoweredName(context.program, gn.name.data(), &lowered_name));
     gn.lowered_name = lowered_name;
+    return {std::move(context)};
   }
-  void execute(nvrtc_program_cleanup)
+
+  inline nvrtc_ptx get_program_ptx()
+  {
+    nvrtc_ptx ret;
+    check(nvrtcGetPTXSize(context.program, &ret.size));
+    ret.ptx = std::unique_ptr<char[]>{new char[ret.size]};
+    check(nvrtcGetPTX(context.program, ret.ptx.get()));
+
+    cleanup_program();
+    return ret;
+  }
+
+  inline nvrtc2_top_level_nl link_program()
   {
     std::size_t ltoir_size{};
-    check(nvrtcGetLTOIRSize(program, &ltoir_size));
+    check(nvrtcGetLTOIRSize(context.program, &ltoir_size));
     std::unique_ptr<char[]> ltoir{new char[ltoir_size]};
-    check(nvrtcGetLTOIR(program, ltoir.get()));
-
-    check(nvJitLinkAddData(jitlink.handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, program_name.data()));
-
-    nvrtcDestroyProgram(&program);
-  }
-  void execute(nvrtc_ltoir lto)
-  {
+    check(nvrtcGetLTOIR(context.program, ltoir.get()));
     check(nvJitLinkAddData(
-      jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, (size_t) lto.ltsz, program_name.data()));
+      context.jit.handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, context.program_name.data()));
+
+    return cleanup_program();
   }
-  void execute(const nvrtc_ltoir_list& lto_list)
+
+private:
+  inline nvrtc2_top_level_nl cleanup_program()
   {
-    for (auto lto : lto_list)
-    {
-      execute(lto);
-    }
+    nvrtcDestroyProgram(&context.program);
+    return {std::move(context)};
   }
-  void execute(nvrtc_jitlink_cleanup cleanup)
+};
+
+struct nvrtc2_pre_build
+{
+  nvrtc2_lto_context& context;
+  nvrtc2_pre_build(nvrtc2_lto_context& c_)
+      : context(c_)
+  {}
+
+  // Add expression before compiling (instantiates global kernel declared in unit)
+  inline nvrtc2_pre_build_nl add_expression(nvrtc_expression arg)
   {
-    auto jitlink_error = nvJitLinkComplete(jitlink.handle);
+    check(nvrtcAddNameExpression(context.program, arg.expression.data()));
+    return nvrtc2_pre_build_nl{std::move(context)};
+  }
+  // Compile program
+  inline nvrtc2_post_build_nl compile_program(nvrtc_compile compile_args)
+  {
+    size_t n_actual_args = std::distance(
+      compile_args.args,
+      std::remove_if(compile_args.args, compile_args.args + compile_args.num_args, [](const char* ptr) -> bool {
+        return (ptr == nullptr);
+      }));
+    nvrtcResult result = nvrtcCompileProgram(context.program, n_actual_args, compile_args.args);
 
     size_t log_size{};
-    check(nvJitLinkGetErrorLogSize(jitlink.handle, &log_size));
+    check(nvrtcGetProgramLogSize(context.program, &log_size));
     if (log_size > 1)
     {
       std::unique_ptr<char[]> log{new char[log_size]};
-      check(nvJitLinkGetErrorLog(jitlink.handle, log.get()));
+      check(nvrtcGetProgramLog(context.program, log.get()));
+      std::cerr << log.get() << std::endl;
+    }
+    check(result);
+
+    return {std::move(context)};
+  }
+};
+
+struct nvrtc2_top_level
+{
+  nvrtc2_lto_context& context;
+  nvrtc2_top_level(nvrtc2_lto_context& c_)
+      : context(c_)
+  {}
+
+  // Compile and link program
+  inline nvrtc2_pre_build_nl add_program(nvrtc_translation_unit tu)
+  {
+    check(nvrtcCreateProgram(&context.program, tu.program.data(), tu.name.data(), 0, nullptr, nullptr));
+    return {std::move(context)};
+  }
+
+  // Add linkable unit to whole program
+  inline nvrtc2_top_level_nl add_link(nvrtc_ltoir arg)
+  {
+    check(nvJitLinkAddData(
+      context.jit.handle, NVJITLINK_INPUT_LTOIR, (const void*) arg.ltoir, arg.ltsz, context.program_name.data()));
+    return {std::move(context)};
+  }
+
+  // Add linkable units to whole program
+  inline nvrtc2_top_level_nl add_link_list(nvrtc_ltoir_list list)
+  {
+    for (const auto& lto : list)
+    {
+      check(nvJitLinkAddData(
+        context.jit.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, lto.ltsz, context.program_name.data()));
+    }
+    return {std::move(context)};
+  }
+
+  // Execute steps and link unit
+  inline nvrtc_link_result finalize_program()
+  {
+    nvrtc_link_result link_result{};
+
+    auto jitlink_error = nvJitLinkComplete(context.jit.handle);
+    size_t log_size{};
+    check(nvJitLinkGetErrorLogSize(context.jit.handle, &log_size));
+    if (log_size > 1)
+    {
+      std::unique_ptr<char[]> log{new char[log_size]};
+      check(nvJitLinkGetErrorLog(context.jit.handle, log.get()));
       std::cerr << log.get() << std::endl;
     }
 
     check(jitlink_error);
 
-    check(nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size));
-    cleanup.cubin_ref.cubin = std::unique_ptr<char[]>(new char[cleanup.cubin_ref.size]);
-    check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.cubin_ref.cubin.get()));
+    bool output_ptx = false;
+    auto result     = nvJitLinkGetLinkedCubinSize(context.jit.handle, &link_result.size);
+
+    if (result != NVJITLINK_SUCCESS)
+    {
+      output_ptx = true;
+      check(nvJitLinkGetLinkedPtxSize(context.jit.handle, &link_result.size));
+    }
+    link_result.data = std::unique_ptr<char[]>(new char[link_result.size]);
+
+    if (output_ptx)
+    {
+      check(nvJitLinkGetLinkedPtx(context.jit.handle, link_result.data.get()));
+    }
+    else
+    {
+      check(nvJitLinkGetLinkedCubin(context.jit.handle, link_result.data.get()));
+    }
+
+    return link_result;
   }
 };
 
-template <typename... Tx, typename T>
-std::tuple<Tx..., T> nvrtc_command_list_append(std::tuple<Tx...>&& tup, T&& a)
+inline nvrtc2_top_level_nl begin_linking_nvrtc_program(uint32_t numLtoOpts, const char** ltoOpts)
 {
-  return std::tuple_cat(std::forward<std::tuple<Tx...>>(tup), std::make_tuple(std::forward<T>(a)));
-}
+  nvrtc2_lto_context context{nvrtc_jitlink(numLtoOpts, ltoOpts)};
 
-template <typename... Tx>
-struct nvrtc_sm_top_level;
-template <typename... Tx>
-struct nvrtc_sm_cleanup_tu;
-
-template <typename... Tx>
-struct nvrtc_sm_compilation_unit
-{
-  using command_list = std::tuple<Tx...>;
-  command_list cl{};
-
-  // Add expression before compiling (instantiates global kernel declared in unit)
-  nvrtc_sm_compilation_unit<Tx..., nvrtc_expression> add_expression(nvrtc_expression arg)
-  {
-    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
-  }
-  // Compile program
-  nvrtc_sm_cleanup_tu<Tx..., nvrtc_compile> compile_program(nvrtc_compile arg)
-  {
-    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
-  }
-};
-
-template <typename... Tx>
-struct nvrtc_sm_cleanup_tu
-{
-  using command_list = std::tuple<Tx...>;
-  command_list cl{};
-
-  nvrtc_sm_cleanup_tu<Tx..., nvrtc_get_name> get_name(nvrtc_get_name arg)
-  {
-    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
-  }
-  // Compile program
-  nvrtc_sm_top_level<Tx..., nvrtc_program_cleanup> cleanup_program()
-  {
-    return {nvrtc_command_list_append(std::move(cl), nvrtc_program_cleanup{})};
-  }
-};
-
-template <typename... Tx>
-struct nvrtc_sm_top_level
-{
-  using command_list = std::tuple<Tx...>;
-  command_list cl{};
-
-  // Multiple programs may be linked together
-  nvrtc_sm_compilation_unit<Tx..., nvrtc_translation_unit> add_program(nvrtc_translation_unit arg)
-  {
-    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
-  }
-  // Add linkable unit to whole program
-  nvrtc_sm_top_level<Tx..., nvrtc_ltoir> add_link(nvrtc_ltoir arg)
-  {
-    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
-  }
-  // Add linkable units to whole program
-  nvrtc_sm_top_level<Tx..., nvrtc_ltoir_list> add_link_list(nvrtc_ltoir_list arg)
-  {
-    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
-  }
-
-  // Execute steps and link unit
-  nvrtc_cubin finalize_program(uint32_t numLtoOpts, const char** ltoOpts)
-  {
-    nvrtc_cubin cubin{};
-    nvrtc_jitlink_cleanup cleanup{cubin};
-    nvrtc_jitlink jl(numLtoOpts, ltoOpts);
-    std::apply(nvrtc_command_list_visitor{jl}, nvrtc_command_list_append(std::move(cl), std::move(cleanup)));
-    return cubin;
-  }
-};
-
-static nvrtc_sm_top_level<> make_nvrtc_command_list()
-{
-  return {};
+  return {std::move(context)};
 }

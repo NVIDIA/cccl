@@ -2,6 +2,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/cstdint>
+
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -126,7 +128,7 @@ void TestFindIfDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::find_if(sys, vec.begin(), vec.end(), thrust::identity<int>());
+  thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
@@ -143,7 +145,7 @@ void TestFindIfDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::find_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::identity<int>());
+  thrust::find_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
   ASSERT_EQUAL(13, vec.front());
 }
@@ -177,7 +179,7 @@ void TestFindIfNotDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::find_if_not(sys, vec.begin(), vec.end(), thrust::identity<int>());
+  thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
@@ -194,7 +196,7 @@ void TestFindIfNotDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::find_if_not(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::identity<int>());
+  thrust::find_if_not(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
   ASSERT_EQUAL(13, vec.front());
 }
@@ -282,12 +284,12 @@ void TestFindWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(1);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::detail::intmax_t distance_low_value = thrust::distance(begin, thrust::find(thrust::device, begin, end, 17));
+  cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));
 
-  thrust::detail::intmax_t distance_high_value =
-    thrust::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
+  cuda::std::intmax_t distance_high_value =
+    ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
 
   ASSERT_EQUAL(distance_low_value, 16);
   ASSERT_EQUAL(distance_high_value, (1ll << magnitude) - 18);

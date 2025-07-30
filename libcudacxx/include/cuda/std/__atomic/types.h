@@ -29,6 +29,8 @@
 #include <cuda/std/__atomic/types/small.h>
 #include <cuda/std/__type_traits/conditional.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
@@ -59,5 +61,7 @@ using __atomic_storage_t =
       _If<__atomic_traits<_Tp>::__atomic_requires_lock, __atomic_locked_storage<_Tp>, __atomic_storage<_Tp>>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_TYPES_H

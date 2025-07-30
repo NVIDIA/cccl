@@ -26,10 +26,12 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b, _UnaryOp __u)
 {
   for (; __first != __last; ++__first)
@@ -40,7 +42,7 @@ transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _Bin
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOp1, class _BinaryOp2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp transform_reduce(
+[[nodiscard]] _CCCL_API constexpr _Tp transform_reduce(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -56,7 +58,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp transform_re
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp
+[[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
 {
   return _CUDA_VSTD::transform_reduce(
@@ -64,5 +66,7 @@ transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterat
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_TRANSFORM_REDUCE_H

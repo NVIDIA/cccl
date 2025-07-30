@@ -8,8 +8,11 @@ See the documentation of the standard header `\<optional\> <https://en.cpprefere
 Extensions
 ----------
 
--  All features are available from C++14 onwards.
--  All features are available at compile time if the value type supports it.
+- All features are available from C++14 onwards.
+- All features are available at compile time if the value type supports it.
+
+- An implementation of `P2988 optional\<T&\> <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p2988r9.pdf>`_ is available by
+  defining ``CCCL_ENABLE_OPTIONAL_REF``
 
 Restrictions
 ------------

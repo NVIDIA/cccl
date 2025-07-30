@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -46,7 +46,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -57,12 +56,11 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
-// forward declare generic reduce
-// to circumvent circular dependency
+// Forward declare generic reduce circumvent circular dependency.
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
 T _CCCL_HOST_DEVICE
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
@@ -70,6 +68,15 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator last,
        T init,
        BinaryFunction binary_op);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+void _CCCL_HOST_DEVICE reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init,
+  BinaryFunction binary_op);
 
 namespace cuda_cub
 {
@@ -109,7 +116,7 @@ template <class, class>
 struct Tuning;
 
 template <class T>
-struct Tuning<sm30, T>
+struct Tuning<core::detail::sm52, T>
 {
   enum
   {
@@ -119,18 +126,6 @@ struct Tuning<sm30, T>
     SCALE_FACTOR_1B = sizeof(T),
   };
 
-  using type =
-    PtxPolicy<256,
-              (((20 / SCALE_FACTOR_4B) > (1)) ? (20 / SCALE_FACTOR_4B) : (1)),
-              2,
-              cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-              cub::LOAD_DEFAULT,
-              cub::GRID_MAPPING_RAKE>;
-}; // Tuning sm30
-
-template <class T>
-struct Tuning<sm35, T> : Tuning<sm30, T>
-{
   // ReducePolicy1B (GTX Titan: 228.7 GB/s @ 192M 1B items)
   using ReducePolicy1B =
     PtxPolicy<128,
@@ -150,7 +145,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
               cub::GRID_MAPPING_DYNAMIC>;
 
   using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
-}; // Tuning sm35
+}; // Tuning sm52
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
 struct ReduceAgent
@@ -167,8 +162,8 @@ struct ReduceAgent
     using tuning = Tuning<Arch, T>;
 
     using Vector      = typename cub::CubVector<T, PtxPlan::VECTOR_LOAD_LENGTH>;
-    using LoadIt      = typename core::LoadIterator<PtxPlan, InputIt>::type;
-    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1, Arch::ver>;
+    using LoadIt      = typename core::detail::LoadIterator<PtxPlan, InputIt>::type;
+    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1>;
 
     using VectorLoadIt = cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, Vector, Size>;
 
@@ -187,7 +182,7 @@ struct ReduceAgent
   // Other algorithms, e.g. merge, may not need additional information,
   // and may use AgentPlan directly, instead of defining their own Plan type.
   //
-  struct Plan : core::AgentPlan
+  struct Plan : core::detail::AgentPlan
   {
     cub::GridMappingStrategy grid_mapping;
 
@@ -195,7 +190,7 @@ struct ReduceAgent
 
     template <class P>
     THRUST_RUNTIME_FUNCTION Plan(P)
-        : core::AgentPlan(P())
+        : core::detail::AgentPlan(P())
         , grid_mapping(P::GRID_MAPPING)
     {}
   };
@@ -204,7 +199,7 @@ struct ReduceAgent
   // ptx_plan type *must* only be used from device code
   // Its use from host code will result in *undefined behaviour*
   //
-  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
+  using ptx_plan = typename core::detail::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
   using TempStorage  = typename ptx_plan::TempStorage;
   using Vector       = typename ptx_plan::Vector;
@@ -242,7 +237,7 @@ struct ReduceAgent
     THRUST_DEVICE_FUNCTION impl(TempStorage& storage_, InputIt input_it_, ReductionOp reduction_op_)
         : storage(storage_)
         , input_it(input_it_)
-        , load_it(core::make_load_iterator(ptx_plan(), input_it))
+        , load_it(core::detail::make_load_iterator(ptx_plan(), input_it))
         , reduction_op(reduction_op_)
     {}
 
@@ -316,7 +311,7 @@ struct ReduceAgent
       T* d_in_unqualified = const_cast<T*>(input_it) + block_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
       VectorLoadIt vec_load_it(reinterpret_cast<Vector*>(d_in_unqualified));
 
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WORDS; ++i)
       {
         vec_items[i] = vec_load_it[BLOCK_THREADS * i];
@@ -440,8 +435,6 @@ struct ReduceAgent
     THRUST_DEVICE_FUNCTION T
     consume_tiles_impl(Size num_items, cub::GridQueue<UnsignedSize> queue, CAN_VECTORIZE can_vectorize)
     {
-      using core::sync_threadblock;
-
       // We give each thread block at least one tile of input.
       T thread_aggregate;
       Size block_offset    = blockIdx.x * ITEMS_PER_TILE;
@@ -466,7 +459,7 @@ struct ReduceAgent
           storage.dequeue_offset = queue.Drain(ITEMS_PER_TILE) + even_share_base;
         }
 
-        sync_threadblock();
+        __syncthreads();
 
         // Grab tile offset and check if we're done with full tiles
         block_offset = storage.dequeue_offset;
@@ -477,7 +470,7 @@ struct ReduceAgent
           consume_tile<false>(
             thread_aggregate, block_offset, ITEMS_PER_TILE, thrust::detail::true_type(), can_vectorize);
 
-          sync_threadblock();
+          __syncthreads();
 
           // Dequeue a tile of items
           if (threadIdx.x == 0)
@@ -485,7 +478,7 @@ struct ReduceAgent
             storage.dequeue_offset = queue.Drain(ITEMS_PER_TILE) + even_share_base;
           }
 
-          sync_threadblock();
+          __syncthreads();
 
           // Grab tile offset and check if we're done with full tiles
           block_offset = storage.dequeue_offset;
@@ -598,7 +591,7 @@ struct DrainAgent
   template <class Arch>
   struct PtxPlan : PtxPolicy<1>
   {};
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -609,190 +602,29 @@ struct DrainAgent
     grid_queue.FillAndResetDrain(num_items);
   }
 }; // struct DrainAgent;
-
-template <class InputIt, class OutputIt, class Size, class ReductionOp, class T>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt input_it,
-  Size num_items,
-  T init,
-  ReductionOp reduction_op,
-  OutputIt output_it,
-  cudaStream_t stream)
-{
-  using core::AgentLauncher;
-  using core::AgentPlan;
-  using core::cuda_optional;
-  using core::get_agent_plan;
-
-  using UnsignedSize = typename detail::make_unsigned_special<Size>::type;
-
-  if (num_items == 0)
-  {
-    return cudaErrorNotSupported;
-  }
-
-  using reduce_agent = AgentLauncher<ReduceAgent<InputIt, OutputIt, T, Size, ReductionOp>>;
-
-  typename reduce_agent::Plan reduce_plan = reduce_agent::get_plan(stream);
-
-  cudaError_t status = cudaSuccess;
-
-  if (num_items <= reduce_plan.items_per_tile)
-  {
-    size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, 1);
-
-    // small, single tile size
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = ::cuda::std::max<size_t>(1, vshmem_size);
-      return status;
-    }
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : nullptr;
-
-    reduce_agent ra(reduce_plan, num_items, stream, vshmem_ptr, "reduce_agent: single_tile only");
-    ra.launch(input_it, output_it, num_items, reduction_op, init);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-  }
-  else
-  {
-    // regular size
-    cuda_optional<int> sm_count = core::get_sm_count();
-    CUDA_CUB_RET_IF_FAIL(sm_count.status());
-
-    // reduction will not use more cta counts than requested
-    cuda_optional<int> max_blocks_per_sm = reduce_agent::template get_max_blocks_per_sm<
-      InputIt,
-      OutputIt,
-      Size,
-      cub::GridEvenShare<Size>,
-      cub::GridQueue<UnsignedSize>,
-      ReductionOp>(reduce_plan);
-    CUDA_CUB_RET_IF_FAIL(max_blocks_per_sm.status());
-
-    int reduce_device_occupancy = (int) max_blocks_per_sm * sm_count;
-
-    int sm_oversubscription = 5;
-    int max_blocks          = reduce_device_occupancy * sm_oversubscription;
-
-    cub::GridEvenShare<Size> even_share;
-    even_share.DispatchInit(static_cast<int>(num_items), max_blocks, reduce_plan.items_per_tile);
-
-    // we will launch at most "max_blocks" blocks in a grid
-    // so preallocate virtual shared memory storage for this if required
-    //
-    size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
-
-    // Temporary storage allocation requirements
-    void* allocations[3]       = {nullptr, nullptr, nullptr};
-    size_t allocation_sizes[3] = {
-      max_blocks * sizeof(T), // bytes needed for privatized block reductions
-      cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
-      vshmem_size // size of virtualized shared memory storage
-    };
-    status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
-
-    T* d_block_reductions = (T*) allocations[0];
-    cub::GridQueue<UnsignedSize> queue(allocations[1]);
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : nullptr;
-
-    // Get grid size for device_reduce_sweep_kernel
-    int reduce_grid_size = 0;
-    if (reduce_plan.grid_mapping == cub::GRID_MAPPING_RAKE)
-    {
-      // Work is distributed evenly
-      reduce_grid_size = even_share.grid_size;
-    }
-    else if (reduce_plan.grid_mapping == cub::GRID_MAPPING_DYNAMIC)
-    {
-      // Work is distributed dynamically
-      size_t num_tiles = ::cuda::ceil_div(num_items, reduce_plan.items_per_tile);
-
-      // if not enough to fill the device with threadblocks
-      // then fill the device with threadblocks
-      reduce_grid_size = static_cast<int>((::cuda::std::min)(num_tiles, static_cast<size_t>(reduce_device_occupancy)));
-
-      using drain_agent    = AgentLauncher<DrainAgent<Size>>;
-      AgentPlan drain_plan = drain_agent::get_plan();
-      drain_plan.grid_size = 1;
-      drain_agent da(drain_plan, stream, "__reduce::drain_agent");
-      da.launch(queue, num_items);
-      CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-    }
-    else
-    {
-      CUDA_CUB_RET_IF_FAIL(cudaErrorNotSupported);
-    }
-
-    reduce_plan.grid_size = reduce_grid_size;
-    reduce_agent ra(reduce_plan, stream, vshmem_ptr, "reduce_agent: regular size reduce");
-    ra.launch(input_it, d_block_reductions, num_items, even_share, queue, reduction_op);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-
-    using reduce_agent_single = AgentLauncher<ReduceAgent<T*, OutputIt, T, Size, ReductionOp>>;
-
-    reduce_plan.grid_size = 1;
-    reduce_agent_single ra1(reduce_plan, stream, vshmem_ptr, "reduce_agent: single tile reduce");
-
-    ra1.launch(d_block_reductions, output_it, reduce_grid_size, reduction_op, init);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-  }
-
-  return status;
-} // func doit_step
-
-template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION T
-reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
-{
-  if (num_items == 0)
-  {
-    return init;
-  }
-
-  size_t temp_storage_bytes = 0;
-  cudaStream_t stream       = cuda_cub::stream(policy);
-
-  cudaError_t status;
-  status = doit_step(nullptr, temp_storage_bytes, first, num_items, init, binary_op, static_cast<T*>(nullptr), stream);
-  cuda_cub::throw_on_error(status, "reduce failed on 1st step");
-
-  size_t allocation_sizes[2] = {sizeof(T*), temp_storage_bytes};
-  void* allocations[2]       = {nullptr, nullptr};
-
-  size_t storage_size = 0;
-  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
-  cuda_cub::throw_on_error(status, "reduce failed on 1st alias_storage");
-
-  // Allocate temporary storage.
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
-  void* ptr = static_cast<void*>(tmp.data().get());
-
-  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
-  cuda_cub::throw_on_error(status, "reduce failed on 2nd alias_storage");
-
-  T* d_result = thrust::detail::aligned_reinterpret_cast<T*>(allocations[0]);
-
-  status = doit_step(allocations[1], temp_storage_bytes, first, num_items, init, binary_op, d_result, stream);
-  cuda_cub::throw_on_error(status, "reduce failed on 2nd step");
-
-  status = cuda_cub::synchronize(policy);
-  cuda_cub::throw_on_error(status, "reduce failed to synchronize");
-
-  T result = cuda_cub::get_value(policy, d_result);
-
-  return result;
-}
 } // namespace __reduce
 
 namespace detail
 {
+
+template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
+THRUST_RUNTIME_FUNCTION size_t get_reduce_n_temporary_storage_size(
+  execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
+{
+  cudaStream_t stream = cuda_cub::stream(policy);
+  cudaError_t status;
+
+  size_t tmp_size = 0;
+
+  THRUST_INDEX_TYPE_DISPATCH(
+    status,
+    cub::DeviceReduce::Reduce,
+    num_items,
+    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, init, stream));
+  cuda_cub::throw_on_error(status, "after determining reduce temporary storage size");
+
+  return tmp_size;
+}
 
 template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
 THRUST_RUNTIME_FUNCTION T
@@ -803,29 +635,21 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
 
   // Determine temporary device storage requirements.
 
-  size_t tmp_size = 0;
-
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    cub::DeviceReduce::Reduce,
-    num_items,
-    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, init, stream));
-  cuda_cub::throw_on_error(status, "after reduction step 1");
+  size_t tmp_size = get_reduce_n_temporary_storage_size(policy, first, num_items, init, binary_op);
 
   // Allocate temporary storage.
 
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
-
-  // Run reduction.
-
-  // `tmp.begin()` yields a `normal_iterator`, which dereferences to a
-  // `reference`, which has an `operator&` that returns a `pointer`, which
-  // has a `.get` method that returns a raw pointer, which we can (finally)
-  // `static_cast` to `void*`.
+  // We allocate both the temporary storage needed for the algorithm, and a `T`
+  // to store the result.
   //
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
+
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, tmp_size + sizeof(T));
+
+  // Run reduction.
+
   T* ret_ptr    = thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get());
   void* tmp_ptr = static_cast<void*>((tmp.data() + sizeof(T)).get());
   THRUST_INDEX_TYPE_DISPATCH(
@@ -833,22 +657,44 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
     cub::DeviceReduce::Reduce,
     num_items,
     (tmp_ptr, tmp_size, first, ret_ptr, num_items_fixed, binary_op, init, stream));
-  cuda_cub::throw_on_error(status, "after reduction step 2");
+  cuda_cub::throw_on_error(status, "after reduce invocation");
 
   // Synchronize the stream and get the value.
 
   status = cuda_cub::synchronize(policy);
   cuda_cub::throw_on_error(status, "reduce failed to synchronize");
-
-  // `tmp.begin()` yields a `normal_iterator`, which dereferences to a
-  // `reference`, which has an `operator&` that returns a `pointer`, which
-  // has a `.get` method that returns a raw pointer, which we can (finally)
-  // `static_cast` to `void*`.
-  //
-  // The array was dynamically allocated, so we assume that it's suitably
-  // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
-  // make this guarantee.
   return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get()));
+}
+
+template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename BinaryOp>
+THRUST_RUNTIME_FUNCTION void reduce_n_into_impl(
+  execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt output, T init, BinaryOp binary_op)
+{
+  cudaStream_t stream = cuda_cub::stream(policy);
+  cudaError_t status;
+
+  // Determine temporary device storage requirements.
+
+  size_t tmp_size = get_reduce_n_temporary_storage_size(policy, first, num_items, init, binary_op);
+
+  // Allocate temporary storage.
+
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, tmp_size);
+
+  // Run reduction.
+
+  void* tmp_ptr = thrust::raw_pointer_cast(tmp.data());
+  THRUST_INDEX_TYPE_DISPATCH(
+    status,
+    cub::DeviceReduce::Reduce,
+    num_items,
+    (tmp_ptr, tmp_size, first, output, num_items_fixed, binary_op, init, stream));
+  cuda_cub::throw_on_error(status, "after reduce invocation");
+
+  // Synchronize the stream and get the value.
+
+  status = cuda_cub::synchronize_optional(policy);
+  cuda_cub::throw_on_error(status, "reduce failed to synchronize");
 }
 
 } // namespace detail
@@ -868,27 +714,61 @@ reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T ini
   return init;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
+template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename BinaryOp>
+_CCCL_HOST_DEVICE void reduce_n_into(
+  execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt output, T init, BinaryOp binary_op)
+{
+  THRUST_CDP_DISPATCH(
+    (thrust::cuda_cub::detail::reduce_n_into_impl(policy, first, num_items, output, init, binary_op);),
+    (thrust::reduce_into(cvt_to_seq(derived_cast(policy)), first, first + num_items, output, init, binary_op);));
+}
+
 template <class Derived, class InputIt, class T, class BinaryOp>
 _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
-  size_type num_items = static_cast<size_type>(thrust::distance(first, last));
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
   return cuda_cub::reduce_n(policy, first, num_items, init, binary_op);
 }
 
 template <class Derived, class InputIt, class T>
 _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
 {
-  return cuda_cub::reduce(policy, first, last, init, plus<T>());
+  return cuda_cub::reduce(policy, first, last, init, ::cuda::std::plus<T>());
 }
 
 template <class Derived, class InputIt>
-_CCCL_HOST_DEVICE typename iterator_traits<InputIt>::value_type
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIt>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 {
-  using value_type = typename iterator_traits<InputIt>::value_type;
+  using value_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::reduce(policy, first, last, value_type(0));
+}
+
+template <class Derived, class InputIt, class OutputIt, class T, class BinaryOp>
+_CCCL_HOST_DEVICE void
+reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, T init, BinaryOp binary_op)
+{
+  using size_type = thrust::detail::it_difference_t<InputIt>;
+  // FIXME: Check for RA iterator.
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
+  cuda_cub::reduce_n_into(policy, first, num_items, output, init, binary_op);
+}
+
+template <class Derived, class InputIt, class OutputIt, class T>
+_CCCL_HOST_DEVICE void
+reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, T init)
+{
+  cuda_cub::reduce_into(policy, first, last, output, init, ::cuda::std::plus<T>());
+}
+
+template <class Derived, class InputIt, class OutputIt>
+_CCCL_HOST_DEVICE void reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output)
+{
+  using value_type = thrust::detail::it_value_t<InputIt>;
+  return cuda_cub::reduce_into(policy, first, last, output, value_type(0));
 }
 
 } // namespace cuda_cub

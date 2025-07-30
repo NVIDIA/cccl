@@ -18,7 +18,7 @@
 #   - <prop_var> is any valid cmake identifier.
 #   - <target_name> is the name of a CUB target.
 #   - <prop> is one of the following:
-#     - DIALECT: The C++ dialect. Valid values: 11, 14, 17, 20.
+#     - DIALECT: The C++ dialect. Valid values: 17, 20.
 #     - PREFIX: A unique prefix that should be used to name all
 #       targets/tests/examples that use this configuration.
 #
@@ -35,13 +35,13 @@
 
 # Dialects:
 set(CUB_CPP_DIALECT_OPTIONS
-  11 14 17 20
+  17 20
   CACHE INTERNAL "C++ dialects supported by CUB." FORCE
 )
 
 define_property(TARGET PROPERTY _CUB_DIALECT
-  BRIEF_DOCS "A target's C++ dialect: 11, 14, 17 or 20."
-  FULL_DOCS "A target's C++ dialect: 11, 14, 17 or 20."
+  BRIEF_DOCS "A target's C++ dialect: 17 or 20."
+  FULL_DOCS "A target's C++ dialect: 17 or 20."
 )
 define_property(TARGET PROPERTY _CUB_PREFIX
   BRIEF_DOCS "A prefix describing the config, eg. 'cub.cpp17'."
@@ -160,8 +160,6 @@ function(cub_build_target_list)
     endif()
   endmacro()
   add_flag_option(IGNORE_DEPRECATED_CPP_DIALECT "Don't warn about any deprecated C++ standards and compilers." OFF)
-  add_flag_option(IGNORE_DEPRECATED_CPP_11 "Don't warn about deprecated C++11." OFF)
-  add_flag_option(IGNORE_DEPRECATED_CPP_14 "Don't warn about deprecated C++14." OFF)
   add_flag_option(IGNORE_DEPRECATED_COMPILER "Don't warn about deprecated compilers." OFF)
 
   # Set up the CUB target while testing out our find_package scripts.

@@ -34,10 +34,9 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
+#include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-
-#include <stdexcept>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -130,7 +129,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      throw std::bad_alloc();
+      ::cuda::std::__throw_bad_alloc();
     } // end if
 
     // use "::operator new" rather than keyword new
@@ -143,10 +142,9 @@ public:
    *  \note Memory deallocated by this function must previously have been
    *        allocated with \p allocate.
    */
-  _CCCL_HOST inline void deallocate(pointer p, size_type cnt) noexcept
+  _CCCL_HOST inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
     // use "::operator delete" rather than keyword delete
-    (void) cnt;
     device_delete(p);
   } // end deallocate()
 

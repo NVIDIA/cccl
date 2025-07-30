@@ -102,20 +102,41 @@ int main(int, char**)
   test_type<unsigned long>();
   test_type<long long>();
   test_type<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test_type<__int128_t>();
-#endif // _LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
   test_type<float>();
   test_type<double>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8_E4M3()
+  test_type<__nv_fp8_e4m3>();
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
+  test_type<__nv_fp8_e5m2>();
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
+  test_type<__nv_fp8_e8m0>();
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
+  test_type<__nv_fp6_e2m3>();
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
+  test_type<__nv_fp6_e3m2>();
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
+  test_type<__nv_fp4_e2m1>();
+#endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }

@@ -46,22 +46,37 @@
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
+enum class CopyAlg
+{
+  Memcpy,
+  Copy
+};
+
 namespace detail
 {
+namespace batch_memcpy
+{
+// Type used to specialize the kernel templates for indexing the buffers processed within a single kernel invocation
+using per_invocation_buffer_offset_t = ::cuda::std::uint32_t;
+
 /**
  * Initialization kernel for tile status initialization (multi-block)
  */
@@ -88,7 +103,7 @@ template <typename ChainedPolicyT,
           typename BufferTileOffsetItT,
           typename TileT,
           typename TileOffsetT,
-          bool IsMemcpy>
+          CopyAlg MemcpyOpt>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
     InputBufferIt input_buffer_it,
@@ -100,15 +115,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 {
   using StatusWord    = typename TileT::StatusWord;
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT;
-  using BufferSizeT   = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT   = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+  using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
+                                                     ::cuda::std::type_identity<char>,
+                                                     lazy_trait<it_value_t, it_value_t<InputBufferIt>>>::type;
   /// Types of the input and output buffers
-  using InputBufferT  = cub::detail::value_t<InputBufferIt>;
-  using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
+  using InputBufferT  = it_value_t<InputBufferIt>;
+  using OutputBufferT = it_value_t<OutputBufferIt>;
 
   constexpr uint32_t BLOCK_THREADS    = ActivePolicyT::BLOCK_THREADS;
   constexpr uint32_t ITEMS_PER_THREAD = ActivePolicyT::BYTES_PER_THREAD;
@@ -162,18 +176,20 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value = read_item<IsMemcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
-          write_item<IsMemcpy, AliasT, OutputBufferT>(output_buffer_it[buffer_id], thread_offset, value);
+          const auto value = read_item < MemcpyOpt == CopyAlg::Memcpy, AliasT,
+                     InputBufferT > (input_buffer_it[buffer_id], thread_offset);
+          write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
+            output_buffer_it[buffer_id], thread_offset, value);
         }
         thread_offset += BLOCK_THREADS;
       }
     }
     else
     {
-      copy_items<IsMemcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<MemcpyOpt == CopyAlg::Memcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
-        (cub::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
+        (::cuda::std::min) (buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
         tile_offset_within_buffer);
     }
 
@@ -214,7 +230,7 @@ template <typename ChainedPolicyT,
           typename BlockOffsetT,
           typename BLevBufferOffsetTileState,
           typename BLevBlockOffsetTileState,
-          bool IsMemcpy>
+          CopyAlg MemcpyOpt>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
     InputBufferIt input_buffer_it,
@@ -229,7 +245,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     BLevBlockOffsetTileState blev_block_scan_state)
 {
   // Internal type used for storing a buffer's size
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   // Alias the correct tuning policy for the current compilation pass' architecture
   using AgentBatchMemcpyPolicyT = typename ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT;
@@ -248,7 +264,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     BlockOffsetT,
     BLevBufferOffsetTileState,
     BLevBlockOffsetTileState,
-    IsMemcpy>;
+    MemcpyOpt == CopyAlg::Memcpy>;
 
   // Shared memory for AgentBatchMemcpy
   __shared__ typename AgentBatchMemcpyT::TempStorage temp_storage;
@@ -268,6 +284,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     blev_block_scan_state)
     .ConsumeTile(blockIdx.x);
 }
+} // namespace batch_memcpy
 
 /**
  * @tparam InputBufferIt **[inferred]** Random-access input iterator type providing the pointers
@@ -276,32 +293,33 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
  * to the destination memory buffers
  * @tparam BufferSizeIteratorT **[inferred]** Random-access input iterator type providing the
  * number of bytes to be copied for each pair of buffers
- * @tparam BufferOffsetT Integer type large enough to hold any offset in [0, num_buffers)
  * @tparam BlockOffsetT Integer type large enough to hold any offset in [0,
  * num_thread_blocks_launched)
  */
-template <typename InputBufferIt,
-          typename OutputBufferIt,
-          typename BufferSizeIteratorT,
-          typename BufferOffsetT,
-          typename BlockOffsetT,
-          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-          bool IsMemcpy      = true>
+template <
+  typename InputBufferIt,
+  typename OutputBufferIt,
+  typename BufferSizeIteratorT,
+  typename BlockOffsetT,
+  CopyAlg MemcpyOpt  = CopyAlg::Memcpy,
+  typename PolicyHub = batch_memcpy::policy_hub<detail::batch_memcpy::per_invocation_buffer_offset_t, BlockOffsetT>>
 struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------
   // TYPE ALIASES
   //------------------------------------------------------------------------------
+  using per_invocation_buffer_offset_t = detail::batch_memcpy::per_invocation_buffer_offset_t;
+
   // Tile state for the single-pass prefix scan to "stream compact" (aka "select") the buffers
   // requiring block-level collaboration
-  using BufferPartitionScanTileStateT = typename cub::ScanTileState<BufferOffsetT>;
+  using BufferPartitionScanTileStateT = typename cub::ScanTileState<per_invocation_buffer_offset_t>;
 
   // Tile state for the single-pass prefix scan to keep track of how many blocks are assigned to
   // each of the buffers requiring block-level collaboration
   using BufferTileOffsetScanStateT = typename cub::ScanTileState<BlockOffsetT>;
 
   // Internal type used to keep track of a buffer's size
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = cub::detail::it_value_t<BufferSizeIteratorT>;
 
   //------------------------------------------------------------------------------
   // Member Variables
@@ -311,7 +329,7 @@ struct DispatchBatchMemcpy
   InputBufferIt input_buffer_it;
   OutputBufferIt output_buffer_it;
   BufferSizeIteratorT buffer_sizes;
-  BufferOffsetT num_buffers;
+  ::cuda::std::int64_t num_buffers;
   cudaStream_t stream;
 
   //------------------------------------------------------------------------------
@@ -323,7 +341,7 @@ struct DispatchBatchMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    BufferOffsetT num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
@@ -346,7 +364,7 @@ struct DispatchBatchMemcpy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     // Single-pass prefix scan tile states for the prefix-sum over the number of block-level buffers
-    using BLevBufferOffsetTileState = cub::ScanTileState<BufferOffsetT>;
+    using BLevBufferOffsetTileState = cub::ScanTileState<per_invocation_buffer_offset_t>;
 
     // Single-pass prefix scan tile states for the prefix sum over the number of thread blocks
     // assigned to each of the block-level buffers
@@ -381,11 +399,20 @@ struct DispatchBatchMemcpy
     constexpr uint32_t TILE_SIZE = ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS
                                  * ActivePolicyT::AgentSmallBufferPolicyT::BUFFERS_PER_THREAD;
 
-    // The number of thread blocks (or tiles) required to process all of the given buffers
-    BlockOffsetT num_tiles = ::cuda::ceil_div(num_buffers, TILE_SIZE);
+    // The upper bound of buffers that a single kernel invocation will process
+    // Memory requirements are a multiple of the number of buffers. Hence, we cap the number of buffers per
+    // invocation to 512 M, which is large enough to easily saturate the GPU and also hide tail effects
+    constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
+    static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());
+    const auto max_num_buffers = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
 
-    using BlevBufferSrcsOutT          = ::cuda::std::_If<IsMemcpy, const void*, cub::detail::value_t<InputBufferIt>>;
-    using BlevBufferDstOutT           = ::cuda::std::_If<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
+    // The number of thread blocks (or tiles) required to process all of the given buffers
+    auto max_num_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, TILE_SIZE));
+
+    using BlevBufferSrcsOutT =
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::it_value_t<InputBufferIt>>;
+    using BlevBufferDstOutT =
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::it_value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
     using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT       = BufferSizeT*;
@@ -407,26 +434,26 @@ struct DispatchBatchMemcpy
     auto blev_buffer_scan_alloc  = blev_buffer_scan_slot->template create_alias<uint8_t>();
     auto blev_block_scan_alloc   = blev_buffer_block_scan_slot->template create_alias<uint8_t>();
 
-    std::size_t buffer_offset_scan_storage = 0;
-    std::size_t blev_block_scan_storage    = 0;
-    error =
-      CubDebug(BLevBufferOffsetTileState::AllocationSize(static_cast<int32_t>(num_tiles), buffer_offset_scan_storage));
+    size_t buffer_offset_scan_storage = 0;
+    size_t blev_block_scan_storage    = 0;
+    error                             = CubDebug(
+      BLevBufferOffsetTileState::AllocationSize(static_cast<int32_t>(max_num_tiles), buffer_offset_scan_storage));
     if (error)
     {
       return error;
     }
 
     error =
-      CubDebug(BLevBlockOffsetTileState::AllocationSize(static_cast<int32_t>(num_tiles), blev_block_scan_storage));
+      CubDebug(BLevBlockOffsetTileState::AllocationSize(static_cast<int32_t>(max_num_tiles), blev_block_scan_storage));
     if (error)
     {
       return error;
     }
 
-    blev_buffer_srcs_alloc.grow(num_buffers);
-    blev_buffer_dsts_alloc.grow(num_buffers);
-    blev_buffer_sizes_alloc.grow(num_buffers);
-    blev_buffer_block_alloc.grow(num_buffers);
+    blev_buffer_srcs_alloc.grow(max_num_buffers);
+    blev_buffer_dsts_alloc.grow(max_num_buffers);
+    blev_buffer_sizes_alloc.grow(max_num_buffers);
+    blev_buffer_block_alloc.grow(max_num_buffers);
     blev_buffer_scan_alloc.grow(buffer_offset_scan_storage);
     blev_block_scan_alloc.grow(blev_block_scan_storage);
 
@@ -456,19 +483,15 @@ struct DispatchBatchMemcpy
     BlevBufferSizesOutItT d_blev_buffer_sizes        = blev_buffer_sizes_alloc.get();
     BlevBufferTileOffsetsOutItT d_blev_block_offsets = blev_buffer_block_alloc.get();
 
-    // Kernels' grid sizes
-    BlockOffsetT init_grid_size         = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-    BlockOffsetT batch_memcpy_grid_size = num_tiles;
-
     // Kernels
     auto init_scan_states_kernel =
-      InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
-    auto batch_memcpy_non_blev_kernel = BatchMemcpyKernel<
+      detail::batch_memcpy::InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
+    auto batch_memcpy_non_blev_kernel = detail::batch_memcpy::BatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
       InputBufferIt,
       OutputBufferIt,
       BufferSizeIteratorT,
-      BufferOffsetT,
+      per_invocation_buffer_offset_t,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
       BlevBufferSizesOutItT,
@@ -476,18 +499,18 @@ struct DispatchBatchMemcpy
       BlockOffsetT,
       BLevBufferOffsetTileState,
       BLevBlockOffsetTileState,
-      IsMemcpy>;
+      MemcpyOpt>;
 
-    auto multi_block_memcpy_kernel = MultiBlockBatchMemcpyKernel<
+    auto multi_block_memcpy_kernel = detail::batch_memcpy::MultiBlockBatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
-      BufferOffsetT,
+      per_invocation_buffer_offset_t,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
       BlevBufferSizesOutItT,
       BlevBufferTileOffsetsOutItT,
       BLevBufferOffsetTileState,
       BlockOffsetT,
-      IsMemcpy>;
+      MemcpyOpt>;
 
     constexpr uint32_t BLEV_BLOCK_THREADS = ActivePolicyT::AgentLargeBufferPolicyT::BLOCK_THREADS;
 
@@ -515,122 +538,139 @@ struct DispatchBatchMemcpy
       return error;
     }
 
-    int batch_memcpy_blev_grid_size =
-      static_cast<int>(sm_count * batch_memcpy_blev_occupancy * CUB_SUBSCRIPTION_FACTOR(0));
+    const int batch_memcpy_blev_grid_size =
+      static_cast<int>(sm_count * batch_memcpy_blev_occupancy * subscription_factor);
 
-    // Construct the tile status for the buffer prefix sum
-    BLevBufferOffsetTileState buffer_scan_tile_state;
-    error = CubDebug(buffer_scan_tile_state.Init(
-      static_cast<int32_t>(num_tiles), blev_buffer_scan_alloc.get(), buffer_offset_scan_storage));
-    if (cudaSuccess != error)
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_buffers, max_num_buffers_per_invocation);
+
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
-      return error;
-    }
+      const auto current_buffer_offset = invocation_index * max_num_buffers_per_invocation;
+      const auto num_current_buffers =
+        ::cuda::std::min(max_num_buffers_per_invocation, num_buffers - current_buffer_offset);
+      const auto num_current_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(num_current_buffers, TILE_SIZE));
 
-    // Construct the tile status for thread blocks-to-buffer-assignment prefix sum
-    BLevBlockOffsetTileState block_scan_tile_state;
-    error = CubDebug(block_scan_tile_state.Init(
-      static_cast<int32_t>(num_tiles), blev_block_scan_alloc.get(), blev_block_scan_storage));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
+      // Kernels' grid sizes
+      const auto init_grid_size = static_cast<BlockOffsetT>(::cuda::ceil_div(num_current_tiles, INIT_KERNEL_THREADS));
+      BlockOffsetT batch_memcpy_grid_size = num_current_tiles;
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-    _CubLog("Invoking "
-            "InitTileStateKernel<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(init_grid_size),
-            INIT_KERNEL_THREADS,
-            (long long) stream);
+      // Construct the tile status for the buffer prefix sum
+      BLevBufferOffsetTileState buffer_scan_tile_state;
+      error = CubDebug(buffer_scan_tile_state.Init(
+        static_cast<int32_t>(num_current_tiles), blev_buffer_scan_alloc.get(), buffer_offset_scan_storage));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+
+      // Construct the tile status for thread blocks-to-buffer-assignment prefix sum
+      BLevBlockOffsetTileState block_scan_tile_state;
+      error = CubDebug(block_scan_tile_state.Init(
+        static_cast<int32_t>(num_current_tiles), blev_block_scan_alloc.get(), blev_block_scan_storage));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking "
+              "InitTileStateKernel<<<%d, %d, 0, %lld>>>()\n",
+              static_cast<int>(init_grid_size),
+              INIT_KERNEL_THREADS,
+              (long long) stream);
 #endif
 
-    // Invoke init_kernel to initialize buffer prefix sum-tile descriptors
-    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-              .doit(init_scan_states_kernel, buffer_scan_tile_state, block_scan_tile_state, num_tiles);
+      // Invoke init_kernel to initialize buffer prefix sum-tile descriptors
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+                .doit(init_scan_states_kernel, buffer_scan_tile_state, block_scan_tile_state, num_current_tiles);
 
-    // Check for failure to launch
-    error = CubDebug(error);
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
+      // Check for failure to launch
+      error = CubDebug(error);
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
 
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
 
-    // Check for failure to launch
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
+      // Check for failure to launch
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-    _CubLog("Invoking "
-            "BatchMemcpyKernel<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(batch_memcpy_grid_size),
-            ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS,
-            (long long) stream);
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking "
+              "BatchMemcpyKernel<<<%d, %d, 0, %lld>>>()\n",
+              static_cast<int>(batch_memcpy_grid_size),
+              ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS,
+              (long long) stream);
 #endif
 
-    // Invoke kernel to copy small buffers and put the larger ones into a queue that will get picked
-    // up by next kernel
-    error =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        batch_memcpy_grid_size, ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS, 0, stream)
-        .doit(batch_memcpy_non_blev_kernel,
-              input_buffer_it,
-              output_buffer_it,
-              buffer_sizes,
-              num_buffers,
-              d_blev_src_buffers,
-              d_blev_dst_buffers,
-              d_blev_buffer_sizes,
-              d_blev_block_offsets,
-              buffer_scan_tile_state,
-              block_scan_tile_state);
+      // Invoke kernel to copy small buffers and put the larger ones into a queue that will get picked
+      // up by next kernel
+      error =
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          batch_memcpy_grid_size, ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS, 0, stream)
+          .doit(batch_memcpy_non_blev_kernel,
+                input_buffer_it + current_buffer_offset,
+                output_buffer_it + current_buffer_offset,
+                buffer_sizes + current_buffer_offset,
+                static_cast<per_invocation_buffer_offset_t>(num_current_buffers),
+                d_blev_src_buffers,
+                d_blev_dst_buffers,
+                d_blev_buffer_sizes,
+                d_blev_block_offsets,
+                buffer_scan_tile_state,
+                block_scan_tile_state);
 
-    // Check for failure to launch
-    error = CubDebug(error);
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
+      // Check for failure to launch
+      error = CubDebug(error);
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
 
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-    _CubLog("Invoking "
-            "MultiBlockBatchMemcpyKernel<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(batch_memcpy_blev_grid_size),
-            BLEV_BLOCK_THREADS,
-            (long long) stream);
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking "
+              "MultiBlockBatchMemcpyKernel<<<%d, %d, 0, %lld>>>()\n",
+              static_cast<int>(batch_memcpy_blev_grid_size),
+              BLEV_BLOCK_THREADS,
+              (long long) stream);
 #endif
 
-    error =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(batch_memcpy_blev_grid_size, BLEV_BLOCK_THREADS, 0, stream)
-        .doit(multi_block_memcpy_kernel,
-              d_blev_src_buffers,
-              d_blev_dst_buffers,
-              d_blev_buffer_sizes,
-              d_blev_block_offsets,
-              buffer_scan_tile_state,
-              batch_memcpy_grid_size - 1);
+      error =
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(batch_memcpy_blev_grid_size, BLEV_BLOCK_THREADS, 0, stream)
+          .doit(multi_block_memcpy_kernel,
+                d_blev_src_buffers,
+                d_blev_dst_buffers,
+                d_blev_buffer_sizes,
+                d_blev_block_offsets,
+                buffer_scan_tile_state,
+                batch_memcpy_grid_size - 1);
 
-    // Check for failure to launch
-    error = CubDebug(error);
-    if (cudaSuccess != error)
-    {
-      return error;
+      // Check for failure to launch
+      error = CubDebug(error);
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
     }
-
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-
     return error;
   }
 
@@ -646,7 +686,7 @@ struct DispatchBatchMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    BufferOffsetT num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream)
   {
     cudaError_t error = cudaSuccess;

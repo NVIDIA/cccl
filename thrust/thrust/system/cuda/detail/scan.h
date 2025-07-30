@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -50,7 +50,7 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -63,7 +63,7 @@ template <typename Derived, typename InputIt, typename Size, typename OutputIt, 
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
-  using AccumT     = typename thrust::iterator_traits<InputIt>::value_type;
+  using AccumT     = thrust::detail::it_value_t<InputIt>;
   using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint32_t, AccumT>;
   using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint64_t, AccumT>;
 
@@ -120,27 +120,13 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   ScanOp scan_op)
 {
   using InputValueT = cub::detail::InputValue<InitValueT>;
-  using AccumT      = typename ::cuda::std::__accumulator_t<ScanOp, cub::detail::value_t<InputIt>, InitValueT>;
-  constexpr bool ForceInclusive = true;
+  using ValueT      = cub::detail::it_value_t<InputIt>;
+  using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
 
   using Dispatch32 =
-    cub::DispatchScan<InputIt,
-                      OutputIt,
-                      ScanOp,
-                      InputValueT,
-                      std::int32_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, ScanOp>,
-                      ForceInclusive>;
+    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, AccumT, cub::ForceInclusive::Yes>;
   using Dispatch64 =
-    cub::DispatchScan<InputIt,
-                      OutputIt,
-                      ScanOp,
-                      InputValueT,
-                      std::int64_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, ScanOp>,
-                      ForceInclusive>;
+    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, AccumT, cub::ForceInclusive::Yes>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
@@ -154,7 +140,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -170,7 +156,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -276,8 +262,8 @@ template <typename Derived, typename InputIt, typename OutputIt, typename ScanOp
 _CCCL_HOST_DEVICE OutputIt inclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, ScanOp scan_op)
 {
-  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
-  diff_t const num_items = thrust::distance(first, last);
+  using diff_t           = thrust::detail::it_difference_t<InputIt>;
+  diff_t const num_items = ::cuda::std::distance(first, last);
   return thrust::cuda_cub::inclusive_scan_n(policy, first, num_items, result, scan_op);
 }
 
@@ -290,8 +276,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
   T init,
   ScanOp scan_op)
 {
-  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
-  diff_t const num_items = thrust::distance(first, last);
+  using diff_t           = thrust::detail::it_difference_t<InputIt>;
+  diff_t const num_items = ::cuda::std::distance(first, last);
   return thrust::cuda_cub::inclusive_scan_n(policy, first, num_items, result, init, scan_op);
 }
 
@@ -299,7 +285,7 @@ template <typename Derived, typename InputIt, typename OutputIt>
 _CCCL_HOST_DEVICE OutputIt
 inclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  return thrust::cuda_cub::inclusive_scan(policy, first, last, result, thrust::plus<>{});
+  return thrust::cuda_cub::inclusive_scan(policy, first, last, result, ::cuda::std::plus<>{});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -328,8 +314,8 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan(
   T init,
   ScanOp scan_op)
 {
-  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
-  diff_t const num_items = thrust::distance(first, last);
+  using diff_t           = thrust::detail::it_difference_t<InputIt>;
+  diff_t const num_items = ::cuda::std::distance(first, last);
   return thrust::cuda_cub::exclusive_scan_n(policy, first, num_items, result, init, scan_op);
 }
 
@@ -337,14 +323,14 @@ template <typename Derived, typename InputIt, typename OutputIt, typename T>
 _CCCL_HOST_DEVICE OutputIt exclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, T init)
 {
-  return thrust::cuda_cub::exclusive_scan(policy, first, last, result, init, thrust::plus<>{});
+  return thrust::cuda_cub::exclusive_scan(policy, first, last, result, init, ::cuda::std::plus<>{});
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
 _CCCL_HOST_DEVICE OutputIt
 exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  using init_type = typename thrust::iterator_traits<InputIt>::value_type;
+  using init_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::exclusive_scan(policy, first, last, result, init_type{});
 };
 

@@ -72,17 +72,17 @@ public:
     assert(src_memory_node != dst_memory_node);
 
     cudaGraph_t graph  = ctx_.graph();
-    size_t graph_epoch = ctx_.epoch();
-    assert(graph && graph_epoch != size_t(-1));
+    size_t graph_stage = ctx_.stage();
+    assert(graph && graph_stage != size_t(-1));
 
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx_, prereqs, graph_stage);
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;
 
     cudaGraphNode_t out = graph_data_copy(kind, src_instance_id, dst_instance_id, graph, nodes.data(), nodes.size());
 
-    reserved::fork_from_graph_node(ctx_, out, graph_epoch, prereqs, "copy");
+    reserved::fork_from_graph_node(ctx_, out, graph, graph_stage, prereqs, "copy");
   }
 };
 

@@ -24,10 +24,8 @@ int main(int, char**)
   static_assert((_5() == 5), "");
   assert(_5() == 5);
 
-#if TEST_STD_VER > 2011
   static_assert(_5{}() == 5, "");
   static_assert(cuda::std::true_type{}(), "");
-#endif
 
   static_assert(cuda::std::false_type::value == false, "");
   static_assert((cuda::std::is_same<cuda::std::false_type::value_type, bool>::value), "");

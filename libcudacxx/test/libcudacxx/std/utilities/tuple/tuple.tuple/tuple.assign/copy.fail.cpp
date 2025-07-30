@@ -12,8 +12,6 @@
 
 // tuple& operator=(const tuple& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -22,7 +20,7 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly>;
     T t0(MoveOnly(2));
     T t;
     t = t0;

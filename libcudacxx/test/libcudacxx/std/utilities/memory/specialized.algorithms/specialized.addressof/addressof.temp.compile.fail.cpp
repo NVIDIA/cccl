@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 // <memory>
 
 // template <ObjectType T> T* addressof(T&& r) = delete;

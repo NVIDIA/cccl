@@ -24,31 +24,30 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 template <class _Cont>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto empty(const _Cont& __c) noexcept(noexcept(__c.empty()))
-  -> decltype(__c.empty())
+[[nodiscard]] _CCCL_API constexpr auto empty(const _Cont& __c) noexcept(noexcept(__c.empty())) -> decltype(__c.empty())
 {
   return __c.empty();
 }
 
 template <class _Tp, size_t _Sz>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty(const _Tp (&)[_Sz]) noexcept
+[[nodiscard]] _CCCL_API constexpr bool empty(const _Tp (&)[_Sz]) noexcept
 {
   return false;
 }
 
 template <class _Ep>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty(initializer_list<_Ep> __il) noexcept
+[[nodiscard]] _CCCL_API constexpr bool empty(initializer_list<_Ep> __il) noexcept
 {
   return __il.size() == 0;
 }
 
-#endif // _CCCL_STD_VER > 2017
-
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_EMPTY_H

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
@@ -54,8 +54,7 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -128,7 +127,7 @@ THRUST_DEVICE_FUNCTION Size biased_binary_search(It data, Size count, T key, Int
 template <bool UpperBound, class Size, class It1, class It2, class Comp>
 THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, Size diag, Comp comp)
 {
-  using T = typename thrust::iterator_traits<It1>::value_type;
+  using T = thrust::detail::it_value_t<It1>;
 
   Size begin = ::cuda::std::max<Size>(0, diag - bCount);
   Size end   = ::cuda::std::min<Size>(diag, aCount);
@@ -155,7 +154,7 @@ template <class It1, class It2, class Size, class Size2, class CompareOp>
 THRUST_DEVICE_FUNCTION pair<Size, Size>
 balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, Size2 levels, CompareOp compare_op)
 {
-  using T = typename iterator_traits<It1>::value_type;
+  using T = thrust::detail::it_value_t<It1>;
 
   Size index1 = merge_path<false>(keys1, num_keys1, keys2, num_keys2, diag, compare_op);
   Size index2 = diag - index1;
@@ -222,28 +221,7 @@ struct Tuning;
 namespace mpl = thrust::detail::mpl::math;
 
 template <class T, class U>
-struct Tuning<sm30, T, U>
-{
-  enum
-  {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(Value),
-    NOMINAL_4B_ITEMS_PER_THREAD = 7,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
-  };
-
-  using type =
-    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
-}; // tuning sm30
-
-template <class T, class U>
-struct Tuning<sm52, T, U>
+struct Tuning<core::detail::sm52, T, U>
 {
   enum
   {
@@ -264,7 +242,7 @@ struct Tuning<sm52, T, U>
 }; // tuning sm52
 
 template <class T, class U>
-struct Tuning<sm60, T, U>
+struct Tuning<core::detail::sm60, T, U>
 {
   enum
   {
@@ -296,10 +274,10 @@ template <class KeysIt1,
           class HAS_VALUES>
 struct SetOpAgent
 {
-  using key1_type   = typename iterator_traits<KeysIt1>::value_type;
-  using key2_type   = typename iterator_traits<KeysIt2>::value_type;
-  using value1_type = typename iterator_traits<ValuesIt1>::value_type;
-  using value2_type = typename iterator_traits<ValuesIt2>::value_type;
+  using key1_type   = thrust::detail::it_value_t<KeysIt1>;
+  using key2_type   = thrust::detail::it_value_t<KeysIt2>;
+  using value1_type = thrust::detail::it_value_t<ValuesIt1>;
+  using value2_type = thrust::detail::it_value_t<ValuesIt2>;
 
   using key_type   = key1_type;
   using value_type = value1_type;
@@ -311,19 +289,19 @@ struct SetOpAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt1   = typename core::LoadIterator<PtxPlan, KeysIt1>::type;
-    using KeysLoadIt2   = typename core::LoadIterator<PtxPlan, KeysIt2>::type;
-    using ValuesLoadIt1 = typename core::LoadIterator<PtxPlan, ValuesIt1>::type;
-    using ValuesLoadIt2 = typename core::LoadIterator<PtxPlan, ValuesIt2>::type;
+    using KeysLoadIt1   = typename core::detail::LoadIterator<PtxPlan, KeysIt1>::type;
+    using KeysLoadIt2   = typename core::detail::LoadIterator<PtxPlan, KeysIt2>::type;
+    using ValuesLoadIt1 = typename core::detail::LoadIterator<PtxPlan, ValuesIt1>::type;
+    using ValuesLoadIt2 = typename core::detail::LoadIterator<PtxPlan, ValuesIt2>::type;
 
-    using BlockLoadKeys1   = typename core::BlockLoad<PtxPlan, KeysLoadIt1>::type;
-    using BlockLoadKeys2   = typename core::BlockLoad<PtxPlan, KeysLoadIt2>::type;
-    using BlockLoadValues1 = typename core::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
-    using BlockLoadValues2 = typename core::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
+    using BlockLoadKeys1   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt1>::type;
+    using BlockLoadKeys2   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt2>::type;
+    using BlockLoadValues1 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
+    using BlockLoadValues2 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
-    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
+    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     // gather required temporary storage in a union
     //
@@ -337,7 +315,7 @@ struct SetOpAgent
 
       struct LoadStorage
       {
-        core::uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
+        core::detail::uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
         union
         {
           // FIXME These don't appear to be used anywhere?
@@ -349,15 +327,15 @@ struct SetOpAgent
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
-          core::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
+          core::detail::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
 
-          core::uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
+          core::detail::uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
         }; // anon union
       } load_storage; // struct LoadStorage
     }; // union TempStorage
   }; // struct PtxPlan
 
-  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
+  using ptx_plan = typename core::detail::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
   using KeysLoadIt1   = typename ptx_plan::KeysLoadIt1;
   using KeysLoadIt2   = typename ptx_plan::KeysLoadIt2;
@@ -411,7 +389,7 @@ struct SetOpAgent
     {
       if (IS_FULL_TILE)
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
         {
           int idx      = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -429,7 +407,7 @@ struct SetOpAgent
       }
       else
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           int idx = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -444,7 +422,7 @@ struct SetOpAgent
     template <class T, class It>
     THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int idx     = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -462,10 +440,9 @@ struct SetOpAgent
       Size tile_output_prefix,
       int tile_output_count)
     {
-      using core::sync_threadblock;
-
       int local_scatter_idx = thread_output_prefix - tile_output_prefix;
-#  pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (active_mask & (1 << ITEM))
@@ -473,7 +450,7 @@ struct SetOpAgent
           shared[local_scatter_idx++] = input[ITEM];
         }
       }
-      sync_threadblock();
+      __syncthreads();
 
       for (int item = threadIdx.x; item < tile_output_count; item += BLOCK_THREADS)
       {
@@ -504,8 +481,7 @@ struct SetOpAgent
     template <bool IS_LAST_TILE>
     void THRUST_DEVICE_FUNCTION consume_tile(Size tile_idx)
     {
-      using core::sync_threadblock;
-      using core::uninitialized_array;
+      using core::detail::uninitialized_array;
 
       pair<Size, Size> partition_beg = partitions[tile_idx + 0];
       pair<Size, Size> partition_end = partitions[tile_idx + 1];
@@ -527,7 +503,7 @@ struct SetOpAgent
 
       reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
 
-      sync_threadblock();
+      __syncthreads();
 
       int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
 
@@ -550,7 +526,7 @@ struct SetOpAgent
       int dst                          = threadIdx.x == 0 ? BLOCK_THREADS - 1 : threadIdx.x - 1;
       storage.load_storage.offset[dst] = value;
 
-      core::sync_threadblock();
+      __syncthreads();
 
       pair<int, int> partition1_loc = thrust::make_pair(
         storage.load_storage.offset[threadIdx.x] >> 16, storage.load_storage.offset[threadIdx.x] & 0xFFFF);
@@ -575,7 +551,7 @@ struct SetOpAgent
         indices,
         compare_op,
         set_op);
-      sync_threadblock();
+      __syncthreads();
 #  if 0
         if (ITEMS_PER_THREAD*threadIdx.x >= num_keys1 + num_keys2)
           active_mask = 0;
@@ -609,7 +585,7 @@ struct SetOpAgent
         tile_output_prefix = prefix_cb.GetExclusivePrefix();
       }
 
-      sync_threadblock();
+      __syncthreads();
 
       // scatter results
       //
@@ -626,15 +602,15 @@ struct SetOpAgent
         value_type values_loc[ITEMS_PER_THREAD];
         gmem_to_reg<!IS_LAST_TILE>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
 
-        sync_threadblock();
+        __syncthreads();
 
         reg_to_shared(&storage.load_storage.values_shared[0], values_loc);
 
-        sync_threadblock();
+        __syncthreads();
 
         // gather items from shared mem
         //
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           if (active_mask & (1 << ITEM))
@@ -643,7 +619,7 @@ struct SetOpAgent
           }
         }
 
-        sync_threadblock();
+        __syncthreads();
 
         scatter(values_out,
                 values_loc,
@@ -681,10 +657,10 @@ struct SetOpAgent
          std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
-        , keys1_in(core::make_load_iterator(ptx_plan(), keys1_))
-        , keys2_in(core::make_load_iterator(ptx_plan(), keys2_))
-        , values1_in(core::make_load_iterator(ptx_plan(), values1_))
-        , values2_in(core::make_load_iterator(ptx_plan(), values2_))
+        , keys1_in(core::detail::make_load_iterator(ptx_plan(), keys1_))
+        , keys2_in(core::detail::make_load_iterator(ptx_plan(), keys2_))
+        , values1_in(core::detail::make_load_iterator(ptx_plan(), values1_))
+        , values2_in(core::detail::make_load_iterator(ptx_plan(), values2_))
         , keys1_count(keys1_count_)
         , keys2_count(keys2_count_)
         , keys_out(keys_out_)
@@ -754,7 +730,7 @@ struct PartitionAgent
   struct PtxPlan : PtxPolicy<256>
   {};
 
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -788,7 +764,7 @@ struct InitAgent
   struct PtxPlan : PtxPolicy<128>
   {};
 
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -831,7 +807,7 @@ struct serial_set_intersection
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pA = compare_op(aKey, bKey);
@@ -887,7 +863,7 @@ struct serial_set_symmetric_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -949,7 +925,7 @@ struct serial_set_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -1011,7 +987,7 @@ struct serial_set_union
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -1079,8 +1055,8 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   cudaError_t status = cudaSuccess;
 
-  using core::AgentLauncher;
-  using core::AgentPlan;
+  using core::detail::AgentLauncher;
+  using core::detail::AgentPlan;
 
   using set_op_agent = AgentLauncher<
     SetOpAgent<KeysIt1, KeysIt2, ValuesIt1, ValuesIt2, KeysOutputIt, ValuesOutputIt, Size, CompareOp, SetOp, HAS_VALUES>>;
@@ -1099,16 +1075,16 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   size_t tile_agent_storage;
   status = ScanTileState::AllocationSize(static_cast<int>(num_tiles), tile_agent_storage);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
-  size_t vshmem_storage          = core::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
+  size_t vshmem_storage          = core::detail::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
   size_t partition_agent_storage = (num_tiles + 1) * sizeof(Size) * 2;
 
   void* allocations[3]       = {nullptr, nullptr, nullptr};
   size_t allocation_sizes[3] = {tile_agent_storage, partition_agent_storage, vshmem_storage};
 
-  status = core::alias_storage(d_temp_storage, temp_storage_size, allocations, allocation_sizes);
-  CUDA_CUB_RET_IF_FAIL(status);
+  status = core::detail::alias_storage(d_temp_storage, temp_storage_size, allocations, allocation_sizes);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
   {
@@ -1117,18 +1093,18 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   ScanTileState tile_state;
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   pair<Size, Size>* partitions = (pair<Size, Size>*) allocations[1];
   char* vshmem_ptr             = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
   init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   partition_agent pa(partition_plan, num_tiles + 1, stream, "set_op::partition agent");
   pa.launch(keys1, keys2, num_keys1, num_keys2, num_tiles + 1, partitions, compare_op, tile_size);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   set_op_agent sa(set_op_plan, keys_total, stream, vshmem_ptr, "set_op::set_op_agent");
   sa.launch(
@@ -1145,7 +1121,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     partitions,
     output_count,
     tile_state);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   return status;
 }
@@ -1173,10 +1149,10 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
   CompareOp compare_op,
   SetOp set_op)
 {
-  using size_type = typename iterator_traits<KeysIt1>::difference_type;
+  using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-  size_type num_keys1 = static_cast<size_type>(thrust::distance(keys1_first, keys1_last));
-  size_type num_keys2 = static_cast<size_type>(thrust::distance(keys2_first, keys2_last));
+  size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
+  size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
 
   if (num_keys1 + num_keys2 == 0)
   {
@@ -1213,14 +1189,14 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 
   size_t storage_size = 0;
 
-  status = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "set_operations failed on 1st alias_storage");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
-  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "set_operations failed on 2nd alias_storage");
 
   std::size_t* d_output_count = thrust::detail::aligned_reinterpret_cast<std::size_t*>(allocations[0]);
@@ -1271,7 +1247,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1299,9 +1275,9 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1318,7 +1294,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1346,9 +1322,9 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_intersection(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1365,7 +1341,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1393,9 +1369,9 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_symmetric_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1412,7 +1388,7 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1440,8 +1416,9 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
-  return cuda_cub::set_union(policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
+  return cuda_cub::set_union(
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1513,7 +1490,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_difference_by_key(
     policy,
     keys1_first,
@@ -1524,7 +1501,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1587,7 +1564,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_intersection_by_key(
     policy,
     keys1_first,
@@ -1597,7 +1574,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
     items1_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1663,7 +1640,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_symmetric_difference_by_key(
     policy,
     keys1_first,
@@ -1674,7 +1651,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1740,7 +1717,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_union_by_key(
     policy,
     keys1_first,
@@ -1751,7 +1728,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 } // namespace cuda_cub

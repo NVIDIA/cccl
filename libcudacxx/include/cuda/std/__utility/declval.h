@@ -20,7 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/void_t.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -28,35 +31,33 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // implementation of declval is available. It compiles approximately 2x faster
 // than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE and
 // MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
-// `__identity_t` alias is help MSVC parse the declaration correctly.
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE) \
-  && !_CCCL_CUDA_COMPILER(NVCC, <, 12, 4) && !_CCCL_COMPILER(MSVC, <, 19, 39)
-
-template <class _Tp>
-using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
+// `type_identity_t` alias is help MSVC parse the declaration correctly.
+#if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 4) && !_CCCL_COMPILER(MSVC, <, 19, 39)
 
 template <class _Tp, class = void>
-extern __identity_t<void (*)() noexcept> declval;
+extern type_identity_t<void (*)() noexcept> declval;
 
 template <class _Tp>
-extern __identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
+extern type_identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
 
-#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
+#else // ^^^ fast declval ^^^ / vvv default impl vvv
 
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp&& __declval(int);
+_CCCL_API inline _Tp&& __declval(int);
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _Tp __declval(long);
+_CCCL_API inline _Tp __declval(long);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
+_CCCL_API inline decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
 
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+#endif // default impl
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_DECLVAL_H

@@ -10,13 +10,13 @@ struct TestMin
     // 2 < 3
     T two(2), three(3);
     ASSERT_EQUAL(two, ::cuda::std::min(two, three));
-    ASSERT_EQUAL(two, ::cuda::std::min(two, three, thrust::less<T>()));
+    ASSERT_EQUAL(two, ::cuda::std::min(two, three, ::cuda::std::less<T>()));
 
     ASSERT_EQUAL(two, ::cuda::std::min(three, two));
-    ASSERT_EQUAL(two, ::cuda::std::min(three, two, thrust::less<T>()));
+    ASSERT_EQUAL(two, ::cuda::std::min(three, two, ::cuda::std::less<T>()));
 
-    ASSERT_EQUAL(three, ::cuda::std::min(two, three, thrust::greater<T>()));
-    ASSERT_EQUAL(three, ::cuda::std::min(three, two, thrust::greater<T>()));
+    ASSERT_EQUAL(three, ::cuda::std::min(two, three, ::cuda::std::greater<T>()));
+    ASSERT_EQUAL(three, ::cuda::std::min(three, two, ::cuda::std::greater<T>()));
 
     using KV = key_value<T, T>;
     KV two_and_two(two, two);
@@ -26,11 +26,11 @@ struct TestMin
     ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::min(two_and_two, two_and_three));
     ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::min(two_and_three, two_and_two));
 
-    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::min(two_and_two, two_and_three, thrust::less<KV>()));
-    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::min(two_and_three, two_and_two, thrust::less<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::min(two_and_two, two_and_three, ::cuda::std::less<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::min(two_and_three, two_and_two, ::cuda::std::less<KV>()));
 
-    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::min(two_and_two, two_and_three, thrust::greater<KV>()));
-    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::min(two_and_three, two_and_two, thrust::greater<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::min(two_and_two, two_and_three, ::cuda::std::greater<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::min(two_and_three, two_and_two, ::cuda::std::greater<KV>()));
   }
 };
 SimpleUnitTest<TestMin, NumericTypes> TestMinInstance;
@@ -43,13 +43,13 @@ struct TestMax
     // 2 < 3
     T two(2), three(3);
     ASSERT_EQUAL(three, ::cuda::std::max(two, three));
-    ASSERT_EQUAL(three, ::cuda::std::max(two, three, thrust::less<T>()));
+    ASSERT_EQUAL(three, ::cuda::std::max(two, three, ::cuda::std::less<T>()));
 
     ASSERT_EQUAL(three, ::cuda::std::max(three, two));
-    ASSERT_EQUAL(three, ::cuda::std::max(three, two, thrust::less<T>()));
+    ASSERT_EQUAL(three, ::cuda::std::max(three, two, ::cuda::std::less<T>()));
 
-    ASSERT_EQUAL(two, ::cuda::std::max(two, three, thrust::greater<T>()));
-    ASSERT_EQUAL(two, ::cuda::std::max(three, two, thrust::greater<T>()));
+    ASSERT_EQUAL(two, ::cuda::std::max(two, three, ::cuda::std::greater<T>()));
+    ASSERT_EQUAL(two, ::cuda::std::max(three, two, ::cuda::std::greater<T>()));
 
     using KV = key_value<T, T>;
     KV two_and_two(two, two);
@@ -59,11 +59,11 @@ struct TestMax
     ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::max(two_and_two, two_and_three));
     ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::max(two_and_three, two_and_two));
 
-    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::max(two_and_two, two_and_three, thrust::less<KV>()));
-    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::max(two_and_three, two_and_two, thrust::less<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::max(two_and_two, two_and_three, ::cuda::std::less<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::max(two_and_three, two_and_two, ::cuda::std::less<KV>()));
 
-    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::max(two_and_two, two_and_three, thrust::greater<KV>()));
-    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::max(two_and_three, two_and_two, thrust::greater<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::max(two_and_two, two_and_three, ::cuda::std::greater<KV>()));
+    ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::max(two_and_three, two_and_two, ::cuda::std::greater<KV>()));
   }
 };
 SimpleUnitTest<TestMax, NumericTypes> TestMaxInstance;

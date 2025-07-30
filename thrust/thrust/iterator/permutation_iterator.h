@@ -14,9 +14,8 @@
  *  limitations under the License.
  */
 
-/*! \file thrust/iterator/permutation_iterator.h
- *  \brief An iterator which performs a gather or scatter operation when dereferenced
- */
+//! \file thrust/iterator/permutation_iterator.h
+//! \brief An iterator which performs a gather or scatter operation when dereferenced
 
 /*
  * (C) Copyright Toon Knapen    2001.
@@ -40,122 +39,117 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/permutation_iterator_base.h>
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/minimum_system.h>
+#include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup iterators
- *  \{
- */
+template <typename, typename>
+class permutation_iterator;
 
-/*! \addtogroup fancyiterator Fancy Iterators
- *  \ingroup iterators
- *  \{
- */
+namespace detail
+{
+template <typename ElementIterator, typename IndexIterator>
+struct make_permutation_iterator_base
+{
+  using System1 = iterator_system_t<ElementIterator>;
+  using System2 = iterator_system_t<IndexIterator>;
 
-/*! \p permutation_iterator is an iterator which represents a pointer into a
- *  reordered view of a given range. \p permutation_iterator is an imprecise name;
- *  the reordered view need not be a strict permutation. This iterator is useful
- *  for fusing a scatter or gather operation with other algorithms.
- *
- *  This iterator takes two arguments:
- *
- *    - an iterator to the range \c V on which the "permutation" will be applied
- *    - the reindexing scheme that defines how the elements of \c V will be permuted.
- *
- *  Note that \p permutation_iterator is not limited to strict permutations of the
- *  given range \c V. The distance between begin and end of the reindexing iterators
- *  is allowed to be smaller compared to the size of the range \c V, in which case
- *  the \p permutation_iterator only provides a "permutation" of a subrange of \c V.
- *  The indices neither need to be unique. In this same context, it must be noted
- *  that the past-the-end \p permutation_iterator is completely defined by means of
- *  the past-the-end iterator to the indices.
- *
- *  The following code snippet demonstrates how to create a \p permutation_iterator
- *  which represents a reordering of the contents of a \p device_vector.
- *
- *  \code
- *  #include <thrust/iterator/permutation_iterator.h>
- *  #include <thrust/device_vector.h>
- *  ...
- *  thrust::device_vector<float> values(8);
- *  values[0] = 10.0f;
- *  values[1] = 20.0f;
- *  values[2] = 30.0f;
- *  values[3] = 40.0f;
- *  values[4] = 50.0f;
- *  values[5] = 60.0f;
- *  values[6] = 70.0f;
- *  values[7] = 80.0f;
- *
- *  thrust::device_vector<int> indices(4);
- *  indices[0] = 2;
- *  indices[1] = 6;
- *  indices[2] = 1;
- *  indices[3] = 3;
- *
- *  using ElementIterator = thrust::device_vector<float>::iterator;
- *  using IndexIterator = thrust::device_vector<int>::iterator  ;
- *
- *  thrust::permutation_iterator<ElementIterator,IndexIterator> iter(values.begin(), indices.begin());
- *
- *  *iter;   // returns 30.0f;
- *  iter[0]; // returns 30.0f;
- *  iter[1]; // returns 70.0f;
- *  iter[2]; // returns 20.0f;
- *  iter[3]; // returns 40.0f;
- *
- *  // iter[4] is an out-of-bounds error
- *
- *  *iter   = -1.0f; // sets values[2] to -1.0f;
- *  iter[0] = -1.0f; // sets values[2] to -1.0f;
- *  iter[1] = -1.0f; // sets values[6] to -1.0f;
- *  iter[2] = -1.0f; // sets values[1] to -1.0f;
- *  iter[3] = -1.0f; // sets values[3] to -1.0f;
- *
- *  // values is now {10, -1, -1, -1, 50, 60, -1, 80}
- *  \endcode
- *
- *  \see make_permutation_iterator
- */
+  using type =
+    iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
+                     IndexIterator,
+                     it_value_t<ElementIterator>,
+                     minimum_system_t<System1, System2>,
+                     use_default,
+                     it_reference_t<ElementIterator>>;
+};
+} // namespace detail
+
+//! \addtogroup iterators
+//! \{
+
+//! \addtogroup fancyiterator Fancy Iterators
+//! \ingroup iterators
+//! \{
+
+//! \p permutation_iterator is an iterator which represents a pointer into a reordered view of a given range. \p
+//! permutation_iterator is an imprecise name; the reordered view need not be a strict permutation. This iterator is
+//! useful for fusing a scatter or gather operation with other algorithms.
+//!
+//! This iterator takes two arguments:
+//!
+//!   - an iterator to the range \c V on which the "permutation" will be applied
+//!   - the reindexing scheme that defines how the elements of \c V will be permuted.
+//!
+//! Note that \p permutation_iterator is not limited to strict permutations of the given range \c V. The distance
+//! between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range \c V,
+//! in which case the \p permutation_iterator only provides a "permutation" of a subrange of \c V. The indices neither
+//! need to be unique. In this same context, it must be noted that the past-the-end \p permutation_iterator is
+//! completely defined by means of the past-the-end iterator to the indices.
+//!
+//! The following code snippet demonstrates how to create a \p permutation_iterator which represents a reordering of the
+//! contents of a \p device_vector.
+//!
+//! \code
+//! #include <thrust/iterator/permutation_iterator.h>
+//! #include <thrust/device_vector.h>
+//! ...
+//! thrust::device_vector<float> values{10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f};
+//! thrust::device_vector<int> indices{2, 6, 1, 3};
+//!
+//! using ElementIterator = thrust::device_vector<float>::iterator;
+//! using IndexIterator = thrust::device_vector<int>::iterator  ;
+//!
+//! thrust::permutation_iterator<ElementIterator,IndexIterator> iter(values.begin(), indices.begin());
+//!
+//! *iter;   // returns 30.0f;
+//! iter[0]; // returns 30.0f;
+//! iter[1]; // returns 70.0f;
+//! iter[2]; // returns 20.0f;
+//! iter[3]; // returns 40.0f;
+//!
+//! // iter[4] is an out-of-bounds error
+//!
+//! *iter   = -1.0f; // sets values[2] to -1.0f;
+//! iter[0] = -1.0f; // sets values[2] to -1.0f;
+//! iter[1] = -1.0f; // sets values[6] to -1.0f;
+//! iter[2] = -1.0f; // sets values[1] to -1.0f;
+//! iter[3] = -1.0f; // sets values[3] to -1.0f;
+//!
+//! // values is now {10, -1, -1, -1, 50, 60, -1, 80}
+//! \endcode
+//!
+//! \see make_permutation_iterator
 template <typename ElementIterator, typename IndexIterator>
 class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
-    : public thrust::detail::permutation_iterator_base<ElementIterator, IndexIterator>::type
+    : public detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type
 {
-  /*! \cond
-   */
+  //! \cond
 
-private:
-  using super_t = typename detail::permutation_iterator_base<ElementIterator, IndexIterator>::type;
+  using super_t = typename detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type;
 
-  friend class thrust::iterator_core_access;
-  /*! \endcond
-   */
+  friend class iterator_core_access;
+  //! \endcond
 
 public:
-  /*! Null constructor calls the null constructor of this \p permutation_iterator's
-   *  element iterator.
-   */
+  //! Null constructor calls the null constructor of this \p permutation_iterator's element iterator.
   permutation_iterator() = default;
 
-  /*! Constructor accepts an \c ElementIterator into a range of values and an
-   *  \c IndexIterator into a range of indices defining the indexing scheme on the
-   *  values.
-   *
-   *  \param x An \c ElementIterator pointing this \p permutation_iterator's range of values.
-   *  \param y An \c IndexIterator pointing to an indexing scheme to use on \p x.
-   */
+  //! Constructor accepts an \c ElementIterator into a range of values and an \c IndexIterator into a range of indices
+  //! defining the indexing scheme on the values.
+  //!
+  //! \param x An \c ElementIterator pointing this \p permutation_iterator's range of values.
+  //! \param y An \c IndexIterator pointing to an indexing scheme to use on \p x.
   _CCCL_HOST_DEVICE explicit permutation_iterator(ElementIterator x, IndexIterator y)
       : super_t(y)
       , m_element_iterator(x)
   {}
 
-  /*! Copy constructor accepts a related \p permutation_iterator.
-   *  \param r A compatible \p permutation_iterator to copy from.
-   */
+  //! Copy constructor accepts a related \p permutation_iterator. \param r A compatible \p permutation_iterator to copy
+  //! from.
   template <typename OtherElementIterator,
             typename OtherIndexIterator,
             detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,
@@ -165,8 +159,7 @@ public:
       , m_element_iterator(rhs.m_element_iterator)
   {}
 
-  /*! \cond
-   */
+  //! \cond
 
 private:
   // MSVC incorrectly warning about returning a reference to a local/temporary here.
@@ -182,29 +175,22 @@ private:
     return *(m_element_iterator + *this->base());
   }
 
-#if _CCCL_COMPILER(MSVC2017)
-  _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER(MSVC2017)
-
   // make friends for the copy constructor
   template <typename, typename>
   friend class permutation_iterator;
 
   ElementIterator m_element_iterator;
-  /*! \endcond
-   */
-}; // end permutation_iterator
+  //! \endcond
+};
 
-/*! \p make_permutation_iterator creates a \p permutation_iterator
- *  from an \c ElementIterator pointing to a range of elements to "permute"
- *  and an \c IndexIterator pointing to a range of indices defining an indexing
- *  scheme on the values.
- *
- *  \param e An \c ElementIterator pointing to a range of values.
- *  \param i An \c IndexIterator pointing to an indexing scheme to use on \p e.
- *  \return A new \p permutation_iterator which permutes the range \p e by \p i.
- *  \see permutation_iterator
- */
+//! \p make_permutation_iterator creates a \p permutation_iterator from an \c ElementIterator pointing to a range of
+//! elements to "permute" and an \c IndexIterator pointing to a range of indices defining an indexing scheme on the
+//! values.
+//!
+//! \param e An \c ElementIterator pointing to a range of values.
+//! \param i An \c IndexIterator pointing to an indexing scheme to use on \p e.
+//! \return A new \p permutation_iterator which permutes the range \p e by \p i.
+//! \see permutation_iterator
 template <typename ElementIterator, typename IndexIterator>
 _CCCL_HOST_DEVICE permutation_iterator<ElementIterator, IndexIterator>
 make_permutation_iterator(ElementIterator e, IndexIterator i)
@@ -212,10 +198,7 @@ make_permutation_iterator(ElementIterator e, IndexIterator i)
   return permutation_iterator<ElementIterator, IndexIterator>(e, i);
 }
 
-/*! \} // end fancyiterators
- */
-
-/*! \} // end iterators
- */
+//! \} // end fancyiterators
+//! \} // end iterators
 
 THRUST_NAMESPACE_END

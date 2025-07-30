@@ -25,202 +25,267 @@
  *
  ******************************************************************************/
 
-#include <cuda.h>
-
 #include <string>
 
-#include <c2h/catch2_test_helper.h>
+#include <cuda.h>
 #include <nvrtc.h>
 #include <nvrtc_args.h>
+
+#include <c2h/catch2_test_helper.h>
 
 TEST_CASE("Test nvrtc", "[test][nvrtc]")
 {
   nvrtcProgram prog{};
 
-  const char* src =
-    "#include <cub/warp/warp_reduce.cuh>                                                         \n"
-    "#include <cub/warp/warp_scan.cuh>                                                           \n"
-    "#include <cub/warp/warp_exchange.cuh>                                                       \n"
-    "#include <cub/warp/warp_load.cuh>                                                           \n"
-    "#include <cub/warp/warp_store.cuh>                                                          \n"
-    "#include <cub/warp/warp_merge_sort.cuh>                                                     \n"
-    "#include <cub/block/block_adjacent_difference.cuh>                                          \n"
-    "#include <cub/block/block_discontinuity.cuh>                                                \n"
-    "#include <cub/block/block_exchange.cuh>                                                     \n"
-    "#include <cub/block/block_histogram.cuh>                                                    \n"
-    "#include <cub/block/block_load.cuh>                                                         \n"
-    "#include <cub/block/block_store.cuh>                                                        \n"
-    "#include <cub/block/block_merge_sort.cuh>                                                   \n"
-    "#include <cub/block/block_radix_rank.cuh>                                                   \n"
-    "#include <cub/block/block_radix_sort.cuh>                                                   \n"
-    "#include <cub/block/block_reduce.cuh>                                                       \n"
-    "#include <cub/block/block_scan.cuh>                                                         \n"
-    "#include <cub/device/dispatch/kernels/reduce.cuh>                                           \n"
-    "#include <cub/device/dispatch/kernels/for_each.cuh>                                         \n"
-    "#include <cub/device/dispatch/kernels/scan.cuh>                                             \n"
-    "                                                                                            \n"
-    "extern \"C\" __global__ void kernel(int *ptr, int *errors)                                  \n"
-    "{                                                                                           \n"
-    "  constexpr int items_per_thread = 4;                                                       \n"
-    "  constexpr int threads_per_block = 128;                                                    \n"
-    "  using warp_load_t = cub::WarpLoad<int, items_per_thread>;                                 \n"
-    "  using warp_load_storage_t = warp_load_t::TempStorage;                                     \n"
-    "                                                                                            \n"
-    "  using warp_exchange_t = cub::WarpExchange<int, items_per_thread>;                         \n"
-    "  using warp_exchange_storage_t = warp_exchange_t::TempStorage;                             \n"
-    "                                                                                            \n"
-    "  using warp_reduce_t = cub::WarpReduce<int>;                                               \n"
-    "  using warp_reduce_storage_t = warp_reduce_t::TempStorage;                                 \n"
-    "                                                                                            \n"
-    "  using warp_merge_sort_t = cub::WarpMergeSort<int, items_per_thread>;                      \n"
-    "  using warp_merge_sort_storage_t = warp_merge_sort_t::TempStorage;                         \n"
-    "                                                                                            \n"
-    "  using warp_scan_t = cub::WarpScan<int>;                                                   \n"
-    "  using warp_scan_storage_t = warp_scan_t::TempStorage;                                     \n"
-    "                                                                                            \n"
-    "  using warp_store_t = cub::WarpStore<int, items_per_thread>;                               \n"
-    "  using warp_store_storage_t = warp_store_t::TempStorage;                                   \n"
-    "                                                                                            \n"
-    "  __shared__ warp_load_storage_t warp_load_storage;                                         \n"
-    "  __shared__ warp_exchange_storage_t warp_exchange_storage;                                 \n"
-    "  __shared__ warp_reduce_storage_t warp_reduce_storage;                                     \n"
-    "  __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;                             \n"
-    "  __shared__ warp_scan_storage_t warp_scan_storage;                                         \n"
-    "  __shared__ warp_store_storage_t warp_store_storage;                                       \n"
-    "                                                                                            \n"
-    "  int items[items_per_thread];                                                              \n"
-    "  if (threadIdx.x < 32)                                                                     \n"
-    "  {                                                                                         \n"
-    "    // Test warp load                                                                       \n"
-    "    warp_load_t(warp_load_storage).Load(ptr, items);                                        \n"
-    "                                                                                            \n"
-    "    for (int i = 0; i < items_per_thread; i++)                                              \n"
-    "    {                                                                                       \n"
-    "      if (items[i] != (i + threadIdx.x * items_per_thread))                                 \n"
-    "      {                                                                                     \n"
-    "        atomicAdd(errors, 1);                                                               \n"
-    "      }                                                                                     \n"
-    "    }                                                                                       \n"
-    "                                                                                            \n"
-    "    // Test warp exchange                                                                   \n"
-    "    warp_exchange_t(warp_exchange_storage).BlockedToStriped(items, items);                  \n"
-    "                                                                                            \n"
-    "    for (int i = 0; i < items_per_thread; i++)                                              \n"
-    "    {                                                                                       \n"
-    "      if (items[i] != (i * 32 + threadIdx.x))                                               \n"
-    "      {                                                                                     \n"
-    "        atomicAdd(errors, 1);                                                               \n"
-    "      }                                                                                     \n"
-    "    }                                                                                       \n"
-    "                                                                                            \n"
-    "    // Test warp reduce                                                                     \n"
-    "    const int sum = warp_reduce_t(warp_reduce_storage).Sum(items[0]);                       \n"
-    "    if (threadIdx.x == 0)                                                                   \n"
-    "    {                                                                                       \n"
-    "      if (sum != (32 * (32 - 1) / 2))                                                       \n"
-    "      {                                                                                     \n"
-    "        atomicAdd(errors, 1);                                                               \n"
-    "      }                                                                                     \n"
-    "    }                                                                                       \n"
-    "                                                                                            \n"
-    "    // Test warp scan                                                                       \n"
-    "    int prefix_sum{};                                                                       \n"
-    "    warp_scan_t(warp_scan_storage).InclusiveSum(items[0], prefix_sum);                      \n"
-    "    if (prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))                                \n"
-    "    {                                                                                       \n"
-    "      atomicAdd(errors, 1);                                                                 \n"
-    "    }                                                                                       \n"
-    "                                                                                            \n"
-    "    // Test warp merge sort                                                                 \n"
-    "    warp_merge_sort_t(warp_merge_sort_storage).Sort(                                        \n"
-    "      items,                                                                                \n"
-    "      [](int a, int b) { return a < b; });                                                  \n"
-    "                                                                                            \n"
-    "    for (int i = 0; i < items_per_thread; i++)                                              \n"
-    "    {                                                                                       \n"
-    "      if (items[i] != (i + threadIdx.x * items_per_thread))                                 \n"
-    "      {                                                                                     \n"
-    "        atomicAdd(errors, 1);                                                               \n"
-    "      }                                                                                     \n"
-    "    }                                                                                       \n"
-    "                                                                                            \n"
-    "    // Test warp store                                                                      \n"
-    "    warp_store_t(warp_store_storage).Store(ptr, items);                                     \n"
-    "  }                                                                                         \n"
-    "  __syncthreads();                                                                          \n"
-    "                                                                                            \n"
-    "  using block_load_t = cub::BlockLoad<int, threads_per_block, items_per_thread>;            \n"
-    "  using block_load_storage_t = block_load_t::TempStorage;                                   \n"
-    "                                                                                            \n"
-    "  using block_exchange_t = cub::BlockExchange<int, threads_per_block, items_per_thread>;    \n"
-    "  using block_exchange_storage_t = block_exchange_t::TempStorage;                           \n"
-    "                                                                                            \n"
-    "  using block_reduce_t = cub::BlockReduce<int, threads_per_block>;                          \n"
-    "  using block_reduce_storage_t = block_reduce_t::TempStorage;                               \n"
-    "                                                                                            \n"
-    "  using block_scan_t = cub::BlockScan<int, threads_per_block>;                              \n"
-    "  using block_scan_storage_t = block_scan_t::TempStorage;                                   \n"
-    "                                                                                            \n"
-    "  using block_radix_sort_t = cub::BlockRadixSort<int, threads_per_block, items_per_thread>; \n"
-    "  using block_radix_sort_storage_t = block_radix_sort_t::TempStorage;                       \n"
-    "                                                                                            \n"
-    "  using block_store_t = cub::BlockStore<int, threads_per_block, items_per_thread>;          \n"
-    "  using block_store_storage_t = block_store_t::TempStorage;                                 \n"
-    "                                                                                            \n"
-    "  __shared__ block_load_storage_t block_load_storage;                                       \n"
-    "  __shared__ block_exchange_storage_t block_exchange_storage;                               \n"
-    "  __shared__ block_reduce_storage_t block_reduce_storage;                                   \n"
-    "  __shared__ block_scan_storage_t block_scan_storage;                                       \n"
-    "  __shared__ block_radix_sort_storage_t block_radix_sort_storage;                           \n"
-    "  __shared__ block_store_storage_t block_store_storage;                                     \n"
-    "                                                                                            \n"
-    "  // Test block load                                                                        \n"
-    "  block_load_t(block_load_storage).Load(ptr, items);                                        \n"
-    "                                                                                            \n"
-    "  for (int i = 0; i < items_per_thread; i++)                                                \n"
-    "  {                                                                                         \n"
-    "    if (items[i] != (i + threadIdx.x * items_per_thread))                                   \n"
-    "    {                                                                                       \n"
-    "      atomicAdd(errors, 1);                                                                 \n"
-    "    }                                                                                       \n"
-    "  }                                                                                         \n"
-    "                                                                                            \n"
-    "  // Test block exchange                                                                    \n"
-    "  block_exchange_t(block_exchange_storage).BlockedToStriped(items, items);                  \n"
-    "                                                                                            \n"
-    "  for (int i = 0; i < items_per_thread; i++)                                                \n"
-    "  {                                                                                         \n"
-    "    if (items[i] != (i * threads_per_block + threadIdx.x))                                  \n"
-    "    {                                                                                       \n"
-    "      atomicAdd(errors, 1);                                                                 \n"
-    "    }                                                                                       \n"
-    "  }                                                                                         \n"
-    "                                                                                            \n"
-    "  // Test block reduce                                                                      \n"
-    "  const int sum = block_reduce_t(block_reduce_storage).Sum(items[0]);                       \n"
-    "  if (threadIdx.x == 0)                                                                     \n"
-    "  {                                                                                         \n"
-    "    if (sum != (threads_per_block * (threads_per_block - 1) / 2))                           \n"
-    "    {                                                                                       \n"
-    "      atomicAdd(errors, 1);                                                                 \n"
-    "    }                                                                                       \n"
-    "  }                                                                                         \n"
-    "                                                                                            \n"
-    "  // Test block scan                                                                        \n"
-    "  int prefix_sum{};                                                                         \n"
-    "  block_scan_t(block_scan_storage).InclusiveSum(items[0], prefix_sum);                      \n"
-    "  if (prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))                                  \n"
-    "  {                                                                                         \n"
-    "    atomicAdd(errors, 1);                                                                   \n"
-    "  }                                                                                         \n"
-    "                                                                                            \n"
-    "  // Test block radix sort                                                                  \n"
-    "  block_radix_sort_t(block_radix_sort_storage).SortDescending(items);                       \n"
-    "                                                                                            \n"
-    "  // Test block store                                                                       \n"
-    "  block_store_t(block_store_storage).Store(ptr, items);                                     \n"
-    "}                                                                                           \n";
+  const char* src  = R"asdf(
+    #include <cub/agent/agent_adjacent_difference.cuh>
+    #include <cub/agent/agent_batch_memcpy.cuh>
+    #include <cub/agent/agent_for.cuh>
+    #include <cub/agent/agent_histogram.cuh>
+    #include <cub/agent/agent_merge.cuh>
+    #include <cub/agent/agent_merge_sort.cuh>
+    #include <cub/agent/agent_radix_sort_downsweep.cuh>
+    #include <cub/agent/agent_radix_sort_histogram.cuh>
+    #include <cub/agent/agent_radix_sort_onesweep.cuh>
+    #include <cub/agent/agent_radix_sort_upsweep.cuh>
+    #include <cub/agent/agent_reduce_by_key.cuh>
+    #include <cub/agent/agent_reduce.cuh>
+    #include <cub/agent/agent_rle.cuh>
+    #include <cub/agent/agent_scan_by_key.cuh>
+    #include <cub/agent/agent_scan.cuh>
+    #include <cub/agent/agent_segmented_radix_sort.cuh>
+    #include <cub/agent/agent_select_if.cuh>
+    #include <cub/agent/agent_sub_warp_merge_sort.cuh>
+    #include <cub/agent/agent_three_way_partition.cuh>
+    #include <cub/agent/agent_unique_by_key.cuh>
+    #include <cub/agent/single_pass_scan_operators.cuh>
+    #include <cub/block/block_adjacent_difference.cuh>
+    #include <cub/block/block_discontinuity.cuh>
+    #include <cub/block/block_exchange.cuh>
+    #include <cub/block/block_histogram.cuh>
+    #include <cub/block/block_load.cuh>
+    #include <cub/block/block_store.cuh>
+    #include <cub/block/block_merge_sort.cuh>
+    #include <cub/block/block_radix_rank.cuh>
+    #include <cub/block/block_radix_sort.cuh>
+    #include <cub/block/block_raking_layout.cuh>
+    #include <cub/block/block_reduce.cuh>
+    #include <cub/block/block_run_length_decode.cuh>
+    #include <cub/block/block_scan.cuh>
+    #include <cub/block/block_shuffle.cuh>
+    #include <cub/block/block_store.cuh>
+    #include <cub/block/radix_rank_sort_operations.cuh>
+    #include <cub/device/dispatch/kernels/reduce.cuh>
+    #include <cub/device/dispatch/kernels/for_each.cuh>
+    #include <cub/device/dispatch/kernels/scan.cuh>
+    #include <cub/device/dispatch/kernels/merge_sort.cuh>
+    #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
+    #include <cub/device/dispatch/kernels/radix_sort.cuh>
+    #include <cub/device/dispatch/kernels/unique_by_key.cuh>
+    #include <cub/device/dispatch/kernels/transform.cuh>
+    #include <cub/device/dispatch/kernels/histogram.cuh>
+    #include <cub/iterator/arg_index_input_iterator.cuh>
+    #include <cub/iterator/cache_modified_input_iterator.cuh>
+    #include <cub/iterator/cache_modified_output_iterator.cuh>
+    #include <cub/iterator/tex_obj_input_iterator.cuh>
+    #include <cub/thread/thread_load.cuh>
+    #include <cub/thread/thread_operators.cuh>
+    #include <cub/thread/thread_reduce.cuh>
+    #include <cub/thread/thread_scan.cuh>
+    #include <cub/thread/thread_sort.cuh>
+    #include <cub/thread/thread_store.cuh>
+    #include <cub/warp/warp_reduce.cuh>
+    #include <cub/warp/warp_scan.cuh>
+    #include <cub/warp/warp_exchange.cuh>
+    #include <cub/warp/warp_load.cuh>
+    #include <cub/warp/warp_store.cuh>
+    #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/util_arch.cuh>
+    #include <cub/util_cpp_dialect.cuh>
+    #include <cub/util_debug.cuh>
+    #include <cub/util_device.cuh>
+    #include <cub/util_macro.cuh>
+    #include <cub/util_math.cuh>
+    #include <cub/util_namespace.cuh>
+    #include <cub/util_policy_wrapper_t.cuh>
+    #include <cub/util_ptx.cuh>
+    #include <cub/util_temporary_storage.cuh>
+    #include <cub/util_type.cuh>
+    #include <cub/util_vsmem.cuh>
 
+    #include <thrust/iterator/constant_iterator.h>
+    #include <thrust/iterator/counting_iterator.h>
+    #include <thrust/iterator/discard_iterator.h>
+    #include <thrust/iterator/permutation_iterator.h>
+    #include <thrust/iterator/reverse_iterator.h>
+    #include <thrust/iterator/tabulate_output_iterator.h>
+    #include <thrust/iterator/transform_input_output_iterator.h>
+    #include <thrust/iterator/transform_iterator.h>
+    #include <thrust/iterator/transform_output_iterator.h>
+    #include <thrust/iterator/zip_iterator.h>
+
+    extern "C" __global__ void kernel(int *ptr, int *errors)
+    {
+      constexpr int items_per_thread = 4;
+      constexpr int threads_per_block = 128;
+      using warp_load_t = cub::WarpLoad<int, items_per_thread>;
+      using warp_load_storage_t = warp_load_t::TempStorage;
+
+      using warp_exchange_t = cub::WarpExchange<int, items_per_thread>;
+      using warp_exchange_storage_t = warp_exchange_t::TempStorage;
+
+      using warp_reduce_t = cub::WarpReduce<int>;
+      using warp_reduce_storage_t = warp_reduce_t::TempStorage;
+
+      using warp_merge_sort_t = cub::WarpMergeSort<int, items_per_thread>;
+      using warp_merge_sort_storage_t = warp_merge_sort_t::TempStorage;
+
+      using warp_scan_t = cub::WarpScan<int>;
+      using warp_scan_storage_t = warp_scan_t::TempStorage;
+
+      using warp_store_t = cub::WarpStore<int, items_per_thread>;
+      using warp_store_storage_t = warp_store_t::TempStorage;
+
+      __shared__ warp_load_storage_t warp_load_storage;
+      __shared__ warp_exchange_storage_t warp_exchange_storage;
+      __shared__ warp_reduce_storage_t warp_reduce_storage;
+      __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;
+      __shared__ warp_scan_storage_t warp_scan_storage;
+      __shared__ warp_store_storage_t warp_store_storage;
+
+      int items[items_per_thread];
+      if (threadIdx.x < 32)
+      {
+        // Test warp load
+        warp_load_t(warp_load_storage).Load(ptr, items);
+
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          if (items[i] != (i + threadIdx.x * items_per_thread))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test warp exchange
+        warp_exchange_t(warp_exchange_storage).BlockedToStriped(items, items);
+
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          if (items[i] != (i * 32 + threadIdx.x))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test warp reduce
+        const int sum = warp_reduce_t(warp_reduce_storage).Sum(items[0]);
+        if (threadIdx.x == 0)
+        {
+          if (sum != (32 * (32 - 1) / 2))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test warp scan
+        int prefix_sum{};
+        warp_scan_t(warp_scan_storage).InclusiveSum(items[0], prefix_sum);
+        if (prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))
+        {
+          atomicAdd(errors, 1);
+        }
+
+        // Test warp merge sort
+        warp_merge_sort_t(warp_merge_sort_storage).Sort(
+          items,
+          [](int a, int b) { return a < b; });
+
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          if (items[i] != (i + threadIdx.x * items_per_thread))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test warp store
+        warp_store_t(warp_store_storage).Store(ptr, items);
+      }
+      __syncthreads();
+
+      using block_load_t = cub::BlockLoad<int, threads_per_block, items_per_thread>;
+      using block_load_storage_t = block_load_t::TempStorage;
+
+      using block_exchange_t = cub::BlockExchange<int, threads_per_block, items_per_thread>;
+      using block_exchange_storage_t = block_exchange_t::TempStorage;
+
+      using block_reduce_t = cub::BlockReduce<int, threads_per_block>;
+      using block_reduce_storage_t = block_reduce_t::TempStorage;
+
+      using block_scan_t = cub::BlockScan<int, threads_per_block>;
+      using block_scan_storage_t = block_scan_t::TempStorage;
+
+      using block_radix_sort_t = cub::BlockRadixSort<int, threads_per_block, items_per_thread>;
+      using block_radix_sort_storage_t = block_radix_sort_t::TempStorage;
+
+      using block_store_t = cub::BlockStore<int, threads_per_block, items_per_thread>;
+      using block_store_storage_t = block_store_t::TempStorage;
+
+      __shared__ block_load_storage_t block_load_storage;
+      __shared__ block_exchange_storage_t block_exchange_storage;
+      __shared__ block_reduce_storage_t block_reduce_storage;
+      __shared__ block_scan_storage_t block_scan_storage;
+      __shared__ block_radix_sort_storage_t block_radix_sort_storage;
+      __shared__ block_store_storage_t block_store_storage;
+
+      // Test block load
+      block_load_t(block_load_storage).Load(ptr, items);
+
+      for (int i = 0; i < items_per_thread; i++)
+      {
+        if (items[i] != (i + threadIdx.x * items_per_thread))
+        {
+          atomicAdd(errors, 1);
+        }
+      }
+
+      // Test block exchange
+      block_exchange_t(block_exchange_storage).BlockedToStriped(items, items);
+
+      for (int i = 0; i < items_per_thread; i++)
+      {
+        if (items[i] != (i * threads_per_block + threadIdx.x))
+        {
+          atomicAdd(errors, 1);
+        }
+      }
+
+      // Test block reduce
+      const int sum = block_reduce_t(block_reduce_storage).Sum(items[0]);
+      if (threadIdx.x == 0)
+      {
+        if (sum != (threads_per_block * (threads_per_block - 1) / 2))
+        {
+          atomicAdd(errors, 1);
+        }
+      }
+
+      // Test block scan
+      int prefix_sum{};
+      block_scan_t(block_scan_storage).InclusiveSum(items[0], prefix_sum);
+      if (prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))
+      {
+        atomicAdd(errors, 1);
+      }
+
+      // Test block radix sort
+      block_radix_sort_t(block_radix_sort_storage).SortDescending(items);
+
+      // Test block store
+      block_store_t(block_store_storage).Store(ptr, items);
+    }
+)asdf";
   const char* name = "test";
 
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, src, name, 0, nullptr, nullptr));
@@ -258,7 +323,8 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
-  REQUIRE(CUDA_SUCCESS == cuCtxCreate(&context, 0, device));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRetain(&context, device));
+  REQUIRE(CUDA_SUCCESS == cuCtxSetCurrent(context));
   REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
@@ -301,5 +367,5 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_ptr));
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_err));
   REQUIRE(CUDA_SUCCESS == cuModuleUnload(module));
-  REQUIRE(CUDA_SUCCESS == cuCtxDestroy(context));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRelease(device));
 }

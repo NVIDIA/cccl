@@ -32,9 +32,9 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/auto_cast.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+#include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 // [range.access.rend]
 
@@ -44,7 +44,7 @@ void rend(_Tp&) = delete;
 template <class _Tp>
 void rend(const _Tp&) = delete;
 
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_rend = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   _CUDA_VRANGES::rbegin(__t);
@@ -63,7 +63,7 @@ concept __can_reverse = __can_borrow<_Tp> && !__member_rend<_Tp> && !__unqualifi
   { _CUDA_VRANGES::begin(__t) } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
   { _CUDA_VRANGES::begin(__t) } -> bidirectional_iterator;
 };
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __member_rend_,
@@ -100,7 +100,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp>
 _CCCL_CONCEPT __can_reverse = _CCCL_FRAGMENT(__can_reverse_, _Tp);
-#  endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 class __fn
 {
@@ -108,7 +108,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_rend<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rend())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.rend());
@@ -117,7 +117,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_rend<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rend(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(rend(__t));
@@ -126,8 +126,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_reverse<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::begin(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CUDA_VRANGES::begin(__t)))
   {
     return _CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::begin(__t));
   }
@@ -151,7 +150,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
@@ -161,7 +160,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t))))
       -> decltype(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))
   {
@@ -175,8 +174,8 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
-
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_REND_H

@@ -93,7 +93,7 @@ public:
     upstream_pool.release();
   }
 
-  _CCCL_NODISCARD virtual void_ptr
+  [[nodiscard]] virtual void_ptr
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     lock_t lock(mtx);

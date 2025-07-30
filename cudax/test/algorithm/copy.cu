@@ -10,13 +10,13 @@
 
 #include "common.cuh"
 
-TEST_CASE("1d Copy", "[data_manipulation]")
+C2H_TEST("1d Copy", "[data_manipulation]")
 {
-  cudax::stream _stream;
+  cudax::stream _stream{cuda::device_ref{0}};
 
   SECTION("Device resource")
   {
-    cudax::device_memory_resource device_resource;
+    cudax::device_memory_resource device_resource{cuda::device_ref{0}};
     std::vector<int> host_vector(buffer_size);
 
     {
@@ -47,7 +47,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   SECTION("Host and managed resource")
   {
     cudax::managed_memory_resource managed_resource;
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, buffer_size);
@@ -78,7 +78,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer input(host_resource, buffer_size);
     cudax::weird_buffer output(host_resource, buffer_size);
 
@@ -90,14 +90,14 @@ TEST_CASE("1d Copy", "[data_manipulation]")
 
   SECTION("Asymmetric size")
   {
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
     cudax::fill_bytes(_stream, host_buffer, fill_byte);
 
     ::std::vector<int> vec(buffer_size, 0xbeef);
 
     cudax::copy_bytes(_stream, host_buffer, vec);
-    _stream.wait();
+    _stream.sync();
 
     CUDAX_REQUIRE(vec[0] == get_expected_value(fill_byte));
     CUDAX_REQUIRE(vec[1] == 0xbeef);
@@ -123,7 +123,7 @@ void test_mdspan_copy_bytes(
   }
 
   cudax::copy_bytes(stream, std::move(src), dst);
-  stream.wait();
+  stream.sync();
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
   {
@@ -131,9 +131,9 @@ void test_mdspan_copy_bytes(
   }
 }
 
-TEST_CASE("Mdspan copy", "[data_manipulation]")
+C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
-  cudax::stream stream;
+  cudax::stream stream{cuda::device_ref{0}};
 
   SECTION("Different extents")
   {
@@ -154,16 +154,34 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
 
   SECTION("Launch transform")
   {
+    auto host_resource = cudax::legacy_pinned_memory_resource{};
     auto mixed_extents =
       cuda::std::extents<size_t, 1024, cuda::std::dynamic_extent, 2, cuda::std::dynamic_extent>(1024, 2);
     [[maybe_unused]] auto static_extents = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
     auto mdspan_buffer                   = make_buffer_for_mdspan(mixed_extents, 1);
     cuda::std::mdspan<int, decltype(mixed_extents)> mdspan(mdspan_buffer.data(), mixed_extents);
     cudax::weird_buffer<cuda::std::mdspan<int, decltype(static_extents)>> buffer{
-      cudax::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
+      host_resource, mdspan.mapping().required_span_size()};
 
     cudax::copy_bytes(stream, mdspan, buffer);
-    stream.wait();
+    stream.sync();
     CUDAX_REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
+  }
+}
+
+C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
+{
+  cudax::stream stream{cuda::device_ref{0}};
+  {
+    auto fake_strided_mdspan = create_fake_strided_mdspan();
+
+    try
+    {
+      cudax::copy_bytes(stream, fake_strided_mdspan, fake_strided_mdspan);
+    }
+    catch (const ::std::invalid_argument& e)
+    {
+      CHECK(e.what() == ::std::string("copy_bytes supports only exhaustive mdspans"));
+    }
   }
 }

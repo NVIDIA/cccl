@@ -2,12 +2,18 @@
 # without anything else but also pretents to be a std header
 add_custom_target(libcudacxx.test.public_headers_host_only)
 
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  find_package(NVHPC)
+else()
+  find_package(CUDAToolkit)
+endif()
+
 # Grep all public headers
 file(GLOB public_headers_host_only
   LIST_DIRECTORIES false
   RELATIVE "${libcudacxx_SOURCE_DIR}/include/"
   CONFIGURE_DEPENDS
-  "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/*"
 )
 
 # mdspan is currently not supported on msvc outside of C++20
@@ -28,11 +34,18 @@ function(libcudacxx_add_std_header_test header)
   add_library(headertest_std_${header_name} SHARED "${headertest_src}.cpp")
   target_include_directories(headertest_std_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_options(headertest_std_${header_name} PRIVATE ${headertest_warning_levels_host})
-  target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
-  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-    target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+  target_compile_definitions(headertest_std_${header_name} PRIVATE
+    _CCCL_HEADER_TEST
+    CCCL_ENABLE_ASSERTIONS
+    CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+    CCCL_ENABLE_OPTIONAL_REF)
+
+  # We want to ensure that we can build headers within <cuda/> with a host compiler but we need cuda_runtime_api.h
+  if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    target_link_libraries(headertest_std_${header_name} NVHPC::CUDART)
+  else()
+    target_link_libraries(headertest_std_${header_name} CUDA::cudart)
   endif()
-  target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
 
   add_dependencies(libcudacxx.test.public_headers_host_only headertest_std_${header_name})
 endfunction()

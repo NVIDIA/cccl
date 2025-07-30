@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // template<class T>
@@ -20,9 +19,7 @@
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::empty_view<int>>);
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::empty_view<int*>>);
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::empty_view<BorrowedView>>);
-#if _LIBCUDACXX_HAS_RANGES
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::empty_view<NonBorrowedView>>);
-#endif
 
 int main(int, char**)
 {

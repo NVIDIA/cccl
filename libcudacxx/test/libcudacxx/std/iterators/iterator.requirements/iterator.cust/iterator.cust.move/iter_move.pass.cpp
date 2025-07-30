@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class I>
 // unspecified iter_move;
 
@@ -236,18 +234,16 @@ __host__ __device__ constexpr bool test()
   static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<true>>())), "");
   static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<true>>())), "");
 // old GCC seems to fall over the chaining of the noexcept clauses here
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9)
+#if !TEST_COMPILER(GCC, <, 9)
   static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())), "");
   static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())), "");
-#endif
+#endif // !TEST_COMPILER(GCC, <, 9)
 
   return true;
 }
 
-#if _CCCL_CUDACC_AT_LEAST(11, 3) // nvcc segfaults here
 static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>, ""); // too many arguments
 static_assert(!cuda::std::is_invocable_v<IterMoveT, int>, "");
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.

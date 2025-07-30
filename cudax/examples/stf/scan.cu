@@ -90,7 +90,7 @@ int main(int argc, char** argv)
   // dummy task to initialize the allocator XXX
   {
     auto ldummy = ctx.logical_data(shape_of<slice<double>>(NBLOCKS)).set_symbol("dummy");
-    ctx.task(ldummy.write(data_place::managed))->*[](cudaStream_t, auto) {};
+    ctx.task(ldummy.write(data_place::managed()))->*[](cudaStream_t, auto) {};
   }
 
   std::vector<double> X(N);
@@ -123,18 +123,18 @@ int main(int argc, char** argv)
     };
   }
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   cudaEvent_t start, stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   for (size_t k = 0; k < 100; k++)
   {
     // Create an auxiliary temporary buffer and blank it
     laux = ctx.logical_data(shape_of<slice<double>>(NBLOCKS)).set_symbol("aux");
-    ctx.parallel_for(laux.shape(), laux.write(data_place::managed)).set_symbol("init_aux")
+    ctx.parallel_for(laux.shape(), laux.write(data_place::managed())).set_symbol("init_aux")
         ->*[] _CCCL_DEVICE(size_t i, auto aux) {
               aux(i) = 0.0;
             };
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
       ctx.parallel_for(exec_place::device(0),
                        box({b, b + 1}),
                        lX[b].read(data_place::device(b % ndevs)),
-                       laux.rw(data_place::managed))
+                       laux.rw(data_place::managed()))
           .set_symbol("store sum X_" + std::to_string(b))
           ->*[] _CCCL_DEVICE(size_t ind, auto Xb, auto aux) {
                 aux(ind) = Xb(Xb.extent(0) - 1);
@@ -161,13 +161,13 @@ int main(int argc, char** argv)
     }
 
     // Prefix sum of the per-block sums
-    scan(ctx, laux, data_place::managed);
+    scan(ctx, laux, data_place::managed());
 
     // Add partial sum of Xi to X(i+1)
     for (size_t b = 1; b < NBLOCKS; b++)
     {
       cuda_safe_call(cudaSetDevice(b % ndevs));
-      ctx.parallel_for(lX[b].shape(), lX[b].rw(), laux.read(data_place::managed))
+      ctx.parallel_for(lX[b].shape(), lX[b].rw(), laux.read(data_place::managed()))
           .set_symbol("add X_" + std::to_string(b))
           ->*[=] _CCCL_DEVICE(size_t i, auto Xb, auto aux) {
                 Xb(i) += aux(b - 1);
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
     }
   }
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -30,7 +30,9 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <map>
 #include <mutex>
 #include <optional>
 
@@ -60,10 +62,10 @@ public:
   task_set() = default;
 
   /* Add a task to the set : this will copy the done prereqs, and save the ID */
-  void add(const task& t)
+  void add(backend_ctx_untyped& bctx, const task& t)
   {
     done_prereqs.merge(t.get_done_prereqs());
-    done_prereqs.optimize();
+    done_prereqs.optimize(bctx);
     // this will maybe depend on the use of dot or not
     task_ids.push_back(t.get_unique_id());
   }
@@ -166,12 +168,12 @@ public:
     refcnt.store(0);
 
     // This will automatically create a weak_ptr from the shared_ptr
-    ctx.get_stack().logical_data_ids_mutex.lock();
-    ctx.get_stack().logical_data_ids.emplace(get_unique_id(), *this);
-    ctx.get_stack().logical_data_ids_mutex.unlock();
+    ctx.get_state().logical_data_ids_mutex.lock();
+    ctx.get_state().logical_data_ids.emplace(get_unique_id(), *this);
+    ctx.get_state().logical_data_ids_mutex.unlock();
 
     // It is possible that there is no valid copy (e.g. with temporary accesses)
-    if (memory_node == data_place::invalid)
+    if (memory_node.is_invalid())
     {
       return; // no data instance present, so nothing to do for the time being
     }
@@ -187,7 +189,7 @@ public:
     auto& inst = get_data_instance(instance_id);
 
     // If this is host memory, try to pin it
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // ret may be false if we detected that the instance was already pinned, for example
       inst.automatically_pinned = dinterface->pin_host_memory(instance_id);
@@ -196,7 +198,7 @@ public:
 #ifndef NDEBUG
     auto mem_type = dinterface->get_memory_type(instance_id);
 
-    if (memory_node == data_place::managed)
+    if (memory_node.is_managed())
     {
       assert(!mem_type || *mem_type == cudaMemoryTypeManaged);
     }
@@ -216,7 +218,7 @@ public:
     // If the beginning of the context depends on a prereq, we assume this logical data depends on it
     if (ctx.has_start_events())
     {
-      inst.add_read_prereq(ctx.get_start_events());
+      inst.add_read_prereq(ctx, ctx.get_start_events());
     }
 
     // This is not an instance allocated by our library, so we will not
@@ -253,14 +255,14 @@ public:
   // (transfers, allocations etc.) or to have data specific accessors.
   ::std::shared_ptr<data_interface> dinterface;
 
-  void freeze(access_mode freeze_mode, data_place place = data_place::invalid)
+  void freeze(access_mode freeze_mode, data_place place = data_place::invalid())
   {
     // We cannot freeze some logical data that is already frozen
     assert(!frozen_flag);
 
     if (freeze_mode != access_mode::read)
     {
-      assert(place != data_place::invalid);
+      _CCCL_ASSERT(!place.is_invalid(), "invalid data place");
     }
 
     frozen_flag  = true;
@@ -270,12 +272,12 @@ public:
 
   void unfreeze(task& fake_task, event_list prereqs);
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
     automatic_unfreeze = flag;
 
     // Save for future use when destroying data
-    frozen_fake_task = fake_task;
+    unfreeze_fake_task = unfreeze_fake_task_;
   }
 
   // This needs the full definition of logical_data_untyped so the implementation is deferred
@@ -302,7 +304,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> frozen_fake_task;
+  ::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -500,6 +502,7 @@ public:
   {
     return used_instances[size_t(instance_id)];
   }
+
   data_instance& get_data_instance(instance_id_t instance_id)
   {
     return used_instances[size_t(instance_id)];
@@ -516,8 +519,8 @@ public:
                 void** extra_args,
                 event_list& prereqs)
   {
-    assert(memory_node != data_place::invalid);
-    assert(has_interface());
+    _CCCL_ASSERT(!memory_node.is_invalid(), "invalid data place");
+    _CCCL_ASSERT(has_interface(), "");
     // nvtx_range r("allocate");
     // Get the allocator for this logical data
     return dinterface->data_allocate(ctx, get_allocator(), memory_node, instance_id, s, extra_args, prereqs);
@@ -525,7 +528,7 @@ public:
 
   void deallocate(const data_place& memory_node, instance_id_t instance_id, void* extra_args, event_list& prereqs)
   {
-    assert(memory_node != data_place::invalid);
+    _CCCL_ASSERT(!memory_node.is_invalid(), "invalid data place");
     assert(has_interface());
     // nvtx_range r("deallocate");
     return dinterface->data_deallocate(ctx, get_allocator(), memory_node, instance_id, extra_args, prereqs);
@@ -537,9 +540,9 @@ public:
                  instance_id_t src_instance_id,
                  event_list& prereqs)
   {
-    assert(src_node != data_place::invalid);
-    assert(dst_node != data_place::invalid);
-    assert(has_interface());
+    _CCCL_ASSERT(!src_node.is_invalid(), "invalid data place");
+    _CCCL_ASSERT(!dst_node.is_invalid(), "invalid data place");
+    _CCCL_ASSERT(has_interface(), "");
     // nvtx_range r("data_copy");
     ctx.add_transfer(src_node, dst_node, dinterface->data_footprint());
     return dinterface->data_copy(ctx, dst_node, dst_instance_id, src_node, src_instance_id, prereqs);
@@ -604,7 +607,7 @@ public:
         // fprintf(stderr, "RECLAIM %s WITH NO TRANSFER (INVALID)... (wb cnt = %ld)\n", get_symbol().c_str(),
         //         total_write_back_cnt);
         // No-op !
-        current_instance.add_read_prereq(prereqs);
+        current_instance.add_read_prereq(ctx, prereqs);
         break;
 
       case reserved::msir_state_id::modified: {
@@ -620,8 +623,8 @@ public:
         // total_write_back_cnt++;
         // fprintf(stderr, "WRITE BACK... %s (%ld)!!\n", get_symbol().c_str(), total_write_back_cnt);
 
-        ref_instance.add_read_prereq(prereqs);
-        current_instance.add_read_prereq(prereqs);
+        ref_instance.add_read_prereq(ctx, prereqs);
+        current_instance.add_read_prereq(ctx, prereqs);
         break;
       }
 
@@ -645,7 +648,7 @@ public:
         assert(cpy_cnt > 0);
 
         current_instance.set_msir(reserved::msir_state_id::invalid);
-        current_instance.add_read_prereq(prereqs);
+        current_instance.add_read_prereq(ctx, prereqs);
 
         // Update other copies (if needed)
         for (auto n : each(nnodes))
@@ -777,7 +780,7 @@ public:
 
             // Make sure this is finished before we delete the source, for example
             // We do not remove existing prereqs as there can be concurrent copies along with existing read accesses
-            src_instance.add_write_prereq(src_avail_prereq);
+            src_instance.add_write_prereq(ctx, src_avail_prereq);
             dst_instance.set_read_prereq(src_avail_prereq);
             // Everything is already in the read_prereq
             dst_instance.clear_write_prereq();
@@ -1054,7 +1057,7 @@ public:
   }
   ///@}
 
-  void freeze(access_mode freeze_mode, data_place place = data_place::invalid)
+  void freeze(access_mode freeze_mode, data_place place = data_place::invalid())
   {
     pimpl->freeze(freeze_mode, place);
   }
@@ -1070,9 +1073,9 @@ public:
     pimpl->unfreeze(fake_task, mv(prereqs));
   }
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
-    pimpl->set_automatic_unfreeze(fake_task, flag);
+    pimpl->set_automatic_unfreeze(unfreeze_fake_task_, flag);
   }
 
   /**
@@ -1230,22 +1233,22 @@ public:
    * @return task_dep_untyped The dependency object corresponding to this logical data
    */
   ///@{
-  task_dep_untyped read(data_place dp = data_place::affine)
+  task_dep_untyped read(data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::read, mv(dp));
   }
 
-  task_dep_untyped write(data_place dp = data_place::affine)
+  task_dep_untyped write(data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::write, mv(dp));
   }
 
-  task_dep_untyped rw(data_place dp = data_place::affine)
+  task_dep_untyped rw(data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::rw, mv(dp));
   }
 
-  task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine)
+  task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::relaxed, mv(dp), op);
   }
@@ -1335,7 +1338,8 @@ public:
   // temporary results as well.
   // If we have a non relaxed type of access after a reduction
   // instance_id is the data instance which should have a coherent copy after the reduction
-  void reconstruct_after_redux(instance_id_t instance_id, const exec_place& e_place, event_list& prereqs)
+  void reconstruct_after_redux(
+    backend_ctx_untyped& bctx, instance_id_t instance_id, const exec_place& e_place, event_list& prereqs)
   {
     // @@@@TODO@@@@ get from somewhere else (machine ?)
     const size_t max_nodes = cuda_try<cudaGetDeviceCount>() + 2;
@@ -1520,7 +1524,7 @@ public:
 
         // This instance will be used, and we add the current list of events to its existing one
         auto& inst = get_data_instance(copy_instance_id);
-        inst.add_read_prereq(prereqs);
+        inst.add_read_prereq(bctx, prereqs);
 
         // fprintf(stderr, "REUSE INSTANCE %d to copy\n", copy_instance_id);
 #ifdef REDUCTION_DEBUG
@@ -1731,11 +1735,11 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Freeze data automatically : we assume all dependencies on that
     // frozen data are solved by other means (this is the requirement of
     // the set_automatic_unfreeze API)
-    assert(frozen_fake_task.has_value());
-    unfreeze(frozen_fake_task.value(), event_list());
+    assert(unfreeze_fake_task.has_value());
+    unfreeze(unfreeze_fake_task.value(), event_list());
   }
 
-  auto& cs = ctx.get_stack();
+  auto& ctx_st = ctx.get_state();
 
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
@@ -1760,7 +1764,7 @@ inline void reserved::logical_data_untyped_impl::erase()
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
       auto e                       = ref_dplace.get_affine_exec_place();
-      l.reconstruct_after_redux(ref_id, e, wb_prereqs);
+      l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;
     }
@@ -1784,13 +1788,13 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       write_back(src_dplace, src_id, reqs);
 
-      src_instance.add_write_prereq(reqs);
+      src_instance.add_write_prereq(ctx, reqs);
       dst_instance.set_read_prereq(reqs);
 
       if (track_dangling_events)
       {
         // nobody waits for these events, so we put them in the list of dangling events
-        cs.add_dangling_events(reqs);
+        ctx_st.add_dangling_events(ctx, reqs);
       }
     }
   }
@@ -1801,8 +1805,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Unpin an instance if if was automatically pinned
     if (inst_i.automatically_pinned)
     {
-      assert(inst_i.get_dplace() == data_place::host);
-      assert(dinterface);
+      _CCCL_ASSERT(inst_i.get_dplace().is_host(), "");
+      _CCCL_ASSERT(dinterface, "");
       dinterface->unpin_host_memory(i);
     }
 
@@ -1820,7 +1824,7 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       if (track_dangling_events)
       {
-        cs.add_dangling_events(inst_prereqs);
+        ctx_st.add_dangling_events(ctx, inst_prereqs);
       }
     }
 
@@ -1832,7 +1836,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     if (wb_prereqs.size() > 0)
     {
       // nobody waits for these events, so we put them in the list of dangling events
-      cs.add_dangling_events(wb_prereqs);
+      ctx_st.add_dangling_events(ctx, wb_prereqs);
     }
   }
 
@@ -1841,23 +1845,21 @@ inline void reserved::logical_data_untyped_impl::erase()
   // data may be called after finalize()
   h_state.clear();
 
-  cs.logical_data_ids_mutex.lock();
+  ctx_st.logical_data_ids_mutex.lock();
 
   // This unique ID is not associated to a pointer anymore (and should never be reused !)
-  auto& logical_data_ids = cs.logical_data_ids;
-
-  // fprintf(stderr, "REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
-  // &logical_data_ids, logical_data_ids.size());
-
+  //
   // This SHOULD be in the table because that piece of data was created
   // in this context and cannot already have been destroyed.
-  auto erased = logical_data_ids.erase(get_unique_id());
+  auto erased = ctx_st.logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
-  cs.logical_data_ids_mutex.unlock();
+  if (ctx_st.logical_data_stats_enabled)
+  {
+    ctx_st.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
+  }
 
-  // fprintf(stderr, "AFTER REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
-  // &logical_data_ids, logical_data_ids.size());
+  ctx_st.logical_data_ids_mutex.unlock();
 
   // Make sure this we do not erase this twice. For example after calling
   // finalize() there is no need to erase it again in the constructor
@@ -1883,8 +1885,8 @@ inline event_list enforce_stf_deps_before(
   const access_mode mode,
   const ::std::optional<exec_place> eplace)
 {
-  auto result = event_list();
-  auto& cs    = bctx.get_stack();
+  auto result  = event_list();
+  auto& ctx_st = bctx.get_state();
   // Get the context in which we store previous writer, readers, ...
   auto& ctx_ = handle.get_state();
 
@@ -1924,7 +1926,7 @@ inline event_list enforce_stf_deps_before(
       }
       ctx_.pending_redux_id.clear();
     }
-    handle.reconstruct_after_redux(instance_id, eplace.value(), result);
+    handle.reconstruct_after_redux(bctx, instance_id, eplace.value(), result);
     ctx_.current_mode = access_mode::none;
   }
 
@@ -1950,7 +1952,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(cw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(cw_id);
+      ctx_st.leaves.remove(cw_id);
 
       // Replace previous writer
       ctx_.previous_writer = cw;
@@ -1969,7 +1971,7 @@ inline event_list enforce_stf_deps_before(
         {
           dot.add_edge(reader_task_id, task.get_unique_id());
         }
-        cs.remove_leaf_task(reader_task_id);
+        ctx_st.leaves.remove(reader_task_id);
       }
 
       current_readers.clear();
@@ -1998,7 +2000,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(pw_id);
+      ctx_st.leaves.remove(pw_id);
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
@@ -2014,7 +2016,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(pw_id);
+      ctx_st.leaves.remove(pw_id);
     }
 
     // Note : the task will later be added to the list of readers
@@ -2024,7 +2026,8 @@ inline event_list enforce_stf_deps_before(
 }
 
 template <typename task_type>
-inline void enforce_stf_deps_after(logical_data_untyped& handle, const task_type& task, const access_mode mode)
+inline void enforce_stf_deps_after(
+  backend_ctx_untyped& bctx, logical_data_untyped& handle, const task_type& task, const access_mode mode)
 {
   if (mode == access_mode::relaxed)
   {
@@ -2042,13 +2045,13 @@ inline void enforce_stf_deps_after(logical_data_untyped& handle, const task_type
   else
   {
     // Add to the list of readers
-    ctx_.current_readers.add(task);
+    ctx_.current_readers.add(bctx, task);
   }
 }
 
 /* Enforce task dependencies, allocations, and copies ... */
 inline void fetch_data(
-  backend_ctx_untyped& ctx,
+  backend_ctx_untyped& bctx,
   logical_data_untyped& d,
   const instance_id_t instance_id,
   task& t,
@@ -2057,12 +2060,12 @@ inline void fetch_data(
   const data_place& dplace,
   event_list& result)
 {
-  event_list stf_prereq = reserved::enforce_stf_deps_before(ctx, d, instance_id, t, mode, eplace);
+  event_list stf_prereq = reserved::enforce_stf_deps_before(bctx, d, instance_id, t, mode, eplace);
 
   if (d.has_interface() && !d.is_void_interface())
   {
     // Allocate data if needed (and possibly reclaim memory to do so)
-    reserved::dep_allocate(ctx, d, mode, dplace, eplace, instance_id, stf_prereq);
+    reserved::dep_allocate(bctx, d, mode, dplace, eplace, instance_id, stf_prereq);
 
     /*
      * DATA LAZY UPDATE (relying on the MSI protocol)
@@ -2070,15 +2073,15 @@ inline void fetch_data(
 
     // This will initiate a copy if the data was not valid
     d.enforce_msi_protocol(instance_id, mode, stf_prereq);
-
-    stf_prereq.optimize();
-
-    // Gather all prereqs required to fetch this piece of data into the
-    // dependencies of the task.
-    // Even temporary allocation may require to enforce dependencies
-    // because we are reclaiming data for instance.
-    result.merge(mv(stf_prereq));
   }
+
+  stf_prereq.optimize(bctx);
+
+  // Gather all prereqs required to fetch this piece of data into the
+  // dependencies of the task.
+  // Even temporary allocation may require to enforce dependencies
+  // because we are reclaiming data for instance.
+  result.merge(mv(stf_prereq));
 }
 
 }; // namespace reserved
@@ -2103,9 +2106,14 @@ reserved::logical_data_untyped_impl::get_frozen(task& fake_task, const data_plac
   // This will also update the MSI states of the logical data instances.
   reserved::fetch_data(ctx, d, id, fake_task, m, ::std::nullopt, dplace, prereqs);
 
-  // Make sure we now have a valid copy
-  assert(used_instances[int(id)].is_allocated());
-  assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
+  // Make sure we now have a valid copy (unless this is a token, because
+  // fetch_data will only enforce dependencies and will not move or allocate
+  // data)
+  if constexpr (!::std::is_same_v<T, void_interface>)
+  {
+    assert(used_instances[int(id)].is_allocated());
+    assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
+  }
 
   return ::std::pair<T, event_list>(dinterface->instance<T>(id), mv(prereqs));
 }
@@ -2121,7 +2129,7 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
   {
     if (frozen_mode == access_mode::read)
     {
-      used_instances[i].add_write_prereq(prereqs);
+      used_instances[i].add_write_prereq(ctx, prereqs);
     }
     else
     {
@@ -2135,7 +2143,7 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
   logical_data_untyped d(shared_from_this());
 
   // Keep track of the previous readers/writers and generate dot
-  reserved::enforce_stf_deps_after(d, fake_task, frozen_mode);
+  reserved::enforce_stf_deps_after(ctx, d, fake_task, frozen_mode);
 
   frozen_flag = false;
 }
@@ -2143,9 +2151,9 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
 inline void backend_ctx_untyped::impl::erase_all_logical_data()
 {
   /* Since we modify the map while iterating on it, we will copy it */
-  stack.logical_data_ids_mutex.lock();
-  auto logical_data_ids_cpy = stack.logical_data_ids;
-  stack.logical_data_ids_mutex.unlock();
+  logical_data_ids_mutex.lock();
+  auto logical_data_ids_cpy = logical_data_ids;
+  logical_data_ids_mutex.unlock();
 
   /* Erase all logical data created in this context */
   for (auto p : logical_data_ids_cpy)
@@ -2153,6 +2161,93 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
     auto& d = p.second;
     d.erase();
   }
+}
+
+inline void backend_ctx_untyped::impl::print_logical_data_summary() const
+{
+  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+
+  fprintf(stderr, "Context current logical data summary\n");
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> data_summary;
+
+  for (const auto& [id, data_impl] : logical_data_ids)
+  {
+    size_t footprint = data_impl.dinterface->data_footprint();
+    total_footprint += footprint;
+
+    ::std::string symbol = data_impl.get_symbol();
+    data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Current footprint : %s\n", pretty_print_bytes(total_footprint).c_str());
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint_destroyed = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> destroyed_data_summary;
+
+  for (const auto& [symbol, footprint] : previous_logical_data_stats)
+  {
+    total_footprint_destroyed += footprint;
+    destroyed_data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : destroyed_data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Destroyed footprint : %s\n", pretty_print_bytes(total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Total footprint : %s\n", pretty_print_bytes(total_footprint + total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
 }
 
 // Defined here to avoid circular dependencies
@@ -2163,12 +2258,15 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 }
 
 // Defined here to avoid circular dependencies
+// (also, don't document this because Doxygen doesn't know `decltype`)
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <class T>
 inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 // Defined here to avoid circular dependencies
 inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) const
@@ -2189,6 +2287,8 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   return instance_id_t::invalid;
 }
 
+// Don't document this because Doxygen doesn't know `decltype`
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename T, typename logical_data_untyped>
 inline decltype(auto) task::get(size_t submitted_index) const
 {
@@ -2203,6 +2303,7 @@ inline decltype(auto) task::get(size_t submitted_index) const
   logical_data_untyped d    = pimpl->deps[reordered_id].get_data();
   return d.template instance<T>(instance_id);
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Represents typed logical data.
@@ -2344,6 +2445,9 @@ public:
   ///@}
 };
 
+/// @brief Shortcut type for the logical data produced by ctx.token()
+using token = logical_data<void_interface>;
+
 /**
  * @brief Reclaims memory from allocated data instances.
  *
@@ -2362,7 +2466,7 @@ inline void reclaim_memory(
 {
   const auto memory_node = to_index(place);
 
-  auto& cs = ctx.get_stack();
+  auto& ctx_state = ctx.get_state();
 
   reclaimed_s = 0;
 
@@ -2399,8 +2503,8 @@ inline void reclaim_memory(
   for (int pass = first_pass; (reclaimed_s < requested_s) && (eligible_data_size < requested_s) && (pass <= 2); pass++)
   {
     // Get the table of all logical data ids used in this context (the parent of the task)
-    ::std::lock_guard<::std::mutex> guard(cs.logical_data_ids_mutex);
-    auto& logical_data_ids = cs.logical_data_ids;
+    ::std::lock_guard<::std::mutex> guard(ctx_state.logical_data_ids_mutex);
+    auto& logical_data_ids = ctx_state.logical_data_ids;
     for (auto& e : logical_data_ids)
     {
       auto& d = e.second;

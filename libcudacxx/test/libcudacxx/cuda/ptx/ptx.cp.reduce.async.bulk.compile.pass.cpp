@@ -16,13 +16,13 @@
 
 #include "generated/cp_reduce_async_bulk.h"
 
-#ifdef _LIBCUDACXX_HAS_NVF16
+#if _LIBCUDACXX_HAS_NVFP16()
 #  include "generated/cp_reduce_async_bulk_f16.h"
-#endif // _LIBCUDACXX_HAS_NVF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 #  include "generated/cp_reduce_async_bulk_bf16.h"
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 int main(int, char**)
 {

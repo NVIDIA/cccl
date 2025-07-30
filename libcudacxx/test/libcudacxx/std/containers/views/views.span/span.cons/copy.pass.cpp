@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // <span>
 
@@ -20,7 +19,7 @@
 template <typename T>
 __host__ __device__ constexpr bool doCopy(const T& rhs)
 {
-  ASSERT_NOEXCEPT(T{rhs});
+  static_assert(noexcept(T{rhs}));
   T lhs{rhs};
   return lhs.data() == rhs.data() && lhs.size() == rhs.size();
 }
@@ -40,20 +39,20 @@ __host__ __device__ void testCV()
   assert((doCopy(cuda::std::span<T, 2>(&arr[0], 2))));
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr[] = {1, 2, 3};
+TEST_GLOBAL_VARIABLE constexpr int carr[] = {1, 2, 3};
 
 int main(int, char**)
 {
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<int>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<int, 0>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int>(&carr[0], 1)));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int, 1>(&carr[0], 1)));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int>(&carr[0], 2)));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int, 2>(&carr[0], 2)));
+  static_assert(doCopy(cuda::std::span<int>()));
+  static_assert(doCopy(cuda::std::span<int, 0>()));
+  static_assert(doCopy(cuda::std::span<const int>(&carr[0], 1)));
+  static_assert(doCopy(cuda::std::span<const int, 1>(&carr[0], 1)));
+  static_assert(doCopy(cuda::std::span<const int>(&carr[0], 2)));
+  static_assert(doCopy(cuda::std::span<const int, 2>(&carr[0], 2)));
 
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<long>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<double>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<A>()));
+  static_assert(doCopy(cuda::std::span<long>()));
+  static_assert(doCopy(cuda::std::span<double>()));
+  static_assert(doCopy(cuda::std::span<A>()));
 
   testCV<int>();
   testCV<const int>();

@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   constexpr int N           = 5;
   int ia[N]                 = {0, 1, 2, 3, 4};
@@ -35,7 +35,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+constexpr __host__ __device__ bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();
@@ -49,10 +49,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

@@ -29,19 +29,19 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_convertible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
-_CCCL_INLINE_VAR constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
 
 #  if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
 template <class _Ty>
@@ -61,16 +61,16 @@ struct is_convertible<volatile _Ty&, const volatile _Ty&> : true_type
 {};
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool is_convertible_v<_Ty&, volatile _Ty&> = true;
+inline constexpr bool is_convertible_v<_Ty&, volatile _Ty&> = true;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, volatile _Ty&> = true;
+inline constexpr bool is_convertible_v<volatile _Ty&, volatile _Ty&> = true;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&> = true;
+inline constexpr bool is_convertible_v<_Ty&, const volatile _Ty&> = true;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
+inline constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
 #  endif // _CCCL_COMPILER(MSVC)
 
 #else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
@@ -80,12 +80,12 @@ namespace __is_convertible_imp
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
-_CCCL_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __test_convert(_Tp);
+_CCCL_API inline void __test_convert(_Tp);
 
-_CCCL_NV_DIAG_DEFAULT(volatile_func_param_deprecated)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 template <class _From, class _To, class = void>
@@ -202,13 +202,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible : public __is_convertible_fa
   static const size_t __complete_check2 = __is_convertible_check<_T2>::__v;
 };
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _From, class _To>
-_CCCL_INLINE_VAR constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
 
 #endif // !_CCCL_BUILTIN_IS_CONVERTIBLE_TO
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H

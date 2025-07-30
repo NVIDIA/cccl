@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 {
   // note: we cannot use swap(*iter1, *iter2) here, because the reference_type's could be proxy references, for which
   // swap() is not guaranteed to work
-  using T = typename thrust::iterator_value<ForwardIterator1>::type;
+  using T = thrust::detail::it_value_t<ForwardIterator1>;
   T temp  = ::cuda::std::move(*iter1);
   *iter1  = ::cuda::std::move(*iter2);
   *iter2  = ::cuda::std::move(temp);
@@ -159,7 +159,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   // wrap pred
   thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
-  using T = typename thrust::iterator_value<ForwardIterator>::type;
+  using T = thrust::detail::it_value_t<ForwardIterator>;
 
   using TempRange    = thrust::detail::temporary_array<T, DerivedPolicy>;
   using TempIterator = typename TempRange::iterator;
@@ -201,7 +201,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   // wrap pred
   thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
-  using T = typename thrust::iterator_value<ForwardIterator>::type;
+  using T = thrust::detail::it_value_t<ForwardIterator>;
 
   using TempRange    = thrust::detail::temporary_array<T, DerivedPolicy>;
   using TempIterator = typename TempRange::iterator;

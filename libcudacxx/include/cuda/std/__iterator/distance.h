@@ -30,36 +30,35 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
-__distance(_InputIter __first, _InputIter __last, input_iterator_tag)
-{
-  typename iterator_traits<_InputIter>::difference_type __r(0);
-  for (; __first != __last; ++__first)
-  {
-    ++__r;
-  }
-  return __r;
-}
-
-template <class _RandIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_RandIter>::difference_type
-__distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
-{
-  return __last - __first;
-}
-
-template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
+[[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
-  return _CUDA_VSTD::__distance(__first, __last, typename iterator_traits<_InputIter>::iterator_category());
+  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  {
+    return __last - __first;
+  }
+  else if constexpr (sized_sentinel_for<_InputIter, _InputIter>)
+  {
+    return __last - __first;
+  }
+  else
+  {
+    typename iterator_traits<_InputIter>::difference_type __r(0);
+    for (; __first != __last; ++__first)
+    {
+      ++__r;
+    }
+    return __r;
+  }
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.iter.op.distance]
 
@@ -67,9 +66,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__distance)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
+  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
   {
     iter_difference_t<_Ip> __n = 0;
     while (__first != __last)
@@ -80,9 +80,10 @@ struct __fn
     return __n;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
+  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
   {
     if constexpr (sized_sentinel_for<_Sp, remove_cvref_t<_Ip>>)
     {
@@ -95,9 +96,10 @@ struct __fn
     _CCCL_UNREACHABLE();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rp)
   _CCCL_REQUIRES((range<_Rp>) )
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
+  [[nodiscard]] _CCCL_API constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
   {
     if constexpr (sized_range<_Rp>)
     {
@@ -116,8 +118,9 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto distance = __distance::__fn{};
 } // namespace __cpo
+
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER > 2014  && !_CCCL_COMPILER(MSVC2017)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_DISTANCE_H

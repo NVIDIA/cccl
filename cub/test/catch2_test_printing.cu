@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <sstream>
 
 #include "test_util.h"
@@ -11,7 +14,7 @@ std::string print(T val)
   return ss.str();
 }
 
-#if CUB_IS_INT128_ENABLED
+#if TEST_INT128()
 TEST_CASE("Test utils can print __int128", "[test][utils]")
 {
   REQUIRE(print(__int128_t{0}) == "0");

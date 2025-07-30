@@ -12,8 +12,6 @@
 
 // template <class U1, class U2> tuple(const pair<U1, U2>& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -22,17 +20,16 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<long, char> T0;
-    typedef cuda::std::tuple<long long, short> T1;
+    using T0 = cuda::std::pair<long, char>;
+    using T1 = cuda::std::tuple<long long, short>;
     T0 t0(2, 'a');
     T1 t1 = t0;
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1) == short('a'));
   }
-#if TEST_STD_VER > 2011
   {
-    typedef cuda::std::pair<long, char> P0;
-    typedef cuda::std::tuple<long long, short> T1;
+    using P0 = cuda::std::pair<long, char>;
+    using T1 = cuda::std::tuple<long long, short>;
     constexpr P0 p0(2, 'a');
     constexpr T1 t1 = p0;
     static_assert(cuda::std::get<0>(t1) == cuda::std::get<0>(p0), "");
@@ -40,7 +37,6 @@ int main(int, char**)
     static_assert(cuda::std::get<0>(t1) == 2, "");
     static_assert(cuda::std::get<1>(t1) == short('a'), "");
   }
-#endif
 
   return 0;
 }

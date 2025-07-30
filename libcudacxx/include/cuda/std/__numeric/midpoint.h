@@ -33,13 +33,14 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-enable_if_t<_CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp), _Tp>
+[[nodiscard]] _CCCL_API constexpr enable_if_t<
+  _CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp),
+  _Tp>
 midpoint(_Tp __a, _Tp __b) noexcept
 {
   using _Up = make_unsigned_t<_Tp>;
@@ -58,29 +59,29 @@ midpoint(_Tp __a, _Tp __b) noexcept
 
 template <class _Tp,
           enable_if_t<_CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_void, _Tp) && (sizeof(_Tp) > 0), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {
   return __a + _CUDA_VSTD::midpoint(ptrdiff_t(0), __b - __a);
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int __sign(_Tp __val)
+[[nodiscard]] _CCCL_API constexpr int __sign(_Tp __val)
 {
   return (_Tp(0) < __val) - (__val < _Tp(0));
 }
 
 template <typename _Fp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Fp __fp_abs(_Fp __f)
+[[nodiscard]] _CCCL_API constexpr _Fp __fp_abs(_Fp __f)
 {
   return __f >= 0 ? __f : -__f;
 }
 
 template <class _Fp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
+[[nodiscard]] _CCCL_API constexpr enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
 midpoint(_Fp __a, _Fp __b) noexcept
 {
-  _CCCL_CONSTEXPR_CXX14 _Fp __lo = numeric_limits<_Fp>::min() * 2;
-  _CCCL_CONSTEXPR_CXX14 _Fp __hi = numeric_limits<_Fp>::max() / 2;
+  constexpr _Fp __lo = numeric_limits<_Fp>::min() * 2;
+  constexpr _Fp __hi = numeric_limits<_Fp>::max() / 2;
   return _CUDA_VSTD::__fp_abs(__a) <= __hi && _CUDA_VSTD::__fp_abs(__b) <= __hi
          ? // typical case: overflow is impossible
            (__a + __b) / 2
@@ -94,6 +95,6 @@ midpoint(_Fp __a, _Fp __b) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_MIDPOINT_H

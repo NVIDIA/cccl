@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr T& optional<T>::value() &&;
@@ -19,7 +18,7 @@
 #include "test_macros.h"
 
 using cuda::std::optional;
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 using cuda::std::bad_optional_access;
 #endif
 
@@ -32,7 +31,7 @@ struct X
   {
     return 3;
   }
-  __host__ __device__ int test() &
+  __host__ __device__ constexpr int test() &
   {
     return 4;
   }
@@ -40,7 +39,7 @@ struct X
   {
     return 5;
   }
-  __host__ __device__ int test() &&
+  __host__ __device__ constexpr int test() &&
   {
     return 6;
   }
@@ -52,18 +51,17 @@ struct Y
   {
     return 7;
   }
+
+  __host__ __device__ constexpr int test() &
+  {
+    return 42;
+  }
 };
 
-__host__ __device__ constexpr int test()
-{
-  optional<Y> opt{Y{}};
-  return cuda::std::move(opt).value().test();
-}
-
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
-  optional<X> opt;
+  optional<X> opt{};
   try
   {
     (void) cuda::std::move(opt).value();
@@ -72,29 +70,57 @@ void test_exceptions()
   catch (const bad_optional_access&)
   {}
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
+
+__host__ __device__ constexpr bool test()
+{
+  {
+    optional<X> opt{};
+    unused(opt);
+    static_assert(!noexcept(cuda::std::move(opt).value()));
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(opt).value()), X&&>);
+
+    optional<X&> optref;
+    unused(optref);
+    static_assert(noexcept(cuda::std::move(optref).value()));
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(optref).value()), X&>);
+  }
+
+  {
+    optional<X> opt{cuda::std::in_place};
+    assert(cuda::std::move(opt).value().test() == 6);
+  }
+
+  {
+    X val{};
+    optional<X&> opt{val};
+    assert(cuda::std::move(opt).value().test() == 4);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(cuda::std::move(opt).value()));
+  }
+
+  {
+    optional<Y> opt{cuda::std::in_place};
+    assert(cuda::std::move(opt).value().test() == 7);
+  }
+
+  {
+    Y val{};
+    optional<Y&> opt{val};
+    assert(cuda::std::move(opt).value().test() == 42);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(cuda::std::move(opt).value()));
+  }
+
+  return true;
+}
 
 int main(int, char**)
 {
-  {
-    optional<X> opt;
-    unused(opt);
-    ASSERT_NOT_NOEXCEPT(cuda::std::move(opt).value());
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(opt).value()), X&&);
-  }
-  {
-    optional<X> opt;
-    opt.emplace();
-    assert(cuda::std::move(opt).value().test() == 6);
-  }
-  assert(test() == 7);
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(test() == 7, "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  test();
+  static_assert(test(), "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

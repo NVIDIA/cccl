@@ -34,10 +34,9 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scatter.h>
 
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/utility>
-
-#include <cstdint>
-#include <limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -63,7 +62,7 @@ struct RadixEncoder<char>
 {
   _CCCL_HOST_DEVICE unsigned char operator()(char x) const
   {
-    if (std::numeric_limits<char>::is_signed)
+    if (::cuda::std::numeric_limits<char>::is_signed)
     {
       return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
     }
@@ -95,7 +94,7 @@ struct RadixEncoder<short>
 template <>
 struct RadixEncoder<int>
 {
-  _CCCL_HOST_DEVICE unsigned long operator()(long x) const
+  _CCCL_HOST_DEVICE unsigned int operator()(int x) const
   {
     return x ^ static_cast<unsigned int>(1) << (8 * sizeof(unsigned int) - 1);
   }
@@ -193,7 +192,7 @@ inline _CCCL_HOST_DEVICE void radix_shuffle_n(
   Integer bit_shift,
   size_t* histogram)
 {
-  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   // note that we are going to mutate the histogram during this sequential scatter
   thrust::scatter(
@@ -221,15 +220,15 @@ _CCCL_HOST_DEVICE void radix_shuffle_n(
   Integer bit_shift,
   size_t* histogram)
 {
-  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   // note that we are going to mutate the histogram during this sequential scatter
   thrust::scatter(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first + n, values_first + n)),
+    thrust::make_zip_iterator(keys_first, values_first),
+    thrust::make_zip_iterator(keys_first + n, values_first + n),
     thrust::make_transform_iterator(keys_first, bucket_functor<RadixBits, KeyType>(bit_shift, histogram)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_result, values_result)));
+    thrust::make_zip_iterator(keys_result, values_result));
 }
 
 template <unsigned int RadixBits,
@@ -247,7 +246,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   RandomAccessIterator4 vals2,
   const size_t N)
 {
-  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   using Encoder     = RadixEncoder<KeyType>;
   using EncodedType = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
@@ -533,7 +532,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   RandomAccessIterator2 keys2,
   const size_t N)
 {
-  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
   radix_sort_dispatcher<sizeof(KeyType)>()(exec, keys1, keys2, N);
 }
 
@@ -550,7 +549,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   RandomAccessIterator4 vals2,
   const size_t N)
 {
-  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
   radix_sort_dispatcher<sizeof(KeyType)>()(exec, keys1, keys2, vals1, vals2, N);
 }
 
@@ -560,7 +559,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void stable_radix_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
-  using KeyType = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
 
   size_t N = last - first;
 
@@ -576,8 +575,8 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
   RandomAccessIterator1 last1,
   RandomAccessIterator2 first2)
 {
-  using KeyType   = typename thrust::iterator_value<RandomAccessIterator1>::type;
-  using ValueType = typename thrust::iterator_value<RandomAccessIterator2>::type;
+  using KeyType   = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using ValueType = thrust::detail::it_value_t<RandomAccessIterator2>;
 
   size_t N = last1 - first1;
 

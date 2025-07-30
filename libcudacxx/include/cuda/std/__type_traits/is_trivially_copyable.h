@@ -24,33 +24,33 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copyable
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_copyable : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_trivially_copyable_v = _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_trivially_copyable_v = _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(_Tp);
 
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copyable
-    : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_copyable : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_trivially_copyable_v = is_trivially_copyable<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_COPYABLE_H

@@ -76,20 +76,20 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include <cmpxchg_loop.h>
-#if !defined(TEST_COMPILER_MSVC)
+
+#include "test_macros.h"
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
 __host__ __device__ __noinline__ void do_test()
 {
   Selector<A, constructor_initializer> sel;
-  A& obj  = *sel.construct(T(0));
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  A& obj                   = *sel.construct(T(0));
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   obj.store(T(0));
   assert(obj == T(0));
   obj.store(T(1), cuda::std::memory_order_release);
@@ -133,9 +133,9 @@ __host__ __device__ __noinline__ void do_test()
 #if TEST_STD_VER > 2017
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();),
+    (alignas(alignof(A)) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();),
     NV_PROVIDES_SM_70,
-    (TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();))
+    (alignas(alignof(A)) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();))
 #endif // TEST_STD_VER > 2017
 }
 

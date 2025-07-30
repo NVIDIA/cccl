@@ -53,6 +53,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 
@@ -78,12 +79,13 @@ CUB_NAMESPACE_BEGIN
  * @tparam _RADIX_BITS
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          CacheLoadModifier _LOAD_MODIFIER,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  CacheLoadModifier _LOAD_MODIFIER,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
   enum
@@ -100,6 +102,11 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
  * participating in device-wide radix sort upsweep .
@@ -110,19 +117,19 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * @tparam KeyT
  *   KeyT type
  *
- * @tparam DecomposerT = detail::identity_decomposer_t
+ * @tparam DecomposerT = identity_decomposer_t
  *   Signed integer type for global offsets
  */
 template <typename AgentRadixSortUpsweepPolicy,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortUpsweep
 {
   //---------------------------------------------------------------------
   // Type definitions and constants
   //---------------------------------------------------------------------
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -142,7 +149,7 @@ struct AgentRadixSortUpsweep
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS = CUB_PTX_LOG_WARP_THREADS,
+    LOG_WARP_THREADS = log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
     WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
@@ -154,17 +161,17 @@ struct AgentRadixSortUpsweep
     PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter),
     LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
 
-    LOG_COUNTER_LANES = CUB_MAX(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO)),
+    LOG_COUNTER_LANES = _CUDA_VSTD::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO)),
     COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
 
     // To prevent counter overflow, we must periodically unpack and aggregate the
     // digit counters back into registers.  Each counter lane is assigned to a
     // warp for aggregation.
 
-    LANES_PER_WARP = CUB_MAX(1, (COUNTER_LANES + WARPS - 1) / WARPS),
+    LANES_PER_WARP = _CUDA_VSTD::max(1, (COUNTER_LANES + WARPS - 1) / WARPS),
 
     // Unroll tiles in batches without risk of counter overflow
-    UNROLL_COUNT      = CUB_MIN(64, 255 / KEYS_PER_THREAD),
+    UNROLL_COUNT      = _CUDA_VSTD::min(64, 255 / KEYS_PER_THREAD),
     UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS,
   };
 
@@ -253,13 +260,13 @@ struct AgentRadixSortUpsweep
     bit_ordered_type converted_key = bit_ordered_conversion::to_bit_ordered(decomposer, key);
 
     // Extract current digit bits
-    std::uint32_t digit = digit_extractor().Digit(converted_key);
+    uint32_t digit = digit_extractor().Digit(converted_key);
 
     // Get sub-counter offset
-    std::uint32_t sub_counter = digit & (PACKING_RATIO - 1);
+    uint32_t sub_counter = digit & (PACKING_RATIO - 1);
 
     // Get row offset
-    std::uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    uint32_t row_offset = digit >> LOG_PACKING_RATIO;
 
     // Increment counter
     temp_storage.thread_counters[row_offset][threadIdx.x][sub_counter]++;
@@ -270,7 +277,7 @@ struct AgentRadixSortUpsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ResetDigitCounters()
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < COUNTER_LANES; LANE++)
     {
       temp_storage.packed_thread_counters[LANE][threadIdx.x] = 0;
@@ -282,10 +289,10 @@ struct AgentRadixSortUpsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ResetUnpackedCounters()
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
       {
         local_counts[LANE][UNPACKED_COUNTER] = 0;
@@ -302,16 +309,16 @@ struct AgentRadixSortUpsweep
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
       const int counter_lane = (LANE * WARPS) + warp_id;
       if (counter_lane < COUNTER_LANES)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int PACKED_COUNTER = 0; PACKED_COUNTER < BLOCK_THREADS; PACKED_COUNTER += WARP_THREADS)
         {
-#pragma unroll
+          _CCCL_PRAGMA_UNROLL_FULL()
           for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
           {
             OffsetT counter = temp_storage.thread_counters[counter_lane][warp_tid + PACKED_COUNTER][UNPACKED_COUNTER];
@@ -423,8 +430,8 @@ struct AgentRadixSortUpsweep
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
-// Place unpacked digit counters in shared memory
-#pragma unroll
+    // Place unpacked digit counters in shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
       int counter_lane = (LANE * WARPS) + warp_id;
@@ -432,7 +439,7 @@ struct AgentRadixSortUpsweep
       {
         int digit_row = counter_lane << LOG_PACKING_RATIO;
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
         {
           int bin_idx = digit_row + UNPACKED_COUNTER;
@@ -444,17 +451,17 @@ struct AgentRadixSortUpsweep
 
     __syncthreads();
 
-// Rake-reduce bin_count reductions
+    // Rake-reduce bin_count reductions
 
-// Whole blocks
-#pragma unroll
+    // Whole blocks
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
          BIN_BASE += BLOCK_THREADS)
     {
-      int bin_idx = BIN_BASE + threadIdx.x;
-
+      int bin_idx       = BIN_BASE + threadIdx.x;
       OffsetT bin_count = 0;
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WARP_THREADS; ++i)
       {
         bin_count += temp_storage.block_counters[i][bin_idx];
@@ -471,10 +478,10 @@ struct AgentRadixSortUpsweep
     // Remainder
     if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
     {
-      int bin_idx = threadIdx.x;
-
+      int bin_idx       = threadIdx.x;
       OffsetT bin_count = 0;
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WARP_THREADS; ++i)
       {
         bin_count += temp_storage.block_counters[i][bin_idx];
@@ -503,8 +510,8 @@ struct AgentRadixSortUpsweep
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
-// Place unpacked digit counters in shared memory
-#pragma unroll
+    // Place unpacked digit counters in shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
       int counter_lane = (LANE * WARPS) + warp_id;
@@ -512,7 +519,7 @@ struct AgentRadixSortUpsweep
       {
         int digit_row = counter_lane << LOG_PACKING_RATIO;
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
         {
           int bin_idx = digit_row + UNPACKED_COUNTER;
@@ -524,8 +531,8 @@ struct AgentRadixSortUpsweep
 
     __syncthreads();
 
-// Rake-reduce bin_count reductions
-#pragma unroll
+    // Rake-reduce bin_count reductions
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -534,7 +541,7 @@ struct AgentRadixSortUpsweep
       {
         bin_count[track] = 0;
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < WARP_THREADS; ++i)
         {
           bin_count[track] += temp_storage.block_counters[i][bin_idx];
@@ -543,5 +550,8 @@ struct AgentRadixSortUpsweep
     }
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

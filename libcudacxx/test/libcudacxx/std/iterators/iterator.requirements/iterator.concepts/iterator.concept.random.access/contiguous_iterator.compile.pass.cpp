@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept contiguous_iterator;
 
@@ -24,12 +22,10 @@ static_assert(!cuda::std::contiguous_iterator<bidirectional_iterator<int*>>, "")
 static_assert(!cuda::std::contiguous_iterator<random_access_iterator<int*>>, "");
 static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(cuda::std::contiguous_iterator<int*>, "");
 static_assert(cuda::std::contiguous_iterator<int const*>, "");
 static_assert(cuda::std::contiguous_iterator<int volatile*>, "");
 static_assert(cuda::std::contiguous_iterator<int const volatile*>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 struct simple_contiguous_iterator
 {
@@ -45,7 +41,7 @@ struct simple_contiguous_iterator
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -110,7 +106,7 @@ struct mismatch_value_iter_ref_t
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -173,7 +169,7 @@ struct wrong_iter_reference_t
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -236,7 +232,7 @@ struct to_address_wrong_return_type
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -312,7 +308,7 @@ struct template_and_no_element_type
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -379,7 +375,7 @@ struct no_operator_arrow
   __host__ __device__ no_operator_arrow();
 
   __host__ __device__ reference operator*() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   __host__ __device__ pointer operator->() const
     requires(!DisableArrow);
   auto operator<=>(const self&) const = default;

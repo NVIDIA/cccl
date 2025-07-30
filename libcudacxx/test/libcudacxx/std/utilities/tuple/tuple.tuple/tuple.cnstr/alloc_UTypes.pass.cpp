@@ -13,8 +13,6 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, UTypes&&...);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -49,7 +47,7 @@ __host__ __device__ void test_uses_allocator_sfinae_evaluation()
 {
   using BadDefault = DefaultCtorBlowsUp<>;
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly, BadDefault> Tuple;
+    using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault>;
 
     static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value, "");
 
@@ -58,7 +56,7 @@ __host__ __device__ void test_uses_allocator_sfinae_evaluation()
       "");
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly, BadDefault, BadDefault> Tuple;
+    using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault, BadDefault>;
 
     static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value,
                   "");

@@ -33,6 +33,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class = void>
@@ -84,20 +86,20 @@ struct __pointer_traits_difference_type<_Ptr, true>
   using type _CCCL_NODEBUG_ALIAS = typename _Ptr::difference_type;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up>
 struct __has_rebind
 {
 private:
   template <class _Xp>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  _CCCL_API inline static false_type __test(...);
   template <class _Xp>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Xp::template rebind<_Up>* = 0);
-  _CCCL_SUPPRESS_DEPRECATED_POP
+  _CCCL_API inline static true_type __test(typename _Xp::template rebind<_Up>* = 0);
 
 public:
   static const bool value = decltype(__test<_Tp>(0))::value;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
@@ -117,8 +119,12 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
   using type = _Sp<_Up, _Args...>;
 };
 
+template <class _Ptr, class = void>
+struct __pointer_traits_impl
+{};
+
 template <class _Ptr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
+struct __pointer_traits_impl<_Ptr, void_t<typename __pointer_traits_element_type<_Ptr>::type>>
 {
   using pointer         = _Ptr;
   using element_type    = typename __pointer_traits_element_type<pointer>::type;
@@ -132,12 +138,16 @@ private:
   {};
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
   {
     return pointer::pointer_to(__r);
   }
 };
+
+template <class _Ptr, class = void>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits : __pointer_traits_impl<_Ptr>
+{};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Tp*>
@@ -154,7 +164,7 @@ private:
   {};
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
   {
     return _CUDA_VSTD::addressof(__r);
@@ -173,7 +183,7 @@ template <class _Pointer, class = void>
 struct __to_address_helper;
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __to_address(_Tp* __p) noexcept
+_CCCL_API constexpr _Tp* __to_address(_Tp* __p) noexcept
 {
   static_assert(!is_function<_Tp>::value, "_Tp is a function type");
   return __p;
@@ -204,7 +214,7 @@ struct _IsFancyPointer
 
 // enable_if is needed here to avoid instantiating checks for fancy pointers on raw pointers
 template <class _Pointer, class = enable_if_t<_And<is_class<_Pointer>, _IsFancyPointer<_Pointer>>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
+_CCCL_API constexpr decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) noexcept
 {
   return __to_address_helper<_Pointer>::__call(__p);
@@ -213,7 +223,8 @@ __to_address(const _Pointer& __p) noexcept
 template <class _Pointer, class>
 struct __to_address_helper
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
   __call(const _Pointer& __p) noexcept
   {
     return _CUDA_VSTD::__to_address(__p.operator->());
@@ -223,28 +234,28 @@ struct __to_address_helper
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
   __call(const _Pointer& __p) noexcept
   {
     return pointer_traits<_Pointer>::to_address(__p);
   }
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
+_CCCL_API constexpr auto to_address(_Tp* __p) noexcept
 {
   return _CUDA_VSTD::__to_address(__p);
 }
 
 template <class _Pointer>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(const _Pointer& __p) noexcept
-  -> decltype(_CUDA_VSTD::__to_address(__p))
+_CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);
 }
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_POINTER_TRAITS_H

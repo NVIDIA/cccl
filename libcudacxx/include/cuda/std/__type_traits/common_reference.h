@@ -37,7 +37,9 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
-_CCCL_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -162,13 +164,11 @@ struct common_reference;
 template <class... _Types>
 using common_reference_t _CCCL_NODEBUG_ALIAS = typename common_reference<_Types...>::type;
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class, class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_common_reference = false;
+inline constexpr bool __has_common_reference = false;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
 
 // bullet 1 - sizeof...(T) == 0
 template <>
@@ -255,6 +255,8 @@ struct common_reference
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_NV_DIAG_DEFAULT(1384)
+_CCCL_END_NV_DIAG_SUPPRESS()
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_REFERENCE_H

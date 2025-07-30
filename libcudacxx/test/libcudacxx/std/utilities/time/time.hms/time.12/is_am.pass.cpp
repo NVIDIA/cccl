@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+
 // <chrono>
 
 // constexpr bool is_am(const hours& h) noexcept;
@@ -19,8 +19,8 @@
 int main(int, char**)
 {
   using hours = cuda::std::chrono::hours;
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::chrono::is_am(cuda::std::declval<hours>())));
-  ASSERT_NOEXCEPT(cuda::std::chrono::is_am(cuda::std::declval<hours>()));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::chrono::is_am(cuda::std::declval<hours>()))>);
+  static_assert(noexcept(cuda::std::chrono::is_am(cuda::std::declval<hours>())));
 
   static_assert(cuda::std::chrono::is_am(hours(0)), "");
   static_assert(cuda::std::chrono::is_am(hours(11)), "");

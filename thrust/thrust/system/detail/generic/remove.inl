@@ -44,7 +44,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 remove(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
 {
-  thrust::detail::equal_to_value<T> pred(value);
+  thrust::detail::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_if(exec, first, last, pred);
@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy(
   OutputIterator result,
   const T& value)
 {
-  thrust::detail::equal_to_value<T> pred(value);
+  thrust::detail::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_copy_if(exec, first, last, result, pred);
@@ -68,7 +68,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator
 remove_if(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   // create temporary storage for an intermediate result
   thrust::detail::temporary_array<InputType, DerivedPolicy> temp(exec, first, last);
@@ -85,7 +85,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   InputIterator stencil,
   Predicate pred)
 {
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   // create temporary storage for an intermediate result
   thrust::detail::temporary_array<InputType, DerivedPolicy> temp(exec, first, last);
@@ -118,7 +118,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  return thrust::copy_if(exec, first, last, stencil, result, thrust::not_fn(pred));
+  return thrust::copy_if(exec, first, last, stencil, result, ::cuda::std::not_fn(pred));
 } // end remove_copy_if()
 
 } // end namespace generic

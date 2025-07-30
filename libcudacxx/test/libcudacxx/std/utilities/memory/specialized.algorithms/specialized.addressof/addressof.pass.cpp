@@ -16,9 +16,9 @@
 
 #include "test_macros.h"
 
-#ifdef TEST_COMPILER_CLANG_CUDA
+#if TEST_CUDA_COMPILER(CLANG)
 #  include <new>
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_CUDA_COMPILER(CLANG)
 
 struct A
 {

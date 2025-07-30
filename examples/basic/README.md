@@ -101,9 +101,9 @@ Most people will want to adapt this example to their own project as described [a
 If you would like to build and run this example as-is, you will need:
 
 - A CUDA-capable GPU
-- NVIDIA CUDA Toolkit (11.1 or later)
+- NVIDIA CUDA Toolkit (12 or later)
 - CMake (3.14 or later)
-- A C++14 standard-compliant compiler
+- A C++17 standard-compliant compiler
 - git
 
 ### Instructions

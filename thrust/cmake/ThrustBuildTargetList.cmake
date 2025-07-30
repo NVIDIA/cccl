@@ -19,7 +19,7 @@
 #   - <prop> is one of the following:
 #     - HOST: The host system. Valid values: CPP, OMP, TBB.
 #     - DEVICE: The device system. Valid values: CUDA, CPP, OMP, TBB.
-#     - DIALECT: The C++ dialect. Valid values: 11, 14, 17, 20.
+#     - DIALECT: The C++ dialect. Valid values: 17, 20.
 #     - PREFIX: A unique prefix that should be used to name all
 #       targets/tests/examples that use this configuration.
 #
@@ -43,8 +43,8 @@ define_property(TARGET PROPERTY _THRUST_DEVICE
   FULL_DOCS "A target's device system: CUDA, CPP, TBB, or OMP."
 )
 define_property(TARGET PROPERTY _THRUST_DIALECT
-  BRIEF_DOCS "A target's C++ dialect: 11, 14, or 17."
-  FULL_DOCS "A target's C++ dialect: 11, 14, or 17."
+  BRIEF_DOCS "A target's C++ dialect: 17 or 20."
+  FULL_DOCS "A target's C++ dialect: 17 or 20."
 )
 define_property(TARGET PROPERTY _THRUST_PREFIX
   BRIEF_DOCS "A prefix describing the config, eg. 'thrust.cpp.cuda.cpp14'."
@@ -179,17 +179,6 @@ function(_thrust_build_target_list_multiconfig)
         endif()
       endforeach()
     endif()
-  endif()
-
-  # Supported versions of MSVC do not distinguish between C++11 and C++14.
-  # Warn the user that they may be generating a ton of redundant targets if
-  # they explicitly requested this configuration.
-  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
-      THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11)
-    message(WARNING
-      "Supported versions of MSVC (2017+) do not distinguish between C++11 "
-      "and C++14. The requested C++11 targets may be redundant."
-    )
   endif()
 
   # Build THRUST_TARGETS

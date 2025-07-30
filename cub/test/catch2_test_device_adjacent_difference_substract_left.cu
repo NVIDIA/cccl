@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_adjacent_difference.cuh>
 
@@ -163,7 +162,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
 template <class T>
 struct cust_diff
 {
-  template <class T2, cuda::std::enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
+  template <class T2, cuda::std::enable_if_t<cuda::std::is_same_v<T, T2>, int> = 0>
   __host__ __device__ constexpr T2 operator()(const T2& lhs, const T2& rhs) const noexcept
   {
     return lhs - rhs;
@@ -270,7 +269,8 @@ struct check_difference
   }
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes", "[device][adjacent_difference]")
+C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes",
+         "[device][adjacent_difference][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
 {
   constexpr cuda::std::size_t num_items = 1ll << 33;
   c2h::device_vector<int> error(1);

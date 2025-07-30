@@ -13,8 +13,6 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, const tuple<UTypes...>&);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -45,15 +43,15 @@ int main(int, char**)
   alloc_last::allocator_constructed()  = false;
 
   {
-    typedef cuda::std::tuple<long> T0;
-    typedef cuda::std::tuple<long long> T1;
+    using T0 = cuda::std::tuple<long>;
+    using T1 = cuda::std::tuple<long long>;
     T0 t0(2);
     T1 t1(cuda::std::allocator_arg, A1<int>(), t0);
     assert(cuda::std::get<0>(t1) == 2);
   }
   {
-    typedef cuda::std::tuple<int> T0;
-    typedef cuda::std::tuple<alloc_first> T1;
+    using T0 = cuda::std::tuple<int>;
+    using T1 = cuda::std::tuple<alloc_first>;
     T0 t0(2);
     alloc_first::allocator_constructed() = false;
     T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
@@ -61,8 +59,8 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
   }
   {
-    typedef cuda::std::tuple<int, int> T0;
-    typedef cuda::std::tuple<alloc_first, alloc_last> T1;
+    using T0 = cuda::std::tuple<int, int>;
+    using T1 = cuda::std::tuple<alloc_first, alloc_last>;
     T0 t0(2, 3);
     alloc_first::allocator_constructed() = false;
     alloc_last::allocator_constructed()  = false;
@@ -73,8 +71,8 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == 3);
   }
   {
-    typedef cuda::std::tuple<long, int, int> T0;
-    typedef cuda::std::tuple<long long, alloc_first, alloc_last> T1;
+    using T0 = cuda::std::tuple<long, int, int>;
+    using T1 = cuda::std::tuple<long long, alloc_first, alloc_last>;
     T0 t0(1, 2, 3);
     alloc_first::allocator_constructed() = false;
     alloc_last::allocator_constructed()  = false;

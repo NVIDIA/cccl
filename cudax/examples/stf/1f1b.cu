@@ -53,11 +53,8 @@ int main(int argc, char** argv)
   int clock_rate;
   cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
-  int f_grid_size, f_block_size;
-  std::tie(f_grid_size, f_block_size) = reserved::compute_occupancy(forward);
-
-  int b_grid_size, b_block_size;
-  std::tie(b_grid_size, b_block_size) = reserved::compute_occupancy(backward);
+  auto occ_f = reserved::compute_occupancy(forward);
+  auto occ_b = reserved::compute_occupancy(backward);
 
   int factor = 1;
   if (argc > 1)
@@ -82,7 +79,7 @@ int main(int argc, char** argv)
     };
   }
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   size_t niter = 10;
 
@@ -95,7 +92,7 @@ int main(int argc, char** argv)
         ctx.task(exec_place::device(d % real_devs), data[b].rw())->*[=](cudaStream_t s, auto bd) {
           int ms                  = 10;
           long long int clock_cnt = (long long int) (ms * clock_rate / factor);
-          forward<<<f_grid_size, f_block_size, 0, s>>>(bd, clock_cnt);
+          forward<<<occ_f.min_grid_size, occ_f.block_size, 0, s>>>(bd, clock_cnt);
         };
       }
       //        }
@@ -106,14 +103,14 @@ int main(int argc, char** argv)
         ctx.task(exec_place::device(d % real_devs), data[b].rw())->*[=](cudaStream_t s, auto bd) {
           int ms                  = 20;
           long long int clock_cnt = (long long int) (ms * clock_rate / factor);
-          backward<<<b_grid_size, b_block_size, 0, s>>>(bd, clock_cnt);
+          backward<<<occ_b.min_grid_size, occ_b.block_size, 0, s>>>(bd, clock_cnt);
         };
       }
     }
 
     /* We introduce a fence because the actual pipeline would introduce
      * some all to all communication to update coefficients */
-    cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+    cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
   }
 
   ctx.finalize();

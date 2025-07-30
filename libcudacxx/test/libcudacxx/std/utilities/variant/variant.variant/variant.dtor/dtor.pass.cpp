@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -24,7 +23,7 @@
 
 struct NonTDtor
 {
-  STATIC_MEMBER_VAR(count, int);
+  STATIC_MEMBER_VAR(count, int)
   NonTDtor() = default;
   __host__ __device__ ~NonTDtor()
   {
@@ -35,7 +34,7 @@ static_assert(!cuda::std::is_trivially_destructible<NonTDtor>::value, "");
 
 struct NonTDtor1
 {
-  STATIC_MEMBER_VAR(count, int);
+  STATIC_MEMBER_VAR(count, int)
   NonTDtor1() = default;
   __host__ __device__ ~NonTDtor1()
   {

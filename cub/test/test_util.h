@@ -35,7 +35,6 @@
 #  include <sys/resource.h>
 #endif
 
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
@@ -43,6 +42,12 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/iterator/discard_iterator.h>
+
+#include <cuda/std/__algorithm_>
+
+#include <nv/target>
 
 #include <cfloat>
 #include <cmath>
@@ -55,27 +60,9 @@
 #include <vector>
 
 #include "mersenne.h"
-#include "test_warning_suppression.cuh"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
-#include <nv/target>
-
-/******************************************************************************
- * Type conversion macros
- ******************************************************************************/
-
-/**
- * Return a value of type `T` with the same bitwise representation of `in`.
- * Types `T` and `U` must be the same size.
- */
-template <typename T, typename U>
-__host__ __device__ T SafeBitCast(const U& in)
-{
-  static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
-  T out;
-  memcpy(&out, &in, sizeof(T));
-  return out;
-}
 
 /******************************************************************************
  * Assertion macros
@@ -326,7 +313,21 @@ struct CommandLineArgs
         exit(1);
       }
 
-      device_giga_bandwidth = float(deviceProp.memoryBusWidth) * deviceProp.memoryClockRate * 2 / 8 / 1000 / 1000;
+      int memoryClockRate{};
+      error = CubDebug(cudaDeviceGetAttribute(&memoryClockRate, cudaDevAttrMemoryClockRate, dev));
+      if (error)
+      {
+        break;
+      }
+
+      int memoryBusWidth{};
+      error = CubDebug(cudaDeviceGetAttribute(&memoryBusWidth, cudaDevAttrGlobalMemoryBusWidth, dev));
+      if (error)
+      {
+        break;
+      }
+
+      device_giga_bandwidth = float(memoryBusWidth) * memoryClockRate * 2 / 8 / 1000 / 1000;
 
       if (!CheckCmdLineFlag("quiet"))
       {
@@ -342,7 +343,7 @@ struct CommandLineArgs
           (unsigned long long) device_free_physmem / 1024 / 1024,
           (unsigned long long) device_total_physmem / 1024 / 1024,
           device_giga_bandwidth,
-          deviceProp.memoryClockRate,
+          memoryClockRate,
           (deviceProp.ECCEnabled) ? "on" : "off");
         fflush(stdout);
       }
@@ -366,94 +367,6 @@ inline std::size_t TotalGlobalMem()
 /******************************************************************************
  * Random bits generator
  ******************************************************************************/
-
-template <typename T>
-bool IsNaN(T /* val */)
-{
-  return false;
-}
-
-template <>
-inline bool IsNaN<float>(float val)
-{
-  return std::isnan(val);
-}
-
-template <>
-inline bool IsNaN<float1>(float1 val)
-{
-  return (IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<float2>(float2 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<float3>(float3 val)
-{
-  return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<float4>(float4 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
-}
-
-template <>
-inline bool IsNaN<double>(double val)
-{
-  return std::isnan(val);
-}
-
-template <>
-inline bool IsNaN<double1>(double1 val)
-{
-  return (IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<double2>(double2 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<double3>(double3 val)
-{
-  return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
-}
-
-template <>
-inline bool IsNaN<double4>(double4 val)
-{
-  return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
-}
-
-#ifdef TEST_HALF_T
-template <>
-inline bool IsNaN<half_t>(half_t val)
-{
-  const auto bits = SafeBitCast<unsigned short>(val);
-
-  // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
-}
-#endif
-
-#ifdef TEST_BF_T
-template <>
-inline bool IsNaN<bfloat16_t>(bfloat16_t val)
-{
-  const auto bits = SafeBitCast<unsigned short>(val);
-
-  // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
-}
-#endif
 
 /**
  * Generates random keys.
@@ -505,8 +418,8 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
       int current_bit = j * WORD_BYTES * 8;
 
       unsigned int word = 0xffffffff;
-      word &= 0xffffffff << CUB_MAX(0, begin_bit - current_bit);
-      word &= 0xffffffff >> CUB_MAX(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
+      word &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
+      word &= 0xffffffff >> ::cuda::std::max(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
 
       for (int i = 0; i <= entropy_reduction; i++)
       {
@@ -520,7 +433,7 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
     memcpy(&key, word_buff, sizeof(K));
 
     K copy = key;
-    if (!IsNaN(copy))
+    if (!c2h::isnan(copy))
     {
       break; // avoids NaNs when generating random floating point numbers
     }
@@ -586,12 +499,12 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
         if (c == 0)
         {
           // Replace 1/256 of values with +0.0 bit pattern
-          value = SafeBitCast<T>(UnsignedBits(0));
+          value = c2h::SafeBitCast<T>(UnsignedBits(0));
         }
         else if (c == 1)
         {
           // Replace 1/256 of values with -0.0 bit pattern
-          value = SafeBitCast<T>(UnsignedBits(UnsignedBits(1) << (sizeof(UnsignedBits) * 8) - 1));
+          value = c2h::SafeBitCast<T>(UnsignedBits(UnsignedBits(1) << (sizeof(UnsignedBits) * 8) - 1));
         }
         else
         {
@@ -716,7 +629,27 @@ std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<
   return os;
 }
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_NVFP16()
+
+inline std::ostream& operator<<(std::ostream& stream, const __half2& value)
+{
+  stream << "(" << value.x << "," << value.y << ")";
+  return stream;
+}
+
+#endif // _CCCL_HAS_HALF
+
+#if _CCCL_HAS_NVBF16()
+
+inline std::ostream& operator<<(std::ostream& stream, const __nv_bfloat162& value)
+{
+  stream << "(" << value.x << "," << value.y << ")";
+  return stream;
+}
+
+#endif // _CCCL_HAS_NVBF16
+
+#if TEST_INT128()
 inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {
   constexpr int max_digits      = 40;
@@ -763,7 +696,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_OVERLOAD_1_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_1_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -773,7 +706,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_OVERLOAD_2_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_2_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -784,7 +717,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_OVERLOAD_3_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_3_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -796,7 +729,7 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_OVERLOAD_4_OLD(T, BaseT)                                                                \
+#define CUB_VEC_OVERLOAD_4_OLD(T)                                                                       \
   /* Test initialization */                                                                             \
   __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0) \
   {                                                                                                     \
@@ -809,27 +742,49 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * All vector overloads
  */
-#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T, BaseT) \
-  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1, BaseT)  \
-  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2, BaseT)  \
-  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3, BaseT)  \
-  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4, BaseT)
+#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T) \
+  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1)  \
+  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2)  \
+  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3)  \
+  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4)
 
 /**
  * Define for types
  */
-CUB_VEC_OVERLOAD_OLD(char, signed char)
-CUB_VEC_OVERLOAD_OLD(short, short)
-CUB_VEC_OVERLOAD_OLD(int, int)
-CUB_VEC_OVERLOAD_OLD(long, long)
-CUB_VEC_OVERLOAD_OLD(longlong, long long)
-CUB_VEC_OVERLOAD_OLD(uchar, unsigned char)
-CUB_VEC_OVERLOAD_OLD(ushort, unsigned short)
-CUB_VEC_OVERLOAD_OLD(uint, unsigned int)
-CUB_VEC_OVERLOAD_OLD(ulong, unsigned long)
-CUB_VEC_OVERLOAD_OLD(ulonglong, unsigned long long)
-CUB_VEC_OVERLOAD_OLD(float, float)
-CUB_VEC_OVERLOAD_OLD(double, double)
+CUB_VEC_OVERLOAD_OLD(char)
+CUB_VEC_OVERLOAD_OLD(short)
+CUB_VEC_OVERLOAD_OLD(int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(long)
+CUB_VEC_OVERLOAD_OLD(longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(long4_16a)
+CUB_VEC_OVERLOAD_4_OLD(long4_32a)
+CUB_VEC_OVERLOAD_4_OLD(longlong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(longlong4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_OLD(uchar)
+CUB_VEC_OVERLOAD_OLD(ushort)
+CUB_VEC_OVERLOAD_OLD(uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(ulong)
+CUB_VEC_OVERLOAD_OLD(ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(ulong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(ulong4_32a)
+CUB_VEC_OVERLOAD_4_OLD(ulonglong4_16a)
+CUB_VEC_OVERLOAD_4_OLD(ulonglong4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_OLD(float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+CUB_VEC_OVERLOAD_OLD(double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#if _CCCL_CTK_AT_LEAST(13, 0)
+CUB_VEC_OVERLOAD_4_OLD(double4_16a)
+CUB_VEC_OVERLOAD_4_OLD(double4_32a)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 //---------------------------------------------------------------------
 // Complex data type TestFoo
@@ -966,36 +921,32 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestFoo& va
   InitValue(gen_mode, value.w, index);
 }
 
-/// numeric_limits<TestFoo> specialization
-CUB_NAMESPACE_BEGIN
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-struct NumericTraits<TestFoo>
+class numeric_limits<TestFoo>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
-  __host__ __device__ static TestFoo Max()
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestFoo max()
   {
     return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Max(),
-      NumericTraits<int>::Max(),
-      NumericTraits<short>::Max(),
-      NumericTraits<char>::Max());
+      numeric_limits<long long>::max(),
+      numeric_limits<int>::max(),
+      numeric_limits<short>::max(),
+      numeric_limits<char>::max());
   }
 
-  __host__ __device__ static TestFoo Lowest()
+  __host__ __device__ static TestFoo lowest()
   {
     return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Lowest(),
-      NumericTraits<int>::Lowest(),
-      NumericTraits<short>::Lowest(),
-      NumericTraits<char>::Lowest());
+      numeric_limits<long long>::lowest(),
+      numeric_limits<int>::lowest(),
+      numeric_limits<short>::lowest(),
+      numeric_limits<char>::lowest());
   }
 };
-CUB_NAMESPACE_END
+_LIBCUDACXX_END_NAMESPACE_STD
 
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
@@ -1100,28 +1051,24 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestBar& va
   InitValue(gen_mode, value.y, index);
 }
 
-/// numeric_limits<TestBar> specialization
-CUB_NAMESPACE_BEGIN
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-struct NumericTraits<TestBar>
+class numeric_limits<TestBar>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestBar max()
   {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
-  __host__ __device__ static TestBar Max()
-  {
-    return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());
+    return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
   }
 
-  __host__ __device__ static TestBar Lowest()
+  __host__ __device__ static TestBar lowest()
   {
-    return TestBar(NumericTraits<long long>::Lowest(), NumericTraits<int>::Lowest());
+    return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
   }
 };
-CUB_NAMESPACE_END
+_LIBCUDACXX_END_NAMESPACE_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display
@@ -1234,7 +1181,7 @@ inline int CompareDeviceResults(
 template <typename S, typename OffsetT>
 int CompareDeviceResults(
   S* /*h_reference*/,
-  CUB_NS_QUALIFIER::DiscardOutputIterator<OffsetT> /*d_data*/,
+  THRUST_NS_QUALIFIER::discard_iterator<OffsetT> /*d_data*/,
   std::size_t /*num_items*/,
   bool /*verbose*/      = true,
   bool /*display_data*/ = false)
@@ -1400,7 +1347,7 @@ void InitializeSegments(OffsetT num_items, int num_segments, OffsetT* h_segment_
 
     OffsetT segment_length = RandomValue((expected_segment_length * 2) + 1);
     offset += segment_length;
-    offset = CUB_MIN(offset, num_items);
+    offset = ::cuda::std::min(offset, num_items);
   }
   h_segment_offsets[num_segments] = num_items;
 

@@ -64,10 +64,10 @@ public:
       , redux_op(mv(redux_op))
   {}
 
-  // dependency without an explicit data_place : using data_place::affine
+  // dependency without an explicit data_place : using data_place::affine()
   task_dep_untyped(
     const logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(d, m, data_place::affine, mv(redux_op))
+      : task_dep_untyped(d, m, data_place::affine(), mv(redux_op))
   {}
 
   logical_data_untyped get_data() const;
@@ -242,7 +242,7 @@ public:
 
   template <typename... Args>
   task_dep(Args&&... args)
-      : base(std::forward<Args>(args)...)
+      : base(::std::forward<Args>(args)...)
   {}
 };
 

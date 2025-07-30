@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -33,7 +33,7 @@
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/stream_ref>
 
-#  if _CCCL_STD_VER >= 2014
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -122,8 +122,8 @@ _CCCL_CONCEPT __different_resource =
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#  endif // _CCCL_STD_VER >= 2014
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_H

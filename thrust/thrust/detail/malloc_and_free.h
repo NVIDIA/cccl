@@ -62,21 +62,6 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
   return pointer<T, DerivedPolicy>(raw_ptr);
 }
 
-// XXX WAR nvbug 992955
-#if _CCCL_HAS_CUDA_COMPILER
-#  if CUDART_VERSION < 5000
-
-// cudafe generates unqualified calls to free(int *volatile)
-// which get confused with thrust::free
-// spoof a thrust::free which simply maps to ::free
-inline _CCCL_HOST_DEVICE void free(int* volatile ptr)
-{
-  ::free(ptr);
-}
-
-#  endif // CUDART_VERSION
-#endif // _CCCL_CUDA_COMPILER
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer ptr)

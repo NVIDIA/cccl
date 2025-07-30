@@ -59,4 +59,4 @@ public:
   {}
 };
 
-}; // end namespace unittest
+} // end namespace unittest

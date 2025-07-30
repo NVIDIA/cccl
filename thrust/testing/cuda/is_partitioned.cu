@@ -80,23 +80,23 @@ void TestIsPartitionedCudaStreams()
 
   // empty partition
   ASSERT_EQUAL_QUIET(true,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin(), thrust::identity<int>()));
+                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin(), ::cuda::std::identity{}));
 
   // one element true partition
   ASSERT_EQUAL_QUIET(
-    true, thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, thrust::identity<int>()));
+    true, thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, ::cuda::std::identity{}));
 
   // just true partition
   ASSERT_EQUAL_QUIET(
-    true, thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 2, thrust::identity<int>()));
+    true, thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 2, ::cuda::std::identity{}));
 
   // both true & false partitions
   ASSERT_EQUAL_QUIET(true,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), thrust::identity<int>()));
+                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   // one element false partition
   ASSERT_EQUAL_QUIET(true,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin() + 3, v.end(), thrust::identity<int>()));
+                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin() + 3, v.end(), ::cuda::std::identity{}));
 
   v[0] = 1;
   v[1] = 0;
@@ -105,7 +105,7 @@ void TestIsPartitionedCudaStreams()
 
   // not partitioned
   ASSERT_EQUAL_QUIET(false,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), thrust::identity<int>()));
+                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }

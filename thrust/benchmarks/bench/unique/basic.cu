@@ -45,15 +45,16 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   caching_allocator_t alloc;
   // not a warm-up run, we need to run once to determine the size of the output
   const auto new_end             = thrust::unique_copy(policy(alloc), input.cbegin(), input.cend(), output.begin());
-  const std::size_t unique_items = thrust::distance(output.begin(), new_end);
+  const std::size_t unique_items = ::cuda::std::distance(output.begin(), new_end);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(unique_items);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::unique_copy(policy(alloc, launch), input.cbegin(), input.cend(), output.begin());
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::unique_copy(policy(alloc, launch), input.cbegin(), input.cend(), output.begin());
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

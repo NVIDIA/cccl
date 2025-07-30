@@ -24,10 +24,13 @@
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_API constexpr _ForwardIterator
 __is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   if (__first != __last)
@@ -46,19 +49,20 @@ __is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __
 }
 
 template <class _ForwardIterator, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__is_sorted_until<__comp_ref_type<_Compare>>(__first, __last, __comp);
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-is_sorted_until(_ForwardIterator __first, _ForwardIterator __last)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator is_sorted_until(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::is_sorted_until(__first, __last, __less{});
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_IS_SORTED_UNTIL_H

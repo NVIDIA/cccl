@@ -33,6 +33,7 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 // Sync only will not move data....
@@ -48,9 +49,9 @@ class exec_place_grid;
 class exec_place_cuda_stream;
 
 // Green contexts are only supported since CUDA 12.4
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
 class exec_place_green_ctx;
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
@@ -74,29 +75,45 @@ public:
   data_place() = default;
 
   /**
-   * @brief Constant representing an invalid `data_place` object.
+   * @brief Represents an invalid `data_place` object.
    */
-  static const data_place invalid;
+  static data_place invalid()
+  {
+    return data_place(invalid_devid);
+  }
 
   /**
-   * @brief Constant representing the host CPU as the `data_place`.
+   * @brief Represents the host CPU as the `data_place` (pinned host memory, or
+   * memory which should be pinned by CUDASTF).
    */
-  static const data_place host;
+  static data_place host()
+  {
+    return data_place(host_devid);
+  }
 
   /**
-   * @brief Constant representing a managed memory location as the `data_place`.
+   * @brief Represents a managed memory location as the `data_place`.
    */
-  static const data_place managed;
+  static data_place managed()
+  {
+    return data_place(managed_devid);
+  }
 
   /// This actually does not define a data_place, but means that we should use
   /// the data place affine to the execution place
-  static const data_place affine;
+  static data_place affine()
+  {
+    return data_place(affine_devid);
+  }
 
   /**
    * @brief Constant representing a placeholder that lets the library automatically select a GPU device as the
    * `data_place`.
    */
-  static const data_place device_auto;
+  static data_place device_auto()
+  {
+    return data_place(device_auto_devid);
+  }
 
   /** @brief Data is placed on device with index dev_id. Two relaxations are allowed: -1 can be passed to create a
    * placeholder for the host, and -2 can be used to create a placeholder for a managed device.
@@ -127,9 +144,9 @@ public:
 
   static data_place composite(get_executor_func_t f, const exec_place_grid& grid);
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   bool operator==(const data_place& rhs) const;
 
@@ -141,40 +158,71 @@ public:
   /// checks if this data place is a composite data place
   bool is_composite() const
   {
-    return (composite_desc != nullptr);
+    // If the devid indicates composite_devid then we must have a descriptor
+    _CCCL_ASSERT(devid != composite_devid || composite_desc != nullptr, "invalid state");
+    return (devid == composite_devid);
   }
 
   /// checks if this data place is a green context data place
   bool is_green_ctx() const
   {
-#if CUDA_VERSION >= 12040
-    return gc_view != nullptr;
-#else
+#if _CCCL_CTK_AT_LEAST(12, 4)
+    // If the devid indicates green_ctx_devid then we must have a descriptor
+    _CCCL_ASSERT(devid != green_ctx_devid || gc_view != nullptr, "invalid state");
+
+    return (devid == green_ctx_devid);
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
     return false;
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+  }
+
+  bool is_invalid() const
+  {
+    return devid == invalid_devid;
+  }
+
+  bool is_host() const
+  {
+    return devid == host_devid;
+  }
+
+  bool is_managed() const
+  {
+    return devid == managed_devid;
+  }
+
+  bool is_affine() const
+  {
+    return devid == affine_devid;
   }
 
   /// checks if this data place corresponds to a specific device
   bool is_device() const
   {
-    return !is_composite() && !is_green_ctx() && (devid >= 0);
+    // All other type of data places have a specific negative devid value.
+    return (devid >= 0);
+  }
+
+  bool is_device_auto() const
+  {
+    return devid == device_auto_devid;
   }
 
   ::std::string to_string() const
   {
-    if (*this == host)
+    if (devid == host_devid)
     {
       return "host";
     }
-    if (*this == managed)
+    if (devid == managed_devid)
     {
       return "managed";
     }
-    if (*this == device_auto)
+    if (devid == device_auto_devid)
     {
       return "auto";
     }
-    if (*this == invalid)
+    if (devid == invalid_devid)
     {
       return "invalid";
     }
@@ -194,7 +242,7 @@ public:
 
   /**
    * @brief Returns an index guaranteed to be >= 0 (0 for managed CPU, 1 for pinned CPU,  2 for device 0, 3 for device
-   * 1, ...). Requires that `p` is initialized and different from `data_place::invalid`.
+   * 1, ...). Requires that `p` is initialized and different from `data_place::invalid()`.
    */
   friend inline size_t to_index(const data_place& p)
   {
@@ -212,11 +260,11 @@ public:
   {
     if (p.is_green_ctx())
     {
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
       return p.gc_view->devid;
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
       assert(0);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
     }
 
     // TODO: restrict this function, i.e. sometimes it's called with invalid places.
@@ -246,28 +294,24 @@ private:
   ::std::shared_ptr<composite_state> composite_desc;
 
 public:
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   ::std::shared_ptr<green_ctx_view> gc_view;
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
   //} state
 
 private:
-  /* Constants to implement data_place::invalid, data_place::host, etc. */
+  /* Constants to implement data_place::invalid(), data_place::host(), etc. */
   enum devid : int
   {
     invalid_devid     = ::std::numeric_limits<int>::min(),
+    green_ctx_devid   = -6,
+    composite_devid   = -5,
     device_auto_devid = -4,
     affine_devid      = -3,
     managed_devid     = -2,
     host_devid        = -1,
   };
 };
-
-inline const data_place data_place::invalid(invalid_devid);
-inline const data_place data_place::host(host_devid);
-inline const data_place data_place::managed(managed_devid);
-inline const data_place data_place::device_auto(device_auto_devid);
-inline const data_place data_place::affine(affine_devid);
 
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
@@ -323,7 +367,7 @@ public:
       }
     }
 
-    virtual const data_place& affine_data_place() const
+    virtual const data_place affine_data_place() const
     {
       return affine;
     }
@@ -331,6 +375,11 @@ public:
     virtual ::std::string to_string() const
     {
       return "exec(" + affine.to_string() + ")";
+    }
+
+    virtual bool is_host() const
+    {
+      return affine.is_host();
     }
 
     virtual bool is_device() const
@@ -351,7 +400,7 @@ public:
     virtual void set_affine_data_place(data_place place)
     {
       affine = mv(place);
-    };
+    }
 
     virtual bool operator==(const impl& rhs) const
     {
@@ -386,14 +435,15 @@ public:
     explicit impl(int devid)
         : affine(data_place::device(devid))
     {}
-    data_place affine = data_place::invalid;
+    data_place affine = data_place::invalid();
   };
 
   exec_place() = default;
   exec_place(const data_place& affine)
       : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : ::std::make_shared<impl>(affine))
   {
-    EXPECT(pimpl->affine != data_place::host, "To create an execution place for the host, use exec_place::host.");
+    _CCCL_ASSERT(pimpl->affine != data_place::host(),
+                 "To create an execution place for the host, use exec_place::host().");
   }
 
   bool operator==(const exec_place& rhs) const
@@ -403,6 +453,12 @@ public:
   bool operator!=(const exec_place& rhs) const
   {
     return !(*this == rhs);
+  }
+
+  // To use in a ::std::map indexed by exec_place
+  bool operator<(const exec_place& rhs) const
+  {
+    return pimpl < rhs.pimpl;
   }
 
   /**
@@ -463,7 +519,7 @@ public:
   /**
    * @brief Returns the `data_place` naturally associated with this execution place.
    */
-  const data_place& affine_data_place() const
+  const data_place affine_data_place() const
   {
     return pimpl->affine_data_place();
   }
@@ -471,7 +527,7 @@ public:
   void set_affine_data_place(data_place place)
   {
     pimpl->set_affine_data_place(mv(place));
-  };
+  }
 
   stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
   {
@@ -509,6 +565,11 @@ public:
     pimpl->deactivate(state, p);
   }
 
+  bool is_host() const
+  {
+    return pimpl->is_host();
+  }
+
   bool is_device() const
   {
     return pimpl->is_device();
@@ -536,15 +597,16 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static const exec_place_host host;
-  static const exec_place device_auto;
+  static exec_place_host host();
+  static exec_place device_auto();
+
   static exec_place device(int devid);
 
 // Green contexts are only supported since CUDA 12.4
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   static exec_place green_ctx(const green_ctx_view& gc_view);
   static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr);
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
   static exec_place_cuda_stream cuda_stream(const decorated_stream& dstream);
@@ -635,7 +697,7 @@ public:
   {
   public:
     impl()
-        : exec_place::impl(data_place::host)
+        : exec_place::impl(data_place::host())
     {}
     exec_place activate(backend_ctx_untyped&) const override
     {
@@ -643,11 +705,11 @@ public:
     } // no-op
     void deactivate(backend_ctx_untyped&, const exec_place& p) const override
     {
-      EXPECT(!p.get_impl());
+      _CCCL_ASSERT(!p.get_impl(), "");
     } // no-op
-    virtual const data_place& affine_data_place() const override
+    virtual const data_place affine_data_place() const override
     {
-      return data_place::host;
+      return data_place::host();
     }
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
     {
@@ -676,13 +738,20 @@ private:
   }
 };
 
-inline const exec_place_host exec_place::host{};
-inline const exec_place exec_place::device_auto{data_place::device_auto};
+inline exec_place_host exec_place::host()
+{
+  return exec_place_host();
+}
+
+inline exec_place exec_place::device_auto()
+{
+  return exec_place(data_place::device_auto());
+}
 
 UNITTEST("exec_place_host::operator->*")
 {
   bool witness = false;
-  exec_place::host->*[&] {
+  exec_place::host()->*[&] {
     witness = true;
   };
   EXPECT(witness);
@@ -736,7 +805,7 @@ UNITTEST("exec_place assignments")
   {
     e = exec_place::device(1);
   }
-  e = exec_place::host;
+  e = exec_place::host();
 };
 
 UNITTEST("exec_place movable")
@@ -767,9 +836,9 @@ public:
         : dims(static_cast<int>(_places.size()), 1, 1, 1)
         , places(mv(_places))
     {
-      assert(!places.empty());
-      assert(dims.x > 0);
-      assert(affine == data_place::invalid);
+      _CCCL_ASSERT(!places.empty(), "");
+      _CCCL_ASSERT(dims.x > 0, "");
+      _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
     // With a "dim4 shape"
@@ -777,8 +846,8 @@ public:
         : dims(_dims)
         , places(mv(_places))
     {
-      assert(dims.x > 0);
-      assert(affine == data_place::invalid);
+      _CCCL_ASSERT(dims.x > 0, "");
+      _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
     // TODO improve with a better description
@@ -1264,6 +1333,9 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
 {
   data_place result;
 
+  // Flags this is a composite data place
+  result.devid = composite_devid;
+
   // Save the state that is specific to a composite data place into the
   // data_place object.
   result.composite_desc = ::std::make_shared<composite_state>(grid, f);
@@ -1271,14 +1343,15 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
   return result;
 }
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
 inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 {
   data_place result;
+  result.devid   = green_ctx_devid;
   result.gc_view = ::std::make_shared<green_ctx_view>(gc_view);
   return result;
 }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 // User-visible API when the same partitioner as the one of the grid
 template <typename partitioner_t>
@@ -1290,17 +1363,17 @@ data_place data_place::composite(partitioner_t, const exec_place_grid& g)
 inline exec_place data_place::get_affine_exec_place() const
 {
   //    EXPECT(*this != affine);
-  //    EXPECT(*this != data_place::invalid);
+  //    EXPECT(*this != data_place::invalid());
 
-  if (*this == host)
+  if (is_host())
   {
-    return exec_place::host;
+    return exec_place::host();
   }
 
   // This is debatable !
-  if (*this == managed)
+  if (is_managed())
   {
-    return exec_place::host;
+    return exec_place::host();
   }
 
   if (is_composite())
@@ -1309,13 +1382,13 @@ inline exec_place data_place::get_affine_exec_place() const
     return get_grid();
   }
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   if (is_green_ctx())
   {
     EXPECT(gc_view != nullptr);
     return exec_place::green_ctx(gc_view);
   }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   // This must be a device
   return exec_place::device(devid);
@@ -1354,11 +1427,12 @@ inline bool data_place::operator==(const data_place& rhs) const
 
   if (is_green_ctx())
   {
-#if CUDA_VERSION >= 12040
-    return *gc_view == *rhs.gc_view;
-#else
+#if _CCCL_CTK_AT_LEAST(12, 4)
+    _CCCL_ASSERT(devid == green_ctx_devid, "");
+    return (rhs.devid == green_ctx_devid && *gc_view == *rhs.gc_view);
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
     assert(0);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
   }
 
   return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));
@@ -1367,8 +1441,8 @@ inline bool data_place::operator==(const data_place& rhs) const
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
 {
-  EXPECT(data_place::managed == data_place::managed);
-  EXPECT(data_place::managed != data_place::host);
+  EXPECT(data_place::managed() == data_place::managed());
+  EXPECT(data_place::managed() != data_place::host());
 };
 #endif // UNITTESTED_FILE
 
@@ -1385,9 +1459,9 @@ enum class instance_id_t : size_t
 #ifdef UNITTESTED_FILE
 UNITTEST("places to_symbol")
 {
-  EXPECT(data_place::host.to_string() == ::std::string("host"));
+  EXPECT(data_place::host().to_string() == ::std::string("host"));
   EXPECT(exec_place::current_device().to_string() == ::std::string("exec(dev0)"));
-  EXPECT(exec_place::host.to_string() == ::std::string("exec(host)"));
+  EXPECT(exec_place::host().to_string() == ::std::string("exec(host)"));
 };
 
 UNITTEST("exec place equality")
@@ -1398,7 +1472,7 @@ UNITTEST("exec place equality")
   auto c2 = exec_place::current_device();
   EXPECT(c1 == c2);
 
-  EXPECT(exec_place::host != exec_place::current_device());
+  EXPECT(exec_place::host() != exec_place::current_device());
 
   cuda_safe_call(cudaSetDevice(0)); // just in case the environment was somehow messed up
   EXPECT(exec_place::device(0) == exec_place::current_device());
@@ -1415,76 +1489,6 @@ UNITTEST("grid exec place equality")
 };
 #endif // UNITTESTED_FILE
 
-namespace reserved
-{
-
-template <typename Kernel>
-::std::pair<int /*min_grid_size*/, int /*block_size*/>
-compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
-{
-  using key_t = ::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>;
-  static ::std::
-    unordered_map<key_t, ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
-      occupancy_cache;
-  const auto key = ::std::make_pair(dynamicSMemSize, blockSizeLimit);
-
-  if (auto i = occupancy_cache.find(key); i != occupancy_cache.end())
-  {
-    // Cache hit
-    return i->second;
-  }
-  // Miss
-  auto& result = occupancy_cache[key];
-  cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, dynamicSMemSize, blockSizeLimit));
-  return result;
-}
-
-/**
- * This method computes the block and grid sizes to optimize thread occupancy.
- *
- * If cooperative kernels are needed, the grid size is capped to the number of
- * blocks
- *
- * - min_grid_size and max_block_size are the grid and block sizes to
- *   _optimize_ occupancy
- * - block_size_limit is the absolute maximum of threads in a block due to
- *   resource constraints
- */
-template <typename Fun>
-void compute_kernel_limits(
-  const Fun&& f,
-  int& min_grid_size,
-  int& max_block_size,
-  size_t shared_mem_bytes,
-  bool cooperative,
-  int& block_size_limit)
-{
-  static_assert(::std::is_function<typename ::std::remove_pointer<Fun>::type>::value,
-                "Template parameter Fun must be a pointer to a function type.");
-
-  ::std::tie(min_grid_size, max_block_size) = compute_occupancy(f, shared_mem_bytes);
-
-  if (cooperative)
-  {
-    // For cooperative kernels, the number of blocks is limited. We compute the number of SM on device 0 and assume
-    // we have a homogeneous machine.
-    static const int sm_count = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, 0);
-
-    // TODO there could be more than 1 block per SM, but we do not know the actual block sizes for now ...
-    min_grid_size = ::std::min(min_grid_size, sm_count);
-  }
-
-  /* Compute the maximum block size (not the optimal size) */
-  static const auto maxThreadsPerBlock = [&] {
-    cudaFuncAttributes result;
-    cuda_safe_call(cudaFuncGetAttributes(&result, f));
-    return result.maxThreadsPerBlock;
-  }();
-  block_size_limit = maxThreadsPerBlock;
-}
-
-} // end namespace reserved
-
 template <auto... spec>
 template <typename Fun>
 interpreted_execution_policy<spec...>::interpreted_execution_policy(
@@ -1492,7 +1496,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 {
   constexpr size_t pdepth = sizeof...(spec) / 2;
 
-  if (where == exec_place::host)
+  if (where == exec_place::host())
   {
     // XXX this may not match the type of the spec if we are not using the default spec ...
     for (size_t d = 0; d < pdepth; d++)
@@ -1509,26 +1513,24 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     size_t l0_size = p.get_width(0);
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
 
-    int max_block_size = 0, min_grid_size = 0;
     size_t shared_mem_bytes = 0;
-    int block_size_limit    = 0;
 
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    auto kernel_limits = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
 
     int grid_size = 0;
     int block_size;
 
     if (l0_size == 0)
     {
-      grid_size = min_grid_size;
+      grid_size = kernel_limits.min_grid_size;
       // Maximum occupancy without exceeding limits
-      block_size = ::std::min(max_block_size, block_size_limit);
+      block_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
       l0_size    = ndevs * grid_size * block_size;
     }
     else
     {
       // Find grid_size and block_size such that grid_size*block_size = l0_size and block_size <= max_block_size
-      for (block_size = max_block_size; block_size >= 1; block_size--)
+      for (block_size = kernel_limits.max_block_size; block_size >= 1; block_size--)
       {
         if (l0_size % block_size == 0)
         {
@@ -1542,7 +1544,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     assert(l0_size > 0);
 
     assert(grid_size > 0);
-    assert(block_size <= max_block_size);
+    assert(block_size <= kernel_limits.max_block_size);
 
     assert(l0_size % ndevs == 0);
     assert(l0_size % (ndevs * block_size) == 0);
@@ -1562,25 +1564,23 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
 
-    int max_block_size = 0, min_grid_size = 0;
-    int block_size_limit = 0;
     /* level 1 will be mapped on threads, level 0 on blocks and above */
     size_t shared_mem_bytes = size_t(p.get_mem(1));
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l1_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l1_size = ::std::min(max_block_size, block_size_limit);
+      l1_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
-      if (int(l1_size) > block_size_limit)
+      if (int(l1_size) > kernel_limits.block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 1)\n",
-                block_size_limit,
+                kernel_limits.block_size_limit,
                 l1_size);
         abort();
       }
@@ -1588,11 +1588,11 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     if (l0_size == 0)
     {
-      l0_size = min_grid_size * ndevs;
+      l0_size = kernel_limits.min_grid_size * ndevs;
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l1_size) <= block_size_limit);
+    assert(int(l1_size) <= kernel_limits.block_size_limit);
 
     assert(l0_size % ndevs == 0);
 
@@ -1614,26 +1614,23 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
     bool l2_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<2>;
 
-    int max_block_size = 0, min_grid_size = 0;
-    int block_size_limit = 0;
     /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
     size_t shared_mem_bytes = size_t(p.get_mem(2));
-    reserved::compute_kernel_limits(
-      f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync || l1_sync);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l2_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l2_size = ::std::min(max_block_size, block_size_limit);
+      l2_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
-      if (int(l2_size) > block_size_limit)
+      if (int(l2_size) > kernel_limits.block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
-                block_size_limit,
+                kernel_limits.block_size_limit,
                 l2_size);
         abort();
       }
@@ -1641,7 +1638,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     if (l1_size == 0)
     {
-      l1_size = min_grid_size;
+      l1_size = kernel_limits.min_grid_size;
     }
 
     if (l0_size == 0)
@@ -1650,7 +1647,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= block_size_limit);
+    assert(int(l2_size) <= kernel_limits.block_size_limit);
     assert(int(l0_size) <= ndevs);
 
     /* Merge blocks and devices */
@@ -1687,11 +1684,11 @@ struct hash<data_place>
     // TODO fix gc_view visibility or provide a getter
     if (k.is_green_ctx())
     {
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
       return hash<green_ctx_view>()(*(k.gc_view));
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
       assert(0);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
     }
 
     return ::std::hash<int>()(device_ordinal(k));

@@ -8,20 +8,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, const void* kernel, void** args);
+
 // Test translation of launch function arguments to cudaLaunchConfig_t sent to cudaLaunchKernelEx internally
 // We replace cudaLaunchKernelEx with a test function here through a macro to intercept the cudaLaunchConfig_t
-#define cudaLaunchKernelEx cudaLaunchKernelExTestReplacement
+#define cudaLaunchKernelExC cudaLaunchKernelExTestReplacement
 #include <cuda/experimental/launch.cuh>
-#undef cudaLaunchKernelEx
+#undef cudaLaunchKernelExC
 
 #include <host_device.cuh>
 
 static cudaLaunchConfig_t expectedConfig;
 static bool replacementCalled = false;
 
-template <typename... ExpTypes, typename... ActTypes>
-cudaError_t
-cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, void (*kernel)(ExpTypes...), ActTypes&&... args)
+cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, const void* kernel, void** args)
 {
   replacementCalled = true;
   bool has_cluster  = false;
@@ -68,7 +68,7 @@ cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, void (*kerne
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
   {
-    return cudaLaunchKernelEx(config, kernel, cuda::std::forward<ActTypes>(args)...);
+    return cudaLaunchKernelExC(config, kernel, args);
   }
   else
   {
@@ -169,10 +169,10 @@ auto configuration_test(
     }
     cudax::launch(stream, config, empty_kernel, 0);
   }
-  stream.wait();
+  stream.sync();
 }
 
-TEST_CASE("Launch configuration", "[launch]")
+C2H_TEST("Launch configuration", "[launch]")
 {
   cudaStream_t stream;
   CUDART(cudaStreamCreate(&stream));
@@ -189,7 +189,7 @@ TEST_CASE("Launch configuration", "[launch]")
   CUDAX_CHECK(replacementCalled);
 }
 
-TEST_CASE("Hierarchy construction in config", "[launch]")
+C2H_TEST("Hierarchy construction in config", "[launch]")
 {
   auto config = cudax::make_config(cudax::grid_dims<2>(), cudax::cooperative_launch());
   static_assert(config.dims.count(cudax::block) == 2);
@@ -204,7 +204,7 @@ TEST_CASE("Hierarchy construction in config", "[launch]")
   static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::__empty_hierarchy>);
 }
 
-TEST_CASE("Configuration combine", "[launch]")
+C2H_TEST("Configuration combine", "[launch]")
 {
   auto grid    = cudax::grid_dims<2>;
   auto cluster = cudax::cluster_dims<2, 2>;

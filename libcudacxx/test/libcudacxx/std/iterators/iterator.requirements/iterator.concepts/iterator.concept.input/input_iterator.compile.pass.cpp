@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept input_iterator;
 
@@ -38,10 +36,8 @@ struct no_explicit_iter_concept
   __host__ __device__ no_explicit_iter_concept& operator++();
   __host__ __device__ void operator++(int);
 };
-#ifndef TEST_COMPILER_MSVC_2017
 // ITER-CONCEPT is `random_access_iterator_tag` >:(
 static_assert(cuda::std::input_iterator<no_explicit_iter_concept>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 static_assert(cuda::std::input_iterator<int*>, "");
 static_assert(cuda::std::input_iterator<int const*>, "");
@@ -63,11 +59,11 @@ struct not_weakly_incrementable
 
   __host__ __device__ int operator*() const;
 
-#if defined(TEST_COMPILER_MSVC) // nvbug4119179
+#if TEST_COMPILER(MSVC) // nvbug4119179
   __host__ __device__ void operator++(int);
 #else
   __host__ __device__ not_weakly_incrementable& operator++();
-#endif // TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>
                 && !cuda::std::input_iterator<not_weakly_incrementable>,

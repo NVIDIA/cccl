@@ -37,9 +37,12 @@ __host__ __device__ T euclidian_subtraction(T lhs, T rhs)
 {
   const T modulus = maxValue - minValue + 1;
   T ret           = lhs - rhs;
-  if (cuda::std::is_signed<T>::value and (ret < minValue)) // avoids warning about comparison with zero if T is unsigned
+  if constexpr (cuda::std::is_signed_v<T>) // avoids warning about comparison with zero if T is unsigned
   {
-    ret += modulus;
+    if (ret < minValue)
+    {
+      ret += modulus;
+    }
   }
   if (ret > maxValue) // this can happen if T is unsigned
   {

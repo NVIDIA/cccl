@@ -34,10 +34,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t, 8>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t, 16>();
   test<char32_t, 32>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short, 15>();
   test<unsigned short, 16>();
   test<int, 31>();
@@ -46,20 +44,42 @@ int main(int, char**)
   test<unsigned long, sizeof(long) == 4 ? 32 : 64>();
   test<long long, 63>();
   test<unsigned long long, 64>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, 127>();
   test<__uint128_t, 128>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, FLT_MANT_DIG>();
   test<double, DBL_MANT_DIG>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, LDBL_MANT_DIG>();
-#endif
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_NVFP16()
   test<__half, 11>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, 8>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8_E4M3()
+  test<__nv_fp8_e4m3, 4>();
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
+  test<__nv_fp8_e5m2, 3>();
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
+  test<__nv_fp8_e8m0, 1>();
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
+  test<__nv_fp6_e2m3, 4>();
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
+  test<__nv_fp6_e3m2, 3>();
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
+  test<__nv_fp4_e2m1, 2>();
+#endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128, 113>();
+#endif // _CCCL_HAS_FLOAT128()
+
   return 0;
 }

@@ -47,14 +47,31 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
  * Tuning policy types
  ******************************************************************************/
+
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD,
+          BlockLoadAlgorithm _LOAD_ALGORITHM,
+          CacheLoadModifier _LOAD_MODIFIER,
+          BlockScanAlgorithm _SCAN_ALGORITHM,
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+struct AgentThreeWayPartitionPolicy
+{
+  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
+};
 
 namespace detail
 {
@@ -93,9 +110,9 @@ struct accumulator_pack_base_t
 };
 
 template <class OffsetT>
-struct accumulator_pack_base_t<OffsetT, typename ::cuda::std::enable_if<sizeof(OffsetT) == 4>::type>
+struct accumulator_pack_base_t<OffsetT, ::cuda::std::enable_if_t<sizeof(OffsetT) == 4>>
 {
-  using pack_t = std::uint64_t;
+  using pack_t = uint64_t;
 
   _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s)
   {
@@ -135,30 +152,6 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   }
 };
 
-} // namespace three_way_partition
-
-} // namespace detail
-
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentThreeWayPartitionPolicy
-{
-  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
-
-  struct detail
-  {
-    using delay_constructor_t = DelayConstructorT;
-  };
-};
-
 /**
  * \brief Implements a device-wide three-way partitioning
  *
@@ -184,9 +177,9 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
-  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackHelperT = accumulator_pack_t<OffsetT>;
   using AccumPackT       = typename AccumPackHelperT::pack_t;
 
   // Tile status descriptor interface type
@@ -198,7 +191,7 @@ struct AgentThreeWayPartition
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -211,7 +204,7 @@ struct AgentThreeWayPartition
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename PolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    cub::TilePrefixCallbackOp<AccumPackT, ::cuda::std::plus<>, ScanTileStateT, 0, DelayConstructorT>;
+    cub::TilePrefixCallbackOp<AccumPackT, ::cuda::std::plus<>, ScanTileStateT, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -592,5 +585,8 @@ struct AgentThreeWayPartition
     }
   }
 };
+
+} // namespace three_way_partition
+} // namespace detail
 
 CUB_NAMESPACE_END

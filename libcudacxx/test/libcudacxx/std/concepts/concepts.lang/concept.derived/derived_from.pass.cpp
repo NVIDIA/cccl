@@ -7,19 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class Derived, class Base>
 // concept derived_from;
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
-
-#if TEST_STD_VER > 2017
-#  define TEST_IF_CONSTEXPR if constexpr
-#else
-#  define TEST_IF_CONSTEXPR if
-#endif
 
 using cuda::std::derived_from;
 
@@ -51,7 +43,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer()
     static_assert(!derived_from<From*, volatile To>, "");
     static_assert(!derived_from<From*, const volatile To>, "");
 
-    TEST_IF_CONSTEXPR(!cuda::std::same_as<To, void>)
+    if constexpr (!cuda::std::same_as<To, void>)
     {
       static_assert(!derived_from<From*, To&>, "");
       static_assert(!derived_from<From*, const To&>, "");
@@ -100,7 +92,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer()
     static_assert(!derived_from<From, volatile To*>, "");
     static_assert(!derived_from<From, const volatile To*>, "");
 
-    TEST_IF_CONSTEXPR(!cuda::std::same_as<From, void>)
+    if constexpr (!cuda::std::same_as<From, void>)
     {
       static_assert(!derived_from<From&, To*>, "");
       static_assert(!derived_from<From&, const To*>, "");
@@ -167,43 +159,43 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer()
 
 #if TEST_STD_VER > 2017
   // From as the return type of a pointer-to-function
-  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From>)
+  if constexpr (!cuda::std::is_array_v<From>)
   {
     static_assert(!derived_from<From (*)(), To>, "");
     static_assert(!derived_from<From (*)(int), To>, "");
   }
 
   // To as the return type of a pointer-to-function
-  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<To>)
+  if constexpr (!cuda::std::is_array_v<To>)
   {
     static_assert(!derived_from<From, To (*)()>, "");
     static_assert(!derived_from<From, To (*)(double)>, "");
   }
 
   // Both as the return type of a pointer-to-function
-  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
+  if constexpr (!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
   {
     static_assert(!derived_from<From (*)(), To (*)()>, "");
     static_assert(!derived_from<From (*)(int), To (*)(double)>, "");
   }
   { // pointer-to-member
-    TEST_IF_CONSTEXPR(cuda::std::is_class_v<From> && !cuda::std::same_as<To, void>)
+    if constexpr (cuda::std::is_class_v<From> && !cuda::std::same_as<To, void>)
     {
       static_assert(!derived_from<To From::*, To>, "");
     }
 
-    TEST_IF_CONSTEXPR(cuda::std::is_class_v<To> && !cuda::std::same_as<From, void>)
+    if constexpr (cuda::std::is_class_v<To> && !cuda::std::same_as<From, void>)
     {
       static_assert(!derived_from<From To::*, From>, "");
     }
   }
   { // pointer-to-member-functions
-    TEST_IF_CONSTEXPR(cuda::std::is_class_v<From>)
+    if constexpr (cuda::std::is_class_v<From>)
     {
       static_assert(!derived_from<From (From::*)(), To>, "");
     }
 
-    TEST_IF_CONSTEXPR(cuda::std::is_class_v<To>)
+    if constexpr (cuda::std::is_class_v<To>)
     {
       static_assert(!derived_from<To (To::*)(), From>, "");
     }
@@ -214,7 +206,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer()
 template <typename From, typename To>
 __host__ __device__ constexpr void CheckNotDerivedFromReference()
 {
-  TEST_IF_CONSTEXPR(!cuda::std::same_as<To, void>)
+  if constexpr (!cuda::std::same_as<To, void>)
   {
     static_assert(!derived_from<From, To&>, "");
     static_assert(!derived_from<From, const To&>, "");
@@ -227,7 +219,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference()
     static_assert(!derived_from<From, const volatile To&&>, "");
   }
 
-  TEST_IF_CONSTEXPR(!cuda::std::same_as<From, void>)
+  if constexpr (!cuda::std::same_as<From, void>)
   {
     static_assert(!derived_from<From&, To>, "");
     static_assert(!derived_from<From&, To>, "");
@@ -241,7 +233,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference()
   }
 
   // From as lvalue references
-  TEST_IF_CONSTEXPR(!cuda::std::same_as<From, void> && !cuda::std::same_as<To, void>)
+  if constexpr (!cuda::std::same_as<From, void> && !cuda::std::same_as<To, void>)
   {
     static_assert(!derived_from<From&, To&>, "");
     static_assert(!derived_from<From&, const To&>, "");
@@ -327,19 +319,19 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference()
 
 #if TEST_STD_VER > 2017
   // From as the return type of a reference-to-function
-  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From>)
+  if constexpr (!cuda::std::is_array_v<From>)
   {
     static_assert(!derived_from<From (&)(), To>, "");
     static_assert(!derived_from<From (&)(int), To>, "");
   }
   // To as the return type of a reference-to-function
-  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<To>)
+  if constexpr (!cuda::std::is_array_v<To>)
   {
     static_assert(!derived_from<From, To (&)()>, "");
     static_assert(!derived_from<From, To (&)(double)>, "");
   }
   // Both as the return type of a reference-to-function
-  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
+  if constexpr (!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
   {
     static_assert(!derived_from<From (&)(), To (&)()>, "");
     static_assert(!derived_from<From (&)(int), To (&)(double)>, "");

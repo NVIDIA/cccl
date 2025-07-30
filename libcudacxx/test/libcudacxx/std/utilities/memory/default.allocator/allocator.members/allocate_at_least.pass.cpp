@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
+// UNSUPPORTED: c++17, c++20
 
 // <memory>
 
@@ -20,10 +20,10 @@
 
 #include "count_new.h"
 
-#ifdef TEST_HAS_NO_ALIGNED_ALLOCATION
-static const bool UsingAlignedNew = false;
-#else
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 static const bool UsingAlignedNew = true;
+#else
+static const bool UsingAlignedNew = false;
 #endif
 
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__

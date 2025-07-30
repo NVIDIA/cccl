@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T2, class E2> requires (!is_void_v<T2>)
 //   friend constexpr bool operator==(const expected& x, const expected<T2, E2>& y);
 

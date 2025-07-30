@@ -32,6 +32,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class __atomic_cuda_memorder
@@ -177,5 +179,7 @@ using __atomic_enable_if_not_native_minmax =
   enable_if_t<!_CCCL_TRAIT(is_integral, _Type) || (_CCCL_TRAIT(is_scalar, _Type) && (sizeof(_Type) == 16)), bool>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H

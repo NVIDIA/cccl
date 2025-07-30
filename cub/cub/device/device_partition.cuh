@@ -43,13 +43,8 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
-
-#include <iterator>
-
-#include <stdio.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -112,7 +107,7 @@ struct DevicePartition
   //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
-  //!    std::size_t temp_storage_bytes = 0;
+  //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::Flagged(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_flags, d_out, d_num_selected_out, num_items);
@@ -187,7 +182,7 @@ struct DevicePartition
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using SelectOp      = NullType; // Selection op (not used)
@@ -200,7 +195,7 @@ struct DevicePartition
                        SelectOp,
                        EqualityOp,
                        OffsetT,
-                       true>;
+                       SelectImpl::Partition>;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
     cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
@@ -270,7 +265,7 @@ struct DevicePartition
   //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
-  //!    std::size_t temp_storage_bytes = 0;
+  //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::If(
   //!    d_temp_storage, temp_storage_bytes,
   //!    d_in, d_out, d_num_selected_out, num_items, select_op);
@@ -344,7 +339,7 @@ struct DevicePartition
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using FlagIterator  = NullType*; // FlagT iterator type (not used)
@@ -365,7 +360,7 @@ struct DevicePartition
                        SelectOp,
                        EqualityOp,
                        OffsetT,
-                       true>;
+                       SelectImpl::Partition>;
 
     return DispatchSelectIfT::Dispatch(
       d_temp_storage,
@@ -381,7 +376,7 @@ struct DevicePartition
   }
 
 private:
-  template <bool IS_DESCENDING,
+  template <SortOrder Order,
             typename KeyT,
             typename ValueT,
             typename OffsetT,
@@ -401,7 +396,7 @@ private:
             typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t IfNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
     SecondOutputIteratorT d_second_part_out,
@@ -539,7 +534,7 @@ public:
   //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
-  //!    std::size_t temp_storage_bytes = 0;
+  //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::If(
   //!         d_temp_storage, temp_storage_bytes,
   //!         d_in, d_large_and_medium_out, d_small_out, unselected_out,
@@ -639,7 +634,7 @@ public:
             typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
-     std::size_t& temp_storage_bytes,
+     size_t& temp_storage_bytes,
      InputIteratorT d_in,
      FirstOutputIteratorT d_first_part_out,
      SecondOutputIteratorT d_second_part_out,
@@ -650,7 +645,7 @@ public:
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     return IfNoNVTX(
       d_temp_storage,
       temp_storage_bytes,

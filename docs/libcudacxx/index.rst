@@ -65,7 +65,7 @@ learning curve of learning CUDA. However, there are many aspects of writing high
 be expressed through purely Standard conforming APIs. For these cases, libcu++ also provides *extensions* of Standard
 Library utilities.
 
-For example, libcu++ extends ``atomic<T>`` and other synchornization primitives with the notion of a “thread scope”
+For example, libcu++ extends ``atomic<T>`` and other synchronization primitives with the notion of a “thread scope”
 that controls the strength of the memory fence.
 
 To use utilities that are extensions to Standard Library features, drop the ``std``:

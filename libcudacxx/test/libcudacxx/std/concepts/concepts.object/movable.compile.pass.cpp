@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept movable = see below;
 
@@ -37,27 +35,27 @@ static_assert(movable<int S::*>, "");
 static_assert(movable<int (S::*)()>, "");
 static_assert(movable<int (S::*)() noexcept>, "");
 static_assert(movable<int (S::*)() &>, "");
-static_assert(movable < int(S::*)() & noexcept >, "");
+static_assert(movable<int (S::*)() & noexcept>, "");
 static_assert(movable<int (S::*)() &&>, "");
-static_assert(movable < int(S::*)() && noexcept >, "");
+static_assert(movable < int (S::*)() && noexcept >, "");
 static_assert(movable<int (S::*)() const>, "");
 static_assert(movable<int (S::*)() const noexcept>, "");
 static_assert(movable<int (S::*)() const&>, "");
-static_assert(movable < int(S::*)() const& noexcept >, "");
+static_assert(movable<int (S::*)() const & noexcept>, "");
 static_assert(movable<int (S::*)() const&&>, "");
-static_assert(movable < int(S::*)() const&& noexcept >, "");
+static_assert(movable < int (S::*)() const&& noexcept >, "");
 static_assert(movable<int (S::*)() volatile>, "");
 static_assert(movable<int (S::*)() volatile noexcept>, "");
 static_assert(movable<int (S::*)() volatile&>, "");
-static_assert(movable < int(S::*)() volatile & noexcept >, "");
+static_assert(movable<int (S::*)() volatile & noexcept>, "");
 static_assert(movable<int (S::*)() volatile&&>, "");
-static_assert(movable < int(S::*)() volatile && noexcept >, "");
+static_assert(movable < int (S::*)() volatile && noexcept >, "");
 static_assert(movable<int (S::*)() const volatile>, "");
 static_assert(movable<int (S::*)() const volatile noexcept>, "");
 static_assert(movable<int (S::*)() const volatile&>, "");
-static_assert(movable < int(S::*)() const volatile& noexcept >, "");
+static_assert(movable<int (S::*)() const volatile & noexcept>, "");
 static_assert(movable<int (S::*)() const volatile&&>, "");
-static_assert(movable < int(S::*)() const volatile&& noexcept >, "");
+static_assert(movable < int (S::*)() const volatile&& noexcept >, "");
 
 static_assert(movable<has_volatile_member>, "");
 static_assert(movable<has_array_member>, "");
@@ -88,18 +86,17 @@ static_assert(!movable<DerivedFromNonMovable>, "");
 static_assert(!movable<HasANonMovable>, "");
 
 static_assert(movable<cpp03_friendly>, "");
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(movable<const_move_ctor>, "");
 static_assert(movable<volatile_move_ctor>, "");
 static_assert(movable<cv_move_ctor>, "");
 static_assert(movable<multi_param_move_ctor>, "");
-#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!movable<not_quite_multi_param_move_ctor>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
+                                                // of SMF
 static_assert(!cuda::std::assignable_from<copy_with_mutable_parameter&, copy_with_mutable_parameter>, "");
 static_assert(!movable<copy_with_mutable_parameter>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 static_assert(!movable<const_move_assignment>, "");
 static_assert(movable<volatile_move_assignment>, "");
@@ -108,11 +105,13 @@ static_assert(!movable<cv_move_assignment>, "");
 static_assert(!movable<const_move_assign_and_traditional_move_assign>, "");
 static_assert(!movable<volatile_move_assign_and_traditional_move_assign>, "");
 static_assert(!movable<cv_move_assign_and_traditional_move_assign>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
+                                                // of SMF
 static_assert(movable<const_move_assign_and_default_ops>, "");
 static_assert(movable<volatile_move_assign_and_default_ops>, "");
 static_assert(movable<cv_move_assign_and_default_ops>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple
+       // definitions of SMF
 
 static_assert(!movable<has_const_member>, "");
 static_assert(!movable<has_cv_member>, "");

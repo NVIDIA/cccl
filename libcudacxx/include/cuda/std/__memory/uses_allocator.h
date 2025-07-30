@@ -26,45 +26,30 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class = void>
-struct __has_allocator_type : false_type
-{};
+inline constexpr bool __has_allocator_type_v = false;
 template <class _Tp>
-struct __has_allocator_type<_Tp, void_t<typename _Tp::allocator_type>> : true_type
-{};
+inline constexpr bool __has_allocator_type_v<_Tp, void_t<typename _Tp::allocator_type>> = true;
 
 template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
-struct __uses_allocator : false_type
-{};
+inline constexpr bool __uses_allocator_v = false;
 template <class _Tp, class _Alloc>
-struct __uses_allocator<_Tp, _Alloc, true> : is_convertible<_Alloc, typename _Tp::allocator_type>
-{};
-#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
-template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_allocator_type_v = false;
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_allocator_type_v<_Tp, void_t<typename _Tp::allocator_type>> = true;
-
-template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
-_CCCL_INLINE_VAR constexpr bool __uses_allocator_v = false;
-template <class _Tp, class _Alloc>
-_CCCL_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
-  is_convertible_v<_Alloc, typename _Tp::allocator_type>;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __uses_allocator_v<_Tp, _Alloc, true> = is_convertible_v<_Alloc, typename _Tp::allocator_type>;
 
 template <class _Tp, class _Alloc>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator
-    : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+uses_allocator : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
 {};
 
-#if _CCCL_STD_VER >= 2014
 template <class _Tp, class _Alloc>
-_CCCL_INLINE_VAR constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
-#endif // _CCCL_STD_VER >= 2014
+inline constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_USES_ALLOCATOR_H

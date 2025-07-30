@@ -22,8 +22,8 @@
 
 static std::string get_for_kernel_iterator(cccl_iterator_t iter)
 {
-  const auto input_it_value_t = cccl_type_enum_to_string(iter.value_type.type);
-  const auto offset_t         = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+  const auto input_it_value_t = cccl_type_enum_to_name(iter.value_type.type);
+  const auto offset_t         = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
   constexpr std::string_view stateful_iterator =
     R"XXX(
@@ -59,7 +59,7 @@ using for_each_iterator_t = input_iterator_state_t;
   using for_each_iterator_t = {0}*;
 )XXX";
 
-  return (iter.type == cccl_iterator_kind_t::iterator)
+  return (iter.type == cccl_iterator_kind_t::CCCL_ITERATOR)
          ? std::format(
              stateful_iterator,
              offset_t, // 0 - type
@@ -74,7 +74,7 @@ using for_each_iterator_t = input_iterator_state_t;
 
 static std::string get_for_kernel_user_op(cccl_op_t user_op, cccl_iterator_t iter)
 {
-  auto value_t = cccl_type_enum_to_string(iter.value_type.type);
+  auto value_t = cccl_type_enum_to_name(iter.value_type.type);
 
   constexpr std::string_view op_format =
     R"XXX(
@@ -108,7 +108,7 @@ struct user_op_t {{
 }};
 )XXX";
 
-  bool user_op_stateful = cccl_op_kind_t::stateful == user_op.type;
+  bool user_op_stateful = cccl_op_kind_t::CCCL_STATEFUL == user_op.type;
 
   return std::format(
     op_format,
@@ -201,12 +201,12 @@ static_assert(calculate_kernel_state_sizes(8, 16, 16) == std::tuple<size_t, size
 for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterator)
 {
   // Iterator is either a pointer or a stateful object, allocate space according to its size or alignment
-  size_t iter_size     = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.size : sizeof(void*);
-  void* iterator_state = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.state : &iterator.state;
+  size_t iter_size     = (cccl_iterator_kind_t::CCCL_ITERATOR == iterator.type) ? iterator.size : sizeof(void*);
+  void* iterator_state = (cccl_iterator_kind_t::CCCL_ITERATOR == iterator.type) ? iterator.state : &iterator.state;
 
   // Do we need to valid user input? Alignments larger than the provided size?
-  size_t user_size  = (cccl_op_kind_t::stateful == op.type) ? op.size : 0;
-  size_t user_align = (cccl_op_kind_t::stateful == op.type) ? op.alignment : 0;
+  size_t user_size  = (cccl_op_kind_t::CCCL_STATEFUL == op.type) ? op.size : 0;
+  size_t user_align = (cccl_op_kind_t::CCCL_STATEFUL == op.type) ? op.alignment : 0;
 
   auto [min_size, user_op_offset] = calculate_kernel_state_sizes(iter_size, user_size, user_align);
 
@@ -224,7 +224,7 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
 
   // Memcpy into either local or allocated buffer
   memcpy(iter_start, iterator_state, iter_size);
-  if (cccl_op_kind_t::stateful == op.type)
+  if (cccl_op_kind_t::CCCL_STATEFUL == op.type)
   {
     char* user_start = iter_start + user_op_offset;
     memcpy(user_start, op.state, user_size);

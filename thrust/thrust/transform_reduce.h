@@ -98,7 +98,7 @@ THRUST_NAMESPACE_BEGIN
  *                                        data, data + 6,
  *                                        absolute_value<int>(),
  *                                        0,
- *                                        thrust::maximum<int>());
+ *                                        ::cuda::maximum<int>());
  *  // result == 3
  *  \endcode
  *
@@ -170,7 +170,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *  int result = thrust::transform_reduce(data, data + 6,
  *                                        absolute_value<int>(),
  *                                        0,
- *                                        thrust::maximum<int>());
+ *                                        ::cuda::maximum<int>());
  *  // result == 3
  *  \endcode
  *

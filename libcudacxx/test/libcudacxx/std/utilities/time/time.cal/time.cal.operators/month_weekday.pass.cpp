@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class month_weekday;
@@ -51,10 +50,10 @@ int main(int, char**)
   constexpr month February  = cuda::std::chrono::February;
 
   { // operator/(const month& m, const weekday_indexed& wdi) (and switched)
-    ASSERT_NOEXCEPT(February / Tuesday[2]);
-    ASSERT_SAME_TYPE(month_weekday, decltype(February / Tuesday[2]));
-    ASSERT_NOEXCEPT(Tuesday[2] / February);
-    ASSERT_SAME_TYPE(month_weekday, decltype(Tuesday[2] / February));
+    static_assert(noexcept(February / Tuesday[2]));
+    static_assert(cuda::std::is_same_v<month_weekday, decltype(February / Tuesday[2])>);
+    static_assert(noexcept(Tuesday[2] / February));
+    static_assert(cuda::std::is_same_v<month_weekday, decltype(Tuesday[2] / February)>);
 
     //  Run the example
     {
@@ -84,10 +83,10 @@ int main(int, char**)
   }
 
   { // operator/(int m, const weekday_indexed& wdi) (and switched)
-    ASSERT_NOEXCEPT(2 / Tuesday[2]);
-    ASSERT_SAME_TYPE(month_weekday, decltype(2 / Tuesday[2]));
-    ASSERT_NOEXCEPT(Tuesday[2] / 2);
-    ASSERT_SAME_TYPE(month_weekday, decltype(Tuesday[2] / 2));
+    static_assert(noexcept(2 / Tuesday[2]));
+    static_assert(cuda::std::is_same_v<month_weekday, decltype(2 / Tuesday[2])>);
+    static_assert(noexcept(Tuesday[2] / 2));
+    static_assert(cuda::std::is_same_v<month_weekday, decltype(Tuesday[2] / 2)>);
 
     //  Run the example
     {

@@ -17,9 +17,9 @@
  */
 #include <cuda/experimental/stf.cuh>
 
-#include <cublas_v2.h>
 #include <cusolverDn.h>
-#include <nvtx3/nvToolsExt.h>
+
+#include <cublas_v2.h>
 
 #define TILED
 
@@ -93,10 +93,10 @@ public:
 
     handles.resize(mt * nt);
 
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      size_t low_rowb = sym_matrix ? colb : 0;
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
         auto& h   = get_handle(rowb, colb);
@@ -171,12 +171,13 @@ public:
   template <typename Fun>
   void fill(Fun&& fun)
   {
-    nvtxRangePushA("FILL");
+    nvtx_range r("fill");
+
     // Fill blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      size_t low_rowb = sym_matrix ? colb : 0;
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
         auto& h   = get_handle(rowb, colb);
@@ -190,24 +191,23 @@ public:
           };
       }
     }
-    nvtxRangePop();
   }
 
   // Print blocks
   void print()
   {
     // print blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
       int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
         ctx.host_launch(get_handle(rowb, colb).read())->*[=](auto sA) {
-          for (int lcol = 0; lcol < sA.extent(1); lcol++)
+          for (size_t lcol = 0; lcol < sA.extent(1); lcol++)
           {
             size_t col = lcol + colb * sA.extent(1);
-            for (int lrow = 0; lrow < sA.extent(0); lrow++)
+            for (size_t lrow = 0; lrow < sA.extent(0); lrow++)
             {
               size_t row = lrow + rowb * sA.extent(0);
 
@@ -306,7 +306,7 @@ void DTRTRI(cublasFillMode_t uplo, cublasDiagType_t diag, matrix<double>& A, int
   auto devInfo = ctx.logical_data(shape_of<slice<int>>(1));
 
   auto t =
-    ctx.task(A.get_handle(A_row, A_col).rw(), d_buffer.write(), h_buffer.write(data_place::managed), devInfo.write());
+    ctx.task(A.get_handle(A_row, A_col).rw(), d_buffer.write(), h_buffer.write(data_place::managed()), devInfo.write());
   t.set_symbol("DTRTRI");
   t->*[&](auto s, auto sA, auto dbuffer, auto hbuffer, auto info) {
     auto& h = get_cusolver_handle();
@@ -804,9 +804,9 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
   ctx.get_dot()->set_current_color("red");
 #endif
 
-  for (int rowb = 0; rowb < A->mt; rowb++)
+  for (size_t rowb = 0; rowb < A->mt; rowb++)
   {
-    for (int colb = 0; colb < A->nt; colb++)
+    for (size_t colb = 0; colb < A->nt; colb++)
     {
       ctx.host_launch(A->get_handle(rowb, colb).read())->*[=](auto sA) {
         double res2 = 0.0;
@@ -826,6 +826,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 
 void PDPOTRF(matrix<double>& A)
 {
+  nvtx_range r("PDPOTRF");
+
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("yellow");
 #endif
@@ -836,7 +838,6 @@ void PDPOTRF(matrix<double>& A)
   int NBLOCKS = A.mt;
   assert(A.mb == A.nb);
 
-  nvtxRangePushA("SUBMIT_PDPOTRF");
   for (int K = 0; K < NBLOCKS; K++)
   {
     cuda_try(cudaSetDevice(A.get_preferred_devid(K, K)));
@@ -857,8 +858,6 @@ void PDPOTRF(matrix<double>& A)
       DSYRK(CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, -1.0, A, row, K, 1.0, A, row, row);
     }
   }
-
-  nvtxRangePop();
 }
 
 // Algorithm from PLASMA
@@ -870,9 +869,8 @@ void PDTRSM(cublasSideMode_t side,
             matrix<double>& A,
             matrix<double>& B)
 {
+  nvtx_range r("PDTRSM");
   //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
-
-  nvtxRangePushA("SUBMIT_PDTRSM");
 
   if (side == CUBLAS_SIDE_LEFT)
   {
@@ -888,17 +886,17 @@ void PDTRSM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int k = 0; k < B.mt; k++)
+        for (size_t k = 0; k < B.mt; k++)
         {
           double lalpha = k == 0 ? alpha : 1.0;
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
             DTRSM(side, uplo, trans, diag, lalpha, A, k, k, B, k, n);
           }
-          for (int m = k + 1; m < B.mt; m++)
+          for (size_t m = k + 1; m < B.mt; m++)
           {
-            for (int n = 0; n < B.nt; n++)
+            for (size_t n = 0; n < B.nt; n++)
             {
               cuda_try(cudaSetDevice(A.get_preferred_devid(m, k)));
               DGEMM(CUBLAS_OP_N, CUBLAS_OP_N, -1.0, A, m, k, B, k, n, lalpha, B, m, n);
@@ -911,17 +909,17 @@ void PDTRSM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int k = 0; k < B.mt; k++)
+        for (size_t k = 0; k < B.mt; k++)
         {
           double lalpha = k == 0 ? alpha : 1.0;
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(A.get_preferred_devid(B.mt - k - 1, B.mt - k - 1)));
             DTRSM(side, uplo, trans, diag, lalpha, A, B.mt - k - 1, B.mt - k - 1, B, B.mt - k - 1, n);
           }
-          for (int m = k + 1; m < B.mt; m++)
+          for (size_t m = k + 1; m < B.mt; m++)
           {
-            for (int n = 0; n < B.nt; n++)
+            for (size_t n = 0; n < B.nt; n++)
             {
               cuda_try(cudaSetDevice(A.get_preferred_devid(B.mt - k - 1, B.mt - 1 - m)));
               DGEMM(
@@ -938,13 +936,11 @@ void PDTRSM(cublasSideMode_t side,
     abort();
   }
   //    std::cout << "[PDTRSM] END" << std::endl;
-
-  nvtxRangePop();
 }
 
 void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
 {
-  nvtxRangePushA("SUBMIT_PDPOTRS");
+  nvtx_range r("PDPOTRS");
 
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("green");
@@ -962,8 +958,6 @@ void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_N : CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
   //    std::cout << "[PDPOTRS] END" << std::endl;
-
-  nvtxRangePop();
 }
 
 /***************************************************************************/ /**
@@ -979,13 +973,15 @@ void PDGEMM(cublasOperation_t transa,
             double beta,
             matrix<double>& C)
 {
+  nvtx_range r("PDGEMM");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("blue");
 #endif
 
-  for (int m = 0; m < C.mt; m++)
+  for (size_t m = 0; m < C.mt; m++)
   {
-    for (int n = 0; n < C.nt; n++)
+    for (size_t n = 0; n < C.nt; n++)
     {
       cuda_try(cudaSetDevice(C.get_preferred_devid(m, n)));
 
@@ -1005,7 +1001,7 @@ void PDGEMM(cublasOperation_t transa,
         if (transb == CUBLAS_OP_N)
         {
           assert(A.nt == B.mt);
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, m, k, B, k, n, zbeta, C, m, n);
@@ -1016,7 +1012,7 @@ void PDGEMM(cublasOperation_t transa,
         //=====================================
         else
         {
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, m, k, B, n, k, zbeta, C, m, n);
@@ -1030,7 +1026,7 @@ void PDGEMM(cublasOperation_t transa,
         //=====================================
         if (transb == CUBLAS_OP_N)
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, k, m, B, k, n, zbeta, C, m, n);
@@ -1041,7 +1037,7 @@ void PDGEMM(cublasOperation_t transa,
         //==========================================
         else
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, k, m, B, n, k, zbeta, C, m, n);
@@ -1058,26 +1054,26 @@ void PDGEMM(cublasOperation_t transa,
 // We assume a lower triangular matrix (uplo == CUBLAS_FILL_MODE_LOWER)
 void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 {
+  nvtx_range r("PDTRTRI");
+
   assert(uplo == CUBLAS_FILL_MODE_LOWER);
 
-  nvtxRangePushA("SUBMIT_PDTRTRI");
-
-  for (int k = 0; k < A.nt; k++)
+  for (size_t k = 0; k < A.nt; k++)
   {
-    for (int m = k + 1; m < A.mt; m++)
+    for (size_t m = k + 1; m < A.mt; m++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(m, k)));
       DTRSM(CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, diag, -1.0, A, k, k, A, m, k);
     }
-    for (int m = k + 1; m < A.mt; m++)
+    for (size_t m = k + 1; m < A.mt; m++)
     {
-      for (int n = 0; n < k; n++)
+      for (size_t n = 0; n < k; n++)
       {
         cuda_try(cudaSetDevice(A.get_preferred_devid(m, n)));
         DGEMM(CUBLAS_OP_N, CUBLAS_OP_N, 1.0, A, m, k, A, k, n, 1.0, A, m, n);
       }
     }
-    for (int n = 0; n < k; n++)
+    for (size_t n = 0; n < k; n++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(k, n)));
       DTRSM(CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, diag, 1.0, A, k, k, A, k, n);
@@ -1087,8 +1083,6 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
     cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
     DTRTRI(uplo, diag, A, k, k);
   }
-
-  nvtxRangePop();
 }
 
 /*
@@ -1097,24 +1091,23 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 // We assume a lower triangular matrix (uplo == CUBLAS_FILL_MODE_LOWER)
 void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
 {
+  nvtx_range r("PDLAUUM");
   assert(uplo == CUBLAS_FILL_MODE_LOWER);
 
-  nvtxRangePushA("SUBMIT_PDLAUUM");
-
-  for (int k = 0; k < A.mt; k++)
+  for (size_t k = 0; k < A.mt; k++)
   {
-    for (int n = 0; n < k; n++)
+    for (size_t n = 0; n < k; n++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(n, n)));
       DSYRK(CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, 1.0, A, k, n, 1.0, A, n, n);
 
-      for (int m = n + 1; m < k; m++)
+      for (size_t m = n + 1; m < k; m++)
       {
         cuda_try(cudaSetDevice(A.get_preferred_devid(m, n)));
         DGEMM(CUBLAS_OP_T, CUBLAS_OP_N, 1.0, A, k, m, A, k, n, 1.0, A, m, n);
       }
     }
-    for (int n = 0; n < k; n++)
+    for (size_t n = 0; n < k; n++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(k, n)));
       DTRMM(CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, k, k, A, k, n);
@@ -1124,8 +1117,6 @@ void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
     cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
     DLAAUM(uplo, A, k, k);
   }
-
-  nvtxRangePop();
 }
 
 void PDSYMM(cublasSideMode_t side,
@@ -1136,7 +1127,9 @@ void PDSYMM(cublasSideMode_t side,
             double beta,
             matrix<double>& C)
 {
-  int k, m, n;
+  nvtx_range r("PDSYMM");
+
+  size_t k, m, n;
   double zbeta;
   double zone = (double) 1.0;
 
@@ -1272,15 +1265,15 @@ void PDTRMM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int m = 0; m < B.mt; m++)
+        for (size_t m = 0; m < B.mt; m++)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = m + 1; k < A.mt; k++)
+            for (size_t k = m + 1; k < A.mt; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, m, k, B, k, n, 1.0, B, m, n);
             }
@@ -1292,15 +1285,15 @@ void PDTRMM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int m = B.mt - 1; m > -1; m--)
+        for (ssize_t m = B.mt - 1; m > -1; m--)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = 0; k < m; k++)
+            for (ssize_t k = 0; k < m; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, k, m, B, k, n, 1.0, B, m, n);
             }
@@ -1315,15 +1308,15 @@ void PDTRMM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int m = B.mt - 1; m > -1; m--)
+        for (ssize_t m = B.mt - 1; m > -1; m--)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = 0; k < m; k++)
+            for (ssize_t k = 0; k < m; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, m, k, B, k, n, 1.0, B, m, n);
             }
@@ -1335,13 +1328,13 @@ void PDTRMM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int m = 0; m < B.mt; m++)
+        for (size_t m = 0; m < B.mt; m++)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = m + 1; k < A.mt; k++)
+            for (size_t k = m + 1; k < A.mt; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, k, m, B, k, n, 1.0, B, m, n);
             }
@@ -1359,15 +1352,15 @@ void PDTRMM(cublasSideMode_t side,
       //============================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int n = B.nt - 1; n > -1; n--)
+        for (ssize_t n = B.nt - 1; n > -1; n--)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = 0; k < n; k++)
+            for (ssize_t k = 0; k < n; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, k, n, 1.0, B, m, n);
             }
@@ -1379,15 +1372,15 @@ void PDTRMM(cublasSideMode_t side,
       //=================================================
       else
       {
-        for (int n = 0; n < B.nt; n++)
+        for (size_t n = 0; n < B.nt; n++)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = n + 1; k < A.mt; k++)
+            for (size_t k = n + 1; k < A.mt; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, n, k, 1.0, B, m, n);
             }
@@ -1402,15 +1395,15 @@ void PDTRMM(cublasSideMode_t side,
       //============================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int n = 0; n < B.nt; n++)
+        for (size_t n = 0; n < B.nt; n++)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = n + 1; k < A.mt; k++)
+            for (size_t k = n + 1; k < A.mt; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, k, n, 1.0, B, m, n);
             }
@@ -1422,15 +1415,15 @@ void PDTRMM(cublasSideMode_t side,
       //=================================================
       else
       {
-        for (int n = B.nt - 1; n > -1; n--)
+        for (ssize_t n = B.nt - 1; n > -1; n--)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = 0; k < n; k++)
+            for (ssize_t k = 0; k < n; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, n, k, 1.0, B, m, n);
             }
@@ -1462,7 +1455,7 @@ void run(int N, int NB)
   int ndevs;
   cuda_try(cudaGetDeviceCount(&ndevs));
 
-  for (size_t d = 0; d < ndevs; d++)
+  for (int d = 0; d < ndevs; d++)
   {
     auto ldummy = ctx.logical_data(shape_of<slice<char>>(1));
     ctx.task(exec_place::device(d), ldummy.write())->*[](cudaStream_t, auto) {
@@ -1470,7 +1463,7 @@ void run(int N, int NB)
       get_cusolver_handle();
     };
 
-    ctx.task(exec_place::host, ldummy.write(data_place::managed))->*[](cudaStream_t, auto) {};
+    ctx.task(exec_place::host(), ldummy.write(data_place::managed()))->*[](cudaStream_t, auto) {};
   }
 
   cuda_try(cudaSetDevice(0));
@@ -1524,10 +1517,10 @@ void run(int N, int NB)
   cudaEvent_t startEvent, stopEvent;
 
   cuda_safe_call(cudaSetDevice(0));
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
   cuda_safe_call(cudaEventCreate(&startEvent));
   cuda_safe_call(cudaEventCreate(&stopEvent));
-  cuda_safe_call(cudaEventRecord(startEvent, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(startEvent, ctx.fence()));
 
   ctx.get_dot()->set_current_color("green");
   PDPOTRF(A);
@@ -1620,7 +1613,7 @@ void run(int N, int NB)
   }
 
   cuda_safe_call(cudaSetDevice(0));
-  cuda_safe_call(cudaEventRecord(stopEvent, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stopEvent, ctx.fence()));
 
   ctx.finalize();
 

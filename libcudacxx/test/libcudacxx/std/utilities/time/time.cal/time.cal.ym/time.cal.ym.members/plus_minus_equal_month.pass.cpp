@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month;
@@ -60,11 +59,13 @@ int main(int, char**)
   using year       = cuda::std::chrono::year;
   using year_month = cuda::std::chrono::year_month;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<year_month&>() += cuda::std::declval<months>());
-  ASSERT_SAME_TYPE(year_month&, decltype(cuda::std::declval<year_month&>() += cuda::std::declval<months>()));
+  static_assert(noexcept(cuda::std::declval<year_month&>() += cuda::std::declval<months>()));
+  static_assert(
+    cuda::std::is_same_v<year_month&, decltype(cuda::std::declval<year_month&>() += cuda::std::declval<months>())>);
 
-  ASSERT_NOEXCEPT(cuda::std::declval<year_month&>() -= cuda::std::declval<months>());
-  ASSERT_SAME_TYPE(year_month&, decltype(cuda::std::declval<year_month&>() -= cuda::std::declval<months>()));
+  static_assert(noexcept(cuda::std::declval<year_month&>() -= cuda::std::declval<months>()));
+  static_assert(
+    cuda::std::is_same_v<year_month&, decltype(cuda::std::declval<year_month&>() -= cuda::std::declval<months>())>);
 
   static_assert(testConstexpr<year_month, months>(year_month{year{1234}, month{1}}), "");
 

@@ -33,8 +33,9 @@
 #include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/vector_base.h>
 
-#include <initializer_list>
-#include <utility>
+#include <cuda/std/initializer_list>
+#include <cuda/std/utility>
+
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
@@ -97,6 +98,20 @@ public:
       : Parent(n)
   {}
 
+  //! This constructor creates a \p host_vector with the given size, performing only default-initialization instead of
+  //! value-initialization.
+  //! \param n The number of elements to initially create.
+  _CCCL_HOST host_vector(size_type n, default_init_t)
+      : Parent(n, default_init_t{})
+  {}
+
+  //! This constructor creates a \p host_vector with the given size, without initializing elements. It mandates that
+  //! the element type is trivially default-constructible.
+  //! \param n The number of elements to initially create.
+  _CCCL_HOST host_vector(size_type n, no_init_t)
+      : Parent(n, no_init_t{})
+  {}
+
   /*! This constructor creates a \p host_vector with the given
    *  size.
    *  \param n The number of elements to initially create.
@@ -144,7 +159,7 @@ public:
    *  \param v The host_vector to move.
    */
   _CCCL_HOST host_vector(host_vector&& v)
-      : Parent(std::move(v))
+      : Parent(::cuda::std::move(v))
   {}
 
   /*! Move constructor moves from another host_vector.
@@ -152,7 +167,7 @@ public:
    *  \param alloc The allocator to use by this host_vector.
    */
   _CCCL_HOST host_vector(host_vector&& v, const Alloc& alloc)
-      : Parent(std::move(v), alloc)
+      : Parent(::cuda::std::move(v), alloc)
   {}
 
   /*! Assign operator copies from an exemplar \p host_vector.
@@ -169,7 +184,7 @@ public:
    */
   _CCCL_HOST host_vector& operator=(host_vector&& v)
   {
-    Parent::operator=(std::move(v));
+    Parent::operator=(::cuda::std::move(v));
     return *this;
   }
 
@@ -233,7 +248,7 @@ public:
   /*! This constructor builds a \p host_vector from an intializer_list.
    *  \param il The intializer_list.
    */
-  host_vector(std::initializer_list<T> il)
+  host_vector(::cuda::std::initializer_list<T> il)
       : Parent(il)
   {}
 
@@ -241,14 +256,14 @@ public:
    *  \param il The intializer_list.
    *  \param alloc The allocator to use by this host_vector.
    */
-  host_vector(std::initializer_list<T> il, const Alloc& alloc)
+  host_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
       : Parent(il, alloc)
   {}
 
   /*! Assign an \p intializer_list with a matching element type
    *  \param il The intializer_list.
    */
-  host_vector& operator=(std::initializer_list<T> il)
+  host_vector& operator=(::cuda::std::initializer_list<T> il)
   {
     Parent::operator=(il);
     return *this;
@@ -287,6 +302,18 @@ public:
      *  extended and new elements are populated with given data.
      */
     void resize(size_type new_size, const value_type &x = value_type());
+
+    //! \brief Resizes this vector to the specified number of elements, performing default-initialization instead of
+    //!         value-initialization.
+    //! \param new_size Number of elements this vector should contain.
+    //! \throw std::length_error If n exceeds max_size().
+    void resize(size_type new_size, default_init_t);
+
+    //! \brief Resizes this vector to the specified number of elements, without initializing elements. It mandates
+    //! that the element type is trivially default-constructible.
+    //! \param new_size Number of elements this vector should contain.
+    //! \throw std::length_error If n exceeds max_size().
+    void resize(size_type new_size, no_init_t);
 
     /*! Returns the number of elements in this vector.
      */

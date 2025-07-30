@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -55,11 +54,11 @@ struct MoveOnlyNT
 
 struct CopyAssign
 {
-  STATIC_MEMBER_VAR(alive, int);
-  STATIC_MEMBER_VAR(copy_construct, int);
-  STATIC_MEMBER_VAR(copy_assign, int);
-  STATIC_MEMBER_VAR(move_construct, int);
-  STATIC_MEMBER_VAR(move_assign, int);
+  STATIC_MEMBER_VAR(alive, int)
+  STATIC_MEMBER_VAR(copy_construct, int)
+  STATIC_MEMBER_VAR(copy_assign, int)
+  STATIC_MEMBER_VAR(move_construct, int)
+  STATIC_MEMBER_VAR(move_assign, int)
   __host__ __device__ static void reset()
   {
     copy_construct() = copy_assign() = move_construct() = move_assign() = alive() = 0;
@@ -165,15 +164,15 @@ struct TCopyAssignNTMoveAssign
 
 static_assert(cuda::std::is_trivially_copy_assignable_v<TCopyAssignNTMoveAssign>, "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct CopyThrows
 {
   CopyThrows() = default;
-  __host__ __device__ CopyThrows(const CopyThrows&)
+  CopyThrows(const CopyThrows&)
   {
     throw 42;
   }
-  __host__ __device__ CopyThrows& operator=(const CopyThrows&)
+  CopyThrows& operator=(const CopyThrows&)
   {
     throw 42;
   }
@@ -182,20 +181,20 @@ struct CopyThrows
 struct CopyCannotThrow
 {
   static int alive;
-  __host__ __device__ CopyCannotThrow()
+  CopyCannotThrow()
   {
     ++alive;
   }
-  __host__ __device__ CopyCannotThrow(const CopyCannotThrow&) noexcept
+  CopyCannotThrow(const CopyCannotThrow&) noexcept
   {
     ++alive;
   }
-  __host__ __device__ CopyCannotThrow(CopyCannotThrow&&) noexcept
+  CopyCannotThrow(CopyCannotThrow&&) noexcept
   {
     assert(false);
   }
-  __host__ __device__ CopyCannotThrow& operator=(const CopyCannotThrow&) noexcept = default;
-  __host__ __device__ CopyCannotThrow& operator=(CopyCannotThrow&&) noexcept
+  CopyCannotThrow& operator=(const CopyCannotThrow&) noexcept = default;
+  CopyCannotThrow& operator=(CopyCannotThrow&&) noexcept
   {
     assert(false);
     return *this;
@@ -207,27 +206,27 @@ int CopyCannotThrow::alive = 0;
 struct MoveThrows
 {
   static int alive;
-  __host__ __device__ MoveThrows()
+  MoveThrows()
   {
     ++alive;
   }
-  __host__ __device__ MoveThrows(const MoveThrows&)
+  MoveThrows(const MoveThrows&)
   {
     ++alive;
   }
-  __host__ __device__ MoveThrows(MoveThrows&&)
+  MoveThrows(MoveThrows&&)
   {
     throw 42;
   }
-  __host__ __device__ MoveThrows& operator=(const MoveThrows&)
+  MoveThrows& operator=(const MoveThrows&)
   {
     return *this;
   }
-  __host__ __device__ MoveThrows& operator=(MoveThrows&&)
+  MoveThrows& operator=(MoveThrows&&)
   {
     throw 42;
   }
-  __host__ __device__ ~MoveThrows()
+  ~MoveThrows()
   {
     --alive;
   }
@@ -238,29 +237,29 @@ int MoveThrows::alive = 0;
 struct MakeEmptyT
 {
   static int alive;
-  __host__ __device__ MakeEmptyT()
+  MakeEmptyT()
   {
     ++alive;
   }
-  __host__ __device__ MakeEmptyT(const MakeEmptyT&)
+  MakeEmptyT(const MakeEmptyT&)
   {
     ++alive;
     // Don't throw from the copy constructor since variant's assignment
     // operator performs a copy before committing to the assignment.
   }
-  __host__ __device__ MakeEmptyT(MakeEmptyT&&)
+  MakeEmptyT(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(const MakeEmptyT&)
+  MakeEmptyT& operator=(const MakeEmptyT&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(MakeEmptyT&&)
+  MakeEmptyT& operator=(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ ~MakeEmptyT()
+  ~MakeEmptyT()
   {
     --alive;
   }
@@ -282,7 +281,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_copy_assignment_not_noexcept()
 {
@@ -343,7 +342,7 @@ __host__ __device__ void test_copy_assignment_sfinae()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_copy_assignment_empty_empty()
 {
   using MET = MakeEmptyT;
@@ -413,7 +412,7 @@ void test_copy_assignment_empty_non_empty()
   }
 #  endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <typename T>
 struct Result
@@ -451,7 +450,7 @@ __host__ __device__ void test_copy_assignment_same_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
     assert(CopyAssign::copy_construct() == 0);
     assert(CopyAssign::move_construct() == 0);
     // FIXME(mdominiak): try to narrow down what in the compiler makes it emit an invalid PTX call instruction without
@@ -460,9 +459,9 @@ __host__ __device__ void test_copy_assignment_same_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 1);
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
   {
@@ -481,7 +480,7 @@ __host__ __device__ void test_copy_assignment_same_index()
     assert(&cuda::std::get<1>(v1) == &mref);
   }
 #  endif // _LIBCUDACXX_HAS_STRING
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -573,7 +572,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
     assert(CopyAssign::alive() == 2);
     assert(CopyAssign::copy_construct() == 1);
     assert(CopyAssign::move_construct() == 1);
@@ -583,9 +582,9 @@ __host__ __device__ void test_copy_assignment_different_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 0);
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
   {
     using V = cuda::std::variant<int, CopyThrows, cuda::std::string>;
@@ -649,7 +648,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     assert(cuda::std::get<2>(v2) == "hello");
   }
 #  endif // _LIBCUDACXX_HAS_STRING
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -709,11 +708,11 @@ __host__ __device__ void test_constexpr_copy_assignment()
 
 int main(int, char**)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_non_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_non_empty();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   test_copy_assignment_same_index();
   test_copy_assignment_different_index();
   test_copy_assignment_sfinae();

@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -314,11 +315,10 @@ template <typename T, size_t N>
  *
  */
 template <typename T, typename P0, typename... P>
-T only_convertible(P0&& p0, P&&... p)
+T only_convertible(P0&& p0, [[maybe_unused]] P&&... p)
 {
   if constexpr (::std::is_convertible_v<P0, T>)
   {
-    ((void) p, ...);
     static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
     return ::std::forward<P0>(p0);
   }
@@ -366,27 +366,26 @@ auto all_convertible(P&&... p)
   unsigned char buffer[size * sizeof(T)];
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
-  try
-  {
-    each_in_pack(
-      [&](auto&& e) {
-        if constexpr (::std::is_convertible_v<decltype(e), T>)
-        {
-          new (result.data() + i) T(::std::forward<decltype(e)>(e));
-          ++i;
-        }
-      },
-      ::std::forward<P>(p)...);
-    return mv(result);
-  }
-  catch (...)
-  {
+
+  auto rollback = [&result, &i]() {
     for (size_t j = 0; j < i; ++j)
     {
       result[j].~T();
     }
-    throw;
-  }
+  };
+
+  auto __guard = _CUDA_VSTD::__make_exception_guard(rollback);
+  each_in_pack(
+    [&](auto&& e) {
+      if constexpr (::std::is_convertible_v<decltype(e), T>)
+      {
+        new (result.data() + i) T(::std::forward<decltype(e)>(e));
+        ++i;
+      }
+    },
+    ::std::forward<P>(p)...);
+  __guard.__complete();
+  return mv(result);
 }
 
 /*
@@ -402,11 +401,10 @@ auto all_convertible(P&&... p)
  * @return T Either the first convertible parameter, or `default_v` if no such parameter is found
  */
 template <typename T, typename... P>
-T only_convertible_or([[maybe_unused]] T default_v, P&&... p)
+T only_convertible_or([[maybe_unused]] T default_v, [[maybe_unused]] P&&... p)
 {
   if constexpr (!(::std::is_convertible_v<P, T> || ...))
   {
-    ((void) p, ...);
     return default_v;
   }
   else

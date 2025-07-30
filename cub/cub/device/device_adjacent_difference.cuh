@@ -38,14 +38,11 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/detail/integer_traits.h>
-
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -112,15 +109,15 @@ CUB_NAMESPACE_BEGIN
 struct DeviceAdjacentDifference
 {
 private:
-  template <bool may_alias,
-            bool read_left,
+  template <MayAlias AliasOpt,
+            ReadOption ReadOpt,
             typename NumItemsT,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename DifferenceOpT>
   static CUB_RUNTIME_FUNCTION cudaError_t AdjacentDifference(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     NumItemsT num_items,
@@ -130,7 +127,7 @@ private:
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     using DispatchT =
-      DispatchAdjacentDifference<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, may_alias, read_left>;
+      DispatchAdjacentDifference<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, AliasOpt, ReadOpt>;
 
     return DispatchT::Dispatch(
       d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
@@ -247,22 +244,19 @@ public:
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename DifferenceOpT = ::cuda::std::minus<>,
-            typename NumItemsT     = std::uint32_t>
+            typename NumItemsT     = uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeftCopy(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    constexpr bool may_alias = false;
-    constexpr bool read_left = true;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::No, ReadOption::Left>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
@@ -359,23 +353,18 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename RandomAccessIteratorT,
-            typename DifferenceOpT = ::cuda::std::minus<>,
-            typename NumItemsT     = std::uint32_t>
+  template <typename RandomAccessIteratorT, typename DifferenceOpT = ::cuda::std::minus<>, typename NumItemsT = uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeft(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     RandomAccessIteratorT d_input,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
-    constexpr bool may_alias = true;
-    constexpr bool read_left = true;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::Yes, ReadOption::Left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
 
@@ -490,22 +479,19 @@ public:
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename DifferenceOpT = ::cuda::std::minus<>,
-            typename NumItemsT     = std::uint32_t>
+            typename NumItemsT     = uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractRightCopy(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    constexpr bool may_alias = false;
-    constexpr bool read_left = false;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::No, ReadOption::Right>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
@@ -591,23 +577,18 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename RandomAccessIteratorT,
-            typename DifferenceOpT = ::cuda::std::minus<>,
-            typename NumItemsT     = std::uint32_t>
+  template <typename RandomAccessIteratorT, typename DifferenceOpT = ::cuda::std::minus<>, typename NumItemsT = uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractRight(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     RandomAccessIteratorT d_input,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
-    constexpr bool may_alias = true;
-    constexpr bool read_left = false;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::Yes, ReadOption::Right>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
 };

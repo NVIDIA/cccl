@@ -11,16 +11,16 @@ void TestAllOf()
 
   Vector v(3, T{1});
 
-  ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), thrust::identity<T>()), true);
+  ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), ::cuda::std::identity{}), true);
 
   v[1] = T{0};
 
-  ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), thrust::identity<T>()), false);
+  ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), ::cuda::std::identity{}), false);
 
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 0, thrust::identity<T>()), true);
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 1, thrust::identity<T>()), true);
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 2, thrust::identity<T>()), false);
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 1, v.begin() + 2, thrust::identity<T>()), false);
+  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), true);
+  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), true);
+  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), false);
+  ASSERT_EQUAL(thrust::all_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), false);
 }
 DECLARE_VECTOR_UNITTEST(TestAllOf);
 
@@ -66,16 +66,16 @@ void TestAnyOf()
 
   Vector v(3, T{1});
 
-  ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), thrust::identity<T>()), true);
+  ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), ::cuda::std::identity{}), true);
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), thrust::identity<T>()), true);
+  ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), ::cuda::std::identity{}), true);
 
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 0, thrust::identity<T>()), false);
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 1, thrust::identity<T>()), true);
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 2, thrust::identity<T>()), true);
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 1, v.begin() + 2, thrust::identity<T>()), false);
+  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), false);
+  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), true);
+  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), true);
+  ASSERT_EQUAL(thrust::any_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), false);
 }
 DECLARE_VECTOR_UNITTEST(TestAnyOf);
 
@@ -121,16 +121,16 @@ void TestNoneOf()
 
   Vector v(3, T{1});
 
-  ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), thrust::identity<T>()), false);
+  ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), ::cuda::std::identity{}), false);
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), thrust::identity<T>()), false);
+  ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), ::cuda::std::identity{}), false);
 
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 0, thrust::identity<T>()), true);
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 1, thrust::identity<T>()), false);
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 2, thrust::identity<T>()), false);
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 1, v.begin() + 2, thrust::identity<T>()), true);
+  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), true);
+  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), false);
+  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), false);
+  ASSERT_EQUAL(thrust::none_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), true);
 }
 DECLARE_VECTOR_UNITTEST(TestNoneOf);
 

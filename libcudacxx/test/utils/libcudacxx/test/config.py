@@ -8,7 +8,6 @@
 
 import ctypes
 import os
-import pipes
 import platform
 import re
 import shlex
@@ -79,6 +78,7 @@ class Configuration(object):
         self.link_shared = self.get_lit_bool("enable_shared", default=True)
         self.debug_build = self.get_lit_bool("debug_build", default=False)
         self.exec_env = dict(os.environ)
+        self.exec_env["CUDA_MODULE_LOADING"] = "EAGER"
         self.use_target = False
         self.use_system_cxx_lib = False
         self.use_clang_verify = False
@@ -202,7 +202,8 @@ class Configuration(object):
     def make_static_lib_name(self, name):
         """Return the full filename for the specified library name"""
         if self.is_windows:
-            assert name == "c++"  # Only allow libc++ to use this function for now.
+            # Only allow libc++ to use this function for now.
+            assert name == "c++"
             return "lib" + name + ".lib"
         else:
             return "lib" + name + ".a"
@@ -284,7 +285,7 @@ class Configuration(object):
                 # that the user wants it at the end, but we have no
                 # way of getting at that easily.
                 self.lit_config.fatal(
-                    "Cannot infer how to create a Valgrind " " executor."
+                    "Cannot infer how to create a Valgrind  executor."
                 )
         else:
             te = LocalExecutor()
@@ -309,7 +310,7 @@ class Configuration(object):
             cxx is not None and os.path.basename(cxx) == "clang-cl.exe"
         )
 
-        ## Build CXXCompiler manually for NVRTCC
+        # Build CXXCompiler manually for NVRTCC
         if nvrtc is True:
             cxx_type = "nvrtcc"
             self.cxx = CXXCompiler(
@@ -350,7 +351,7 @@ class Configuration(object):
                     self.lit_config.note("inferred cxx_under_test as: %r" % cxx)
                 elif self.cxx_is_clang_cl:
                     self.lit_config.fatal(
-                        "Failed to find clang++ substitution for" " clang-cl"
+                        "Failed to find clang++ substitution for clang-cl"
                     )
             if not cxx:
                 self.lit_config.fatal(
@@ -399,11 +400,11 @@ class Configuration(object):
                     else:
                         nvcc_host_compiler = "gcc"
 
-                self.host_cxx = CXXCompiler(nvcc_host_compiler, None)
-                self.host_cxx_type = self.host_cxx.type
+                self.cxx.host_cxx = CXXCompiler(nvcc_host_compiler, None)
+                self.host_cxx_type = self.cxx.host_cxx.type
                 if self.host_cxx_type is not None:
-                    assert self.host_cxx.version is not None
-                    maj_v, min_v, _ = self.host_cxx.version
+                    assert self.cxx.host_cxx.version is not None
+                    maj_v, min_v, _ = self.cxx.host_cxx.version
                     self.config.available_features.add(self.host_cxx_type)
                     self.config.available_features.add(
                         "%s-%s" % (self.host_cxx_type, maj_v)
@@ -412,14 +413,14 @@ class Configuration(object):
                         "%s-%s.%s" % (self.host_cxx_type, maj_v, min_v)
                     )
                 self.lit_config.note(
-                    "detected host_cxx.type as: {}".format(self.host_cxx.type)
+                    "detected host_cxx.type as: {}".format(self.cxx.host_cxx.type)
                 )
                 self.lit_config.note(
-                    "detected host_cxx.version as: {}".format(self.host_cxx.version)
+                    "detected host_cxx.version as: {}".format(self.cxx.host_cxx.version)
                 )
                 self.lit_config.note(
                     "detected host_cxx.default_dialect as: {}".format(
-                        self.host_cxx.default_dialect
+                        self.cxx.host_cxx.default_dialect
                     )
                 )
 
@@ -752,7 +753,7 @@ class Configuration(object):
             if compute_archs == "native":
                 compute_archs = self.get_compute_capabilities()
 
-            compute_archs = set(sorted(re.split("\s|;|,", compute_archs)))
+            compute_archs = set(sorted(re.split("\\s|;|,", compute_archs)))
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
@@ -839,7 +840,7 @@ class Configuration(object):
 
                     # ... then we need to check if host compiler supports the
                     # dialect.
-                    cxx = self.host_cxx
+                    cxx = self.cxx.host_cxx
 
                 if cxx.type == "msvc":
                     if not cxx.hasCompileFlag("/std:%s" % s):
@@ -874,7 +875,7 @@ class Configuration(object):
         if not std:
             # There is no dialect flag. This happens with older MSVC.
             if self.cxx.type == "nvcc":
-                std = self.host_cxx.default_dialect
+                std = self.cxx.host_cxx.default_dialect
             else:
                 std = self.cxx.default_dialect
             self.lit_config.note("using default language dialect: %s" % std)
@@ -913,8 +914,7 @@ class Configuration(object):
                 ["--target=" + self.config.target_triple]
             ):
                 self.lit_config.warning(
-                    "use_target is true but --target is "
-                    "not supported by the compiler"
+                    "use_target is true but --target is not supported by the compiler"
                 )
         if self.use_deployment:
             arch, name, version = self.config.deployment
@@ -1329,7 +1329,9 @@ class Configuration(object):
             else:
                 # TODO: Re-enable soon.
                 def addIfHostSupports(flag):
-                    if hasattr(self, "host_cxx") and self.host_cxx.hasWarningFlag(flag):
+                    if hasattr(
+                        self.cxx, "host_cxx"
+                    ) and self.cxx.host_cxx.hasWarningFlag(flag):
                         self.cxx.warning_flags += ["-Xcompiler", flag]
 
                 addIfHostSupports("-Wall")
@@ -1454,7 +1456,7 @@ class Configuration(object):
                 self.config.available_features.add("sanitizer-new-delete")
             else:
                 self.lit_config.fatal(
-                    "unsupported value for " "use_sanitizer: {0}".format(san)
+                    "unsupported value for use_sanitizer: {0}".format(san)
                 )
             san_lib = self.get_lit_conf("sanitizer_library")
             if san_lib:
@@ -1477,8 +1479,7 @@ class Configuration(object):
             macros = self._dump_macros_verbose(flags=["-fcoroutines-ts"])
             if "__cpp_coroutines" not in macros:
                 self.lit_config.warning(
-                    "-fcoroutines-ts is supported but "
-                    "__cpp_coroutines is not defined"
+                    "-fcoroutines-ts is supported but __cpp_coroutines is not defined"
                 )
             # Consider coroutines supported only when the feature test macro
             # reflects a recent value.
@@ -1512,14 +1513,14 @@ class Configuration(object):
 
     def configure_substitutions(self):
         sub = self.config.substitutions
-        cxx_path = pipes.quote(self.cxx.path)
+        cxx_path = shlex.quote(self.cxx.path)
         # Configure compiler substitutions
         sub.append(("%cxx", cxx_path))
         sub.append(("%libcxx_src_root", self.libcudacxx_src_root))
         # Configure flags substitutions
-        flags_str = " ".join([pipes.quote(f) for f in self.cxx.flags])
-        compile_flags_str = " ".join([pipes.quote(f) for f in self.cxx.compile_flags])
-        link_flags_str = " ".join([pipes.quote(f) for f in self.cxx.link_flags])
+        flags_str = " ".join([shlex.quote(f) for f in self.cxx.flags])
+        compile_flags_str = " ".join([shlex.quote(f) for f in self.cxx.compile_flags])
+        link_flags_str = " ".join([shlex.quote(f) for f in self.cxx.link_flags])
         all_flags = "%s %s %s" % (flags_str, compile_flags_str, link_flags_str)
         sub.append(("%flags", flags_str))
         sub.append(("%compile_flags", compile_flags_str))
@@ -1548,7 +1549,7 @@ class Configuration(object):
         sub.append(("%run", "%t.exe"))
         # Configure not program substitutions
         not_py = os.path.join(self.libcudacxx_src_root, "test", "utils", "not.py")
-        not_str = "%s %s " % (pipes.quote(sys.executable), pipes.quote(not_py))
+        not_str = "%s %s " % (shlex.quote(sys.executable), shlex.quote(not_py))
         sub.append(("not ", not_str))
         if self.get_lit_conf("libcudacxx_gdb"):
             sub.append(("%libcxx_gdb", self.get_lit_conf("libcudacxx_gdb")))
@@ -1587,7 +1588,7 @@ class Configuration(object):
         # under test.
         if not self.config.target_triple:
             target_triple = (
-                self.cxx if self.cxx.type != "nvcc" else self.host_cxx
+                self.cxx if self.cxx.type != "nvcc" else self.cxx.host_cxx
             ).getTriple()
             # Drop sub-major version components from the triple, because the
             # current XFAIL handling expects exact matches for feature checks.
@@ -1630,7 +1631,7 @@ class Configuration(object):
         arch = self.get_lit_conf("arch")
         if not arch:
             arch = (
-                (self.cxx if self.cxx.type != "nvcc" else self.host_cxx)
+                (self.cxx if self.cxx.type != "nvcc" else self.cxx.host_cxx)
                 .getTriple()
                 .split("-", 1)[0]
             )

@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: gcc-6
 
@@ -17,9 +16,9 @@
 #include <cuda/std/array>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
-#endif
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
@@ -27,7 +26,8 @@
 
 // std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
+TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 template <class Tuple>
 struct ConstexprConstructibleFromTuple
@@ -189,10 +189,10 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     Tuple const& ctup = tup;
     unused(ctup);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(ctup));
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup)));
+#if !TEST_COMPILER(NVHPC)
+    static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
+#endif // TEST_COMPILER(NVHPC)
+    static_assert(noexcept(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup))));
   }
   {
     using Tuple = cuda::std::pair<int, NothrowMoveable>;
@@ -200,37 +200,37 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     Tuple const& ctup = tup;
     unused(ctup);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(ctup));
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup)));
+#if !TEST_COMPILER(NVHPC)
+    static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
+#endif // TEST_COMPILER(NVHPC)
+    static_assert(noexcept(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup))));
   }
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::tuple<int, int, int>;
     Tuple tup;
     unused(tup);
-    ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+    static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(tup)));
     unused(tup);
   }
   {
     using Tuple = cuda::std::tuple<long, long, long>;
     Tuple tup;
     unused(tup);
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+    static_assert(noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
   {
     using Tuple = cuda::std::array<int, 3>;
     Tuple tup;
     unused(tup);
-    ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+    static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::array<long, 3>;
     Tuple tup;
     unused(tup);
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+    static_assert(noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
 }
 

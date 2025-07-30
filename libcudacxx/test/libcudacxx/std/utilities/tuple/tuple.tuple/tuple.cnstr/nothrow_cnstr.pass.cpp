@@ -12,8 +12,6 @@
 
 // tuple(tuple&& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -29,7 +27,7 @@ struct NothrowConstruct
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<NothrowConstruct, NothrowConstruct> T;
+    using T = cuda::std::tuple<NothrowConstruct, NothrowConstruct>;
     T t(0, 1);
     unused(t); // Prevent unused warning
 

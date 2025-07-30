@@ -1,4 +1,4 @@
-CUB Testing Overview
+CUB Tests
 ###########################
 
 .. warning::

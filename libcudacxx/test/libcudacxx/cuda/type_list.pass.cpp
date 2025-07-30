@@ -232,7 +232,7 @@ static_assert(
     ::cuda::std::__type_list<_CUDA_VSTD::integral_constant<size_t, 0>, _CUDA_VSTD::integral_constant<size_t, 1>>>::value,
   "");
 static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<int(float&, double&&)>,
-                                   ::cuda::std::__type_list<float&, double&&>>::value,
+                                   ::cuda::std::__type_list<int, float&, double&&>>::value,
               "");
 
 // __type_callable

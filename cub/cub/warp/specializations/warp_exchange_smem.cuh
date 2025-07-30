@@ -53,16 +53,16 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
+template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeSmem
 {
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
 
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS + 1;
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
 
-  static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
+  static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
   // Insert padding if the number of items per thread is a power of two
   // and > 4 (otherwise we can typically use 128b loads)
@@ -144,7 +144,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
     {
       if (INSERT_PADDING)
@@ -157,7 +157,7 @@ public:
 
     __syncwarp(member_mask);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
     {
       int item_offset = (ITEM * LOGICAL_WARP_THREADS) + lane_id;

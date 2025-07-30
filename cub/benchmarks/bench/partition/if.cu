@@ -29,6 +29,7 @@
 
 #include <thrust/count.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <look_back_helper.cuh>
@@ -41,9 +42,6 @@
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
-
-constexpr bool keep_rejects = true;
-constexpr bool may_alias    = false;
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -63,14 +61,9 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
-
-    static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
-
     using SelectIfPolicyT =
       cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,
-                               ITEMS_PER_THREAD,
+                               TUNE_ITEMS_PER_THREAD,
                                TUNE_LOAD_ALGORITHM,
                                TUNE_LOAD_MODIFIER,
                                cub::BLOCK_SCAN_WARP_SCANS,
@@ -81,41 +74,16 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-struct less_then_t
-{
-  T m_val;
-
-  __device__ bool operator()(const T& val) const
-  {
-    return val < m_val;
-  }
-};
-
-template <typename T>
-T value_from_entropy(double percentage)
-{
-  if (percentage == 1)
-  {
-    return std::numeric_limits<T>::max();
-  }
-
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
-  const auto result  = min_val + percentage * max_val - percentage * min_val;
-  return static_cast<T>(result);
-}
-
 template <typename InItT, typename T, typename OffsetT, typename SelectOpT>
 void init_output_partition_buffer(
   InItT d_in,
   OffsetT num_items,
   T* d_out,
   SelectOpT select_op,
-  cub::detail::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
+  cub::detail::select::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
 {
   const auto selected_elements = thrust::count_if(d_in, d_in + num_items, select_op);
-  d_partition_out_buffer       = cub::detail::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
+  d_partition_out_buffer = cub::detail::select::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
 }
 
 template <typename InItT, typename T, typename OffsetT, typename SelectOpT>
@@ -135,39 +103,28 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
   using offset_t                             = OffsetT;
   constexpr bool use_distinct_out_partitions = UseDistinctPartitionT::value;
   using output_it_t                          = typename ::cuda::std::
-    conditional<use_distinct_out_partitions, cub::detail::partition_distinct_output_t<T*, T*>, T*>::type;
+    conditional<use_distinct_out_partitions, cub::detail::select::partition_distinct_output_t<T*, T*>, T*>::type;
 
+  using dispatch_t = cub::DispatchSelectIf<
+    input_it_t,
+    flag_it_t,
+    output_it_t,
+    num_selected_it_t,
+    select_op_t,
+    equality_op_t,
+    offset_t,
+    cub::SelectImpl::Partition
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<T>;
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias>;
+    ,
+    policy_hub_t<T>
 #endif // !TUNE_BASE
+    >;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  T val = value_from_entropy<T>(entropy_to_probability(entropy));
+  const T val = lerp_min_max<T>(entropy_to_probability(entropy));
   select_op_t select_op{val};
 
   thrust::device_vector<T> in = generate(elements);
@@ -193,7 +150,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,

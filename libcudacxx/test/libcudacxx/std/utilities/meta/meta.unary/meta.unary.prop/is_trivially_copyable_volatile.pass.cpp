@@ -12,8 +12,7 @@
 
 // These compilers have not implemented Core 2094 which makes volatile
 // qualified types trivially copyable.
-// XFAIL: clang-3, clang-4, apple-clang-6, apple-clang-7, apple-clang-8, apple-clang-9.0
-// XFAIL: gcc-4.8, gcc-5, gcc-6, gcc-7, gcc-8, gcc-9
+// XFAIL: gcc-7, gcc-8, gcc-9
 
 // When we marked this XFAIL for MSVC, QA reported that it unexpectedly passed.
 // When we stopped marking it XFAIL for MSVC, QA reported that it unexpectedly
@@ -33,10 +32,8 @@ __host__ __device__ void test_is_trivially_copyable_volatile()
 {
   static_assert(cuda::std::is_trivially_copyable<volatile T>::value, "");
   static_assert(cuda::std::is_trivially_copyable<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_trivially_copyable_v<volatile T>, "");
   static_assert(cuda::std::is_trivially_copyable_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -44,10 +41,8 @@ __host__ __device__ void test_is_not_trivially_copyable_volatile()
 {
   static_assert(!cuda::std::is_trivially_copyable<volatile T>::value, "");
   static_assert(!cuda::std::is_trivially_copyable<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_trivially_copyable_v<volatile T>, "");
   static_assert(!cuda::std::is_trivially_copyable_v<const volatile T>, "");
-#endif
 }
 
 struct A

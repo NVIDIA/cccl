@@ -49,9 +49,11 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned
  *        across a CUDA thread warp.
@@ -61,11 +63,8 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam LOGICAL_WARP_THREADS
  *   Number of threads per logical warp (must be a power-of-two)
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpScanShfl
 {
   //---------------------------------------------------------------------
@@ -75,13 +74,13 @@ struct WarpScanShfl
   enum
   {
     /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0)),
+    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads),
 
     /// The number of warp scan steps
     STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
 
     /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    SHFL_C = (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS) << 8
+    SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8
   };
 
   template <typename S>
@@ -91,7 +90,8 @@ struct WarpScanShfl
     {
       /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
       /// exchange
-      IS_SMALL_UNSIGNED = (Traits<S>::CATEGORY == UNSIGNED_INTEGER) && (sizeof(S) <= sizeof(unsigned int))
+      IS_SMALL_UNSIGNED =
+        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
     };
   };
 
@@ -436,7 +436,7 @@ struct WarpScanShfl
    */
   template <typename _T, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<true> /*is_small_unsigned*/)
+  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -461,8 +461,8 @@ struct WarpScanShfl
    *   Marker type indicating whether T is a small integer
    */
   template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<false> /*is_small_unsigned*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
+    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -513,12 +513,16 @@ struct WarpScanShfl
     // Iterate scan steps
     int segment_first_lane = 0;
 
-// Iterate scan steps
-#pragma unroll
+    // Iterate scan steps
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output = InclusiveScanStep(
-        inclusive_output, scan_op, segment_first_lane, (1 << STEP), Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        inclusive_output,
+        scan_op,
+        segment_first_lane,
+        (1 << STEP),
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -548,10 +552,10 @@ struct WarpScanShfl
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = CUB_MAX(0, 31 - __clz(ballot));
+    int segment_first_lane = _CUDA_VSTD::max(0, 31 - __clz(ballot));
 
-// Iterate scan steps
-#pragma unroll
+    // Iterate scan steps
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output.value = InclusiveScanStep(
@@ -559,7 +563,7 @@ struct WarpScanShfl
         scan_op.op,
         segment_first_lane,
         (1 << STEP),
-        Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -617,7 +621,7 @@ struct WarpScanShfl
    *        integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, Int2Type<true> /*is_integer*/)
+  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
     exclusive = inclusive - input;
@@ -645,7 +649,12 @@ struct WarpScanShfl
    *        (specialized for summation of integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
-    T input, T& inclusive, T& exclusive, ::cuda::std::plus<> scan_op, T initial_value, Int2Type<true> /*is_integer*/)
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> scan_op,
+    T initial_value,
+    ::cuda::std::true_type /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
     exclusive = inclusive - input;
@@ -674,5 +683,6 @@ struct WarpScanShfl
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

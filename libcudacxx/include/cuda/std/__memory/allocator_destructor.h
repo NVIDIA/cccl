@@ -24,6 +24,8 @@
 
 #include <cuda/std/__memory/allocator_traits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Alloc>
@@ -40,16 +42,18 @@ private:
   size_type __s_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI __allocator_destructor(_Alloc& __a, size_type __s) noexcept
+  _CCCL_API inline __allocator_destructor(_Alloc& __a, size_type __s) noexcept
       : __alloc_(__a)
       , __s_(__s)
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI void operator()(pointer __p) noexcept
+  _CCCL_API inline void operator()(pointer __p) noexcept
   {
     __alloc_traits::deallocate(__alloc_, __p, __s_);
   }
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATOR_DESTRUCTOR_H

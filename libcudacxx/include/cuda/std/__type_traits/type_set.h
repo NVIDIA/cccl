@@ -25,8 +25,11 @@
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -37,10 +40,8 @@ template <class _Set, class... _Ty>
 struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, type_identity<_Ty>, _Set)...>
 {};
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<type_identity<_Ty>, _Set>...>;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<type_identity<_Ty>, _Set>...>;
 
 namespace __set
 {
@@ -53,7 +54,7 @@ struct __tupl<>
   template <class _Ty>
   using __maybe_insert _CCCL_NODEBUG_ALIAS = __tupl<_Ty>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  _CCCL_API static constexpr size_t __size() noexcept
   {
     return 0;
   }
@@ -68,7 +69,7 @@ struct __tupl<_Ty, _Ts...>
   using __maybe_insert _CCCL_NODEBUG_ALIAS =
     _If<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  _CCCL_API static constexpr size_t __size() noexcept
   {
     return sizeof...(_Ts) + 1;
   }
@@ -86,7 +87,7 @@ struct __bulk_insert<false>
 {
 #if _CCCL_COMPILER(MSVC, <, 19, 20)
   template <class _Set, class _Ty, class... _Us>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
+  _CCCL_API inline static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
     typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
 
   template <class _Set, class... _Us>
@@ -105,10 +106,8 @@ template <class _ExpectedSet, class... _Ts>
 using __type_set_eq =
   conjunction<bool_constant<sizeof...(_Ts) == _ExpectedSet::__size()>, __type_set_contains<_ExpectedSet, _Ts...>>;
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _ExpectedSet, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
 
 template <class... _Ts>
 using __type_set = __set::__tupl<_Ts...>;
@@ -123,11 +122,11 @@ template <class _Ty, class... _Ts>
 struct __is_included_in : __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>
 {};
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Ty, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H

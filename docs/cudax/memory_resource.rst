@@ -8,10 +8,11 @@ Memory Resources
    :maxdepth: 3
 
    ${repo_docs_api_path}/*any__resource*
-   ${repo_docs_api_path}/enum*device__memory__pool*
    ${repo_docs_api_path}/struct*memory__pool__properties*
    ${repo_docs_api_path}/class*device__memory__pool*
    ${repo_docs_api_path}/class*device__memory__resource*
+   ${repo_docs_api_path}/class*pinned__memory__pool*
+   ${repo_docs_api_path}/class*pinned__memory__resource*
    ${repo_docs_api_path}/*shared__resource*
 
 The ``<cuda/experimental/memory_resource.cuh>`` header provides:

@@ -37,7 +37,6 @@
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
-#include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_stack
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
@@ -70,432 +69,28 @@ class stream_ctx;
 namespace reserved
 {
 
-template <typename Ctx, typename shape_t, typename partitioner_t, typename... DepsAndOps>
+template <typename Ctx, typename exec_place_t, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
 class launch_scope;
 
-/**
- * @brief Result of `host_launch` (below)
- *
- * @tparam Deps Types of dependencies
- *
- * @see `host_launch`
- */
 template <typename Ctx, bool called_from_launch, typename... Deps>
-class host_launch_scope
-{
-public:
-  host_launch_scope(Ctx& ctx, task_dep<Deps>... deps)
-      : ctx(ctx)
-      , deps(mv(deps)...)
-  {}
+class host_launch_scope;
 
-  host_launch_scope(const host_launch_scope&)            = delete;
-  host_launch_scope& operator=(const host_launch_scope&) = delete;
-  // move-constructible
-  host_launch_scope(host_launch_scope&&) = default;
-
-  /**
-   * @brief Sets the symbol for this object.
-   *
-   * This method moves the provided string into the internal symbol member and returns a reference to the current
-   * object, allowing for method chaining.
-   *
-   * @param s The string to set as the symbol.
-   * @return A reference to the current object.
-   */
-  auto& set_symbol(::std::string s)
-  {
-    symbol = mv(s);
-    return *this;
-  }
-
-  /**
-   * @brief Takes a lambda function and executes it on the host in a graph callback node.
-   *
-   * @tparam Fun type of lambda function
-   * @param f Lambda function to execute
-   */
-  template <typename Fun>
-  void operator->*(Fun&& f)
-  {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    auto t = ctx.task(exec_place::host);
-    t.add_deps(deps);
-    if (!symbol.empty())
-    {
-      t.set_symbol(symbol);
-    }
-
-    cudaEvent_t start_event, end_event;
-    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
-
-    t.start();
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
-      }
-    }
-
-    SCOPE(exit)
-    {
-      t.end_uncleared();
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-      {
-        if (record_time)
-        {
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
-        }
-      }
-      t.clear();
-    };
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
-
-    auto payload = [&]() {
-      if constexpr (called_from_launch)
-      {
-        return tuple_prepend(thread_hierarchy<>(), deps.instance(t));
-      }
-      else
-      {
-        return deps.instance(t);
-      }
-    }();
-    auto* wrapper = new ::std::pair<Fun, decltype(payload)>{::std::forward<Fun>(f), mv(payload)};
-
-    auto callback = [](void* untyped_wrapper) {
-      auto w = static_cast<decltype(wrapper)>(untyped_wrapper);
-      SCOPE(exit)
-      {
-        delete w;
-      };
-
-      constexpr bool fun_invocable_task_deps = reserved::is_tuple_invocable_v<Fun, decltype(payload)>;
-      constexpr bool fun_invocable_task_non_void_deps =
-        reserved::is_tuple_invocable_with_filtered<Fun, decltype(payload)>::value;
-
-      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
-                    "Incorrect lambda function signature in host_launch.");
-
-      if constexpr (fun_invocable_task_deps)
-      {
-        ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
-      }
-      else if constexpr (fun_invocable_task_non_void_deps)
-      {
-        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
-      }
-    };
-
-    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-    {
-      cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
-      // Put this host node into the child graph that implements the graph_task<>
-      cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
-    }
-    else
-    {
-      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, wrapper));
-    }
-  }
-
-private:
-  ::std::string symbol;
-  Ctx& ctx;
-  task_dep_vector<Deps...> deps;
-};
-
-} // end namespace reserved
-
-/**
- * @brief Description of a CUDA kernel
- *
- * This is used to describe kernels passed to the `ctx.cuda_kernel` and
- * `ctx.cuda_kernel_chain` API calls.
- */
-struct cuda_kernel_desc
-{
-  template <typename Fun, typename... Args>
-  cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
-      : func((const void*) func)
-      , gridDim(gridDim_)
-      , blockDim(blockDim_)
-      , sharedMem(sharedMem_)
-  {
-    using TupleType = ::std::tuple<::std::decay_t<Args>...>;
-
-    // We first copy all arguments into a tuple because the kernel
-    // implementation needs pointers to the argument, so we cannot use
-    // directly those passed in the pack of arguments
-    auto arg_tuple = ::std::make_shared<TupleType>(std::forward<Args>(args)...);
-
-    // Ensure we are packing arguments of the proper types to call func
-    static_assert(::std::is_invocable_v<Fun, Args...>);
-
-    // Get the address of every tuple entry
-    ::std::apply(
-      [this](auto&... elems) {
-        // Push back the addresses of each tuple element into the args vector
-        ((args_ptr.push_back(static_cast<void*>(&elems))), ...);
-      },
-      *arg_tuple);
-
-    // Save the tuple in a typed erased value
-    arg_tuple_type_erased = mv(arg_tuple);
-  }
-
-  /* __global__ function */
-  const void* func;
-  dim3 gridDim;
-  dim3 blockDim;
-  size_t sharedMem;
-
-  // Vector of pointers to the arg_tuple which saves arguments in a typed-erased way
-  ::std::vector<void*> args_ptr;
-
-private:
-  ::std::shared_ptr<void> arg_tuple_type_erased;
-};
-
-namespace reserved
-{
-
-/**
- * @brief Implementation of the CUDA kernel construct
- *
- * If the chained flag is set, we expect to have a chain of kernels, otherwise a single kernel
- */
 template <typename Ctx, bool chained, typename... Deps>
-class cuda_kernel_scope
-{
-public:
-  cuda_kernel_scope(Ctx& ctx, task_dep<Deps>... deps)
-      : ctx(ctx)
-      , deps(mv(deps)...)
-  {}
+class cuda_kernel_scope;
 
-  // Provide an explicit execution place
-  cuda_kernel_scope(Ctx& ctx, exec_place e_place, task_dep<Deps>... deps)
-      : ctx(ctx)
-      , deps(mv(deps)...)
-      , e_place(mv(e_place))
-  {}
-
-  cuda_kernel_scope(const cuda_kernel_scope&)            = delete;
-  cuda_kernel_scope& operator=(const cuda_kernel_scope&) = delete;
-  // move-constructible
-  cuda_kernel_scope(cuda_kernel_scope&&) = default;
-
-  /**
-   * @brief Sets the symbol for this object.
-   *
-   * This method moves the provided string into the internal symbol member and returns a reference to the current
-   * object, allowing for method chaining.
-   *
-   * @param s The string to set as the symbol.
-   * @return A reference to the current object.
-   */
-  auto& set_symbol(::std::string s)
-  {
-    symbol = mv(s);
-    return *this;
-  }
-
-  /**
-   * @brief Takes a lambda function and executes it on the host in a graph callback node.
-   *
-   * @tparam Fun type of lambda function
-   * @param f Lambda function to execute
-   */
-  template <typename Fun>
-  void operator->*(Fun&& f)
-  {
-    // If a place is specified, use it
-    auto t = e_place ? ctx.task(e_place.value()) : ctx.task();
-
-    t.add_deps(deps);
-    if (!symbol.empty())
-    {
-      t.set_symbol(symbol);
-    }
-
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    cudaEvent_t start_event, end_event;
-    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
-
-    t.start();
-
-    int device = -1;
-
-    SCOPE(exit)
-    {
-      t.end_uncleared();
-
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-      {
-        if (record_time)
-        {
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
-        }
-      }
-
-      t.clear();
-    };
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
-      }
-    }
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
-
-    // When chained is enable, we expect a vector of kernel description which should be executed one after the other
-    if constexpr (chained)
-    {
-      ::std::vector<cuda_kernel_desc> res = ::std::apply(f, deps.instance(t));
-      assert(!res.empty());
-
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-      {
-        // We have two situations : either there is a single kernel and we put the kernel in the context's
-        // graph, or we rely on a child graph
-        if (res.size() == 1)
-        {
-          insert_one_kernel(res[0], t.get_node(), t.get_ctx_graph());
-        }
-        else
-        {
-          // Get the (child) graph associated to the task
-          auto g = t.get_graph();
-
-          cudaGraphNode_t n      = nullptr;
-          cudaGraphNode_t prev_n = nullptr;
-
-          // Create a chain of kernels
-          for (size_t i = 0; i < res.size(); i++)
-          {
-            if (i > 0)
-            {
-              prev_n = n;
-            }
-
-            insert_one_kernel(res[i], n, g);
-            if (i > 0)
-            {
-              cuda_safe_call(cudaGraphAddDependencies(g, &prev_n, &n, 1));
-            }
-          }
-        }
-      }
-      else
-      {
-        // Rely on stream semantic to have a dependency between the kernels
-        for (auto& k : res)
-        {
-          cuda_safe_call(
-            cudaLaunchKernel(k.func, k.gridDim, k.blockDim, k.args_ptr.data(), k.sharedMem, t.get_stream()));
-        }
-      }
-    }
-    else
-    {
-      // We have an unchained cuda_kernel, which means there is a single
-      // CUDA kernel described, and the function should return a single
-      // descriptor, not a vector
-      static_assert(!chained);
-
-      cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
-
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-      {
-        insert_one_kernel(res, t.get_node(), t.get_ctx_graph());
-      }
-      else
-      {
-        cuda_safe_call(
-          cudaLaunchKernel(res.func, res.gridDim, res.blockDim, res.args_ptr.data(), res.sharedMem, t.get_stream()));
-      }
-    }
-  }
-
-private:
-  /* Add a kernel to a CUDA graph given its description */
-  auto insert_one_kernel(cuda_kernel_desc& k, cudaGraphNode_t& n, cudaGraph_t& g) const
-  {
-    cudaKernelNodeParams kconfig;
-    kconfig.blockDim       = k.blockDim;
-    kconfig.extra          = nullptr;
-    kconfig.func           = const_cast<void*>(k.func);
-    kconfig.gridDim        = k.gridDim;
-    kconfig.kernelParams   = k.args_ptr.data();
-    kconfig.sharedMemBytes = k.sharedMem;
-    cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
-  }
-
-  ::std::string symbol;
-  Ctx& ctx;
-  task_dep_vector<Deps...> deps;
-  ::std::optional<exec_place> e_place;
-};
+// We need to have a map of logical data stored in the ctx.
+class logical_data_untyped_impl;
 
 } // end namespace reserved
 
 /**
- * @brief Unified context!!!
+ * @brief This is the underlying context implementation common to all types.
  *
+ * We use this class rather than the front-end ones (stream_ctx, graph_ctx,
+ * ...) in the internal methods where we don't always know types for example.
  */
 class backend_ctx_untyped
 {
@@ -513,21 +108,10 @@ public:
     finalized, // we have called finalize
   };
 
-#if 0
-    static ::std::string phase_to_string(phase p) {
-        switch (p) {
-        case phase::setup: return ::std::string("setup");
-        case phase::submitted: return ::std::string("submitted");
-        case phase::finalized: return ::std::string("finalized");
-        }
-        return ::std::string("error");
-   }
-#endif
-
 protected:
   /**
    * @brief This stores states attached to any context, which are not specific to a
-   * given backend. For example the stack of tasks.
+   * given backend.
    */
   class impl
   {
@@ -539,6 +123,13 @@ protected:
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
     {
+      // Forces init
+      cudaError_t ret = cudaFree(0);
+
+      // If we are running the task in the context of a CUDA callback, we are
+      // not allowed to issue any CUDA API call.
+      EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
+
       // Enable peer memory accesses (if not done already)
       reserved::machine::instance().enable_peer_accesses();
 
@@ -556,19 +147,28 @@ protected:
         reserved::dot::instance().is_timing());
 
       // We generate symbols if we may use them
-#ifdef CUDASTF_DEBUG
-      generate_event_symbols = true;
-#else
       generate_event_symbols = dot->is_tracing_prereqs();
-#endif
+
       // Record it in the list of all traced contexts
-      reserved::dot::instance().per_ctx.push_back(dot);
+      reserved::dot::instance().track_ctx(dot);
     }
 
     virtual ~impl()
     {
-      // We can't assert here because there may be tasks inside tasks
-      //_CCCL_ASSERT(total_task_cnt == 0, "You created some tasks but forgot to call finalize().");
+      // Make sure everything is clean before leaving that context
+      _CCCL_ASSERT(dangling_events.size() == 0, "");
+
+      // Otherwise there are tasks which were not completed
+      _CCCL_ASSERT(leaves.size() == 0, "");
+
+#ifndef NDEBUG
+      _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
+#endif
+
+      if (logical_data_stats_enabled)
+      {
+        print_logical_data_summary();
+      }
 
       if (!is_recording_stats)
       {
@@ -576,8 +176,6 @@ protected:
       }
 
       display_transfers();
-
-      fprintf(stderr, "TOTAL SYNC COUNT: %lu\n", reserved::counter<reserved::join_tag>::load());
     }
 
     impl(const impl&)            = delete;
@@ -588,6 +186,21 @@ protected:
     virtual void update_uncached_allocator(block_allocator_untyped custom) = 0;
 
     virtual cudaGraph_t graph() const
+    {
+      return nullptr;
+    }
+
+    void set_graph_cache_policy(::std::function<bool()> fn)
+    {
+      cache_policy = mv(fn);
+    }
+
+    ::std::optional<::std::function<bool()>> get_graph_cache_policy() const
+    {
+      return cache_policy;
+    }
+
+    virtual executable_graph_cache_stat* graph_get_cache_stat()
     {
       return nullptr;
     }
@@ -606,10 +219,12 @@ protected:
     _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(MSVC)
 
-    virtual size_t epoch() const
+    virtual size_t stage() const
     {
       return size_t(-1);
     }
+
+    virtual ::std::string to_string() const = 0;
 
     /**
      * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
@@ -632,6 +247,15 @@ protected:
      * The implementation requires logical_data_untyped_impl to be complete
      */
     void erase_all_logical_data();
+
+    bool logical_data_stats_enabled = false;
+    ::std::vector<::std::pair<::std::string, size_t>> previous_logical_data_stats;
+
+    // We need logical_data_untyped_impl to be defined to print this
+    void print_logical_data_summary() const;
+
+    ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
+    mutable ::std::mutex logical_data_ids_mutex;
 
     /**
      * @brief Add an allocator to the vector of allocators which will be
@@ -656,7 +280,7 @@ protected:
         auto deinit_res = it->deinit(bctx);
         if (track_dangling)
         {
-          stack.add_dangling_events(mv(deinit_res));
+          add_dangling_events(bctx, mv(deinit_res));
         }
       }
 
@@ -667,7 +291,7 @@ protected:
       auto composite_deinit_res = composite_cache.deinit();
       if (track_dangling)
       {
-        stack.add_dangling_events(mv(composite_deinit_res));
+        add_dangling_events(bctx, mv(composite_deinit_res));
       }
     }
 
@@ -695,9 +319,7 @@ protected:
 
     void cleanup()
     {
-      // assert(!stack.hasCurrentTask());
       attached_allocators.clear();
-      total_task_cnt.store(0);
       // Leave custom_allocator, auto_scheduler, and auto_reordered as they were.
     }
 
@@ -705,7 +327,6 @@ protected:
     block_allocator_untyped custom_allocator;
     block_allocator_untyped default_allocator;
     block_allocator_untyped uncached_allocator;
-    reserved::ctx_stack stack;
 
     // A vector of all allocators used in this ctx, so that they are
     // destroyed when calling finalize()
@@ -721,7 +342,12 @@ protected:
       transfers;
     bool is_recording_stats = false;
     // Keep track of the number of tasks generated in the context
-    ::std::atomic<size_t> total_task_cnt;
+    ::std::atomic<size_t> total_task_cnt = 0;
+
+#ifndef NDEBUG
+    // Keep track of the number of completed tasks in that context
+    ::std::atomic<size_t> total_finished_task_cnt = 0;
+#endif
 
     // This data structure contains all resources useful for an efficient
     // asynchronous execution. This will for example contain pools of CUDA
@@ -755,21 +381,226 @@ protected:
       ctx_phase = p;
     }
 
+    /*
+     *
+     *  Start events : keep track of what events any work in a context depends on
+     *
+     */
     bool has_start_events() const
     {
-      return stack.has_start_events();
+      return (start_events.size() > 0);
+    }
+
+    void add_start_events(backend_ctx_untyped& bctx, const event_list& lst)
+    {
+      start_events.merge(lst);
+
+      // We only add events at the beginning of the context, but use them
+      // often, so it's good to optimize anyhow
+      start_events.optimize(bctx);
     }
 
     const event_list& get_start_events() const
     {
-      return stack.get_start_events();
+      return start_events;
     }
+
+    // Events which denote the beginning of the context : any task with no
+    // dependency, or logical data with a reference copy should depend on it.
+    event_list start_events;
+
+    /*
+     * Dangling events : events that we need to synchronize automatically
+     * because they would be leaked otherwise (eg. waiting for the events
+     * generated by the destructor of a logical data)
+     */
+
+    void add_dangling_events(backend_ctx_untyped& bctx, const event_list& lst)
+    {
+      auto guard = ::std::lock_guard(dangling_events_mutex);
+      dangling_events.merge(lst);
+      /* If the number of dangling events gets too high, we try to optimize
+       * the list to avoid keeping events alive for no reason. */
+      if (dangling_events.size() > 16)
+      {
+        dangling_events.optimize(bctx);
+      }
+    }
+
+    // Some asynchronous operations cannot be waited on when they occur.
+    // For example, when destroying a logical data, it is possible that
+    // asynchronous operations are not completed immediately (write back
+    // copies, deallocations, ...). A fence can be used to wait on these
+    // "dangling" events.
+    event_list dangling_events;
+    mutable ::std::mutex dangling_events_mutex;
+
+    class leaf_tasks
+    {
+    public:
+      /* Add one task to the leaf tasks */
+      void add(const task& t)
+      {
+        // this will create a new key in the map
+        leaf_tasks_mutex.lock();
+        event_list& done_prereqs = leaf_tasks[t.get_unique_id()];
+        leaf_tasks_mutex.unlock();
+
+        // XXX we need a copy method for event_list
+        done_prereqs.merge(t.get_done_prereqs());
+      }
+
+      /* Remove one task (if it is still a leaf task, otherwise do nothing) */
+      void remove(int task_id)
+      {
+        // Erase that leaf task if it is found, or do nothing
+        auto guard = ::std::lock_guard(leaf_tasks_mutex);
+        leaf_tasks.erase(task_id);
+      }
+
+      const auto& get_leaf_tasks() const
+      {
+        return leaf_tasks;
+      }
+
+      auto& get_leaf_tasks()
+      {
+        return leaf_tasks;
+      }
+
+      size_t size() const
+      {
+        return leaf_tasks.size();
+      }
+
+      void clear()
+      {
+        leaf_tasks.clear();
+      }
+
+      ::std::mutex leaf_tasks_mutex;
+
+    private:
+      // To synchronize with all work submitted in this context, we need to
+      // synchronize will all "leaf tasks". Leaf tasks are task that have no
+      // outgoing dependencies. Leaf tasks will eventually depend on tasks which
+      // are not leaf, so it is sufficient to wait for leaf tasks.
+      //
+      // Instead of storing tasks, we store a map of id to event lists
+      ::std::unordered_map<int /* task_id */, event_list> leaf_tasks;
+    };
+
+    // Insert a fence with all pending asynchronous operations on the current context
+    [[nodiscard]] inline event_list insert_fence(reserved::per_ctx_dot& dot)
+    {
+      auto prereqs = event_list();
+      // Create a node in the DOT output (if any)
+      int fence_unique_id = -1;
+      bool dot_is_tracing = dot.is_tracing();
+      if (dot_is_tracing)
+      {
+        fence_unique_id = reserved::unique_id_t();
+        dot.add_fence_vertex(fence_unique_id);
+      }
+
+      {
+        auto guard = ::std::lock_guard(leaves.leaf_tasks_mutex);
+
+        // Sync with the events of all leaf tasks
+        for (auto& [t_id, t_done_prereqs] : leaves.get_leaf_tasks())
+        {
+          // Add the events associated with the termination of that leaf tasks to the list of events
+          prereqs.merge(mv(t_done_prereqs));
+
+          // Add an edge between that leaf task and the fence node in the DOT output
+          if (dot_is_tracing)
+          {
+            dot.add_edge(t_id, fence_unique_id, reserved::edge_type::fence);
+          }
+        }
+
+        /* Remove all leaf tasks */
+        leaves.clear();
+
+        /* Erase start events if any */
+        start_events.clear();
+
+        _CCCL_ASSERT(leaves.get_leaf_tasks().size() == 0, "");
+      }
+
+      {
+        // Wait for all pending get() operations associated to frozen logical data
+        auto guard = ::std::lock_guard(pending_freeze_mutex);
+
+        for (auto& [fake_t_id, get_prereqs] : pending_freeze)
+        {
+          // Depend on the get() operation
+          prereqs.merge(mv(get_prereqs));
+
+          // Add an edge between that freeze and the fence node in the DOT output
+          if (dot_is_tracing)
+          {
+            dot.add_edge(fake_t_id, fence_unique_id, reserved::edge_type::fence);
+          }
+        }
+
+        pending_freeze.clear();
+      }
+
+      // Sync with events which have not been synchronized with, and which are
+      // not "reachable". For example if some async operations occurred in a data
+      // handle destructor there could be some remaining events to sync with to
+      // make sure data were properly deallocated.
+      auto guard = ::std::lock_guard(dangling_events_mutex);
+      if (dangling_events.size() > 0)
+      {
+        prereqs.merge(mv(dangling_events));
+
+        // We consider that dangling events have been sync'ed with, so there is
+        // no need to keep track of them.
+        dangling_events.clear();
+      }
+
+      _CCCL_ASSERT(dangling_events.size() == 0, "");
+
+      return prereqs;
+    }
+
+    void add_pending_freeze(const task& fake_t, const event_list& events)
+    {
+      auto guard = ::std::lock_guard(pending_freeze_mutex);
+
+      // This creates an entry if necessary (there can be multiple gets)
+      event_list& prereqs = pending_freeze[fake_t.get_unique_id()];
+
+      // Add these events to the stored list
+      prereqs.merge(events);
+    }
+
+    // When we unfreeze a logical data, there is no need to automatically sync
+    // with the get events because unfreezing implies the get events where
+    // sync'ed with
+    void remove_pending_freeze(const task& fake_t)
+    {
+      auto guard = ::std::lock_guard(pending_freeze_mutex);
+      pending_freeze.erase(fake_t.get_unique_id());
+    }
+
+    leaf_tasks leaves;
 
   private:
     // Used if we print the task graph using DOT
     ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
+    ::std::optional<::std::function<bool()>> cache_policy;
+
+    // To automatically synchronize with pending get() operartion for
+    // frozen_logical_data, we keep track of the events. The freeze operation
+    // is identified by the id of the "fake" task, and this map should be
+    // cleaned when unfreezing which means it has been synchronized with.
+    ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
+    ::std::mutex pending_freeze_mutex;
   };
 
 public:
@@ -803,12 +634,6 @@ public:
     return pimpl->async_resources;
   }
 
-  auto& get_stack()
-  {
-    assert(pimpl);
-    return pimpl->stack;
-  }
-
   bool reordering_tasks() const
   {
     assert(pimpl);
@@ -838,6 +663,13 @@ public:
   {
     ++pimpl->total_task_cnt;
   }
+
+#ifndef NDEBUG
+  void increment_finished_task_count()
+  {
+    ++pimpl->total_finished_task_cnt;
+  }
+#endif
 
   size_t task_count() const
   {
@@ -903,9 +735,29 @@ public:
     return pimpl->generate_event_symbols;
   }
 
+  void enable_logical_data_stats()
+  {
+    pimpl->logical_data_stats_enabled = true;
+  }
+
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  void set_graph_cache_policy(::std::function<bool()> policy)
+  {
+    pimpl->set_graph_cache_policy(mv(policy));
+  }
+
+  auto get_graph_cache_policy() const
+  {
+    return pimpl->get_graph_cache_policy();
+  }
+
+  executable_graph_cache_stat* graph_get_cache_stat()
+  {
+    return pimpl->graph_get_cache_stat();
   }
 
   event_list stream_to_event_list(cudaStream_t stream, ::std::string event_symbol) const
@@ -914,9 +766,14 @@ public:
     return pimpl->stream_to_event_list(stream, mv(event_symbol));
   }
 
-  size_t epoch() const
+  size_t stage() const
   {
-    return pimpl->epoch();
+    return pimpl->stage();
+  }
+
+  ::std::string to_string() const
+  {
+    return pimpl->to_string();
   }
 
   bool track_dangling_events() const
@@ -953,16 +810,6 @@ public:
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
-  }
-
-  void dot_push_section(::std::string symbol) const
-  {
-    reserved::dot::section::push(mv(symbol));
-  }
-
-  void dot_pop_section() const
-  {
-    reserved::dot::section::pop();
   }
 
   auto dot_section(::std::string symbol) const
@@ -1073,21 +920,21 @@ public:
   template <typename T>
   cuda::experimental::stf::logical_data<T> logical_data(shape_of<T> shape)
   {
-    return cuda::experimental::stf::logical_data<T>(*this, make_data_interface<T>(shape), data_place::invalid);
+    return cuda::experimental::stf::logical_data<T>(*this, make_data_interface<T>(shape), data_place::invalid());
   }
 
   template <typename T>
-  auto logical_data(T prototype, data_place dplace = data_place::host)
+  auto logical_data(T prototype, data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    EXPECT(!dplace.is_invalid());
     assert(self());
     return cuda::experimental::stf::logical_data<T>(*this, make_data_interface<T>(prototype), mv(dplace));
   }
 
   template <typename T, size_t n>
-  auto logical_data(T (&array)[n], data_place dplace = data_place::host)
+  auto logical_data(T (&array)[n], data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    EXPECT(!dplace.is_invalid());
     return logical_data(make_slice(&array[0], n), mv(dplace));
   }
 
@@ -1099,13 +946,13 @@ public:
   }
 
   template <typename T>
-  auto logical_data(T* p, size_t n, data_place dplace = data_place::host)
+  auto logical_data(T* p, size_t n, data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    _CCCL_ASSERT(!dplace.is_invalid(), "invalid data place");
     return logical_data(make_slice(p, n), mv(dplace));
   }
 
-  auto logical_token()
+  auto token()
   {
     // We do not use a shape because we want the first rw() access to succeed
     // without an initial write()
@@ -1116,11 +963,13 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid)
+  frozen_logical_data<T>
+  freeze(cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
-    return frozen_logical_data<T>(*this, mv(d), m, mv(where));
+    return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
 
   /**
@@ -1199,26 +1048,30 @@ public:
   /*
    * parallel_for : apply an operation over a shaped index space
    */
-  template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, Deps... deps)
+
+  template <typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
+  auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+      self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
-  template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
+  template <typename partitioner_t,
+            typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
+      self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>
   auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
-
-  template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, Deps... deps)
-  {
-    return parallel_for(mv(p), exec_place(mv(e_place)), mv(shape), mv(deps)...);
-  }
 
   template <typename S, typename... Deps, typename... Ops, bool... flags>
   auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)

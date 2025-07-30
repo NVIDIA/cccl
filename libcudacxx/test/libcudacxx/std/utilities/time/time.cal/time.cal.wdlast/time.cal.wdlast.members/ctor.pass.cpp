@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday_last;
@@ -28,7 +27,7 @@ int main(int, char**)
   using weekday      = cuda::std::chrono::weekday;
   using weekday_last = cuda::std::chrono::weekday_last;
 
-  ASSERT_NOEXCEPT(weekday_last{weekday{}});
+  static_assert(noexcept(weekday_last{weekday{}}));
 
   constexpr weekday_last wdl0{weekday{}};
   static_assert(wdl0.weekday() == weekday{}, "");

@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_scan.cuh>
 
@@ -64,17 +63,27 @@ using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, floa
 using full_type_list = c2h::type_list<type_quad<std::int32_t>, type_quad<std::uint64_t>>;
 #elif TEST_TYPES == 2
 using full_type_list =
-  c2h::type_list<type_quad<uchar3, uchar3, custom_t>, type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
+  c2h::type_list<type_quad<uchar3, uchar3, custom_t>,
+                 type_quad<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a,
+                   ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4,
+                   ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   std::uint8_t,
+                   Mod2Equality>>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
 type_quad<custom_t, custom_t, custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_quad<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_quad<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif
@@ -92,8 +101,9 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,
@@ -116,7 +126,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   // Generate input data
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(C2H_SEED(2), in_values, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(2), in_values, ::cuda::std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
 // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
@@ -140,7 +150,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -171,7 +181,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -203,7 +213,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -232,7 +242,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
-    using init_t         = cub::detail::value_t<decltype(unwrap_it(d_values_out_it))>;
+    using init_t         = cub::detail::it_value_t<decltype(unwrap_it(d_values_out_it))>;
     device_exclusive_scan_by_key(
       d_keys_it, unwrap_it(d_values_it), unwrap_it(d_values_out_it), scan_op, init_t{}, num_items, eq_op_t{});
 
@@ -240,7 +250,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -278,8 +288,9 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,
@@ -302,7 +313,7 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
   // Generate input data
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(C2H_SEED(2), in_values, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(2), in_values, ::cuda::std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
   SECTION("inclusive sum")

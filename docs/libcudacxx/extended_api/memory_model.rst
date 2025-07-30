@@ -76,7 +76,7 @@ An atomic operation is atomic at the scope it specifies if:
          memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ [1],
          **or**
       -  it affects an object in GPU memory, only GPU threads access it, and
-          - `p2pNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg2f597e2acceab33f60bd61c41fea0c1b8513982962e4439fa60f2a24348be587>`__ between each accessing GPU and the GPU where the object resides is ``1``, or
+          - `*val` returned from `cudaDeviceGetP2PAttribute(&val, cudaDevP2PAttrNativeAtomicSupported, srcDev, dstDev) <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1g2f597e2acceab33f60bd61c41fea0c1b>`__ between each accessing `srcDev` and the GPU where the object resides, `dstDev`, is ``1``, or
           - only GPU threads from a single GPU concurrently access it.
 
 .. note::

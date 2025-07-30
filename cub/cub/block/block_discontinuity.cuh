@@ -122,9 +122,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1>
 class BlockDiscontinuity
 {
 private:
@@ -196,7 +194,7 @@ private:
       T (&preds)[ITEMS_PER_THREAD],
       FlagOp flag_op)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < ITEMS_PER_THREAD; ++i)
       {
         preds[i] = input[i - 1];
@@ -220,7 +218,7 @@ private:
     static _CCCL_DEVICE _CCCL_FORCEINLINE void
     FlagTails(int linear_tid, FlagT (&flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD - 1; ++i)
       {
         flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, input[i], input[i + 1], (linear_tid * ITEMS_PER_THREAD) + i + 1);

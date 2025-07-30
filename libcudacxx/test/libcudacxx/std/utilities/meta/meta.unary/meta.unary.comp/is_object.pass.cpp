@@ -22,12 +22,10 @@ __host__ __device__ void test_is_object()
   static_assert(cuda::std::is_object<const T>::value, "");
   static_assert(cuda::std::is_object<volatile T>::value, "");
   static_assert(cuda::std::is_object<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_object_v<T>, "");
   static_assert(cuda::std::is_object_v<const T>, "");
   static_assert(cuda::std::is_object_v<volatile T>, "");
   static_assert(cuda::std::is_object_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -37,12 +35,10 @@ __host__ __device__ void test_is_not_object()
   static_assert(!cuda::std::is_object<const T>::value, "");
   static_assert(!cuda::std::is_object<volatile T>::value, "");
   static_assert(!cuda::std::is_object<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_object_v<T>, "");
   static_assert(!cuda::std::is_object_v<const T>, "");
   static_assert(!cuda::std::is_object_v<volatile T>, "");
   static_assert(!cuda::std::is_object_v<const volatile T>, "");
-#endif
 }
 
 class incomplete_type;

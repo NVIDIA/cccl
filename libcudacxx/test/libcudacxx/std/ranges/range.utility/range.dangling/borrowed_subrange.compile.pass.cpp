@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // cuda::std::ranges::borrowed_subrange_t;
@@ -15,15 +14,12 @@
 #include <cuda/std/concepts>
 #include <cuda/std/ranges>
 #include <cuda/std/span>
+#include <cuda/std/string_view>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>
-#endif
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/string_view>
-#endif
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
+#endif // _LIBCUDACXX_HAS_STRING
+#include <cuda/std/inplace_vector>
+#include <cuda/std/string_view>
 
 #if defined(_LIBCUDACXX_HAS_STRING)
 static_assert(
@@ -31,10 +27,8 @@ static_assert(
 static_assert(
   cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string&&>, cuda::std::ranges::dangling>);
 #endif
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(
-  cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::vector<int>>, cuda::std::ranges::dangling>);
-#endif
+static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::inplace_vector<int, 3>>,
+                                 cuda::std::ranges::dangling>);
 
 #if defined(_LIBCUDACXX_HAS_STRING)
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string&>,
@@ -43,10 +37,8 @@ static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::st
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::span<int>>,
                                  cuda::std::ranges::subrange<cuda::std::span<int>::iterator>>);
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string_view>,
                                  cuda::std::ranges::subrange<cuda::std::string_view::iterator>>);
-#endif
 
 #if TEST_STD_VER > 2017
 template <class T>

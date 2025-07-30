@@ -18,18 +18,11 @@ file(GLOB_RECURSE internal_headers
   ${libcudacxx_SOURCE_DIR}/include/cuda/std/__*/*.h
 )
 
+# Exclude <cuda/std/__cccl/(prologue|epilogue).h> from the test
+list(FILTER internal_headers EXCLUDE REGEX "__cccl/(prologue|epilogue)\.h")
+
 # headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
 list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
-
-# mdspan is currently not supported on msvc outside of C++20
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "20")
-  list(FILTER internal_headers EXCLUDE REGEX "mdspan")
-endif()
-
-# Exclude __limits/msvc_win32.h on non-MSVC compilers
-if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  list(FILTER internal_headers EXCLUDE REGEX "__limits/msvc_win32.h")
-endif()
 
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
@@ -52,7 +45,10 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     $<$<COMPILE_LANGUAGE:CUDA>:${headertest_warning_levels_device}>
     $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>
     -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-  target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
+  target_compile_definitions(headertest_${header_name} PRIVATE
+    _CCCL_HEADER_TEST
+    CCCL_ENABLE_ASSERTIONS
+    CCCL_ENABLE_OPTIONAL_REF)
   if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     target_link_libraries(headertest_${header_name} NVHPC::CUDART)
   else()
@@ -63,9 +59,6 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")
   endif()
   target_compile_definitions(headertest_${header_name} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
-  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-  endif()
 
   add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
 endfunction()

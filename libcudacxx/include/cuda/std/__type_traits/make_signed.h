@@ -28,6 +28,8 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
@@ -42,10 +44,10 @@ using __signed_types =
               signed int,
               signed long,
               signed long long
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
               ,
               __int128_t
-#  endif
+#  endif // _CCCL_HAS_INT128()
               >;
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
@@ -107,7 +109,7 @@ struct __make_signed_impl<unsigned long long, true>
 {
   using type = long long;
 };
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 template <>
 struct __make_signed_impl<__int128_t, true>
 {
@@ -118,7 +120,7 @@ struct __make_signed_impl<__uint128_t, true>
 {
   using type = __int128_t;
 };
-#  endif // !_LIBCUDACXX_HAS_NO_INT128
+#  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
 using make_signed_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_signed_impl<remove_cv_t<_Tp>>::type>;
@@ -132,5 +134,7 @@ struct make_signed
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_MAKE_SIGNED_H

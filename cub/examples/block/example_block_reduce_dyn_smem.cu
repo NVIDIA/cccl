@@ -29,7 +29,7 @@
  * Simple demonstration of cub::BlockReduce with dynamic shared memory
  *
  * To compile using the command line:
- *   nvcc -arch=sm_XX example_block_reduce_dyn_smem.cu -I../.. -lcudart -O3 -std=c++14
+ *   nvcc -arch=sm_XX example_block_reduce_dyn_smem.cu -I../.. -lcudart -O3 -std=c++17
  *
  ******************************************************************************/
 
@@ -43,11 +43,9 @@
 #include <algorithm>
 #include <iostream>
 
-#include "../../test/test_util.h"
 #include <stdio.h>
 
-// Some implementation details rely on c++14
-#if _CCCL_STD_VER >= 2014
+#include "../../test/test_util.h"
 
 using namespace cub;
 
@@ -167,7 +165,7 @@ void Test()
   auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BLOCK_THREADS>::TempStorage);
   // finally, we need to make sure that we can hold at least one integer
   // needed in the kernel to exchange data after reduction
-  auto smem_size = (std::max)(1 * sizeof(int), block_reduce_temp_bytes);
+  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes);
 
   // use default stream
   cudaStream_t stream = nullptr;
@@ -240,9 +238,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
-#else // < C++14
-
-int main() {}
-
-#endif

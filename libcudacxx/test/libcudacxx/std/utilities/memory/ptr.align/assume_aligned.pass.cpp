@@ -18,48 +18,14 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check(T* p)
+__host__ __device__ constexpr void check(T* p)
 {
-  ASSERT_SAME_TYPE(T*, decltype(cuda::std::assume_aligned<1>(p)));
+  static_assert(cuda::std::is_same_v<T*, decltype(cuda::std::assume_aligned<1>(p))>);
   constexpr cuda::std::size_t alignment = alignof(T);
-
-  _CCCL_IF_CONSTEXPR (alignment >= 1)
-  {
-    assert(p == cuda::std::assume_aligned<1>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 2)
-  {
-    assert(p == cuda::std::assume_aligned<2>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 4)
-  {
-    assert(p == cuda::std::assume_aligned<4>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 8)
-  {
-    assert(p == cuda::std::assume_aligned<8>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 16)
-  {
-    assert(p == cuda::std::assume_aligned<16>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 32)
-  {
-    assert(p == cuda::std::assume_aligned<32>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 64)
-  {
-    assert(p == cuda::std::assume_aligned<64>(p));
-  }
-  _CCCL_IF_CONSTEXPR (alignment >= 128)
-  {
-    assert(p == cuda::std::assume_aligned<128>(p));
-  }
+  assert(p == cuda::std::assume_aligned<alignment>(p));
 }
 
 struct S
@@ -77,7 +43,7 @@ struct alignas(64) S64
 struct alignas(128) S128
 {};
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   char c{};
   int i{};
@@ -109,9 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014
   static_assert(tests(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

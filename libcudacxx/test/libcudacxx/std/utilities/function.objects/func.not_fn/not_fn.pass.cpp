@@ -6,10 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-// UNSUPPORTED: gcc-6
-// UNSUPPORTED: nvcc-11.1
-
 // TODO: there's multiple failures that appear to be all about overload resolution and SFINAE,
 // and they will require further debugging to pinpoint the root cause of (almost certainly a
 // compiler bug)
@@ -203,8 +199,8 @@ __host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType R
 
 #if 0
 
-STATIC_TEST_GLOBAL_VAR CallType      ForwardingCallObject_last_call_type = CT_None;
-STATIC_TEST_GLOBAL_VAR TypeID const* ForwardingCallObject_last_call_args = nullptr;
+TEST_GLOBAL_VARIABLE CallType      ForwardingCallObject_last_call_type = CT_None;
+TEST_GLOBAL_VARIABLE TypeID const* ForwardingCallObject_last_call_args = nullptr;
 
 struct ForwardingCallObject {
 
@@ -265,7 +261,7 @@ struct ForwardingCallObject {
 //                        BOOL TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-STATIC_TEST_GLOBAL_VAR int EvilBool_bang_called = 0;
+TEST_GLOBAL_VARIABLE int EvilBool_bang_called = 0;
 struct EvilBool
 {
   EvilBool(EvilBool const&) = default;
@@ -385,8 +381,8 @@ __host__ __device__ void constructor_tests()
     using RetT = decltype(cuda::std::not_fn(value));
     static_assert(cuda::std::is_move_constructible<RetT>::value, "");
     static_assert(cuda::std::is_copy_constructible<RetT>::value, "");
-    LIBCPP_STATIC_ASSERT(cuda::std::is_move_assignable<RetT>::value, "");
-    LIBCPP_STATIC_ASSERT(cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_copy_assignable<RetT>::value, "");
     auto ret = cuda::std::not_fn(value);
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(value2);
@@ -404,7 +400,7 @@ __host__ __device__ void constructor_tests()
     using RetT = decltype(cuda::std::not_fn(cuda::std::move(value)));
     static_assert(cuda::std::is_move_constructible<RetT>::value, "");
     static_assert(!cuda::std::is_copy_constructible<RetT>::value, "");
-    LIBCPP_STATIC_ASSERT(cuda::std::is_move_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_assignable<RetT>::value, "");
     static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
     auto ret = cuda::std::not_fn(cuda::std::move(value));
     assert(ret() == false);
@@ -492,46 +488,43 @@ __host__ __device__ void other_callable_types_test()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void throws_in_constructor_test()
 {
   struct ThrowsOnCopy
   {
-    ThrowsOnCopy(ThrowsOnCopy const&)
-    {
-      throw 42;
-    }
     ThrowsOnCopy() = default;
-    bool operator()() const
+    // NVCC claims this is a host device function so we need to hack around it
+    __host__ __device__ ThrowsOnCopy(ThrowsOnCopy const&)
+    {
+      NV_IF_TARGET(NV_IS_HOST, throw 42;)
+    }
+    [[noreturn]] bool operator()() const
     {
       assert(false);
-      _CCCL_UNREACHABLE();
+      cuda::std::unreachable();
     }
   };
+  try
   {
-    ThrowsOnCopy cp;
-    try
-    {
-      (void) cuda::std::not_fn(cp);
-      assert(false);
-    }
-    catch (int const& value)
-    {
-      assert(value == 42);
-    }
+    ThrowsOnCopy cp{};
+    (void) cuda::std::not_fn(cp);
+    assert(false);
+  }
+  catch (int const& value)
+  {
+    assert(value == 42);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void call_operator_sfinae_test()
 {
-#if !defined(TEST_COMPILER_MSVC_2017)
   { // wrong number of arguments
     using T = decltype(cuda::std::not_fn(returns_true));
     static_assert(cuda::std::is_invocable<T>::value, ""); // callable only with no args
     static_assert(!cuda::std::is_invocable<T, bool>::value, "");
   }
-#endif // !TEST_COMPILER_MSVC_2017
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
     static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value, "");
@@ -546,7 +539,7 @@ __host__ __device__ void call_operator_sfinae_test()
   }
   // NVRTC appears to be unhappy about... the lambda?
   // but doesn't let me fix it with annotations
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   { // returns bad type with no operator!
     auto fn = [](auto x) {
       return x;
@@ -556,7 +549,7 @@ __host__ __device__ void call_operator_sfinae_test()
     // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value, "");
     unused(fn);
   }
-#endif // TEST_COMPILER_NVRTC
+#endif // TEST_COMPILER(NVRTC)
 }
 
 #if 0
@@ -653,65 +646,61 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = ConstCallable<bool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
     auto const& cret = ret;
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
     unused(cret);
   }
   {
     using T = NoExceptCallable<bool>;
     T value(true);
-    auto ret = cuda::std::not_fn(value);
-    (void) ret;
-    LIBCPP_STATIC_ASSERT(noexcept(!_CUDA_VSTD::__invoke(value)), "");
-#if TEST_STD_VER > 2014
+    [[maybe_unused]] auto ret = cuda::std::not_fn(value);
+    static_assert(noexcept(!_CUDA_VSTD::__invoke(value)), "");
     static_assert(noexcept(!cuda::std::invoke(value)), "");
-#endif
 // TODO: nvcc gets this wrong, investigate
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     auto const& cret = ret;
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(cret()), "call should be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     unused(cret);
   }
   {
     using T = NoExceptCallable<NoExceptEvilBool>;
     T value(true);
-    auto ret = cuda::std::not_fn(value);
-    (void) ret;
+    [[maybe_unused]] auto ret = cuda::std::not_fn(value);
 // TODO: nvcc gets this wrong, investigate
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should not be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     auto const& cret = ret;
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(cret()), "call should not be noexcept");
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
     unused(cret);
   }
   {
     using T = NoExceptCallable<EvilBool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
     auto const& cret = ret;
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
     unused(cret);
   }
 }
 
-#ifndef TEST_COMPILER_CLANG_CUDA // https://github.com/llvm/llvm-project/issues/67533
+#if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
 __host__ __device__ void test_lwg2767()
 {
   // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
@@ -737,22 +726,22 @@ __host__ __device__ void test_lwg2767()
     assert(b);
   }
 }
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_CUDA_COMPILER(CLANG)
 
 int main(int, char**)
 {
   constructor_tests();
   return_type_tests();
   other_callable_types_test();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (throws_in_constructor_test();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   call_operator_sfinae_test(); // somewhat of an extension
   // call_operator_forwarding_test();
   call_operator_noexcept_test();
-#ifndef TEST_COMPILER_CLANG_CUDA
+#if !TEST_CUDA_COMPILER(CLANG)
   test_lwg2767();
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_CUDA_COMPILER(CLANG)
 
   return 0;
 }

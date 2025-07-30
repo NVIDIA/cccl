@@ -24,8 +24,8 @@
 
 template <typename Key,
           typename Value,
-          typename Hash           = thrust::identity<Key>,
-          typename KeyEqual       = thrust::equal_to<Key>,
+          typename Hash           = cuda::std::identity,
+          typename KeyEqual       = cuda::std::equal_to<Key>,
           typename MemoryResource = thrust::universal_memory_resource>
 struct concurrent_hash_table
 {

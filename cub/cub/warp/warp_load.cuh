@@ -216,16 +216,13 @@ enum WarpLoadAlgorithm
 //!   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
 //!   power of two.
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   Unused.
 template <typename InputT,
           int ITEMS_PER_THREAD,
           WarpLoadAlgorithm ALGORITHM = WARP_LOAD_DIRECT,
-          int LOGICAL_WARP_THREADS    = CUB_PTX_WARP_THREADS,
-          int LEGACY_PTX_ARCH         = 0>
+          int LOGICAL_WARP_THREADS    = detail::warp_threads>
 class WarpLoad
 {
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
 
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
 
@@ -313,13 +310,11 @@ private:
         : linear_tid(linear_tid)
     {}
 
-    template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputT* block_ptr, InputT (&items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
     }
 
-    template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const InputT* block_ptr, InputT (&items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);

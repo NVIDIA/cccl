@@ -89,8 +89,8 @@ THRUST_NAMESPACE_BEGIN
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(thrust::host, data, data + 6, data, unary_op, binary_op); // in-place scan
  *
@@ -150,8 +150,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(data, data + 6, data, unary_op, binary_op); // in-place scan
  *
@@ -212,8 +212,8 @@ OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(thrust::host, data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *
@@ -279,8 +279,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_inclusive_scan(data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *
@@ -345,8 +345,8 @@ OutputIterator transform_inclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_exclusive_scan(thrust::host, data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *
@@ -410,8 +410,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
- *  thrust::negate<int> unary_op;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::negate<int> unary_op;
+ *  ::cuda::std::plus<int> binary_op;
  *
  *  thrust::transform_exclusive_scan(data, data + 6, data, unary_op, 4, binary_op); // in-place scan
  *

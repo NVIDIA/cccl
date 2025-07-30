@@ -49,13 +49,12 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/type_traits>
-
-#include <iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -123,6 +122,9 @@ struct AgentSelectIfPolicy
 
 namespace detail
 {
+namespace select
+{
+
 template <typename SelectedOutputItT, typename RejectedOutputItT>
 struct partition_distinct_output_t
 {
@@ -132,7 +134,15 @@ struct partition_distinct_output_t
   selected_iterator_t selected_it;
   rejected_iterator_t rejected_it;
 };
-} // namespace detail
+
+template <typename OutputIterator>
+struct is_partition_distinct_output_t : ::cuda::std::false_type
+{};
+
+template <typename SelectedOutputItT, typename RejectedOutputItT>
+struct is_partition_distinct_output_t<partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>>
+    : ::cuda::std::true_type
+{};
 
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
@@ -175,8 +185,9 @@ struct partition_distinct_output_t
  *    num_total_items() -> total number of items across all partitions (partition only)
  *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
- * @tparam KeepRejects
- *   Whether or not we push rejected items to the back of the output
+ * @tparam SelectImpl SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
+ *   output may alias each other.
  */
 template <typename AgentSelectIfPolicyT,
           typename InputIteratorT,
@@ -186,8 +197,7 @@ template <typename AgentSelectIfPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          bool KeepRejects,
-          bool MayAlias>
+          SelectImpl SelectionOpt>
 struct AgentSelectIf
 {
   //---------------------------------------------------------------------
@@ -206,17 +216,19 @@ struct AgentSelectIf
   // updating a tile state. Similarly, we need to make sure that the load of previous tile states precede writing of
   // the stream-compacted items and, hence, we need a load acquire when reading those tile states.
   static constexpr MemoryOrder memory_order =
-    ((!KeepRejects) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
+    ((SelectionOpt == SelectImpl::SelectPotentiallyInPlace) && (!loads_via_smem))
+      ? MemoryOrder::acquire_release
+      : MemoryOrder::relaxed;
 
   // If we need to enforce memory order for in-place stream compaction, wrap the default decoupled look-back tile
   // state in a helper class that enforces memory order on reads and writes
-  using MemoryOrderedTileStateT = detail::tile_state_with_memory_order<ScanTileStateT, memory_order>;
+  using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
+  using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
   enum
@@ -232,8 +244,8 @@ struct AgentSelectIf
   static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
 
-  static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
-  static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+  static constexpr bool has_select_op       = (!::cuda::std::is_same_v<SelectOpT, NullType>);
+  static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
     use_stencil_with_op ? USE_STENCIL_WITH_OP
@@ -245,7 +257,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -253,7 +265,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedFlagsInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<FlagsInputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
                      FlagsInputIteratorT>;
 
@@ -272,7 +284,7 @@ struct AgentSelectIf
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -382,9 +394,9 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_SELECT_OP> /*select_method*/)
+    constant_t<USE_SELECT_OP> /*select_method*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Out-of-bounds items are selection_flags
@@ -406,7 +418,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
+    constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
   {
     __syncthreads();
 
@@ -414,7 +426,7 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       // Initialize the out-of-bounds flags
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         selection_flags[ITEM] = true;
@@ -428,7 +440,7 @@ struct AgentSelectIf
       BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -448,7 +460,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_SELECT_FLAGS> /*select_method*/)
+    constant_t<USE_SELECT_FLAGS> /*select_method*/)
   {
     __syncthreads();
 
@@ -465,8 +477,8 @@ struct AgentSelectIf
       BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
-// Convert flag type to selection_flags type
-#pragma unroll
+    // Convert flag type to selection_flags type
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       selection_flags[ITEM] = static_cast<bool>(flags[ITEM]);
@@ -482,7 +494,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_DISCONTINUITY> /*select_method*/)
+    constant_t<USE_DISCONTINUITY> /*select_method*/)
   {
     if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
@@ -505,8 +517,8 @@ struct AgentSelectIf
         .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
     }
 
-// Set selection flags for out-of-bounds items
-#pragma unroll
+    // Set selection flags for out-of-bounds items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -531,8 +543,8 @@ struct AgentSelectIf
     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
     OffsetT num_selections)
   {
-// Scatter flagged items
-#pragma unroll
+    // Scatter flagged items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (selection_flags[ITEM])
@@ -573,8 +585,8 @@ struct AgentSelectIf
   {
     __syncthreads();
 
-// Compact and scatter items
-#pragma unroll
+    // Compact and scatter items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -621,7 +633,7 @@ struct AgentSelectIf
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
     OffsetT num_selections,
-    Int2Type<false> /*is_keep_rejects*/)
+    ::cuda::std::false_type /*is_keep_rejects*/)
   {
     // Do a two-phase scatter if two-phase is enabled and the average number of selection_flags items per thread is
     // greater than one
@@ -665,14 +677,14 @@ struct AgentSelectIf
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
     OffsetT num_selections,
-    Int2Type<true> /*is_keep_rejects*/)
+    ::cuda::std::true_type /*is_keep_rejects*/)
   {
     __syncthreads();
 
     int tile_num_rejections = num_tile_items - num_tile_selections;
 
-// Scatter items to shared memory (rejections first)
-#pragma unroll
+    // Scatter items to shared memory (rejections first)
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx            = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
@@ -702,12 +714,12 @@ struct AgentSelectIf
     int tile_num_rejections,
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
-    detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
+    partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
   {
     auto selected_out_it = partitioned_out_wrapper.selected_it + streaming_context.num_previously_selected();
     auto rejected_out_it = partitioned_out_wrapper.rejected_it + streaming_context.num_previously_rejected();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
@@ -747,7 +759,7 @@ struct AgentSelectIf
   {
     using total_offset_t = typename StreamingContextT::total_num_items_t;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
@@ -809,7 +821,7 @@ struct AgentSelectIf
 
     // Initialize selection_flags
     InitializeSelections<true, IS_LAST_TILE>(
-      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+      tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -845,7 +857,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type<KeepRejects>{});
+      bool_constant_v < SelectionOpt == SelectImpl::Partition >);
 
     return num_tile_selections;
   }
@@ -889,7 +901,7 @@ struct AgentSelectIf
 
     // Initialize selection_flags
     InitializeSelections<false, IS_LAST_TILE>(
-      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+      tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -928,7 +940,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type<KeepRejects>{});
+      bool_constant_v < SelectionOpt == SelectImpl::Partition >);
 
     return num_selections;
   }
@@ -1013,5 +1025,8 @@ struct AgentSelectIf
     }
   }
 };
+
+} // namespace select
+} // namespace detail
 
 CUB_NAMESPACE_END

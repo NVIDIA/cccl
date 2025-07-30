@@ -53,8 +53,9 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cfloat>
-#include <cmath>
+#include <cuda/std/cfloat>
+#include <cuda/std/cmath>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -278,7 +279,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   {
     if (isinf(x))
     {
-      return (complex<float>(y + y, -infinity<float>()));
+      return (complex<float>(y + y, -::cuda::std::numeric_limits<float>::infinity()));
     }
     if (isinf(y))
     {

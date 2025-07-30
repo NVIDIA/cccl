@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <memory>
 
 // template <ObjectType T> constexpr T* addressof(T& r);

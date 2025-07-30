@@ -45,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-namespace launcher
+namespace detail
 {
 
 struct _CCCL_VISIBILITY_HIDDEN triple_chevron
@@ -83,10 +83,11 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 #endif
 
+#if !_CCCL_COMPILER(NVRTC)
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-#if _CCCL_HAS_PDL
+#  if _CCCL_HAS_PDL()
     if (dependent_launch)
     {
       cudaLaunchAttribute attribute[1];
@@ -100,19 +101,20 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
       config.stream           = stream;
       config.attrs            = attribute;
       config.numAttrs         = 1;
-#  if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
+#    if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
       cudaLaunchKernelEx_MSVC_workaround(&config, k, args...);
-#  else
+#    else
       cudaLaunchKernelEx(&config, k, args...);
-#  endif
+#    endif
     }
     else
-#endif // _CCCL_HAS_PDL
+#  endif // _CCCL_HAS_PDL()
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
     }
     return cudaPeekAtLastError();
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
   template <class T>
   size_t _CCCL_DEVICE align_up(size_t offset) const
@@ -129,8 +131,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   size_t _CCCL_DEVICE argument_pack_size(size_t size, Args const&...) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
-    int dummy[] = {(size = align_up<Args>(size) + sizeof(Args), 0)...};
-    static_cast<void>(dummy);
+    [[maybe_unused]] int dummy[] = {(size = align_up<Args>(size) + sizeof(Args), 0)...};
     return size;
   }
 
@@ -150,8 +151,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Args const&... args) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
-    int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
-    static_cast<void>(dummy);
+    [[maybe_unused]] int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
   }
 
 #ifdef THRUST_RDC_ENABLED
@@ -185,8 +185,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 
 }; // struct triple_chevron
-
-} // namespace launcher
+} // namespace detail
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

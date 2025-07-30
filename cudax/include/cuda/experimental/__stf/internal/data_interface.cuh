@@ -26,6 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/type_traits>
+
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
@@ -59,32 +61,28 @@ struct readonly_type_of
 };
 
 // Specialization of `readonly_type_of` for `mdspan`.
-template <typename T, typename... More>
-struct readonly_type_of<mdspan<T, More...>>
+template <typename T, typename Extents, typename Layout, template <typename> class Accessor>
+struct readonly_type_of<mdspan<T, Extents, Layout, Accessor<T>>>
 {
-  using type = mdspan<const T, More...>;
+  using type = mdspan<::cuda::std::add_const_t<T>, Extents, Layout, Accessor<::cuda::std::add_const_t<T>>>;
 };
 
 // Helper struct to deduce read-write types.
 template <typename T>
 struct rw_type_of
 {
-  using type = ::std::remove_const_t<T>;
+  using type = ::cuda::std::remove_const_t<T>;
 };
 
 // Specialization of rw_type_of for `mdspan`.
-template <typename T, typename... More>
-struct rw_type_of<mdspan<const T, More...>>
+template <typename T, typename Extents, typename Layout, template <typename> class Accessor>
+struct rw_type_of<mdspan<const T, Extents, Layout, Accessor<const T>>>
 {
-  using type = mdspan<T, More...>;
+  using type = mdspan<T, Extents, Layout, Accessor<T>>;
 };
 
-// Specialization of rw_type_of for const mdspan.
-template <typename T, typename... More>
-struct rw_type_of<const mdspan<const T, More...>>
-{
-  using type = mdspan<T, More...>;
-};
+template <class T>
+inline constexpr bool always_false = false;
 
 } // namespace reserved
 
@@ -93,14 +91,39 @@ struct rw_type_of<const mdspan<const T, More...>>
  * @tparam T Type to process
  */
 template <typename T>
-using readonly_type_of = typename reserved::readonly_type_of<T>::type;
+using readonly_type_of = typename reserved::readonly_type_of<::cuda::std::remove_cvref_t<T>>::type;
 
 /**
  * @brief Given a type `T`, returns the inverse of `constify`.
  * @tparam T Type to process
  */
 template <typename T>
-using rw_type_of = typename reserved::rw_type_of<T>::type;
+using rw_type_of = typename reserved::rw_type_of<::cuda::std::remove_cvref_t<T>>::type;
+
+template <typename T>
+rw_type_of<T> to_rw_type_of(const T& t)
+{
+  return rw_type_of<T>{t};
+}
+
+template <typename T, typename Extents, typename Layout, template <typename> class Accessor>
+mdspan<T, Extents, Layout, Accessor<T>> to_rw_type_of(const mdspan<const T, Extents, Layout, Accessor<const T>>& md)
+{
+  if constexpr (_CUDA_VSTD::is_default_constructible_v<Accessor<T>>)
+  {
+    return mdspan<T, Extents, Layout, Accessor<T>>{const_cast<T*>(md.data_handle()), md.mapping()};
+  }
+  else if constexpr (_CUDA_VSTD::is_constructible_v<Accessor<T>, const Accessor<const T>&>)
+  {
+    return mdspan<T, Extents, Layout, Accessor<T>>{
+      const_cast<T*>(md.data_handle()), md.mapping(), Accessor<T>{md.accessor()}};
+  }
+  else
+  {
+    static_assert(reserved::always_false<T>, "Need to implement the conversion of Accessor<T> to Accessor<const T>");
+  }
+  _CCCL_UNREACHABLE();
+}
 
 namespace reserved
 {
@@ -201,7 +224,7 @@ public:
   virtual ::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
   {
     return ::std::nullopt;
-  };
+  }
 
   /// @brief Unpin host memory.
   ///

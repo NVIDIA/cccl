@@ -12,7 +12,7 @@
 
 // constexpr byte& operator |=(byte l, byte r) noexcept;
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 cuda::std::byte test(cuda::std::byte b1, cuda::std::byte b2)
+__host__ __device__ constexpr cuda::std::byte test(cuda::std::byte b1, cuda::std::byte b2)
 {
   cuda::std::byte bret = b1;
   return bret |= b2;
@@ -35,7 +35,6 @@ int main(int, char**)
   assert(cuda::std::to_integer<int>(test(b8, b1)) == 9);
   assert(cuda::std::to_integer<int>(test(b8, b2)) == 10);
 
-#if TEST_STD_VER >= 2014
   static_assert(cuda::std::to_integer<int>(test(b1, b2)) == 3, "");
   static_assert(cuda::std::to_integer<int>(test(b1, b8)) == 9, "");
   static_assert(cuda::std::to_integer<int>(test(b2, b8)) == 10, "");
@@ -43,7 +42,6 @@ int main(int, char**)
   static_assert(cuda::std::to_integer<int>(test(b2, b1)) == 3, "");
   static_assert(cuda::std::to_integer<int>(test(b8, b1)) == 9, "");
   static_assert(cuda::std::to_integer<int>(test(b8, b2)) == 10, "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

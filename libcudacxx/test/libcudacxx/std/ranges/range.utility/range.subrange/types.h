@@ -59,7 +59,7 @@ struct MoveOnlyForwardIter
   {
     return lhs.base == rhs;
   }
-#if TEST_STD_VER < 2020 || defined(TEST_COMPILER_CLANG) || defined(TEST_COMPILER_NVRTC) || defined(TEST_COMPILER_MSVC)
+#if TEST_STD_VER < 2020 || TEST_COMPILER(CLANG) || TEST_COMPILER(NVRTC) || TEST_COMPILER(MSVC)
   __host__ __device__ friend constexpr bool operator==(int* rhs, const self& lhs)
   {
     return lhs.base == rhs;
@@ -256,7 +256,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<ForwardBorrowedRange> = true;
+inline constexpr bool enable_borrowed_range<ForwardBorrowedRange> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -286,7 +286,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<ConvertibleForwardBorrowedRange> = true;
+inline constexpr bool enable_borrowed_range<ConvertibleForwardBorrowedRange> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -333,7 +333,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<ForwardBorrowedRangeDifferentSentinel> = true;
+inline constexpr bool enable_borrowed_range<ForwardBorrowedRangeDifferentSentinel> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -387,7 +387,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<DifferentSentinelWithSizeMember> = true;
+inline constexpr bool enable_borrowed_range<DifferentSentinelWithSizeMember> = true;
 }
 } // namespace std
 } // namespace cuda

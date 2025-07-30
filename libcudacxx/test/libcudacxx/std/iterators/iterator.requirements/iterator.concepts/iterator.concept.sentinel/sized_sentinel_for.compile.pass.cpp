@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // [iterator.concept.sizedsentinel], concept sized_sentinel_for
 //
 // template<class S, class I>
@@ -107,7 +105,7 @@ namespace cuda
 namespace std
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
+inline constexpr bool disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
 }
 } // namespace cuda
 

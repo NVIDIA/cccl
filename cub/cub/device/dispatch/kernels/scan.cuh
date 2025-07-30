@@ -40,7 +40,14 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+namespace scan
+{
 
 /******************************************************************************
  * Kernel entry points
@@ -154,7 +161,8 @@ template <typename ChainedPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive>
+          bool ForceInclusive,
+          typename RealInitValueT = typename InitValueT::value_type>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     InputIteratorT d_in,
@@ -165,11 +173,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
     InitValueT init_value,
     OffsetT num_items)
 {
-  using RealInitValueT = typename InitValueT::value_type;
-  using ScanPolicyT    = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
+  using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanT =
+  using AgentScanT = detail::scan::
     AgentScan<ScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, RealInitValueT, OffsetT, AccumT, ForceInclusive>;
 
   // Shared memory for AgentScan
@@ -180,5 +187,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   // Process tiles
   AgentScanT(temp_storage, d_in, d_out, scan_op, real_init_value).ConsumeRange(num_items, tile_state, start_tile);
 }
+
+} // namespace scan
+} // namespace detail
 
 CUB_NAMESPACE_END

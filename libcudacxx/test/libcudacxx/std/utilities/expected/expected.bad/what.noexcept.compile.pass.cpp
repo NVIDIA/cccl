@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: libcpp-no-exceptions
 // UNSUPPORTED: nvrtc
 
@@ -16,6 +15,9 @@
 #include <cuda/std/expected>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
+#if TEST_HAS_EXCEPTIONS()
 template <class T, class = void>
 constexpr bool WhatNoexcept = false;
 
@@ -29,6 +31,7 @@ struct foo
 static_assert(!WhatNoexcept<foo>, "");
 static_assert(WhatNoexcept<cuda::std::bad_expected_access<int>>, "");
 static_assert(WhatNoexcept<cuda::std::bad_expected_access<foo>>, "");
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {

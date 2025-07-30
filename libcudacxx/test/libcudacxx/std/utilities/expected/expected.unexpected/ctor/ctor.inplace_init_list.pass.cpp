@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class U, class... Args>
 //   constexpr explicit unexpected(in_place_t, initializer_list<U> il, Args&&... args);
 //
@@ -74,11 +72,8 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                       requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
-
-template <class T, class... Args>
-constexpr bool ImplicitlyConstructible = _CCCL_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+_CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 
 static_assert(ImplicitlyConstructible<int, int>, "");
 static_assert(
@@ -120,7 +115,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
   struct Except
@@ -142,14 +137,14 @@ void test_exceptions()
   catch (Except)
   {}
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
   test();
   static_assert(test(), "");
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

@@ -41,11 +41,7 @@
 #define THRUST_CPP_DIALECT _CCCL_STD_VER
 
 // Define THRUST_COMPILER_DEPRECATION macro:
-#if _CCCL_COMPILER(MSVC)
-#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
-#else // clang / gcc:
-#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
-#endif
+#define THRUST_COMP_DEPR_IMPL(msg) _CCCL_WARNING(#msg)
 
 // Compiler checks:
 // clang-format off
@@ -66,9 +62,6 @@ THRUST_COMPILER_DEPRECATION(Clang 7.0);
 #  elif _CCCL_COMPILER(MSVC, <, 19, 10)
 // <2017. Hard upgrade message:
 THRUST_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
-#  elif _CCCL_COMPILER(MSVC2017)
-// >=2017, <2019. Soft deprecation message:
-THRUST_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 #  endif
 #endif // CCCL_IGNORE_DEPRECATED_COMPILER
 
@@ -78,8 +71,7 @@ THRUST_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 // C++17 dialect check:
 #ifndef CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #  if _CCCL_STD_VER < 2017
-THRUST_COMP_DEPR_IMPL(
-  Thrust requires at least C++ 17. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+#    error Thrust requires at least C++17. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.
 #  endif // _CCCL_STD_VER >= 2017
 #endif
 

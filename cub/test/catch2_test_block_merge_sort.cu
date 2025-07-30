@@ -166,7 +166,10 @@ template <int ItemsPerThread, int ThreadsInBlock, class KeyT, class ActionT>
 void block_merge_sort(c2h::device_vector<KeyT>& keys, ActionT action)
 {
   block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread><<<1, ThreadsInBlock>>>(
-    thrust::raw_pointer_cast(keys.data()), static_cast<int>(keys.size()), std::numeric_limits<KeyT>::max(), action);
+    thrust::raw_pointer_cast(keys.data()),
+    static_cast<int>(keys.size()),
+    ::cuda::std::numeric_limits<KeyT>::max(),
+    action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -179,7 +182,7 @@ void block_merge_sort(c2h::device_vector<KeyT>& keys, c2h::device_vector<ValueT>
     thrust::raw_pointer_cast(keys.data()),
     thrust::raw_pointer_cast(vals.data()),
     static_cast<int>(keys.size()),
-    std::numeric_limits<KeyT>::max(),
+    ::cuda::std::numeric_limits<KeyT>::max(),
     action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());

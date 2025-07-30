@@ -4,6 +4,7 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
@@ -57,7 +58,9 @@ struct policy_hub_t
     // Type used for the final result
     using output_tuple_t = cub::KeyValuePair<global_offset_t, T>;
 
-    auto const init = ::cuda::std::is_same<OpT, cub::ArgMin>::value ? cub::Traits<T>::Max() : cub::Traits<T>::Lowest();
+    auto const init = ::cuda::std::is_same_v<OpT, cub::ArgMin>
+                      ? ::cuda::std::numeric_limits<T>::max()
+                      : ::cuda::std::numeric_limits<T>::lowest();
 
 #if !TUNE_BASE
     using policy_t   = policy_hub_t<output_tuple_t, per_partition_offset_t>;
@@ -95,7 +98,7 @@ struct policy_hub_t
     thrust::device_vector<nvbench::uint8_t> temp(temp_size);
     auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-    state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
       dispatch_t::Dispatch(
         temp_storage, temp_size, d_in, d_out, static_cast<global_offset_t>(elements), OpT{}, init, launch.get_stream());
     });

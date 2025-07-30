@@ -14,17 +14,8 @@
 #define _LIBCUDACXX_FORCE_INCLUDE_H
 
 #include <cuda_runtime.h>
-
 #include <stdio.h>
 #include <stdlib.h>
-
-#define VERSION2_COMPARE_GTE(MAJ1, MIN1, MAJ2, MIN2) ((MAJ1 == MAJ2 && MIN1 >= MIN2) || (MAJ1 > MAJ2))
-
-#if defined(__CUDACC__)
-#  define CUDACC_COMPARE_GTE(MAJ, MIN) VERSION2_COMPARE_GTE(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__, MAJ, MIN)
-#else
-#  define CUDACC_COMPARE_GTE(MAJ, MIN) 0
-#endif
 
 void list_devices()
 {
@@ -91,8 +82,7 @@ int main(int argc, char** argv)
 
   int* cuda_ret = 0;
   CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
-// cudaLaunchKernelEx is supported from 11.8 onwards
-#if CUDACC_COMPARE_GTE(11, 8)
+
   if (cuda_cluster_size > 1)
   {
     cudaLaunchAttribute attribute[1];
@@ -112,11 +102,10 @@ int main(int argc, char** argv)
     CUDA_CALL(err, cudaLaunchKernelEx(&config, fake_main_kernel, cuda_ret));
   }
   else
-#endif // CTK <= 11.7
   {
-    (void) cuda_cluster_size;
     fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);
   }
+
   CUDA_CALL(err, cudaGetLastError());
   CUDA_CALL(err, cudaDeviceSynchronize());
   CUDA_CALL(err, cudaMemcpy(&ret, cuda_ret, sizeof(int), cudaMemcpyDeviceToHost));
@@ -125,6 +114,6 @@ int main(int argc, char** argv)
   return ret;
 }
 
-#define main __host__ __device__ fake_main
+#define main(...) __host__ __device__ fake_main(__VA_ARGS__)
 
 #endif

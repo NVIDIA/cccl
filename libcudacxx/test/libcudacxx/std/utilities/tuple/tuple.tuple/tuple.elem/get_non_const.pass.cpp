@@ -14,16 +14,12 @@
 //   typename tuple_element<I, tuple<Types...> >::type&
 //   get(tuple<Types...>& t);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 // cuda::std::string not supported
 // #include <cuda/std/string>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
-
-#if TEST_STD_VER > 2011
 
 struct Empty
 {};
@@ -44,12 +40,11 @@ __host__ __device__ constexpr cuda::std::tuple<int, int> getP()
 {
   return {3, 4};
 }
-#endif
 
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     T t(3);
     assert(cuda::std::get<0>(t) == 3);
     cuda::std::get<0>(t) = 2;
@@ -58,7 +53,7 @@ int main(int, char**)
   // cuda::std::string not supported
   /*
   {
-      typedef cuda::std::tuple<cuda::std::string, int> T;
+      using T = cuda::std::tuple<cuda::std::string, int>;
       T t("high", 5);
       assert(cuda::std::get<0>(t) == "high");
       assert(cuda::std::get<1>(t) == 5);
@@ -68,7 +63,7 @@ int main(int, char**)
       assert(cuda::std::get<1>(t) == 4);
   }
   {
-      typedef cuda::std::tuple<double&, cuda::std::string, int> T;
+      using T = cuda::std::tuple<double&, cuda::std::string, int>;
       double d = 1.5;
       T t(d, "high", 5);
       assert(cuda::std::get<0>(t) == 1.5);
@@ -83,7 +78,6 @@ int main(int, char**)
       assert(d == 2.5);
   }
   */
-#if TEST_STD_VER > 2011
   { // get on an rvalue tuple
     static_assert(cuda::std::get<0>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 0, "");
     static_assert(cuda::std::get<1>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 1, "");
@@ -92,7 +86,6 @@ int main(int, char**)
     static_assert(S().k == 1, "");
     static_assert(cuda::std::get<1>(getP()) == 4, "");
   }
-#endif
 
   return 0;
 }

@@ -7,21 +7,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept totally_ordered_with;
 
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wc++17-extensions"
-#  pragma clang diagnostic ignored "-Wordered-compare-function-pointers"
-#endif
+#include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wordered-compare-function-pointers")
 
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 
 #include "compare_types.h"
-#include "test_macros.h"
 
 using cuda::std::equality_comparable_with;
 using cuda::std::nullptr_t;
@@ -545,7 +541,7 @@ static_assert(!check_totally_ordered_with<int (S::*)() const volatile&&, int (S:
 static_assert(
   !check_totally_ordered_with<int (S::*)() const volatile && noexcept, int (S::*)() const volatile && noexcept>(), "");
 
-#if !defined(TEST_COMPILER_GCC) && defined(INVESTIGATE_COMPILER_BUG)
+#if !TEST_COMPILER(GCC) && defined(INVESTIGATE_COMPILER_BUG)
 static_assert(!check_totally_ordered_with<nullptr_t, int>(), "");
 
 static_assert(!check_totally_ordered_with<nullptr_t, int*>(), "");
@@ -596,13 +592,13 @@ static_assert(!equality_comparable_with<void, int (S::*)() volatile noexcept>, "
 static_assert(!equality_comparable_with<void, int (S::*)() const volatile>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const volatile noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() &>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() & noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const&>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() const& noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() const & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() volatile&>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() volatile& noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() volatile & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const volatile&>, "");
-static_assert(!equality_comparable_with < void, int (S::*)() const volatile& noexcept >, "");
+static_assert(!equality_comparable_with<void, int (S::*)() const volatile & noexcept>, "");
 static_assert(!equality_comparable_with<void, int (S::*)() &&>, "");
 static_assert(!equality_comparable_with < void, int (S::*)() && noexcept >, "");
 static_assert(!equality_comparable_with<void, int (S::*)() const&&>, "");
@@ -626,25 +622,27 @@ static_assert(!check_totally_ordered_with<cxx20_member_eq, cxx20_member_eq>(), "
 static_assert(!check_totally_ordered_with<cxx20_friend_eq, cxx20_friend_eq>(), "");
 static_assert(!check_totally_ordered_with<cxx20_member_eq, cxx20_friend_eq>(), "");
 
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(check_totally_ordered_with<member_three_way_comparable, member_three_way_comparable>(), "");
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 static_assert(check_totally_ordered_with<friend_three_way_comparable, friend_three_way_comparable>(), "");
 static_assert(!check_totally_ordered_with<member_three_way_comparable, friend_three_way_comparable>(), "");
-#    endif // !__NVCC__
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#    endif // !TEST_CUDA_COMPILER(NVCC)
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 
 static_assert(check_totally_ordered_with<explicit_operators, explicit_operators>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where it considers the conversion with C++17
-                                                        // and below
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where it considers the
+                                                // conversion with C++17
+// and below
 static_assert(!check_totally_ordered_with<equality_comparable_with_ec1, equality_comparable_with_ec1>(), "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(check_totally_ordered_with<different_return_types, different_return_types>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where it considers the conversion with C++17
-                                                        // and below
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where it considers the
+                                                // conversion with C++17
+// and below
 static_assert(!check_totally_ordered_with<explicit_operators, equality_comparable_with_ec1>(), "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(check_totally_ordered_with<explicit_operators, different_return_types>(), "");
 
 #if TEST_STD_VER > 2017
@@ -658,8 +656,8 @@ static_assert(cuda::std::common_reference_with<one_way_ne const&, explicit_opera
                 && !check_totally_ordered_with<one_way_ne, explicit_operators>(),
               "");
 
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
-#    ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(check_totally_ordered_with<totally_ordered_with_others, partial_ordering_totally_ordered_with>(), "");
 static_assert(check_totally_ordered_with<totally_ordered_with_others, weak_ordering_totally_ordered_with>(), "");
 static_assert(check_totally_ordered_with<totally_ordered_with_others, strong_ordering_totally_ordered_with>(), "");
@@ -698,7 +696,7 @@ static_assert(cuda::std::totally_ordered<no_ge_not_totally_ordered_with>
                 && equality_comparable_with<totally_ordered_with_others, no_ge_not_totally_ordered_with>
                 && !check_totally_ordered_with<totally_ordered_with_others, no_ge_not_totally_ordered_with>(),
               "");
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 } // namespace types_fit_for_purpose
 

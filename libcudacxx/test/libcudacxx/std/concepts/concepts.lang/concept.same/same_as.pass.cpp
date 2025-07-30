@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T, class U>
 // concept same_as;
 
@@ -41,9 +39,8 @@ struct S5
   int* p;
 };
 
-#ifdef TEST_COMPILER_CLANG_CUDA
-#  pragma clang diagnostic ignored "-Wunused-private-field"
-#endif // TEST_COMPILER_CLANG_CUDA
+TEST_DIAG_SUPPRESS_CLANG("-Wunused-private-field")
+
 class C1
 {};
 class C2

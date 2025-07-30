@@ -64,7 +64,7 @@ struct EmptyT
 {};
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
@@ -90,9 +90,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   cuda::std::in_range<T>(int()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
 }
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _CCCL_HAS_CHAR8_T()
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
+__host__ __device__ constexpr void test_char8t()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
@@ -115,10 +115,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
   cuda::std::in_range<T>(int()); // expected-error 1 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 1 {{no matching function for call to 'in_range'}}
 }
-#endif // TEST_HAS_NO_CHAR8_T
+#endif // _CCCL_HAS_CHAR8_T()
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_uchars()
+__host__ __device__ constexpr void test_uchars()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
@@ -146,9 +146,7 @@ int main(int, char**)
 {
   test<bool>();
   test<char>();
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test<wchar_t>();
-#endif
   test<float>();
   test<double>();
   test<long double>();
@@ -158,9 +156,9 @@ int main(int, char**)
   test<cuda::std::nullptr_t>();
   test<EmptyT>();
 
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _CCCL_HAS_CHAR8_T()
   test_char8t<char8_t>();
-#endif // TEST_HAS_NO_CHAR8_T
+#endif // _CCCL_HAS_CHAR8_T()
 
   test_uchars<char16_t>();
   test_uchars<char32_t>();

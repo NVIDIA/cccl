@@ -7,10 +7,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03
 
 // Self assignment post-conditions are tested.
-// ADDITIONAL_COMPILE_FLAGS: -Wno-self-move
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-self-move
 
 // <memory>
 

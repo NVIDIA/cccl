@@ -26,10 +26,13 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _ForwardIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+_CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, forward_iterator_tag)
 {
   while (true)
@@ -57,8 +60,9 @@ __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, 
   return _CUDA_VSTD::make_pair(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__p));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_BidirectionalIterator, _BidirectionalIterator>
+_CCCL_API constexpr pair<_BidirectionalIterator, _BidirectionalIterator>
 __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicate __pred, bidirectional_iterator_tag)
 {
   _BidirectionalIterator __original_last = _IterOps<_AlgPolicy>::next(__first, __sentinel);
@@ -90,17 +94,18 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator, class _Sentinel, class _Predicate, class _IterCategory>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+_CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _IterCategory __iter_category)
 {
   return _CUDA_VSTD::__partition_impl<remove_cvref_t<_Predicate>&, _AlgPolicy>(
     _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred, __iter_category);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
+_CCCL_API constexpr _ForwardIterator partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;
   auto __result       = _CUDA_VSTD::__partition<_ClassicAlgPolicy>(
@@ -109,5 +114,7 @@ partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_PARTITION_H

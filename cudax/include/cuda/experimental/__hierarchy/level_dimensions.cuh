@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,14 +14,15 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__detail/config.cuh>
 #include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 
-namespace detail
+namespace __detail
 {
 
 /* Keeping it around in case issues like https://github.com/NVIDIA/cccl/issues/522
@@ -46,7 +47,7 @@ struct dimensions_handler
 {
   static constexpr bool is_type_supported = ::cuda::std::is_integral_v<Dims>;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
   {
     return dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(d));
   }
@@ -57,7 +58,7 @@ struct dimensions_handler<dim3>
 {
   static constexpr bool is_type_supported = true;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const dim3& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const dim3& d) noexcept
   {
     return dimensions<dimensions_index_type,
                       ::cuda::std::dynamic_extent,
@@ -71,12 +72,12 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
 {
   static constexpr bool is_type_supported = true;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
   {
     return dimensions<dimensions_index_type, size_t(d), 1, 1>();
   }
 };
-} // namespace detail
+} // namespace __detail
 
 /**
  * @brief Type representing dimensions of a level in a thread hierarchy.
@@ -118,7 +119,7 @@ struct level_dimensions
   using level_type = Level;
 
   // Needs alignas to work around an issue with tuple
-  alignas(16) const Dimensions dims; // Unit for dimensions is implicit
+  alignas(16) Dimensions dims; // Unit for dimensions is implicit
 
   _CCCL_HOST_DEVICE constexpr level_dimensions(const Dimensions& d)
       : dims(d)
@@ -130,15 +131,15 @@ struct level_dimensions
       : dims(){};
 
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const level_dimensions& left, const level_dimensions& right) noexcept
   {
     return left.dims == right.dims;
   }
 
-  _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const level_dimensions& left, const level_dimensions& right) noexcept
   {
     return left.dims != right.dims;
@@ -165,8 +166,8 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
 template <typename T>
 _CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
 {
-  static_assert(detail::dimensions_handler<T>::is_type_supported);
-  auto dims = detail::dimensions_handler<T>::translate(t);
+  static_assert(__detail::dimensions_handler<T>::is_type_supported);
+  auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<grid_level, decltype(dims)>(dims);
 }
 
@@ -189,8 +190,8 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 template <typename T>
 _CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
 {
-  static_assert(detail::dimensions_handler<T>::is_type_supported);
-  auto dims = detail::dimensions_handler<T>::translate(t);
+  static_assert(__detail::dimensions_handler<T>::is_type_supported);
+  auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<cluster_level, decltype(dims)>(dims);
 }
 
@@ -213,11 +214,14 @@ _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 template <typename T>
 _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
 {
-  static_assert(detail::dimensions_handler<T>::is_type_supported);
-  auto dims = detail::dimensions_handler<T>::translate(t);
+  static_assert(__detail::dimensions_handler<T>::is_type_supported);
+  auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<block_level, decltype(dims)>(dims);
 }
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__HIERARCHY_LEVEL_DIMENSIONS

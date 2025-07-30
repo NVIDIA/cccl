@@ -23,17 +23,17 @@ template <class T>
 __host__ __device__ void test_conversions()
 {
   {
-    T p = 0;
+    // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
+    [[maybe_unused]] T p = 0;
     assert(p == nullptr);
-    (void) p; // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
   }
   {
-    T p = nullptr;
+    // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
+    [[maybe_unused]] T p = nullptr;
     assert(p == nullptr);
     assert(nullptr == p);
     assert(!(p != nullptr));
     assert(!(nullptr != p));
-    (void) p; // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
   }
 }
 
@@ -53,36 +53,30 @@ struct has_less<T, typename Voider<decltype(cuda::std::declval<T>() < nullptr)>:
 template <class T>
 __host__ __device__ void test_comparisons()
 {
-  T p = nullptr;
+  // GCC spuriously claims that p is unused, probably due to optimizations?
+  [[maybe_unused]] T p = nullptr;
   assert(p == nullptr);
   assert(!(p != nullptr));
   assert(nullptr == p);
   assert(!(nullptr != p));
-  (void) p; // GCC spuriously claims that p is unused, probably due to optimizations?
 }
 
-#if defined(__clang__)
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wnull-conversion"
-#endif
+TEST_DIAG_SUPPRESS_CLANG("-Wnull-conversion")
 __host__ __device__ void test_nullptr_conversions()
 {
 // GCC does not accept this due to CWG Defect #1423
 // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#1423
-#if defined(TEST_COMPILER_CLANG) && !defined(TEST_COMPILER_NVCC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if TEST_COMPILER(CLANG) && !TEST_CUDA_COMPILER(NVCC) && !TEST_CUDA_COMPILER(CLANG)
   {
     bool b = nullptr;
     assert(!b);
   }
-#endif
+#endif // TEST_COMPILER(CLANG) && !TEST_CUDA_COMPILER(NVCC) && !TEST_CUDA_COMPILER(CLANG)
   {
     bool b(nullptr);
     assert(!b);
   }
 }
-#if defined(__clang__)
-#  pragma clang diagnostic pop
-#endif
 
 int main(int, char**)
 {

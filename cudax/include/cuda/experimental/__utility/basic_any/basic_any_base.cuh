@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,27 +31,26 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
 template <class _Interface>
-_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface>&&) -> basic_any<_Interface>&&;
+_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface>&&) -> basic_any<_Interface>&&;
 template <class _Interface>
-_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface>&) -> basic_any<_Interface>&;
+_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface>&) -> basic_any<_Interface>&;
 template <class _Interface>
-_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_any<_Interface> const&;
+_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_any<_Interface> const&;
 
 #if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 // Older versions of clang and gcc need help disambiguating between
 // basic_any<__ireference<I>> and basic_any<I&>.
 template <class _Interface>
-_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&&) -> basic_any<_Interface&>&&;
+_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&&) -> basic_any<_Interface&>&&;
 template <class _Interface>
-_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&) -> basic_any<_Interface&>&;
+_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&) -> basic_any<_Interface&>&;
 template <class _Interface>
-_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface&> const&) -> basic_any<_Interface&> const&;
+_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface&> const&) -> basic_any<_Interface&> const&;
 #endif
 
 // clang-format off
@@ -59,11 +58,11 @@ template <class _Tp>
 _CCCL_CONCEPT __is_basic_any =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    __cudax::__is_basic_any_test(__value)
+    experimental::__is_basic_any_test(__value)
   );
 // clang-format on
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Interface, int = 0>
 struct __basic_any_base : __interface_of<_Interface>
 {
@@ -78,7 +77,7 @@ private:
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
   alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
 };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // Without concepts, we need a base class to correctly implement movability
 // and copyability.
 template <class _Interface, int = extension_of<_Interface, imovable<>> + extension_of<_Interface, icopyable<>>>
@@ -89,23 +88,23 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
 {
   __basic_any_base() = default;
 
-  _CUDAX_HOST_API __basic_any_base(__basic_any_base&& __other) noexcept
+  _CCCL_HOST_API __basic_any_base(__basic_any_base&& __other) noexcept
   {
     static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface>&&>(__other));
   }
 
-  _CUDAX_HOST_API __basic_any_base(__basic_any_base const& __other)
+  _CCCL_HOST_API __basic_any_base(__basic_any_base const& __other)
   {
     static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface> const&>(__other));
   }
 
-  _CUDAX_HOST_API auto operator=(__basic_any_base&& __other) noexcept -> __basic_any_base&
+  _CCCL_HOST_API auto operator=(__basic_any_base&& __other) noexcept -> __basic_any_base&
   {
     static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface>&&>(__other));
     return *this;
   }
 
-  _CUDAX_HOST_API auto operator=(__basic_any_base const& __other) -> __basic_any_base&
+  _CCCL_HOST_API auto operator=(__basic_any_base const& __other) -> __basic_any_base&
   {
     static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface> const&>(__other));
     return *this;
@@ -142,10 +141,10 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
   auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = delete;
   auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
 };
-#endif // ^^^ _CCCL_NO_CONCEPTS ^^^
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H

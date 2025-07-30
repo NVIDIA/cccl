@@ -10,15 +10,13 @@
 // Make sure cuda::std::array is an aggregate type.
 // We can only check this in C++17 and above, because we don't have the
 // trait before that.
-// UNSUPPORTED: c++03, c++11
+
 // UNSUPPORTED: gcc-6
 
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
-
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <typename T>
 __host__ __device__ void check_aggregate()
@@ -51,7 +49,9 @@ int main(int, char**)
   check_aggregate<long>();
   check_aggregate<float>();
   check_aggregate<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   check_aggregate<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
   check_aggregate<Empty>();
   check_aggregate<Trivial>();
   check_aggregate<NonTrivial>();

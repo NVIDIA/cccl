@@ -28,7 +28,7 @@ using concatenate_t = typename concatenate<Types...>::type;
 
 // for_each takes a type_list calls f with each element as the first template argument
 template <class... Types, class Functor>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>, Functor f);
+__host__ __device__ constexpr void for_each(type_list<Types...>, Functor f);
 
 // impl
 template <class... Types>
@@ -50,11 +50,11 @@ struct concatenate<type_list<Types1...>, type_list<Types2...>, Rest...>
 };
 
 template <class... Types>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void swallow(Types...)
+__host__ __device__ constexpr void swallow(Types...)
 {}
 
 template <class... Types, class Functor>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>, Functor f)
+__host__ __device__ constexpr void for_each(type_list<Types...>, Functor f)
 {
   swallow((f.template operator()<Types>(), 0)...);
 }
@@ -65,7 +65,6 @@ struct type_identity
   using type = T;
 };
 
-#if TEST_STD_VER >= 2017
 template <class Func>
 struct apply_type_identity
 {
@@ -85,7 +84,6 @@ struct apply_type_identity
 template <class T>
 apply_type_identity(T) -> apply_type_identity<T>;
 
-#endif
 template <template <class...> class T, class... Args>
 struct partial_instantiation
 {
@@ -96,15 +94,12 @@ struct partial_instantiation
 // type categories defined in [basic.fundamental] plus extensions (without CV-qualifiers)
 
 using character_types =
-  type_list<char
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
-            ,
+  type_list<char,
             wchar_t
-#endif
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _CCCL_HAS_CHAR8_T()
             ,
             char8_t
-#endif
+#endif // !_CCCL_HAS_CHAR8_T()
             ,
             char16_t,
             char32_t>;
@@ -115,10 +110,10 @@ using signed_integer_types =
             int,
             long,
             long long
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
             ,
             __int128_t
-#endif
+#endif // _CCCL_HAS_INT128()
             >;
 
 using unsigned_integer_types =
@@ -127,10 +122,10 @@ using unsigned_integer_types =
             unsigned int,
             unsigned long,
             unsigned long long
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
             ,
             __uint128_t
-#endif
+#endif // _CCCL_HAS_INT128()
             >;
 
 using integer_types = concatenate_t<character_types, signed_integer_types, unsigned_integer_types>;

@@ -20,11 +20,12 @@
 #include <string_view>
 #include <utility>
 
+#include <errno.h>
+#include <unistd.h>
+
 #include "test_allocator.h"
 #include "test_macros.h"
-#include <errno.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 #ifndef _LIBCUDACXX_VERSION
 #  error "This header may only be used for libc++ tests"
@@ -214,7 +215,7 @@ struct DeathTest
 
 private:
   template <class Func>
-  TEST_NORETURN void RunForChild(Func&& f)
+  [[noreturn]] void RunForChild(Func&& f)
   {
     close(GetStdOutReadFD()); // don't need to read from the pipe in the child.
     close(GetStdErrReadFD());
@@ -320,11 +321,10 @@ void std::__cccl_verbose_abort(char const* format, ...)
   // how we format assertions in the library.
   va_list list;
   va_start(list, format);
-  char const* file       = va_arg(list, char const*);
-  int line               = va_arg(list, int);
-  char const* expression = va_arg(list, char const*);
-  (void) expression;
-  char const* message = va_arg(list, char const*);
+  char const* file                        = va_arg(list, char const*);
+  int line                                = va_arg(list, int);
+  [[maybe_unused]] char const* expression = va_arg(list, char const*);
+  char const* message                     = va_arg(list, char const*);
   va_end(list);
 
   if (GlobalMatcher().Matches(file, line, message))

@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // cuda::std::ranges::ssize
@@ -79,25 +78,25 @@ __host__ __device__ constexpr bool test()
   int a[4] = {};
 
   assert(cuda::std::ranges::ssize(a) == 4);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::ssize(a)), SignedSizeT);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::ssize(a)), SignedSizeT>);
 
   assert(cuda::std::ranges::ssize(SizeMember()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::ssize(SizeMember())), SignedSizeT);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::ssize(SizeMember())), SignedSizeT>);
 
   assert(cuda::std::ranges::ssize(SizeFunction()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::ssize(SizeFunction())), SignedSizeT);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::ssize(SizeFunction())), SignedSizeT>);
 
   assert(cuda::std::ranges::ssize(SizeFunctionSigned()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::ssize(SizeFunctionSigned())), cuda::std::ptrdiff_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::ssize(SizeFunctionSigned())), cuda::std::ptrdiff_t>);
 
   SizedSentinelRange b{};
   assert(cuda::std::ranges::ssize(b) == 2);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::ssize(b)), cuda::std::ptrdiff_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::ssize(b)), cuda::std::ptrdiff_t>);
 
   // This gets converted to ptrdiff_t because it's wider.
   ShortUnsignedReturnType c{};
   assert(cuda::std::ranges::ssize(c) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::ssize(c)), ptrdiff_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::ssize(c)), ptrdiff_t>);
 
   return true;
 }

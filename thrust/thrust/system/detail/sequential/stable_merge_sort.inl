@@ -32,6 +32,7 @@
 #include <thrust/system/detail/sequential/insertion_sort.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/iterator>
 
 #include <nv/target>
 
@@ -53,7 +54,7 @@ _CCCL_HOST_DEVICE void inplace_merge(
   RandomAccessIterator last,
   StrictWeakOrdering comp)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
 
   thrust::detail::temporary_array<value_type, DerivedPolicy> a(exec, first, middle);
   thrust::detail::temporary_array<value_type, DerivedPolicy> b(exec, middle, last);
@@ -73,8 +74,8 @@ _CCCL_HOST_DEVICE void inplace_merge_by_key(
   RandomAccessIterator2 first2,
   StrictWeakOrdering comp)
 {
-  using value_type1 = typename thrust::iterator_value<RandomAccessIterator1>::type;
-  using value_type2 = typename thrust::iterator_value<RandomAccessIterator2>::type;
+  using value_type1 = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using value_type2 = thrust::detail::it_value_t<RandomAccessIterator2>;
 
   RandomAccessIterator2 middle2 = first2 + (middle1 - first1);
   RandomAccessIterator2 last2   = first2 + (last1 - first1);
@@ -96,7 +97,7 @@ insertion_sort_each(RandomAccessIterator first, RandomAccessIterator last, Size 
   {
     for (; first < last; first += partition_size)
     {
-      RandomAccessIterator partition_last = (::cuda::std::min)(last, first + partition_size);
+      RandomAccessIterator partition_last = (::cuda::std::min) (last, first + partition_size);
 
       thrust::system::detail::sequential::insertion_sort(first, partition_last, comp);
     } // end for
@@ -115,7 +116,7 @@ _CCCL_HOST_DEVICE void insertion_sort_each_by_key(
   {
     for (; keys_first < keys_last; keys_first += partition_size, values_first += partition_size)
     {
-      RandomAccessIterator1 keys_partition_last = (::cuda::std::min)(keys_last, keys_first + partition_size);
+      RandomAccessIterator1 keys_partition_last = (::cuda::std::min) (keys_last, keys_first + partition_size);
 
       thrust::system::detail::sequential::insertion_sort_by_key(keys_first, keys_partition_last, values_first, comp);
     } // end for
@@ -137,8 +138,8 @@ _CCCL_HOST_DEVICE void merge_adjacent_partitions(
 {
   for (; first < last; first += 2 * partition_size, result += 2 * partition_size)
   {
-    RandomAccessIterator1 interval_middle = (::cuda::std::min)(last, first + partition_size);
-    RandomAccessIterator1 interval_last   = (::cuda::std::min)(last, interval_middle + partition_size);
+    RandomAccessIterator1 interval_middle = (::cuda::std::min) (last, first + partition_size);
+    RandomAccessIterator1 interval_last   = (::cuda::std::min) (last, interval_middle + partition_size);
 
     thrust::merge(exec, first, interval_middle, interval_middle, interval_last, result, comp);
   } // end for
@@ -166,8 +167,8 @@ _CCCL_HOST_DEVICE void merge_adjacent_partitions_by_key(
   for (; keys_first < keys_last;
        keys_first += stride, values_first += stride, keys_result += stride, values_result += stride)
   {
-    RandomAccessIterator1 keys_interval_middle = (::cuda::std::min)(keys_last, keys_first + partition_size);
-    RandomAccessIterator1 keys_interval_last   = (::cuda::std::min)(keys_last, keys_interval_middle + partition_size);
+    RandomAccessIterator1 keys_interval_middle = (::cuda::std::min) (keys_last, keys_first + partition_size);
+    RandomAccessIterator1 keys_interval_last   = (::cuda::std::min) (keys_last, keys_interval_middle + partition_size);
 
     RandomAccessIterator2 values_first2 = values_first + (keys_interval_middle - keys_first);
 
@@ -192,8 +193,8 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort(
   RandomAccessIterator last,
   StrictWeakOrdering comp)
 {
-  using value_type      = typename thrust::iterator_value<RandomAccessIterator>::type;
-  using difference_type = typename thrust::iterator_difference<RandomAccessIterator>::type;
+  using value_type      = thrust::detail::it_value_t<RandomAccessIterator>;
+  using difference_type = thrust::detail::it_difference_t<RandomAccessIterator>;
 
   difference_type n = last - first;
 
@@ -236,9 +237,9 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort_by_key(
   RandomAccessIterator2 values_first,
   StrictWeakOrdering comp)
 {
-  using value_type1     = typename thrust::iterator_value<RandomAccessIterator1>::type;
-  using value_type2     = typename thrust::iterator_value<RandomAccessIterator2>::type;
-  using difference_type = typename thrust::iterator_difference<RandomAccessIterator1>::type;
+  using value_type1     = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using value_type2     = thrust::detail::it_value_t<RandomAccessIterator2>;
+  using difference_type = thrust::detail::it_difference_t<RandomAccessIterator1>;
 
   difference_type n = keys_last - keys_first;
 

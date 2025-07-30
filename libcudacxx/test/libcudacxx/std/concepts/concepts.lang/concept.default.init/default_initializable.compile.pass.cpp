@@ -7,11 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // We voluntarily use cuda::std::default_initializable on types that have redundant
 // or ignored cv-qualifiers -- don't warn about it.
-// ADDITIONAL_COMPILE_FLAGS: -Wno-ignored-qualifiers
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-ignored-qualifiers
 
 // template<class T>
 //     concept default_initializable = constructible_from<T> &&
@@ -124,10 +122,10 @@ __host__ __device__ void test_not_const()
 {
   static_assert(cuda::std::default_initializable<T>, "");
   static_assert(cuda::std::default_initializable<volatile T>, "");
-#if !defined(TEST_COMPILER_MSVC) // nvbug3953465
+#if !TEST_COMPILER(MSVC) // nvbug3953465
   static_assert(!cuda::std::default_initializable<const T>, "");
   static_assert(!cuda::std::default_initializable<const volatile T>, "");
-#endif
+#endif // !TEST_COMPILER(MSVC)
 }
 
 template <class T>
@@ -173,9 +171,9 @@ __host__ __device__ void test()
 
   test_true<Noexcept>();
   test_true<NoexceptTrue>();
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   test_false<NoexceptFalse>();
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 
   test_false<CtorProtected>();
   test_false<CtorPrivate>();
@@ -183,9 +181,9 @@ __host__ __device__ void test()
   test_false<DtorPrivate>();
 
   test_true<NoexceptDependant<int>>();
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   test_false<NoexceptDependant<double>>();
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
 
   test_true<CtorExplicit>();
   test_false<CtorArgument>();
@@ -198,18 +196,18 @@ __host__ __device__ void test()
 
   test_true<OperatorNewDeleted>();
 
-#if !defined(__GNUC__) || (__GNUC__ > 11) // type qualifiers ignored on cast result type [-Werror=ignored-qualifiers]
+#if !TEST_COMPILER(GCC, <, 12) // type qualifiers ignored on cast result type [-Werror=ignored-qualifiers]
   test_not_const<void (*)(const int&)>();
   test_not_const<void (Empty::*)(const int&)>();
   test_not_const<void (Empty::*)(const int&) const>();
   test_not_const<void (Empty::*)(const int&) volatile>();
   test_not_const<void (Empty::*)(const int&) const volatile>();
-  test_not_const<void (Empty::*)(const int&)&>();
+  test_not_const<void (Empty::*)(const int&) &>();
   test_not_const<void (Empty::*)(const int&) &&>();
   test_not_const<void (Empty::*)(const int&) noexcept>();
   test_not_const<void (Empty::*)(const int&) noexcept(true)>();
   test_not_const<void (Empty::*)(const int&) noexcept(false)>();
-#endif
+#endif // !TEST_COMPILER(GCC, <, 12)
 
   // Sequence containers
   test_not_const<cuda::std::array<int, 0>>();

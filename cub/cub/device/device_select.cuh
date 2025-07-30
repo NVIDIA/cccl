@@ -43,22 +43,16 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
 #include <cuda/std/type_traits>
-
-#include <iterator>
-
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! DeviceSelect provides device-wide, parallel operations for compacting
-//! selected items from sequences of data items residing within
-//! device-accessible memory.
+//! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
+//! residing within device-accessible memory. It is similar to DevicePartition, except that non-selected items are
+//! discarded, whereas DevicePartition retains them.
 //!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -176,7 +170,7 @@ struct DeviceSelect
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
@@ -190,8 +184,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     d_flags,
@@ -292,31 +285,31 @@ struct DeviceSelect
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ true>::Dispatch(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_data, // in
-                                   d_flags,
-                                   d_data, // out
-                                   d_num_selected_out,
-                                   SelectOp(),
-                                   EqualityOp(),
-                                   num_items,
-                                   stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        d_flags,
+        d_data, // out
+        d_num_selected_out,
+        SelectOp(),
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -431,7 +424,7 @@ struct DeviceSelect
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
     using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
@@ -445,8 +438,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     nullptr,
@@ -559,33 +551,31 @@ struct DeviceSelect
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
     using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
 
-    constexpr bool may_alias = true;
-
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ may_alias>::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_data, // in
-                                        nullptr,
-                                        d_data, // out
-                                        d_num_selected_out,
-                                        select_op,
-                                        EqualityOp(),
-                                        num_items,
-                                        stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        nullptr,
+        d_data, // out
+        d_num_selected_out,
+        select_op,
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -681,7 +671,7 @@ struct DeviceSelect
     SelectOp select_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
@@ -694,8 +684,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     d_flags,
@@ -787,30 +776,30 @@ struct DeviceSelect
     SelectOp select_op,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ true>::Dispatch(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_data, // in
-                                   d_flags,
-                                   d_data, // out
-                                   d_num_selected_out,
-                                   select_op,
-                                   EqualityOp(),
-                                   num_items,
-                                   stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        d_flags,
+        d_data, // out
+        d_num_selected_out,
+        select_op,
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -904,7 +893,7 @@ struct DeviceSelect
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
     using OffsetT      = ::cuda::std::int64_t;
     using FlagIterator = NullType*; // FlagT iterator type (not used)
@@ -919,8 +908,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     nullptr,
@@ -1055,9 +1043,9 @@ struct DeviceSelect
             typename NumItemsT,
             typename EqualityOpT>
   CUB_RUNTIME_FUNCTION __forceinline__ static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<EqualityOpT, cudaStream_t>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<EqualityOpT, cudaStream_t>, //
+      cudaError_t>
     UniqueByKey(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1070,7 +1058,7 @@ struct DeviceSelect
       EqualityOpT equality_op,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 

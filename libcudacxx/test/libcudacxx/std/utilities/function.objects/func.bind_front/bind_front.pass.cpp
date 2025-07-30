@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-// UNSUPPORTED: gcc-6
-// UNSUPPORTED: nvcc-11.1
-
 // functional
 
 // template <class F, class... Args>
@@ -206,9 +202,9 @@ __host__ __device__ constexpr bool test()
 
   // Make sure we don't treat cuda::std::reference_wrapper specially.
 #if TEST_STD_VER > 2017
-#  if defined(TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
+#  if TEST_COMPILER(NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
   if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_COMPILER_NVRTC
+#  endif // TEST_COMPILER(NVRTC)
   {
     auto add = [](cuda::std::reference_wrapper<int> a, cuda::std::reference_wrapper<int> b) {
       return a.get() + b.get();
@@ -297,7 +293,7 @@ __host__ __device__ constexpr bool test()
   }
 
 // GCC fails with template argument deduction issues here...
-#ifndef TEST_COMPILER_GCC
+#if !TEST_COMPILER(GCC)
   // Make sure the bind_front unspecified-type is NOT invocable when the call would select a
   // differently-qualified operator().
   //
@@ -321,9 +317,7 @@ __host__ __device__ constexpr bool test()
       using X = decltype(cuda::std::bind_front(F{}));
       static_assert(cuda::std::is_invocable_v<X&>);
       static_assert(cuda::std::is_invocable_v<X const&>);
-#  ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
       static_assert(!cuda::std::is_invocable_v<X>);
-#  endif // !TEST_COMPILER_MSVC_2017
       static_assert(cuda::std::is_invocable_v<X const>);
     }
 
@@ -340,15 +334,12 @@ __host__ __device__ constexpr bool test()
       static_assert(cuda::std::is_invocable_v<X&>);
       static_assert(cuda::std::is_invocable_v<X const&>);
       static_assert(cuda::std::is_invocable_v<X>);
-#  ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
       static_assert(!cuda::std::is_invocable_v<X const>);
-#  endif // !TEST_COMPILER_MSVC_2017
     }
   }
 #endif
 
   // Some examples by Tim Song
-#ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
   {
     {
       struct T
@@ -374,7 +365,6 @@ __host__ __device__ constexpr bool test()
       static_assert(!cuda::std::is_invocable_v<X>);
     }
   }
-#endif // !TEST_COMPILER_MSVC_2017
 
   // Test properties of the constructor of the unspecified-type returned by bind_front.
   {
@@ -462,7 +452,6 @@ __host__ __device__ constexpr bool test()
     takeAnything();
   }
 
-#if !defined(TEST_COMPILER_MSVC_2017)
   // Make sure bind_front's unspecified type's operator() is SFINAE-friendly
   {
     using T = decltype(cuda::std::bind_front(cuda::std::declval<int (*)(int, int)>(), 1));
@@ -471,7 +460,6 @@ __host__ __device__ constexpr bool test()
     static_assert(!cuda::std::is_invocable<T, void*>::value);
     static_assert(!cuda::std::is_invocable<T, int, int>::value);
   }
-#endif // !TEST_COMPILER_MSVC_2017
 
   return true;
 }

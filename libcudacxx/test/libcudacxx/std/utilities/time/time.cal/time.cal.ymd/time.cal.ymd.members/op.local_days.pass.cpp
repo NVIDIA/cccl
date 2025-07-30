@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_day;
@@ -35,12 +34,8 @@
 
 #include "test_macros.h"
 
-// MSVC warns about unsigned/signed comparisons and addition/subtraction
-// Silence these warnings, but not the ones within the header itself.
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4307)
-#  pragma warning(disable : 4308)
-#endif
+TEST_DIAG_SUPPRESS_MSVC(4307) // potential overflow
+TEST_DIAG_SUPPRESS_MSVC(4308) // unsigned/signed comparisons
 
 __host__ __device__ void RunTheExample()
 {
@@ -60,7 +55,7 @@ int main(int, char**)
   using days           = cuda::std::chrono::days;
   using year_month_day = cuda::std::chrono::year_month_day;
 
-  ASSERT_NOEXCEPT(local_days(cuda::std::declval<year_month_day>()));
+  static_assert(noexcept(local_days(cuda::std::declval<year_month_day>())));
   RunTheExample();
 
   {

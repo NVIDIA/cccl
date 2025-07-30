@@ -28,7 +28,7 @@
 
 #include <thrust/detail/type_traits.h>
 
-#include <utility> // for std::declval
+#include <cuda/std/utility> // for std::declval
 
 #define __THRUST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                       \
   template <typename T, typename Signature, typename = void>                                                        \

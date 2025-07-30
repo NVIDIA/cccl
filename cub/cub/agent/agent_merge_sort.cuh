@@ -43,7 +43,11 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/util.h>
+#include <thrust/system/cuda/detail/core/load_iterator.h>
+
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -63,7 +67,11 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-/// \brief This agent is responsible for the initial in-tile sorting.
+namespace detail
+{
+namespace merge_sort
+{
+
 template <typename Policy,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -79,12 +87,14 @@ struct AgentBlockSort
   // Types and constants
   //---------------------------------------------------------------------
 
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
+  using ItemsLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -156,7 +166,7 @@ struct AgentBlockSort
     auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
     auto num_tiles    = static_cast<OffsetT>(gridDim.x);
     auto tile_base    = tile_idx * ITEMS_PER_TILE;
-    int items_in_tile = (cub::min)(keys_count - tile_base, int{ITEMS_PER_TILE});
+    int items_in_tile = (::cuda::std::min) (static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
 
     if (tile_idx < num_tiles - 1)
     {
@@ -175,9 +185,9 @@ struct AgentBlockSort
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
-    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+    if constexpr (!KEYS_ONLY)
     {
-      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE)
       {
         BlockLoadItems(storage.load_items)
           .Load(items_in + tile_base, items_local, num_remaining, *(items_in + tile_base));
@@ -191,7 +201,7 @@ struct AgentBlockSort
     }
 
     KeyT keys_local[ITEMS_PER_THREAD];
-    _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockLoadKeys(storage.load_keys).Load(keys_in + tile_base, keys_local, num_remaining, *(keys_in + tile_base));
     }
@@ -203,7 +213,7 @@ struct AgentBlockSort
     __syncthreads();
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
-    _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
     }
@@ -216,7 +226,7 @@ struct AgentBlockSort
 
     if (ping)
     {
-      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE)
       {
         BlockStoreKeysIt(storage.store_keys_it).Store(keys_out_it + tile_base, keys_local, num_remaining);
       }
@@ -225,11 +235,11 @@ struct AgentBlockSort
         BlockStoreKeysIt(storage.store_keys_it).Store(keys_out_it + tile_base, keys_local);
       }
 
-      _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         __syncthreads();
 
-        _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+        if constexpr (IS_LAST_TILE)
         {
           BlockStoreItemsIt(storage.store_items_it).Store(items_out_it + tile_base, items_local, num_remaining);
         }
@@ -241,7 +251,7 @@ struct AgentBlockSort
     }
     else
     {
-      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE)
       {
         BlockStoreKeysRaw(storage.store_keys_raw).Store(keys_out_raw + tile_base, keys_local, num_remaining);
       }
@@ -250,11 +260,11 @@ struct AgentBlockSort
         BlockStoreKeysRaw(storage.store_keys_raw).Store(keys_out_raw + tile_base, keys_local);
       }
 
-      _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         __syncthreads();
 
-        _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+        if constexpr (IS_LAST_TILE)
         {
           BlockStoreItemsRaw(storage.store_items_raw).Store(items_out_raw + tile_base, items_local, num_remaining);
         }
@@ -335,10 +345,10 @@ struct AgentPartition
     // partition_idx / target_merged_tiles_number
     const OffsetT local_tile_idx = mask & partition_idx;
 
-    const OffsetT keys1_beg = (cub::min)(keys_count, start);
-    const OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys1_beg = (::cuda::std::min) (keys_count, start);
+    const OffsetT keys1_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
-    const OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys2_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -349,7 +359,7 @@ struct AgentPartition
     }
     else
     {
-      const OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
+      const OffsetT partition_at = (::cuda::std::min) (keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
       OffsetT partition_diag =
         ping
@@ -371,8 +381,6 @@ struct AgentPartition
   }
 };
 
-namespace detail
-{
 /**
  * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
  *
@@ -383,9 +391,9 @@ template <int BLOCK_THREADS, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, c
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
 {
-  _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+  if constexpr (IS_FULL_TILE)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
       const int idx = BLOCK_THREADS * item + threadIdx.x;
@@ -395,7 +403,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
   }
   else
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
       const int idx = BLOCK_THREADS * item + threadIdx.x;
@@ -411,14 +419,13 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
 template <int BLOCK_THREADS, int ITEMS_PER_THREAD, class T, class It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
     const int idx = BLOCK_THREADS * item + threadIdx.x;
     output[idx]   = input[item];
   }
 }
-} // namespace detail
 
 /// \brief The agent is responsible for merging N consecutive sorted arrays into N/2 sorted arrays.
 template <typename Policy,
@@ -433,10 +440,11 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
+  using ItemsLoadPingIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
+  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
+  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
@@ -465,7 +473,7 @@ struct AgentMerge
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  static constexpr bool KEYS_ONLY       = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
@@ -526,15 +534,16 @@ struct AgentMerge
     // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
     // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
     // and keys1_end is key1's component of that path
-    const OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
+    const OffsetT keys2_beg = (::cuda::std::min) (max_keys2, diag - keys1_beg);
     OffsetT keys2_end =
-      (cub::min)(max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+      (::cuda::std::min) (max_keys2,
+                          detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
     {
-      keys1_end = (cub::min)(keys_count - start, size);
-      keys2_end = (cub::min)(max_keys2, size);
+      keys1_end = (::cuda::std::min) (keys_count - start, size);
+      keys2_end = (::cuda::std::min) (max_keys2, size);
     }
 
     // number of keys per tile
@@ -547,25 +556,24 @@ struct AgentMerge
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    detail::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
+    reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
-    ValueT items_local[ITEMS_PER_THREAD];
-    (void) items_local; // TODO(bgruber): replace by [[maybe_unused]] in C++17
-    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+    [[maybe_unused]] ValueT items_local[ITEMS_PER_THREAD];
+    if constexpr (!KEYS_ONLY)
     {
       if (ping)
       {
-        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -574,7 +582,7 @@ struct AgentMerge
       }
       else
       {
-        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -591,7 +599,7 @@ struct AgentMerge
     // we can use int type here, because the number of
     // items in shared memory is limited
     //
-    const int diag0_local = (cub::min)(num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
+    const int diag0_local = (::cuda::std::min) (num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
 
     const int keys1_beg_local = MergePath(
       &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_local, compare_op);
@@ -621,7 +629,7 @@ struct AgentMerge
     // write keys
     if (ping)
     {
-      _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+      if constexpr (IS_FULL_TILE)
       {
         BlockStoreKeysPing(storage.store_keys_ping).Store(keys_out_ping + tile_base, keys_local);
       }
@@ -632,7 +640,7 @@ struct AgentMerge
     }
     else
     {
-      _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+      if constexpr (IS_FULL_TILE)
       {
         BlockStoreKeysPong(storage.store_keys_pong).Store(keys_out_pong + tile_base, keys_local);
       }
@@ -643,22 +651,17 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
-#if _CCCL_CUDACC_BELOW(11, 8)
-    if (!KEYS_ONLY) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
-                    // nvcc versions between may work
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 8)
-    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
-#endif // _CCCL_CUDACC_AT_LEAST(11, 8)
+    if constexpr (!KEYS_ONLY)
     {
       __syncthreads();
 
-      detail::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
+      reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
       __syncthreads();
 
       // gather items from shared mem
       //
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ITEMS_PER_THREAD; ++item)
       {
         items_local[item] = storage.items_shared[indices[item]];
@@ -670,7 +673,7 @@ struct AgentMerge
       //
       if (ping)
       {
-        _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+        if constexpr (IS_FULL_TILE)
         {
           BlockStoreItemsPing(storage.store_items_ping).Store(items_out_ping + tile_base, items_local);
         }
@@ -681,7 +684,7 @@ struct AgentMerge
       }
       else
       {
-        _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+        if constexpr (IS_FULL_TILE)
         {
           BlockStoreItemsPong(storage.store_items_pong).Store(items_out_pong + tile_base, items_local);
         }
@@ -731,7 +734,7 @@ struct AgentMerge
     const OffsetT tile_base = OffsetT(tile_idx) * ITEMS_PER_TILE;
     const int tid           = static_cast<int>(threadIdx.x);
     const int items_in_tile =
-      static_cast<int>((cub::min)(static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
+      static_cast<int>((::cuda::std::min) (static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
 
     if (tile_idx < num_tiles - 1)
     {
@@ -743,5 +746,8 @@ struct AgentMerge
     }
   }
 };
+
+} // namespace merge_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

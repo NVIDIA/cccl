@@ -54,7 +54,6 @@ int main(int, char**)
   A a;
   test(&a + 1, A());
 
-#if TEST_STD_VER > 2011
   {
     constexpr const char* p = "123456789";
     typedef cuda::std::reverse_iterator<const char*> RI;
@@ -63,7 +62,6 @@ int main(int, char**)
     static_assert(*it1 == p[0], "");
     static_assert(*it2 == p[1], "");
   }
-#endif
 
   return 0;
 }

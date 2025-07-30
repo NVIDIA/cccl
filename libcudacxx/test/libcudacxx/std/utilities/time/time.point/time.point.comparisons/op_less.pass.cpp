@@ -72,7 +72,6 @@ int main(int, char**)
     assert(!(t1 >= t2));
   }
 
-#if TEST_STD_VER > 2011
   {
     constexpr T1 t1(Duration1(3));
     constexpr T1 t2(Duration1(3));
@@ -105,7 +104,6 @@ int main(int, char**)
     static_assert((t1 <= t2), "");
     static_assert(!(t1 >= t2), "");
   }
-#endif
 
   return 0;
 }

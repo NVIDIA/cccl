@@ -115,7 +115,7 @@ using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t
  *    thrust::for_each(exec, data, data + 4, ignore_argument());
  *
  *    // can't dispatch thrust::transform because no overload exists for my_policy:
- *    //thrust::transform(exec, data, data, + 4, data, thrust::identity<int>()); // error!
+ *    //thrust::transform(exec, data, data, + 4, data, ::cuda::std::identity{}); // error!
  *
  *    return 0;
  *  }
@@ -175,7 +175,7 @@ struct execution_policy : thrust::detail::execution_policy_base<DerivedPolicy>
  *    thrust::for_each(exec, data, data + 4, ignore_argument());
  *
  *    // dispatch thrust::transform whose behavior our policy inherits
- *    thrust::transform(exec, data, data, + 4, data, thrust::identity<int>());
+ *    thrust::transform(exec, data, data, + 4, data, ::cuda::std::identity{});
  *
  *    return 0;
  *  }
@@ -234,7 +234,7 @@ struct host_execution_policy : thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::e
  *    thrust::for_each(exec, data, data + 4, ignore_argument());
  *
  *    // dispatch thrust::transform whose behavior our policy inherits
- *    thrust::transform(exec, data, data, + 4, data, thrust::identity<int>());
+ *    thrust::transform(exec, data, data, + 4, data, ::cuda::std::identity{});
  *
  *    return 0;
  *  }

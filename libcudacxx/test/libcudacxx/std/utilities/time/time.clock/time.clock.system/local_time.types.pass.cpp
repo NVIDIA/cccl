@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // <cuda/std/chrono>
 
@@ -41,24 +41,24 @@ int main(int, char**)
 
   constexpr cuda::std::chrono::month January = cuda::std::chrono::January;
 
-  ASSERT_SAME_TYPE(cuda::std::chrono::local_time<seconds>, local_seconds);
-  ASSERT_SAME_TYPE(cuda::std::chrono::local_time<days>, local_days);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::local_time<seconds>, local_seconds>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::local_time<days>, local_days>);
 
   //  Test the long form, too
-  ASSERT_SAME_TYPE(cuda::std::chrono::time_point<local_t, seconds>, local_seconds);
-  ASSERT_SAME_TYPE(cuda::std::chrono::time_point<local_t, minutes>, local_minutes);
-  ASSERT_SAME_TYPE(cuda::std::chrono::time_point<local_t, days>, local_days);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::time_point<local_t, seconds>, local_seconds>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::time_point<local_t, minutes>, local_minutes>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::time_point<local_t, days>, local_days>);
 
   //  Test some well known values
   local_days d0 = local_days{year{1970} / January / 1};
   local_days d1 = local_days{year{2000} / January / 1};
-  ASSERT_SAME_TYPE(decltype(d0.time_since_epoch()), days);
+  static_assert(cuda::std::is_same_v<decltype(d0.time_since_epoch()), days>);
   assert(d0.time_since_epoch().count() == 0);
   assert(d1.time_since_epoch().count() == 10957);
 
   local_seconds s0{d0};
   local_seconds s1{d1};
-  ASSERT_SAME_TYPE(decltype(s0.time_since_epoch()), seconds);
+  static_assert(cuda::std::is_same_v<decltype(s0.time_since_epoch()), seconds>);
   assert(s0.time_since_epoch().count() == 0);
   assert(s1.time_since_epoch().count() == 946684800L);
 #endif // __cuda_std__

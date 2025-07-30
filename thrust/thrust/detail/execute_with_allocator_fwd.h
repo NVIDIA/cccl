@@ -26,14 +26,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/execute_with_dependencies.h>
 #include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename Allocator, template <typename> class BaseSystem>
 struct execute_with_allocator : BaseSystem<execute_with_allocator<Allocator, BaseSystem>>
 {
@@ -53,52 +51,11 @@ public:
       : alloc(alloc_)
   {}
 
-  ::cuda::std::remove_reference_t<Allocator>& get_allocator()
+  _CCCL_HOST_DEVICE ::cuda::std::remove_reference_t<Allocator>& get_allocator()
   {
     return alloc;
   }
-
-  template <typename... Dependencies>
-  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  after(Dependencies&&... dependencies) const
-  {
-    return {alloc, capture_as_dependency(THRUST_FWD(dependencies))...};
-  }
-
-  template <typename... Dependencies>
-  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  after(std::tuple<Dependencies...>& dependencies) const
-  {
-    return {alloc, capture_as_dependency(dependencies)};
-  }
-  template <typename... Dependencies>
-  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  after(std::tuple<Dependencies...>&& dependencies) const
-  {
-    return {alloc, capture_as_dependency(std::move(dependencies))};
-  }
-
-  template <typename... Dependencies>
-  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  rebind_after(Dependencies&&... dependencies) const
-  {
-    return {alloc, capture_as_dependency(THRUST_FWD(dependencies))...};
-  }
-
-  template <typename... Dependencies>
-  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  rebind_after(std::tuple<Dependencies...>& dependencies) const
-  {
-    return {alloc, capture_as_dependency(dependencies)};
-  }
-  template <typename... Dependencies>
-  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  rebind_after(std::tuple<Dependencies...>&& dependencies) const
-  {
-    return {alloc, capture_as_dependency(std::move(dependencies))};
-  }
 };
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

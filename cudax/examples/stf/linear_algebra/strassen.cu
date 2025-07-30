@@ -417,9 +417,9 @@ void strassen_test(context& ctx, size_t N)
   cuda_safe_call(cudaHostRegister(B, N * N * sizeof(double), cudaHostRegisterPortable));
   cuda_safe_call(cudaHostRegister(C, N * N * sizeof(double), cudaHostRegisterPortable));
 
-  for (int col = 0; col < N; col++)
+  for (size_t col = 0; col < N; col++)
   {
-    for (int row = 0; row < N; row++)
+    for (size_t row = 0; row < N; row++)
     {
       A[row + N * col] = 1.0;
       B[row + N * col] = -1.0;

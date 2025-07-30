@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class T, class... Args>
@@ -28,13 +27,12 @@
 
 int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   {
     constexpr auto opt = cuda::std::make_optional<int>('a');
     static_assert(*opt == int('a'), "");
     assert(*opt == int('a'));
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
 #ifdef _LIBCUDACXX_HAS_STRING
   {
     cuda::std::string s = "123";

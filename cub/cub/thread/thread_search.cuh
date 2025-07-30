@@ -46,7 +46,7 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <iterator>
+#include <cuda/std/__algorithm_>
 
 #include <nv/target>
 
@@ -54,16 +54,18 @@ CUB_NAMESPACE_BEGIN
 
 /**
  * Computes the begin offsets into A and B for the specific diagonal
+ *
+ * Deprecated [Since 3.0]
  */
 template <typename AIteratorT, typename BIteratorT, typename OffsetT, typename CoordinateT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
+CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
   OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
 {
   /// The value type of the input iterator
-  using T = cub::detail::value_t<AIteratorT>;
+  using T = cub::detail::it_value_t<AIteratorT>;
 
-  OffsetT split_min = CUB_MAX(diagonal - b_len, 0);
-  OffsetT split_max = CUB_MIN(diagonal, a_len);
+  OffsetT split_min = _CUDA_VSTD::max(diagonal - b_len, 0);
+  OffsetT split_max = _CUDA_VSTD::min(diagonal, a_len);
 
   while (split_min < split_max)
   {
@@ -80,7 +82,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
     }
   }
 
-  path_coordinate.x = CUB_MIN(split_min, a_len);
+  path_coordinate.x = _CUDA_VSTD::min(split_min, a_len);
   path_coordinate.y = diagonal - split_min;
 }
 
@@ -154,7 +156,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
   return retval;
 }
 
-#if defined(__CUDA_FP16_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP16()
 /**
  * @param[in] input
  *   Input sequence
@@ -191,6 +193,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
   return retval;
 }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
 
 CUB_NAMESPACE_END

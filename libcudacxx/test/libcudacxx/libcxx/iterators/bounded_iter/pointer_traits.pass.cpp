@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   using BoundedIter       = cuda::std::__bounded_iter<Iter>;
   using PointerTraits     = cuda::std::pointer_traits<BoundedIter>;
@@ -44,7 +44,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 #if TEST_STD_VER > 2017
     assert(cuda::std::to_address(iter1) == b); // in-bounds iterator
     assert(cuda::std::to_address(iter2) == e); // out-of-bounds iterator
-#endif
+#endif // TEST_STD_VER > 2017
   }
 
   return true;
@@ -53,14 +53,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests<int*>();
-#if TEST_STD_VER > 2011
   static_assert(tests<int*>(), "");
-#endif
 
 #if TEST_STD_VER > 2017
   tests<contiguous_iterator<int*>>();
   static_assert(tests<contiguous_iterator<int*>>(), "");
-#endif
+#endif // TEST_STD_VER > 2017
 
   return 0;
 }

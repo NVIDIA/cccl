@@ -75,7 +75,6 @@ struct is_operator_greater_function_object_impl;
 template <typename T>
 using is_operator_less_function_object = detail::is_operator_less_function_object_impl<T>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
  *  <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">BinaryPredicate</a>
  *  equivalent to \c operator<, and \c false otherwise.
@@ -87,7 +86,6 @@ using is_operator_less_function_object = detail::is_operator_less_function_objec
  */
 template <typename T>
 constexpr bool is_operator_less_function_object_v = is_operator_less_function_object<T>::value;
-#endif
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/UnaryTypeTrait"><i>UnaryTypeTrait</i></a>
  *  that returns \c true_type if \c T is a
@@ -102,7 +100,6 @@ constexpr bool is_operator_less_function_object_v = is_operator_less_function_ob
 template <typename T>
 using is_operator_greater_function_object = detail::is_operator_greater_function_object_impl<T>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
  *  <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">BinaryPredicate</a>
  *  equivalent to \c operator>, and \c false otherwise.
@@ -114,7 +111,6 @@ using is_operator_greater_function_object = detail::is_operator_greater_function
  */
 template <typename T>
 constexpr bool is_operator_greater_function_object_v = is_operator_greater_function_object<T>::value;
-#endif
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/UnaryTypeTrait"><i>UnaryTypeTrait</i></a>
  *  that returns \c true_type if \c T is a
@@ -132,7 +128,6 @@ using is_operator_less_or_greater_function_object =
                     detail::is_operator_less_function_object_impl<T>::value
                       || detail::is_operator_greater_function_object_impl<T>::value>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
  *  <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">BinaryPredicate</a>
  *  equivalent to \c operator< or \c operator>, and \c false otherwise.
@@ -144,7 +139,6 @@ using is_operator_less_or_greater_function_object =
  */
 template <typename T>
 constexpr bool is_operator_less_or_greater_function_object_v = is_operator_less_or_greater_function_object<T>::value;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -158,7 +152,7 @@ template <typename T>
 struct is_operator_less_function_object_impl : false_type
 {};
 template <typename T>
-struct is_operator_less_function_object_impl<thrust::less<T>> : true_type
+struct is_operator_less_function_object_impl<::cuda::std::less<T>> : true_type
 {};
 template <typename T>
 struct is_operator_less_function_object_impl<std::less<T>> : true_type
@@ -168,7 +162,7 @@ template <typename T>
 struct is_operator_greater_function_object_impl : false_type
 {};
 template <typename T>
-struct is_operator_greater_function_object_impl<thrust::greater<T>> : true_type
+struct is_operator_greater_function_object_impl<::cuda::std::greater<T>> : true_type
 {};
 template <typename T>
 struct is_operator_greater_function_object_impl<std::greater<T>> : true_type

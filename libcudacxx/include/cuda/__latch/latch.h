@@ -24,17 +24,21 @@
 #include <cuda/std/__latch/latch.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <thread_scope _Sco>
 class latch : public _CUDA_VSTD::__latch_base<_Sco>
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
+  _CCCL_API constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
       : _CUDA_VSTD::__latch_base<_Sco>(__count)
   {}
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDA__LATCH_LATCH_H

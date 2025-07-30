@@ -40,13 +40,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -170,27 +169,18 @@ struct DeviceCopy
     InputIt input_it,
     OutputIt output_it,
     SizeIteratorT sizes,
-    uint32_t num_ranges,
+    ::cuda::std::int64_t num_ranges,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
-
-    // Integer type large enough to hold any offset in [0, num_ranges)
-    using RangeOffsetT = uint32_t;
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_ranges, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<
-      InputIt,
-      OutputIt,
-      SizeIteratorT,
-      RangeOffsetT,
-      BlockOffsetT,
-      detail::batch_memcpy::policy_hub<RangeOffsetT, BlockOffsetT>,
-      false>::Dispatch(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+    return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, BlockOffsetT, CopyAlg::Copy>::Dispatch(
+      d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
   }
 };
 

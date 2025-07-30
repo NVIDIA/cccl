@@ -227,7 +227,7 @@ merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputI
  *                                  A1, A1 + 6,
  *                                  A2, A2 + 7,
  *                                  result,
- *                                  thrust::greater<int>());
+ *                                  ::cuda::std::greater<int>());
  *  // result = {13, 11, 9, 8, 7, 5, 5, 3, 3, 2, 1, 1, 1}
  *  \endcode
  *
@@ -293,7 +293,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *
  *  int result[13];
  *
- *  int *result_end = thrust::merge(A1, A1 + 6, A2, A2 + 7, result, thrust::greater<int>());
+ *  int *result_end = thrust::merge(A1, A1 + 6, A2, A2 + 7, result, ::cuda::std::greater<int>());
  *  // result = {13, 11, 9, 8, 7, 5, 5, 3, 3, 2, 1, 1, 1}
  *  \endcode
  *
@@ -591,7 +591,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *                         B_keys, B_keys + 7,
  *                         A_vals, B_vals,
  *                         keys_result, vals_result,
- *                         thrust::greater<int>());
+ *                         ::cuda::std::greater<int>());
  *
  *  // keys_result = {13, 11, 9, 8, 7, 5, 5, 3, 3, 2, 1, 1, 1}
  *  // vals_result = { 1,  0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1}
@@ -689,7 +689,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int vals_result[13];
  *
  *  thrust::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
- * keys_result, vals_result, thrust::greater<int>());
+ * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result = {13, 11, 9, 8, 7, 5, 5, 3, 3, 2, 1, 1, 1}
  *  // vals_result = { 1,  0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1}

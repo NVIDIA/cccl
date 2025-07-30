@@ -46,14 +46,15 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-// CUDA treats long double as double
-//  test<long double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
   test<int>();
   test<unsigned>();
   test<long long>();

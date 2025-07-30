@@ -26,8 +26,6 @@
 //   bool
 //   operator>=(const tuple<TTypes...>& t, const tuple<UTypes...>& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 // cuda::std::string not supported
 // #include <cuda/std/string>
@@ -38,8 +36,8 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<> T1;
-    typedef cuda::std::tuple<> T2;
+    using T1 = cuda::std::tuple<>;
+    using T2 = cuda::std::tuple<>;
     const T1 t1;
     const T2 t2;
     assert(!(t1 < t2));
@@ -48,8 +46,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long> T1;
-    typedef cuda::std::tuple<double> T2;
+    using T1 = cuda::std::tuple<long>;
+    using T2 = cuda::std::tuple<double>;
     const T1 t1(1);
     const T2 t2(1);
     assert(!(t1 < t2));
@@ -58,8 +56,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long> T1;
-    typedef cuda::std::tuple<double> T2;
+    using T1 = cuda::std::tuple<long>;
+    using T2 = cuda::std::tuple<double>;
     const T1 t1(1);
     const T2 t2(0.9);
     assert(!(t1 < t2));
@@ -68,8 +66,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long> T1;
-    typedef cuda::std::tuple<double> T2;
+    using T1 = cuda::std::tuple<long>;
+    using T2 = cuda::std::tuple<double>;
     const T1 t1(1);
     const T2 t2(1.1);
     assert((t1 < t2));
@@ -78,8 +76,8 @@ int main(int, char**)
     assert(!(t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int> T1;
-    typedef cuda::std::tuple<double, long> T2;
+    using T1 = cuda::std::tuple<long, int>;
+    using T2 = cuda::std::tuple<double, long>;
     const T1 t1(1, 2);
     const T2 t2(1, 2);
     assert(!(t1 < t2));
@@ -88,8 +86,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int> T1;
-    typedef cuda::std::tuple<double, long> T2;
+    using T1 = cuda::std::tuple<long, int>;
+    using T2 = cuda::std::tuple<double, long>;
     const T1 t1(1, 2);
     const T2 t2(0.9, 2);
     assert(!(t1 < t2));
@@ -98,8 +96,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int> T1;
-    typedef cuda::std::tuple<double, long> T2;
+    using T1 = cuda::std::tuple<long, int>;
+    using T2 = cuda::std::tuple<double, long>;
     const T1 t1(1, 2);
     const T2 t2(1.1, 2);
     assert((t1 < t2));
@@ -108,8 +106,8 @@ int main(int, char**)
     assert(!(t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int> T1;
-    typedef cuda::std::tuple<double, long> T2;
+    using T1 = cuda::std::tuple<long, int>;
+    using T2 = cuda::std::tuple<double, long>;
     const T1 t1(1, 2);
     const T2 t2(1, 1);
     assert(!(t1 < t2));
@@ -118,8 +116,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int> T1;
-    typedef cuda::std::tuple<double, long> T2;
+    using T1 = cuda::std::tuple<long, int>;
+    using T2 = cuda::std::tuple<double, long>;
     const T1 t1(1, 2);
     const T2 t2(1, 3);
     assert((t1 < t2));
@@ -128,8 +126,8 @@ int main(int, char**)
     assert(!(t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(1, 2, 3);
     assert(!(t1 < t2));
@@ -138,8 +136,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(0.9, 2, 3);
     assert(!(t1 < t2));
@@ -148,8 +146,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(1.1, 2, 3);
     assert((t1 < t2));
@@ -158,8 +156,8 @@ int main(int, char**)
     assert(!(t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(1, 1, 3);
     assert(!(t1 < t2));
@@ -168,8 +166,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(1, 3, 3);
     assert((t1 < t2));
@@ -178,8 +176,8 @@ int main(int, char**)
     assert(!(t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(1, 2, 2);
     assert(!(t1 < t2));
@@ -188,8 +186,8 @@ int main(int, char**)
     assert((t1 >= t2));
   }
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     const T1 t1(1, 2, 3);
     const T2 t2(1, 2, 4);
     assert((t1 < t2));
@@ -197,10 +195,9 @@ int main(int, char**)
     assert(!(t1 > t2));
     assert(!(t1 >= t2));
   }
-#if TEST_STD_VER > 2011
   {
-    typedef cuda::std::tuple<long, int, double> T1;
-    typedef cuda::std::tuple<double, long, int> T2;
+    using T1 = cuda::std::tuple<long, int, double>;
+    using T2 = cuda::std::tuple<double, long, int>;
     constexpr T1 t1(1, 2, 3);
     constexpr T2 t2(1, 2, 4);
     static_assert((t1 < t2), "");
@@ -208,7 +205,6 @@ int main(int, char**)
     static_assert(!(t1 > t2), "");
     static_assert(!(t1 >= t2), "");
   }
-#endif
 
   return 0;
 }

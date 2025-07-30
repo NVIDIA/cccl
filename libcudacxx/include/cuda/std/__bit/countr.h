@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,93 +21,165 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/ctz.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#if _CCCL_COMPILER(MSVC)
+#  include <intrin.h>
+#endif // _CCCL_COMPILER(MSVC)
+
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// Forward decl for recursive use in split word operations
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept;
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
-__countr_zero_dispatch(_Tp __t) noexcept
+template <typename _Tp>
+[[nodiscard]] _CCCL_API constexpr int __cccl_countr_zero_impl_constexpr(_Tp __v) noexcept
 {
-  return __cccl_ctz(static_cast<uint32_t>(__t));
-}
+  constexpr auto __digits = numeric_limits<uint32_t>::digits;
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
-__countr_zero_dispatch(_Tp __t) noexcept
-{
-  return __cccl_ctz(static_cast<uint64_t>(__t));
-}
-
-template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
-struct __countr_zero_rsh_impl
-{
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __short_circuit(_Tp __t, int __cur, int __count)
+  if (__v == 0)
   {
-    // Stops processing early if non-zero
-    return (__cur == numeric_limits<uint64_t>::digits)
-           ? __countr_zero_rsh_impl<_Tp, _St - 1>::__count(__t, __cur + __count)
-           : __cur + __count;
+    return __digits;
   }
 
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __count(_Tp __t, int __count)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    return __short_circuit(__t >> numeric_limits<uint64_t>::digits, __countr_zero(static_cast<uint64_t>(__t)), __count);
+    if (__v & 1)
+    {
+      return 0;
+    }
+    int __pos = 1;
+    for (int __i = __digits / 2; __i >= 2; __i /= 2)
+    {
+      const auto __mark = ~uint32_t{0} >> (__digits - __i);
+      if ((__v & __mark) == 0)
+      {
+        __v >>= __i;
+        __pos += __i;
+      }
+    }
+    return (__pos - (__v & 1));
   }
-};
+  else
+  {
+    const auto __hi = static_cast<uint32_t>(__v >> 32);
+    const auto __lo = static_cast<uint32_t>(__v);
+    return (__lo != 0) ? _CUDA_VSTD::__cccl_countr_zero_impl_constexpr(__lo)
+                       : numeric_limits<uint32_t>::digits + _CUDA_VSTD::__cccl_countr_zero_impl_constexpr(__hi);
+  }
+}
+
+#if !_CCCL_COMPILER(NVRTC)
+template <typename _Tp>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __cccl_countr_zero_impl_host(_Tp __v) noexcept
+{
+  // nvcc does not support __builtin_ctz, so we use it only for host code
+#  if defined(_CCCL_BUILTIN_CTZ)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CCCL_BUILTIN_CTZ(__v);
+  }
+  else
+  {
+    return _CCCL_BUILTIN_CTZLL(__v);
+  }
+#  elif _CCCL_COMPILER(MSVC)
+  unsigned long __where{};
+  unsigned char __res{};
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    __res = ::_BitScanForward(&__where, __v);
+  }
+  else
+  {
+    __res = ::_BitScanForward64(&__where, __v);
+  }
+  return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
+#  else
+  return _CUDA_VSTD::__cccl_countr_zero_impl_constexpr(__v);
+#  endif // _CCCL_COMPILER(MSVC)
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#if _CCCL_CUDA_COMPILATION()
+template <typename _Tp>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countr_zero_impl_device(_Tp __v) noexcept
+{
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return ::__clz(static_cast<int>(::__brev(__v)));
+  }
+  else
+  {
+    return ::__clzll(static_cast<long long>(::__brevll(__v)));
+  }
+}
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
-struct __countr_zero_rsh_impl<_Tp, 1>
+[[nodiscard]] _CCCL_API constexpr int __cccl_countr_zero_impl(_Tp __v) noexcept
 {
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __count(_Tp __t, int __count)
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-    return __count + __countr_zero(static_cast<uint64_t>(__t));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (return _CUDA_VSTD::__cccl_countr_zero_impl_host(__v);),
+                      (return _CUDA_VSTD::__cccl_countr_zero_impl_device(__v);));
   }
-};
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
-__countr_zero_dispatch(_Tp __t) noexcept
-{
-  return __countr_zero_rsh_impl<_Tp>::__count(__t, 0);
+  return _CUDA_VSTD::__cccl_countr_zero_impl_constexpr(__v);
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+[[nodiscard]] _CCCL_API constexpr int countr_zero(_Tp __v) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__countr_zero requires unsigned");
+  int __count{};
 
-  return __t ? __countr_zero_dispatch(__t) : numeric_limits<_Tp>::digits;
+#if defined(_CCCL_BUILTIN_CTZG)
+  __count = _CCCL_BUILTIN_CTZG(__v, numeric_limits<_Tp>::digits);
+#else // ^^^ __CCCL_BUILTIN_CTZG ^^^ / vvv !__CCCL_BUILTIN_CTZG vvv
+  if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
+  {
+    using _Sp = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+    __count   = (__v != 0) ? _CUDA_VSTD::__cccl_countr_zero_impl(static_cast<_Sp>(__v)) : numeric_limits<_Tp>::digits;
+  }
+  else
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t __i = 0; __i < sizeof(_Tp) / sizeof(uint64_t); ++__i)
+    {
+      const auto __value64 = static_cast<uint64_t>(__v);
+      if (__value64 != 0)
+      {
+        __count += _CUDA_VSTD::countr_zero(__value64);
+        break;
+      }
+      __count += numeric_limits<uint64_t>::digits;
+      __v >>= numeric_limits<uint64_t>::digits;
+    }
+  }
+#endif // ^^^ !__CCCL_BUILTIN_CTZG ^^^
+
+  _CCCL_ASSUME(__count >= 0 && __count <= numeric_limits<_Tp>::digits);
+  return __count;
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_one(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+[[nodiscard]] _CCCL_API constexpr int countr_one(_Tp __t) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__countr_one requires unsigned");
-  return __t != numeric_limits<_Tp>::max() ? __countr_zero(static_cast<_Tp>(~__t)) : numeric_limits<_Tp>::digits;
-}
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
-countr_zero(_Tp __t) noexcept
-{
-  return __countr_zero(__t);
-}
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int> countr_one(_Tp __t) noexcept
-{
-  return __countr_one(__t);
+  return _CUDA_VSTD::countr_zero(static_cast<_Tp>(~__t));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_COUNTR_H

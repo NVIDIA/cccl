@@ -20,7 +20,6 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_STD_VER > 2011
 struct add_two
 {
   __host__ __device__ constexpr void operator()(int& a) const noexcept
@@ -41,7 +40,6 @@ __host__ __device__ constexpr bool test_constexpr()
   }
   return true;
 }
-#endif
 
 struct for_each_test
 {
@@ -50,7 +48,7 @@ struct for_each_test
   __host__ __device__ constexpr for_each_test(int c)
       : count(c)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()(int& i)
+  __host__ __device__ constexpr void operator()(int& i)
   {
     ++i;
     ++count;
@@ -71,9 +69,7 @@ int main(int, char**)
     }
   }
 
-#if TEST_STD_VER > 2011
   static_assert(test_constexpr(), "");
-#endif
 
   return 0;
 }

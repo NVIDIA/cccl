@@ -29,26 +29,27 @@
 #include <cuda/std/__type_traits/alignment_of.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_t>
-get_temporary_buffer(ptrdiff_t __n) noexcept
+[[nodiscard]] _CCCL_NO_CFI _CCCL_API inline pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
-  const ptrdiff_t __m =
-    (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * __CHAR_BIT__ - 1))) / sizeof(_Tp);
+  const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
   if (__n > __m)
   {
     __n = __m;
   }
   while (__n > 0)
   {
-#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
-    if (__is_overaligned_for_new(_LIBCUDACXX_ALIGNOF(_Tp)))
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
+    if (__is_overaligned_for_new(alignof(_Tp)))
     {
       _CUDA_VSTD::align_val_t __al = _CUDA_VSTD::align_val_t(_CUDA_VSTD::alignment_of<_Tp>::value);
       __r.first                    = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
@@ -57,8 +58,8 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
     {
       __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
     }
-#else // ^^^ !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION ^^^ / vvv _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION vvv
-    if (__is_overaligned_for_new(_LIBCUDACXX_ALIGNOF(_Tp)))
+#else // ^^^ _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() ^^^ / vvv !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION() vvv
+    if (__is_overaligned_for_new(alignof(_Tp)))
     {
       // Since aligned operator new is unavailable, return an empty
       // buffer rather than one with invalid alignment.
@@ -66,7 +67,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
     }
 
     __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
-#endif // _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
     if (__r.first)
     {
@@ -79,11 +80,13 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
+_CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
-  _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, _LIBCUDACXX_ALIGNOF(_Tp));
+  _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H

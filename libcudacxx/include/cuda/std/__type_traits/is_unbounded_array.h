@@ -22,27 +22,22 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_unbounded_array : false_type
-{};
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_unbounded_array<_Tp[]> : true_type
-{};
+inline constexpr bool is_unbounded_array_v = false;
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : false_type
-{};
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array<_Tp[]> : true_type
-{};
+inline constexpr bool is_unbounded_array_v<_Tp[]> = true;
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : bool_constant<is_unbounded_array_v<_Tp>>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNBOUNDED_ARRAY_H

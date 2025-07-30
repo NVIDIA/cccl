@@ -26,13 +26,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/integer_traits.h>
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
-
-#include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 

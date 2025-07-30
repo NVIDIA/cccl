@@ -29,7 +29,7 @@
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/tbb/memory.h>
 
-#include <limits>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class F, class I1, class I2>
 // concept indirect_binary_predicate;
 
@@ -36,15 +34,13 @@ struct GoodPredicate
 static_assert(cuda::std::indirect_binary_predicate<GoodPredicate<It1, It2>, It1, It2>, "");
 static_assert(cuda::std::indirect_binary_predicate<bool (*)(int, float), int*, float*>, "");
 
-#ifdef TEST_COMPILER_CLANG_CUDA
-#  pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
-#endif // TEST_COMPILER_CLANG_CUDA
-#ifndef __CUDA_ARCH__
+TEST_DIAG_SUPPRESS_CLANG("-Wunneeded-internal-declaration")
+#if _CCCL_HOST_COMPILATION()
 auto lambda = [](int i, long j) {
   return i == j;
 };
 static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>, "");
-#endif
+#endif // _CCCL_HOST_COMPILATION()
 
 // Should fail when either of the iterators is not indirectly_readable
 #if TEST_STD_VER > 2017

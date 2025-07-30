@@ -9,6 +9,7 @@ Fancy iterators
   - :cpp:class:`thrust::iterator_adaptor <thrust::iterator_adaptor>`
   - :cpp:class:`thrust::iterator_facade <thrust::iterator_facade>`
   - :cpp:class:`thrust::iterator_core_access <thrust::iterator_core_access>`
+  - :cpp:class:`thrust::offset_iterator <thrust::offset_iterator>`
   - :cpp:class:`thrust::permutation_iterator <thrust::permutation_iterator>`
   - :cpp:class:`thrust::reverse_iterator <thrust::reverse_iterator>`
   - :cpp:class:`thrust::transform_input_output_iterator <thrust::transform_input_output_iterator>`

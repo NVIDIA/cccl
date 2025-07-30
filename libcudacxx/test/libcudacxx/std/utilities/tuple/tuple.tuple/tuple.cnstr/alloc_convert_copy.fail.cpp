@@ -13,8 +13,6 @@
 // template <class Alloc, class ...UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, tuple<UTypes...> const&);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 
 struct ExplicitCopy

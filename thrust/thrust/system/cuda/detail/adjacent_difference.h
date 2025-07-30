@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -51,9 +51,10 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
-#  include <thrust/type_traits/remove_cvref.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -71,7 +72,7 @@ namespace cuda_cub
 namespace __adjacent_difference
 {
 
-template <bool MayAlias, class InputIt, class OutputIt, class BinaryOp>
+template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -86,11 +87,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaSuccess;
   }
 
-  constexpr bool may_alias = MayAlias;
-  constexpr bool read_left = true;
+  constexpr cub::ReadOption read_left = cub::ReadOption::Left;
 
-  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, may_alias, read_left>;
-  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, may_alias, read_left>;
+  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, AliasOpt, read_left>;
+  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, AliasOpt, read_left>;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH2(
@@ -113,8 +113,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   cudaStream_t stream,
   thrust::detail::integral_constant<bool, false> /* comparable */)
 {
-  constexpr bool may_alias = true;
-  return doit_step<may_alias>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
 }
 
 template <class InputIt, class OutputIt, class BinaryOp>
@@ -133,27 +132,25 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   // `num_items`. In the latter case, we use an optimized version.
   if (first != result)
   {
-    constexpr bool may_alias = false;
-    return doit_step<may_alias>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+    return doit_step<cub::MayAlias::No>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
   }
 
-  constexpr bool may_alias = true;
-  return doit_step<may_alias>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename BinaryOp>
 OutputIt THRUST_RUNTIME_FUNCTION
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryOp binary_op)
 {
-  const auto num_items     = static_cast<std::size_t>(thrust::distance(first, last));
+  const auto num_items     = static_cast<std::size_t>(::cuda::std::distance(first, last));
   std::size_t storage_size = 0;
   cudaStream_t stream      = cuda_cub::stream(policy);
 
   using UnwrapInputIt  = thrust::try_unwrap_contiguous_iterator_t<InputIt>;
   using UnwrapOutputIt = thrust::try_unwrap_contiguous_iterator_t<OutputIt>;
 
-  using InputValueT  = thrust::iterator_value_t<UnwrapInputIt>;
-  using OutputValueT = thrust::iterator_value_t<UnwrapOutputIt>;
+  using InputValueT  = thrust::detail::it_value_t<UnwrapInputIt>;
+  using OutputValueT = thrust::detail::it_value_t<UnwrapOutputIt>;
 
   constexpr bool can_compare_iterators =
     ::cuda::std::is_pointer<UnwrapInputIt>::value && ::cuda::std::is_pointer<UnwrapOutputIt>::value
@@ -209,8 +206,8 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt _CCCL_HOST_DEVICE
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  using input_type = typename iterator_traits<InputIt>::value_type;
-  return cuda_cub::adjacent_difference(policy, first, last, result, minus<input_type>());
+  using input_type = thrust::detail::it_value_t<InputIt>;
+  return cuda_cub::adjacent_difference(policy, first, last, result, ::cuda::std::minus<input_type>());
 }
 
 } // namespace cuda_cub

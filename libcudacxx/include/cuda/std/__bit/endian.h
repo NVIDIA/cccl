@@ -21,21 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class endian
 {
-  little = 0xDEAD,
-  big    = 0xFACE,
-#if defined(_LIBCUDACXX_LITTLE_ENDIAN)
-  native = little
-#elif defined(_LIBCUDACXX_BIG_ENDIAN)
-  native = big
-#else
-  native = 0xCAFE
-#endif
+  little = _CCCL_ENDIAN_LITTLE(),
+  big    = _CCCL_ENDIAN_BIG(),
+  native = _CCCL_ENDIAN_NATIVE(),
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_ENDIAN_H

@@ -90,11 +90,12 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include <cmpxchg_loop.h>
-#if !defined(TEST_COMPILER_MSVC)
+
+#include "test_macros.h"
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
@@ -106,8 +107,7 @@ __host__ __device__ __noinline__ void do_test()
   assert(val == T(0));
   A obj(val);
   assert(obj.load() == T(0));
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   obj.store(T(0));
   assert(obj.load() == T(0));
   assert(obj == T(0));
@@ -173,9 +173,7 @@ __host__ __device__ void test_for_all_types()
   test<Atomic<unsigned long, Scope>, unsigned long, Selector>();
   test<Atomic<long long, Scope>, long long, Selector>();
   test<Atomic<unsigned long long, Scope>, unsigned long long, Selector>();
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<Atomic<char32_t, Scope>, char32_t, Selector>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<Atomic<int8_t, Scope>, int8_t, Selector>();
   test<Atomic<uint8_t, Scope>, uint8_t, Selector>();
   test<Atomic<int16_t, Scope>, int16_t, Selector>();

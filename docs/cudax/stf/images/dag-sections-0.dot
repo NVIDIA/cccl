@@ -1,0 +1,5 @@
+digraph {
+"NODE_23" [style="filled" fillcolor="red" label="task fence"]
+"NODE_3" -> "NODE_23"
+"NODE_3" [style="filled" fillcolor="white" label="foo"]
+}

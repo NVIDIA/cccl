@@ -28,9 +28,9 @@
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concepts.arithmetic], arithmetic concepts
 
@@ -47,10 +47,10 @@ template <class _Tp>
 _CCCL_CONCEPT floating_point = _CCCL_TRAIT(is_floating_point, _Tp);
 
 template <class _Tp>
-_CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer<_Tp>::value;
-
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+_CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_ARITHMETIC_H

@@ -49,11 +49,8 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/std/type_traits>
-
-#include <iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -116,6 +113,9 @@ struct AgentReduceByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail::reduce
+{
+
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide reduce-value-by-key
@@ -159,21 +159,25 @@ template <typename AgentReduceByKeyPolicyT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          typename StreamingContextT>
 struct AgentReduceByKey
 {
+  // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
+  static constexpr bool is_streaming_invocation = !_CUDA_VSTD::is_same_v<StreamingContextT, NullType>;
+
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
 
   // The input keys type
-  using KeyInputT = cub::detail::value_t<KeysInputIteratorT>;
+  using KeyInputT = it_value_t<KeysInputIteratorT>;
 
   // The output keys type
-  using KeyOutputT = cub::detail::non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
+  using KeyOutputT = non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
 
   // The input values type
-  using ValueInputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using ValueInputT = it_value_t<ValuesInputIteratorT>;
 
   // Tuple type for scanning (pairs accumulated segment-value with
   // segment-index)
@@ -224,14 +228,14 @@ struct AgentReduceByKey
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
   static constexpr int HAS_IDENTITY_ZERO =
-    (std::is_same<ReductionOpT, ::cuda::std::plus<>>::value) && (Traits<AccumT>::PRIMITIVE);
+    (::cuda::std::is_same_v<ReductionOpT, ::cuda::std::plus<>>) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<KeysInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
                      KeysInputIteratorT>;
 
@@ -240,7 +244,7 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<ValuesInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      ValuesInputIteratorT>;
 
@@ -249,7 +253,7 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<AggregatesOutputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      AggregatesOutputIteratorT>;
 
@@ -272,7 +276,7 @@ struct AgentReduceByKey
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Key and value exchange types
   using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];
@@ -339,6 +343,9 @@ struct AgentReduceByKey
   /// Reduce-by-segment scan operator
   ReduceBySegmentOpT scan_op;
 
+  /// Streaming context providing context about this partition for streaming invocations
+  StreamingContextT streaming_context;
+
   //---------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------
@@ -367,7 +374,11 @@ struct AgentReduceByKey
    *
    * @param reduction_op
    *   ValueT reduction operator
+   *
+   * @param streaming_context
+   *   Streaming context providing context about this partition for streaming invocations
    */
+  template <typename StreamingContext>
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
     TempStorage& temp_storage,
     KeysInputIteratorT d_keys_in,
@@ -376,7 +387,30 @@ struct AgentReduceByKey
     AggregatesOutputIteratorT d_aggregates_out,
     NumRunsOutputIteratorT d_num_runs_out,
     EqualityOpT equality_op,
-    ReductionOpT reduction_op)
+    ReductionOpT reduction_op,
+    StreamingContext streaming_context)
+      : temp_storage(temp_storage.Alias())
+      , d_keys_in(d_keys_in)
+      , d_unique_out(d_unique_out + streaming_context.num_uniques())
+      , d_values_in(d_values_in)
+      , d_aggregates_out(d_aggregates_out + streaming_context.num_uniques())
+      , d_num_runs_out(d_num_runs_out)
+      , equality_op(equality_op)
+      , reduction_op(reduction_op)
+      , scan_op(reduction_op)
+      , streaming_context(streaming_context)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
+    TempStorage& temp_storage,
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    EqualityOpT equality_op,
+    ReductionOpT reduction_op,
+    NullType streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out)
@@ -386,6 +420,7 @@ struct AgentReduceByKey
       , equality_op(equality_op)
       , reduction_op(reduction_op)
       , scan_op(reduction_op)
+      , streaming_context(streaming_context)
   {}
 
   //---------------------------------------------------------------------
@@ -400,8 +435,8 @@ struct AgentReduceByKey
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     OffsetT (&segment_indices)[ITEMS_PER_THREAD])
   {
-// Scatter flagged keys and values
-#pragma unroll
+    // Scatter flagged keys and values
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (segment_flags[ITEM])
@@ -428,8 +463,8 @@ struct AgentReduceByKey
   {
     __syncthreads();
 
-// Compact and scatter pairs
-#pragma unroll
+    // Compact and scatter pairs
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (segment_flags[ITEM])
@@ -536,7 +571,14 @@ struct AgentReduceByKey
       //   be flagged as a head)
       // else
       //   Subsequent tiles get last key from previous tile
-      tile_predecessor = (tile_idx == 0) ? keys[0] : d_keys_in[tile_offset - 1];
+      if constexpr (is_streaming_invocation)
+      {
+        tile_predecessor = (tile_idx == 0) ? streaming_context.predecessor_key() : d_keys_in[tile_offset - 1];
+      }
+      else
+      {
+        tile_predecessor = (tile_idx == 0) ? keys[0] : d_keys_in[tile_offset - 1];
+      }
     }
 
     __syncthreads();
@@ -556,8 +598,7 @@ struct AgentReduceByKey
     // Initialize head-flags and shuffle up the previous keys
     if (IS_LAST_TILE)
     {
-      // Use custom flag operator to additionally flag the first out-of-bounds
-      // item
+      // Use custom flag operator to additionally flag the first out-of-bounds item
       GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
@@ -571,13 +612,23 @@ struct AgentReduceByKey
 
     // Reset head-flag on the very first item to make sure we don't start a new run for data where
     // (key[0] == key[0]) is false (e.g., when key[0] is NaN)
-    if (threadIdx.x == 0 && tile_idx == 0)
+    if constexpr (is_streaming_invocation)
     {
-      head_flags[0] = 0;
+      if (streaming_context.is_first_partition() && threadIdx.x == 0 && tile_idx == 0)
+      {
+        head_flags[0] = 0;
+      }
+    }
+    else
+    {
+      if (threadIdx.x == 0 && tile_idx == 0)
+      {
+        head_flags[0] = 0;
+      }
     }
 
     // Zip values and head flags
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       scan_items[ITEM].value = values[ITEM];
@@ -597,9 +648,33 @@ struct AgentReduceByKey
     if (tile_idx == 0)
     {
       // Scan first tile
-      BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
-      num_segments_prefix = 0;
-      total_aggregate     = block_aggregate;
+      // First partition does not need to account for preceding partitions
+      if constexpr (is_streaming_invocation)
+      {
+        if (streaming_context.is_first_partition())
+        {
+          BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
+          num_segments_prefix = 0;
+          total_aggregate     = block_aggregate;
+        }
+        // Subsequent partitions need to account for preceding partitions
+        else
+        {
+          auto init_value = OffsetValuePairT{0, streaming_context.prefix()};
+          BlockScanT(temp_storage.scan_storage.scan)
+            .ExclusiveScan(scan_items, scan_items, init_value, scan_op, block_aggregate);
+          num_segments_prefix = 0;
+          // note, block_aggregate does not include the prefix
+          block_aggregate = scan_op(init_value, block_aggregate);
+          total_aggregate = block_aggregate;
+        }
+      }
+      else
+      {
+        BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
+        num_segments_prefix = 0;
+        total_aggregate     = block_aggregate;
+      }
 
       // Update tile status if there are successor tiles
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
@@ -618,8 +693,8 @@ struct AgentReduceByKey
       total_aggregate     = prefix_op.GetInclusivePrefix();
     }
 
-// Rezip scatter items and segment indices
-#pragma unroll
+    // Rezip scatter items and segment indices
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       scatter_items[ITEM].key   = prev_keys[ITEM];
@@ -636,22 +711,52 @@ struct AgentReduceByKey
     OffsetT num_tile_segments = block_aggregate.key;
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
-    // Last thread in last tile will output final count (and last pair, if
-    // necessary)
+    // Last thread in last tile will output final count (and last pair, if necessary)
     if ((IS_LAST_TILE) && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 
-      // If the last tile is a whole tile, output the final_value
+      // If the last tile is a full tile, we need to write out the run ending with the last item
+      // If this was not a full tile, we already have flagged the head of one-past-the-last-item
       if (num_remaining == TILE_ITEMS)
       {
-        d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
-        d_aggregates_out[num_segments] = total_aggregate.value;
-        num_segments++;
+        if constexpr (is_streaming_invocation)
+        {
+          if (streaming_context.is_last_partition())
+          {
+            d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+            d_aggregates_out[num_segments] = total_aggregate.value;
+            num_segments++;
+          }
+          else
+          {
+            // Write the prefix aggregate of this partition as context for the subsequent partition
+            streaming_context.write_prefix(total_aggregate.value);
+          }
+        }
+        else
+        {
+          d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+          d_aggregates_out[num_segments] = total_aggregate.value;
+          num_segments++;
+        }
       }
 
-      // Output the total number of items selected
-      *d_num_runs_out = num_segments;
+      if constexpr (is_streaming_invocation)
+      {
+        // Add the number of unique items in this partition to the global aggregate
+        auto total_uniques = streaming_context.add_num_uniques(num_segments);
+
+        // If this is the last partition, write out the number of unique items
+        if (streaming_context.is_last_partition())
+        {
+          *d_num_runs_out = total_uniques;
+        }
+      }
+      else
+      {
+        *d_num_runs_out = num_segments;
+      }
     }
   }
 
@@ -693,5 +798,7 @@ struct AgentReduceByKey
     }
   }
 };
+
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END

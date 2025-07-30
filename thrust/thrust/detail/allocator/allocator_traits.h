@@ -36,6 +36,8 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
@@ -83,11 +85,10 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
-#if _CCCL_STD_VER >= 2017
-#  define THRUST_SPECIALIZE_DEPRECATED(trait_name)    \
-    template <typename T>                             \
-    struct trait_name<std::allocator<T>> : false_type \
-    {};
+#define THRUST_SPECIALIZE_DEPRECATED(trait_name)    \
+  template <typename T>                             \
+  struct trait_name<std::allocator<T>> : false_type \
+  {};
 
 THRUST_SPECIALIZE_DEPRECATED(has_is_always_equal)
 THRUST_SPECIALIZE_DEPRECATED(has_pointer)
@@ -95,12 +96,11 @@ THRUST_SPECIALIZE_DEPRECATED(has_const_pointer)
 THRUST_SPECIALIZE_DEPRECATED(has_reference)
 THRUST_SPECIALIZE_DEPRECATED(has_const_reference)
 
-#  undef THRUST_SPECIALIZE_DEPRECATED
+#undef THRUST_SPECIALIZE_DEPRECATED
 
 template <typename T, typename U>
 struct has_rebind<std::allocator<T>, U> : false_type
 {};
-#endif
 
 template <typename T>
 struct nested_pointer
@@ -220,7 +220,7 @@ struct allocator_traits
 
   using pointer = typename eval_if<allocator_traits_detail::has_pointer<allocator_type>::value,
                                    allocator_traits_detail::nested_pointer<allocator_type>,
-                                   identity_<value_type*>>::type;
+                                   ::cuda::std::type_identity<value_type*>>::type;
 
 private:
   template <typename T>
@@ -257,17 +257,17 @@ public:
   using propagate_on_container_copy_assignment =
     typename eval_if<allocator_traits_detail::has_propagate_on_container_copy_assignment<allocator_type>::value,
                      allocator_traits_detail::nested_propagate_on_container_copy_assignment<allocator_type>,
-                     identity_<false_type>>::type;
+                     ::cuda::std::type_identity<false_type>>::type;
 
   using propagate_on_container_move_assignment =
     typename eval_if<allocator_traits_detail::has_propagate_on_container_move_assignment<allocator_type>::value,
                      allocator_traits_detail::nested_propagate_on_container_move_assignment<allocator_type>,
-                     identity_<false_type>>::type;
+                     ::cuda::std::type_identity<false_type>>::type;
 
   using propagate_on_container_swap =
     typename eval_if<allocator_traits_detail::has_propagate_on_container_swap<allocator_type>::value,
                      allocator_traits_detail::nested_propagate_on_container_swap<allocator_type>,
-                     identity_<false_type>>::type;
+                     ::cuda::std::type_identity<false_type>>::type;
 
   using is_always_equal =
     typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
@@ -339,7 +339,7 @@ struct allocator_system
   using get_result_type =
     typename eval_if<allocator_traits_detail::has_member_system<Alloc>::value,
                      ::cuda::std::add_lvalue_reference<type>,
-                     identity_<type>>::type;
+                     ::cuda::std::type_identity<type>>::type;
 
   _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a);
 };

@@ -16,7 +16,6 @@ struct is_even
 template <typename Vector>
 void TestPartitionPointSimple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector v{1, 1, 1, 0};
@@ -25,11 +24,11 @@ void TestPartitionPointSimple()
 
   Iterator last = v.begin() + 4;
   Iterator ref  = first + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, ::cuda::std::identity{}));
 
   last = v.begin() + 3;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestPartitionPointSimple);
 
@@ -98,11 +97,11 @@ void TestPartitionPointWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(0);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   test_less_than fn = {(1ll << magnitude) - 17};
 
-  ASSERT_EQUAL(thrust::distance(begin, thrust::partition_point(thrust::device, begin, end, fn)),
+  ASSERT_EQUAL(::cuda::std::distance(begin, thrust::partition_point(thrust::device, begin, end, fn)),
                (1ll << magnitude) - 17);
 }
 

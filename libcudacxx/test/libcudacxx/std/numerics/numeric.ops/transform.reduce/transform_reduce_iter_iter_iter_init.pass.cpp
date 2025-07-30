@@ -22,14 +22,14 @@
 #include "test_macros.h"
 
 template <class Iter1, class Iter2, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
+__host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
   static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init))>::value, "");
   assert(cuda::std::transform_reduce(first1, last1, first2, init) == x);
 }
 
 template <class SIter, class UIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]          = {1, 2, 3, 4, 5, 6};
   unsigned int ua[] = {2, 4, 6, 8, 10, 12};
@@ -47,14 +47,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 
 template <typename T, typename Init>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_return_type()
+__host__ __device__ constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
   static_assert(cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, p, Init{}))>::value, "");
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_move_only_types()
+__host__ __device__ constexpr void test_move_only_types()
 {
   MoveOnly ia[] = {{1}, {2}, {3}};
   MoveOnly ib[] = {{1}, {2}, {3}};
@@ -63,7 +63,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_move_only_types()
     == cuda::std::transform_reduce(cuda::std::begin(ia), cuda::std::end(ia), cuda::std::begin(ib), MoveOnly{0}).get());
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_return_type<char, int>();
   test_return_type<int, int>();
@@ -108,8 +108,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

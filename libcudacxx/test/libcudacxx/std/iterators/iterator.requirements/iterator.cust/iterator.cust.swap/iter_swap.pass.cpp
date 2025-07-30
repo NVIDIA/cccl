@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class I>
 // unspecified iter_swap;
 
@@ -43,7 +41,6 @@ struct HasIterSwap
   }
 };
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
 static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>, "");
 static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>, "");
@@ -55,12 +52,10 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>, "");
 static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>, "");
 static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>, "");
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
 struct NodiscardIterSwap
 {
-  __host__ __device__ _CCCL_NODISCARD_FRIEND int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&)
+  [[nodiscard]] __host__ __device__ friend int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&)
   {
     return 0;
   }
@@ -70,7 +65,6 @@ __host__ __device__ void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap&
 {
   cuda::std::ranges::iter_swap(a, b);
 }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 struct HasRangesSwap
 {
@@ -108,12 +102,10 @@ struct HasRangesSwapWrapper
   }
 };
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
 static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>, "");
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
 static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>, "");
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 struct B;
 
@@ -175,7 +167,6 @@ struct MoveOnly2
 
 __host__ __device__ constexpr bool test()
 {
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
   {
     int value1 = 0;
     int value2 = 0;
@@ -213,21 +204,22 @@ __host__ __device__ constexpr bool test()
     cuda::std::ranges::iter_swap(&g, &h);
     assert(g.value && h.value);
   }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
-    if (__builtin_is_constant_evaluated())
+    if (cuda::std::is_constant_evaluated())
     {
+#  if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
       assert(arr[0].moves() == 1 && arr[1].moves() == 3);
+#  endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
     }
     else
     {
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
   }
-#endif
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   {
     int buff[2] = {1, 2};
     cuda::std::ranges::iter_swap(buff + 0, buff + 1);
@@ -254,13 +246,11 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int*>, ""); // too few arguments
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int*, int*>, ""); // too many arguments
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int, int*>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>, "");
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.

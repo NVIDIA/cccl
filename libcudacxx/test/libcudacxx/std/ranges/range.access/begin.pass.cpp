@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // std::ranges::begin
 // std::ranges::cbegin
 
@@ -22,24 +20,24 @@
 using RangeBeginT  = decltype(cuda::std::ranges::begin);
 using RangeCBeginT = decltype(cuda::std::ranges::cbegin);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8] = {};
+TEST_GLOBAL_VARIABLE int globalBuff[8] = {};
 
 // This has been made valid as a defect report for C++17 onwards, however both clang and gcc below 11.0 does not
 // implement it
-#if (!defined(__GNUC__) || __GNUC__ >= 11)
+#if !TEST_COMPILER(GCC, <, 11)
 static_assert(cuda::std::is_invocable_v<RangeBeginT, int (&)[]>, "");
 static_assert(cuda::std::is_invocable_v<RangeCBeginT, int (&)[]>, "");
-#endif
+#endif // !TEST_COMPILER(GCC, <, 11)
 static_assert(cuda::std::is_invocable_v<RangeBeginT, int (&)[10]>, "");
 static_assert(cuda::std::is_invocable_v<RangeCBeginT, int (&)[10]>, "");
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1923)
+#if !TEST_COMPILER(MSVC, <, 19, 23)
 // old MSVC has a bug where it doesn't properly handle rvalue arrays
 static_assert(!cuda::std::is_invocable_v<RangeBeginT, int (&&)[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeBeginT, int (&&)[10]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCBeginT, int (&&)[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCBeginT, int (&&)[10]>, "");
-#endif
+#endif // !TEST_COMPILER(MSVC, <, 19, 23)
 
 struct Incomplete;
 static_assert(!cuda::std::is_invocable_v<RangeBeginT, Incomplete (&&)[]>, "");
@@ -99,8 +97,8 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int x[2][2] = {};
     unused(x);
-    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::begin(x)), int(*)[2]>, "");
-    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cbegin(x)), const int(*)[2]>, "");
+    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::begin(x)), int (*)[2]>, "");
+    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cbegin(x)), const int (*)[2]>, "");
   }
   {
     Different x{};
@@ -185,7 +183,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<EnabledBorrowingBeginMember> = true;
+inline constexpr bool enable_borrowed_range<EnabledBorrowingBeginMember> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -300,7 +298,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BeginFunctionEnabledBorrowing> = true;
+inline constexpr bool enable_borrowed_range<BeginFunctionEnabledBorrowing> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -384,11 +382,11 @@ __host__ __device__ constexpr bool testBeginFunction()
 
   return true;
 }
-ASSERT_NOEXCEPT(cuda::std::ranges::begin(cuda::std::declval<int (&)[10]>()));
-ASSERT_NOEXCEPT(cuda::std::ranges::cbegin(cuda::std::declval<int (&)[10]>()));
+static_assert(noexcept(cuda::std::ranges::begin(cuda::std::declval<int (&)[10]>())));
+static_assert(noexcept(cuda::std::ranges::cbegin(cuda::std::declval<int (&)[10]>())));
 
 // needs c++17's guaranteed copy elision
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !TEST_COMPILER(MSVC2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberBegin
 {
   __host__ __device__ ThrowingIterator<int> begin() const noexcept; // auto(t.begin()) doesn't throw
@@ -403,7 +401,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLBegin
 } ntab;
 static_assert(noexcept(cuda::std::ranges::begin(ntab)), "");
 static_assert(noexcept(cuda::std::ranges::cbegin(ntab)), "");
-#endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberBeginReturnsRef
 {
@@ -438,9 +436,7 @@ int main(int, char**)
   static_assert(testReturnTypes(), "");
 
   testArray();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(testArray(), "");
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   testBeginMember();
   static_assert(testBeginMember(), "");
@@ -448,10 +444,10 @@ int main(int, char**)
   testBeginFunction();
   static_assert(testBeginFunction(), "");
 
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !TEST_COMPILER(MSVC2019) // broken noexcept
   unused(ntmb);
   unused(ntab);
-#endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
   unused(ntmbrr);
   unused(brar);
 

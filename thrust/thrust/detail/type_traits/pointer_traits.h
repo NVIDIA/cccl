@@ -28,10 +28,11 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/is_metafunction_defined.h>
+#include <thrust/detail/type_traits/is_thrust_pointer.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cstddef>
-#include <type_traits>
+#include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -61,7 +62,7 @@ struct pointer_difference
 template <typename T>
 struct pointer_difference<T*>
 {
-  using type = std::ptrdiff_t;
+  using type = ::cuda::std::ptrdiff_t;
 };
 
 template <typename Ptr, typename T>
@@ -90,7 +91,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "0");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "0");
   using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
 };
 
@@ -106,7 +107,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "1");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
   using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
@@ -116,10 +117,10 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename Tag,
           typename... PtrTail,
           typename T>
-struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::type, PtrTail...>, T>
+struct rebind_pointer<Ptr<OldT, Tag, typename ::cuda::std::add_lvalue_reference<OldT>::type, PtrTail...>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "2");
-  using type = Ptr<T, Tag, typename std::add_lvalue_reference<T>::type, PtrTail...>;
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
+  using type = Ptr<T, Tag, typename ::cuda::std::add_lvalue_reference<T>::type, PtrTail...>;
 };
 
 // Rebind `thrust::pointer`-like things with native reference types and templated
@@ -130,37 +131,13 @@ template <template <typename, typename, typename, typename...> class Ptr,
           template <typename...> class DerivedPtr,
           typename... DerivedPtrTail,
           typename T>
-struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::type, DerivedPtr<OldT, DerivedPtrTail...>>,
-                      T>
+struct rebind_pointer<
+  Ptr<OldT, Tag, typename ::cuda::std::add_lvalue_reference<OldT>::type, DerivedPtr<OldT, DerivedPtrTail...>>,
+  T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "3");
-  using type = Ptr<T, Tag, typename std::add_lvalue_reference<T>::type, DerivedPtr<T, DerivedPtrTail...>>;
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "3");
+  using type = Ptr<T, Tag, typename ::cuda::std::add_lvalue_reference<T>::type, DerivedPtr<T, DerivedPtrTail...>>;
 };
-
-namespace pointer_traits_detail
-{
-
-template <typename Ptr, typename Enable = void>
-struct pointer_raw_pointer_impl
-{};
-
-template <typename T>
-struct pointer_raw_pointer_impl<T*>
-{
-  using type = T*;
-};
-
-template <typename Ptr>
-struct pointer_raw_pointer_impl<Ptr, ::cuda::std::void_t<typename Ptr::raw_pointer>>
-{
-  using type = typename Ptr::raw_pointer;
-};
-
-} // namespace pointer_traits_detail
-
-template <typename T>
-struct pointer_raw_pointer : pointer_traits_detail::pointer_raw_pointer_impl<T>
-{};
 
 namespace pointer_traits_detail
 {
@@ -185,7 +162,7 @@ struct capture_address
 template <typename T>
 struct pointer_to_param
     : thrust::detail::eval_if<::cuda::std::is_void<T>::value,
-                              thrust::detail::identity_<capture_address<T>>,
+                              ::cuda::std::type_identity<capture_address<T>>,
                               ::cuda::std::add_lvalue_reference<T>>
 {};
 
@@ -310,8 +287,7 @@ struct pointer_traits<const void*>
 };
 
 template <typename FromPtr, typename ToPtr>
-struct is_pointer_system_convertible
-    : ::cuda::std::is_convertible<typename iterator_system<FromPtr>::type, typename iterator_system<ToPtr>::type>
+struct is_pointer_system_convertible : ::cuda::std::is_convertible<iterator_system_t<FromPtr>, iterator_system_t<ToPtr>>
 {};
 
 template <typename FromPtr, typename ToPtr>
@@ -327,25 +303,19 @@ struct is_void_pointer_system_convertible
                         is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 
-// this could be a lot better, but for our purposes, it's probably
-// sufficient just to check if pointer_raw_pointer<T> has meaning
-template <typename T>
-struct is_thrust_pointer : is_metafunction_defined<pointer_raw_pointer<T>>
-{};
-
 // avoid inspecting traits of the arguments if they aren't known to be pointers
 template <typename FromPtr, typename ToPtr>
 struct lazy_is_pointer_convertible
-    : thrust::detail::eval_if<is_thrust_pointer<FromPtr>::value && is_thrust_pointer<ToPtr>::value,
+    : thrust::detail::eval_if<is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>,
                               is_pointer_convertible<FromPtr, ToPtr>,
-                              thrust::detail::identity_<thrust::detail::false_type>>
+                              ::cuda::std::type_identity<thrust::detail::false_type>>
 {};
 
 template <typename FromPtr, typename ToPtr>
 struct lazy_is_void_pointer_system_convertible
-    : thrust::detail::eval_if<is_thrust_pointer<FromPtr>::value && is_thrust_pointer<ToPtr>::value,
+    : thrust::detail::eval_if<is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>,
                               is_void_pointer_system_convertible<FromPtr, ToPtr>,
-                              thrust::detail::identity_<thrust::detail::false_type>>
+                              ::cuda::std::type_identity<thrust::detail::false_type>>
 {};
 
 template <typename FromPtr, typename ToPtr, typename T = void>

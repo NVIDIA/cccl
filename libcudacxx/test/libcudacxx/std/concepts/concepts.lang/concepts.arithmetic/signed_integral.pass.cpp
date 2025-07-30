@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept signed_integral = // see below
 
@@ -75,7 +73,7 @@ static_assert(!CheckSignedIntegralQualifiers<unsigned long>(), "");
 static_assert(!CheckSignedIntegralQualifiers<unsigned long long>(), "");
 
 // extended integers
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
 static_assert(CheckSignedIntegralQualifiers<__int128_t>(), "");
 static_assert(!CheckSignedIntegralQualifiers<__uint128_t>(), "");
 #endif

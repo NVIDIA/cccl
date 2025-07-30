@@ -28,6 +28,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // is_nothrow_destructible
@@ -37,6 +39,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct is_nothrow_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(_Tp)>
 {};
+
+template <class _Tp>
+inline constexpr bool is_nothrow_destructible_v = _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE vvv
 
@@ -65,13 +70,13 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&&> : public true_type
 {};
 
+template <class _Tp>
+inline constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_Tp>::value;
+
 #endif // !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
-
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H

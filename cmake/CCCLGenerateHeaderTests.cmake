@@ -29,6 +29,10 @@ function(cccl_generate_header_tests target_name project_include_path)
   set(multiValueArgs GLOBS EXCLUDES HEADERS DEFINES)
   cmake_parse_arguments(CGHT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+  if (CGHT_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unrecognized arguments: ${CGHT_UNPARSED_ARGUMENTS}")
+  endif()
+
   # Setup defaults
   if (NOT DEFINED CGHT_LANGUAGE)
     set(CGHT_LANGUAGE CUDA)
@@ -39,7 +43,9 @@ function(cccl_generate_header_tests target_name project_include_path)
   endif()
 
   # Derived vars:
-  if (${CGHT_LANGUAGE} STREQUAL "CXX")
+  if (${CGHT_LANGUAGE} STREQUAL "C")
+    set(extension "c")
+  elseif (${CGHT_LANGUAGE} STREQUAL "CXX")
     set(extension "cpp")
   elseif(${CGHT_LANGUAGE} STREQUAL "CUDA")
     set(extension "cu")

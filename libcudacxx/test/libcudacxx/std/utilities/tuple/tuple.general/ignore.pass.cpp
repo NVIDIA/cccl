@@ -20,14 +20,12 @@ static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::
               "");
 
 // constexpr variables are unavailable before 11.3
-#if TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
-TEST_NODISCARD __host__ __device__ constexpr int test_nodiscard()
+[[nodiscard]] __host__ __device__ constexpr int test_nodiscard()
 {
   return 8294;
 }
-#endif // TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     auto& ignore_v = cuda::std::ignore;
@@ -61,11 +59,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     unused(moved);
   }
 
-#if TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
   {
     cuda::std::ignore = test_nodiscard();
   }
-#endif // TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
 
   return true;
 }
@@ -73,9 +69,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

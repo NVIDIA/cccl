@@ -11,11 +11,12 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h> // for ftruncate
+
 #include "filesystem_include.h"
 #include "format_string.h"
 #include "rapid-cxx-test.h"
 #include "test_macros.h"
-#include <unistd.h> // for ftruncate
 
 // static test helpers
 
@@ -224,14 +225,12 @@ struct scoped_test_env
 
   // OS X and FreeBSD doesn't support socket files so we shouldn't even
   // allow tests to call this unguarded.
-#  if !defined(__APPLE__)
   std::string create_socket(std::string file)
   {
     file = sanitize_path(std::move(file));
     fs_helper_run(fs_make_cmd("create_socket", file));
     return file;
   }
-#  endif
 
   fs::path const test_root;
 
@@ -285,9 +284,8 @@ private:
   {
     // check that the fs test root in the environment matches what we were
     // compiled with.
-    static bool checked = checkDynamicTestRoot();
-    ((void) checked);
-    std::string cmd = LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER;
+    [[maybe_unused]] static bool checked = checkDynamicTestRoot();
+    std::string cmd                      = LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER;
     cmd += " \"" + raw_cmd + "\"";
     int ret = std::system(cmd.c_str());
     assert(ret == 0);
@@ -481,11 +479,11 @@ inline bool ErrorIs(const std::error_code& ec, std::errc First, ErrcT... Rest)
 void SleepFor(std::chrono::seconds dur)
 {
   using namespace std::chrono;
-#if defined(_LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK)
-  using Clock = system_clock;
-#else
+#if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
   using Clock = steady_clock;
-#endif
+#else // ^^^ _LIBCUDACXX_HAS_MONOTONIC_CLOCK() ^^^ / vvv !_LIBCUDACXX_HAS_MONOTONIC_CLOCK() vvv
+  using Clock = system_clock;
+#endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
   const auto wake_time = Clock::now() + dur;
   while (Clock::now() < wake_time)
     ;
@@ -534,7 +532,7 @@ struct ExceptionChecker
     TEST_CHECK(ErrorIsImp(Err.code(), {expected_err}));
     TEST_CHECK(Err.path1() == expected_path1);
     TEST_CHECK(Err.path2() == expected_path2);
-    LIBCPP_ONLY(check_libcxx_string(Err));
+    assert(check_libcxx_string(Err));
   }
 
   void check_libcxx_string(fs::filesystem_error const& Err)

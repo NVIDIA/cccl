@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/undefined.h>
 
 //! \file type_list.h
 //! This file defines a type-list type and some fundamental algorithms on type
@@ -48,15 +49,14 @@
 #  endif
 #endif
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <class... _Ts>
 struct __type_list;
-
-template <class...>
-struct __undefined; // leave this undefined
 
 template <class _Ty>
 using __type = typename _Ty::type;
@@ -313,10 +313,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
 
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
-#  ifndef _CCCL_NO_INLINE_VARIABLES
 template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
 
 //! \brief A pointer to a type list, often used as a function argument.
 template <class... _Ts>
@@ -337,35 +335,55 @@ using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_lis
 namespace __detail
 {
 template <template <class...> class _Fn, class... _Ts>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
+_CCCL_API inline auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
   -> __type_list<_Ts...>;
 
 template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
+_CCCL_API inline auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
   -> __type_list<integral_constant<_Ty, _Us>...>;
 
 template <class _Ret, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
-  -> __type_list<_Args...>;
+_CCCL_API inline auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
+  -> __type_list<_Ret, _Args...>;
 } // namespace __detail
 
-//! \brief Given a type that is a specialization of a class template, return a
-//! type list of the template arguments.
+//! \brief Given a type that is can be interpreted as a type list, return its
+//! type list interpretation. Types that can be interpreted as a type
+//! list are of the following forms:
+//!
+//! \li `C<Ts...>`, for any class template `C` and types `Ts...`.
+//! \li `C<T, T... Vs>`, for any class template `C`, type `T` and values `Vs...`.
+//!     The resulting type is `_Fn<integral_constant<T, Vs>...>`.
+//! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
+//!     `_Fn<R, As...>`.
 template <class _List>
 using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
-//! \brief Given a type that is a specialization of a class template and a
-//! meta-callable, invoke the callable with the template arguments.
+//! \brief Given a type that can be interpreted as a type list and a
+//! meta-callable, invoke the meta-callable with the types in the list.
+//! \c __as_type_list is used to convert the \c _List type to a specialization
+//! of \c __type_list.
+//!
+//! \sa __as_type_list
 template <class _Fn, class _List>
 using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
+
+//! \brief Given a type that can be interpreted as a type list and a class or
+//! alias template, instantiate the template with the types in the list.
+//! \c __as_type_list is used to convert the \c _List type to a specialization
+//! of \c __type_list.
+//!
+//! \sa __as_type_list
+template <template <class...> class _Fn, class _List>
+using __type_apply_q = __type_call<__as_type_list<_List>, __type_quote<_Fn>>;
 
 namespace __detail
 {
 // Only the following precise formulation works with nvcc < 12.2
 template <class _Fn, class... _Ts, template <class...> class _Fn2 = _Fn::template __call, class = _Fn2<_Ts...>>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
+_CCCL_API inline auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
 
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(void*) -> false_type;
+_CCCL_API inline auto __type_callable_fn(void*) -> false_type;
 } // namespace __detail
 
 //! \brief Test whether a meta-callable is callable with a given set of
@@ -401,8 +419,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
 //! arguments, or if the meta-callable is not callable with the arguments, a
 //! class type without a nested \c ::type type alias.
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
-    : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+__type_defer : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
 
 //! \brief Defer the instantiation of a template with a list of arguments.
@@ -430,7 +448,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC)
+#  if _CCCL_HAS_PACK_INDEXING()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
@@ -473,29 +491,33 @@ using __type_index = __type_call<__detail::__type_index_fn<_Ip::value>, _Ts...>;
 
 namespace __detail
 {
-template <class... _Ts>
-struct __inherit_flat : _Ts...
-{};
-
 template <size_t _Ip, class _Ty>
-struct __type_index_leaf
+struct __type_tuple_elem
 {
-  using type = _Ty;
+  using type _CCCL_NODEBUG_ALIAS = _Ty;
 };
 
+template <class _Is, class... _Ts>
+struct __type_tupl;
+
+template <size_t... _Is, class... _Ts>
+struct __type_tupl<index_sequence<_Is...>, _Ts...> : __type_tuple_elem<_Is, _Ts>...
+{};
+
+template <class... _Ts>
+using __type_tuple = __type_tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+
 template <size_t _Ip, class _Ty>
-_LIBCUDACXX_HIDE_FROM_ABI __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>*);
+_CCCL_API inline __type_tuple_elem<_Ip, _Ty> __type_tuple_get(__type_tuple_elem<_Ip, _Ty>);
 
-template <class _Is>
-struct __type_index_large_size_fn;
+template <size_t _Ip, class... _Ts>
+using __type_tuple_element_t _CCCL_NODEBUG_ALIAS =
+  __type<decltype(__detail::__type_tuple_get<_Ip>(__type_tuple<_Ts...>{}))>;
 
-template <size_t... _Is>
-struct __type_index_large_size_fn<index_sequence<_Is...>>
+struct __type_index_large_size_fn
 {
   template <class _Ip, class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = //
-    __type<decltype(__detail::__type_index_get<_Ip::value>(
-      static_cast<__inherit_flat<__type_index_leaf<_Is, _Ts>...>*>(nullptr)))>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_tuple_element_t<_Ip::value, _Ts...>;
 };
 
 template <size_t _Ip>
@@ -516,12 +538,8 @@ _CCCL_PP_REPEAT_REVERSE(_CCCL_META_UNROLL_LIMIT, _M1)
 #    undef _M1
 
 template <bool _IsSmall>
-struct __type_index_select_fn // Default for larger indices
-{
-  template <class _Ip, class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS =
-    __type_call<__type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>, _Ip, _Ts...>;
-};
+struct __type_index_select_fn : __type_index_large_size_fn // Default for larger indices
+{};
 
 template <>
 struct __type_index_select_fn<true> // Fast implementation for smaller indices
@@ -531,8 +549,18 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 };
 } // namespace __detail
 
+#    if !_CCCL_COMPILER(MSVC)
+
 template <class _Ip, class... _Ts>
 using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < _CCCL_META_UNROLL_LIMIT)>, _Ip, _Ts...>;
+
+#    else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
+
+// Simplify the implementation for MSVC, which has trouble with the above
+template <class _Ip, class... _Ts>
+using __type_index = __detail::__type_index_large_size_fn::__call<_Ip, _Ts...>;
+
+#    endif // !_CCCL_COMPILER(MSVC)
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
@@ -593,10 +621,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
   using type _CCCL_NODEBUG_ALIAS = _Value;
 };
 
-#  if _CCCL_CUDACC_AT_LEAST(12) || defined(_CCCL_DOXYGEN_INVOKED)
+#  if defined(_CCCL_DOXYGEN_INVOKED)
 
 //! \see __type_switch
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
 {
   template <class _OtherInt>
@@ -605,7 +633,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
   using type = _Value;
 };
 
-#  else // ^^^ CUDACC >= 12.0 || DOXYGEN ^^^ / vvv CUDACC < 12.0 && !DOXYGEN vvv
+#  else // ^^^ DOXYGEN ^^^ / vvv !DOXYGEN vvv
 
 template <class _Label, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
@@ -616,18 +644,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
   using type = _Value;
 };
 
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(_Label), _Label>, _Value>;
 
-#  endif // CUDACC < 12.0 && !DOXYGEN
+#  endif // !DOXYGEN
 
 namespace __detail
 {
-template <_CCCL_NTTP_AUTO _Label, class _Value>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
+template <auto _Label, class _Value>
+_CCCL_API inline auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
 
-template <_CCCL_NTTP_AUTO _Label, class _Value>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
+template <auto _Label, class _Value>
+_CCCL_API inline auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
 } // namespace __detail
 
 //! \see __type_switch
@@ -654,7 +682,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __type_switch_fn
 //!                              __type_default<float>>;
 //! static_assert(is_same_v<result, double>);
 //! \endcode
-template <_CCCL_NTTP_AUTO _Label, class... _Cases>
+template <auto _Label, class... _Cases>
 using __type_switch _CCCL_NODEBUG_ALIAS =
   __type_call<__type_switch_fn<decltype(_Label), _Cases...>, integral_constant<decltype(_Label), _Label>>;
 
@@ -703,7 +731,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
             class... _Gs,
             class... _Hs,
             class... _Tail>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(
+  _CCCL_API inline static auto __fn(
     __type_list_ptr<_Ts...>, // state
     __type_list_ptr<_As...>, // 1
     __type_list_ptr<_Bs...>, // 2
@@ -730,7 +758,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<0>
 {
   template <class... _Ts>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
+  _CCCL_API inline static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
 };
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
@@ -1020,7 +1048,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_value_list : __type_list<integral_co
 namespace __detail
 {
 template <class _Ty, _Ty _Start, _Ty _Stride, _Ty... _Is>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
+_CCCL_API inline auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
   -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
 } // namespace __detail
 
@@ -1033,5 +1061,7 @@ using __type_iota =
 #endif // _CCCL_DOXYGEN_INVOKED
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_LIST_H

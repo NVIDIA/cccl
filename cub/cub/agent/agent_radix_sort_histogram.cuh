@@ -51,6 +51,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,7 +67,7 @@ struct AgentRadixSortHistogramPolicy
      * ID. However, lanes with the same ID in different warp use the same private
      * histogram. This arrangement helps reduce the degree of conflicts in atomic
      * operations. */
-    NUM_PARTS  = CUB_MAX(1, NOMINAL_4B_NUM_PARTS * 4 / CUB_MAX(sizeof(ComputeT), 4)),
+    NUM_PARTS  = _CUDA_VSTD::max(1, NOMINAL_4B_NUM_PARTS * 4 / _CUDA_VSTD::max(int{sizeof(ComputeT)}, 4)),
     RADIX_BITS = _RADIX_BITS,
   };
 };
@@ -81,31 +82,33 @@ struct AgentRadixSortExclusiveSumPolicy
   };
 };
 
+namespace detail
+{
+namespace radix_sort
+{
+
 template <typename AgentRadixSortHistogramPolicy,
           bool IS_DESCENDING,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortHistogram
 {
   // constants
-  enum
-  {
-    ITEMS_PER_THREAD = AgentRadixSortHistogramPolicy::ITEMS_PER_THREAD,
-    BLOCK_THREADS    = AgentRadixSortHistogramPolicy::BLOCK_THREADS,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-    RADIX_BITS       = AgentRadixSortHistogramPolicy::RADIX_BITS,
-    RADIX_DIGITS     = 1 << RADIX_BITS,
-    MAX_NUM_PASSES   = (sizeof(KeyT) * 8 + RADIX_BITS - 1) / RADIX_BITS,
-    NUM_PARTS        = AgentRadixSortHistogramPolicy::NUM_PARTS,
-  };
+  static constexpr int ITEMS_PER_THREAD = AgentRadixSortHistogramPolicy::ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = AgentRadixSortHistogramPolicy::BLOCK_THREADS;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int RADIX_BITS       = AgentRadixSortHistogramPolicy::RADIX_BITS;
+  static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
+  static constexpr int MAX_NUM_PASSES   = (sizeof(KeyT) * 8 + RADIX_BITS - 1) / RADIX_BITS;
+  static constexpr int NUM_PARTS        = AgentRadixSortHistogramPolicy::NUM_PARTS;
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   using Twiddle             = RadixSortTwiddle<IS_DESCENDING, KeyT>;
-  using ShmemCounterT       = std::uint32_t;
+  using ShmemCounterT       = uint32_t;
   using ShmemAtomicCounterT = ShmemCounterT;
 
   using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
@@ -160,14 +163,14 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Init()
   {
-// Initialize bins to 0.
-#pragma unroll
+    // Initialize bins to 0.
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int part = 0; part < NUM_PARTS; ++part)
         {
           s.bins[pass][bin][part] = 0;
@@ -191,7 +194,7 @@ struct AgentRadixSortHistogram
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       keys[u] = Twiddle::In(keys[u], decomposer);
@@ -202,14 +205,16 @@ struct AgentRadixSortHistogram
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
-      int num_bits = CUB_MIN(RADIX_BITS, end_bit - current_bit);
-#pragma unroll
+      const int num_bits = _CUDA_VSTD::min(+RADIX_BITS, end_bit - current_bit);
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {
-        std::uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
+        uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
         // Using cuda::atomic<> results in lower performance on GP100,
         // so atomicAdd() is used instead.
         atomicAdd(&s.bins[pass][bin][part], 1);
@@ -219,10 +224,10 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
       {
         OffsetT count = cub::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});
@@ -253,7 +258,7 @@ struct AgentRadixSortHistogram
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
-      OffsetT portion_size   = CUB_MIN(MAX_PORTION_SIZE, num_items - portion_offset);
+      OffsetT portion_size   = _CUDA_VSTD::min(MAX_PORTION_SIZE, num_items - portion_offset);
       for (OffsetT offset = blockIdx.x * TILE_ITEMS; offset < portion_size; offset += TILE_ITEMS * gridDim.x)
       {
         OffsetT tile_offset = portion_offset + offset;
@@ -274,5 +279,8 @@ struct AgentRadixSortHistogram
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

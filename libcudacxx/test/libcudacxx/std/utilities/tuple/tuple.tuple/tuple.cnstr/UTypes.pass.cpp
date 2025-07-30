@@ -16,16 +16,12 @@
 // XFAIL: gcc-4.8, gcc-4.9
 // XFAIL: msvc-19.12, msvc-19.13
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
 #include "MoveOnly.h"
 #include "test_convertible.h"
 #include "test_macros.h"
-
-#if TEST_STD_VER > 2011
 
 struct Empty
 {};
@@ -36,8 +32,6 @@ struct A
       : id_(i)
   {}
 };
-
-#endif
 
 struct NoDefault
 {
@@ -51,14 +45,14 @@ struct NoDefault
 __host__ __device__ void test_default_constructible_extension_sfinae()
 {
   {
-    typedef cuda::std::tuple<MoveOnly, NoDefault> Tuple;
+    using Tuple = cuda::std::tuple<MoveOnly, NoDefault>;
 
     static_assert(!cuda::std::is_constructible<Tuple, MoveOnly>::value, "");
 
     static_assert(cuda::std::is_constructible<Tuple, MoveOnly, NoDefault>::value, "");
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly, NoDefault> Tuple;
+    using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, NoDefault>;
 
     static_assert(!cuda::std::is_constructible<Tuple, MoveOnly, MoveOnly>::value, "");
 
@@ -66,8 +60,8 @@ __host__ __device__ void test_default_constructible_extension_sfinae()
   }
   {
     // Same idea as above but with a nested tuple type.
-    typedef cuda::std::tuple<MoveOnly, NoDefault> Tuple;
-    typedef cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly> NestedTuple;
+    using Tuple       = cuda::std::tuple<MoveOnly, NoDefault>;
+    using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
 
     static_assert(!cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value, "");
 
@@ -76,8 +70,8 @@ __host__ __device__ void test_default_constructible_extension_sfinae()
   // testing extensions
 #ifdef _LIBCUDACXX_VERSION
   {
-    typedef cuda::std::tuple<MoveOnly, int> Tuple;
-    typedef cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly> NestedTuple;
+    using Tuple       = cuda::std::tuple<MoveOnly, int>;
+    using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
 
     static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value, "");
 
@@ -104,7 +98,7 @@ int main(int, char**)
     assert(cuda::std::get<2>(t) == 2);
   }
   // extensions, MSVC issues
-#if defined(_LIBCUDACXX_VERSION) && !defined(_MSC_VER)
+#if defined(_LIBCUDACXX_VERSION) && !TEST_COMPILER(MSVC)
   {
     using E   = MoveOnly;
     using Tup = cuda::std::tuple<E, E, E>;
@@ -125,16 +119,13 @@ int main(int, char**)
     assert(cuda::std::get<2>(t2) == E());
   }
 #endif
-#if TEST_STD_VER > 2011
   {
-    constexpr cuda::std::tuple<Empty> t0{Empty()};
-    (void) t0;
+    [[maybe_unused]] constexpr cuda::std::tuple<Empty> t0{Empty()};
   }
   {
     constexpr cuda::std::tuple<A, A> t(3, 2);
     static_assert(cuda::std::get<0>(t).id_ == 3, "");
   }
-#endif
   // Check that SFINAE is properly applied with the default reduced arity
   // constructor extensions.
   test_default_constructible_extension_sfinae();

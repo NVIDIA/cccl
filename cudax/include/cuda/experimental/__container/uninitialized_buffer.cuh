@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,7 +33,9 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
-#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#include <cuda/std/__cccl/prologue.h>
+
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
 //! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
@@ -85,27 +87,27 @@ private:
     && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Determines the allocation size given the alignment and size of `T`
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI static constexpr size_t __get_allocation_size(const size_t __count) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr size_t __get_allocation_size(const size_t __count) noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     return (__count * sizeof(_Tp) + (__alignment - 1)) & ~(__alignment - 1);
   }
 
   //! @brief Determines the properly aligned start of the buffer given the alignment and size of  `T`
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _Tp* __get_data() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _Tp* __get_data() const noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     size_t __space               = __get_allocation_size(__count_);
     void* __ptr                  = __buf_;
     return _CUDA_VSTD::launder(
-      reinterpret_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
+      static_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
-  __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
+  transform_device_argument(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
@@ -115,8 +117,8 @@ private:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
-  __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
+  transform_device_argument(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
@@ -124,10 +126,12 @@ private:
   }
 
 public:
-  using value_type = _Tp;
-  using reference  = _Tp&;
-  using pointer    = _Tp*;
-  using size_type  = size_t;
+  using value_type      = _Tp;
+  using reference       = _Tp&;
+  using const_reference = const _Tp&;
+  using pointer         = _Tp*;
+  using const_pointer   = const _Tp*;
+  using size_type       = size_t;
 
   //! @brief Constructs an \c uninitialized_buffer and allocates sufficient storage for \p __count elements through
   //! \p __mr
@@ -186,44 +190,73 @@ public:
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_buffer and deallocates the buffer
-  //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
+  //! @brief Destroys an \c uninitialized_buffer, deallocates the buffer and destroys the memory resource
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
-  _CCCL_HIDE_FROM_ABI ~uninitialized_buffer()
+  _CCCL_HIDE_FROM_ABI void destroy()
   {
     if (__buf_)
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
+      __buf_   = nullptr;
+      __count_ = 0;
     }
+    auto __tmp_mr = _CUDA_VSTD::move(__mr_);
+  }
+
+  //! @brief Destroys an \c uninitialized_buffer, deallocates the buffer and destroys the memory resource
+  //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI ~uninitialized_buffer()
+  {
+    destroy();
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI pointer begin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer begin() noexcept
+  {
+    return __get_data();
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer begin() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns an aligned pointer to the element following the last element of the buffer.
   //! This element acts as a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI pointer end() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer end() noexcept
+  {
+    return __get_data() + __count_;
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer end() const noexcept
   {
     return __get_data() + __count_;
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI pointer data() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer data() noexcept
+  {
+    return __get_data();
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer data() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns the size of the allocation
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return __count_;
   }
 
   //! @brief Returns the size of the buffer in bytes
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
   {
     return __count_ * sizeof(_Tp);
   }
@@ -232,7 +265,7 @@ public:
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& memory_resource() const noexcept
   {
     return __mr_;
   }
@@ -263,6 +296,8 @@ using uninitialized_device_buffer = uninitialized_buffer<_Tp, device_accessible>
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_BUFFER_H

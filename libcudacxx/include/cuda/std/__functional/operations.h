@@ -25,6 +25,8 @@
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Arithmetic operations
@@ -34,7 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x + __y;
   }
@@ -46,7 +48,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -60,7 +62,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x - __y;
   }
@@ -72,7 +74,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -86,7 +88,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies : __binary_function<_Tp, _Tp, _T
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x * __y;
   }
@@ -98,7 +100,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -112,7 +114,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x / __y;
   }
@@ -124,7 +126,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -138,7 +140,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x % __y;
   }
@@ -150,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -164,7 +166,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate : __unary_function<_Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x) const
+  constexpr _CCCL_API inline _Tp operator()(const _Tp& __x) const
   {
     return -__x;
   }
@@ -176,8 +178,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
-    noexcept(noexcept(-_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(-_CUDA_VSTD::forward<_Tp>(__x))
+  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(-_CUDA_VSTD::forward<_Tp>(__x)))
+    -> decltype(-_CUDA_VSTD::forward<_Tp>(__x))
   {
     return -_CUDA_VSTD::forward<_Tp>(__x);
   }
@@ -191,7 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x & __y;
   }
@@ -203,7 +205,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -216,7 +218,7 @@ template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not : __unary_function<_Tp, _Tp>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x) const
+  constexpr _CCCL_API inline _Tp operator()(const _Tp& __x) const
   {
     return ~__x;
   }
@@ -228,8 +230,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
-    noexcept(noexcept(~_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(~_CUDA_VSTD::forward<_Tp>(__x))
+  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(~_CUDA_VSTD::forward<_Tp>(__x)))
+    -> decltype(~_CUDA_VSTD::forward<_Tp>(__x))
   {
     return ~_CUDA_VSTD::forward<_Tp>(__x);
   }
@@ -241,7 +243,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  constexpr _CCCL_API inline _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x | __y;
   }
@@ -253,7 +255,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -267,7 +269,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x ^ __y;
   }
@@ -279,7 +281,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -295,7 +297,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to : __binary_function<_Tp, _Tp, bool
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x == __y;
   }
@@ -307,7 +309,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -321,7 +323,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to : __binary_function<_Tp, _Tp, 
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x != __y;
   }
@@ -333,7 +335,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -347,7 +349,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less : __binary_function<_Tp, _Tp, bool>
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x < __y;
   }
@@ -359,7 +361,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -373,7 +375,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal : __binary_function<_Tp, _Tp, bo
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x <= __y;
   }
@@ -385,7 +387,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -399,7 +401,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal : __binary_function<_Tp, _Tp,
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x >= __y;
   }
@@ -411,7 +413,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -425,7 +427,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater : __binary_function<_Tp, _Tp, bool>
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x > __y;
   }
@@ -437,7 +439,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -453,7 +455,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and : __binary_function<_Tp, _Tp, b
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x && __y;
   }
@@ -465,7 +467,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -479,7 +481,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not : __unary_function<_Tp, bool>
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x) const
   {
     return !__x;
   }
@@ -491,8 +493,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
-    noexcept(noexcept(!_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(!_CUDA_VSTD::forward<_Tp>(__x))
+  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(!_CUDA_VSTD::forward<_Tp>(__x)))
+    -> decltype(!_CUDA_VSTD::forward<_Tp>(__x))
   {
     return !_CUDA_VSTD::forward<_Tp>(__x);
   }
@@ -504,7 +506,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or : __binary_function<_Tp, _Tp, bo
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x || __y;
   }
@@ -516,7 +518,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_T1&& __t, _T2&& __u) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
     noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u)))
       -> decltype(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u))
   {
@@ -526,5 +528,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or<void>
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_OPERATIONS_H

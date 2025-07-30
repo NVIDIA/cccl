@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class In>
 // concept cuda::std::weakly_incrementable;
 
@@ -28,21 +26,21 @@ static_assert(!cuda::std::weakly_incrementable<int&>, "");
 static_assert(!cuda::std::weakly_incrementable<int()>, "");
 static_assert(!cuda::std::weakly_incrementable<int (*)()>, "");
 static_assert(!cuda::std::weakly_incrementable<int (&)()>, "");
-#ifndef TEST_COMPILER_GCC
+#if !TEST_COMPILER(GCC)
 static_assert(!cuda::std::weakly_incrementable<bool>, "");
-#endif
+#endif // !TEST_COMPILER(GCC)
 
 struct S
 {};
 static_assert(!cuda::std::weakly_incrementable<int S::*>, "");
 
-#define CHECK_POINTER_TO_MEMBER_FUNCTIONS(qualifier)                                        \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier>, "");              \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier noexcept>, "");     \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&>, "");             \
-  static_assert(!cuda::std::weakly_incrementable < int(S::*)() qualifier & noexcept >, ""); \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&&>, "");            \
-  static_assert(!cuda::std::weakly_incrementable < int(S::*)() qualifier && noexcept >, "");
+#define CHECK_POINTER_TO_MEMBER_FUNCTIONS(qualifier)                                      \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier>, "");            \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier noexcept>, "");   \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&>, "");           \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier & noexcept>, ""); \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&&>, "");          \
+  static_assert(!cuda::std::weakly_incrementable < int (S::*)() qualifier && noexcept >, "");
 
 #define NO_QUALIFIER
 CHECK_POINTER_TO_MEMBER_FUNCTIONS(NO_QUALIFIER);
@@ -66,11 +64,9 @@ static_assert(cuda::std::weakly_incrementable<not_default_initializable>, "");
 static_assert(cuda::std::weakly_incrementable<incrementable_with_difference_type>, "");
 static_assert(cuda::std::weakly_incrementable<incrementable_without_difference_type>, "");
 static_assert(cuda::std::weakly_incrementable<difference_type_and_void_minus>, "");
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(cuda::std::weakly_incrementable<noncopyable_with_difference_type>, "");
 static_assert(cuda::std::weakly_incrementable<noncopyable_without_difference_type>, "");
 static_assert(cuda::std::weakly_incrementable<noncopyable_with_difference_type_and_minus>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {

@@ -12,7 +12,7 @@
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -42,7 +42,7 @@ int main(int, char**)
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
   static_assert((cuda::std::is_same<F::result_type, bool>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert(f(36));
   assert(!f(0));
 

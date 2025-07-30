@@ -54,7 +54,7 @@ void writeVTKFile(stream_ctx& ctx,
 
   for (size_t b = 0; b < parts.size(); b++)
   {
-    ctx.task(exec_place::host, parts[b].read())->*[&](cudaStream_t s, slice<body> p) {
+    ctx.task(exec_place::host(), parts[b].read())->*[&](cudaStream_t s, slice<body> p) {
       cuda_safe_call(cudaStreamSynchronize(s));
       for (size_t i = 0; i < p.size(); i++)
       {
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t start;
   cuda_safe_call(cudaEventCreate(&start));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   cudaGraphExec_t exec_graph = nullptr;
 
@@ -306,7 +306,7 @@ int main(int argc, char** argv)
 
   cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

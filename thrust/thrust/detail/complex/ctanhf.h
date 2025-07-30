@@ -57,7 +57,7 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cmath>
+#include <cuda/std/cmath>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

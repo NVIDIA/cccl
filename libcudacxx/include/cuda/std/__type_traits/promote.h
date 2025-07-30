@@ -20,44 +20,36 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct __numeric_type
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static void __test(...);
-#ifdef _LIBCUDACXX_HAS_NVFP16
-  _LIBCUDACXX_HIDE_FROM_ABI static float __test(__half);
-#endif // _LIBCUDACXX_HAS_NVBF16
-#ifdef _LIBCUDACXX_HAS_NVBF16
-  _LIBCUDACXX_HIDE_FROM_ABI static float __test(__nv_bfloat16);
-#endif // _LIBCUDACXX_HAS_NVFP16
-  _LIBCUDACXX_HIDE_FROM_ABI static float __test(float);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(char);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(int);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(long long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned long long);
-  _LIBCUDACXX_HIDE_FROM_ABI static double __test(double);
-  _LIBCUDACXX_HIDE_FROM_ABI static long double __test(long double);
+  _CCCL_API inline static void __test(...);
+#if _LIBCUDACXX_HAS_NVFP16()
+  _CCCL_API inline static float __test(__half);
+#endif // _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16()
+  _CCCL_API inline static float __test(__nv_bfloat16);
+#endif // _LIBCUDACXX_HAS_NVFP16()
+  _CCCL_API inline static float __test(float);
+  _CCCL_API inline static double __test(char);
+  _CCCL_API inline static double __test(int);
+  _CCCL_API inline static double __test(unsigned);
+  _CCCL_API inline static double __test(long);
+  _CCCL_API inline static double __test(unsigned long);
+  _CCCL_API inline static double __test(long long);
+  _CCCL_API inline static double __test(unsigned long long);
+  _CCCL_API inline static double __test(double);
+  _CCCL_API inline static long double __test(long double);
 
   using type              = decltype(__test(declval<_Tp>()));
   static const bool value = _IsNotSame<type, void>::value;
@@ -75,7 +67,7 @@ struct __is_mixed_extended_floating_point
   static constexpr bool value = false;
 };
 
-#if defined(_LIBCUDACXX_HAS_NVFP16) && defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
 template <class _A1>
 struct __is_mixed_extended_floating_point<_A1, __half, __nv_bfloat16>
 {
@@ -111,7 +103,7 @@ struct __is_mixed_extended_floating_point<__nv_bfloat16, __half, _A1>
 {
   static constexpr bool value = true;
 };
-#endif // _LIBCUDACXX_HAS_NVFP16 && _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1,
           class _A2 = void,
@@ -165,5 +157,7 @@ template <class _A1, class _A2 = void, class _A3 = void>
 using __promote_t _CCCL_NODEBUG_ALIAS = typename __promote<_A1, _A2, _A3>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_PROMOTE_H

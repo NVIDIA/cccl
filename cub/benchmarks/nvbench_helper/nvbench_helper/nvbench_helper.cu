@@ -15,13 +15,16 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/functional>
+
 #include <cstdint>
 #include <random>
 #include <type_traits>
 
-#include "thrust/device_vector.h"
 #include <curand.h>
 #include <nvbench_helper.cuh>
+
+#include "thrust/device_vector.h"
 
 namespace
 {
@@ -331,7 +334,11 @@ void generator_t::generate(
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
 
       thrust::transform(
-        exec, uniform_distribution, uniform_distribution + span.size(), span.data(), random_to_item_t<T>(min, max));
+        exec,
+        uniform_distribution,
+        uniform_distribution + span.size(),
+        span.data(),
+        ::cuda::proclaim_copyable_arguments(random_to_item_t<T>(min, max)));
       return;
     }
     case bit_entropy::_0_000: {
@@ -347,7 +354,11 @@ void generator_t::generate(
       ++seed;
 
       thrust::transform(
-        exec, uniform_distribution, uniform_distribution + span.size(), span.data(), random_to_item_t<T>(min, max));
+        exec,
+        uniform_distribution,
+        uniform_distribution + span.size(),
+        span.data(),
+        ::cuda::proclaim_copyable_arguments(random_to_item_t<T>(min, max)));
 
       const int number_of_steps = static_cast<int>(entropy);
 
@@ -360,7 +371,13 @@ void generator_t::generate(
       {
         this->generate(is_device ? executor::device : executor::host, seed, tmp, bit_entropy::_1_000, min, max);
 
-        thrust::transform(exec, span.data(), span.data() + span.size(), tmp.data(), span.data(), and_t{});
+        thrust::transform(
+          exec,
+          span.data(),
+          span.data() + span.size(),
+          tmp.data(),
+          span.data(),
+          ::cuda::proclaim_copyable_arguments(and_t{}));
       }
       return;
     }
@@ -423,7 +440,13 @@ void generator_t::generate(
       {
         this->generate(is_device ? executor::device : executor::host, seed, tmp, bit_entropy::_1_000, min, max);
 
-        thrust::transform(exec, span.data(), span.data() + span.size(), tmp.data(), span.data(), and_t{}); // TODO issue
+        thrust::transform(
+          exec,
+          span.data(),
+          span.data() + span.size(),
+          tmp.data(),
+          span.data(),
+          ::cuda::proclaim_copyable_arguments(and_t{}));
       }
       return;
     }
@@ -467,7 +490,7 @@ void generator_t::generate(
       uniform_distribution,
       uniform_distribution + span.size(),
       span.data(),
-      random_to_probability_t{entropy_to_probability(entropy)});
+      ::cuda::proclaim_copyable_arguments(random_to_probability_t{entropy_to_probability(entropy)}));
   }
 }
 
@@ -501,7 +524,7 @@ void generator_t::power_law_segment_offsets(
     uniform_distribution,
     uniform_distribution + total_segments,
     device_segment_offsets.data(),
-    lognormal_transformer_t<T>{total_elements, sum});
+    ::cuda::proclaim_copyable_arguments(lognormal_transformer_t<T>{total_elements, sum}));
 
   const int diff =
     total_elements
@@ -644,7 +667,7 @@ std::size_t gen_uniform_offsets(
       policy, segment_offsets.data(), segment_offsets.data() + segment_offsets.size(), segment_offsets.data());
     auto iter = thrust::find_if(
       policy, segment_offsets.data(), segment_offsets.data() + segment_offsets.size(), ge_t<T>{total_elements});
-    auto dist = thrust::distance(segment_offsets.data(), iter);
+    auto dist = cuda::std::distance(segment_offsets.data(), iter);
     thrust::fill_n(policy, segment_offsets.data() + dist, 1, total_elements);
     return dist + 1;
   };
@@ -736,10 +759,7 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
   generator_t{}.power_law_segment_offsets<T>(executor::device, seed, segment_offsets, elements);
 }
 
-void do_not_optimize(const void* ptr)
-{
-  (void) ptr;
-}
+void do_not_optimize([[maybe_unused]] const void* ptr) {}
 
 } // namespace detail
 

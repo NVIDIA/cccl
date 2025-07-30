@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -53,17 +52,25 @@ using full_type_list = c2h::type_list<type_triple<std::uint8_t>, type_triple<std
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_triple<std::int32_t>, type_triple<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_triple<uchar3, uchar3, custom_t>, type_triple<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_triple<uchar3, uchar3, custom_t>,
+                 type_triple<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
 type_triple<custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_triple<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_triple<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif
@@ -149,7 +156,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_values, segment_offsets, op_t{}, cub::NumericTraits<value_t>::Max(), expected_result.begin());
+      in_values, segment_offsets, op_t{}, ::cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test

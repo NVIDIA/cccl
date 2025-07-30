@@ -25,35 +25,35 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type : public integral_constant<bool, _CCCL_BUILTIN_IS_LITERAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+is_literal_type : public integral_constant<bool, _CCCL_BUILTIN_IS_LITERAL(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _CCCL_INLINE_VAR constexpr bool is_literal_type_v = __is_literal_type(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+_LIBCUDACXX_DEPRECATED inline constexpr bool is_literal_type_v = __is_literal_type(_Tp);
 
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED is_literal_type
     : public integral_constant<bool,
                                is_scalar<remove_all_extents_t<_Tp>>::value
                                  || is_reference<remove_all_extents_t<_Tp>>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _CCCL_INLINE_VAR constexpr bool is_literal_type_v = is_literal_type<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+_LIBCUDACXX_DEPRECATED inline constexpr bool is_literal_type_v = is_literal_type<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE

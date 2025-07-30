@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/mismatch.h>
 
+#include <cuda/std/atomic>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -93,3 +95,36 @@ void TestMismatchCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestMismatchCudaStreams);
+
+// see https://github.com/NVIDIA/cccl/issues/3591
+template <typename T>
+class Wrapper
+{
+public:
+  Wrapper()
+  {
+    ++my_count;
+  }
+
+  _CCCL_HOST_DEVICE bool operator==(const Wrapper& input) const
+  {
+    return true;
+  }
+
+  ~Wrapper()
+  {
+    --my_count;
+  }
+
+private:
+  static cuda::std::atomic<size_t> my_count;
+  T dummy;
+};
+
+void TestMismatchBug3591()
+{
+  using T = Wrapper<int32_t>;
+  T* p    = nullptr;
+  thrust::mismatch(thrust::device, p, p, p, cuda::std::equal_to<T>());
+}
+DECLARE_UNITTEST(TestMismatchBug3591);

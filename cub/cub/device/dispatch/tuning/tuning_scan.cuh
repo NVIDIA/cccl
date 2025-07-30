@@ -42,9 +42,11 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/functional>
 #include <cuda/std/functional>
 
 CUB_NAMESPACE_BEGIN
@@ -68,10 +70,24 @@ enum class primitive_op
   no,
   yes
 };
+enum class op_type
+{
+  plus,
+  unknown
+};
 enum class offset_size
 {
   _4,
   _8,
+  unknown
+};
+enum class value_size
+{
+  _1,
+  _2,
+  _4,
+  _8,
+  _16,
   unknown
 };
 enum class accum_size
@@ -87,13 +103,43 @@ enum class accum_size
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
 {
-  return Traits<AccumT>::PRIMITIVE ? primitive_accum::yes : primitive_accum::no;
+  return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
 constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_t<ScanOpT>::value ? primitive_op::yes : primitive_op::no;
+}
+
+template <typename Op>
+struct is_plus
+{
+  static constexpr bool value = false;
+};
+
+template <typename T>
+struct is_plus<::cuda::std::plus<T>>
+{
+  static constexpr bool value = true;
+};
+
+template <class ScanOpT>
+constexpr op_type classify_op()
+{
+  return is_plus<ScanOpT>::value ? op_type::plus : op_type::unknown;
+}
+
+template <class ValueT>
+constexpr value_size classify_value_size()
+{
+  return sizeof(ValueT) == 1 ? value_size::_1
+       : sizeof(ValueT) == 2 ? value_size::_2
+       : sizeof(ValueT) == 4 ? value_size::_4
+       : sizeof(ValueT) == 8 ? value_size::_8
+       : sizeof(ValueT) == 16
+         ? value_size::_16
+         : value_size::unknown;
 }
 
 template <class AccumT>
@@ -106,6 +152,12 @@ constexpr accum_size classify_accum_size()
        : sizeof(AccumT) == 16
          ? accum_size::_16
          : accum_size::unknown;
+}
+
+template <class OffsetT>
+constexpr offset_size classify_offset_size()
+{
+  return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
 template <class AccumT,
@@ -174,7 +226,7 @@ struct sm80_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
 {
@@ -220,7 +272,7 @@ template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes
 template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, accum_size::_4> : sm90_tuning_vals<float,  128, 24, 688, 1140> {};
 template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : sm90_tuning_vals<double, 224, 24, 576, 1215> {};
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <> struct sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : sm90_tuning_vals<__int128_t, 576, 21, 860, 630> {};
 template <>
 struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
@@ -229,7 +281,178 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 #endif
 // clang-format on
 
-template <typename AccumT, typename ScanOpT>
+template <class ValueT,
+          class AccumT,
+          class OffsetT,
+          op_type OpTypeT,
+          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
+          offset_size OffsetSize               = classify_offset_size<OffsetT>(),
+          value_size ValueSize                 = classify_value_size<ValueT>()>
+struct sm100_tuning;
+
+// sum
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_1>
+{
+  // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
+  static constexpr int items                           = 18;
+  static constexpr int threads                         = 512;
+  using delay_constructor                              = exponential_backon_constructor_t<768, 820>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_1>
+{
+  // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
+  static constexpr int items                           = 14;
+  static constexpr int threads                         = 384;
+  using delay_constructor                              = exponential_backon_constructor_t<228, 775>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_2>
+{
+  // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
+  static constexpr int items                           = 13;
+  static constexpr int threads                         = 512;
+  using delay_constructor                              = exponential_backon_constructor_t<1384, 720>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+// todo(gonidelis): Regresses for large inputs. Find better tuning.
+// template <class ValueT, class AccumT, class OffsetT>
+// struct sm100_tuning<ValueT,
+//                     AccumT,
+//                     OffsetT,
+//                     op_type::plus,
+//                     primitive_value::yes,
+//                     primitive_accum::yes,
+//                     offset_size::_8,
+//                     value_size::_2>
+// {
+//   // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
+//   static constexpr int items                           = 13;
+//   static constexpr int threads                         = 288;
+//   using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1520, 895>;
+//   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+//   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+//   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+// };
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_4>
+{
+  // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
+  static constexpr int items                           = 22;
+  static constexpr int threads                         = 384;
+  using delay_constructor                              = exponential_backon_jitter_constructor_t<1904, 830>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_4>
+{
+  // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
+  static constexpr int items                           = 19;
+  static constexpr int threads                         = 416;
+  using delay_constructor                              = exponential_backon_constructor_t<956, 550>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_8>
+{
+  // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
+  static constexpr int items                           = 23;
+  static constexpr int threads                         = 416;
+  using delay_constructor                              = exponential_backon_jitter_window_constructor_t<772, 710>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_8>
+{
+  // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
+  static constexpr int items                           = 22;
+  static constexpr int threads                         = 320;
+  using delay_constructor                              = exponential_backoff_constructor_t<328, 965>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+// todo(gonidelis): Add tunings for i128, float and double.
+// template <class OffsetT> struct sm100_tuning<float, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8,
+// accum_size::_4>;
+// Default explicitly so it doesn't pick up the sm100<I64, I64> tuning.
+template <class AccumT, class OffsetT>
+struct sm100_tuning<double, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_8>
+    : sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8>
+{};
+
+#if _CCCL_HAS_INT128()
+// template <class OffsetT> struct sm100_tuning<__int128_t, OffsetT, op_type::plus, primitive_accum::no,
+// offset_size::_8, accum_size::_16> : tuning<576, 21, 860, 630> {}; template <class OffsetT> struct
+// sm100_tuning<__uint128_t, OffsetT, op_type::plus, primitive_accum::no, offset_size::_8, accum_size::_16>
+//     : sm100_tuning<__int128_t, OffsetT, op_type::plus, primitive_accum::no, offset_size::_8, accum_size::_16>
+// {};
+#endif
+
+template <typename PolicyT, typename = void, typename = void>
+struct ScanPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr auto Scan()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
+  {
+    return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
+  {
+    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
+                  "The memory consistency model does not apply to texture "
+                  "accesses");
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT policy)
+{
+  return ScanPolicyWrapper<PolicyT>{policy};
+}
+
+template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
   // For large values, use timesliced loads/stores to fit shared memory.
@@ -239,13 +462,13 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
+  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
@@ -273,7 +496,7 @@ struct policy_hub
                        LOAD_DEFAULT,
                        Tuning::store_algorithm,
                        BLOCK_SCAN_WARP_SCANS,
-                       MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                       cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
@@ -293,13 +516,40 @@ struct policy_hub
     using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  using MaxPolicy = Policy900;
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  {
+    // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy900
+    template <typename Tuning,
+              typename IVT,
+              // In the tuning benchmarks the Initial-, Input- and OutputType are the same. Let's check that the
+              // accumulator type's size matches what we used during the benchmark since that has an impact (The
+              // tunings also check later that it's a primitive type, so arithmetic impact is also comparable to the
+              // benchmark). Input- and OutputType only impact loading and storing data (all arithmetic is done in the
+              // accumulator type), so let's check that they are the same size and dispatch the size in the tunings.
+              ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
+                                         && sizeof(IVT) == sizeof(OutputValueT),
+                                       int> = 0>
+    static auto select_agent_policy100(int)
+      -> AgentScanPolicy<Tuning::threads,
+                         Tuning::items,
+                         AccumT,
+                         Tuning::load_algorithm,
+                         Tuning::load_modifier,
+                         Tuning::store_algorithm,
+                         BLOCK_SCAN_WARP_SCANS,
+                         MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                         typename Tuning::delay_constructor>;
+    template <typename Tuning, typename IVT>
+    static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
+
+    using ScanPolicyT =
+      decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
+        0));
+  };
+
+  using MaxPolicy = Policy1000;
 };
 } // namespace scan
 } // namespace detail
-
-// TODO(bgruber): deprecate this at some point when we have a better way to allow users to supply tunings
-template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
-using DeviceScanPolicy = detail::scan::policy_hub<AccumT, ScanOpT>;
 
 CUB_NAMESPACE_END

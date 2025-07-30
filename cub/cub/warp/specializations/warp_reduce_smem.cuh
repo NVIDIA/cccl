@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -44,15 +44,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -62,39 +62,33 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam LOGICAL_WARP_THREADS
  *   Number of threads per logical warp
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpReduceSmem
 {
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0)),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
-    /// Whether the logical warp size is a power-of-two
-    IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
+  /// Whether the logical warp size is a power-of-two
+  static constexpr bool IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
 
-    /// The number of warp reduction steps
-    STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
+  /// The number of warp reduction steps
+  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
 
-    /// The number of threads in half a warp
-    HALF_WARP_THREADS = 1 << (STEPS - 1),
+  /// The number of threads in half a warp
+  static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
 
-    /// The number of shared memory elements per warp
-    WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS,
+  /// The number of shared memory elements per warp
+  static constexpr int WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS;
 
-    /// FlagT status (when not using ballot)
-    UNSET = 0x0, // Is initially unset
-    SET   = 0x1, // Is initially set
-    SEEN  = 0x2, // Has seen another head flag from a successor peer
-  };
+  /// FlagT status (when not using ballot)
+  static constexpr auto UNSET = 0x0; // Is initially unset
+  static constexpr auto SET   = 0x1; // Is initially set
+  static constexpr auto SEEN  = 0x2; // Has seen another head flag from a successor peer
 
   /// Shared memory flag type
   using SmemFlag = unsigned char;
@@ -154,25 +148,20 @@ struct WarpReduceSmem
    */
   template <bool ALL_LANES_VALID, typename ReductionOp, int STEP>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceStep(T input, int valid_items, ReductionOp reduction_op, Int2Type<STEP> /*step*/)
+  ReduceStep(T input, int valid_items, ReductionOp reduction_op, constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
-
     // Share input through buffer
-    ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
-
+    temp_storage.reduce[lane_id] = input;
     __syncwarp(member_mask);
-
     // Update input if peer_addend is in range
     if ((ALL_LANES_VALID && IS_POW_OF_TWO) || ((lane_id + OFFSET) < valid_items))
     {
-      T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
+      T peer_addend = temp_storage.reduce[lane_id + OFFSET];
       input         = reduction_op(input, peer_addend);
     }
-
     __syncwarp(member_mask);
-
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<STEP + 1>());
+    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, constant_v<STEP + 1>);
   }
 
   /**
@@ -192,7 +181,7 @@ struct WarpReduceSmem
    */
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, Int2Type<STEPS> /*step*/)
+  ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, constant_t<STEPS> /*step*/)
   {
     return input;
   }
@@ -221,7 +210,7 @@ struct WarpReduceSmem
    */
   template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<true> /*has_ballot*/)
+  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
     int warp_flags = __ballot_sync(member_mask, flag);
@@ -246,23 +235,23 @@ struct WarpReduceSmem
     // Clip the next segment at the warp boundary if necessary
     if (LOGICAL_WARP_THREADS != 32)
     {
-      next_flag = CUB_MIN(next_flag, LOGICAL_WARP_THREADS);
+      next_flag = _CUDA_VSTD::min(next_flag, LOGICAL_WARP_THREADS);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       const int OFFSET = 1 << STEP;
 
       // Share input into buffer
-      ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
+      temp_storage.reduce[lane_id] = input;
 
       __syncwarp(member_mask);
 
       // Update input if peer_addend is in range
       if (OFFSET + lane_id < next_flag)
       {
-        T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
+        T peer_addend = temp_storage.reduce[lane_id + OFFSET];
         input         = reduction_op(input, peer_addend);
       }
 
@@ -292,7 +281,7 @@ struct WarpReduceSmem
    */
   template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<false> /*has_ballot*/)
+  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
   {
     enum
     {
@@ -302,7 +291,7 @@ struct WarpReduceSmem
     };
 
     // Alias flags onto shared data storage
-    volatile SmemFlag* flag_storage = temp_storage.flags;
+    SmemFlag* flag_storage = temp_storage.flags;
 
     SmemFlag flag_status = (flag) ? SET : UNSET;
 
@@ -311,12 +300,12 @@ struct WarpReduceSmem
       const int OFFSET = 1 << STEP;
 
       // Share input through buffer
-      ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
+      temp_storage.reduce[lane_id] = input;
 
       __syncwarp(member_mask);
 
       // Get peer from buffer
-      T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
+      T peer_addend = temp_storage.reduce[lane_id + OFFSET];
 
       __syncwarp(member_mask);
 
@@ -387,7 +376,7 @@ struct WarpReduceSmem
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<0>());
+    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, constant_v<0>);
   }
 
   /**
@@ -408,8 +397,9 @@ struct WarpReduceSmem
   template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
-    return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, Int2Type<true>());
+    return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, ::cuda::std::true_type());
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

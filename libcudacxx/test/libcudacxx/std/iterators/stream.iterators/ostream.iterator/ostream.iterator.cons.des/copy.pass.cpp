@@ -24,9 +24,8 @@ int main(int, char**)
 {
   cuda::std::ostringstream outf;
   cuda::std::ostream_iterator<int> i(outf);
-  cuda::std::ostream_iterator<int> j = i;
+  [[maybe_unused]] cuda::std::ostream_iterator<int> j = i;
   assert(outf.good());
-  ((void) j);
 
   return 0;
 }

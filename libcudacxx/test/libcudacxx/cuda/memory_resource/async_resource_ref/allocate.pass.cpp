@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -53,10 +52,10 @@ void test_allocate_async()
     cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate_async(0, 0, {}) == ref.allocate_async(0, {}));
+    assert(input.allocate_async(0, 0, ::cudaStream_t{}) == ref.allocate_async(0, ::cudaStream_t{}));
 
     int expected_after_deallocate = 1337;
-    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, {});
+    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, ::cudaStream_t{});
     assert(input._val == expected_after_deallocate);
   }
 
@@ -65,10 +64,10 @@ void test_allocate_async()
     cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate_async(0, 0, {}) == ref.allocate_async(0, 0, {}));
+    assert(input.allocate_async(0, 0, ::cudaStream_t{}) == ref.allocate_async(0, 0, ::cudaStream_t{}));
 
     int expected_after_deallocate = 1337;
-    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, {});
+    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, ::cudaStream_t{});
     assert(input._val == expected_after_deallocate);
   }
 }

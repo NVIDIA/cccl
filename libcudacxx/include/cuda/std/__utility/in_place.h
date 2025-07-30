@@ -24,9 +24,9 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER > 2011
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 {
@@ -40,7 +40,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_type_t
   _CCCL_HIDE_FROM_ABI explicit in_place_type_t() = default;
 };
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
+inline constexpr in_place_type_t<_Tp> in_place_type{};
 
 template <size_t _Idx>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
@@ -48,7 +48,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
   _CCCL_HIDE_FROM_ABI explicit in_place_index_t() = default;
 };
 template <size_t _Idx>
-_CCCL_INLINE_VAR constexpr in_place_index_t<_Idx> in_place_index{};
+inline constexpr in_place_index_t<_Idx> in_place_index{};
 
 template <class _Tp>
 struct __is_inplace_type_imp : false_type
@@ -70,8 +70,8 @@ struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type
 template <class _Tp>
 using __is_inplace_index = __is_inplace_index_imp<remove_cvref_t<_Tp>>;
 
-#endif // _CCCL_STD_VER > 2011
-
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_IN_PLACE_H

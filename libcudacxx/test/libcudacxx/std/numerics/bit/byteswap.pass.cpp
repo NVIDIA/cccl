@@ -46,13 +46,13 @@ struct MakeUnsigned<bool>
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_num(T in, T expected)
+__host__ __device__ constexpr void test_num(T in, T expected)
 {
   using U = typename MakeUnsigned<T>::type;
 
   assert(static_cast<U>(cuda::std::byteswap(in)) == static_cast<U>(expected));
-  ASSERT_SAME_TYPE(decltype(cuda::std::byteswap(in)), decltype(in));
-  ASSERT_NOEXCEPT(cuda::std::byteswap(in));
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::byteswap(in)), decltype(in)>);
+  static_assert(noexcept(cuda::std::byteswap(in)));
 }
 
 template <class T>
@@ -63,7 +63,7 @@ struct TestData
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 TestData<T> get_test_data()
+__host__ __device__ constexpr TestData<T> get_test_data()
 {
   switch (sizeof(T))
   {
@@ -80,13 +80,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 TestData<T> get_test_data()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_implementation_defined_size()
+__host__ __device__ constexpr void test_implementation_defined_size()
 {
   const auto test_data = get_test_data<T>();
   test_num<T>(test_data.in, test_data.expected);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_num<cuda::std::uint8_t>(0xAB, 0xAB);
   test_num<cuda::std::uint16_t>(0xCDEF, 0xEFCD);
@@ -100,12 +100,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_num<cuda::std::int64_t>(
     static_cast<cuda::std::int64_t>(0x0123456789ABCDEF), static_cast<cuda::std::int64_t>(0xEFCDAB8967452301));
 
-#if !defined(TEST_HAS_NO_INT128_T)
+#if _CCCL_HAS_INT128()
   const auto in       = static_cast<__uint128_t>(0x0123456789ABCDEF) << 64 | 0x13579BDF02468ACE;
   const auto expected = static_cast<__uint128_t>(0xCE8A4602DF9B5713) << 64 | 0xEFCDAB8967452301;
   test_num<__uint128_t>(in, expected);
   test_num<__int128_t>(in, expected);
-#endif // !defined(TEST_HAS_NO_INT128_T)
+#endif // _CCCL_HAS_INT128()
 
   test_num<bool>(true, true);
   test_num<bool>(false, false);
@@ -117,9 +117,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 #endif // TEST_STD_VER >= 2020
   test_num<char16_t>(0xABCD, 0xCDAB);
   test_num<char32_t>(0xABCDEF01, 0x01EFCDAB);
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test_implementation_defined_size<wchar_t>();
-#endif
 
   test_implementation_defined_size<short>();
   test_implementation_defined_size<unsigned short>();
@@ -135,9 +133,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

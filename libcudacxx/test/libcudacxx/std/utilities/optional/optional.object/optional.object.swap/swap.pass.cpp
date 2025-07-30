@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // void swap(optional&)
@@ -28,7 +27,7 @@ class X
   int i_;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   __host__ __device__ X(int i)
       : i_(i)
   {}
@@ -50,7 +49,7 @@ class Y
   int i_;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   __host__ __device__ Y(int i)
       : i_(i)
   {}
@@ -83,18 +82,18 @@ public:
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 void swap(W& x, W& y) noexcept
+  __host__ __device__ friend constexpr void swap(W& x, W& y) noexcept
   {
     cuda::std::swap(x.i_, y.i_);
   }
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool check_swap()
+__host__ __device__ constexpr bool check_swap()
 {
   {
     optional<T> opt1;
-    optional<T> opt2;
+    optional<T> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == true, "");
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
@@ -104,7 +103,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool check_swap()
   }
   {
     optional<T> opt1(1);
-    optional<T> opt2;
+    optional<T> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == true, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -158,7 +157,7 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
@@ -187,7 +186,7 @@ void test_exceptions()
   {
     optional<Z> opt1;
     opt1.emplace(1);
-    optional<Z> opt2;
+    optional<Z> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -207,7 +206,7 @@ void test_exceptions()
   }
   {
     optional<Z> opt1;
-    optional<Z> opt2;
+    optional<Z> opt2{};
     opt2.emplace(2);
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
     assert(static_cast<bool>(opt1) == false);
@@ -229,7 +228,7 @@ void test_exceptions()
   {
     optional<Z> opt1;
     opt1.emplace(1);
-    optional<Z> opt2;
+    optional<Z> opt2{};
     opt2.emplace(2);
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
     assert(static_cast<bool>(opt1) == true);
@@ -251,7 +250,7 @@ void test_exceptions()
     assert(*opt2 == 2);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -263,7 +262,7 @@ int main(int, char**)
 #endif
   {
     optional<X> opt1;
-    optional<X> opt2;
+    optional<X> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == true, "");
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
@@ -274,7 +273,7 @@ int main(int, char**)
   }
   {
     optional<X> opt1(1);
-    optional<X> opt2;
+    optional<X> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == true, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -318,7 +317,7 @@ int main(int, char**)
   }
   {
     optional<Y> opt1;
-    optional<Y> opt2;
+    optional<Y> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
@@ -329,7 +328,7 @@ int main(int, char**)
   }
   {
     optional<Y> opt1(1);
-    optional<Y> opt2;
+    optional<Y> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
@@ -373,7 +372,7 @@ int main(int, char**)
   }
   {
     optional<TerminatesOnMoveAssignmentAndSwap> opt1;
-    optional<TerminatesOnMoveAssignmentAndSwap> opt2;
+    optional<TerminatesOnMoveAssignmentAndSwap> opt2{};
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
@@ -382,9 +381,30 @@ int main(int, char**)
     assert(static_cast<bool>(opt2) == false);
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+  {
+    int value       = 42;
+    int other_value = 1337;
+    optional<int&> opt1(value);
+    optional<int&> opt2(other_value);
+    static_assert(noexcept(swap(opt1, opt2)), "");
+    assert(opt1.has_value());
+    assert(*opt1 == value);
+    assert(opt2.has_value());
+    assert(*opt2 == other_value);
+    assert(cuda::std::addressof(value) == cuda::std::addressof(*opt1));
+    assert(cuda::std::addressof(other_value) == cuda::std::addressof(*opt2));
+    swap(opt1, opt2);
+    assert(opt1.has_value());
+    assert(*opt1 == other_value);
+    assert(opt2.has_value());
+    assert(*opt2 == value);
+    assert(cuda::std::addressof(value) == cuda::std::addressof(*opt2));
+    assert(cuda::std::addressof(other_value) == cuda::std::addressof(*opt1));
+  }
+
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

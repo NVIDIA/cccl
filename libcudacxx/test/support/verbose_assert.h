@@ -101,7 +101,7 @@ public:
     }
   }
 
-  ~AssertHandler() TEST_NOEXCEPT_FALSE
+  ~AssertHandler() noexcept(false)
   {
     if (!passed)
     {

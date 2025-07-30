@@ -29,6 +29,9 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__algorithm/max.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -81,7 +84,7 @@ class layout;
  */
 class slot
 {
-  std::size_t m_size{};
+  size_t m_size{};
   void* m_pointer{};
 
 public:
@@ -91,15 +94,15 @@ public:
    * @brief Returns an array of type @p T and length @p elements
    */
   template <typename T>
-  _CCCL_HOST_DEVICE alias<T> create_alias(std::size_t elements = 0);
+  _CCCL_HOST_DEVICE alias<T> create_alias(size_t elements = 0);
 
 private:
-  _CCCL_HOST_DEVICE void set_bytes_required(std::size_t new_size)
+  _CCCL_HOST_DEVICE void set_bytes_required(size_t new_size)
   {
-    m_size = (max) (m_size, new_size);
+    m_size = (::cuda::std::max) (m_size, new_size);
   }
 
-  _CCCL_HOST_DEVICE std::size_t get_bytes_required() const
+  _CCCL_HOST_DEVICE size_t get_bytes_required() const
   {
     return m_size;
   }
@@ -135,9 +138,9 @@ template <typename T>
 class alias
 {
   slot& m_slot;
-  std::size_t m_elements{};
+  size_t m_elements{};
 
-  _CCCL_HOST_DEVICE explicit alias(slot& slot, std::size_t elements = 0)
+  _CCCL_HOST_DEVICE explicit alias(slot& slot, size_t elements = 0)
       : m_slot(slot)
       , m_elements(elements)
   {
@@ -162,7 +165,7 @@ public:
    *                         temporary slot to fit up to @p new_elements items
    *                         of type @p T.
    */
-  _CCCL_HOST_DEVICE void grow(std::size_t new_elements)
+  _CCCL_HOST_DEVICE void grow(size_t new_elements)
   {
     m_elements = new_elements;
     this->update_slot();
@@ -188,7 +191,7 @@ public:
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE alias<T> slot::create_alias(std::size_t elements)
+_CCCL_HOST_DEVICE alias<T> slot::create_alias(size_t elements)
 {
   return alias<T>(*this, elements);
 }
@@ -255,7 +258,7 @@ template <int SlotsCount>
 class layout
 {
   slot m_slots[SlotsCount];
-  std::size_t m_sizes[SlotsCount];
+  size_t m_sizes[SlotsCount];
   void* m_pointers[SlotsCount];
   bool m_layout_was_mapped{};
 
@@ -275,14 +278,14 @@ public:
   /**
    * @brief Returns required temporary storage size in bytes
    */
-  _CCCL_HOST_DEVICE std::size_t get_size()
+  _CCCL_HOST_DEVICE size_t get_size()
   {
     this->prepare_interface();
 
     // AliasTemporaries can return error only in mapping stage,
     // so it's safe to ignore it here.
-    std::size_t temp_storage_bytes{};
-    AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+    size_t temp_storage_bytes{};
+    detail::AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
 
     if (temp_storage_bytes == 0)
     {
@@ -304,7 +307,7 @@ public:
   /**
    * @brief Maps the layout to the temporary storage buffer.
    */
-  _CCCL_HOST_DEVICE cudaError_t map_to_buffer(void* d_temp_storage, std::size_t temp_storage_bytes)
+  _CCCL_HOST_DEVICE cudaError_t map_to_buffer(void* d_temp_storage, size_t temp_storage_bytes)
   {
     if (m_layout_was_mapped)
     {
@@ -314,12 +317,12 @@ public:
     this->prepare_interface();
 
     cudaError_t error = cudaSuccess;
-    if ((error = AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if ((error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
     {
       return error;
     }
 
-    for (std::size_t slot_id = 0; slot_id < SlotsCount; slot_id++)
+    for (size_t slot_id = 0; slot_id < SlotsCount; slot_id++)
     {
       m_slots[slot_id].set_storage(m_pointers[slot_id]);
     }
@@ -336,15 +339,43 @@ private:
       return;
     }
 
-    for (std::size_t slot_id = 0; slot_id < SlotsCount; slot_id++)
+    for (size_t slot_id = 0; slot_id < SlotsCount; slot_id++)
     {
-      const std::size_t slot_size = m_slots[slot_id].get_bytes_required();
+      const size_t slot_size = m_slots[slot_id].get_bytes_required();
 
       m_sizes[slot_id]    = slot_size;
       m_pointers[slot_id] = nullptr;
     }
   }
 };
+
+template <typename MRT>
+CUB_RUNTIME_FUNCTION cudaError_t
+allocate_async(void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr, ::cuda::stream_ref stream)
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (
+      try { d_temp_storage = mr.allocate_async(temp_storage_bytes, stream); } catch (...) {
+        return cudaErrorMemoryAllocation;
+      }),
+    (d_temp_storage = mr.allocate_async(temp_storage_bytes, stream);));
+  return cudaSuccess;
+}
+
+template <typename MRT>
+CUB_RUNTIME_FUNCTION cudaError_t
+deallocate_async(void* d_temp_storage, size_t temp_storage_bytes, MRT& mr, ::cuda::stream_ref stream)
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (
+      try { mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); } catch (...) {
+        return cudaErrorMemoryAllocation;
+      }),
+    (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream);));
+  return cudaSuccess;
+}
 
 } // namespace temporary_storage
 

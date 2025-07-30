@@ -25,12 +25,12 @@ void TestInclusiveScanByKeySimple()
   ASSERT_EQUAL(output, ref);
 
   thrust::inclusive_scan_by_key(
-    keys.begin(), keys.end(), vals.begin(), output.begin(), thrust::equal_to<T>(), thrust::multiplies<T>());
+    keys.begin(), keys.end(), vals.begin(), output.begin(), ::cuda::std::equal_to<T>(), ::cuda::std::multiplies<T>());
 
   ref = {1, 2, 6, 24, 5, 6, 42};
   ASSERT_EQUAL(output, ref);
 
-  thrust::inclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin(), thrust::equal_to<T>());
+  thrust::inclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin(), ::cuda::std::equal_to<T>());
 
   ref = {1, 2, 5, 9, 5, 6, 13};
   ASSERT_EQUAL(output, ref);
@@ -97,7 +97,7 @@ void TestScanByKeyHeadFlags()
   Vector output(7, 0);
 
   thrust::inclusive_scan_by_key(
-    keys.begin(), keys.end(), vals.begin(), output.begin(), head_flag_predicate(), thrust::plus<T>());
+    keys.begin(), keys.end(), vals.begin(), output.begin(), head_flag_predicate(), ::cuda::std::plus<T>());
 
   Vector ref{1, 2, 5, 9, 5, 6, 13};
   ASSERT_EQUAL(output, ref);
@@ -114,7 +114,7 @@ void TestInclusiveScanByKeyTransformIterator()
   Vector output(7, 0);
 
   thrust::inclusive_scan_by_key(
-    keys.begin(), keys.end(), thrust::make_transform_iterator(vals.begin(), thrust::negate<T>()), output.begin());
+    keys.begin(), keys.end(), thrust::make_transform_iterator(vals.begin(), ::cuda::std::negate<T>()), output.begin());
 
   Vector ref{-1, -2, -5, -9, -5, -6, -13};
   ASSERT_EQUAL(output, ref);
@@ -267,9 +267,9 @@ void TestScanByKeyDiscardOutput(std::size_t n)
 
   // These are no-ops, but they should compile.
   thrust::inclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out);
-  thrust::inclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, thrust::equal_to<T>{});
+  thrust::inclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, ::cuda::std::equal_to<T>{});
   thrust::inclusive_scan_by_key(
-    d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, thrust::equal_to<T>{}, thrust::multiplies<T>{});
+    d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, ::cuda::std::equal_to<T>{}, ::cuda::std::multiplies<T>{});
 }
 DECLARE_VARIABLE_UNITTEST(TestScanByKeyDiscardOutput);
 

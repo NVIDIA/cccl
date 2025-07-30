@@ -1,0 +1,21 @@
+changelog:
+  categories:
+    - title: 🚀 Thrust / CUB
+      labels:
+        - "thrust"
+        - "cub"
+    - title: 📚 Libcudacxx
+      labels:
+        - "libcu++"
+    - title: 🤝 cuda.cccl.cooperative
+      labels:
+        - "cuda.cccl.cooperative"
+    - title: ⚡ cuda.cccl.parallel
+      labels:
+        - "cuda.cccl.parallel"
+    - title: 📝 Documentation
+      labels:
+        - "doc"
+    - title: 🔄 Other Changes
+      labels:
+        - "*"

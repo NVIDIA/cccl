@@ -24,7 +24,7 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -33,7 +33,7 @@ class __atomic_semaphore
 {
   __atomic_impl<ptrdiff_t, _Sco> __count;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __fetch_sub_if_slow(ptrdiff_t __old)
+  [[nodiscard]] _CCCL_API inline bool __fetch_sub_if_slow(ptrdiff_t __old)
   {
     while (__old != 0)
     {
@@ -45,7 +45,7 @@ class __atomic_semaphore
     return false;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __fetch_sub_if()
+  [[nodiscard]] _CCCL_API inline bool __fetch_sub_if()
   {
     ptrdiff_t __old = __count.load(memory_order_acquire);
     if (__old == 0)
@@ -59,7 +59,7 @@ class __atomic_semaphore
     return __fetch_sub_if_slow(__old); // fail only if not __available
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void __wait_slow()
+  _CCCL_API inline void __wait_slow()
   {
     while (1)
     {
@@ -72,7 +72,7 @@ class __atomic_semaphore
     }
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
+  [[nodiscard]] _CCCL_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
     return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       [this]() {
@@ -83,12 +83,12 @@ class __atomic_semaphore
   }
 
 public:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
   {
     return numeric_limits<ptrdiff_t>::max();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_semaphore(ptrdiff_t __count) noexcept
+  _CCCL_API constexpr __atomic_semaphore(ptrdiff_t __count) noexcept
       : __count(__count)
   {}
 
@@ -97,7 +97,7 @@ public:
   __atomic_semaphore(__atomic_semaphore const&)            = delete;
   __atomic_semaphore& operator=(__atomic_semaphore const&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI void release(ptrdiff_t __update = 1)
+  _CCCL_API inline void release(ptrdiff_t __update = 1)
   {
     __count.fetch_add(__update, memory_order_release);
     if (__update > 1)
@@ -110,7 +110,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void acquire()
+  _CCCL_API inline void acquire()
   {
     while (!try_acquire())
     {
@@ -118,13 +118,13 @@ public:
     }
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire() noexcept
+  [[nodiscard]] _CCCL_API inline bool try_acquire() noexcept
   {
     return __fetch_sub_if();
   }
 
   template <class Clock, class Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  [[nodiscard]] _CCCL_API inline bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -137,7 +137,7 @@ public:
   }
 
   template <class Rep, class Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  [[nodiscard]] _CCCL_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
   {
     if (try_acquire())
     {
@@ -155,7 +155,7 @@ class __atomic_semaphore<_Sco, 1>
 {
   __atomic_impl<int, _Sco> __available;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
+  [[nodiscard]] _CCCL_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
     return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       [this]() {
@@ -165,12 +165,12 @@ class __atomic_semaphore<_Sco, 1>
   }
 
 public:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
   {
     return 1;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_semaphore(ptrdiff_t __available)
+  _CCCL_API constexpr __atomic_semaphore(ptrdiff_t __available)
       : __available(__available)
   {}
 
@@ -179,15 +179,14 @@ public:
   __atomic_semaphore(__atomic_semaphore const&)            = delete;
   __atomic_semaphore& operator=(__atomic_semaphore const&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI void release(ptrdiff_t __update = 1)
+  _CCCL_API inline void release([[maybe_unused]] ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update == 1, "");
     __available.store(1, memory_order_release);
     __available.notify_one();
-    (void) __update;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void acquire()
+  _CCCL_API inline void acquire()
   {
     while (!try_acquire())
     {
@@ -195,13 +194,13 @@ public:
     }
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire() noexcept
+  [[nodiscard]] _CCCL_API inline bool try_acquire() noexcept
   {
     return 1 == __available.exchange(0, memory_order_acquire);
   }
 
   template <class Clock, class Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  [[nodiscard]] _CCCL_API inline bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -214,7 +213,7 @@ public:
   }
 
   template <class Rep, class Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  [[nodiscard]] _CCCL_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
   {
     if (try_acquire())
     {
@@ -229,6 +228,6 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H

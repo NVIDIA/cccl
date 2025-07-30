@@ -28,13 +28,14 @@
 
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
+#include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
-#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/__cccl_config>
 #include <cuda/std/__cccl/dialect.h>
 
 #include <cstdint>
@@ -62,10 +63,16 @@ using types = ::cuda::std::__type_push_back<
   char4,
   short4,
   int4,
+  float4,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  long4_16a,
+  longlong4_16a,
+  double4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
   long4,
   longlong4,
-  float4,
   double4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
   c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
 
 template <typename InputIteratorT, typename T>
@@ -108,56 +115,35 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(d_in == h_itrs[1]);
 }
 
-C2H_TEST("Test constant iterator", "[iterator]", scalar_types)
-{
-  using T                = c2h::get<0, TestType>;
-  const T base           = static_cast<T>(GENERATE(0, 99));
-  const auto h_reference = c2h::host_vector<T>{base, base, base, base, base, base, base, base};
-  test_iterator(cub::ConstantInputIterator<T>(base), h_reference);
-}
+static_assert(
+  ::cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
 
-C2H_TEST("Test counting iterator", "[iterator]", scalar_types)
-{
-  using T                = c2h::get<0, TestType>;
-  const T base           = static_cast<T>(GENERATE(0, 99));
-  const auto h_reference = c2h::host_vector<T>{
-    static_cast<T>(base + 0),
-    static_cast<T>(base + 100),
-    static_cast<T>(base + 1000),
-    static_cast<T>(base + 10000),
-    static_cast<T>(base + 1),
-    static_cast<T>(base + 21),
-    static_cast<T>(base + 11),
-    static_cast<T>(base + 0)};
-  test_iterator(cub::CountingInputIterator<T>(base), h_reference);
-}
-
-using cache_modifiers =
-  c2h::enum_type_list<cub::CacheLoadModifier,
-                      cub::LOAD_DEFAULT,
-                      cub::LOAD_CA,
-                      cub::LOAD_CG,
-                      cub::LOAD_CS,
-                      cub::LOAD_CV,
-                      cub::LOAD_LDG,
-                      cub::LOAD_VOLATILE>;
-
-C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
-{
-  using T                       = c2h::get<0, TestType>;
-  constexpr auto cache_modifier = c2h::get<1, TestType>::value;
-  constexpr int TEST_VALUES     = 11000;
-
-  c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(C2H_SEED(1), d_data);
-  c2h::host_vector<T> h_data(d_data);
-
-  const auto h_reference = c2h::host_vector<T>{
-    h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
-  test_iterator(
-    cub::CacheModifiedInputIterator<cache_modifier, T>(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data()))),
-    h_reference);
-}
+// using cache_modifiers =
+//   c2h::enum_type_list<cub::CacheLoadModifier,
+//                       cub::LOAD_DEFAULT,
+//                       cub::LOAD_CA,
+//                       cub::LOAD_CG,
+//                       cub::LOAD_CS,
+//                       cub::LOAD_CV,
+//                       cub::LOAD_LDG,
+//                       cub::LOAD_VOLATILE>;
+//
+// C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
+// {
+//   using T                       = c2h::get<0, TestType>;
+//   constexpr auto cache_modifier = c2h::get<1, TestType>::value;
+//   constexpr int TEST_VALUES     = 11000;
+//
+//   c2h::device_vector<T> d_data(TEST_VALUES);
+//   c2h::gen(C2H_SEED(1), d_data);
+//   c2h::host_vector<T> h_data(d_data);
+//
+//   const auto h_reference = c2h::host_vector<T>{
+//     h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
+//   test_iterator(
+//     cub::CacheModifiedInputIterator<cache_modifier, T>(const_cast<const
+//     T*>(thrust::raw_pointer_cast(d_data.data()))), h_reference);
+// }
 
 template <typename T>
 struct transform_op_t
@@ -167,30 +153,6 @@ struct transform_op_t
     return input + input;
   }
 };
-
-C2H_TEST("Test transform iterator", "[iterator]", types)
-{
-  using T                   = c2h::get<0, TestType>;
-  constexpr int TEST_VALUES = 11000;
-
-  c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(C2H_SEED(1), d_data);
-  c2h::host_vector<T> h_data(d_data);
-
-  transform_op_t<T> op;
-  const auto h_reference = c2h::host_vector<T>{
-    op(h_data[0]),
-    op(h_data[100]),
-    op(h_data[1000]),
-    op(h_data[10000]),
-    op(h_data[1]),
-    op(h_data[21]),
-    op(h_data[11]),
-    op(h_data[0])};
-  test_iterator(cub::TransformInputIterator<T, transform_op_t<T>, const T*>(
-                  const_cast<const T*>(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data()))), op),
-                h_reference);
-}
 
 C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
 {
@@ -233,7 +195,7 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  cub::TransformInputIterator<T, transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  thrust::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }

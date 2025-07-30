@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // struct unreachable_sentinel_t;
 // inline constexpr unreachable_sentinel_t unreachable_sentinel;
 
@@ -46,11 +44,12 @@ __host__ __device__ constexpr bool test()
 
   static_assert(cuda::std::__weakly_equality_comparable_with<cuda::std::unreachable_sentinel_t, int>);
   static_assert(cuda::std::__weakly_equality_comparable_with<cuda::std::unreachable_sentinel_t, int*>);
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue with void
+#if !TEST_COMPILER(GCC, <, 12) || TEST_STD_VER < 2020 // gcc 10 has an issue
+                                                      // with void
   static_assert(!cuda::std::__weakly_equality_comparable_with<cuda::std::unreachable_sentinel_t, void*>);
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020
-  ASSERT_NOEXCEPT(sentinel == p);
-  ASSERT_NOEXCEPT(sentinel != p);
+#endif // !TEST_COMPILER(GCC, <, 12)  || TEST_STD_VER < 2020
+  static_assert(noexcept(sentinel == p));
+  static_assert(noexcept(sentinel != p));
 
   return true;
 }

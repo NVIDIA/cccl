@@ -40,11 +40,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
-#include <cstdint>
-#include <type_traits>
+#include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -171,39 +170,25 @@ struct DeviceMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    uint32_t num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
-    static_assert(std::is_pointer<cub::detail::value_t<InputBufferIt>>::value,
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-    static_assert(std::is_pointer<cub::detail::value_t<OutputBufferIt>>::value,
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<OutputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-
-    // Integer type large enough to hold any offset in [0, num_buffers)
-    using BufferOffsetT = uint32_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<
-      InputBufferIt,
-      OutputBufferIt,
-      BufferSizeIteratorT,
-      BufferOffsetT,
-      BlockOffsetT,
-      detail::batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-      true>::Dispatch(d_temp_storage,
-                      temp_storage_bytes,
-                      input_buffer_it,
-                      output_buffer_it,
-                      buffer_sizes,
-                      num_buffers,
-                      stream);
+    return detail::
+      DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
+        d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
   }
 };
 

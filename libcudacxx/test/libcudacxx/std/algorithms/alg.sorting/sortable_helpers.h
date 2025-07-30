@@ -15,12 +15,12 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #  include <cuda/std/iterator>
 
 #  include "test_iterators.h"
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 struct TrivialSortable
 {
@@ -54,7 +54,7 @@ struct NonTrivialSortable
   __host__ __device__ constexpr NonTrivialSortable(const NonTrivialSortable& rhs)
       : value(rhs.value)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialSortable& operator=(const NonTrivialSortable& rhs)
+  __host__ __device__ constexpr NonTrivialSortable& operator=(const NonTrivialSortable& rhs)
   {
     value = rhs.value;
     return *this;
@@ -104,7 +104,7 @@ struct NonTrivialSortableWithComp
   __host__ __device__ constexpr NonTrivialSortableWithComp(const NonTrivialSortableWithComp& rhs)
       : value(rhs.value)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialSortableWithComp& operator=(const NonTrivialSortableWithComp& rhs)
+  __host__ __device__ constexpr NonTrivialSortableWithComp& operator=(const NonTrivialSortableWithComp& rhs)
   {
     value = rhs.value;
     return *this;
@@ -163,12 +163,12 @@ struct TracedCopy
   {
     return data == o.data;
   }
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   __host__ __device__ constexpr auto operator<=>(const TracedCopy& o) const
   {
     return data <=> o.data;
   }
-#  else // ^^^ <=> ^^^ / vvv no <=> vvv
+#  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   __host__ __device__ constexpr auto operator<(const TracedCopy& o) const
   {
     return data < o.data;
@@ -185,7 +185,7 @@ struct TracedCopy
   {
     return data >= o.data;
   }
-#  endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#  endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 template <class Iter>

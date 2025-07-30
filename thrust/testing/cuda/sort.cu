@@ -71,7 +71,7 @@ VariableUnitTest<TestComparisonSortDeviceDevice, unittest::type_list<unittest::i
 template <typename T, typename ExecutionPolicy>
 void TestSortDevice(ExecutionPolicy exec, const size_t n)
 {
-  TestComparisonSortDevice<T>(exec, n, thrust::less<T>());
+  TestComparisonSortDevice<T>(exec, n, ::cuda::std::less<T>());
 };
 
 template <typename T>
@@ -131,13 +131,13 @@ DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 template <typename T>
 struct TestRadixSortDispatch
 {
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<T>>::value, "");
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
 
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<>>::value, "");
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
 
@@ -146,18 +146,18 @@ struct TestRadixSortDispatch
 SimpleUnitTest<TestRadixSortDispatch,
                unittest::concat<IntegralTypes,
                                 FloatingPointTypes
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
                                 ,
                                 unittest::type_list<__int128_t, __uint128_t>
-#endif // _LIBCUDACXX_HAS_NO_INT128
-#ifdef _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_INT128()
+#if _CCCL_HAS_NVFP16()
                                 ,
                                 unittest::type_list<__half>
-#endif // _CCCL_HAS_NVFP16
-#ifdef _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
                                 ,
                                 unittest::type_list<__nv_bfloat16>
-#endif // _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16()
                                 >>
   TestRadixSortDispatchInstance;
 
@@ -272,8 +272,8 @@ struct TestSortAscendingKey
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    std::sort(h_data.begin(), h_data.end(), thrust::less<T>{});
-    thrust::sort(d_data.begin(), d_data.end(), thrust::less<T>{});
+    std::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>{});
+    thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>{});
 
     ASSERT_EQUAL_QUIET(h_data, d_data);
   }
@@ -281,21 +281,20 @@ struct TestSortAscendingKey
 
 SimpleUnitTest<TestSortAscendingKey,
                unittest::concat<unittest::type_list<>
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
                                 ,
                                 unittest::type_list<__int128_t, __uint128_t>
-#endif
+#endif // _CCCL_HAS_INT128()
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
-#if _CCCL_CUDACC_AT_LEAST(12, 2)
-#  if defined(_CCCL_HAS_NVFP16) || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+#if _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
                                 ,
                                 unittest::type_list<__half>
 #  endif
-#  if defined(_CCCL_HAS_NVBF16) \
-    || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
+#  if _CCCL_HAS_NVBF16() || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
                                 ,
                                 unittest::type_list<__nv_bfloat16>
 #  endif
-#endif // _CCCL_CUDACC_AT_LEAST(12, 2)
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
                                 >>
   TestSortAscendingKeyMoreTypes;

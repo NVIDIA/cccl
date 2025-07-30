@@ -305,6 +305,33 @@ void unpin_memory(T* p)
   }
 }
 
+/**
+ * @brief Pins arrays in host memory
+ */
+template <typename T, size_t N>
+cudaError_t pin_memory(T (&array)[N])
+{
+  return pin_memory(array, N);
+}
+
+/**
+ * @brief Pins vectors in host memory
+ */
+template <typename T>
+cudaError_t pin_memory(::std::vector<T>& v)
+{
+  return pin_memory(v.data(), v.size());
+}
+
+/**
+ * @brief Unpin vectors in host memory
+ */
+template <typename T>
+void unpin_memory(::std::vector<T>& v)
+{
+  unpin_memory(v.data());
+}
+
 #ifdef UNITTESTED_FILE
 UNITTEST("pin_memory")
 {
@@ -995,6 +1022,12 @@ UNITTEST("small_vector basics")
   {
     EXPECT(element < 'd');
   }
+
+  // Vector of non-copyable objects
+  small_vector<::std::unique_ptr<int>, 8> v4;
+  v4.reserve(10);
+  v4.push_back(::std::make_unique<int>(42));
+  v4.push_back(::std::make_unique<int>(5));
 };
 #endif // UNITTESTED_FILE
 

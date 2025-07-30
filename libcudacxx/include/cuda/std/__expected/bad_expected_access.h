@@ -25,25 +25,25 @@
 
 #include <nv/target>
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_HAS_EXCEPTIONS()
+#  ifdef __cpp_lib_expected
+#    include <expected>
+#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#    include <exception>
+#  endif // !__cpp_lib_expected
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
-#  ifndef _CCCL_NO_EXCEPTIONS
-#    ifdef __cpp_lib_expected
-#      include <expected>
-#    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
-#      include <exception>
-#    endif // !__cpp_lib_expected
-#  endif // _CCCL_NO_EXCEPTIONS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
 
-#    ifdef __cpp_lib_expected
+#  ifdef __cpp_lib_expected
 
 using ::std::bad_expected_access;
 
-#    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
 
 template <class _Err>
 class bad_expected_access;
@@ -51,14 +51,6 @@ class bad_expected_access;
 template <>
 class bad_expected_access<void> : public ::std::exception
 {
-protected:
-  _CCCL_HIDE_FROM_ABI bad_expected_access() noexcept                             = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access(const bad_expected_access&)            = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access(bad_expected_access&&)                 = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(const bad_expected_access&) = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(bad_expected_access&&)      = default;
-  ~bad_expected_access() noexcept override                                       = default;
-
 public:
   // The way this has been designed (by using a class template below) means that we'll already
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
@@ -74,26 +66,37 @@ template <class _Err>
 class bad_expected_access : public bad_expected_access<void>
 {
 public:
-  explicit bad_expected_access(_Err __e)
+#    if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+  _CCCL_HOST_DEVICE
+#    endif // _CCCL_CUDA_COMPILER(CLANG)
+  _CCCL_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
       : __unex_(_CUDA_VSTD::move(__e))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Err& error() & noexcept
+#    if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+  _CCCL_HOST_DEVICE
+#    endif // _CCCL_CUDA_COMPILER(CLANG)
+  _CCCL_HIDE_FROM_ABI ~bad_expected_access() noexcept
+  {
+    __unex_.~_Err();
+  }
+
+  _CCCL_API inline _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Err& error() const& noexcept
+  _CCCL_API inline const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Err&& error() && noexcept
+  _CCCL_API inline _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Err&& error() const&& noexcept
+  _CCCL_API inline const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
@@ -101,25 +104,24 @@ public:
 private:
   _Err __unex_;
 };
-#    endif // !__cpp_lib_expected
+#  endif // !__cpp_lib_expected
 
-#  endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Err, class _Arg>
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access(_Arg&& __arg)
+[[noreturn]] _CCCL_API inline void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
 {
-#  ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
                     ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
-  (void) __arg;
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER > 2011
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H

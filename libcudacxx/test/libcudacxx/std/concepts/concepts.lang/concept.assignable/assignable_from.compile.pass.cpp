@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class LHS, class RHS>
 // concept assignable_from =
 //   std::is_lvalue_reference_v<LHS> &&
@@ -83,9 +81,6 @@ struct Locale
 static_assert(cuda::std::is_assignable_v<Locale&, const Locale&>, "");
 static_assert(!cuda::std::assignable_from<Locale&, const Locale&>, "");
 
-#ifdef TEST_COMPILER_MSVC_2017
-#  pragma warning(disable : 4522) // multiple assignment operators defined
-#endif // TEST_COMPILER_MSVC_2017
 struct Tuple
 {
   __host__ __device__ Tuple& operator=(const Tuple&);
@@ -110,13 +105,9 @@ static_assert(cuda::std::assignable_from<volatile int&, int&>, "");
 static_assert(cuda::std::assignable_from<volatile int&, int&&>, "");
 static_assert(!cuda::std::assignable_from<int (&)[10], int>, "");
 static_assert(!cuda::std::assignable_from<int (&)[10], int (&)[10]>, "");
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(cuda::std::assignable_from<MoveOnly&, MoveOnly>, "");
-#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!cuda::std::assignable_from<MoveOnly&, MoveOnly&>, "");
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(cuda::std::assignable_from<MoveOnly&, MoveOnly&&>, "");
-#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!cuda::std::assignable_from<void, int>, "");
 static_assert(!cuda::std::assignable_from<void, void>, "");
 

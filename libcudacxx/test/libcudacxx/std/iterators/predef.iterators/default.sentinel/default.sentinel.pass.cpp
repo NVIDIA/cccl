@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // struct default_sentinel_t;
 // inline constexpr default_sentinel_t default_sentinel;
 

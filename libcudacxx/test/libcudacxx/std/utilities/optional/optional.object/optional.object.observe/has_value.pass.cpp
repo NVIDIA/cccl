@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr bool optional<T>::has_value() const noexcept;
@@ -18,33 +17,37 @@
 
 #include "test_macros.h"
 
+template <class T>
+__host__ __device__ constexpr void test()
+{
+  {
+    using O = cuda::std::optional<T>;
+    cuda::std::remove_reference_t<T> one{1};
+
+    O opt;
+    assert(!opt.has_value());
+
+    opt = one;
+    assert(opt.has_value());
+
+    static_assert(noexcept(opt.has_value()));
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  return true;
+}
+
 int main(int, char**)
 {
-  using cuda::std::optional;
-  {
-    const optional<int> opt;
-    ((void) opt);
-    ASSERT_NOEXCEPT(opt.has_value());
-    ASSERT_SAME_TYPE(decltype(opt.has_value()), bool);
-  }
-  {
-    optional<int> opt;
-    assert(!opt.has_value());
-  }
-  {
-    optional<int> opt(0);
-    assert(opt.has_value());
-  }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    constexpr optional<int> opt;
-    static_assert(!opt.has_value(), "");
-  }
-  {
-    constexpr optional<int> opt(0);
-    static_assert(opt.has_value(), "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  test();
+  static_assert(test(), "");
 
   return 0;
 }

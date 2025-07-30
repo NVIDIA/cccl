@@ -43,15 +43,17 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
-#include <iterator>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
@@ -87,10 +89,10 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::false_type,
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
@@ -108,10 +110,10 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::true_type,
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
@@ -204,7 +206,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -242,14 +244,14 @@ public:
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     T initial_value,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
 
     // Integer type for global offsets
     using OffsetT               = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -269,6 +271,95 @@ public:
       reduction_op,
       initial_value, // zero-initialize
       stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented reduction using the specified
+  //! binary ``reduction_op`` functor and a fixed segment size.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-reduce
+  //!     :end-before: example-end fixed-size-segmented-reduce-reduce
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregates
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] initial_value
+  //!   Initial value of the reduction for each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
+  CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    int segment_size,
+    ReductionOpT reduction_op,
+    T initial_value,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T>::Dispatch(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
   }
 
   //! @rst
@@ -326,7 +417,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -348,24 +439,29 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
       size_t& temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
-      int num_segments,
+      ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
 
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The output value type
-    using OutputT               = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -390,9 +486,89 @@ public:
   }
 
   //! @rst
+  //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! - Uses ``0`` as the initial value of the reduction for each segment.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-sum
+  //!     :end-before: example-end fixed-size-segmented-reduce-sum
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The output value type
+    using output_t = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, output_t>::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        segment_size,
+        ::cuda::std::plus{},
+        output_t{},
+        stream);
+  }
+
+  //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
   //!
-  //! - Uses ``std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
+  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
   //!   the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where the latter is
@@ -450,7 +626,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -471,24 +647,29 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
       size_t& temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
-      int num_segments,
+      ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
 
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT                = cub::detail::value_t<InputIteratorT>;
+    using InputT                = cub::detail::it_value_t<InputIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -508,11 +689,93 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::minimum<>{},
-      Traits<InputT>::Max(), // replace with
-                             // std::numeric_limits<T>::max()
-                             // when C++11 support is
-                             // more prevalent
+      ::cuda::std::numeric_limits<InputT>::max(),
       stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
+  //!
+  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-custommin
+  //!     :end-before: example-end segmented-reduce-custommin
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-min
+  //!     :end-before: example-end fixed-size-segmented-reduce-min
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Min(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The input value type
+    using input_t = cub::detail::it_value_t<InputIteratorT>;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, input_t>::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        segment_size,
+        ::cuda::minimum<>{},
+        ::cuda::std::numeric_limits<input_t>::max(),
+        stream);
   }
 
   //! @rst
@@ -524,7 +787,7 @@ public:
   //!
   //!   - The minimum of the *i*\ :sup:`th` segment is written to
   //!     ``d_out[i].value`` and its offset in that segment is written to ``d_out[i].key``.
-  //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -580,7 +843,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -601,18 +864,23 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
 
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
@@ -620,7 +888,7 @@ public:
     using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
@@ -638,8 +906,7 @@ public:
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -666,9 +933,119 @@ public:
   }
 
   //! @rst
+  //! Finds the first device-wide minimum in each segment using the
+  //! less-than (``<``) operator, also returning the in-segment index of that item.
+  //!
+  //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
+  //!   (assuming the value type of ``d_in`` is ``T``)
+  //!
+  //!   - The minimum of the *i*\ :sup:`th` segment is written to
+  //!     ``d_out[i].second`` and its offset in that segment is written to ``d_out[i].first``.
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-argmin
+  //!     :end-before: example-end fixed-size-segmented-reduce-argmin
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items (of some type `T`) @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate
+  //!   (having value type `cuda::std::pair<int, T>`) @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    int segment_size,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The input type
+    using input_value_t = cub::detail::it_value_t<InputIteratorT>;
+
+    // The output tuple type
+    using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<offset_t, input_value_t>>;
+
+    using accum_t = output_tuple_t;
+
+    using init_t = detail::reduce::empty_problem_init_t<accum_t>;
+
+    // The output value type
+    using output_value_t = typename output_tuple_t::second_type;
+
+    // Wrapped input iterator to produce index-value <offset_t, InputT> tuples
+    auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
+      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
+      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
+
+    using arg_index_input_iterator_t = decltype(d_indexed_in);
+
+    // Initial value
+    init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::max())};
+
+    return detail::reduce::DispatchFixedSizeSegmentedReduce<
+      arg_index_input_iterator_t,
+      OutputIteratorT,
+      offset_t,
+      cub::detail::arg_min,
+      init_t,
+      accum_t>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_indexed_in,
+                         d_out,
+                         num_segments,
+                         segment_size,
+                         cub::detail::arg_min(),
+                         initial_value,
+                         stream);
+  }
+
+  //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
   //!
-  //! - Uses ``std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
   //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
@@ -720,7 +1097,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -741,24 +1118,29 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
       size_t& temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
-      int num_segments,
+      ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
 
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT = cub::detail::value_t<InputIteratorT>;
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -773,11 +1155,87 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::maximum<>{},
-      Traits<InputT>::Lowest(), // replace with
-                                // std::numeric_limits<T>::lowest()
-                                // when C++11 support is
-                                // more prevalent
+      ::cuda::std::numeric_limits<InputT>::lowest(),
       stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
+  //!
+  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-max
+  //!     :end-before: example-end fixed-size-segmented-reduce-max
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Max(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The input value type
+    using input_t = cub::detail::it_value_t<InputIteratorT>;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, input_t>::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        segment_size,
+        ::cuda::maximum<>{},
+        ::cuda::std::numeric_limits<input_t>::lowest(),
+        stream);
   }
 
   //! @rst
@@ -789,7 +1247,7 @@ public:
   //!
   //!   - The maximum of the *i*\ :sup:`th` segment is written to
   //!     ``d_out[i].value`` and its offset in that segment is written to ``d_out[i].key``.
-  //!   - The ``{1, std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
   //!
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -848,7 +1306,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -869,18 +1327,23 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
 
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
@@ -888,7 +1351,7 @@ public:
     using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
@@ -906,8 +1369,7 @@ public:
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -931,6 +1393,119 @@ public:
       cub::ArgMax(),
       initial_value,
       stream);
+  }
+
+  //! @rst
+  //! Finds the first device-wide maximum in each segment using the
+  //! greater-than (``>``) operator, also returning the in-segment index of that item
+  //!
+  //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
+  //!   (assuming the value type of ``d_in`` is ``T``)
+  //!
+  //!   - The maximum of the *i*\ :sup:`th` segment is written to
+  //!     ``d_out[i].second`` and its offset in that segment is written to ``d_out[i].first``.
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the argmax-reduction of a device vector
+  //! of `int` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-argmax
+  //!     :end-before: example-end fixed-size-segmented-reduce-argmax
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items
+  //!   (of some type `T`) @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate
+  //!   (having value type `cuda::std::pair<int, T>`) @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    int segment_size,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using input_t = int;
+
+    // The input type
+    using input_value_t = cub::detail::it_value_t<InputIteratorT>;
+
+    // The output tuple type
+    using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<input_t, input_value_t>>;
+
+    using accum_t = output_tuple_t;
+
+    using init_t = detail::reduce::empty_problem_init_t<accum_t>;
+
+    // The output value type
+    using output_value_t = typename output_tuple_t::second_type;
+
+    // Wrapped input iterator to produce index-value <input_t, InputT> tuples
+    auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
+      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
+      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
+
+    using arg_index_input_iterator_t = decltype(d_indexed_in);
+
+    // Initial value
+    init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::lowest())};
+
+    return detail::reduce::DispatchFixedSizeSegmentedReduce<
+      arg_index_input_iterator_t,
+      OutputIteratorT,
+      input_t,
+      cub::detail::arg_max,
+      init_t,
+      accum_t>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_indexed_in,
+                         d_out,
+                         num_segments,
+                         segment_size,
+                         cub::detail::arg_max(),
+                         initial_value,
+                         stream);
   }
 };
 

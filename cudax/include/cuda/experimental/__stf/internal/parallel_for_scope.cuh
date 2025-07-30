@@ -29,7 +29,7 @@
 namespace cuda::experimental::stf
 {
 
-#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 class stream_ctx;
 class graph_ctx;
@@ -403,7 +403,7 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
  *
  * @tparam deps_t
  */
-template <typename context, typename shape_t, typename partitioner_t, typename... deps_ops_t>
+template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
   //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
@@ -421,7 +421,7 @@ public:
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, deps_ops_t... deps)
+  parallel_for_scope(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
       , deps(mv(deps)...)
       , ctx(ctx)
@@ -578,7 +578,7 @@ public:
     // TODO redo cascade of tests
     if constexpr (need_reduction)
     {
-      _CCCL_ASSERT(e_place != exec_place::host, "Reduce access mode currently unimplemented on host.");
+      _CCCL_ASSERT(e_place != exec_place::host(), "Reduce access mode currently unimplemented on host.");
       _CCCL_ASSERT(!e_place.is_grid(), "Reduce access mode currently unimplemented on grid of places.");
       do_parallel_for_redux(f, e_place, shape, t);
       return;
@@ -586,7 +586,7 @@ public:
     else if constexpr (is_extended_host_device_lambda_closure_type)
     {
       // Can run on both - decide dynamically
-      if (e_place == exec_place::host)
+      if (e_place.is_host())
       {
         return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
       }
@@ -595,18 +595,19 @@ public:
     else if constexpr (is_extended_device_lambda_closure_type)
     {
       // Lambda can run only on device - make sure they're not trying it on the host
-      EXPECT(e_place != exec_place::host, "Attempt to run a device function on the host.");
+      EXPECT(!e_place.is_host(), "Attempt to run a device function on the host.");
       // Fall through for the device implementation
     }
     else
     {
       // Lambda can run only on the host - make sure they're not trying it elsewhere
-      EXPECT(e_place == exec_place::host, "Attempt to run a host function on a device.");
+      EXPECT(e_place.is_host(), "Attempt to run a host function on a device.");
       return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
     }
 
     // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
-    if constexpr (is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
+    if constexpr (!::std::is_same_v<exec_place_t, exec_place_host> && is_extended_host_device_lambda_closure_type
+                  || is_extended_device_lambda_closure_type)
     {
       if (!e_place.is_grid())
       {
@@ -662,8 +663,8 @@ public:
     Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
-    _CCCL_ASSERT(sub_exec_place != exec_place::host, "Internal CUDASTF error.");
-    _CCCL_ASSERT(sub_exec_place != exec_place::device_auto, "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::device_auto(), "Internal CUDASTF error.");
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
@@ -698,7 +699,8 @@ public:
         kernel_params.sharedMemBytes = 0;
 
         // This new node will depend on the previous in the chain (allocation)
-        cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params));
+        auto lock = t.lock_ctx_graph();
+        cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params);
       }
 
       return;
@@ -715,7 +717,8 @@ public:
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    const auto [block_size, min_blocks] = conf;
+    const auto block_size = conf.first;
+    const auto min_blocks = conf.second;
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
@@ -759,10 +762,8 @@ public:
     }
     else
     {
-      auto g = t.get_ctx_graph();
-
       _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
-      int dev_id = device_ordinal(sub_exec_place.affine_data_place());
+      const int dev_id = device_ordinal(sub_exec_place.affine_data_place());
 
       cudaMemAllocNodeParams allocParams{};
       allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
@@ -770,6 +771,8 @@ public:
       allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
       allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
+      auto lock               = t.lock_ctx_graph();
+      auto g                  = t.get_ctx_graph();
       const auto& input_nodes = t.get_ready_dependencies();
 
       /* This first node depends on task's dependencies themselves */
@@ -826,9 +829,9 @@ public:
     Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
-    _CCCL_ASSERT(sub_exec_place != exec_place::host, "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
 
-    if (sub_exec_place == exec_place::device_auto)
+    if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
       return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
@@ -837,15 +840,12 @@ public:
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
     static const auto conf = [] {
-      // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      int min_grid_size = 0, max_block_size = 0, block_size_limit = 0;
       // compute_kernel_limits will return the min number of blocks/max
       // block size to optimize occupancy, as well as some block size
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
-      reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, min_grid_size, max_block_size, 0, false, block_size_limit);
-      return ::std::pair(size_t(min_grid_size), size_t(max_block_size));
+      auto res = reserved::compute_kernel_limits(&reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, 0, false);
+      return ::std::pair(size_t(res.min_grid_size), size_t(res.max_block_size));
     }();
 
     const auto [block_size, min_blocks] = conf;
@@ -898,7 +898,9 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
+      auto lock = t.lock_ctx_graph();
       cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
+
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
     }
@@ -983,12 +985,12 @@ private:
   ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
-  exec_place e_place;
+  exec_place_t e_place;
   ::std::string symbol;
   shape_t shape;
 };
 } // end namespace reserved
 
-#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 } // end namespace cuda::experimental::stf

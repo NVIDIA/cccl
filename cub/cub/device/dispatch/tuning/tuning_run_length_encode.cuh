@@ -46,7 +46,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/cmath>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 
@@ -82,13 +83,13 @@ enum class length_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return Traits<T>::PRIMITIVE ? primitive_key::yes : primitive_key::no;
+  return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_length is_primitive_length()
 {
-  return Traits<T>::PRIMITIVE ? primitive_length::yes : primitive_length::no;
+  return is_primitive<T>::value ? primitive_length::yes : primitive_length::no;
 }
 
 template <class KeyT>
@@ -156,7 +157,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<1075>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -216,7 +217,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<515>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -232,11 +233,80 @@ struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
+template <class LengthT,
+          class KeyT,
+          primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
+          primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
+          length_size LengthSize           = classify_length_size<LengthT>(),
+          key_size KeySize                 = classify_key_size<KeyT>()>
+struct sm100_tuning;
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
+{
+  // ipt_14.tpb_256.trp_0.ld_1.ns_468.dcid_7.l2w_300 1.202228  1.126160  1.197973  1.307692
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 14;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<468, 300>;
+};
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
+{
+  // ipt_14.tpb_224.trp_0.ld_0.ns_376.dcid_7.l2w_420 1.123754  1.002404  1.113839  1.274882
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 14;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<376, 420>;
+};
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
+{
+  // ipt_14.tpb_256.trp_0.ld_1.ns_956.dcid_7.l2w_70 1.134395  1.071951  1.137008  1.169419
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 14;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<956, 70>;
+};
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
+{
+  // ipt_9.tpb_224.trp_1.ld_0.ns_188.dcid_2.l2w_765 1.100140  1.020069  1.116462  1.345506
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 9;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<188, 765>;
+};
+
+// TODO(gonidelis): Tune for I128.
+#if _CCCL_HAS_INT128()
+// template <class LengthT>
+// struct sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+// {
+//   static constexpr int threads = 128;
+//   static constexpr int items = 11;
+//   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+//   using delay_constructor = detail::fixed_delay_constructor_t<428, 930>;
+// };
+
+// template <class LengthT>
+// struct sm100_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+//     : sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+// {};
+#endif
+
 // this policy is passed to DispatchReduceByKey
 template <class LengthT, class KeyT>
 struct policy_hub
 {
-  static constexpr int max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(LengthT)));
+  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max) (sizeof(KeyT), sizeof(LengthT)));
   static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
 
   template <CacheLoadModifier LoadModifier>
@@ -246,9 +316,8 @@ struct policy_hub
     static constexpr int items =
       (max_input_bytes <= 8)
         ? 6
-        // TODO(bgruber): use clamp() and ceil_div in C++14
-        : CUB_MIN(nominal_4B_items_per_thread,
-                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
+        : ::cuda::std::clamp(
+            ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
                              items,
@@ -258,10 +327,9 @@ struct policy_hub
                              default_reduce_by_key_delay_constructor_t<LengthT, int>>;
   };
 
-  // SM35
-  struct Policy350
+  struct Policy500
       : DefaultPolicy<LOAD_LDG>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -276,25 +344,39 @@ struct policy_hub
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
-  // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
-    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
+    using ReduceByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
 
-  // SM86
   struct Policy860
       : DefaultPolicy<LOAD_LDG>
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  // SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm90_tuning<LengthT, KeyT>>(0));
+    using ReduceByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<LengthT, KeyT>>(0));
   };
 
-  using MaxPolicy = Policy900;
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy900
+    template <typename Tuning>
+    static auto select_agent_policy100(int)
+      -> AgentReduceByKeyPolicy<Tuning::threads,
+                                Tuning::items,
+                                Tuning::load_algorithm,
+                                Tuning::load_modifier,
+                                BLOCK_SCAN_WARP_SCANS,
+                                typename Tuning::delay_constructor>;
+    template <typename Tuning>
+    static auto select_agent_policy100(long) -> typename Policy900::ReduceByKeyPolicyT;
+
+    using ReduceByKeyPolicyT = decltype(select_agent_policy100<sm100_tuning<LengthT, KeyT>>(0));
+  };
+
+  using MaxPolicy = Policy1000;
 };
 } // namespace encode
 
@@ -349,7 +431,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<1065>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -414,7 +496,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<840>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -431,6 +513,87 @@ struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
+template <class LengthT,
+          class KeyT,
+          primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
+          primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
+          length_size LengthSize           = classify_length_size<LengthT>(),
+          key_size KeySize                 = classify_key_size<KeyT>()>
+struct sm100_tuning;
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
+{
+  // ipt_20.tpb_224.trp_1.ts_0.ld_1.ns_64.dcid_2.l2w_315 1.119878  1.003690  1.130067  1.338983
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr bool store_with_time_slicing      = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<64, 315>;
+};
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
+{
+  // ipt_20.tpb_224.trp_1.ts_0.ld_0.ns_116.dcid_7.l2w_340 1.146528  1.072769  1.152390  1.333333
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr bool store_with_time_slicing      = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<116, 340>;
+};
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
+{
+  // ipt_13.tpb_224.trp_0.ts_0.ld_0.ns_252.dcid_2.l2w_470 1.113202  1.003690  1.133114  1.349296
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 13;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr bool store_with_time_slicing      = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<252, 470>;
+};
+
+template <class LengthT, class KeyT>
+struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
+{
+  // ipt_15.tpb_256.trp_1.ts_0.ld_0.ns_28.dcid_2.l2w_520 1.114944  1.033189  1.122360  1.252083
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 15;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr bool store_with_time_slicing      = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<28, 520>;
+};
+// Fall back to Policy900 for double, because that one performs better than the above tuning (same key_size)
+// TODO(bgruber): in C++20 put a requires(!::cuda::std::is_same_v<KeyT, double>) onto the above tuning and delete this
+// one
+template <class LengthT>
+struct sm100_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
+    : sm90_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
+{};
+
+// TODO(gonidelis): Tune for I128.
+#if _CCCL_HAS_INT128()
+// template <class LengthT>
+// struct sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+// {
+//   static constexpr int threads = 288;
+//   static constexpr int items = 9;
+//   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+//   static constexpr bool store_with_time_slicing = false;
+//   using delay_constructor = detail::fixed_delay_constructor_t<484, 1150>;
+// };
+
+// template <class LengthT>
+// struct sm100_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+//     : sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+// {};
+#endif
+
 template <class LengthT, class KeyT>
 struct policy_hub
 {
@@ -440,7 +603,7 @@ struct policy_hub
     static constexpr int nominal_4B_items_per_thread = 15;
     // TODO(bgruber): use clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(KeyT))));
+      _CUDA_VSTD::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
     using RleSweepPolicyT =
       AgentRlePolicy<96,
                      ITEMS_PER_THREAD,
@@ -451,10 +614,9 @@ struct policy_hub
                      default_reduce_by_key_delay_constructor_t<DelayConstructorKey, int>>;
   };
 
-  // SM35
-  struct Policy350
+  struct Policy500
       : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -471,25 +633,40 @@ struct policy_hub
   static auto select_agent_policy(long) ->
     typename DefaultPolicy<BLOCK_LOAD_WARP_TRANSPOSE, LengthT, LOAD_DEFAULT>::RleSweepPolicyT;
 
-  // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
-    using RleSweepPolicyT = decltype(select_agent_policy<non_trivial_runs::sm80_tuning<LengthT, KeyT>>(0));
+    using RleSweepPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
 
-  // SM86
   struct Policy860
       : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  // SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using RleSweepPolicyT = decltype(select_agent_policy<non_trivial_runs::sm90_tuning<LengthT, KeyT>>(0));
+    using RleSweepPolicyT = decltype(select_agent_policy<sm90_tuning<LengthT, KeyT>>(0));
   };
 
-  using MaxPolicy = Policy900;
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy900
+    template <typename Tuning>
+    static auto select_agent_policy100(int)
+      -> AgentRlePolicy<Tuning::threads,
+                        Tuning::items,
+                        Tuning::load_algorithm,
+                        Tuning::load_modifier,
+                        Tuning::store_with_time_slicing,
+                        BLOCK_SCAN_WARP_SCANS,
+                        typename Tuning::delay_constructor>;
+    template <typename Tuning>
+    static auto select_agent_policy100(long) -> typename Policy900::RleSweepPolicyT;
+
+    using RleSweepPolicyT = decltype(select_agent_policy100<sm100_tuning<LengthT, KeyT>>(0));
+  };
+
+  using MaxPolicy = Policy1000;
 };
 } // namespace non_trivial_runs
 } // namespace rle

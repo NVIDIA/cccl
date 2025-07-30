@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].
@@ -30,33 +32,31 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public integral_constant<bool, _CCCL_BUILTIN_IS_ARRAY(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<_CCCL_BUILTIN_IS_ARRAY(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_array_v = _CCCL_BUILTIN_IS_ARRAY(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_array_v = _CCCL_BUILTIN_IS_ARRAY(_Tp);
 
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public false_type
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array<_Tp[]> : public true_type
-{};
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array<_Tp[_Np]> : public true_type
-{};
+inline constexpr bool is_array_v = false;
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_array_v = is_array<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_array_v<_Tp[]> = true;
+
+template <class _Tp, size_t _Np>
+inline constexpr bool is_array_v<_Tp[_Np]> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<is_array_v<_Tp>>
+{};
 
 #endif // defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ARRAY_H

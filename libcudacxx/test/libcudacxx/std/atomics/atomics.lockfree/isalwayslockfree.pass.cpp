@@ -18,15 +18,13 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 // NVRTC doesn't include host atomic making this feature test invalid
 // TODO: Should we define __cccl_lib_atomic_is_always_lock_free for NVRTC?
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 #  if !defined(__cccl_lib_atomic_is_always_lock_free)
 #    error Feature test macro missing.
 #  endif
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 template <typename T>
 __host__ __device__ void checkAlwaysLockFree()
@@ -41,7 +39,7 @@ __host__ __device__ void checkAlwaysLockFree()
 // which causes LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE to be defined as '1' in 32-bit builds
 // even though __atomic_always_lock_free returns true for the same type.
 constexpr bool NeedWorkaroundForPR31864 =
-#if defined(__clang__)
+#if TEST_COMPILER(CLANG)
   (sizeof(void*) == 4); // Needed on 32 bit builds
 #else
   false;
@@ -108,7 +106,7 @@ __host__ __device__ void run()
   CHECK_ALWAYS_LOCK_FREE(float);
   CHECK_ALWAYS_LOCK_FREE(double);
   // CHECK_ALWAYS_LOCK_FREE(long double); // long double is not supported
-#if _CCCL_HAS_ATTRIBUTE(vector_size) && defined(_LIBCUDACXX_VERSION) && !defined(__CUDACC__)
+#if _CCCL_HAS_ATTRIBUTE(vector_size) && defined(_LIBCUDACXX_VERSION) && !_CCCL_CUDA_COMPILATION()
   // NOTE: NVCC doesn't support the vector_size attribute in device code.
   CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(1 * sizeof(int)))));
   CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(2 * sizeof(int)))));

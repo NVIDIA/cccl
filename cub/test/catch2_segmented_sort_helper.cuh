@@ -44,6 +44,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <nv/target>
+
 #include <cstdio>
 
 #include "catch2_test_launch_helper.h"
@@ -51,7 +53,6 @@
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
-#include <nv/target>
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
   inline c2h::seed_t make_##name##_seed(const c2h::seed_t seed) \
@@ -133,7 +134,8 @@ public:
   void verify_sorted(const c2h::device_vector<key_t>& out_keys) const
   {
     // Verify keys are sorted next to each other
-    auto count = thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>());
+    auto count =
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), cuda::std::equal_to<int>());
     REQUIRE(count <= max_histo_size);
 
     // Verify keys are sorted using prior histogram computation
@@ -215,7 +217,7 @@ public:
 
     // Verify keys are sorted next to each other
     const auto count = static_cast<std::size_t>(
-      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>()));
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), cuda::std::equal_to<int>()));
     REQUIRE(count <= sequence_length * num_segments);
 
     // // Verify keys are sorted using prior histogram computation
@@ -250,7 +252,7 @@ public:
           auto const next_end =
             (uniques_index == count - 1) ? out_keys.size() : h_unique_indexes_out[uniques_index + 1];
           REQUIRE(h_unique_keys_out[uniques_index] == i);
-          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == segment_histogram[i]);
+          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == static_cast<std::size_t>(segment_histogram[i]));
           current_offset += segment_histogram[i];
           uniques_index++;
         }
@@ -265,21 +267,21 @@ struct unwrap_value_t_impl
   using type = T;
 };
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 template <>
 struct unwrap_value_t_impl<half_t>
 {
   using type = __half;
 };
-#endif
+#endif // TEST_HALF_T()
 
-#if TEST_BF_T
+#if TEST_BF_T()
 template <>
 struct unwrap_value_t_impl<bfloat16_t>
 {
   using type = __nv_bfloat16;
 };
-#endif
+#endif // TEST_BF_T()
 
 template <typename T>
 using unwrap_value_t = typename unwrap_value_t_impl<T>::type;
@@ -459,7 +461,7 @@ private:
         // values are descending when generating ascending input keys for a descending sort.
         const int conv_idx         = sort_descending ? (segment_size - 1 - in_seg_idx) : in_seg_idx;
         const ValueT current_value = static_cast<ValueT>(conv_idx * value_conversion);
-        _CCCL_IF_CONSTEXPR (STABLE)
+        if constexpr (STABLE)
         {
           // For stable sorts, the output value must appear at an exact offset:
           const int out_seg_idx = key_out_dup_begin + dup_idx;
@@ -523,21 +525,19 @@ void generate_unsorted_derived_inputs(
 {
   C2H_TIME_SCOPE("GenerateUnsortedDerivedInputs");
 
-  static constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
-  const int num_segments = static_cast<int>(d_offsets.size() - 1);
-  const int* offsets     = thrust::raw_pointer_cast(d_offsets.data());
-  KeyT* keys             = thrust::raw_pointer_cast(d_keys.data());
-  ValueT* values         = thrust::raw_pointer_cast(d_values.data());
-
-  (void) values; // Unused for key-only sort.
+  const int num_segments          = static_cast<int>(d_offsets.size() - 1);
+  const int* offsets              = thrust::raw_pointer_cast(d_offsets.data());
+  KeyT* keys                      = thrust::raw_pointer_cast(d_keys.data());
+  [[maybe_unused]] ValueT* values = thrust::raw_pointer_cast(d_values.data());
 
   // Build keys in reversed order from how they'll eventually be sorted:
   thrust::for_each(c2h::nosync_device_policy,
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(num_segments),
                    segment_filler<KeyT>{keys, offsets, !descending_sort});
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     // Values are generated in reversed order from keys:
     thrust::for_each(c2h::nosync_device_policy,
@@ -581,15 +581,13 @@ void validate_sorted_derived_outputs(
 template <typename KeyT, typename ValueT>
 void generate_random_unsorted_inputs(c2h::seed_t seed, //
                                      c2h::device_vector<KeyT>& d_keys,
-                                     c2h::device_vector<ValueT>& d_values)
+                                     [[maybe_unused]] c2h::device_vector<ValueT>& d_values)
 {
   C2H_TIME_SCOPE("generate_random_unsorted_inputs");
 
-  (void) d_values; // Unused for key-only sort.
-
   c2h::gen(make_key_seed(seed), d_keys);
 
-  _CCCL_IF_CONSTEXPR (!::cuda::std::is_same<ValueT, cub::NullType>::value)
+  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
   {
     c2h::gen(make_value_seed(seed), d_values);
   }
@@ -604,13 +602,11 @@ void host_sort_random_inputs(
   const int* h_begin_offsets,
   const int* h_end_offsets,
   c2h::host_vector<KeyT>& h_unsorted_keys,
-  c2h::host_vector<ValueT>& h_unsorted_values = {})
+  [[maybe_unused]] c2h::host_vector<ValueT>& h_unsorted_values = {})
 {
   C2H_TIME_SCOPE("host_sort_random_inputs");
 
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
-
-  (void) h_unsorted_values; // Unused for key-only sort.
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   for (int segment_i = 0; segment_i < num_segments; segment_i++)
   {
@@ -622,7 +618,7 @@ void host_sort_random_inputs(
       continue;
     }
 
-    _CCCL_IF_CONSTEXPR (sort_pairs)
+    if constexpr (sort_pairs)
     {
       if (sort_descending)
       {
@@ -630,7 +626,7 @@ void host_sort_random_inputs(
           h_unsorted_keys.begin() + segment_begin,
           h_unsorted_keys.begin() + segment_end,
           h_unsorted_values.begin() + segment_begin,
-          thrust::greater<KeyT>{});
+          cuda::std::greater<KeyT>{});
       }
       else
       {
@@ -645,7 +641,7 @@ void host_sort_random_inputs(
       {
         thrust::stable_sort(h_unsorted_keys.begin() + segment_begin, //
                             h_unsorted_keys.begin() + segment_end,
-                            thrust::greater<KeyT>{});
+                            cuda::std::greater<KeyT>{});
       }
       else
       {
@@ -734,29 +730,23 @@ struct unstable_segmented_value_checker
 // They will not be modified when STABLE.
 template <bool STABLE, typename KeyT, typename ValueT>
 void validate_sorted_random_outputs(
-  int num_segments,
-  const int* d_segment_begin,
-  const int* d_segment_end,
+  [[maybe_unused]] int num_segments,
+  [[maybe_unused]] const int* d_segment_begin,
+  [[maybe_unused]] const int* d_segment_end,
   const c2h::device_vector<KeyT>& d_ref_keys,
   const c2h::device_vector<KeyT>& d_sorted_keys,
-  const c2h::device_vector<ValueT>& d_ref_values,
-  c2h::device_vector<ValueT>& d_sorted_values)
+  [[maybe_unused]] const c2h::device_vector<ValueT>& d_ref_values,
+  [[maybe_unused]] c2h::device_vector<ValueT>& d_sorted_values)
 {
   C2H_TIME_SCOPE("validate_sorted_random_outputs");
-
-  (void) d_ref_values;
-  (void) d_sorted_values;
-  (void) num_segments;
-  (void) d_segment_begin;
-  (void) d_segment_end;
 
   // Verify that the key arrays match exactly:
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
 
   // Verify segment-by-segment that the values are appropriately sorted for an unstable key-value sort:
-  _CCCL_IF_CONSTEXPR (!::cuda::std::is_same<ValueT, cub::NullType>::value)
+  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
   {
-    _CCCL_IF_CONSTEXPR (STABLE)
+    if constexpr (STABLE)
     {
       REQUIRE((d_ref_values == d_sorted_values) == true);
     }
@@ -789,13 +779,13 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   std::size_t& temp_storage_bytes,
 
   int* keys_selector,
-  int* values_selector,
+  [[maybe_unused]] int* values_selector,
 
   WrappedKeyT* wrapped_input_keys,
   WrappedKeyT* wrapped_output_keys,
 
-  ValueT* input_values,
-  ValueT* output_values,
+  [[maybe_unused]] ValueT* input_values,
+  [[maybe_unused]] ValueT* output_values,
 
   int num_items,
   int num_segments,
@@ -806,12 +796,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   cudaStream_t stream = 0)
 {
   using KeyT                = unwrap_value_t<WrappedKeyT>;
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
-
-  // Unused for key-only sort.
-  (void) values_selector;
-  (void) input_values;
-  (void) output_values;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   auto input_keys  = reinterpret_cast<KeyT*>(wrapped_input_keys);
   auto output_keys = reinterpret_cast<KeyT*>(wrapped_output_keys);
@@ -824,7 +809,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
 
   if (stable_sort)
   {
-    _CCCL_IF_CONSTEXPR (sort_pairs)
+    if constexpr (sort_pairs)
     {
       if (descending)
       {
@@ -979,7 +964,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   }
   else
   {
-    _CCCL_IF_CONSTEXPR (sort_pairs)
+    if constexpr (sort_pairs)
     {
       if (descending)
       {
@@ -1280,7 +1265,7 @@ template <typename KeyT, typename ValueT = cub::NullType>
 void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 {
   C2H_TIME_SECTION_INIT();
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   const int num_items    = d_offsets_vec.back();
   const int num_segments = static_cast<int>(d_offsets_vec.size() - 1);
@@ -1292,7 +1277,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 
   c2h::device_vector<ValueT> values_input;
   c2h::device_vector<ValueT> values_output;
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     values_input.resize(num_items);
     values_output.resize(num_items);
@@ -1318,7 +1303,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
   int keys_selector   = 0;
   int values_selector = 1;
 
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     if (sort_buffers)
     { // Value buffer selector is initialized to read from the second buffer:
@@ -1370,7 +1355,7 @@ void test_segments_random(
   const int* d_begin_offsets,
   const int* d_end_offsets)
 {
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   CAPTURE(c2h::type_name<KeyT>(), //
           c2h::type_name<ValueT>(),
@@ -1385,7 +1370,7 @@ void test_segments_random(
 
   c2h::device_vector<ValueT> values_input;
   c2h::device_vector<ValueT> values_output;
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     values_input.resize(num_items);
     values_output.resize(num_items);
@@ -1462,7 +1447,7 @@ void test_segments_random(
       int keys_selector   = 0;
       int values_selector = 1;
 
-      _CCCL_IF_CONSTEXPR (sort_pairs)
+      if constexpr (sort_pairs)
       {
         if (sort_buffers)
         { // Value buffer selector is initialized to read from the second buffer:
@@ -1540,7 +1525,7 @@ struct offset_scan_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(int a, int b) const
   {
     const int sum = a + b;
-    return CUB_MIN(sum, max_items);
+    return _CUDA_VSTD::min(sum, max_items);
   }
 };
 
@@ -1549,7 +1534,7 @@ generate_random_offsets(c2h::seed_t seed, int max_items, int max_segment, int nu
 {
   C2H_TIME_SCOPE("generate_random_offsets");
   const int expected_segment_length = ::cuda::ceil_div(max_items, num_segments);
-  const int max_segment_length      = CUB_MIN(max_segment, (expected_segment_length * 2) + 1);
+  const int max_segment_length      = ::cuda::std::min(max_segment, (expected_segment_length * 2) + 1);
 
   c2h::device_vector<int> offsets(num_segments + 1);
   c2h::gen(make_offset_seed(seed), offsets, 0, max_segment_length);

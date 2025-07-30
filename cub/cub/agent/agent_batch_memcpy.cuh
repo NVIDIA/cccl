@@ -52,13 +52,15 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
+{
+namespace batch_memcpy
 {
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
 _CCCL_FORCEINLINE _CCCL_DEVICE void
@@ -117,7 +119,7 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint3
 template <typename VectorT>
 _CCCL_FORCEINLINE _CCCL_DEVICE void LoadVector(const char* ptr, VectorT& data_out)
 {
-  const uint32_t offset            = reinterpret_cast<std::uintptr_t>(ptr) % 4U;
+  const uint32_t offset            = reinterpret_cast<uintptr_t>(ptr) % 4U;
   const uint32_t* aligned_ptr      = reinterpret_cast<uint32_t const*>(ptr - offset);
   constexpr uint32_t bits_per_byte = 8U;
   const uint32_t bit_shift         = offset * bits_per_byte;
@@ -169,22 +171,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE PointerRange<VectorT>
 GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
 {
   // Data type size used for vectorized stores
-  constexpr size_t out_datatype_size = sizeof(VectorT);
+  constexpr auto out_datatype_size = uint32_t{sizeof(VectorT)};
   // Data type size used for type-aliased loads
-  constexpr size_t in_datatype_size = sizeof(uint32_t);
+  constexpr auto in_datatype_size = uint32_t{sizeof(uint32_t)};
 
   // char-aliased ptrs to simplify pointer arithmetic
   char* out_ptr      = reinterpret_cast<char*>(out_begin);
   const char* in_ptr = reinterpret_cast<const char*>(in_begin);
 
   // Number of bytes between the first VectorT-aligned address at or before out_begin and out_begin
-  const uint32_t alignment_offset = reinterpret_cast<std::uintptr_t>(out_ptr) % out_datatype_size;
+  const uint32_t alignment_offset = reinterpret_cast<uintptr_t>(out_ptr) % out_datatype_size;
 
   // The first VectorT-aligned address before (or at) out_begin
   char* out_chars_aligned = reinterpret_cast<char*>(out_ptr - alignment_offset);
 
   // The number of extra bytes preceding `in_ptr` that are loaded but dropped
-  uint32_t in_extra_bytes = reinterpret_cast<std::uintptr_t>(in_ptr) % in_datatype_size;
+  uint32_t in_extra_bytes = reinterpret_cast<uintptr_t>(in_ptr) % in_datatype_size;
 
   // The offset required by `LoadVector`:
   // If the input pointer is not aligned, we load data from the last aligned address preceding the
@@ -192,8 +194,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   uint32_t in_offset_req = in_extra_bytes;
 
   // Bytes after `out_chars_aligned` to the first VectorT-aligned address at or after `out_begin`
-  uint32_t out_start_aligned =
-    CUB_QUOTIENT_CEILING(in_offset_req + alignment_offset, out_datatype_size) * out_datatype_size;
+  uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
 
   // Compute the beginning of the aligned ranges (output and input pointers)
   VectorT* out_aligned_begin   = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
@@ -203,7 +204,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   // bytes after the last byte that is copied. That is, we always load four bytes up to the next
   // aligned input address at a time. E.g., if the last byte loaded is one byte past the last
   // aligned address we'll also load the three bytes after that byte.
-  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<std::uintptr_t>(in_aligned_begin) % in_datatype_size);
+  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<uintptr_t>(in_aligned_begin) % in_datatype_size);
   uint32_t in_end_padding_req          = (in_datatype_size - in_extra_bytes_from_aligned) % in_datatype_size;
 
   // Bytes after `out_chars_aligned` to the last VectorT-aligned
@@ -241,7 +242,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
  */
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-VectorizedCopy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
+vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
 {
   char* out_ptr      = reinterpret_cast<char*>(dest);
   const char* in_ptr = reinterpret_cast<const char*>(src);
@@ -298,11 +299,11 @@ template <bool IsMemcpy,
           typename InputBufferT,
           typename OutputBufferT,
           typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+          ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_bytes, OffsetT offset = 0)
 {
-  VectorizedCopy<LOGICAL_WARP_SIZE, uint4>(
+  vectorized_copy<LOGICAL_WARP_SIZE, uint4>(
     threadIdx.x % LOGICAL_WARP_SIZE,
     &reinterpret_cast<char*>(output_buffer)[offset],
     num_bytes,
@@ -314,7 +315,7 @@ template <bool IsMemcpy,
           typename InputBufferT,
           typename OutputBufferT,
           typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+          ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_items, OffsetT offset = 0)
 {
@@ -326,70 +327,65 @@ copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_i
   }
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename InputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename InputIt, typename OffsetT, ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(reinterpret_cast<const AliasT*>(buffer_src) + offset);
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename InputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename InputIt, typename OffsetT, ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(buffer_src + offset);
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename OutputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename OutputIt, typename OffsetT, ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(reinterpret_cast<AliasT*>(buffer_dst) + offset) = value;
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename OutputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename OutputIt, typename OffsetT, ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(buffer_dst + offset) = value;
 }
 
+enum class prefer_power_of_two_bits_option
+{
+  no,
+  yes
+};
+
 /**
  * @brief A helper class that allows threads to maintain multiple counters, where the counter that
  * shall be incremented can be addressed dynamically without incurring register spillage.
  *
- * @tparam NUM_ITEMS The number of counters to allocate
- * @tparam MAX_ITEM_VALUE The maximum count that must be supported.
- * @tparam PREFER_POW2_BITS Whether the number of bits to dedicate to each counter should be a
+ * @tparam NumItems The number of counters to allocate
+ * @tparam MaxItemValue The maximum count that must be supported.
+ * @tparam PreferPowerOfTwoBits Whether the number of bits to dedicate to each counter should be a
  * power-of-two. If enabled, this allows replacing integer multiplication with a bit-shift in
  * exchange for higher register pressure.
  * @tparam BackingUnitT The data type that is used to provide the bits of all the counters that
  * shall be allocated.
  */
-template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE, bool PREFER_POW2_BITS, typename BackingUnitT = uint32_t>
-class BitPackedCounter
+template <uint32_t NumItems,
+          uint32_t MaxItemValue,
+          prefer_power_of_two_bits_option PreferPowerOfTwoBits,
+          typename BackingUnitT = uint32_t>
+class bit_packed_counter
 {
 private:
-  /// The minimum number of bits required to represent all values from [0, MAX_ITEM_VALUE]
+  /// The minimum number of bits required to represent all values from [0, MaxItemValue]
   static constexpr uint32_t MIN_BITS_PER_ITEM =
-    (MAX_ITEM_VALUE == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MAX_ITEM_VALUE + 1U)>::VALUE;
+    (MaxItemValue == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MaxItemValue + 1U)>::VALUE;
 
   /// The number of bits allocated for each item. For pre-Volta, we prefer a power-of-2 here to
   /// have the compiler replace costly integer multiplication with bit-shifting.
   static constexpr uint32_t BITS_PER_ITEM =
-    PREFER_POW2_BITS ? (0x01ULL << (cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE)) : MIN_BITS_PER_ITEM;
+    (PreferPowerOfTwoBits == prefer_power_of_two_bits_option::yes)
+      ? (0x01ULL << (cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE))
+      : MIN_BITS_PER_ITEM;
 
   /// The number of bits that each backing data type can store
   static constexpr uint32_t NUM_BITS_PER_UNIT = sizeof(BackingUnitT) * 8;
@@ -401,7 +397,7 @@ private:
   static constexpr uint32_t USED_BITS_PER_UNIT = ITEMS_PER_UNIT * BITS_PER_ITEM;
 
   /// The number of backing data types required to store the given number of items
-  static constexpr uint32_t NUM_TOTAL_UNITS = CUB_QUOTIENT_CEILING(NUM_ITEMS, ITEMS_PER_UNIT);
+  static constexpr uint32_t NUM_TOTAL_UNITS = ::cuda::ceil_div(NumItems, ITEMS_PER_UNIT);
 
   /// This is the net number of bit-storage provided by each unit (remainder bits are unused)
   static constexpr uint32_t UNIT_MASK =
@@ -415,12 +411,12 @@ private:
   //------------------------------------------------------------------------------
 
 public:
-  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t Get(uint32_t index) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t get(uint32_t index) const
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
     uint32_t val                 = 0;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       // In case the bit-offset of the counter at <index> is larger than the bit range of the
@@ -434,11 +430,11 @@ public:
     return val;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Add(uint32_t index, uint32_t value)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void add(uint32_t index, uint32_t value)
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       // In case the bit-offset of the counter at <index> is larger than the bit range of the
@@ -451,10 +447,11 @@ public:
     }
   }
 
-  _CCCL_DEVICE BitPackedCounter operator+(const BitPackedCounter& rhs) const
+  _CCCL_DEVICE bit_packed_counter operator+(const bit_packed_counter& rhs) const
   {
-    BitPackedCounter result;
-#pragma unroll
+    bit_packed_counter result;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       result.data[i] = data[i] + rhs.data[i];
@@ -492,7 +489,7 @@ struct AgentBatchMemcpyPolicy
   /// from one or more
   // source-buffers and writing them out to the respective destination-buffers.
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = _TLEV_BYTES_PER_THREAD;
-  /// Whether the BitPackedCounter should prefer allocating a power-of-2 number of bits per
+  /// Whether the bit_packed_counter should prefer allocating a power-of-2 number of bits per
   /// counter
   static constexpr uint32_t PREFER_POW2_BITS = _PREFER_POW2_BITS;
   /// BLEV tile size granularity
@@ -528,7 +525,10 @@ private:
   static constexpr uint32_t BLOCK_THREADS         = AgentMemcpySmallBuffersPolicyT::BLOCK_THREADS;
   static constexpr uint32_t BUFFERS_PER_THREAD    = AgentMemcpySmallBuffersPolicyT::BUFFERS_PER_THREAD;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = AgentMemcpySmallBuffersPolicyT::TLEV_BYTES_PER_THREAD;
-  static constexpr bool PREFER_POW2_BITS          = AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS;
+  static constexpr prefer_power_of_two_bits_option PREFER_POW2_BITS =
+    (AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS)
+      ? prefer_power_of_two_bits_option::yes
+      : prefer_power_of_two_bits_option::no;
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_TILE_SIZE;
 
   // Derived configs
@@ -555,18 +555,16 @@ private:
   // TYPE DECLARATIONS
   //---------------------------------------------------------------------
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+  using AliasT = typename ::cuda::std::
+    conditional_t<IsMemcpy, ::cuda::std::type_identity<char>, lazy_trait<it_value_t, it_value_t<InputBufferIt>>>::type;
 
   /// Types of the input and output buffers
-  using InputBufferT  = cub::detail::value_t<InputBufferIt>;
-  using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
+  using InputBufferT  = it_value_t<InputBufferIt>;
+  using OutputBufferT = it_value_t<OutputBufferIt>;
 
   /// Type that has to be sufficiently large to hold any of the buffers' sizes.
   /// The BufferSizeIteratorT's value type must be convertible to this type.
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   /// Type used to index into the tile of buffers that this thread block is assigned to.
   using BlockBufferOffsetT = uint16_t;
@@ -599,7 +597,7 @@ private:
     BlockBufferOffsetT buffer_id;
   };
 
-  // Load buffers in a striped arrangement if we do not want to performa a stable partitioning into
+  // Load buffers in a striped arrangement if we do not want to perform a stable partitioning into
   // small, medium, and large buffers, otherwise load them in a blocked arrangement
   using BufferLoadT =
     BlockLoad<BufferSizeT,
@@ -615,7 +613,7 @@ private:
   //-> (2) WLEV (warp-level collaboration), requiring a full warp to collaborate on a buffer
   //-> (3) BLEV (block-level collaboration), requiring one or multiple thread blocks to collaborate
   // on a buffer */
-  using VectorizedSizeClassCounterT = BitPackedCounter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
+  using VectorizedSizeClassCounterT = bit_packed_counter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
 
   // Block-level scan used to compute the write offsets
   using BlockSizeClassScanT = cub::BlockScan<VectorizedSizeClassCounterT, static_cast<int32_t>(BLOCK_THREADS)>;
@@ -640,14 +638,12 @@ private:
     TilePrefixCallbackOp<BufferOffsetT,
                          ::cuda::std::plus<>,
                          BLevBufferOffsetTileState,
-                         0,
                          typename AgentMemcpySmallBuffersPolicyT::buff_delay_constructor>;
 
   using BLevBlockScanPrefixCallbackOpT =
     TilePrefixCallbackOp<BlockOffsetT,
                          ::cuda::std::plus<>,
                          BLevBlockOffsetTileState,
-                         0,
                          typename AgentMemcpySmallBuffersPolicyT::block_delay_constructor>;
 
   //-----------------------------------------------------------------------------
@@ -739,7 +735,8 @@ private:
   GetBufferSizeClassHistogram(const BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD])
   {
     VectorizedSizeClassCounterT vectorized_counters{};
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BUFFERS_PER_THREAD; i++)
     {
       // Whether to increment ANY of the buffer size classes at all
@@ -750,7 +747,7 @@ private:
       buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
 
       // Increment the count of the respective size class
-      vectorized_counters.Add(buffer_size_class, increment);
+      vectorized_counters.add(buffer_size_class, increment);
     }
     return vectorized_counters;
   }
@@ -769,7 +766,7 @@ private:
     constexpr BlockBufferOffsetT BUFFER_STRIDE =
       BUFFER_STABLE_PARTITION ? static_cast<BlockBufferOffsetT>(1) : static_cast<BlockBufferOffsetT>(BLOCK_THREADS);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BUFFERS_PER_THREAD; i++)
     {
       if (buffer_sizes[i] > 0)
@@ -777,9 +774,9 @@ private:
         uint32_t buffer_size_class = 0;
         buffer_size_class += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
         buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
-        const uint32_t write_offset         = vectorized_offsets.Get(buffer_size_class);
+        const uint32_t write_offset         = vectorized_offsets.get(buffer_size_class);
         buffers_by_size_class[write_offset] = {static_cast<TLevBufferSizeT>(buffer_sizes[i]), buffer_id};
-        vectorized_offsets.Add(buffer_size_class, 1U);
+        vectorized_offsets.add(buffer_size_class, 1U);
       }
       buffer_id += BUFFER_STRIDE;
     }
@@ -801,13 +798,14 @@ private:
     BlockOffsetT block_offset[BLEV_BUFFERS_PER_THREAD];
     // Read in the BLEV buffer partition (i.e., the buffers that require block-level collaboration)
     uint32_t blev_buffer_offset = threadIdx.x * BLEV_BUFFERS_PER_THREAD;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BLEV_BUFFERS_PER_THREAD; i++)
     {
       if (blev_buffer_offset < num_blev_buffers)
       {
         BlockBufferOffsetT tile_buffer_id = buffers_by_size_class[blev_buffer_offset].buffer_id;
-        block_offset[i] = CUB_QUOTIENT_CEILING(tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
+        block_offset[i]                   = ::cuda::ceil_div(+tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
       }
       else
       {
@@ -838,7 +836,8 @@ private:
 
     // Read in the BLEV buffer partition (i.e., the buffers that require block-level collaboration)
     blev_buffer_offset = threadIdx.x * BLEV_BUFFERS_PER_THREAD;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BLEV_BUFFERS_PER_THREAD; i++)
     {
       if (blev_buffer_offset < num_blev_buffers)
@@ -864,13 +863,13 @@ private:
     BufferSizeIteratorT tile_buffer_sizes,
     BlockBufferOffsetT num_wlev_buffers)
   {
-    const int32_t warp_id              = threadIdx.x / CUB_PTX_WARP_THREADS;
-    constexpr uint32_t WARPS_PER_BLOCK = BLOCK_THREADS / CUB_PTX_WARP_THREADS;
+    const int32_t warp_id              = threadIdx.x / warp_threads;
+    constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
 
-    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += WARPS_PER_BLOCK)
+    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
     {
       const auto buffer_id = buffers_by_size_class[buffer_offset].buffer_id;
-      copy_items<IsMemcpy, CUB_PTX_WARP_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<IsMemcpy, warp_threads, InputBufferT, OutputBufferT, BufferSizeT>(
         tile_buffer_srcs[buffer_id], tile_buffer_dsts[buffer_id], tile_buffer_sizes[buffer_id]);
     }
   }
@@ -901,7 +900,7 @@ private:
 
     // Pre-populate the buffer sizes to 0 (i.e. zero-padding towards the end) to ensure
     // out-of-bounds TLEV buffers will not be considered
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < TLEV_BUFFERS_PER_THREAD; i++)
     {
       tlev_buffer_sizes[i] = 0;
@@ -909,7 +908,7 @@ private:
 
     // Assign TLEV buffers in a blocked arrangement (each thread is assigned consecutive TLEV
     // buffers)
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < TLEV_BUFFERS_PER_THREAD; i++)
     {
       if (tlev_buffer_offset < num_tlev_buffers)
@@ -940,7 +939,8 @@ private:
 
       // Zip from SoA to AoS
       ZippedTLevByteAssignment zipped_byte_assignment[TLEV_BYTES_PER_THREAD];
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
       {
         zipped_byte_assignment[i] = {buffer_id[i], buffer_byte_offset[i]};
@@ -957,14 +957,16 @@ private:
       {
         uint32_t absolute_tlev_byte_offset = decoded_window_offset + threadIdx.x;
         AliasT src_byte[TLEV_BYTES_PER_THREAD];
-#pragma unroll
+
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
           src_byte[i] = read_item<IsMemcpy, AliasT, InputBufferT>(
             tile_buffer_srcs[zipped_byte_assignment[i].tile_buffer_id], zipped_byte_assignment[i].buffer_byte_offset);
           absolute_tlev_byte_offset += BLOCK_THREADS;
         }
-#pragma unroll
+
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
           write_item<IsMemcpy, AliasT, OutputBufferT>(
@@ -976,7 +978,8 @@ private:
       else
       {
         uint32_t absolute_tlev_byte_offset = decoded_window_offset + threadIdx.x;
-#pragma unroll
+
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
           if (absolute_tlev_byte_offset < num_total_tlev_bytes)
@@ -1045,8 +1048,8 @@ public:
     uint32_t buffer_count = 0U;
     for (uint32_t i = 0; i < NUM_SIZE_CLASSES; i++)
     {
-      size_class_histogram.Add(i, buffer_count);
-      buffer_count += size_class_agg.Get(i);
+      size_class_histogram.add(i, buffer_count);
+      buffer_count += size_class_agg.get(i);
     }
 
     // Signal the number of BLEV buffers we're planning to write out
@@ -1055,7 +1058,7 @@ public:
     {
       if (threadIdx.x == 0)
       {
-        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.Get(BLEV_SIZE_CLASS));
+        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.get(BLEV_SIZE_CLASS));
       }
       buffer_exclusive_prefix = 0;
     }
@@ -1065,9 +1068,9 @@ public:
         blev_buffer_scan_state, temp_storage.buffer_scan_callback, ::cuda::std::plus<>{}, tile_id);
 
       // Signal our partial prefix and wait for the inclusive prefix of previous tiles
-      if (threadIdx.x < CUB_PTX_WARP_THREADS)
+      if (threadIdx.x < warp_threads)
       {
-        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.Get(BLEV_SIZE_CLASS));
+        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(BLEV_SIZE_CLASS));
       }
     }
     if (threadIdx.x == 0)
@@ -1095,11 +1098,11 @@ public:
     // Copy block-level buffers
     EnqueueBLEVBuffers(
       &temp_storage.staged
-         .buffers_by_size_class[size_class_agg.Get(TLEV_SIZE_CLASS) + size_class_agg.Get(WLEV_SIZE_CLASS)],
+         .buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS) + size_class_agg.get(WLEV_SIZE_CLASS)],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.Get(BLEV_SIZE_CLASS),
+      size_class_agg.get(BLEV_SIZE_CLASS),
       temp_storage.blev_buffer_offset,
       tile_id);
 
@@ -1108,14 +1111,14 @@ public:
 
     // Copy warp-level buffers
     BatchMemcpyWLEVBuffers(
-      &temp_storage.staged.buffers_by_size_class[size_class_agg.Get(TLEV_SIZE_CLASS)],
+      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS)],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.Get(WLEV_SIZE_CLASS));
+      size_class_agg.get(WLEV_SIZE_CLASS));
 
     // Perform batch memcpy for all the buffers that require thread-level collaboration
-    uint32_t num_tlev_buffers = size_class_agg.Get(TLEV_SIZE_CLASS);
+    uint32_t num_tlev_buffers = size_class_agg.get(TLEV_SIZE_CLASS);
     BatchMemcpyTLEVBuffers(
       temp_storage.staged.buffers_by_size_class, tile_buffer_srcs, tile_buffer_dsts, num_tlev_buffers);
   }
@@ -1172,7 +1175,7 @@ private:
   // buffers
   BLevBlockOffsetTileState blev_block_scan_state;
 };
-
+} // namespace batch_memcpy
 } // namespace detail
 
 CUB_NAMESPACE_END

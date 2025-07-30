@@ -25,7 +25,8 @@ void TestTransformUnaryDevice(ExecutionPolicy exec)
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
-  transform_kernel<<<1, 1>>>(exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), iter_vec.begin());
+  transform_kernel<<<1, 1>>>(
+    exec, input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -80,7 +81,13 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
   transform_if_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::identity<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    ::cuda::std::identity{},
+    iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -143,8 +150,8 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
     input.end(),
     stencil.begin(),
     output.begin(),
-    thrust::negate<T>(),
-    thrust::identity<T>(),
+    ::cuda::std::negate<T>(),
+    ::cuda::std::identity{},
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
@@ -201,7 +208,7 @@ void TestTransformBinaryDevice(ExecutionPolicy exec)
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
   transform_kernel<<<1, 1>>>(
-    exec, input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minus<T>(), iter_vec.begin());
+    exec, input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>(), iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -259,7 +266,7 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
   Vector output{1, 2, 3};
   Vector result{5, 2, -3};
 
-  thrust::identity<T> identity;
+  ::cuda::std::identity identity;
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -270,8 +277,8 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
     input2.begin(),
     stencil.begin(),
     output.begin(),
-    thrust::minus<T>(),
-    thrust::not_fn(identity),
+    ::cuda::std::minus<T>(),
+    ::cuda::std::not_fn(identity),
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
@@ -309,7 +316,8 @@ void TestTransformUnaryCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  iter = thrust::transform(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>());
+  iter =
+    thrust::transform(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>());
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
@@ -335,7 +343,7 @@ void TestTransformBinaryCudaStreams()
   cudaStreamCreate(&s);
 
   iter = thrust::transform(
-    thrust::cuda::par.on(s), input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minus<T>());
+    thrust::cuda::par.on(s), input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>());
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
@@ -354,8 +362,6 @@ struct sum_five
   }
 };
 
-// The following test cannot be compiled because of a bug in the conversion of thrust::tuple on MSVC 2017
-#if !_CCCL_COMPILER(MSVC2017)
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
 THRUST_NAMESPACE_BEGIN
@@ -420,4 +426,3 @@ void TestTransformZipIteratorUnwrapping()
   }
 }
 DECLARE_UNITTEST(TestTransformZipIteratorUnwrapping);
-#endif // !_CCCL_COMPILER(MSVC2017)

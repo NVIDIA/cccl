@@ -41,13 +41,13 @@ namespace generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  using InputType = typename thrust::iterator_value<InputIterator>::type;
+  using T = thrust::detail::it_value_t<InputIterator>;
 
-  // use InputType(0) as init by default
-  return thrust::reduce(exec, first, last, InputType(0));
+  // use T(0) as init by default
+  return thrust::reduce(exec, first, last, T(0));
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T>
@@ -55,17 +55,50 @@ _CCCL_HOST_DEVICE T
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   // use plus<T> by default
-  return thrust::reduce(exec, first, last, init, thrust::plus<T>());
+  return thrust::reduce(exec, first, last, init, ::cuda::std::plus<T>());
 } // end reduce()
 
-template <typename ExecutionPolicy, typename RandomAccessIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
-  thrust::execution_policy<ExecutionPolicy>&, RandomAccessIterator, RandomAccessIterator, OutputType, BinaryFunction)
+template <typename ExecutionPolicy, typename InputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE T reduce(thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, T, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value),
-                           "unimplemented for this system");
-  return OutputType();
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
+  return T();
 } // end reduce()
+
+template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output)
+{
+  using T = thrust::detail::it_value_t<InputIterator>;
+
+  // use T(0) as init by default
+  thrust::reduce_into(exec, first, last, output, T(0));
+} // end reduce_into()
+
+template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init)
+{
+  // use plus<T> by default
+  thrust::reduce_into(exec, first, last, output, init, ::cuda::std::plus<T>());
+} // end reduce_into()
+
+template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init,
+  BinaryFunction binary_op)
+{
+  // use reduce by default
+  *output = thrust::reduce(exec, first, last, init, binary_op);
+} // end reduce_into()
 
 } // end namespace generic
 } // end namespace detail

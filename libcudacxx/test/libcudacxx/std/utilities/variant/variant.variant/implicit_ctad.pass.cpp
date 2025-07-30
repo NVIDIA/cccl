@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -19,7 +18,7 @@
 // We make sure that it is not ill-formed, however we still produce a warning for
 // this one because explicit construction from a variant using CTAD is ambiguous
 // (in the sense that the programer intent is not clear).
-// ADDITIONAL_COMPILE_FLAGS: -Wno-ctad-maybe-unsupported
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-ctad-maybe-unsupported
 
 #include <cuda/std/variant>
 
@@ -31,14 +30,14 @@ int main(int, char**)
   {
     cuda::std::variant<int, double> v1(3);
     cuda::std::variant v2 = v1;
-    ASSERT_SAME_TYPE(decltype(v2), cuda::std::variant<int, double>);
+    static_assert(cuda::std::is_same_v<decltype(v2), cuda::std::variant<int, double>>);
     unused(v2);
   }
 
   {
     cuda::std::variant<int, double> v1(3);
     cuda::std::variant v2 = cuda::std::variant(v1); // Technically valid, but intent is ambiguous!
-    ASSERT_SAME_TYPE(decltype(v2), cuda::std::variant<int, double>);
+    static_assert(cuda::std::is_same_v<decltype(v2), cuda::std::variant<int, double>>);
     unused(v2);
   }
 

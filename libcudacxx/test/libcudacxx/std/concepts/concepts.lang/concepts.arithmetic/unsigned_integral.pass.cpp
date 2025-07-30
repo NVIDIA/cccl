@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept unsigned_integral = // see below
 
@@ -68,7 +66,7 @@ static_assert(CheckUnsignedIntegralQualifiers<char16_t>() == !cuda::std::is_sign
 static_assert(CheckUnsignedIntegralQualifiers<char32_t>() == !cuda::std::is_signed_v<char32_t>, "");
 
 // extended integers
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
 static_assert(CheckUnsignedIntegralQualifiers<__uint128_t>(), "");
 static_assert(!CheckUnsignedIntegralQualifiers<__int128_t>(), "");
 #endif

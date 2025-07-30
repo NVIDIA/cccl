@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
+#ifndef _CUDA___MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
+#define _CUDA___MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
 
 #include <cuda/std/detail/__config>
 
@@ -25,6 +25,8 @@
 #include <cuda/std/cstddef>
 
 #include <nv/target>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -55,7 +57,7 @@ __cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA
   // fully unrolling the loop to 1024 copy instructions. This prevents the
   // compile times from increasing unreasonably, and also has negligible
   // impact on runtime performance.
-  _LIBCUDACXX_PRAGMA_UNROLL(64)
+  _CCCL_PRAGMA_UNROLL(64)
   for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride)
   {
     __chunk_t tmp                                    = *reinterpret_cast<const __chunk_t*>(__src + __offset);
@@ -65,4 +67,6 @@ __cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_

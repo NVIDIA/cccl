@@ -5,10 +5,12 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/std/cmath>
 #include <cuda/std/complex>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/span>
 
-#include <limits>
 #include <map>
 #include <stdexcept>
 
@@ -52,20 +54,20 @@ struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
 namespace detail
 {
 
-template <class T, class List>
+template <class List, class... Ts>
 struct push_back
 {};
 
-template <class T, class... As>
-struct push_back<T, nvbench::type_list<As...>>
+template <class... As, class... Ts>
+struct push_back<nvbench::type_list<As...>, Ts...>
 {
-  using type = nvbench::type_list<As..., T>;
+  using type = nvbench::type_list<As..., Ts...>;
 };
 
 } // namespace detail
 
-template <class T, class List>
-using push_back_t = typename detail::push_back<T, List>::type;
+template <class List, class... Ts>
+using push_back_t = typename detail::push_back<List, Ts...>::type;
 
 #ifdef TUNE_OffsetT
 using offset_types = nvbench::type_list<TUNE_OffsetT>;
@@ -200,6 +202,19 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
   throw std::runtime_error("Can't convert string to bit entropy");
 }
 
+// Creates an interpolated value of type T between min (at = 0.0) and max (at = 1.0).
+template <typename T>
+[[nodiscard]] T lerp_min_max(double at) noexcept
+{
+  if (at == 1.0)
+  {
+    return ::cuda::std::numeric_limits<T>::max();
+  }
+  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  return static_cast<T>(::cuda::std::lerp(min_val, max_val, at));
+}
+
 namespace detail
 {
 
@@ -260,8 +275,8 @@ struct generator_base_t
 template <class T>
 struct vector_generator_t : generator_base_t
 {
-  const T m_min{std::numeric_limits<T>::min()};
-  const T m_max{std::numeric_limits<T>::max()};
+  const T m_min{::cuda::std::numeric_limits<T>::min()};
+  const T m_max{::cuda::std::numeric_limits<T>::max()};
 
   operator thrust::device_vector<T>()
   {
@@ -275,17 +290,17 @@ struct vector_generator_t<void> : generator_base_t
   template <typename T>
   operator thrust::device_vector<T>()
   {
-    return generator_base_t::generate(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+    return generator_base_t::generate(::cuda::std::numeric_limits<T>::min(), ::cuda::std::numeric_limits<T>::max());
   }
 
   // This overload is needed because numeric limits is not specialized for complex, making
   // the min and max values for complex equal zero.
   operator thrust::device_vector<complex>()
   {
-    const complex min =
-      complex{std::numeric_limits<complex::value_type>::min(), std::numeric_limits<complex::value_type>::min()};
-    const complex max =
-      complex{std::numeric_limits<complex::value_type>::max(), std::numeric_limits<complex::value_type>::max()};
+    const complex min = complex{
+      ::cuda::std::numeric_limits<complex::value_type>::min(), ::cuda::std::numeric_limits<complex::value_type>::min()};
+    const complex max = complex{
+      ::cuda::std::numeric_limits<complex::value_type>::max(), ::cuda::std::numeric_limits<complex::value_type>::max()};
 
     return generator_base_t::generate(min, max);
   }
@@ -407,8 +422,8 @@ struct gen_t
   vector_generator_t<T> operator()(
     std::size_t elements,
     bit_entropy entropy = bit_entropy::_1_000,
-    T min               = std::numeric_limits<T>::min,
-    T max               = std::numeric_limits<T>::max()) const
+    T min               = ::cuda::std::numeric_limits<T>::min,
+    T max               = ::cuda::std::numeric_limits<T>::max()) const
   {
     return {{seed_t{}, elements, entropy}, min, max};
   }
@@ -452,7 +467,7 @@ struct less_t
       // (close to the maximum representable value for a double), it is possible that
       // the magnitude computation can result in positive infinity:
       // ```cpp
-      // const double large_number = std::numeric_limits<double>::max() / 2;
+      // const double large_number = ::cuda::std::numeric_limits<double>::max() / 2;
       // std::complex<double> z(large_number, large_number);
       // std::abs(z) == inf;
       // ```
@@ -464,7 +479,7 @@ struct less_t
     }
 
     const complex::value_type difference = cuda::std::abs(magnitude_0 - magnitude_1);
-    const complex::value_type threshold  = cuda::std::numeric_limits<complex::value_type>::epsilon() * 2;
+    const complex::value_type threshold  = ::cuda::std::numeric_limits<complex::value_type>::epsilon() * 2;
 
     if (difference < threshold)
     {
@@ -490,6 +505,21 @@ struct max_t
     return less(lhs, rhs) ? rhs : lhs;
   }
 };
+
+template <class T>
+struct less_then_t
+{
+  T m_val;
+
+  [[nodiscard]] __device__ bool operator()(const T& val) const noexcept
+  {
+    return val < m_val;
+  }
+};
+
+template <typename T>
+struct ::cuda::proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
+{};
 
 namespace
 {

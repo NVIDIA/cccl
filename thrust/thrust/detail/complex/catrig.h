@@ -53,8 +53,9 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cfloat>
-#include <cmath>
+#include <cuda/std/cfloat>
+#include <cuda/std/cmath>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -68,8 +69,7 @@ _CCCL_HOST_DEVICE inline void raise_inexact()
 {
   const volatile float tiny = 7.888609052210118054117286e-31; /* 0x1p-100; */
   // needs the volatile to prevent compiler from ignoring it
-  volatile float junk = 1 + tiny;
-  (void) junk;
+  [[maybe_unused]] volatile float junk = 1 + tiny;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z);
@@ -431,7 +431,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
     /* cacos(+-Inf + I*NaN) = NaN + I*opt(-)Inf */
     if (isinf(x))
     {
-      return (complex<double>(y + y, -infinity<double>()));
+      return (complex<double>(y + y, -::cuda::std::numeric_limits<double>::infinity()));
     }
     /* cacos(NaN + I*+-Inf) = NaN + I*-+Inf */
     if (isinf(y))

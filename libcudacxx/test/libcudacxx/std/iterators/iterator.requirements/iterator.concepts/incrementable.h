@@ -115,9 +115,9 @@ struct postinc_not_declared
   using difference_type = int;
 
   __host__ __device__ postinc_not_declared& operator++();
-#if defined(TEST_COMPILER_MSVC) // MSVC complains about "single-argument function used for postfix "++" (anachronism)""
+#if TEST_COMPILER(MSVC) // MSVC complains about "single-argument function used for postfix "++" (anachronism)""
   __host__ __device__ postinc_not_declared& operator++(int) = delete;
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 };
 
 struct incrementable_with_difference_type

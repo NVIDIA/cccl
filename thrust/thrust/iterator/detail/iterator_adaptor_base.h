@@ -31,9 +31,11 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 
-// forward declaration of iterator_adaptor for iterator_adaptor_base below
+// forward declaration of iterator_adaptor for make_iterator_adaptor_base below
 template <typename Derived,
           typename Base,
           typename Value,
@@ -45,18 +47,12 @@ class iterator_adaptor;
 
 namespace detail
 {
-
-// If T is use_default, return the result of invoking
-// DefaultNullaryFn, otherwise return T.
-// XXX rename to dflt_help
+// If T is use_default, return the result of invoking DefaultNullaryFn, otherwise return T.
 template <class T, class DefaultNullaryFn>
-struct ia_dflt_help
-    : thrust::detail::
-        eval_if<::cuda::std::is_same<T, thrust::use_default>::value, DefaultNullaryFn, thrust::detail::identity_<T>>
-{}; // end ia_dflt_help
+using replace_if_use_default = typename ::cuda::std::
+  _If<::cuda::std::is_same_v<T, use_default>, DefaultNullaryFn, ::cuda::std::type_identity<T>>::type;
 
-// A metafunction which computes an iterator_adaptor's base class,
-// a specialization of iterator_facade.
+// A metafunction which computes an iterator_adaptor's base class, a specialization of iterator_facade.
 template <typename Derived,
           typename Base,
           typename Value,
@@ -64,24 +60,22 @@ template <typename Derived,
           typename Traversal,
           typename Reference,
           typename Difference>
-struct iterator_adaptor_base
+struct make_iterator_adaptor_base
 {
-  using value = typename ia_dflt_help<Value, iterator_value<Base>>::type;
-
-  using system = typename ia_dflt_help<System, thrust::iterator_system<Base>>::type;
-
-  using traversal = typename ia_dflt_help<Traversal, thrust::iterator_traversal<Base>>::type;
-
+private:
+  using value     = replace_if_use_default<Value, lazy_trait<it_value_t, Base>>;
+  using system    = replace_if_use_default<System, iterator_system<Base>>;
+  using traversal = replace_if_use_default<Traversal, iterator_traversal<Base>>;
   using reference =
-    typename ia_dflt_help<Reference,
-                          thrust::detail::eval_if<::cuda::std::is_same<Value, use_default>::value,
-                                                  thrust::iterator_reference<Base>,
-                                                  ::cuda::std::add_lvalue_reference<Value>>>::type;
+    replace_if_use_default<Reference,
+                           ::cuda::std::_If<::cuda::std::is_same_v<Value, use_default>,
+                                            lazy_trait<it_reference_t, Base>,
+                                            ::cuda::std::add_lvalue_reference<Value>>>;
+  using difference = replace_if_use_default<Difference, lazy_trait<it_difference_t, Base>>;
 
-  using difference = typename ia_dflt_help<Difference, iterator_difference<Base>>::type;
-
-  using type = thrust::iterator_facade<Derived, value, system, traversal, reference, difference>;
-}; // end iterator_adaptor_base
+public:
+  using type = iterator_facade<Derived, value, system, traversal, reference, difference>;
+};
 
 } // namespace detail
 THRUST_NAMESPACE_END

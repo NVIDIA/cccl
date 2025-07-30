@@ -40,8 +40,10 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
+#include <cuda/type_traits>
 
 #include <array>
 #include <climits>
@@ -56,22 +58,6 @@
 using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
 using all_offset_types =
   c2h::type_list<cuda::std::int64_t, cuda::std::uint64_t, cuda::std::int32_t, cuda::std::uint32_t>;
-
-// Create a segment iterator that returns the next multiple of Step except for a few cases. This allows to save memory
-template <typename OffsetT, OffsetT Step>
-struct segment_iterator
-{
-  OffsetT last = 0;
-
-  segment_iterator(std::int64_t last1)
-      : last{last1}
-  {}
-
-  __host__ __device__ OffsetT operator()(std::int64_t x) const
-  {
-    return ::cuda::std::min(last, x * Step);
-  }
-};
 
 // The launchers defined in catch2_test_launch_helper.h do not support
 // passing objects by reference since the device-launch tests cannot
@@ -226,7 +212,7 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
   {
     bit_ordered_t key = ::cuda::std::bit_cast<bit_ordered_t>(h_keys[i]);
 
-    _CCCL_IF_CONSTEXPR (traits_t::CATEGORY == cub::FLOATING_POINT)
+    if constexpr (::cuda::is_floating_point_v<KeyT>)
     {
       const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
 
@@ -476,7 +462,7 @@ struct radix_offset_scan_op_t
   __host__ __device__ OffsetT operator()(OffsetT a, OffsetT b) const
   {
     const OffsetT sum = a + b;
-    return CUB_MIN(sum, num_items);
+    return _CUDA_VSTD::min(sum, num_items);
   }
 };
 

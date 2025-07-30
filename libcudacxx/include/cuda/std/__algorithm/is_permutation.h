@@ -26,10 +26,13 @@
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _BinaryPredicate __pred)
 {
   //  shorten sequences as much as possible by lopping of any equal prefix
@@ -100,15 +103,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+[[nodiscard]] _CCCL_API constexpr bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
   return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to{});
 }
 
-#if _CCCL_STD_VER > 2011
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool __is_permutation(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -190,8 +193,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permut
   return true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool __is_permutation(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator2 __last1,
   _RandomAccessIterator1 __first2,
@@ -210,7 +214,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permut
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool is_permutation(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -228,7 +232,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return _CUDA_VSTD::__is_permutation(
@@ -240,8 +244,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
     __iterator_category_type<_ForwardIterator1>{},
     __iterator_category_type<_ForwardIterator2>{});
 }
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H

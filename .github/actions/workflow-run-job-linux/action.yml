@@ -1,24 +1,6 @@
 name: "Run Linux Job"
 description: "Run a job on a Linux runner."
 
-# This job now uses a docker-outside-of-docker (DOOD) strategy.
-#
-# The GitHub Actions runner application mounts the host's docker socket `/var/run/docker.sock` into the
-# container. By using a container with the `docker` CLI, this container can launch docker containers
-# using the host's docker daemon.
-#
-# This allows us to run actions that require node v20 in the `cruizba/ubuntu-dind:jammy-26.1.3` container, and
-# then launch our Ubuntu18.04-based GCC 6/7 containers to build and test CCCL.
-#
-# The main inconvenience to this approach is that any container mounts have to match the paths of the runner host,
-# not the paths as seen in the intermediate (`cruizba/ubuntu-dind`) container.
-#
-# Note: I am using `cruizba/ubuntu-dind:jammy-26.1.3` instead of `docker:latest`, because GitHub doesn't support
-# JS actions in alpine aarch64 containers, instead failing actions with this error:
-# ```
-# Error: JavaScript Actions in Alpine containers are only supported on x64 Linux runners. Detected Linux Arm64
-# ```
-
 inputs:
   id:
     description: "A unique identifier."
@@ -42,21 +24,30 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install dependencies
-      shell: sh
+    - name: Define and log job details
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
+        COMMAND: "${{inputs.command}}"
       run: |
-        # Install script dependencies
-        apt update
-        apt install -y --no-install-recommends tree git
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        path: ${{github.event.repository.name}}
-        persist-credentials: false
+        echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
+
+        echo "::group::️🔍 Job Inputs"
+        # Define the job input parameters as JOB_* environment variables that are visible in all steps:
+        echo "JOB_ID=${{inputs.id}}"               | tee -a $GITHUB_ENV
+        echo "JOB_RUNNER=${{inputs.runner}}"       | tee -a $GITHUB_ENV
+        echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
+        echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
+        echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
+        echo
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+        echo "::endgroup::"
+
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
+        echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
     - name: Get AWS credentials for sccache bucket
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -64,11 +55,11 @@ runs:
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+      id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        GH_TOKEN: ${{ github.token }}
         CI: true
-        RUNNER: "${{inputs.runner}}"
-        IMAGE: "${{inputs.image}}"
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
@@ -76,24 +67,17 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        echo "[host]      github.workspace: ${{github.workspace}}"
-        echo "[container] GITHUB_WORKSPACE: ${GITHUB_WORKSPACE:-}"
-        echo "[container]              PWD: $(pwd)"
-
-        # Necessary because we're doing docker-outside-of-docker:
-        # Make a symlink in the container that matches the host's ${{github.workspace}}, so that way `$(pwd)`
-        # in `.devcontainer/launch.sh` constructs volume paths relative to the hosts's ${{github.workspace}}.
-        mkdir -p "$(dirname "${{github.workspace}}")"
-        ln -s "$(pwd)" "${{github.workspace}}"
-        cd "${{github.workspace}}"
-
-        cat <<"EOF" > ci.sh
+        cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
-        set -eo pipefail
+
+        set -euo pipefail
+
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
+        echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
+        exit_code=0
         eval "${COMMAND}" || exit_code=$?
-        if [ ! -z "$exit_code" ]; then
+        if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
@@ -105,101 +89,88 @@ runs:
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
-          exit $exit_code
         fi
+
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
+
+        exit $exit_code
         EOF
 
         chmod +x ci.sh
 
-        mkdir "$RUNNER_TEMP/.aws";
+        # The devcontainer will mount this path to the home directory:
+        readonly aws_dir="${{github.workspace}}/.aws"
+        mkdir "${aws_dir}";
 
-        cat <<EOF > "$RUNNER_TEMP/.aws/config"
+        cat <<EOF > "${aws_dir}/config"
         [default]
         bucket=rapids-sccache-devs
         region=us-east-2
         EOF
 
-        cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
+        cat <<EOF > "${aws_dir}/credentials"
         [default]
         aws_access_key_id=$AWS_ACCESS_KEY_ID
         aws_session_token=$AWS_SESSION_TOKEN
         aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
         EOF
 
-        chmod 0600 "$RUNNER_TEMP/.aws/credentials"
-        chmod 0664 "$RUNNER_TEMP/.aws/config"
+        chmod 0600 "${aws_dir}/credentials"
+        chmod 0664 "${aws_dir}/config"
 
         declare -a gpu_request=()
 
         # Explicitly pass which GPU to use if on a GPU runner
-        if [[ "${RUNNER}" = *"-gpu-"* ]]; then
+        if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
           gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
 
-        host_path() {
-          sed "s@/__w@$(dirname "$(dirname "${{github.workspace}}")")@" <<< "$1"
-        }
-
         # If the image contains "cudaXX.Yext"...
-        if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
+        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+ext ]]; then
           cuda_ext_request="--cuda-ext"
         fi
 
+        # Initialize artifact paths, vars, etc shared with the devcontainer:
+        source ci/util/artifacts/common.sh
+        source ci/util/workflow/common.sh
+
         # Launch this container using the host's docker daemon
-        set -x
-        ${{github.event.repository.name}}/.devcontainer/launch.sh \
-          --docker \
-          --cuda ${{inputs.cuda}} \
-          --host ${{inputs.host}} \
-          ${cuda_ext_request:-} \
-          "${gpu_request[@]}" \
-          --env "CI=$CI" \
-          --env "AWS_ROLE_ARN=" \
-          --env "COMMAND=$COMMAND" \
-          --env "SCCACHE_IDLE_TIMEOUT=0" \
-          --env "GITHUB_ENV=$GITHUB_ENV" \
-          --env "GITHUB_SHA=$GITHUB_SHA" \
-          --env "GITHUB_PATH=$GITHUB_PATH" \
-          --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
-          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-          --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
-          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-          --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-          --volume "${{github.workspace}}/ci.sh:/ci.sh" \
-          --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
-          --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
-          -- /ci.sh
+        ( # Subshell to contain the set -x log
+          set -x
+          .devcontainer/launch.sh \
+            --docker \
+            --cuda $JOB_CUDA \
+            --host $JOB_HOST \
+            ${cuda_ext_request:-} \
+            "${gpu_request[@]}" \
+            --env "AWS_ROLE_ARN=" \
+            --env "COMMAND=$COMMAND" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --env "GH_TOKEN=${{ github.token }}" \
+            --env "HOST_WORKSPACE=${{github.workspace}}" \
+            --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
+            --env "JOB_ID=$JOB_ID" \
+            --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
+            --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
+            --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
+            -- ./ci.sh
+        )
 
-    - name: Prepare job artifacts
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        echo "Prepare job artifacts"
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
-
-        touch "$result_dir/success"
-
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          filename="$1"
-          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
-          if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
-            return 1
-          fi
-          cp -v "$filepath" "$result_dir"
-        }
-
-        find_and_copy "sccache_stats.json" || true # Ignore failures
-
-        echo "::group::Job artifacts"
-        tree "$result_dir"
-        echo "::endgroup::"
+        # Dump artifact matrix for upload step:
+        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
 
     - name: Upload job artifacts
-      uses: actions/upload-artifact@v4
+      if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
+      uses: ./.github/actions/upload-artifacts
       with:
-        name: jobs-${{inputs.id}}
-        path: jobs
-        compression-level: 0
+        artifacts: ${{ steps.run.outputs.ARTIFACTS }}

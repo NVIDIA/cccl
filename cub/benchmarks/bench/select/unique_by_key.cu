@@ -53,7 +53,7 @@
 
 struct policy_hub
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using UniqueByKeyPolicyT =
       cub::AgentUniqueByKeyPolicy<TUNE_THREADS,
@@ -64,7 +64,7 @@ struct policy_hub
                                   delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 
@@ -155,7 +155,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<KeyT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       d_temp_storage,
       temp_storage_bytes,

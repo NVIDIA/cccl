@@ -22,21 +22,23 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public integral_constant<bool, _CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public bool_constant<_CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
 
 #endif // defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_AGGREGATE_H

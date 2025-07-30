@@ -21,12 +21,10 @@ __host__ __device__ void test_is_standard_layout()
   static_assert(cuda::std::is_standard_layout<const T>::value, "");
   static_assert(cuda::std::is_standard_layout<volatile T>::value, "");
   static_assert(cuda::std::is_standard_layout<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_standard_layout_v<T>, "");
   static_assert(cuda::std::is_standard_layout_v<const T>, "");
   static_assert(cuda::std::is_standard_layout_v<volatile T>, "");
   static_assert(cuda::std::is_standard_layout_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -36,12 +34,10 @@ __host__ __device__ void test_is_not_standard_layout()
   static_assert(!cuda::std::is_standard_layout<const T>::value, "");
   static_assert(!cuda::std::is_standard_layout<volatile T>::value, "");
   static_assert(!cuda::std::is_standard_layout<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_standard_layout_v<T>, "");
   static_assert(!cuda::std::is_standard_layout_v<const T>, "");
   static_assert(!cuda::std::is_standard_layout_v<volatile T>, "");
   static_assert(!cuda::std::is_standard_layout_v<const volatile T>, "");
-#endif
 }
 
 template <class T1, class T2>

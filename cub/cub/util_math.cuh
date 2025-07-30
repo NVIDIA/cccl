@@ -43,6 +43,8 @@
 #endif // no system header
 
 #include <cuda/cmath>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -52,7 +54,7 @@ namespace detail
 
 template <typename T>
 using is_integral_or_enum =
-  ::cuda::std::integral_constant<bool, ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
+  ::cuda::std::integral_constant<bool, ::cuda::std::is_integral_v<T> || ::cuda::std::is_enum_v<T>>;
 
 /**
  * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition
@@ -64,9 +66,9 @@ using is_integral_or_enum =
 template <typename OffsetT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, OffsetT rhs)
 {
-  static_assert(::cuda::std::is_integral<OffsetT>::value, "OffsetT must be an integral type");
+  static_assert(::cuda::std::is_integral_v<OffsetT>, "OffsetT must be an integral type");
   static_assert(sizeof(OffsetT) >= 4, "OffsetT must be at least 32 bits in size");
-  auto const capped_operand_rhs = (cub::min)(rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
+  auto const capped_operand_rhs = (::cuda::std::min) (rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
   return lhs + capped_operand_rhs;
 }
 
@@ -74,14 +76,15 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
 
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
 {
-  return (cub::min)(nominal_4b_items_per_thread, (cub::max)(1, nominal_4b_items_per_thread * 8 / combined_bytes));
+  return (::cuda::std::min) (nominal_4b_items_per_thread,
+                             (::cuda::std::max) (1, nominal_4b_items_per_thread * 8 / combined_bytes));
 }
 
 template <typename T>
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 {
-  return (cub::min)(nominal_4b_items_per_thread,
-                    (cub::max)(1, nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(T))));
+  return (::cuda::std::min) (nominal_4b_items_per_thread,
+                             (::cuda::std::max) (1, nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(T))));
 }
 
 template <typename ItemT>
@@ -89,10 +92,11 @@ constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_8b_items_per_t
 {
   return sizeof(ItemT) <= 8u
          ? nominal_8b_items_per_thread
-         : (cub::min)(nominal_8b_items_per_thread,
-                      (cub::max)(1,
-                                 ((nominal_8b_items_per_thread * 8) + static_cast<int>(sizeof(ItemT)) - 1)
-                                   / static_cast<int>(sizeof(ItemT))));
+         : (::cuda::std::min) (nominal_8b_items_per_thread,
+                               (::cuda::std::max) (1,
+                                                   ((nominal_8b_items_per_thread * 8) + static_cast<int>(sizeof(ItemT))
+                                                    - 1)
+                                                     / static_cast<int>(sizeof(ItemT))));
 }
 
 /**

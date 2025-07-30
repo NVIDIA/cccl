@@ -27,9 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
-
-#include <limits>
 
 #include <nv/target>
 

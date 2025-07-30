@@ -21,14 +21,10 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+    cmake .. --preset=cub-benchmark
 
 You clone the repository, create a build directory and configure the build with CMake.
-It's important that you enable benchmarks (`CCCL_ENABLE_BENCHMARKS=ON`),
-build in Release mode (`CMAKE_BUILD_TYPE=Release`),
-and set the GPU architecture to match your system (`CMAKE_CUDA_ARCHITECTURES=XX`).
-This `website <https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/>`_
-contains a great table listing the architectures for different brands of GPUs.
+The preset `cub-benchmark` takes care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
 
@@ -53,6 +49,8 @@ We also provide a target to build all benchmarks:
 
     ninja cub.all.benches
 
+
+.. _cub-benchmarking-running:
 
 Running a benchmark
 --------------------------------------------------------------------------------
@@ -110,6 +108,8 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
+
+.. _cub-benchmarking-comparing:
 
 Comparing benchmark results
 --------------------------------------------------------------------------------
@@ -226,7 +226,7 @@ Contrary to running a benchmark directly,
 the tuning infrastructure will just ignore an axis value if a benchmark does not support,
 run the benchmark regardless, and continue.
 
-The tuning infrastructure stores results in an SQLite database called `cccl_meta_bench.db` in the build directory.
+The tuning infrastructure stores results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
@@ -242,11 +242,17 @@ Benchmark results captured in different tuning databases can be compared as well
 
 This will print a Markdown report showing the runtime differences and noise for each variant.
 
-Furthermore, you can plot the results from one or more tuning databases as a bar chart or a box plot (add `--box`):
+Furthermore, you can plot the results, which requires additional python packages:
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/sol.py -o cccl_meta_bench.db ...
+    pip install fpzip pandas matplotlib seaborn tabulate PyQt5 colorama
+
+You can plot one or more tuning databases as a bar chart or a box plot (add `--box`):
+
+.. code-block:: bash
+
+    ../benchmarks/scripts/sol.py cccl_meta_bench.db ...
 
 This is useful to display the current performance of CUB as captured in a single tuning database,
 or visually compare the performance of CUB across different tuning databases
@@ -299,7 +305,7 @@ With cmake, you can just add `-DCMAKE_CUDA_FLAGS=-lineinfo` when invoking cmake 
 
 .. code-block:: bash
 
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
 
 To profile the kernels, use the `ncu` command.
 A typical invocation, if you work on a remote cluster, could look like this:

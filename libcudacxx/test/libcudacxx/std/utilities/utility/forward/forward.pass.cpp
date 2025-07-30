@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03
-
 // test forward
 
 #include <cuda/std/cassert>
@@ -20,16 +18,15 @@
 struct A
 {};
 
-__host__ __device__ A source() TEST_NOEXCEPT
+__host__ __device__ A source() noexcept
 {
   return A();
 }
-__host__ __device__ const A csource() TEST_NOEXCEPT
+__host__ __device__ const A csource() noexcept
 {
   return A();
 }
 
-#if TEST_STD_VER > 2011
 __host__ __device__ constexpr bool test_constexpr_forward()
 {
   int x        = 42;
@@ -39,54 +36,39 @@ __host__ __device__ constexpr bool test_constexpr_forward()
       && cuda::std::forward<int&&>(x) == 42 && cuda::std::forward<const int&&>(x) == 42
       && cuda::std::forward<const int&>(cx) == 101 && cuda::std::forward<const int>(cx) == 101;
 }
-#endif
 
 int main(int, char**)
 {
-  A a;
-  const A ca = A();
-
-  ((void) a); // Prevent unused warning
-  ((void) ca); // Prevent unused warning
+  [[maybe_unused]] A a;
+  [[maybe_unused]] const A ca = A();
 
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<A&>(a)), A&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(a)), A&&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(source())), A&&>::value, "");
-  ASSERT_NOEXCEPT(cuda::std::forward<A&>(a));
-  ASSERT_NOEXCEPT(cuda::std::forward<A>(a));
-  ASSERT_NOEXCEPT(cuda::std::forward<A>(source()));
+  static_assert(noexcept(cuda::std::forward<A&>(a)));
+  static_assert(noexcept(cuda::std::forward<A>(a)));
+  static_assert(noexcept(cuda::std::forward<A>(source())));
 
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A&>(a)), const A&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(a)), const A&&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(source())), const A&&>::value, "");
-  ASSERT_NOEXCEPT(cuda::std::forward<const A&>(a));
-  ASSERT_NOEXCEPT(cuda::std::forward<const A>(a));
-  ASSERT_NOEXCEPT(cuda::std::forward<const A>(source()));
+  static_assert(noexcept(cuda::std::forward<const A&>(a)));
+  static_assert(noexcept(cuda::std::forward<const A>(a)));
+  static_assert(noexcept(cuda::std::forward<const A>(source())));
 
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A&>(ca)), const A&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(ca)), const A&&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(csource())), const A&&>::value, "");
-  ASSERT_NOEXCEPT(cuda::std::forward<const A&>(ca));
-  ASSERT_NOEXCEPT(cuda::std::forward<const A>(ca));
-  ASSERT_NOEXCEPT(cuda::std::forward<const A>(csource()));
+  static_assert(noexcept(cuda::std::forward<const A&>(ca)));
+  static_assert(noexcept(cuda::std::forward<const A>(ca)));
+  static_assert(noexcept(cuda::std::forward<const A>(csource())));
 
-#if TEST_STD_VER > 2011
   {
     constexpr int i2 = cuda::std::forward<int>(42);
     static_assert(cuda::std::forward<int>(42) == 42, "");
     static_assert(cuda::std::forward<const int&>(i2) == 42, "");
     static_assert(test_constexpr_forward(), "");
   }
-#endif
-#if TEST_STD_VER == 2011 && defined(_LIBCUDACXX_VERSION)
-  // Test that cuda::std::forward is constexpr in C++11. This is an extension
-  // provided by both libc++ and libstdc++.
-  {
-    constexpr int i2 = cuda::std::forward<int>(42);
-    static_assert(cuda::std::forward<int>(42) == 42, "");
-    static_assert(cuda::std::forward<const int&>(i2) == 42, "");
-  }
-#endif
 
   return 0;
 }

@@ -79,8 +79,8 @@ template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
 {
-// Load directly in thread-blocked order
-#pragma unroll
+  // Load directly in thread-blocked order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     dst_items[i] = block_src_it[linear_tid * ITEMS_PER_THREAD + i];
@@ -119,7 +119,7 @@ template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     const auto src_pos = linear_tid * ITEMS_PER_THREAD + i;
@@ -170,7 +170,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
   int block_items_end,
   DefaultT oob_default)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     dst_items[i] = oob_default;
@@ -206,22 +206,33 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   _CCCL_DIAG_POP
   constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
   constexpr int vectors_per_thread = total_words / vector_size;
-  using vector_t                   = typename CubVector<device_word_t, vector_size>::Type;
 
   // Load into an array of vectors in thread-blocked order
-  vector_t vec_items[vectors_per_thread];
-  const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
-#  pragma unroll
-  for (int i = 0; i < vectors_per_thread; i++)
-  {
-    vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
-  }
+  using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
-// Copy to destination
-#  pragma unroll
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  // Add the alignment check to ensure the vectorized loading can proceed.
+  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (alignof(vector_t)) == 0)
   {
-    dst_items[i] = *(reinterpret_cast<T*>(vec_items) + i);
+    vector_t vec_items[vectors_per_thread];
+    // Load into an array of vectors in thread-blocked order
+    const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < vectors_per_thread; i++)
+    {
+      vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
+    }
+
+    // Copy to destination
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ITEMS_PER_THREAD; i++)
+    {
+      dst_items[i] = *(reinterpret_cast<T*>(vec_items) + i);
+    }
+  }
+  else
+  {
+    LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
   }
 }
 
@@ -300,7 +311,7 @@ template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename RandomAc
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     dst_items[i] = block_src_it[linear_tid + i * BLOCK_THREADS];
@@ -313,7 +324,7 @@ template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename RandomAc
 _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], TransformOpT transform_op)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     dst_items[i] = transform_op(block_src_it[linear_tid + i * BLOCK_THREADS]);
@@ -356,7 +367,7 @@ template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename RandomAc
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     const auto src_pos = linear_tid + i * BLOCK_THREADS;
@@ -410,7 +421,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int block_items_end,
   DefaultT oob_default)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     dst_items[i] = oob_default;
@@ -457,15 +468,15 @@ template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
 {
-  const int tid         = linear_tid & (CUB_PTX_WARP_THREADS - 1);
-  const int wid         = linear_tid >> CUB_PTX_LOG_WARP_THREADS;
-  const int warp_offset = wid * CUB_PTX_WARP_THREADS * ITEMS_PER_THREAD;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
-// Load directly in warp-striped order
-#pragma unroll
+  // Load directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
-    new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * CUB_PTX_WARP_THREADS)]);
+    new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]);
   }
 }
 
@@ -506,15 +517,15 @@ template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
 {
-  const int tid         = linear_tid & (CUB_PTX_WARP_THREADS - 1);
-  const int wid         = linear_tid >> CUB_PTX_LOG_WARP_THREADS;
-  const int warp_offset = wid * CUB_PTX_WARP_THREADS * ITEMS_PER_THREAD;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
-// Load directly in warp-striped order
-#pragma unroll
+  // Load directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
-    const auto src_pos = warp_offset + tid + (i * CUB_PTX_WARP_THREADS);
+    const auto src_pos = warp_offset + tid + (i * detail::warp_threads);
     if (src_pos < block_items_end)
     {
       new (&dst_items[i]) T(block_src_it[src_pos]);
@@ -567,8 +578,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
   int block_items_end,
   DefaultT oob_default)
 {
-// Load directly in warp-striped order
-#pragma unroll
+  // Load directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
     dst_items[i] = oob_default;
@@ -790,15 +801,12 @@ enum BlockLoadAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           int ITEMS_PER_THREAD,
           BlockLoadAlgorithm ALGORITHM = BLOCK_LOAD_DIRECT,
           int BLOCK_DIM_Y              = 1,
-          int BLOCK_DIM_Z              = 1,
-          int LEGACY_PTX_ARCH          = 0>
+          int BLOCK_DIM_Z              = 1>
 class BlockLoad
 {
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; // total threads in the block
@@ -879,8 +887,16 @@ class BlockLoad
     {}
 
     // attempts vectorization (pointer)
-    template <typename>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
+    {
+      InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
+    }
+    // NOTE: This function is necessary for pointers to non-const types.
+    // The core reason is that the compiler will not deduce 'T*' to 'const T*' automatically.
+    // Otherwise, when the pointer type is 'T*', the compiler will prefer the overloaded version
+    // Load(RandomAccessIterator...) over Load(const T*...), which means it will never perform vectorized loading for
+    // pointers to non-const types.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
     }
@@ -959,7 +975,7 @@ class BlockLoad
   template <int DUMMY>
   struct LoadInternal<BLOCK_LOAD_WARP_TRANSPOSE, DUMMY>
   {
-    static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
+    static constexpr int WARP_THREADS = detail::warp_threads;
     static_assert(BLOCK_THREADS % WARP_THREADS == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
@@ -1001,7 +1017,7 @@ class BlockLoad
   template <int DUMMY>
   struct LoadInternal<BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED, DUMMY>
   {
-    static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
+    static constexpr int WARP_THREADS = detail::warp_threads;
     static_assert(BLOCK_THREADS % WARP_THREADS == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z>;
@@ -1234,7 +1250,7 @@ public:
   //! @}  end member group
 };
 
-template <class Policy, class It, class T = cub::detail::value_t<It>>
+template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockLoadType
 {
   using type = cub::BlockLoad<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::LOAD_ALGORITHM>;

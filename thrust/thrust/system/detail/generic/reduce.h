@@ -37,7 +37,7 @@ namespace generic
 {
 
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
 reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 template <typename DerivedPolicy, typename InputIterator, typename T>
@@ -49,6 +49,23 @@ _CCCL_HOST_DEVICE T reduce(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
+  T init,
+  BinaryFunction binary_op);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output, T init);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
   T init,
   BinaryFunction binary_op);
 

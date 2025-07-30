@@ -21,3 +21,8 @@ Multicast
 ---------
 
 .. include:: generated/cp_async_bulk_tensor_multicast.rst
+
+Scatter / Gather
+----------------
+
+.. include:: generated/cp_async_bulk_tensor_gather_scatter.rst

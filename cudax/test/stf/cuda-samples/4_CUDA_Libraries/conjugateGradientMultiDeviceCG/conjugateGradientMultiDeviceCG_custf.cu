@@ -42,13 +42,12 @@
  */
 
 // includes, system
-#include <cuda_runtime.h>
-
 #include <iostream>
 #include <map>
 #include <set>
 #include <utility>
 
+#include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +57,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <cooperative_groups.h>
+
 #include <cooperative_groups/reduce.h>
 
 using namespace cuda::experimental::stf;
@@ -212,9 +212,9 @@ void cpuConjugateGrad(int* I, int* J, float* val, float* x, float* Ax, float* p,
 
 template <typename thread_hierarchy_t>
 __device__ void gpuSpMV(
-  slice<int> I,
-  slice<int> J,
-  slice<float> val,
+  slice<const int> I,
+  slice<const int> J,
+  slice<const float> val,
   int nnz,
   int num_rows,
   float alpha,
@@ -316,9 +316,9 @@ gpuScaleVectorAndSaxpy(slice<float> x, slice<float> y, float a, float scale, int
 template <typename thread_hierarchy_t>
 __device__ void multiGpuConjugateGradient(
   thread_hierarchy_t t,
-  slice<int> I,
-  slice<int> J,
-  slice<float> val,
+  slice<const int> I,
+  slice<const int> J,
+  slice<const float> val,
   slice<float> x,
   slice<float> Ax,
   slice<float> p,
@@ -458,9 +458,9 @@ int main()
     handle_dot_result.write())
       ->*[=]
     _CCCL_DEVICE(auto t,
-                 slice<int> I,
-                 slice<int> J,
-                 slice<float> val,
+                 slice<const int> I,
+                 slice<const int> J,
+                 slice<const float> val,
                  slice<float> x,
                  slice<float> Ax,
                  slice<float> p,

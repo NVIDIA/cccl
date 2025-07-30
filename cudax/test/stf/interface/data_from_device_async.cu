@@ -13,7 +13,7 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-__global__ void axpy(int n, T a, T* x, T* y)
+__global__ void axpy(int n, T a, const T* x, T* y)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
@@ -80,7 +80,7 @@ int main()
     };
 
     // Access Ask to use X, Y and Z on the host
-    ctx.task(exec_place::host, handle_X.read(), handle_Y.read(), handle_Z.read())
+    ctx.task(exec_place::host(), handle_X.read(), handle_Y.read(), handle_Z.read())
                     ->*
             [](cudaStream_t stream, auto X, auto Y, auto Z) {
                 cuda_safe_call(cudaStreamSynchronize(stream));

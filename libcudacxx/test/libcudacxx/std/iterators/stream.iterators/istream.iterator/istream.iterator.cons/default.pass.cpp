@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Usage of is_trivially_constructible is broken with these compilers.
-// See https://bugs.llvm.org/show_bug.cgi?id=31016
-// XFAIL: clang-3.7, apple-clang-7 && c++17
-
 // <cuda/std/iterator>
 
 // class istream_iterator
@@ -31,14 +27,12 @@ struct S
   S();
 }; // not constexpr
 
-#  if TEST_STD_VER > 2014
 template <typename T, bool isTrivial = cuda::std::is_trivially_default_constructible_v<T>>
 struct test_trivial
 {
   void operator()() const
   {
-    constexpr cuda::std::istream_iterator<T> it;
-    (void) it;
+    [[maybe_unused]] constexpr cuda::std::istream_iterator<T> it;
   }
 };
 
@@ -47,7 +41,6 @@ struct test_trivial<T, false>
 {
   void operator()() const {}
 };
-#  endif
 
 int main(int, char**)
 {
@@ -55,17 +48,14 @@ int main(int, char**)
     typedef cuda::std::istream_iterator<int> T;
     T it;
     assert(it == T());
-    constexpr T it2;
-    (void) it2;
+    [[maybe_unused]] constexpr T it2;
   }
 
-#  if TEST_STD_VER > 2014
   test_trivial<int>()();
   test_trivial<char>()();
   test_trivial<double>()();
   test_trivial<S>()();
   test_trivial<cuda::std::string>()();
-#  endif
 
   return 0;
 }

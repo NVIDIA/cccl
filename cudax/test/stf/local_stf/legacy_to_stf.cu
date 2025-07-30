@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
@@ -33,7 +34,7 @@ __global__ void initB(double* d_ptrB, size_t N)
 }
 
 // B += alpha*A;
-__global__ void axpy(double alpha, double* d_ptrA, double* d_ptrB, size_t N)
+__global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
@@ -145,12 +146,11 @@ void lib_call_generic(async_resources_handle& handle, cudaStream_t stream, doubl
 }
 
 template <typename Ctx_t>
-void lib_call_logical_token(
-  async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
+void lib_call_token(async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
 {
   Ctx_t ctx(stream, handle);
-  auto lA = ctx.logical_token();
-  auto lB = ctx.logical_token();
+  auto lA = ctx.token();
+  auto lB = ctx.token();
   ctx.task(lA.write())->*[=](cudaStream_t s) {
     initA<<<128, 32, 0, s>>>(d_ptrA, N);
   };
@@ -183,66 +183,68 @@ int main()
   cudaStream_t stream;
   cuda_safe_call(cudaStreamCreate(&stream));
 
-  nvtxRangePushA("warmup");
+  nvtx_range r_warmup("warmup");
   for (size_t i = 0; i < NITER; i++)
   {
     ref_lib_call(stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
+  r_warmup.end();
 
-  nvtxRangePushA("ref");
+  nvtx_range r_ref("ref");
   for (size_t i = 0; i < NITER; i++)
   {
     ref_lib_call(stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
+  r_ref.end();
 
-  nvtxRangePushA("local stf");
+  nvtx_range r_local("local stf");
   for (size_t i = 0; i < NITER; i++)
   {
     lib_call(stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
+  r_local.end();
 
-  nvtxRangePushA("local stf handle");
+  nvtx_range r_local_handle("local stf handle");
   async_resources_handle handle;
   for (size_t i = 0; i < NITER; i++)
   {
     lib_call_with_handle(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
+  r_local_handle.end();
 
-  nvtxRangePushA("generic graph handle");
+  nvtx_range r_generic_graph_handle("generic graph handle");
   for (size_t i = 0; i < NITER; i++)
   {
     lib_call_generic<graph_ctx>(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
+  r_generic_graph_handle.end();
 
-  nvtxRangePushA("generic stream handle");
+  nvtx_range r_generic_stream_handle("generic stream handle");
   for (size_t i = 0; i < NITER; i++)
   {
     lib_call_generic<stream_ctx>(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
+  r_generic_stream_handle.end();
 
-  nvtxRangePushA("generic context handle");
+  nvtx_range r_generic_context_handle("generic context handle");
   for (size_t i = 0; i < NITER; i++)
   {
     lib_call_generic<context>(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
+  r_generic_context_handle.end();
 
-  nvtxRangePushA("logical token");
+  nvtx_range r_token("logical token");
   for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_logical_token<context>(handle, stream, d_ptrA, d_ptrB, N);
+    lib_call_token<context>(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
-
-  nvtxRangePop();
+  r_token.end();
 }

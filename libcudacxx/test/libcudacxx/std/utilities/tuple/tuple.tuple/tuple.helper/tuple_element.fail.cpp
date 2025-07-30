@@ -13,10 +13,8 @@
 // template <size_t I, class... Types>
 // struct tuple_element<I, tuple<Types...> >
 // {
-//     typedef Ti type;
+//     using type = Ti;
 // };
-
-// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>

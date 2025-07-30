@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03
-
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>

@@ -12,9 +12,10 @@
 #define __ALGORITHM_COMMON__
 
 #include <cuda/memory_resource>
+#include <cuda/std/mdspan>
 
 #include <cuda/experimental/algorithm.cuh>
-#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <testing.cuh>
@@ -35,7 +36,7 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
 {
   int expected = get_expected_value(pattern_byte);
 
-  stream.wait();
+  stream.sync();
   for (int& i : result)
   {
     CUDAX_REQUIRE(i == expected);
@@ -46,7 +47,7 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
 template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(Extents extents, char value = 0)
 {
-  cudax::pinned_memory_resource host_resource;
+  cudax::legacy_pinned_memory_resource host_resource;
   auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
 
   cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
@@ -56,18 +57,30 @@ auto make_buffer_for_mdspan(Extents extents, char value = 0)
   return buffer;
 }
 
+inline auto create_fake_strided_mdspan()
+{
+  cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
+  cuda::std::array<size_t, 3> strides{12, 4, 1};
+#if _CCCL_CUDACC_BELOW(12, 6)
+  auto map = cuda::std::layout_stride::mapping{dynamic_extents, strides};
+#else
+  cuda::std::layout_stride::mapping map{dynamic_extents, strides};
+#endif
+  return cuda::std::mdspan<int, decltype(dynamic_extents), cuda::std::layout_stride>(nullptr, map);
+};
+
 namespace cuda::experimental
 {
 
 // Need a type that goes through all launch_transform steps, but is not a contiguous_range
-template <typename AsKernelArg = cuda::std::span<int>>
+template <typename RelocatableValue = cuda::std::span<int>>
 struct weird_buffer
 {
-  const pinned_memory_resource& resource;
+  legacy_pinned_memory_resource& resource;
   int* data;
   std::size_t size;
 
-  weird_buffer(const pinned_memory_resource& res, std::size_t s)
+  weird_buffer(legacy_pinned_memory_resource& res, std::size_t s)
       : resource(res)
       , data((int*) res.allocate(s * sizeof(int)))
       , size(s)
@@ -88,7 +101,10 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    using __as_kernel_arg = AsKernelArg;
+    RelocatableValue transformed_argument()
+    {
+      return *this;
+    };
 
     operator cuda::std::span<int>()
     {
@@ -102,7 +118,7 @@ struct weird_buffer
     }
   };
 
-  _CCCL_NODISCARD_FRIEND transform_result __cudax_launch_transform(cuda::stream_ref, const weird_buffer& self) noexcept
+  [[nodiscard]] friend transform_result transform_device_argument(cuda::stream_ref, const weird_buffer& self) noexcept
   {
     return {self.data, self.size};
   }

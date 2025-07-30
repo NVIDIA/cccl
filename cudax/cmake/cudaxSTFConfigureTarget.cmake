@@ -41,10 +41,4 @@ function(cudax_stf_configure_target target_name)
       "CUDASTF_BOUNDSCHECK"
     )
   endif()
-
-  if (cudax_ENABLE_CUDASTF_DEBUG)
-    target_compile_definitions(${target_name} PRIVATE
-      "CUDASTF_DEBUG"
-    )
-  endif()
 endfunction()

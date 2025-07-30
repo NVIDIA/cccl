@@ -30,6 +30,7 @@
 namespace cuda::experimental::stf
 {
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename element_type, size_t dimensions = 1, typename ReduxOp>
 __global__ void
 slice_reduction_op_kernel(const slice<element_type, dimensions> in, const slice<element_type, dimensions> inout)
@@ -88,6 +89,7 @@ __global__ void slice_reduction_op_init_kernel(slice<element_type, dimensions> o
     static_assert(dimensions == 1 || dimensions == 2, "Dimensionality not supported.");
   }
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Helper class to define element-wise reduction operators applied to slices
@@ -110,7 +112,7 @@ public:
   /// Reconstruct an instance by applying the reduction operator over it and another instance
   void op(const instance_t& in, instance_t& inout, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
       cuda_safe_call(cudaStreamSynchronize(s));
@@ -146,16 +148,16 @@ public:
     else
     {
       // this is not the host, so this has to be a device ... (XXX)
-      auto [gridsize, threadblocksize] =
-        reserved::compute_occupancy(slice_reduction_op_kernel<element_type, dimensions, ReduxOp>);
-      slice_reduction_op_kernel<element_type, dimensions, ReduxOp><<<gridsize, threadblocksize, 0, s>>>(in, inout);
+      const auto occ = reserved::compute_occupancy(slice_reduction_op_kernel<element_type, dimensions, ReduxOp>);
+      slice_reduction_op_kernel<element_type, dimensions, ReduxOp>
+        <<<occ.min_grid_size, occ.block_size, 0, s>>>(in, inout);
     }
   }
 
   /// Initialize an instance with an appropriate default value for the reduction operator
   void init_op(instance_t& out, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
       cuda_safe_call(cudaStreamSynchronize(s));
@@ -184,11 +186,11 @@ public:
     else
     {
       // this is not the host, so this has to be a device ... (XXX)
-      auto [gridsize, threadblocksize] =
-        reserved::compute_occupancy(slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp>);
+      const auto occ = reserved::compute_occupancy(slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp>);
 
       EXPECT(out.data_handle() != nullptr);
-      slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp><<<gridsize, threadblocksize, 0, s>>>(out);
+      slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp>
+        <<<occ.min_grid_size, occ.block_size, 0, s>>>(out);
     }
   }
 };

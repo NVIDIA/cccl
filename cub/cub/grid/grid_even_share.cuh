@@ -49,6 +49,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm_>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -131,12 +133,12 @@ public:
     this->block_end         = num_items_; // Initialize past-the-end
     this->num_items         = num_items_;
     this->total_tiles       = static_cast<int>(::cuda::ceil_div(num_items_, tile_items));
-    this->grid_size         = CUB_MIN(total_tiles, max_grid_size);
+    this->grid_size         = _CUDA_VSTD::min(total_tiles, max_grid_size);
     int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
     this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
-    this->normal_share_items = avg_tiles_per_block * tile_items;
-    this->normal_base_offset = big_shares * tile_items;
+    this->normal_share_items = static_cast<OffsetT>(avg_tiles_per_block) * tile_items;
+    this->normal_base_offset = static_cast<OffsetT>(big_shares) * tile_items;
     this->big_share_items    = normal_share_items + tile_items;
   }
 
@@ -146,7 +148,7 @@ public:
    *        consecutive sequence of input tiles.
    */
   template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, detail::constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
   {
     block_stride = TILE_ITEMS;
     if (block_id < big_shares)
@@ -160,7 +162,7 @@ public:
       // This thread block gets a normal share of grains (avg_tiles_per_block)
       block_offset = normal_base_offset + (block_id * normal_share_items);
       // Avoid generating values greater than num_items, as it may cause overflow
-      block_end = block_offset + CUB_MIN(num_items - block_offset, normal_share_items);
+      block_end = block_offset + _CUDA_VSTD::min(num_items - block_offset, normal_share_items);
     }
     // Else default past-the-end
   }
@@ -171,7 +173,8 @@ public:
    *        of input tiles.
    */
   template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  BlockInit(int block_id, detail::constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
     block_stride = grid_size * TILE_ITEMS;
     block_offset = (block_id * TILE_ITEMS);
@@ -186,7 +189,7 @@ public:
   template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
   {
-    BlockInit<TILE_ITEMS>(blockIdx.x, Int2Type<STRATEGY>());
+    BlockInit<TILE_ITEMS>(blockIdx.x, detail::constant_v<STRATEGY>);
   }
 
   /**
@@ -200,8 +203,8 @@ public:
    * @param[in] block_end
    *   Threadblock end offset (exclusive)
    */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT block_offset, OffsetT block_end)
+  template <int TILE_ITEMS, typename OffsetT1 = OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
   {
     this->block_offset = block_offset;
     this->block_end    = block_end;

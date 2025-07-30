@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,8 +23,7 @@
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -34,17 +33,17 @@ struct __tagged_ptr;
 template <class _Tp>
 struct __tagged_ptr<_Tp*>
 {
-  _CUDAX_HOST_API void __set(_Tp* __pv, bool __flag) noexcept
+  _CCCL_HOST_API void __set(_Tp* __pv, bool __flag) noexcept
   {
     __ptr_ = reinterpret_cast<uintptr_t>(__pv) | uintptr_t(__flag);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get() const noexcept -> _Tp*
+  [[nodiscard]] _CCCL_HOST_API auto __get() const noexcept -> _Tp*
   {
     return reinterpret_cast<_Tp*>(__ptr_ & ~uintptr_t(1));
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __flag() const noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_API auto __flag() const noexcept -> bool
   {
     return static_cast<bool>(__ptr_ & uintptr_t(1));
   }
@@ -54,6 +53,6 @@ struct __tagged_ptr<_Tp*>
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_TAGGED_PTR_H

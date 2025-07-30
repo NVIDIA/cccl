@@ -34,31 +34,34 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #ifndef __cuda_std__
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Size>
-_LIBCUDACXX_HIDE_FROM_ABI _Size __loadword(const void* __p)
+_CCCL_API inline _Size __loadword(const void* __p)
 {
   _Size __r;
-  std::memcpy(&__r, __p, sizeof(__r));
+  _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
 // We use murmur2 when size_t is 32 bits, and cityhash64 when size_t
 // is 64 bits.  This is because cityhash64 uses 64bit x 64bit
 // multiplication, which can be very slow on 32-bit systems.
-template <class _Size, size_t = sizeof(_Size) * __CHAR_BIT__>
+template <class _Size, size_t = sizeof(_Size) * CHAR_BIT>
 struct __murmur2_or_cityhash;
 
 template <class _Size>
 struct __murmur2_or_cityhash<_Size, 32>
 {
-  inline _Size operator()(const void* __key, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK;
+  inline _Size operator()(const void* __key, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow");
 };
 
 // murmur2
@@ -82,10 +85,10 @@ _Size __murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __le
   {
     case 3:
       __h ^= static_cast<_Size>(__data[2] << 16);
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case 2:
       __h ^= static_cast<_Size>(__data[1] << 8);
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case 1:
       __h ^= __data[0];
       __h *= __m;
@@ -99,7 +102,7 @@ _Size __murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __le
 template <class _Size>
 struct __murmur2_or_cityhash<_Size, 64>
 {
-  inline _Size operator()(const void* __key, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK;
+  inline _Size operator()(const void* __key, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow");
 
 private:
   // Some primes between 2^63 and 2^64.
@@ -123,7 +126,7 @@ private:
     return __val ^ (__val >> 47);
   }
 
-  static _Size __hash_len_16(_Size __u, _Size __v) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_16(_Size __u, _Size __v) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     const _Size __mul = 0x9ddfea08eb382d69ULL;
     _Size __a         = (__u ^ __v) * __mul;
@@ -134,7 +137,7 @@ private:
     return __b;
   }
 
-  static _Size __hash_len_0_to_16(const char* __s, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_0_to_16(const char* __s, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     if (__len > 8)
     {
@@ -160,7 +163,7 @@ private:
     return __k2;
   }
 
-  static _Size __hash_len_17_to_32(const char* __s, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_17_to_32(const char* __s, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     const _Size __a = __loadword<_Size>(__s) * __k1;
     const _Size __b = __loadword<_Size>(__s + 8);
@@ -172,8 +175,9 @@ private:
 
   // Return a 16-byte hash for 48 bytes.  Quick and dirty.
   // Callers do best to use "random-looking" values for a and b.
-  static pair<_Size, _Size> __weak_hash_len_32_with_seeds(
-    _Size __w, _Size __x, _Size __y, _Size __z, _Size __a, _Size __b) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static pair<_Size, _Size>
+  __weak_hash_len_32_with_seeds(_Size __w, _Size __x, _Size __y, _Size __z, _Size __a, _Size __b)
+    _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     __a += __w;
     __b             = __rotate(__b + __a + __z, 21);
@@ -185,8 +189,8 @@ private:
   }
 
   // Return a 16-byte hash for s[0] ... s[31], a, and b.  Quick and dirty.
-  static pair<_Size, _Size>
-  __weak_hash_len_32_with_seeds(const char* __s, _Size __a, _Size __b) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static pair<_Size, _Size> __weak_hash_len_32_with_seeds(const char* __s, _Size __a, _Size __b)
+    _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     return __weak_hash_len_32_with_seeds(
       __loadword<_Size>(__s),
@@ -198,7 +202,7 @@ private:
   }
 
   // Return an 8-byte hash for 33 to 64 bytes.
-  static _Size __hash_len_33_to_64(const char* __s, size_t __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_33_to_64(const char* __s, size_t __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     _Size __z = __loadword<_Size>(__s + 24);
     _Size __a = __loadword<_Size>(__s) + (__len + __loadword<_Size>(__s + __len - 16)) * __k0;
@@ -278,7 +282,7 @@ struct __scalar_hash;
 template <class _Tp>
 struct __scalar_hash<_Tp, 0> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -294,7 +298,7 @@ struct __scalar_hash<_Tp, 0> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 1> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -309,7 +313,7 @@ struct __scalar_hash<_Tp, 1> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 2> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -328,7 +332,7 @@ struct __scalar_hash<_Tp, 2> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 3> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -348,7 +352,7 @@ struct __scalar_hash<_Tp, 3> : public __unary_function<_Tp, size_t>
 template <class _Tp>
 struct __scalar_hash<_Tp, 4> : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     union
     {
@@ -372,7 +376,7 @@ struct _PairT
   size_t second;
 };
 
-_LIBCUDACXX_HIDE_FROM_ABI size_t __hash_combine(size_t __lhs, size_t __rhs) noexcept
+_CCCL_API inline size_t __hash_combine(size_t __lhs, size_t __rhs) noexcept
 {
   using _HashT     = __scalar_hash<_PairT>;
   const _PairT __p = {__lhs, __rhs};
@@ -382,7 +386,7 @@ _LIBCUDACXX_HIDE_FROM_ABI size_t __hash_combine(size_t __lhs, size_t __rhs) noex
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<_Tp*> : public __unary_function<_Tp*, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp* __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp* __v) const noexcept
   {
     union
     {
@@ -397,7 +401,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<_Tp*> : public __unary_function<_Tp*, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<bool> : public __unary_function<bool, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(bool __v) const noexcept
+  _CCCL_API inline size_t operator()(bool __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -406,7 +410,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<bool> : public __unary_function<bool, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char> : public __unary_function<char, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(char __v) const noexcept
+  _CCCL_API inline size_t operator()(char __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -415,7 +419,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char> : public __unary_function<char, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<signed char> : public __unary_function<signed char, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(signed char __v) const noexcept
+  _CCCL_API inline size_t operator()(signed char __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -424,17 +428,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<signed char> : public __unary_function
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned char> : public __unary_function<unsigned char, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned char __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned char __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
 };
 
-#  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char16_t> : public __unary_function<char16_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(char16_t __v) const noexcept
+  _CCCL_API inline size_t operator()(char16_t __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -443,28 +446,25 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char16_t> : public __unary_function<ch
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char32_t> : public __unary_function<char32_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(char32_t __v) const noexcept
+  _CCCL_API inline size_t operator()(char32_t __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
 };
-#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<wchar_t> : public __unary_function<wchar_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(wchar_t __v) const noexcept
+  _CCCL_API inline size_t operator()(wchar_t __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
 };
-#  endif // _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<short> : public __unary_function<short, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(short __v) const noexcept
+  _CCCL_API inline size_t operator()(short __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -473,7 +473,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<short> : public __unary_function<short
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned short> : public __unary_function<unsigned short, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned short __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned short __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -482,7 +482,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned short> : public __unary_funct
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<int> : public __unary_function<int, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(int __v) const noexcept
+  _CCCL_API inline size_t operator()(int __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -491,7 +491,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<int> : public __unary_function<int, si
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned int> : public __unary_function<unsigned int, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned int __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned int __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -500,7 +500,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned int> : public __unary_functio
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long> : public __unary_function<long, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(long __v) const noexcept
+  _CCCL_API inline size_t operator()(long __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -509,7 +509,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long> : public __unary_function<long, 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned long> : public __unary_function<unsigned long, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(unsigned long __v) const noexcept
+  _CCCL_API inline size_t operator()(unsigned long __v) const noexcept
   {
     return static_cast<size_t>(__v);
   }
@@ -523,7 +523,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned long long> : public __scalar_hash<unsigned long long>
 {};
 
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__int128_t> : public __scalar_hash<__int128_t>
@@ -533,12 +533,12 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__uint128_t> : public __scalar_hash<__uint128_t>
 {};
 
-#  endif
+#  endif // _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(float __v) const noexcept
+  _CCCL_API inline size_t operator()(float __v) const noexcept
   {
     // -0.0 and 0.0 should return same hash
     if (__v == 0.0f)
@@ -552,7 +552,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<double> : public __scalar_hash<double>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(double __v) const noexcept
+  _CCCL_API inline size_t operator()(double __v) const noexcept
   {
     // -0.0 and 0.0 should return same hash
     if (__v == 0.0)
@@ -566,33 +566,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<double> : public __scalar_hash<double>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<long double>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(long double __v) const noexcept
+  _CCCL_API inline size_t operator()(long double __v) const noexcept
   {
     // -0.0 and 0.0 should return same hash
     if (__v == 0.0L)
     {
       return 0;
     }
-#  if defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__))
-    // Zero out padding bits
-    union
-    {
-      long double __t;
-      struct
-      {
-        size_t __a;
-        size_t __b;
-        size_t __c;
-        size_t __d;
-      } __s;
-    } __u;
-    __u.__s.__a = 0;
-    __u.__s.__b = 0;
-    __u.__s.__c = 0;
-    __u.__s.__d = 0;
-    __u.__t     = __v;
-    return __u.__s.__a ^ __u.__s.__b ^ __u.__s.__c ^ __u.__s.__d;
-#  elif defined(__x86_64__)
+#  if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
     // Zero out padding bits
     union
     {
@@ -616,7 +597,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<lo
 template <class _Tp, bool = is_enum<_Tp>::value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __enum_hash : public __unary_function<_Tp, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
+  _CCCL_API inline size_t operator()(_Tp __v) const noexcept
   {
     using type = typename underlying_type<_Tp>::type;
     return hash<type>()(static_cast<type>(__v));
@@ -634,41 +615,35 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash : public __enum_hash<_Tp>
 {};
 
-#  if _CCCL_STD_VER > 2014
-
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<nullptr_t, size_t>
 {
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(nullptr_t) const noexcept
+  _CCCL_API inline size_t operator()(nullptr_t) const noexcept
   {
     return 662607004ull;
   }
 };
-#  endif
 
 template <class _Key, class _Hash>
 using __check_hash_requirements _CCCL_NODEBUG_ALIAS =
   integral_constant<bool,
                     is_copy_constructible<_Hash>::value && is_move_constructible<_Hash>::value
-                      && __invokable_r<size_t, _Hash, _Key const&>::value>;
+                      && __invocable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
 using __has_enabled_hash _CCCL_NODEBUG_ALIAS =
   integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible<_Hash>::value>;
 
-#  if _CCCL_STD_VER > 2014
 template <class _Type, class>
 using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
 
 template <class _Type, class... _Keys>
 using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
   __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
-#  else
-template <class _Type, class...>
-using __enable_hash_helper _CCCL_NODEBUG_ALIAS = _Type;
-#  endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 

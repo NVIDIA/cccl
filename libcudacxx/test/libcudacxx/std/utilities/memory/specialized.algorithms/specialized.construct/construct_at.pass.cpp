@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // <memory>
 
@@ -21,9 +21,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4244)
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion possible loss of data
 
 struct Foo
 {
@@ -90,6 +88,20 @@ struct Always_false
   __host__ __device__ constexpr Always_false(const bool val) noexcept
   {
     assert(val);
+  }
+};
+
+struct Dest
+{
+  struct tag
+  {};
+  __host__ __device__ constexpr Dest(tag) {}
+};
+struct ConvertibleToDest
+{
+  __host__ __device__ constexpr operator Dest() const noexcept
+  {
+    return Dest{Dest::tag{}};
   }
 };
 
@@ -163,6 +175,15 @@ __host__ __device__ constexpr bool test()
     assert(*res == 2);
   }
 
+#if !TEST_COMPILER(NVHPC, <, 25, 5)
+  // ensure that we can construct despite only through conversion operator
+  {
+    Dest i{Dest::tag{}};
+    const ConvertibleToDest conv{};
+    Dest* res = cuda::std::construct_at(&i, conv);
+    assert(res == &i);
+  }
+#endif // !TEST_COMPILER(NVHPC, <, 25, 5)
 #if 0 // we do not support std::allocator
     {
         cuda::std::allocator<Counted> a;
@@ -221,17 +242,16 @@ static_assert(!can_construct_at(contiguous_iterator<Foo*>(), 1, '2', 3.0));
 #endif
 // Can't construct function pointers.
 
-#ifndef TEST_COMPILER_MSVC // nvbug 4075886
+#if !TEST_COMPILER(MSVC) // nvbug 4075886
 static_assert(!can_construct_at((int (*)()) nullptr));
 static_assert(!can_construct_at((int (*)()) nullptr, nullptr));
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 int main(int, char**)
 {
   test();
-#if !(defined(TEST_COMPILER_CLANG) && __clang_major__ <= 10) && !defined(TEST_COMPILER_MSVC_2017) \
-  && !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
   static_assert(test());
-#endif
+#endif // !TEST_COMPILER(MSVC2019)
   return 0;
 }

@@ -3,6 +3,8 @@
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/std/iterator>
+
 #include <iostream>
 
 #include "../include/host_device.h"
@@ -20,10 +22,10 @@ class range_view
 {
 public:
   using iterator        = Iterator;
-  using value_type      = typename thrust::iterator_traits<iterator>::value_type;
-  using pointer         = typename thrust::iterator_traits<iterator>::pointer;
-  using difference_type = typename thrust::iterator_traits<iterator>::difference_type;
-  using reference       = typename thrust::iterator_traits<iterator>::reference;
+  using value_type      = typename cuda::std::iterator_traits<iterator>::value_type;
+  using pointer         = typename cuda::std::iterator_traits<iterator>::pointer;
+  using difference_type = typename cuda::std::iterator_traits<iterator>::difference_type;
+  using reference       = typename cuda::std::iterator_traits<iterator>::reference;
 
 private:
   const iterator first;
@@ -38,7 +40,7 @@ public:
 
   __host__ __device__ difference_type size() const
   {
-    return thrust::distance(first, last);
+    return ::cuda::std::distance(first, last);
   }
 
   __host__ __device__ reference operator[](difference_type n)
@@ -194,7 +196,7 @@ int main()
     make_range_view(thrust::make_transform_iterator(X.cbegin(), f1()), thrust::make_transform_iterator(X.cend(), f1())),
 
     // range view of normal_iterators
-    make_range_view(Y.begin(), thrust::distance(Y.begin(), Y.end())),
+    make_range_view(Y.begin(), ::cuda::std::distance(Y.begin(), Y.end())),
 
     // range view of naked pointers
     make_range_view(Z.data().get(), 4));

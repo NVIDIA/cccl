@@ -43,7 +43,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -69,6 +68,9 @@ CUB_NAMESPACE_BEGIN
 //! The term *exclusive* indicates the *i*\ :sup:`th` input is not
 //! incorporated into the *i*\ :sup:`th` output reduction. When the input and
 //! output sequences are the same, the scan is performed in-place.
+//!
+//! In order to provide an efficient parallel implementation, the binary reduction operator must be associative. That
+//! is, ``op(op(a, b), c)`` must be equivalent to ``op(a, op(b, c))`` for any input values ``a``, ``b``, and ``c``.
 //!
 //! As of CUB 1.0.1 (2013), CUB's device-wide scan APIs have implemented our
 //! *"decoupled look-back"* algorithm for performing global prefix scan with
@@ -187,11 +189,11 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<InputIteratorT>;
+    using InitT   = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
     InitT init_value{};
@@ -285,7 +287,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
-  //! binary ``scan_op`` functor. The ``init_value`` value is applied as
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_out``.
   //!
   //! - Supports non-commutative scan operators.
@@ -305,8 +307,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -353,11 +355,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -376,7 +377,7 @@ struct DeviceScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -399,7 +400,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -417,7 +418,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
-  //! binary ``scan_op`` functor. The ``init_value`` value is applied as
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_data``.
   //!
   //! - Supports non-commutative scan operators.
@@ -435,8 +436,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -479,11 +480,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -499,7 +499,7 @@ struct DeviceScan
   //!   Random-access iterator to the sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -526,7 +526,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
-  //! binary ``scan_op`` functor. The ``init_value`` value is provided as a future value.
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is provided as a future value.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -545,8 +545,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -598,11 +598,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -621,7 +620,7 @@ struct DeviceScan
   //!   Pointer to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -649,7 +648,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -666,7 +665,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide exclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The ``init_value`` value is provided as a future value.
   //!
   //! - Supports non-commutative scan operators.
@@ -683,8 +682,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -732,11 +731,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -752,7 +750,7 @@ struct DeviceScan
   //!   Pointer to the sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -872,7 +870,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -957,7 +955,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -976,8 +974,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1024,7 +1022,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -1044,7 +1042,7 @@ struct DeviceScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
@@ -1063,7 +1061,7 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1073,7 +1071,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
   //! is assigned to ``*d_out``.
   //!
@@ -1107,7 +1105,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value`
@@ -1130,7 +1128,7 @@ struct DeviceScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
@@ -1152,12 +1150,11 @@ struct DeviceScan
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::value_t<InputIteratorT>, InitValueT>;
-    constexpr bool ForceInclusive = true;
+    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
     return DispatchScan<
       InputIteratorT,
@@ -1166,19 +1163,18 @@ struct DeviceScan
       detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
-      detail::scan::policy_hub<AccumT, ScanOpT>,
-      ForceInclusive>::Dispatch(d_temp_storage,
-                                temp_storage_bytes,
-                                d_in,
-                                d_out,
-                                scan_op,
-                                detail::InputValue<InitValueT>(init_value),
-                                num_items,
-                                stream);
+      ForceInclusive::Yes>::Dispatch(d_temp_storage,
+                                     temp_storage_bytes,
+                                     d_in,
+                                     d_out,
+                                     scan_op,
+                                     detail::InputValue<InitValueT>(init_value),
+                                     num_items,
+                                     stream);
   }
 
   //! @rst
-  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1194,8 +1190,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1238,7 +1234,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -1255,7 +1251,7 @@ struct DeviceScan
   //!   Random-access iterator to the sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
@@ -1377,7 +1373,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1388,11 +1384,11 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<ValuesInputIteratorT>;
+    using InitT   = cub::detail::it_value_t<ValuesInputIteratorT>;
 
     // Initial value
     InitT init_value{};
@@ -1418,7 +1414,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan-by-key using the
-  //! specified binary ``scan_op`` functor. The key equality is defined by
+  //! specified binary associative ``scan_op`` functor. The key equality is defined by
   //! ``equality_op``.  The ``init_value`` value is applied as the initial
   //! value, and is assigned to the beginning of each segment in ``d_values_out``.
   //!
@@ -1442,8 +1438,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1507,11 +1503,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!   **[inferred]** Type of the `init_value` value used in Binary scan
-  //!   functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Type of the `init_value`
   //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
@@ -1537,7 +1532,7 @@ struct DeviceScan
   //!    Random-access output iterator to the output sequence of value items
   //!
   //!  @param[in] scan_op
-  //!    Binary scan functor
+  //!    Binary associative scan functor
   //!
   //!  @param[in] init_value
   //!    Initial value to seed the exclusive scan (and is assigned to the
@@ -1561,7 +1556,7 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1574,7 +1569,7 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1697,7 +1692,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1708,7 +1703,7 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1734,7 +1729,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
-  //! specified binary ``scan_op`` functor. The key equality is defined by ``equality_op``.
+  //! specified binary associative ``scan_op`` functor. The key equality is defined by ``equality_op``.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1756,8 +1751,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1818,7 +1813,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
@@ -1844,7 +1839,7 @@ struct DeviceScan
   //!    Random-access output iterator to the output sequence of value items
   //!
   //!  @param[in] scan_op
-  //!    Binary scan functor
+  //!    Binary associative scan functor
   //!
   //!  @param[in] num_items
   //!    Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
@@ -1862,7 +1857,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1874,7 +1869,7 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;

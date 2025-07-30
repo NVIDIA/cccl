@@ -776,7 +776,7 @@ an asynchronous fence mechanism is available :
 
 .. code:: cpp
 
-    cudaStream_t stream = ctx.task_fence();
+    cudaStream_t stream = ctx.fence();
     cudaStreamSynchronize(stream);
 
 Another synchronization mechanism is the ``wait`` method of the
@@ -818,7 +818,7 @@ host.
 The first argument passed to ``ctx.task`` is called an *execution place*
 and tells CUDASTF where the task is expected to execute.
 ``exec_place::device(id)`` means that the task will run on device
-``id``, and ``exec_place::host`` specifies that the task will execute on
+``id``, and ``exec_place::host()`` specifies that the task will execute on
 the host.
 
 Regardless of the *execution place*, it is important to note that the
@@ -826,7 +826,7 @@ task’s body (i.e., the contents of the lambda function) corresponds to
 CPU code that is expected to launch computation asynchronously. When
 using ``exec_place::device(id)``, CUDASTF will automatically set the
 current CUDA device to ``id`` when the task is started, and restore the
-previous current device when the task ends. ``exec_place::host`` does
+previous current device when the task ends. ``exec_place::host()`` does
 not affect the current CUDA device.
 
 .. code:: cpp
@@ -845,7 +845,7 @@ not affect the current CUDA device.
        inc_kernel<<<1, 1, 0, stream>>>(sX);
    };
 
-   ctx.task(exec_place::host, lX.read())->*[](cudaStream_t stream, auto sX) {
+   ctx.task(exec_place::host(), lX.read())->*[](cudaStream_t stream, auto sX) {
        cudaStreamSynchronize(stream);
        assert(sX(0) == 44);
    };
@@ -897,7 +897,7 @@ for the second task.
        ...
    };
 
-   ctx.task(exec_place::host, lA.rw())->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::host(), lA.rw())->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -905,11 +905,11 @@ The code above is equivalent with:
 
 .. code:: cpp
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::affine))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::affine))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -921,7 +921,7 @@ The affinity can also be made explicit:
        ...
    };
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::host))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -932,7 +932,7 @@ device ``0``:
 
 .. code:: cpp
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::host))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -947,7 +947,7 @@ on a device:
 
 .. code:: cpp
 
-   ctx.task(exec_place::host, lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::host(), lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -1601,6 +1601,111 @@ will differ between the different threads which call `inner()`.
     ...
     th.inner().sync(); // synchronize threads in the same block of the second level of the hierarchy
 
+``cuda_kernel`` construct
+-------------------------
+
+CUDASTF provides the `cuda_kernel` construct to implement tasks executing a
+CUDA kernel. This construct is especially useful when we writing code that may
+be executed using a CUDA graph backend, because its `task` construct relies on
+a graph capture mechanism which has some overhead, while the `cuda_kernel`
+construct is directly translated to CUDA kernel launch APIs, thus avoiding this
+overhead.
+
+
+`cuda_kernel` accepts the same arguments as the task construct, including an
+execution place and a list of data dependencies.  It implements a `->*`
+operator that takes a lambda function as argument.  This lambda function must
+return an object of type `cuda_kernel_desc`, describing the CUDA kernel to
+execute.  The constructor of the `cuda_kernel_desc` class, shown below, takes
+the CUDA kernel function pointer (ie. the ``__global__`` method defining the
+kernel), a grid description, the amount of dynamically allocated shared memory,
+and finally all the arguments that must be passed to the CUDA kernel.
+
+.. code:: cpp
+
+  template <typename Fun, typename... Args>
+  cuda_kernel_desc(Fun func,           // Pointer to the CUDA kernel function (__global__)
+                   dim3 gridDim_,      // Dimensions of the grid (number of thread blocks)
+                   dim3 blockDim_,     // Dimensions of each thread block
+                   size_t sharedMem_,  // Amount of dynamically allocated shared memory
+                   Args... args)       // Arguments passed to the CUDA kernel
+
+For example, the following piece of code creates a task that launches a CUDA kernel that accesses two logical data.
+
+.. code:: cpp
+
+  ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
+    // calls __global__ void axpy(double a, slice<const double> x, slice<double> y);
+    // similarly to axpy<<<16, 128, 0, ...>>>(alpha, dX, dY)
+    return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
+  };
+
+Similar to the `task` construct, the `cuda_kernel` construct also supports
+specifying dynamic dependencies using the `add_deps` method and retrieving data
+instances using `get`. The previous code can therefore be rewritten as:
+
+.. code:: cpp
+
+  auto t = ctx.cuda_kernel();
+  t.add_deps(lX.read());
+  t.add_deps(lY.rw());
+  t->*[&]() {
+    auto dX = t.template get<slice<double>>(0);
+    auto dY = t.template get<slice<double>>(1);
+    return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
+  };
+
+``cuda_kernel_chain`` construct
+-------------------------------
+
+In addition to `cuda_kernel`, CUDASTF provides the `cuda_kernel_chain`
+construct to execute sequences of CUDA kernels within a single task. Unlike
+`cuda_kernel`, which expects a single kernel descriptor, the lambda passed to
+the `->*` operator of `cuda_kernel_chain` should return a
+`::std::vector<cuda_kernel_desc>` describing multiple kernel launches.
+Kernels specified within the vector are executed sequentially in the order they appear.
+
+The following two constructs are therefore equivalent, except that the
+`cuda_kernel_chain` implementation directly translate to efficient, direct CUDA
+kernel launch APIs, while the implementation of the `task` construct may rely
+on graph capture when using a CUDA graph backend.
+
+.. code:: cpp
+
+  /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
+  ctx.cuda_kernel_chain(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
+     return ::std::vector<cuda_kernel_desc> {
+         { axpy, 16, 128, 0, alpha, dX, dY },
+         { axpy, 16, 128, 0, beta,  dX, dY },
+         { axpy, 16, 128, 0, gamma, dX, dY }
+     };
+  };
+
+  /* Equivalent to the previous construct, but possibly less efficient */
+  ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t stream, auto dX, auto dY) {
+     axpy<<<16, 128, 0, stream>>>(alpha, dX, dY);
+     axpy<<<16, 128, 0, stream>>>(beta,  dX, dY);
+     axpy<<<16, 128, 0, stream>>>(gamma, dX, dY);
+  };
+
+Similarly to the `cuda_kernel` constructs, dependencies can be set dynamically:
+
+.. code:: cpp
+
+  /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
+  auto t = ctx.cuda_kernel_chain();
+  t.add_deps(lX.read());
+  t.add_deps(lY.rw());
+  t->*[&]() {
+    auto dX = t.template get<slice<double>>(0);
+    auto dY = t.template get<slice<double>>(1);
+    return ::std::vector<cuda_kernel_desc> {
+        { axpy, 16, 128, 0, alpha, dX, dY },
+        { axpy, 16, 128, 0, beta, dX, dY },
+        { axpy, 16, 128, 0, gamma, dX, dY }
+    };
+  };
+
 C++ Types of logical data and tasks
 -----------------------------------
 
@@ -1781,7 +1886,7 @@ one may however already manage coherency or enforce dependencies.
 
 - The "logical data freezing" mechanism ensures data availability while letting
   the application take care of synchronization.
-- Logical token makes it possible to enforce concurrent execution while
+- Tokens make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
@@ -1814,7 +1919,7 @@ when calling ``get``.
 
     // Get a read-only copy of the frozen data on other data places
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
-    auto hX = frozen_ld.get(data_place::host, stream);
+    auto hX = frozen_ld.get(data_place::host(), stream);
 
     fx.unfreeze(stream);
 
@@ -1853,24 +1958,27 @@ stream passed to ``freeze`` (for example, by using a blocking call such as
 depend on the completion of the work in the streams used for any preceding
 ``freeze`` and ``get`` calls.
 
-Logical token
-^^^^^^^^^^^^^
+It is possible to retrieve the access mode used to freeze a logical data with
+the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
 
-A logical token is a specific type of logical data whose only purpose is to
+Tokens
+^^^^^^
+
+A token is a specific type of logical data whose only purpose is to
 automate synchronization, while letting the application manage the actual data.
 This can, for example, be useful with user-provided buffers on a single device,
 where no allocations or transfers are required, but where concurrent accesses
 may occur.
 
-A logical token internally relies on the ``void_interface`` data interface,
+A token internally relies on the ``void_interface`` data interface,
 which is specifically optimized to skip unnecessary stages in the cache
 coherency protocol (e.g., data allocations or copying data). When appropriate,
-using a logical token rather than a logical data with a full-fledged data
+using a token rather than a logical data with a full-fledged data
 interface therefore minimizes runtime overhead.
 
 .. code:: cpp
 
-    auto token = ctx.logical_token();
+    auto token = ctx.token();
 
     // A and B are assumed to be two other valid logical data
     ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
@@ -1878,10 +1986,10 @@ interface therefore minimizes runtime overhead.
         ...
     };
 
-The example above shows how to create a logical token and how to use it in a
+The example above shows how to create a token and how to use it in a
 task.
 
-Since the logical token is only used for synchronization purposes, the
+Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
 task’s implementation. Thus, the above task is equivalent to this code:
 
@@ -1894,10 +2002,14 @@ To avoid ambiguities, you must either consistently ignore every
 unused. Eliding these token arguments is possible in the ``ctx.task`` and
 ``ctx.host_launch`` constructs.
 
-Note that the token created by the ``logical_token`` method of the context
+Note that the token created by the ``token`` method of the context
 object is already valid, which means the first access can be either a ``read()``
 or an ``rw()`` access. There is no need to set any content in the token
 (unlike a logical data object created from a shape).
+
+A token corresponds to a ``logical_data<void_interface>`` object, so that the
+``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
+returns an object with a ``token`` type.
 
 Tools
 -----
@@ -1910,6 +2022,9 @@ possible to generate a file in the Graphviz format. This visualization
 helps to better understand the application, and can be helpful to
 optimize the algorithms as it sometimes allow to identify inefficient
 patterns.
+
+Generating visualizations of task graphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let us consider the ``examples/01-axpy.cu`` example which we compile as
 usual with ``make build/examples/01-axpy``.
@@ -1998,6 +2113,74 @@ It is also possible to include timing information in this graph by setting the
 ``CUDASTF_DOT_TIMING`` environment variable to a non-null value. This will
 color the graph nodes according to their relative duration, and the measured
 duration will be included in task labels.
+
+Condensed and structured graphs visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Realistic workloads are typically made of thousands or millions of tasks which
+cannot be easily visualized using graphviz (dot). To simplify the generated
+graphs we can further
+annotate the application using dot sections.
+Dot sections can also be nested to better structure the visualization.
+
+This is achieved by creating `dot_section` objects in the application. `ctx.dot_section` returns
+an object whose lifetime defines a dot section valid until it is destroyed, or
+when calling the `end()` method on this object. The following example
+illustrates how to add nested sections:
+
+.. code:: c++
+
+    context ctx;
+    auto lA = ctx.token().set_symbol("A");
+    auto lB = ctx.token().set_symbol("B");
+    auto lC = ctx.token().set_symbol("C");
+
+    // Begin a top-level section named "foo"
+    auto s_foo = ctx.dot_section("foo");
+    for (size_t i = 0; i < 2; i++)
+    {
+      // Section named "bar" using RAII
+      auto s_bar = ctx.dot_section("bar");
+      ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
+      for (size_t j = 0; j < 2; j++) {
+         // Section named "baz" using RAII
+         auto s_bar = ctx.dot_section("baz");
+         ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
+         ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
+         // Implicit end of section "baz"
+      }
+      // Implicit end of section "bar"
+    }
+    s_foo.end(); // Explicit end of section "foo"
+    ctx.finalize();
+
+When running this with the `CUDASTF_DOT_FILE` environment variable for example
+set to `dag.dot`, we observe that the graph produced by `dot -Tpdf dag.dot -o
+dag.pdf` depicts these sections as dashed boxes.
+
+.. image:: stf/images/dag-sections.png
+
+Adding sections also makes it possible to define a maximum depth for the
+generated graphs by setting the `CUDASTF_DOT_MAX_DEPTH` environment variable.
+When it is undefined, CUDASTF will display all tasks. Otherwise, if
+`CUDASTF_DOT_MAX_DEPTH` is an integer value of `i` any sections and tasks which
+nesting level is deeper than `i` will be collapsed.
+
+When setting `CUDASTF_DOT_MAX_DEPTH=2`, the previous graph becomes:
+
+.. image:: stf/images/dag-sections-2.png
+
+When setting `CUDASTF_DOT_MAX_DEPTH=1`, one additional level is collapsed:
+
+.. image:: stf/images/dag-sections-1.png
+
+With `CUDASTF_DOT_MAX_DEPTH=0`, only the top-most tasks and sections are displayed:
+
+.. image:: stf/images/dag-sections-0.png
+
+Note that `CUDASTF_DOT_MAX_DEPTH` and `CUDASTF_DOT_TIMING` can be used in
+combination, and that the duration of a section corresponds to the duration of
+all tasks in this sections.
 
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -2175,8 +2358,8 @@ Syntax:
 
 - **Data Places**: Specify where a logical data in the data dependencies should be located:
 
-  - `data_place::affine` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
-  - `data_place::managed`: Use managed memory.
+  - `data_place::affine()` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
+  - `data_place::managed()`: Use managed memory.
   - `data_place::device(i)`: Put data in the memory of the i-th CUDA device (which may be different from the current device or the device of the execution place).
 
 - **Access Modes**:
@@ -2203,7 +2386,7 @@ Syntax:
 
   - `exec_place::current_device()` (default): Run on current CUDA device.
   - `exec_place::device(ID)`: Run on CUDA device identified by its index.
-  - `exec_place::host`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
+  - `exec_place::host()`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
 
 Examples:
 

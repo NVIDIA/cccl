@@ -48,11 +48,14 @@
 #include <cub/util_debug.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/iterator/iterator_traits.h>
 
-#include <ostream>
+#include <cuda/std/type_traits>
 
 #include <nv/target>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -154,6 +157,7 @@ public:
       , tex_obj(0)
   {}
 
+#if !_CCCL_COMPILER(NVRTC)
   /**
    * @brief Use this iterator to bind @p ptr with a texture reference
    *
@@ -169,7 +173,7 @@ public:
   template <typename QualifiedT>
   cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
   {
-    this->ptr        = const_cast<typename std::remove_cv<QualifiedT>::type*>(ptr);
+    this->ptr        = const_cast<::cuda::std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
@@ -190,6 +194,7 @@ public:
   {
     return CubDebug(cudaDestroyTextureObject(tex_obj));
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
   /// Postfix increment
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
@@ -282,13 +287,15 @@ public:
     return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
   }
 
+#if !_CCCL_COMPILER(NVRTC)
   /// ostream operator
-  friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";
     return os;
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 private:
   // This is hoisted out of operator* because #pragma can't be used inside of
@@ -301,7 +308,7 @@ private:
 
     const auto tex_idx_base = tex_offset * TEXTURE_MULTIPLE;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < TEXTURE_MULTIPLE; ++i)
     {
       words[i] = tex1Dfetch<TextureWord>(tex_obj, tex_idx_base + i);
