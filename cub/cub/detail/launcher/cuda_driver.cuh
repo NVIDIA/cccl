@@ -114,10 +114,10 @@ struct CudaDriverLauncherFactory
   }
 
   _CCCL_HIDE_FROM_ABI ::cudaError_t
-  MemsetAsync(void* dst, int value, size_t num_elements, size_t /*element_size*/, ::CUstream stream) const
+  MemsetAsync(void* dst, unsigned char value, size_t num_bytes, ::CUstream stream) const
   {
     return static_cast<::cudaError_t>(
-      ::cuMemsetD32Async(reinterpret_cast<::CUdeviceptr>(dst), value, num_elements, stream));
+      ::cuMemsetD8Async(reinterpret_cast<::CUdeviceptr>(dst), value, num_bytes, stream));
   }
 
   _CCCL_HIDE_FROM_ABI ::cudaError_t

@@ -178,7 +178,7 @@ struct DispatchReduceNondeterministic
     const int reduce_grid_size =
       ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size)));
 
-    error = CubDebug(launcher_factory.MemsetAsync(d_out, 0, 1, kernel_source.InitSize(), stream));
+    error = CubDebug(launcher_factory.MemsetAsync(d_out, 0, kernel_source.InitSize(), stream));
     if (cudaSuccess != error)
     {
       return error;
