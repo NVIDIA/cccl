@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-/**
- * @file cub::DeviceReduce provides device-wide, parallel operations for computing a reduction
- *       across a sequence of data items residing within device-accessible memory.
- */
+//! @file
+//! cub::DeviceReduceNondeterministic provides device-wide, parallel operations for computing a reduction
+//! across a sequence of data items residing within device-accessible memory. The reduction is not guaranteed
+//! to be deterministic.
 
 #pragma once
 
@@ -72,24 +72,22 @@ struct DeviceReduceNondeterministicKernelSource
 
 namespace detail
 {
-/**
- * @brief Utility class for dispatching the appropriately-tuned kernels for device-wide reduction
- *
- * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items @iterator
- *
- * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate @iterator
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @tparam ReductionOpT
- *   Binary reduction functor type having member `auto operator()(const T &a, const U &b)`
- *
- * @tparam InitT
- *   Initial value type
- */
+//! @brief Utility class for dispatching the appropriately-tuned kernels for device-wide reduction
+//!
+//! @tparam InputIteratorT
+//!   Random-access input iterator type for reading input items @iterator
+//!
+//! @tparam OutputIteratorT
+//!   Output iterator type for recording the reduced aggregate @iterator
+//!
+//! @tparam OffsetT
+//!   Signed integer type for global offsets
+//!
+//! @tparam ReductionOpT
+//!   Binary reduction functor type having member `auto operator()(const T &a, const U &b)`
+//!
+//! @tparam InitT
+//!   Initial value type
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -116,29 +114,29 @@ struct DispatchReduceNondeterministic
   // Problem state
   //---------------------------------------------------------------------------
 
-  /// Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
-  /// size is written to `temp_storage_bytes` and no work is done.
+  //! Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
+  //! size is written to `temp_storage_bytes` and no work is done.
   void* d_temp_storage;
 
-  /// Reference to size in bytes of `d_temp_storage` allocation
+  //! Reference to size in bytes of `d_temp_storage` allocation
   size_t& temp_storage_bytes;
 
-  /// Pointer to the input sequence of data items
+  //! Pointer to the input sequence of data items
   InputIteratorT d_in;
 
-  /// Pointer to the output aggregate
+  //! Pointer to the output aggregate
   OutputIteratorT d_out;
 
-  /// Total number of input items (i.e., length of `d_in`)
+  //! Total number of input items (i.e., length of `d_in`)
   OffsetT num_items;
 
-  /// Binary reduction functor
+  //! Binary reduction functor
   ReductionOpT reduction_op;
 
-  /// The initial value of the reduction
+  //! The initial value of the reduction
   InitT init;
 
-  /// CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
+  //! CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
   cudaStream_t stream;
 
   int ptx_version;
@@ -149,18 +147,16 @@ struct DispatchReduceNondeterministic
 
   KernelLauncherFactory launcher_factory;
 
-  /**
-   * @brief Invoke a single block block to reduce in-core
-   *
-   * @tparam ActivePolicyT
-   *   Umbrella policy active for the target device
-   *
-   * @tparam AtomicKernelT
-   *   Function type of cub::DeviceReduceAtomicKernel
-   *
-   * @param[in] last_block_kernel
-   *   Kernel function pointer to parameterization of cub::DeviceReduceLastBlockKernel
-   */
+  //! @brief Invoke a single block block to reduce in-core
+  //!
+  //! @tparam ActivePolicyT
+  //!   Umbrella policy active for the target device
+  //!
+  //! @tparam AtomicKernelT
+  //!   Function type of cub::DeviceReduceAtomicKernel
+  //!
+  //! @param[in] last_block_kernel
+  //!   Kernel function pointer to parameterization of cub::DeviceReduceLastBlockKernel
   template <typename ActivePolicyT, typename AtomicKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeAtomicKernel(AtomicKernelT atomic_kernel, ActivePolicyT active_policy = {})
@@ -221,7 +217,6 @@ struct DispatchReduceNondeterministic
   // Chained policy invocation
   //---------------------------------------------------------------------------
 
-  /// Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
@@ -238,34 +233,32 @@ struct DispatchReduceNondeterministic
   // Dispatch entrypoints
   //---------------------------------------------------------------------------
 
-  /**
-   * @brief Internal dispatch routine for computing a device-wide reduction
-   *
-   * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
-   *   size is written to `temp_storage_bytes` and no work is done.
-   *
-   * @param[in,out] temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param[in] d_in
-   *   Pointer to the input sequence of data items
-   *
-   * @param[out] d_out
-   *   Pointer to the output aggregate
-   *
-   * @param[in] num_items
-   *   Total number of input items (i.e., length of `d_in`)
-   *
-   * @param[in] reduction_op
-   *   Binary reduction functor
-   *
-   * @param[in] init
-   *   The initial value of the reduction
-   *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   */
+  //! @brief Internal dispatch routine for computing a device-wide reduction
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
+  //!   size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] init
+  //!   The initial value of the reduction
+  //!
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
