@@ -16,7 +16,7 @@ CUDA Toolkit changes
 CCCL is moving to its own include directory within the CUDA Toolkit. This may cause build failures and some initial confusion.
 This section will have some suggestions and mitigations to help maintain builds across both CUDA12 and future releases.
 
-The CTK provided includes are changing in the following ways:
+The CTK-provided includes are changing in the following ways:
 +-------------------------------+------------------------------------+
 | **Before CUDA 13.0**          | **After CUDA 13.0**                |
 +===============================+====================================+
