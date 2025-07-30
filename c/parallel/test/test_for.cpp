@@ -217,8 +217,8 @@ C2H_TEST("for works with iterators", "[for]")
     {"constant_iterator_state_t", "struct constant_iterator_state_t { int value; };\n"},
     {"in_advance", "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {}"},
     {"in_dereference",
-     "extern \"C\" __device__ int in_dereference(constant_iterator_state_t* state) { \n"
-     "  return state->value;\n"
+     "extern \"C\" __device__ void in_dereference(constant_iterator_state_t* state, int* result) { \n"
+     "  *result = state->value;\n"
      "}"});
   input_it.state.value = 1;
 
