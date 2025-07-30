@@ -39,8 +39,6 @@ CUB_NAMESPACE_BEGIN
 namespace detail::reduce
 {
 
-using CounterT = int;
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
