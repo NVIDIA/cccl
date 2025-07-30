@@ -642,8 +642,11 @@ extern __shared__ char __align__(512) smem512[];
 extern __shared__ char __align__(1024) smem1024[];
 extern __shared__ char __align__(2048) smem2048[];
 extern __shared__ char __align__(4096) smem4096[];
+// MSVC does not allow alignment larger than 4KiB
+#if !_CCCL_COMPILER(MSVC)
 extern __shared__ char __align__(16384) smem16384[];
 extern __shared__ char __align__(32768) smem32768[];
+#endif // !_CCCL_COMPILER(MSVC)
 // cannot have larger alignment since it would exhause the 48KiB shared memory even for a single item
 
 template <int Alignment, bool EnsureAlignment = true>
@@ -687,6 +690,7 @@ _CCCL_DEVICE auto aligned_smem() -> char*
   {
     smem = smem4096;
   }
+#if !_CCCL_COMPILER(MSVC)
   else if constexpr (Alignment == 16384)
   {
     smem = smem16384;
@@ -695,6 +699,7 @@ _CCCL_DEVICE auto aligned_smem() -> char*
   {
     smem = smem32768;
   }
+#endif // !_CCCL_COMPILER(MSVC)
   else
   {
     static_assert(Alignment <= 32768, "Unsupported shared memory alignment");
