@@ -105,11 +105,11 @@ struct sum_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartial(thread_data, thread_data, ::cuda::std::plus<>{}, valid_items);
+      scan.ExclusiveScanPartial(thread_data, thread_data, cuda::std::plus<>{}, valid_items);
     }
     else
     {
-      scan.InclusiveScanPartial(thread_data, thread_data, ::cuda::std::plus<>{}, valid_items);
+      scan.InclusiveScanPartial(thread_data, thread_data, cuda::std::plus<>{}, valid_items);
     }
   }
 };
@@ -127,11 +127,11 @@ struct sum_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartial(thread_data, thread_data, ::cuda::std::plus<>{}, valid_items, warp_aggregate);
+      scan.ExclusiveScanPartial(thread_data, thread_data, cuda::std::plus<>{}, valid_items, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScanPartial(thread_data, thread_data, ::cuda::std::plus<>{}, valid_items, warp_aggregate);
+      scan.InclusiveScanPartial(thread_data, thread_data, cuda::std::plus<>{}, valid_items, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -151,11 +151,11 @@ struct min_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartial(thread_data, thread_data, ::cuda::minimum<>{}, valid_items);
+      scan.ExclusiveScanPartial(thread_data, thread_data, cuda::minimum<>{}, valid_items);
     }
     else
     {
-      scan.InclusiveScanPartial(thread_data, thread_data, ::cuda::minimum<>{}, valid_items);
+      scan.InclusiveScanPartial(thread_data, thread_data, cuda::minimum<>{}, valid_items);
     }
   }
 };
@@ -173,11 +173,11 @@ struct min_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartial(thread_data, thread_data, ::cuda::minimum<>{}, valid_items, warp_aggregate);
+      scan.ExclusiveScanPartial(thread_data, thread_data, cuda::minimum<>{}, valid_items, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScanPartial(thread_data, thread_data, ::cuda::minimum<>{}, valid_items, warp_aggregate);
+      scan.InclusiveScanPartial(thread_data, thread_data, cuda::minimum<>{}, valid_items, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -198,11 +198,11 @@ struct min_init_value_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartial(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, valid_items);
+      scan.ExclusiveScanPartial(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items);
     }
     else
     {
-      scan.InclusiveScanPartial(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, valid_items);
+      scan.InclusiveScanPartial(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items);
     }
   }
 };
@@ -221,13 +221,11 @@ struct min_init_value_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartial(
-        thread_data, thread_data, initial_value, ::cuda::minimum<>{}, valid_items, warp_aggregate);
+      scan.ExclusiveScanPartial(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScanPartial(
-        thread_data, thread_data, initial_value, ::cuda::minimum<>{}, valid_items, warp_aggregate);
+      scan.InclusiveScanPartial(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -245,7 +243,7 @@ struct min_scan_op_t
   __device__ void
   operator()(WarpScanT& scan, T& thread_data, T& inclusive_output, T& exclusive_output, int valid_items) const
   {
-    scan.ScanPartial(thread_data, inclusive_output, exclusive_output, ::cuda::minimum<>{}, valid_items);
+    scan.ScanPartial(thread_data, inclusive_output, exclusive_output, cuda::minimum<>{}, valid_items);
   }
 };
 
@@ -257,7 +255,7 @@ struct min_init_value_scan_op_t
   __device__ void
   operator()(WarpScanT& scan, T& thread_data, T& inclusive_output, T& exclusive_output, int valid_items) const
   {
-    scan.ScanPartial(thread_data, inclusive_output, exclusive_output, initial_value, ::cuda::minimum<>{}, valid_items);
+    scan.ScanPartial(thread_data, inclusive_output, exclusive_output, initial_value, cuda::minimum<>{}, valid_items);
   }
 };
 
@@ -419,7 +417,7 @@ c2h::host_vector<T> compute_host_reference(
       T accumulator = output[0];
       T current     = static_cast<T>(scan_op(initial_value, output[0]));
       output[0]     = initial_value;
-      for (int i = 1; i < ::cuda::std::clamp(valid_items, 0, logical_warp_threads); i++)
+      for (int i = 1; i < cuda::std::clamp(valid_items, 0, logical_warp_threads); i++)
       {
         accumulator = static_cast<T>(scan_op(accumulator, output[i]));
         T tmp       = output[i];
@@ -437,7 +435,7 @@ c2h::host_vector<T> compute_host_reference(
       T accumulator = output[0];
       T current     = static_cast<T>(scan_op(initial_value, output[0]));
       output[0]     = current;
-      for (int i = 1; i < ::cuda::std::clamp(valid_items, 0, logical_warp_threads); i++)
+      for (int i = 1; i < cuda::std::clamp(valid_items, 0, logical_warp_threads); i++)
       {
         T tmp       = output[i];
         current     = static_cast<T>(scan_op(current, tmp));
@@ -499,8 +497,8 @@ C2H_TEST("Partial warp scan works with sum", "[scan][warp]", types, logical_warp
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_out(params::tile_size, thrust::no_init);
@@ -536,8 +534,8 @@ C2H_TEST("Partial warp scan works with vec_types", "[scan][warp]", vec_types, lo
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_out(params::tile_size, thrust::no_init);
@@ -577,8 +575,8 @@ C2H_TEST("Partial warp scan works with custom types",
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_out(params::tile_size);
@@ -618,8 +616,8 @@ C2H_TEST("Partial warp scan returns valid warp aggregate",
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_warp_aggregates(params::total_warps);
@@ -666,8 +664,8 @@ C2H_TEST("Partial warp scan works with custom scan op", "[scan][warp]", types, l
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_out(params::tile_size, thrust::no_init);
@@ -686,7 +684,7 @@ C2H_TEST("Partial warp scan works with custom scan op", "[scan][warp]", types, l
       return std::min(l, r);
     },
     valid_items,
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -712,8 +710,8 @@ C2H_TEST("Partial warp custom op scan returns valid warp aggregate", "[scan][war
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_warp_aggregates(params::total_warps);
@@ -739,7 +737,7 @@ C2H_TEST("Partial warp custom op scan returns valid warp aggregate", "[scan][war
       return std::min(l, r);
     },
     valid_items,
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -766,8 +764,8 @@ C2H_TEST("Partial warp custom op scan works with initial value", "[scan][warp]",
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_out(params::tile_size, thrust::no_init);
@@ -805,8 +803,8 @@ C2H_TEST("Partial warp custom op scan with initial value returns valid warp aggr
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_warp_aggregates(params::total_warps);
@@ -848,12 +846,12 @@ C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp
   using type                         = int;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, logical_warp_threads))),
-    take(1, random(logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, logical_warp_threads))),
+    take(1, random(logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, logical_warp_threads, logical_warp_threads + 1}));
-  const int bounded_valid_items = ::cuda::std::min(valid_items, logical_warp_threads);
-  const type filler             = GENERATE_COPY(
-    take(1, random(::cuda::std::numeric_limits<type>::lowest(), ::cuda::std::numeric_limits<type>::max())));
+  const int bounded_valid_items = cuda::std::min(valid_items, logical_warp_threads);
+  const type filler =
+    GENERATE_COPY(take(1, random(cuda::std::numeric_limits<type>::lowest(), cuda::std::numeric_limits<type>::max())));
   CAPTURE(valid_items, logical_warp_threads, filler, c2h::type_name<type>());
   c2h::device_vector<type> d_inclusive_out(tile_size, thrust::no_init);
   c2h::device_vector<type> d_exclusive_out(tile_size, thrust::no_init);
@@ -881,7 +879,7 @@ C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp
       return std::min(l, r);
     },
     valid_items,
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   compute_host_reference(
     scan_mode::inclusive,
@@ -891,7 +889,7 @@ C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp
       return std::min(l, r);
     },
     valid_items,
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   // According to WarpScan::Scan documentation -
   // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is
@@ -917,12 +915,12 @@ C2H_TEST("Partial warp combination custom scan works with initial value", "[scan
   using type                         = int;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, logical_warp_threads))),
-    take(1, random(logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, logical_warp_threads))),
+    take(1, random(logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, logical_warp_threads, logical_warp_threads + 1}));
-  const int bounded_valid_items = ::cuda::std::min(valid_items, logical_warp_threads);
-  const type filler             = GENERATE_COPY(
-    take(1, random(::cuda::std::numeric_limits<type>::lowest(), ::cuda::std::numeric_limits<type>::max())));
+  const int bounded_valid_items = cuda::std::min(valid_items, logical_warp_threads);
+  const type filler =
+    GENERATE_COPY(take(1, random(cuda::std::numeric_limits<type>::lowest(), cuda::std::numeric_limits<type>::max())));
   CAPTURE(valid_items, logical_warp_threads, filler, c2h::type_name<type>());
   c2h::device_vector<type> d_inclusive_out(tile_size, thrust::no_init);
   c2h::device_vector<type> d_exclusive_out(tile_size, thrust::no_init);
@@ -976,8 +974,8 @@ C2H_TEST(
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::logical_warp_threads);
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
@@ -1029,8 +1027,8 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and returns va
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::logical_warp_threads);
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
@@ -1091,8 +1089,8 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and works with
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::logical_warp_threads);
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
@@ -1135,8 +1133,8 @@ C2H_TEST("Partial warp scan with initial value does not apply op to invalid elem
   using type   = typename params::type;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, params::logical_warp_threads))),
-    take(1, random(params::logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, params::logical_warp_threads))),
+    take(1, random(params::logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, params::logical_warp_threads, params::logical_warp_threads + 1}));
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::logical_warp_threads);
   CAPTURE(valid_items, params::mode, params::logical_warp_threads, c2h::type_name<type>());
@@ -1184,10 +1182,10 @@ C2H_TEST("Partial warp combination scan does not apply op to invalid elements", 
   using type                         = segment;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, logical_warp_threads))),
-    take(1, random(logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, logical_warp_threads))),
+    take(1, random(logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, logical_warp_threads, logical_warp_threads + 1}));
-  const int bounded_valid_items = ::cuda::std::min(valid_items, logical_warp_threads);
+  const int bounded_valid_items = cuda::std::min(valid_items, logical_warp_threads);
   CAPTURE(valid_items, logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_inclusive_out(tile_size);
   c2h::device_vector<type> d_exclusive_out(tile_size);
@@ -1246,10 +1244,10 @@ C2H_TEST("Partial warp combination custom scan does not apply op to invalid elem
   using type                         = segment;
 
   const int valid_items = GENERATE_COPY(
-    take(1, random(2, ::cuda::std::max(2, logical_warp_threads))),
-    take(1, random(logical_warp_threads + 2, ::cuda::std::numeric_limits<int>::max())),
+    take(1, random(2, cuda::std::max(2, logical_warp_threads))),
+    take(1, random(logical_warp_threads + 2, cuda::std::numeric_limits<int>::max())),
     values({1, logical_warp_threads, logical_warp_threads + 1}));
-  const int bounded_valid_items = ::cuda::std::min(valid_items, logical_warp_threads);
+  const int bounded_valid_items = cuda::std::min(valid_items, logical_warp_threads);
   CAPTURE(valid_items, logical_warp_threads, c2h::type_name<type>());
   c2h::device_vector<type> d_inclusive_out(total_warps * logical_warp_threads);
   c2h::device_vector<type> d_exclusive_out(total_warps * logical_warp_threads);

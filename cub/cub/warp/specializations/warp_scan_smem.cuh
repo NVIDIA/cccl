@@ -349,7 +349,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    warp_aggregate = temp_storage[HALF_WARP_THREADS + _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)];
+    warp_aggregate = temp_storage[HALF_WARP_THREADS + ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)];
 
     __syncwarp(member_mask);
   }
@@ -525,7 +525,7 @@ struct WarpScanSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, IsIntegerT is_integer)
   {
-    if constexpr (is_integer && _CUDA_VSTD::is_same_v<ScanOpT, _CUDA_VSTD::plus<>>)
+    if constexpr (is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -562,7 +562,7 @@ struct WarpScanSmem
     }
     // Get exclusive
     UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, is_integer);
-    if constexpr (!(is_integer && _CUDA_VSTD::is_same_v<ScanOpT, _CUDA_VSTD::plus<>>) )
+    if constexpr (!(is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>) )
     {
       if ((lane_id == 0u) && (valid_items > 0))
       {
@@ -583,9 +583,9 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    const int last_valid_lane = _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
-    if constexpr (is_integer && _CUDA_VSTD::is_same_v<ScanOpT, _CUDA_VSTD::plus<>>)
+    if constexpr (is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>)
     {
       UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, is_integer);
     }
@@ -620,7 +620,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    const int last_valid_lane = _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
 
     __syncwarp(member_mask);
