@@ -499,7 +499,7 @@
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 0
 #  endif
 
-// Re-enable sm_120a support in nvcc.
+// Re-enable sm_121a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_121a
 #  define NV_HAS_FEATURE_SM_121a __NV_HAS_FEATURE_SM_121a
 #  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1210) \
