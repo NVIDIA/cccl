@@ -523,18 +523,21 @@ public:
 
       // Certain conditions must be met to be able to use the non-deterministic
       // kernel. The output iterator must be a contiguous iterator and the
-      // reduction operator must be plus (for now).
+      // reduction operator must be plus (for now). Additionally, since atomics for types of
+      // size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+      // determinism.
       constexpr auto is_contiguous_fallback =
         !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
       constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
 
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
-      using determinism_t =
-        ::cuda::std::conditional_t<(gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
-                                     || (no_determinism && !(is_contiguous_fallback && is_plus_fallback)),
-                                   ::cuda::execution::determinism::run_to_run_t,
-                                   default_determinism_t>;
+      using determinism_t = ::cuda::std::conditional_t<
+        (gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
+          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
+        ::cuda::execution::determinism::run_to_run_t,
+        default_determinism_t>;
 
       // Query relevant properties from the environment
       auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
@@ -656,8 +659,14 @@ public:
     constexpr auto is_contiguous_fallback =
       !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
 
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    // Since atomics for types of size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+    // determinism.
+    constexpr auto is_4b_or_greater = !no_determinism || sizeof(OutputT) >= 4;
+
     using determinism_t =
-      ::cuda::std::conditional_t<no_determinism && !is_contiguous_fallback,
+      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater),
                                  ::cuda::execution::determinism::run_to_run_t,
                                  default_determinism_t>;
 
@@ -669,8 +678,6 @@ public:
     size_t temp_storage_bytes = 0;
 
     using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
-
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
     using InitT = OutputT;
 
