@@ -77,6 +77,10 @@ For each type ``T`` and :ref:`cuda::thread_scope <libcudacxx-extended-api-memory
      - Any thread scope
      - ``sizeof(T) <= 8``
 
+Types of ``T``, where ``sizeof(T) < 4``, are not natively supported by the underlying hardware. For these types atomic 
+operations are emulated and will be drastically slower. Contention with contiguous memory in the current 4 byte boundary
+will be exacerbated. In these situations it is advisable to perform a hierarchical reduction to non-adjacent memory first.
+
 Example
 -------
 
