@@ -57,8 +57,7 @@ using all_types =
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
 // List of offset types to be used for testing large number of items
-// TODO (elstehle): Add back std::int64_t and std::uint32_t in the PR that adds support for large number of items
-using offset_types = c2h::type_list<std::int32_t>;
+using offset_types = c2h::type_list<std::int64_t, std::uint32_t, std::int32_t>;
 
 // generates for [0, 1, 2, ...] the sequence [0, 1, 1, 2, 3, 3, 4, 5, 5, ...]
 struct index_to_item_op
@@ -466,9 +465,12 @@ try
   c2h::device_vector<offset_type> out_num_runs(1);
 
   // Run algorithm under test
-  // TODO (elstehle): Remove static_cast<int> in PR that adds support for large number of items
   run_length_encode(
-    input_item_it, offsets_out.begin(), run_lengths_out.begin(), out_num_runs.begin(), static_cast<int>(num_items));
+    input_item_it,
+    offsets_out.begin(),
+    run_lengths_out.begin(),
+    out_num_runs.begin(),
+    static_cast<offset_type>(num_items));
 
   // Expected results
   c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};

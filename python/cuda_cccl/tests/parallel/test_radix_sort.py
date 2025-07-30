@@ -64,30 +64,13 @@ def radix_sort_device(
     end_bit=None,
     stream=None,
 ):
-    radix_sort = parallel.radix_sort(
-        d_in_keys, d_out_keys, d_in_values, d_out_values, order
-    )
-
-    temp_storage_size = radix_sort(
-        None,
+    # Use the new single-phase API with automatic temp storage allocation
+    parallel.radix_sort(
         d_in_keys,
         d_out_keys,
         d_in_values,
         d_out_values,
-        num_items,
-        begin_bit,
-        end_bit,
-        stream,
-    )
-    d_temp_storage = numba.cuda.device_array(
-        temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
-    )
-    radix_sort(
-        d_temp_storage,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
+        order,
         num_items,
         begin_bit,
         end_bit,
