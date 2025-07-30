@@ -112,7 +112,9 @@ enum class address_space
       return static_cast<bool>(::__isConstant(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     case address_space::local:
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+      // __isLocal is buggy, see https://github.com/NVIDIA/cccl/pull/4866#discussion_r2121772829
+      // let's always use the inline PTX instead of the intrinsic
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)
     {
       unsigned __ret;
       asm volatile(
@@ -125,10 +127,10 @@ enum class address_space
         : "l"(__ptr));
       return static_cast<bool>(__ret);
     }
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) ^^^ /
+        // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) vvv
       return static_cast<bool>(::__isLocal(__ptr));
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) ^^^
     case address_space::grid_constant:
 #  if _CCCL_HAS_GRID_CONSTANT()
 #    if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)

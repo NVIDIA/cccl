@@ -46,7 +46,7 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 #  else // ^^^ _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH) ^^^
         // / vvv !_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
         // vvv
-  return _CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::local);
+  return _CUDA_DEVICE::is_address_from(const_cast<const void*>(__ptr), _CUDA_DEVICE::address_space::local);
 #  endif // ^^^ !_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
          // ^^^
 }
