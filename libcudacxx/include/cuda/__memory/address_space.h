@@ -33,6 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 //! @brief Address space enumeration for CUDA device code.
+//!
 //!        See https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces for more details.
 enum class address_space
 {
