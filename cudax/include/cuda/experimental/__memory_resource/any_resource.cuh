@@ -836,7 +836,7 @@ public:
 //! .. _cudax-memory-resource-any-resource:
 //!
 //! Type erased wrapper around a `synchronous_resource`
-//! ----------------------------------------
+//! ----------------------------------------------------
 //!
 //! ``any_resource`` wraps any given :ref:`synchronous_resource
 //! <libcudacxx-extended-api-memory-resources-resource>` that satisfies the
