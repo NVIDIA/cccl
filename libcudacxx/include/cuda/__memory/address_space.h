@@ -32,14 +32,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
+//! @brief Address space enumeration for CUDA device code.
+//!        See https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces for more details.
 enum class address_space
 {
-  global,
-  shared,
-  constant,
-  local,
-  grid_constant,
-  cluster_shared,
+  global, //!< Global state space
+  shared, //!< Shared state space
+  constant, //!< Constant state space
+  local, //!< Local state space
+  grid_constant, //!< Kernel function parameter in the parameter state space
+  cluster_shared, //!< Cluster shared window within the shared state space
   __max,
 };
 
@@ -49,6 +51,10 @@ enum class address_space
   return __v >= 0 && __v < _CUDA_VSTD::to_underlying(address_space::__max);
 }
 
+//! @brief Checks if the given pointer is from the specified address state space.
+//! @param __ptr The address to check.
+//! @param __space The address state space to check against.
+//! @return `true` if the pointer is from the specified address space, `false` otherwise.
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space)
 {
   _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
@@ -176,8 +182,12 @@ enum class address_space
   }
 }
 
-template <typename T>
-[[nodiscard]] _CCCL_DEVICE_API inline bool is_object_from(T& __obj, address_space __space)
+//! @brief Checks if the given object is from the specified address state space.
+//! @param __obj The object to check.
+//! @param __space The address state space to check against.
+//! @return `true` if the object is from the specified address space, `false` otherwise.
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_object_from(_Tp& __obj, address_space __space)
 {
   return _CUDA_DEVICE::is_address_from(_CUDA_VSTD::addressof(__obj), __space);
 }
