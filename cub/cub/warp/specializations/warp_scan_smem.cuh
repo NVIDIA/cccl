@@ -125,8 +125,15 @@ struct WarpScanSmem
   {
     constexpr int OFFSET = 1 << STEP;
 
-    // Share partial into buffer
-    temp_storage[HALF_WARP_THREADS + lane_id] = partial;
+    // Share partal into buffer
+    if constexpr (STEP == 0)
+    {
+      detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], partial);
+    }
+    else
+    {
+      temp_storage[HALF_WARP_THREADS + lane_id] = partial;
+    }
 
     __syncwarp(member_mask);
 
@@ -302,11 +309,19 @@ struct WarpScanSmem
     {
       inclusive_output = input;
     }
+
     ::cuda::static_for<STEPS>([&](auto step) {
       constexpr int offset = 1 << step;
 
       // Share partial into buffer
-      temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
+      if constexpr (step == 0)
+      {
+        detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
+      }
+      else
+      {
+        temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
+      }
 
       __syncwarp(member_mask);
 
@@ -494,7 +509,7 @@ struct WarpScanSmem
     inclusive = scan_op(initial_value, inclusive);
 
     // Get exclusive from exclusive
-    temp_storage[HALF_WARP_THREADS + lane_id - 1] = inclusive;
+    detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id - 1], inclusive);
 
     __syncwarp(member_mask);
 
