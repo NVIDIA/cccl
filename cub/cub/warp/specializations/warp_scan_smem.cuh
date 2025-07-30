@@ -51,6 +51,7 @@
 
 #include <cuda/ptx>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/utility>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -143,35 +144,6 @@ struct WarpScanSmem
   /// Basic inclusive scan iteration(template unrolled, base-case specialization)
   template <bool HAS_IDENTITY, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, constant_t<STEPS> /*step*/)
-  {}
-
-  /// Basic partial inclusive scan iteration (template unrolled, inductive-case specialization)
-  template <int STEP, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanStepPartial(T& partial, ScanOp scan_op, int valid_items, constant_t<STEP> /*step*/)
-  {
-    constexpr int OFFSET = 1 << STEP;
-
-    // Share partial into buffer
-    temp_storage[HALF_WARP_THREADS + lane_id] = partial;
-
-    __syncwarp(member_mask);
-
-    // Update partial if addend is in range
-    if ((lane_id >= OFFSET) && (static_cast<int>(lane_id) < valid_items))
-    {
-      T addend = temp_storage[HALF_WARP_THREADS + lane_id - OFFSET];
-      partial  = scan_op(addend, partial);
-    }
-    __syncwarp(member_mask);
-
-    ScanStepPartial(partial, scan_op, valid_items, constant_v<STEP + 1>);
-  }
-
-  /// Basic inclusive scan iteration(template unrolled, base-case specialization)
-  template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanStepPartial(T& /*partial*/, ScanOp /*scan_op*/, int /*valid_items*/, constant_t<STEPS> /*step*/)
   {}
 
   /**
@@ -330,7 +302,22 @@ struct WarpScanSmem
     {
       inclusive_output = input;
     }
-    ScanStepPartial(inclusive_output, scan_op, valid_items, constant_v<0>);
+    ::cuda::static_for<STEPS>([&](auto step) {
+      constexpr int offset = 1 << step;
+
+      // Share partial into buffer
+      temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
+
+      __syncwarp(member_mask);
+
+      // Update partial if addend is in range
+      if ((lane_id >= offset) && (static_cast<int>(lane_id) < valid_items))
+      {
+        T addend         = temp_storage[HALF_WARP_THREADS + lane_id - offset];
+        inclusive_output = scan_op(addend, inclusive_output);
+      }
+      __syncwarp(member_mask);
+    });
   }
 
   /**
