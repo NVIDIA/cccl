@@ -405,15 +405,6 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   REQUIRE(d_out[0] == num_items);
 }
 
-template <class T>
-struct square_t
-{
-  __host__ __device__ T operator()(const T& x) const
-  {
-    return x * x;
-  }
-};
-
 C2H_TEST("Device transform reduce uses environment", "[reduce][device]", requirements)
 {
   using determinism_t = c2h::get<0, TestType>;
@@ -421,7 +412,7 @@ C2H_TEST("Device transform reduce uses environment", "[reduce][device]", require
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = square_t<accumulator_t>;
+  using transform_t   = thrust::square<accumulator_t>;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);

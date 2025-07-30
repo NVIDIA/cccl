@@ -226,15 +226,6 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts stream", "[reduce][env]")
   REQUIRE(index_output == expected_index);
 }
 
-template <class T>
-struct square_t
-{
-  __host__ __device__ T operator()(const T& x) const
-  {
-    return x * x;
-  }
-};
-
 C2H_TEST("cub::DeviceReduce::TransformReduce accepts determinism requirements", "[reduce][env]")
 {
   // example-begin transform-reduce-env-determinism
@@ -248,7 +239,7 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts determinism requirements", 
     output.begin(),
     static_cast<int>(input.size()), // OffsetT must be 4 bytes or less for deterministic reduction
     ::cuda::std::plus<float>{},
-    square_t<float>{},
+    thrust::square<float>{},
     0.0f,
     env);
 
@@ -269,7 +260,7 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
   cuda::stream_ref stream_ref{legacy_stream};
 
   cub::DeviceReduce::TransformReduce(
-    input.begin(), output.begin(), input.size(), ::cuda::std::plus<float>{}, square_t<float>{}, init, stream_ref);
+    input.begin(), output.begin(), input.size(), ::cuda::std::plus<float>{}, thrust::square<float>{}, init, stream_ref);
 
   thrust::device_vector<float> expected{14.0f};
   // example-end transform-reduce-env-stream
