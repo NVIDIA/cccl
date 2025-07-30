@@ -589,10 +589,10 @@ struct WarpScanShfl
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int STEP = 0; STEP < STEPS; STEP++)
+    for (int step = 0; step < STEPS; step++)
     {
       inclusive_output =
-        InclusiveScanStepPartial(inclusive_output, scan_op, valid_items, segment_first_lane, (1 << STEP));
+        InclusiveScanStepPartial(inclusive_output, scan_op, valid_items, segment_first_lane, (1 << step));
     }
   }
 
@@ -686,7 +686,7 @@ struct WarpScanShfl
     InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
     // Grab aggregate from last valid warp lane
-    warp_aggregate = ShuffleIndex<LOGICAL_WARP_THREADS>(
+    warp_aggregate = cub::ShuffleIndex<LOGICAL_WARP_THREADS>(
       inclusive_output, _CUDA_VSTD::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1), member_mask);
   }
 
