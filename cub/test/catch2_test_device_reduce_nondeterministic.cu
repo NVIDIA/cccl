@@ -65,7 +65,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
          float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
-  const int num_items = 1 << 20;
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
@@ -92,7 +92,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   using type     = typename c2h::get<0, TestType>;
   using limits_t = cuda::std::numeric_limits<type>;
 
-  constexpr int num_items = 1 << 20;
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
 
   constexpr auto min_op = cuda::minimum<type>{};
   constexpr auto init   = cuda::std::numeric_limits<type>::max();
@@ -100,26 +100,34 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
 
-  const int num_indices = GENERATE_COPY(take(2, random(1 << 10, num_items)));
-
-  CAPTURE(num_indices, num_items);
-
-  // generate random indices to scatter NaNs (no duplicates)
-  c2h::device_vector<int> indices(num_items);
-  thrust::sequence(c2h::device_policy, indices.begin(), indices.end());
-  thrust::shuffle(c2h::device_policy, indices.begin(), indices.end(), thrust::default_random_engine{});
-
-  // Take only the first num_indices elements for scattering
-  indices.resize(num_indices);
-  for (int i = 0; i < 2; ++i)
+  int num_indices = 0;
+  if (num_items > 0)
   {
-    const type nan_val = i == 0 ? limits_t::signaling_NaN() : limits_t::quiet_NaN();
+    num_indices = GENERATE_COPY(take(2, random(1, num_items + 1)));
 
-    auto begin = thrust::make_constant_iterator(nan_val);
-    auto end   = begin + num_indices;
+    CAPTURE(num_indices, num_items);
 
-    // sprinkle some NaNs randomly throughout the input
-    thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), d_input.begin());
+    // generate random indices to scatter NaNs (no duplicates)
+    c2h::device_vector<int> indices(num_items);
+    thrust::sequence(c2h::device_policy, indices.begin(), indices.end());
+    thrust::shuffle(c2h::device_policy, indices.begin(), indices.end(), thrust::default_random_engine{});
+
+    // Take only the first num_indices elements for scattering
+    indices.resize(num_indices);
+    for (int i = 0; i < 2; ++i)
+    {
+      const type nan_val = i == 0 ? limits_t::signaling_NaN() : limits_t::quiet_NaN();
+
+      auto begin = thrust::make_constant_iterator(nan_val);
+      auto end   = begin + num_indices;
+
+      // sprinkle some NaNs randomly throughout the input
+      thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), d_input.begin());
+    }
+  }
+  else
+  {
+    CAPTURE(num_indices, num_items);
   }
 
   c2h::device_vector<type> d_output_p1(1);
@@ -145,7 +153,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 1 << 10}));
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 10}));
   const auto env      = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
   SECTION("device_vector iterators")
@@ -198,7 +206,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 1 << 10;
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 10}));
 
   using input_it_t = cuda::counting_iterator<int>;
   auto input       = input_it_t(1);
@@ -246,7 +254,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 1 << 10;
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 10}));
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
@@ -276,8 +284,8 @@ C2H_TEST("Nondeterministic Device reduce works with various types on gpu with di
 {
   using type = typename c2h::get<0, TestType>;
 
-  const auto env          = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
-  constexpr int num_items = 1 << 10;
+  const auto env      = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+  const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 10}));
 
   type min_value{}, max_value{};
 
