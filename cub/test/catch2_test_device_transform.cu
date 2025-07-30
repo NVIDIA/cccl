@@ -684,3 +684,45 @@ C2H_TEST("DeviceTransform::Transform function/output_iter return type not conver
   c2h::device_vector<C> reference(num_items, C{-43});
   CHECK(output == reference);
 }
+
+template <int Alignment>
+__global__ void check_maybe_aligned_smem_kernel()
+{
+  _CCCL_VERIFY((reinterpret_cast<uintptr_t>(cub::detail::transform::aligned_smem<Alignment>()) % Alignment == 0), "");
+}
+
+#ifdef CUB_RDC_ENABLED
+template <int Alignment>
+__global__ void check_maybe_aligned_smem_kernel_cdp()
+{
+  check_maybe_aligned_smem_kernel<Alignment><<<1, 1>>>();
+}
+#endif
+
+template <int Alignment>
+void check_maybe_aligned_smem()
+{
+  check_maybe_aligned_smem_kernel<Alignment><<<1, 1>>>();
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+#ifdef CUB_RDC_ENABLED
+  check_maybe_aligned_smem_kernel_cdp<Alignment><<<1, 1>>>();
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+#endif
+}
+
+C2H_TEST("DeviceTransform::Transform maybe_aligned_smem", "[device][transform]")
+{
+  check_maybe_aligned_smem<16>();
+  check_maybe_aligned_smem<32>();
+  check_maybe_aligned_smem<64>();
+  check_maybe_aligned_smem<128>();
+  check_maybe_aligned_smem<256>();
+  check_maybe_aligned_smem<512>();
+  check_maybe_aligned_smem<1024>();
+  check_maybe_aligned_smem<2048>();
+  check_maybe_aligned_smem<4096>();
+  check_maybe_aligned_smem<16384>();
+  check_maybe_aligned_smem<32768>();
+}

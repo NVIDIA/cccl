@@ -626,35 +626,102 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
 // for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
 // Furthermore, as required by the C++ language, any extern declaration of a variable with the same name must have the
 // same type and attributes. However, since different template instantiations produce different alignment values for the
-// attribute, we also need to make sure the extern declaration produces a different symbol name. Therefore, we declare
-// the external shared memory as a variable template.
-template <int Alignment>
-extern __shared__ char __align__(Alignment) hopefully_aligned_smem[];
+// attribute, we also need to make sure the extern declaration produces a different symbol name. Therefore, we could
+// declare the external shared memory as a variable template. However, nvcc drops attributes on extern __shared__
+// variable templates, see NVBug 5420296.
+//   template <int Alignment>
+//   extern __shared__ char __align__(Alignment) hopefully_aligned_smem[];
 
-template <int Alignment>
+// As a workaround, we declare dedicated variables and pick the right one.
+extern __shared__ char smem16[];
+extern __shared__ char __align__(32) smem32[];
+extern __shared__ char __align__(64) smem64[];
+extern __shared__ char __align__(128) smem128[];
+extern __shared__ char __align__(256) smem256[];
+extern __shared__ char __align__(512) smem512[];
+extern __shared__ char __align__(1024) smem1024[];
+extern __shared__ char __align__(2048) smem2048[];
+extern __shared__ char __align__(4096) smem4096[];
+extern __shared__ char __align__(16384) smem16384[];
+extern __shared__ char __align__(32768) smem32768[];
+// cannot have larger alignment since it would exhause the 48KiB shared memory even for a single item
+
+template <int Alignment, bool EnsureAlignment = true>
 _CCCL_DEVICE auto aligned_smem() -> char*
 {
-  // Not guaranteed to be aligned for all nvcc compilation modes:
-  char* smem = hopefully_aligned_smem<Alignment>;
+  // smem is not guaranteed to be aligned for all nvcc compilation modes:
+  char* smem;
+  if constexpr (Alignment == 16)
+  {
+    smem = smem16;
+  }
+  else if constexpr (Alignment == 32)
+  {
+    smem = smem32;
+  }
+  else if constexpr (Alignment == 64)
+  {
+    smem = smem64;
+  }
+  else if constexpr (Alignment == 128)
+  {
+    smem = smem128;
+  }
+  else if constexpr (Alignment == 256)
+  {
+    smem = smem256;
+  }
+  else if constexpr (Alignment == 512)
+  {
+    smem = smem512;
+  }
+  else if constexpr (Alignment == 1024)
+  {
+    smem = smem1024;
+  }
+  else if constexpr (Alignment == 2048)
+  {
+    smem = smem2048;
+  }
+  else if constexpr (Alignment == 4096)
+  {
+    smem = smem4096;
+  }
+  else if constexpr (Alignment == 16384)
+  {
+    smem = smem16384;
+  }
+  else if constexpr (Alignment == 32768)
+  {
+    smem = smem32768;
+  }
+  else
+  {
+    static_assert(Alignment <= 32768, "Unsupported shared memory alignment");
+    _CCCL_UNREACHABLE();
+  }
+  if constexpr (EnsureAlignment)
+  {
 #if _CCCL_CUDA_COMPILER(NVCC, <, 13, 2) && (__CUDACC_RDC__ || __CUDACC_DEBUG__)
-  // Manual alignment of the shared memory start address introduces about 7 additional SASS instructions at the start of
-  // the kernel. This does not outweigh the benefit of a faster bulk copy on Hopper, but is needed for correctness with
-  // overaligned types.
+    // Manual alignment of the shared memory start address introduces about 7 additional SASS instructions at the start
+    // of the kernel. This does not outweigh the benefit of a faster bulk copy on Hopper, but is needed for correctness
+    // with overaligned types.
 
-  // We could do better if we relied on a few observations:
-  // * static shared memory is aligned to 1KiB
-  // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
-  // Since the transform kernel only stores an 8-byte barrier in static shared memory, the dynamic shared memory starts
-  // 16 bytes after a 1KiB aligned address and we could: `smem += Alignment - 16;`
-  // However, CUDA currently does not guarantee these observations in any official document.
+    // We could do better if we relied on a few observations:
+    // * static shared memory is aligned to 1KiB
+    // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
+    // Since the transform kernel only stores an 8-byte barrier in static shared memory, the dynamic shared memory
+    // starts 16 bytes after a 1KiB aligned address and we could: `smem += Alignment - 16;` However, CUDA currently does
+    // not guarantee these observations in any official document.
 
-  // So let's just align the pointer:
-  smem = round_up_smem_ptr<Alignment>(smem);
+    // So let's just align the pointer:
+    smem = round_up_smem_ptr<Alignment>(smem);
 
-  // keep NVVM from pulling the alignment code deeper into the kernel (worse performance)
-  asm("" : "+l"(smem));
+    // keep NVVM from pulling the alignment code deeper into the kernel (worse performance)
+    asm("" : "+l"(smem));
 #endif
-  _CCCL_ASSERT(::cuda::is_aligned(smem, Alignment), "");
+    _CCCL_ASSERT(::cuda::is_aligned(smem, Alignment), "");
+  }
   return smem;
 }
 
@@ -675,7 +742,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   __shared__ uint64_t bar;
 
-  char* smem_base = aligned_smem<tile_padding>();
+  // if any type requires an alignment > 16, we need to ensure SMEM alignment. Otherwise, just try our best and eat the
+  // TMA copy perf regression otherwise.
+  constexpr bool need_alignment_for_correctness = max_alignment > 16;
+  char* smem_base                               = aligned_smem<tile_padding, need_alignment_for_correctness>();
 
   namespace ptx = ::cuda::ptx;
 
