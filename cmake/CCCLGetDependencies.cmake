@@ -14,7 +14,13 @@ endmacro()
 
 macro(cccl_get_catch2)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:catchorg/Catch2@3.8.0")
+  CPMAddPackage(
+    NAME Catch2
+    GIT_REPOSITORY "https://github.com/catchorg/Catch2"
+    VERSION "3.8.0"
+    # To avoid https://github.com/catchorg/Catch2/issues/1833:
+    OPTIONS "CATCH_CONFIG_NO_POSIX_SIGNALS ON"
+  )
 endmacro()
 
 macro(cccl_get_fmt)
