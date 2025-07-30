@@ -121,8 +121,10 @@ struct BlockReduceWarpReductionsNondeterministic
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
-      ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
-      atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
+      NV_IF_TARGET(NV_PROVIDES_SM_60,
+                   (::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
+                    atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);),
+                   (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
     }
 
     __syncthreads();
