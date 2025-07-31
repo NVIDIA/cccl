@@ -303,32 +303,70 @@ def type_thread_data(context):
 #      own versions for now that are more flexible.
 
 
-class CoopArrayBaseTemplate(CallableTemplate):
-    def generic(self):
-        def typer(shape, dtype, alignment=None):
-            # Allow the shape to be a tuple of integers or a single integer.
-            valid_shape = isinstance(shape, types.Integer) or isinstance(
-                shape, (types.Tuple, types.UniTuple)
+class CoopArrayBaseTemplate(CoopAbstractTemplate):
+    minimum_num_args = 2
+
+    @classmethod
+    def signature(
+        cls: type,  # pylint: disable=unused-argument
+        shape: Union[types.Integer, types.Tuple, types.UniTuple],
+        dtype: types.DType,
+        alignment: Optional[types.Integer] = None,
+    ):
+        return inspect.signature(cls.signature).bind(
+            shape,
+            dtype,
+            alignment=alignment,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase: bool = False):
+        shape = bound.arguments.get("shape")
+        if not shape:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'shape' to be specified"
             )
-            if not valid_shape:
-                return None
 
-            if alignment is not None:
-                permitted = (
-                    types.Integer,
-                    types.IntegerLiteral,
-                    types.NoneType,
+        dtype = bound.arguments.get("dtype")
+        if not dtype:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'dtype' to be specified"
+            )
+
+        ndim = parse_shape(shape)
+        if not ndim:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'shape' to be a valid Numba "
+                f"shape, got: {shape}"
+            )
+
+        dtype = bound.arguments["dtype"]
+        nb_dtype = parse_dtype(dtype)
+        if not nb_dtype:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'dtype' to be a valid Numba "
+                f"dtype, got: {dtype}"
+            )
+
+        alignment = bound.arguments.get("alignment")
+
+        arglist = [shape, dtype]
+
+        alignment = bound.arguments.get("alignment")
+        if alignment is not None:
+            if not isinstance(alignment, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'alignment' to be an "
+                    f"integer or integer literal, got: {alignment}"
                 )
-                if not isinstance(alignment, permitted):
-                    msg = "alignment must be an integer value"
-                    raise errors.TypingError(msg)
+            arglist.append(alignment)
 
-            ndim = parse_shape(shape)
-            nb_dtype = parse_dtype(dtype)
-            if nb_dtype is not None and ndim is not None:
-                return types.Array(dtype=nb_dtype, ndim=ndim, layout="C")
+        # Create the signature with the validated arguments.
+        sig = signature(
+            types.Array(dtype=nb_dtype, ndim=ndim, layout="C"),
+            *arglist,
+        )
 
-        return typer
+        return sig
 
 
 @register

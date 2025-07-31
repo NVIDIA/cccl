@@ -211,6 +211,96 @@ def test_block_histogram_histo_atomic_single_phase_0():
     np.testing.assert_array_equal(actual, expected)
 
 
+def test_block_histogram_histo_atomic_single_phase_1():
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
+        tid = cuda.grid(1)
+        if tid >= num_total_items:
+            return
+
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        thread_offset = cuda.threadIdx.x * items_per_thread
+
+        # Shared per-block histogram bin counts.
+        smem_histogram = coop.shared.array(
+            d_out.shape,
+            d_out.dtype,
+            alignment=128,
+        )
+        thread_samples = coop.local.array(
+            items_per_thread,
+            d_in.dtype,
+            alignment=16,
+        )
+
+        histo = coop.block.histogram(thread_samples, smem_histogram)
+        histo.init()
+        cuda.syncthreads()
+
+        while block_offset < num_total_items:
+            num_valid_items = min(
+                items_per_block,
+                num_total_items - block_offset,
+            )
+
+            # Load with padding.
+            coop.block.load(
+                d_in[block_offset:],
+                thread_samples,
+                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                num_valid_items=num_valid_items,
+            )
+
+            # Zero-pad invalid thread items explicitly.
+            for i in range(items_per_thread):
+                global_idx = block_offset + thread_offset + i
+                if global_idx >= num_total_items:
+                    thread_samples[i] = 0
+
+            histo.composite(thread_samples)
+
+            cuda.syncthreads()
+
+            block_offset += items_per_block * cuda.gridDim.x
+
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        for bin_idx in range(cuda.threadIdx.x, bins, threads_per_block):
+            cuda.atomic.add(d_out, bin_idx, smem_histogram[bin_idx])
+
+    item_dtype = np.uint8
+    counter_dtype = np.uint32
+    bins = 1 << bitwidth(item_dtype)
+    items_per_thread = 4
+    threads_per_block = 128
+    # num_total_items = 1 << 15  # 32KB
+    num_total_items = 1024
+    # num_total_items = threads_per_block * items_per_thread
+
+    items_per_block = threads_per_block * items_per_thread
+    blocks_per_grid = (num_total_items + items_per_block - 1) // items_per_block
+
+    h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    num_blocks = blocks_per_grid
+    print(f"num blocks: {num_blocks}, threads per block: {threads_per_block}")
+    num_blocks = 1
+    k = kernel[num_blocks, threads_per_block]
+    # k = kernel2[num_blocks, threads_per_block]
+    k(d_input, d_output, items_per_thread, num_total_items)
+
+    actual = d_output.copy_to_host()
+    expected = np.bincount(h_input, minlength=bins).astype(counter_dtype)
+    # Sanity check sum of histo bins matches total items.
+    assert np.sum(expected) == num_total_items
+    assert np.sum(actual) == num_total_items
+
+    np.testing.assert_array_equal(actual, expected)
+
+
 def test_block_histogram_histo_atomic_single_phase1():
     bins = 256
     item_dtype = np.uint8

@@ -27,6 +27,7 @@ from numba.core.typing.templates import (
 )
 from numba.cuda import LTOIR
 from numba.cuda.cudadecl import register_global
+from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 
 try:
@@ -61,7 +62,6 @@ except ModuleNotFoundError:
     raise ModuleNotFoundError(msg) from None
 
 from ._common import (
-    normalize_dim_param,
     normalize_dtype_param,
 )
 
@@ -224,6 +224,7 @@ class ArrayCallDefinition(CallDefinition):
     #      (`assign`, and `order`).
     array_type: Optional[types.Array] = None
     array_dtype: Optional[types.DType] = None
+    array_alignment: Optional[int] = None
     is_coop_array: bool = False
     shape: Optional[int] = None
 
@@ -538,20 +539,67 @@ def get_root_definition(
                         )
                     array_dtype = array_type.dtype
                     is_coop_array = func_modname == CUDA_CCCL_COOP_ARRAY_MODULE_NAME
-                    # If this isn't a coop array (i.e. it's a cuda local or
-                    # shared array), we'll be able to obtain the shape as
-                    # a literal value from the first argument of the instr,
-                    # by way of another get root def call.
+
+                    instr_args = instr.args
+                    instr_kws = None
+                    if isinstance(instr.kws, (list, tuple)):
+                        # If kws is a tuple, convert it to a dict.
+                        instr_kws = dict(instr.kws)
+                    elif isinstance(instr.kws, dict):
+                        # Is this ever already a dict?
+                        assert False
+
+                    if instr_kws is None:
+                        instr_kws = {}
+
+                    from ._decls import CoopArrayBaseTemplate
+
+                    bound = CoopArrayBaseTemplate.signature(*instr_args, **instr_kws)
+
+                    shape_arg = bound.arguments["shape"]
+                    shape_root = rewriter.get_root_def(shape_arg)
+                    if shape_root is None:
+                        raise RuntimeError(
+                            f"Expected shape root for {shape_arg!r}, but got None."
+                        )
+
                     if not is_coop_array:
-                        shape_arg = instr.args[0]
-                        shape_root = rewriter.get_root_def(shape_arg)
-                        if shape_root is None:
-                            raise RuntimeError(
-                                f"Expected shape root for {shape_arg!r}, but got None."
-                            )
-                        shape = get_element_count(shape_root.root_instr.value)
+                        # This is a `cuda.(local|shared).array()`.  We can obtain
+                        # the shape as a literal value from the first argument
+                        # of the instr, by way of another root def call.
+                        shape = shape_root.root_instr.value
                     else:
-                        shape = None
+                        # For `coop.(local|shared).array()`, we can get the
+                        # shape directly from the shape_root's `instance`
+                        # attribute.  It'll either be a literal int or tuple,
+                        # or a DeviceNDArray instance.
+                        shape = shape_root.instance
+                        if isinstance(shape, DeviceNDArray):
+                            # We need to go one level deeper to get the shape
+                            # if we're dealing with a device array.
+                            shape = shape.shape
+
+                    # Normalize the shape into a 1D value.
+                    shape = get_element_count(shape)
+
+                    # Optionally grab alignment.
+
+                    alignment_arg = bound.arguments.get("alignment", None)
+                    if alignment_arg is not None:
+                        alignment_root = rewriter.get_root_def(alignment_arg)
+                        if alignment_root is None:
+                            raise RuntimeError(
+                                f"Expected alignment root for {alignment_arg!r}, "
+                                "but got None."
+                            )
+                        alignment = alignment_root.instance
+                        if not isinstance(alignment, int):
+                            raise TypeError(
+                                "Expected alignment to be an int, got "
+                                f"{alignment!r} for call {instr!r}."
+                            )
+                    else:
+                        alignment = None
 
                     defn = ArrayCallDefinition(
                         instr=instr,
@@ -562,6 +610,7 @@ def get_root_definition(
                         order=-1,
                         array_type=array_type,
                         array_dtype=array_dtype,
+                        array_alignment=alignment,
                         is_coop_array=is_coop_array,
                         shape=shape,
                     )
@@ -850,12 +899,17 @@ class CoopNode:
 
         if isinstance(arg_ty, (types.Tuple, types.UniTuple)):
             literals = []
-            for elem in arg_ty.elements:
-                if isinstance(elem, types.IntegerLiteral):
-                    literals.append(elem.literal_value)
-                else:
-                    raise RuntimeError(f"Expected integer literal in tuple, got {elem}")
-            return tuple(literals)
+            if hasattr(arg_ty, "elements"):
+                # Do we *ever* see elements here?
+                assert False
+                for elem in arg_ty.elements:
+                    if isinstance(elem, types.IntegerLiteral):
+                        literals.append(elem.literal_value)
+                    else:
+                        raise RuntimeError(
+                            f"Expected integer literal in tuple, got {elem}"
+                        )
+                return tuple(literals)
 
         if isinstance(arg_ty, types.DType):
             # If the argument is a dtype, return the dtype itself.
@@ -1260,6 +1314,7 @@ class CoopLoadStoreNode(CoopNode):
                 self.typemap[dst.name],
             ]
             runtime_arg_names = ["src", "dst"]
+            items_per_thread_array_var = dst
 
         else:
             dst = expr_args.pop(0)
@@ -1270,18 +1325,32 @@ class CoopLoadStoreNode(CoopNode):
                 self.typemap[src.name],
             ]
             runtime_arg_names = ["dst", "src"]
+            items_per_thread_array_var = src
+
+        array_root = rewriter.get_root_def(items_per_thread_array_var)
+        array_leaf = array_root.leaf_constructor_call
+        if not isinstance(array_leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                f"Expected leaf constructor call to be an ArrayCallDefinition,"
+                f" but got {array_leaf!r} for {items_per_thread_array_var!r}"
+            )
+        items_per_thread = array_leaf.shape
+        assert isinstance(items_per_thread, int), (
+            f"Expected items_per_thread to be an int, but got {items_per_thread!r}"
+        )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is not None:
+            # If the values don't match, raise an error.
+            if items_per_thread_kwarg != items_per_thread:
+                raise RuntimeError(
+                    f"Expected items_per_thread to be {items_per_thread}, "
+                    f"but got {items_per_thread_kwarg} for {self!r}"
+                )
 
         arg_ty = self.typemap[src.name]
         assert isinstance(arg_ty, types.Array)
         dtype = arg_ty.dtype
-
-        # Get items_per_thread.  If we're two-phase, it's optional, otherwise,
-        # it's mandatory.
-        if self.is_two_phase:
-            getter = self.get_arg_value_safe
-        else:
-            getter = self.get_arg_value
-        items_per_thread = getter("items_per_thread")
 
         # algorithm is always optional.
         algorithm_id = self.get_arg_value_safe("algorithm")
@@ -1575,8 +1644,19 @@ class CoopArrayNode(CoopNode):
         return get_element_count(self.shape)
 
     def refine_match(self, rewriter):
-        self.shape = normalize_dim_param(self.get_arg_value("shape"))
-        self.dtype = normalize_dtype_param(self.get_arg_value("dtype"))
+        root = rewriter.get_root_def(self.instr)
+        if not root:
+            raise RuntimeError(
+                f"Expected root definition for {self.instr!r}, but got None."
+            )
+        leaf = root.leaf_constructor_call
+        if not isinstance(leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                f"Expected leaf constructor call to be an ArrayCallDefinition,"
+                f" but got {leaf!r} for {self.instr!r}"
+            )
+        self.shape = leaf.shape
+        self.dtype = leaf.array_dtype
         self.alignment = self.get_arg_value_safe("alignment")
         rewriter.need_global_cuda_module_instr = True
 
