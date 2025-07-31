@@ -34,22 +34,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <typename _Tp>
 struct __atomic_traits
 {
-  static constexpr size_t __atomic_query_arch_supported_size()
-  {
-    NV_DISPATCH_TARGET(
-      NV_IS_HOST,
-      (return 8;), // TODO: determine host maximum host atomic size
-      NV_PROVIDES_SM_90,
-      (return 16;), // Hopper+ for 128b CAS
-      NV_ANY_TARGET,
-      (return 8;) // Everything else 64b max
-    )
-  }
-
   static constexpr bool __atomic_requires_lock  = !__atomic_is_always_lock_free<_Tp>::__value;
   static constexpr bool __atomic_requires_small = sizeof(_Tp) < 4;
-  static constexpr bool __atomic_supports_reference =
-    __atomic_is_always_lock_free<_Tp>::__value && sizeof(_Tp) <= __atomic_query_arch_supported_size();
 };
 
 template <typename _Tp>
