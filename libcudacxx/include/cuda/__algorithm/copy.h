@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ALGORITHM_COPY
-#define __CUDAX_ALGORITHM_COPY
+#ifndef __CUDA___ALGORITHM_COPY_H
+#define __CUDA___ALGORITHM_COPY_H
 
 #include <cuda/__cccl_config>
 
@@ -21,17 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/mdspan>
-#include <cuda/std/span>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__algorithm/common.cuh>
-#include <cuda/experimental/__stream/stream_ref.cuh>
+#  include <cuda/__algorithm/common.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/mdspan>
+#  include <cuda/std/span>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 namespace __detail
 {
 template <typename _SrcTy, typename _DstTy>
@@ -77,7 +78,7 @@ _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
     _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
   }
 
-  ::cuda::experimental::__detail::__copy_bytes_impl(
+  ::cuda::__detail::__copy_bytes_impl(
     __stream,
     _CUDA_VSTD::span(__src.data_handle(), __src.mapping().required_span_size()),
     _CUDA_VSTD::span(__dst.data_handle(), __dst.mapping().required_span_size()));
@@ -87,8 +88,9 @@ _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
 //! @brief Launches a bytewise memory copy from source to destination into the provided
 //! stream.
 //!
-//! Both source and destination needs to be or device_transform to a type that is a `contiguous_range` and converts to
-//! `cuda::std::span`. The element types of both the source and destination range is required to be trivially copyable.
+//! Both source and destination needs to be a `contiguous_range` and convert to
+//! `cuda::std::span`. The element types of both the source and destination range is
+//! required to be trivially copyable.
 //!
 //! This call might be synchronous if either source or destination is pagable host memory.
 //! It will be synchronous if both destination and copy is located in host memory.
@@ -97,25 +99,24 @@ _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(
-  __spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
+_CCCL_REQUIRES(__spannable<_SrcTy> _CCCL_AND __spannable<_DstTy>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
-  ::cuda::experimental::__detail::__copy_bytes_impl(
+  ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-    _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
+    _CUDA_VSTD::span(_CUDA_VSTD::forward<_SrcTy>(__src)),
+    _CUDA_VSTD::span(_CUDA_VSTD::forward<_DstTy>(__dst)));
 }
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided
 //! stream.
 //!
-//! Both source and destination needs to be or device_transform to an instance of `cuda::std::mdspan`.
-//! They can also implicitly convert to `cuda::std::mdspan`, but the
-//! type needs to contain `mdspan` template arguments as member aliases named
-//! `value_type`, `extents_type`, `layout_type` and `accessor_type`. The resulting mdspan
-//! is required to be exhaustive. The element types of both the source and destination
-//! type are required to be trivially copyable.
+//! Both source and destination needs to be an instance of `cuda::std::mdspan`.
+//! They can also convert to `cuda::std::mdspan`, but the type needs to contain
+//! `mdspan` template arguments as member aliases named `value_type`, `extents_type`,
+//! `layout_type` and `accessor_type`. The resulting mdspan is required to be
+//! exhaustive. The element types of both the source and destination type are
+//! required to be trivially copyable.
 //!
 //! This call might be synchronous if either source or destination is pagable host memory.
 //! It will be synchronous if both destination and copy is located in host memory.
@@ -124,18 +125,19 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(
-  __mdspannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __mdspannable<transformed_device_argument_t<_DstTy>>)
+_CCCL_REQUIRES(__mdspannable<_SrcTy> _CCCL_AND __mdspannable<_DstTy>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
-  ::cuda::experimental::__detail::__copy_bytes_impl(
+  ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    ::cuda::experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-    ::cuda::experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
+    ::cuda::__as_mdspan(_CUDA_VSTD::forward<_SrcTy>(__src)),
+    ::cuda::__as_mdspan(_CUDA_VSTD::forward<_DstTy>(__dst)));
 }
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_ALGORITHM_COPY
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // __CUDA___ALGORITHM_COPY_H
