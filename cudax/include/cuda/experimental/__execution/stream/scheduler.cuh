@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
@@ -102,7 +103,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
                    "stream scheduler's operation state must be allocated in managed memory");
     }
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API void start() noexcept
     {

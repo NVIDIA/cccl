@@ -22,9 +22,8 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__utility/__basic_any/semiregular.h>
 #include <cuda/std/__type_traits/is_same.h>
-
-#include <cuda/experimental/__utility/basic_any/semiregular.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
