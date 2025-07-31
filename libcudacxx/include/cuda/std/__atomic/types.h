@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "nv/detail/__target_macros"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
