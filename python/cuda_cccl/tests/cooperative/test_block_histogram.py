@@ -9,6 +9,7 @@ from typing import Any
 
 import numba
 import numpy as np
+import pytest
 from numba import cuda
 
 import cuda.cccl.cooperative.experimental as coop
@@ -17,8 +18,13 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 def bitwidth(np_type):
-    """Returns the bitwidth of a numpy type."""
     return np.dtype(np_type).itemsize * 8
+
+
+def get_histogram_bins_for_type(np_type):
+    dtype = np.dtype(np_type)
+    bins = 1 << (dtype.itemsize * 8)
+    return bins if dtype.kind == "u" else bins >> 1
 
 
 def test_block_histogram_histo_atomic_single_phase0():
@@ -297,6 +303,293 @@ def test_block_histogram_histo_atomic_single_phase_1():
     # Sanity check sum of histo bins matches total items.
     assert np.sum(expected) == num_total_items
     assert np.sum(actual) == num_total_items
+
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("item_dtype", [np.uint8])  # , np.int8])
+@pytest.mark.parametrize("counter_dtype", [np.uint32])  # , np.uint32])
+@pytest.mark.parametrize("threads_per_block", [32, 128, (4, 16), (4, 8, 8)])
+@pytest.mark.parametrize("items_per_thread", [2, 4])  # , 8])
+@pytest.mark.parametrize(
+    "num_total_items",
+    [
+        1 << 10,  # 1KB
+        1 << 12,  # 4KB
+        1 << 15,  # 32KB
+        1 << 19,  # 512KB
+        1 << 23,  # 8MB
+        1 << 28,  # 256MB
+    ],
+)
+@pytest.mark.parametrize(
+    "algorithm",
+    [
+        coop.BlockHistogramAlgorithm.ATOMIC,
+        coop.BlockHistogramAlgorithm.SORT,
+    ],
+)
+def test_block_histogram_histo_atomic_single_phase_2(
+    item_dtype,
+    counter_dtype,
+    threads_per_block,
+    items_per_thread,
+    num_total_items,
+    algorithm,
+):
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
+        tid = cuda.grid(1)
+        if tid >= num_total_items:
+            return
+
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        thread_offset = cuda.threadIdx.x * items_per_thread
+
+        # Shared per-block histogram bin counts.
+        smem_histogram = coop.shared.array(
+            d_out.shape,
+            d_out.dtype,
+            alignment=128,
+        )
+        thread_samples = coop.local.array(
+            items_per_thread,
+            d_in.dtype,
+            alignment=16,
+        )
+
+        histo = coop.block.histogram(thread_samples, smem_histogram)
+        histo.init()
+        cuda.syncthreads()
+
+        while block_offset < num_total_items:
+            num_valid_items = min(
+                items_per_block,
+                num_total_items - block_offset,
+            )
+
+            # Load with padding.
+            coop.block.load(
+                d_in[block_offset:],
+                thread_samples,
+                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                num_valid_items=num_valid_items,
+            )
+
+            # Zero-pad invalid thread items explicitly.
+            for i in range(items_per_thread):
+                global_idx = block_offset + thread_offset + i
+                if global_idx >= num_total_items:
+                    thread_samples[i] = 0
+
+            histo.composite(thread_samples)
+
+            cuda.syncthreads()
+
+            block_offset += items_per_block * cuda.gridDim.x
+
+        cuda.syncthreads()
+
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        for bin_idx in range(cuda.threadIdx.x, bins, threads_per_block):
+            cuda.atomic.add(d_out, bin_idx, smem_histogram[bin_idx])
+
+        cuda.syncthreads()
+
+    bins = get_histogram_bins_for_type(item_dtype)
+
+    threads_per_block = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    items_per_block = threads_per_block * items_per_thread
+    blocks_per_grid = (num_total_items + items_per_block - 1) // items_per_block
+
+    h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    num_blocks = blocks_per_grid
+    print(
+        f"num_blocks: {num_blocks}, "
+        f"threads_per_block: {threads_per_block}, "
+        f"items_per_thread: {items_per_thread}, "
+        f"num_total_items: {num_total_items}, "
+        f"items_per_block: {items_per_block}, "
+        f"blocks_per_grid: {blocks_per_grid}, "
+        f"bins: {bins}"
+    )
+
+    k = kernel[num_blocks, threads_per_block]
+    k(d_input, d_output, items_per_thread, num_total_items)
+
+    actual = d_output.copy_to_host()
+    expected = np.bincount(h_input, minlength=bins).astype(counter_dtype)
+    # Sanity check sum of histo bins matches total items.
+    assert np.sum(actual) == num_total_items
+    assert np.sum(expected) == num_total_items
+
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("item_dtype", [np.uint8])  # , np.int8])
+@pytest.mark.parametrize("counter_dtype", [np.int32])  # , np.uint32])
+@pytest.mark.parametrize("threads_per_block", [128, 223, (8, 8, 16)])
+@pytest.mark.parametrize("items_per_thread", [3, 4, 7])
+@pytest.mark.parametrize(
+    "num_total_items",
+    [
+        # Add a little odd fudge to ensure we handle awkward sizes properly.
+        (1 << 10) + 7,  # 1KB
+        (1 << 12) + 9,  # 4KB
+        (1 << 15) + 13,  # 32KB
+        (1 << 19) + 1,  # 512KB
+        (1 << 23) + 23,  # 8MB
+        (1 << 28) + 5,  # 256MB
+    ],
+)
+@pytest.mark.parametrize(
+    "algorithm",
+    [
+        coop.BlockHistogramAlgorithm.ATOMIC,
+        coop.BlockHistogramAlgorithm.SORT,
+    ],
+)
+def foo():
+    pass
+
+
+@pytest.mark.parametrize("item_dtype", [np.uint8])  # , np.int8])
+@pytest.mark.parametrize("counter_dtype", [np.int32])  # , np.uint32])
+@pytest.mark.parametrize("threads_per_block", [128, (4, 16), (4, 8, 8)])
+@pytest.mark.parametrize("items_per_thread", [2, 4, 8])
+@pytest.mark.parametrize(
+    "num_total_items",
+    [
+        1 << 10,  # 1KB
+        1 << 12,  # 4KB
+        1 << 15,  # 32KB
+        1 << 19,  # 512KB
+        1 << 23,  # 8MB
+        1 << 28,  # 256MB
+    ],
+)
+@pytest.mark.parametrize(
+    "algorithm",
+    [
+        coop.BlockHistogramAlgorithm.ATOMIC,
+        coop.BlockHistogramAlgorithm.SORT,
+    ],
+)
+def test_block_histogram_histo_atomic_single_phase_3(
+    item_dtype,
+    counter_dtype,
+    threads_per_block,
+    items_per_thread,
+    num_total_items,
+    algorithm,
+):
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
+        tid = cuda.grid(1)
+        if tid >= num_total_items:
+            return
+
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        thread_offset = cuda.threadIdx.x * items_per_thread
+
+        # Shared per-block histogram bin counts.
+        smem_histogram = coop.shared.array(
+            d_out.shape,
+            d_out.dtype,
+            alignment=128,
+        )
+        thread_samples = coop.local.array(
+            items_per_thread,
+            d_in.dtype,
+            alignment=16,
+        )
+
+        histo = coop.block.histogram(thread_samples, smem_histogram)
+        histo.init()
+        cuda.syncthreads()
+
+        while block_offset < num_total_items:
+            num_valid_items = min(
+                items_per_block,
+                num_total_items - block_offset,
+            )
+
+            coop.block.load(
+                d_in[block_offset:],
+                thread_samples,
+                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                num_valid_items=num_valid_items,
+            )
+
+            # Explicitly zero-pad invalid thread items.
+            for i in range(items_per_thread):
+                global_idx = block_offset + thread_offset + i
+                if global_idx >= num_total_items:
+                    thread_samples[i] = 0
+
+            # Composite into shared histogram.
+            histo.composite(thread_samples)
+            cuda.syncthreads()
+
+            # Atomically accumulate block-local histogram to global memory.
+            for bin_idx in range(cuda.threadIdx.x, bins, threads_per_block):
+                cuda.atomic.add(d_out, bin_idx, smem_histogram[bin_idx])
+
+            cuda.syncthreads()
+
+            # Reset shared histogram bins to zero before next iteration.
+            histo.init()
+            cuda.syncthreads()
+
+            # Increment block offset for next iteration
+            block_offset += items_per_block * cuda.gridDim.x
+
+    bins = get_histogram_bins_for_type(item_dtype)
+
+    threads_per_block = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    items_per_block = threads_per_block * items_per_thread
+    blocks_per_grid = (num_total_items + items_per_block - 1) // items_per_block
+
+    h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    num_blocks = blocks_per_grid
+    print(
+        f"num_blocks: {num_blocks}, "
+        f"threads_per_block: {threads_per_block}, "
+        f"items_per_thread: {items_per_thread}, "
+        f"num_total_items: {num_total_items}, "
+        f"items_per_block: {items_per_block}, "
+        f"blocks_per_grid: {blocks_per_grid}, "
+        f"bins: {bins}"
+    )
+
+    k = kernel[num_blocks, threads_per_block]
+    k(d_input, d_output, items_per_thread, num_total_items)
+
+    actual = d_output.copy_to_host()
+    expected = np.bincount(h_input, minlength=bins).astype(counter_dtype)
+    # Sanity check sum of histo bins matches total items.
+    assert np.sum(actual) == num_total_items
+    assert np.sum(expected) == num_total_items
 
     np.testing.assert_array_equal(actual, expected)
 
