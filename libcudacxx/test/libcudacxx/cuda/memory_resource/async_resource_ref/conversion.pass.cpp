@@ -18,6 +18,10 @@
 
 #include "types.h"
 
+struct S {
+  [[deprecated]] void foo() {}
+};
+
 struct Fake_alloc_base
 {
   void* object                                       = nullptr;
@@ -44,6 +48,9 @@ void test_conversion_from_async_resource_ref()
 
     // Ensure we are deallocating properly
     int expected_after_deallocate = 1337;
+    S s;
+    s.foo();
+
     ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, ::cudaStream_t{});
     assert(input._val == expected_after_deallocate);
   }
