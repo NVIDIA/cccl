@@ -74,26 +74,17 @@ nvcc --version
 nvidia-smi
 ```
 
-You can also test the package:
 
-```python
-import cuda.cccl.parallel.experimental as parallel
-print(dir(parallel))
+You can also test the package by running one of our [examples]((https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/reduction/basic_reduce.py):
+
+```bash
+python basic_reduce.py
 ```
 
 Expected Output:
 
-```python
-['__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__']
+```bash
+Running basic reduction examples...
+Sum: 15
+All examples completed successfully!
 ```
-
----
-
-## 🧪 Example: Alternating Sum Using Transform Iterator
-
-This example demonstrates how to use CCCL’s parallel tools to compute the alternating sum:
-
-> **Sum:** `1 - 2 + 3 - 4 + ... ± N`
-
-🔗 [Blog Article](https://go.nvidianews.com/MTU2LU9GTi03NDIAAAGblPIog3GxgqJI2nCWFj2_xv1LfEG5RFX-R2TlZZURSTmDVBUd-z9wBrHkhZ7amS4Pkx4_2WI=)
-📄 [Script on GitHub](https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/reduction/iterator/transform_iterator.py)
