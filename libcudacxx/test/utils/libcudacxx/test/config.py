@@ -1348,7 +1348,6 @@ class Configuration(object):
                 addIfHostSupports(
                     "-Wno-unused-local-typedefs"
                 )  # GCC warning local typdefs
-                addIfHostSupports("-Wno-deprecated-declarations")
                 addIfHostSupports("-Wno-noexcept-type")
                 addIfHostSupports("-Wno-unused-function")
 
