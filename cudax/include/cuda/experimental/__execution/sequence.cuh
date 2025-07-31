@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 
@@ -97,7 +98,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
         , __opstate1_(execution::connect(static_cast<_Sndr1&&>(__sndr1), __rcvr_t<_Rcvr, _Sndr2>{&__state_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {
