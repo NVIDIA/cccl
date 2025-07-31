@@ -92,8 +92,8 @@ jobs:
           .devcontainer/launch.sh \
             --docker \
             --cuda 12.9 \
-            --host gcc13 \
             --cuda-ext \
+            --host gcc14 \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env VAULT_HOST= \
