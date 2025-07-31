@@ -63,7 +63,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
 [[nodiscard]] _CCCL_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
-  if (__is_small<_Tp>(__size, __align))
+  if (::cuda::__is_small<_Tp>(__size, __align))
   {
     ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
     return true;
@@ -80,7 +80,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
 [[nodiscard]] _CCCL_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
-  if (__is_small<_Tp>(__size, __align))
+  if (::cuda::__is_small<_Tp>(__size, __align))
   {
     ::new (__dst) _Tp(__src);
     return true;
@@ -121,16 +121,16 @@ struct __imovable : __basic_interface<__imovable>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &__try_move_fn<_Tp>, &__move_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
 
   _CCCL_API auto __move_to(void* __pv) noexcept -> void
   {
-    return ::cuda::__virtcall<&__move_fn<__imovable>>(this, __pv);
+    return ::cuda::__virtcall<&::cuda::__move_fn<__imovable>>(this, __pv);
   }
 
   [[nodiscard]] _CCCL_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
   {
-    return ::cuda::__virtcall<&__try_move_fn<__imovable>>(this, __pv, __size, __align);
+    return ::cuda::__virtcall<&::cuda::__try_move_fn<__imovable>>(this, __pv, __size, __align);
   }
 };
 
@@ -139,11 +139,11 @@ struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &__copy_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
 
   [[nodiscard]] _CCCL_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
-    return __virtcall<&__copy_fn<__icopyable>>(this, __pv, __size, __align);
+    return ::cuda::__virtcall<&::cuda::__copy_fn<__icopyable>>(this, __pv, __size, __align);
   }
 };
 
@@ -179,7 +179,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   operator==(__iequality_comparable<_ILeft> const& __lhs, __iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     auto const& __other = ::cuda::__basic_any_from(__rhs);
-    constexpr auto __eq = &__equal_fn<__iequality_comparable<_ILeft>>;
+    constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_ILeft>>;
     return ::cuda::__virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
   }
 
@@ -208,7 +208,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_API friend auto operator==(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs)
     -> bool
   {
-    constexpr auto __eq = &__equal_fn<__iequality_comparable<_Interface>>;
+    constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
   }
 
@@ -218,7 +218,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_API friend auto
   operator==(_Object const& __lhs, __iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
-    constexpr auto __eq = &__equal_fn<__iequality_comparable<_Interface>>;
+    constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
   }
 
@@ -242,7 +242,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &__equal_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__equal_fn<_Tp>>;
 };
 
 template <class... _Super>
@@ -273,11 +273,11 @@ struct __iconvertible_to_<__self, _To>
   {
     [[nodiscard]] _CCCL_API operator _To()
     {
-      return ::cuda::__virtcall<__conversion_fn<__interface_, _To>>(this);
+      return ::cuda::__virtcall<::cuda::__conversion_fn<__interface_, _To>>(this);
     }
 
     template <class _From>
-    using overrides = __overrides_for<_From, &__conversion_fn<_From, _To>>;
+    using overrides = __overrides_for<_From, &::cuda::__conversion_fn<_From, _To>>;
   };
 };
 
@@ -289,11 +289,11 @@ struct __iconvertible_to_<__self&, _To>
   {
     [[nodiscard]] _CCCL_API operator _To() &
     {
-      return ::cuda::__virtcall<&__conversion_fn<__interface_&, _To>>(this);
+      return ::cuda::__virtcall<&::cuda::__conversion_fn<__interface_&, _To>>(this);
     }
 
     template <class _From>
-    using overrides = __overrides_for<_From, &__conversion_fn<_From&, _To>>;
+    using overrides = __overrides_for<_From, &::cuda::__conversion_fn<_From&, _To>>;
   };
 };
 
@@ -305,11 +305,11 @@ struct __iconvertible_to_<__self const&, _To>
   {
     [[nodiscard]] _CCCL_API operator _To() const&
     {
-      return ::cuda::__virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
+      return ::cuda::__virtcall<&::cuda::__conversion_fn<__interface_ const&, _To>>(this);
     }
 
     template <class _From>
-    using overrides = __overrides_for<_From, &__conversion_fn<_From const&, _To>>;
+    using overrides = __overrides_for<_From, &::cuda::__conversion_fn<_From const&, _To>>;
   };
 };
 

@@ -34,8 +34,7 @@
 //! interface will be stored in-situ in the `__basic_any` object if possible;
 //! otherwise, they will be stored on the heap.
 //!
-//! A simple interface looks like this (where `cuda` is an alias for
-//! `cuda::experimental`):
+//! A simple interface looks like this:
 //!
 //! \code{.cpp}
 //! template <class...>
