@@ -6,7 +6,7 @@ import numpy as np
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._cccl_interop import call_build, get_cccl_value_state, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.protocols import (
     get_data_pointer,
@@ -95,7 +95,7 @@ class _SegmentedReduce:
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
-        self.h_init_cccl.state = to_cccl_value_state(h_init)
+        self.h_init_cccl.state = get_cccl_value_state(h_init)
 
         stream_handle = validate_and_get_stream(stream)
 
