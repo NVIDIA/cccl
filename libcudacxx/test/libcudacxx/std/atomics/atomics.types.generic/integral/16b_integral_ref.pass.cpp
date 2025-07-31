@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
-// UNSUPPORTED: windows && pre-sm-70
+// UNSUPPORTED: windows
 
 // <cuda/std/atomic>
 
