@@ -10,10 +10,9 @@ import numba
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._cccl_interop import call_build, get_cccl_iterator_state
 from .._utils import protocols
 from .._utils.protocols import (
-    get_data_pointer,
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -106,33 +105,24 @@ class _UniqueByKey:
 
     def __call__(
         self,
-        temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
-        d_out_num_selected: DeviceArrayLike,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
         num_items: int,
-        stream=None,
+        stream_handle=None,
     ):
-        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
-        set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
-        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
-        set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
-        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
+        self.d_in_keys_cccl.state = d_in_keys
+        self.d_in_items_cccl.state = d_in_items
+        self.d_out_keys_cccl.state = d_out_keys
+        self.d_out_items_cccl.state = d_out_items
+        self.d_out_num_selected_cccl.state = d_out_num_selected
 
-        stream_handle = validate_and_get_stream(stream)
-        if temp_storage is None:
-            temp_storage_bytes = 0
-            d_temp_storage = 0
-        else:
-            temp_storage_bytes = temp_storage.nbytes
-            # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
-            # TODO: switch to use gpumemoryview once it's ready
-            d_temp_storage = get_data_pointer(temp_storage)
-
-        temp_storage_bytes = self.build_result.compute(
-            d_temp_storage,
+        return self.build_result.compute(
+            temp_storage_ptr,
             temp_storage_bytes,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
@@ -143,7 +133,6 @@ class _UniqueByKey:
             num_items,
             stream_handle,
         )
-        return temp_storage_bytes
 
 
 @cache_with_key(make_cache_key)
@@ -208,27 +197,40 @@ def unique_by_key(
         num_items: Number of items to process
         stream: CUDA stream for the operation (optional)
     """
+    stream_handle = validate_and_get_stream(stream)
+
     uniquer = make_unique_by_key(
         d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
     )
+
+    d_in_keys_state = get_cccl_iterator_state(uniquer.d_in_keys_cccl, d_in_keys)
+    d_in_items_state = get_cccl_iterator_state(uniquer.d_in_items_cccl, d_in_items)
+    d_out_keys_state = get_cccl_iterator_state(uniquer.d_out_keys_cccl, d_out_keys)
+    d_out_items_state = get_cccl_iterator_state(uniquer.d_out_items_cccl, d_out_items)
+    d_out_num_selected_state = get_cccl_iterator_state(
+        uniquer.d_out_num_selected_cccl, d_out_num_selected
+    )
+
     tmp_storage_bytes = uniquer(
-        None,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
+        0,
+        0,
+        d_in_keys_state,
+        d_in_items_state,
+        d_out_keys_state,
+        d_out_items_state,
+        d_out_num_selected_state,
         num_items,
-        stream,
+        stream_handle,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     uniquer(
-        tmp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
+        tmp_storage.data.ptr,
+        tmp_storage.nbytes,
+        d_in_keys_state,
+        d_in_items_state,
+        d_out_keys_state,
+        d_out_items_state,
+        d_out_num_selected_state,
         num_items,
-        stream,
+        stream_handle,
     )
