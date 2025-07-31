@@ -642,6 +642,7 @@ extern __shared__ char __align__(512) smem512[];
 extern __shared__ char __align__(1024) smem1024[];
 extern __shared__ char __align__(2048) smem2048[];
 extern __shared__ char __align__(4096) smem4096[];
+extern __shared__ char __align__(8192) smem8192[];
 // MSVC does not allow alignment larger than 4KiB
 #if !_CCCL_COMPILER(MSVC)
 extern __shared__ char __align__(16384) smem16384[];
@@ -689,6 +690,10 @@ _CCCL_DEVICE auto aligned_smem() -> char*
   else if constexpr (Alignment == 4096)
   {
     smem = smem4096;
+  }
+  else if constexpr (Alignment == 8192)
+  {
+    smem = smem8192;
   }
 #if !_CCCL_COMPILER(MSVC)
   else if constexpr (Alignment == 16384)

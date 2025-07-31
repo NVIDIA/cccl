@@ -723,6 +723,10 @@ C2H_TEST("DeviceTransform::Transform maybe_aligned_smem", "[device][transform]")
   check_maybe_aligned_smem<1024>();
   check_maybe_aligned_smem<2048>();
   check_maybe_aligned_smem<4096>();
+  check_maybe_aligned_smem<8192>();
+  // MSVC does not allow alignment larger than 4KiB
+#if !_CCCL_COMPILER(MSVC)
   check_maybe_aligned_smem<16384>();
   check_maybe_aligned_smem<32768>();
+#endif // #if !_CCCL_COMPILER(MSVC)
 }
