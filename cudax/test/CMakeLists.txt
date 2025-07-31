@@ -148,23 +148,39 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   option(CUDAX_ENABLE_CUFILE_TESTS "Enable cuFile tests (may fail due to cuFile library issues)" ON)
   if(CUDAX_ENABLE_CUFILE_TESTS)
-    cudax_add_catch2_test(test_target cufile ${cn_target}
-      cufile/catch2_test_driver_functions.cu
+    # Driver functions tests
+    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
+      cufile/driver_functions.cu
     )
 
-    # Link cuFile library for cufile tests
-    find_library(CUFILE_LIBRARY cufile
-      HINTS ${CUDAToolkit_LIBRARY_DIR}
-      PATH_SUFFIXES lib64 lib
+    # File handle functions tests
+    cudax_add_catch2_test(cufile_file_handle_target cufile_file_handle ${cn_target}
+      cufile/file_handle_functions.cu
+      cufile/test_utils.cu
     )
-    if(CUFILE_LIBRARY)
-      message(STATUS "Found cuFile library: ${CUFILE_LIBRARY}")
-      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
-    else()
-      message(STATUS "cuFile library not found via find_library, trying direct linking")
-      # Try direct linking to cufile
-      target_link_libraries(${test_target} PRIVATE cufile)
-    endif()
+
+    # Utils functions tests
+    cudax_add_catch2_test(cufile_utils_target cufile_utils ${cn_target}
+      cufile/utils_functions.cu
+      cufile/test_utils.cu
+    )
+
+    # Link cuFile library for all cufile tests
+    set(cufile_test_targets ${cufile_driver_target} ${cufile_file_handle_target} ${cufile_utils_target})
+    foreach(cufile_test_target IN LISTS cufile_test_targets)
+      find_library(CUFILE_LIBRARY cufile
+        HINTS ${CUDAToolkit_LIBRARY_DIR}
+        PATH_SUFFIXES lib64 lib
+      )
+      if(CUFILE_LIBRARY)
+        message(STATUS "Found cuFile library: ${CUFILE_LIBRARY}")
+        target_link_libraries(${cufile_test_target} PRIVATE ${CUFILE_LIBRARY})
+      else()
+        message(STATUS "cuFile library not found via find_library, trying direct linking")
+        # Try direct linking to cufile
+        target_link_libraries(${cufile_test_target} PRIVATE cufile)
+      endif()
+    endforeach()
   else()
     message(STATUS "cuFile tests disabled - set CUDAX_ENABLE_CUFILE_TESTS=ON to enable")
   endif()
