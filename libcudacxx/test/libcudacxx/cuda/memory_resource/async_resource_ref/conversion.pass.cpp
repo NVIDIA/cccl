@@ -50,10 +50,6 @@ void test_conversion_from_async_resource_ref()
     // Ensure we are deallocating properly
     int expected_after_deallocate = 1337;
 
-    S s;
-    s.foo();
-    cuda::stream_ref s_ref{};
-
     ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, ::cudaStream_t{});
     assert(input._val == expected_after_deallocate);
   }
@@ -81,7 +77,9 @@ void test_conversion_from_async_resource_ref()
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST,
-               (test_conversion_from_async_resource_ref<property_with_value<short>, property_with_value<int>>();
+               (S s; s.foo(); cuda::stream_ref s_ref{};
+
+                test_conversion_from_async_resource_ref<property_with_value<short>, property_with_value<int>>();
                 test_conversion_from_async_resource_ref<property_with_value<short>, property_without_value<int>>();
                 test_conversion_from_async_resource_ref<property_without_value<short>, property_without_value<int>>();))
 
