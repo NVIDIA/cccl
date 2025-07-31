@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H
-#define __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,36 +21,34 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
+#include <cuda/__utility/__basic_any/storage.h>
+#include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstddef> // for byte
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-#include <cuda/experimental/__utility/basic_any/storage.cuh>
-#include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Interface>
-_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface>&&) -> basic_any<_Interface>&&;
+_CCCL_API auto __is_basic_any_test(__basic_any<_Interface>&&) -> __basic_any<_Interface>&&;
 template <class _Interface>
-_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface>&) -> basic_any<_Interface>&;
+_CCCL_API auto __is_basic_any_test(__basic_any<_Interface>&) -> __basic_any<_Interface>&;
 template <class _Interface>
-_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_any<_Interface> const&;
+_CCCL_API auto __is_basic_any_test(__basic_any<_Interface> const&) -> __basic_any<_Interface> const&;
 
 #if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 // Older versions of clang and gcc need help disambiguating between
-// basic_any<__ireference<I>> and basic_any<I&>.
+// __basic_any<__ireference<I>> and __basic_any<I&>.
 template <class _Interface>
-_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&&) -> basic_any<_Interface&>&&;
+_CCCL_API auto __is_basic_any_test(__basic_any<_Interface&>&&) -> __basic_any<_Interface&>&&;
 template <class _Interface>
-_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&) -> basic_any<_Interface&>&;
+_CCCL_API auto __is_basic_any_test(__basic_any<_Interface&>&) -> __basic_any<_Interface&>&;
 template <class _Interface>
-_CCCL_HOST_API auto __is_basic_any_test(basic_any<_Interface&> const&) -> basic_any<_Interface&> const&;
+_CCCL_API auto __is_basic_any_test(__basic_any<_Interface&> const&) -> __basic_any<_Interface&> const&;
 #endif
 
 // clang-format off
@@ -58,7 +56,7 @@ template <class _Tp>
 _CCCL_CONCEPT __is_basic_any =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    experimental::__is_basic_any_test(__value)
+    (::cuda::__is_basic_any_test(__value))
   );
 // clang-format on
 
@@ -68,7 +66,7 @@ struct __basic_any_base : __interface_of<_Interface>
 {
 private:
   template <class>
-  friend struct basic_any;
+  friend struct __basic_any;
   friend struct __basic_any_access;
 
   static constexpr size_t __size_  = __buffer_size(_Interface::size);
@@ -80,7 +78,7 @@ private:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // Without concepts, we need a base class to correctly implement movability
 // and copyability.
-template <class _Interface, int = extension_of<_Interface, imovable<>> + extension_of<_Interface, icopyable<>>>
+template <class _Interface, int = __extension_of<_Interface, __imovable<>> + __extension_of<_Interface, __icopyable<>>>
 struct __basic_any_base;
 
 template <class _Interface>
@@ -88,31 +86,31 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
 {
   __basic_any_base() = default;
 
-  _CCCL_HOST_API __basic_any_base(__basic_any_base&& __other) noexcept
+  _CCCL_API __basic_any_base(__basic_any_base&& __other) noexcept
   {
-    static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface>&&>(__other));
+    static_cast<__basic_any<_Interface>*>(this)->__convert_from(static_cast<__basic_any<_Interface>&&>(__other));
   }
 
-  _CCCL_HOST_API __basic_any_base(__basic_any_base const& __other)
+  _CCCL_API __basic_any_base(__basic_any_base const& __other)
   {
-    static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface> const&>(__other));
+    static_cast<__basic_any<_Interface>*>(this)->__convert_from(static_cast<__basic_any<_Interface> const&>(__other));
   }
 
-  _CCCL_HOST_API auto operator=(__basic_any_base&& __other) noexcept -> __basic_any_base&
+  _CCCL_API auto operator=(__basic_any_base&& __other) noexcept -> __basic_any_base&
   {
-    static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface>&&>(__other));
+    static_cast<__basic_any<_Interface>*>(this)->__assign_from(static_cast<__basic_any<_Interface>&&>(__other));
     return *this;
   }
 
-  _CCCL_HOST_API auto operator=(__basic_any_base const& __other) -> __basic_any_base&
+  _CCCL_API auto operator=(__basic_any_base const& __other) -> __basic_any_base&
   {
-    static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface> const&>(__other));
+    static_cast<__basic_any<_Interface>*>(this)->__assign_from(static_cast<__basic_any<_Interface> const&>(__other));
     return *this;
   }
 
 private:
   template <class>
-  friend struct basic_any;
+  friend struct __basic_any;
   friend struct __basic_any_access;
 
   static constexpr size_t __size_  = __buffer_size(_Interface::size);
@@ -143,8 +141,8 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
 };
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
