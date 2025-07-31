@@ -145,6 +145,110 @@ struct test_murmurhash3_32
   }
 };
 
+#if _CCCL_HAS_INT128()
+struct test_murmurhash3_x86_128
+{
+  _CCCL_HOST_DEVICE constexpr __uint128_t conv(cuda::std::array<uint32_t, 4> const& arr) const
+  {
+    return cuda::std::bit_cast<__uint128_t>(arr);
+  }
+
+  _CCCL_HOST_DEVICE bool operator()()
+  {
+    return check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             0, conv({3422973727u, 2656139328u, 2656139328u, 2656139328u}), 0)
+        && check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             9, conv({2808089785u, 314604614u, 314604614u, 314604614u}), 0)
+        && check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             42, conv({3611919118u, 1962256489u, 1962256489u, 1962256489u}), 0)
+        && check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             42, conv({3399017053u, 732469929u, 732469929u, 732469929u}), 42)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 2>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int32_t, 2>{2, 2}, conv({1234494082u, 1431451587u, 431049201u, 431049201u}), 0)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 3>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int32_t, 3>{1, 4, 9}, conv({2516796247u, 2757675829u, 778406919u, 2453259553u}), 42)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 4>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int32_t, 4>{42, 64, 108, 1024},
+             conv({2686265656u, 591236665u, 3797082165u, 2731908938u}),
+             63)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 16>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int32_t, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+             conv({3918256832u, 4205523739u, 1707810111u, 1625952473u}),
+             1024)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 2>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int64_t, 2>{2, 2}, conv({3811075945u, 727160712u, 3510740342u, 235225510u}), 0)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 3>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int64_t, 3>{1, 4, 9}, conv({2817194959u, 206796677u, 3391242768u, 248681098u}), 42)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 4>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int64_t, 4>{42, 64, 108, 1024},
+             conv({2335912146u, 1566515912u, 760710030u, 452077451u}),
+             63)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 16>, cudax::cuco::HashStrategy::MurmurHash3_x86_128>>(
+             cuda::std::array<int64_t, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+             conv({1101169764u, 1758958147u, 2406511780u, 2903571412u}),
+             1024);
+  }
+};
+
+struct test_murmurhash3_x64_128
+{
+  _CCCL_HOST_DEVICE constexpr __uint128_t conv(cuda::std::array<uint64_t, 2> const& arr) const
+  {
+    return cuda::std::bit_cast<__uint128_t>(arr);
+  }
+
+  _CCCL_HOST_DEVICE bool operator()()
+  {
+    return check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             0, conv({14961230494313510588ull, 6383328099726337777ull}), 0)
+        && check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             9, conv({1779292183511753683ull, 16298496441448380334ull}), 0)
+        && check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             42, conv({2913627637088662735ull, 16344193523890567190ull}), 0)
+        && check_hash_result<cudax::cuco::Hash<int32_t, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             42, conv({2248879576374326886ull, 18006515275339376488ull}), 42)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 2>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int32_t, 2>{2, 2}, conv({12221386834995143465ull, 6690950894782946573ull}), 0)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 3>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int32_t, 3>{1, 4, 9}, conv({299140022350411792ull, 9891903873182035274ull}), 42)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 4>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int32_t, 4>{42, 64, 108, 1024}, conv({4333511168876981289ull, 4659486988434316416ull}), 63)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int32_t, 16>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int32_t, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+             conv({3302412811061286680ull, 7070355726356610672ull}),
+             1024)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 2>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int64_t, 2>{2, 2}, conv({8554944597931919519ull, 14938998000509429729ull}), 0)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 3>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int64_t, 3>{1, 4, 9}, conv({13442629947720186435ull, 7061727494178573325ull}), 42)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 4>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int64_t, 4>{42, 64, 108, 1024},
+             conv({8786399719555989948ull, 14954183901757012458ull}),
+             63)
+        && check_hash_result<
+             cudax::cuco::Hash<cuda::std::array<int64_t, 16>, cudax::cuco::HashStrategy::MurmurHash3_x64_128>>(
+             cuda::std::array<int64_t, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+             conv({15409921801541329777ull, 10546487400963404004ull}),
+             1024);
+  }
+};
+#endif // _CCCL_HAS_INT128()
+
 template <typename TestFn, typename ResultIt>
 __global__ void test_hasher_kernel(TestFn test_fn, ResultIt result)
 {
@@ -195,3 +299,31 @@ TEST_CASE("Utility Hasher _MurmurHash3_32 test", "")
     test_hasher_on_device(test_murmurhash3_32{});
   }
 }
+
+#if _CCCL_HAS_INT128()
+TEST_CASE("Utility Hasher _MurmurHash3_x86_128 test", "")
+{
+  SECTION("host-generated hash values match the reference implementation.")
+  {
+    CUDAX_REQUIRE(test_murmurhash3_x86_128{}());
+  }
+
+  SECTION("device-generated hash values match the reference implementation.")
+  {
+    test_hasher_on_device(test_murmurhash3_x86_128{});
+  }
+}
+
+TEST_CASE("Utility Hasher _MurmurHash3_x64_128 test", "")
+{
+  SECTION("host-generated hash values match the reference implementation.")
+  {
+    CUDAX_REQUIRE(test_murmurhash3_x64_128{}());
+  }
+
+  SECTION("device-generated hash values match the reference implementation.")
+  {
+    test_hasher_on_device(test_murmurhash3_x64_128{});
+  }
+}
+#endif // _CCCL_HAS_INT128()
