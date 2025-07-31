@@ -384,6 +384,7 @@ auto all_convertible(P&&... p)
       }
     },
     ::std::forward<P>(p)...);
+  __guard.__complete();
   return mv(result);
 }
 
