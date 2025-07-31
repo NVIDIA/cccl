@@ -82,6 +82,16 @@ CUDA_CCCL_COOP_MODULE_NAME = "cuda.cccl.cooperative.experimental"
 CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
 NUMBA_CUDA_ARRAY_MODULE_NAME = "numba.cuda.stubs"
 
+DEBUG_PRINT = False
+
+
+def debug_print(*args, **kwargs):
+    """
+    Print debug information if DEBUG_PRINT is enabled.
+    """
+    if DEBUG_PRINT:
+        print(*args, **kwargs)
+
 
 def add_ltoirs(context, ltoirs):
     # Add all the LTO-IRs to the current code library.
@@ -1201,7 +1211,7 @@ class CoopNode:
         assert num_params == 1, parameters
         parameters = parameters[0]
         param_dtypes = [p.dtype() for p in parameters]
-        print(f"param_dtypes: {param_dtypes}")
+        debug_print(f"param_dtypes: {param_dtypes}")
 
         # if len(parameters) != len(self.runtime_arg_types):
         #    import debugpy; debugpy.breakpoint()
@@ -1233,7 +1243,7 @@ class CoopNode:
                     f"outer_args={outer_args}, "
                     f"outer_kws={outer_kws})"
                 )
-                print(msg)
+                debug_print(msg)
 
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
@@ -1244,7 +1254,7 @@ class CoopNode:
                         f"sig={sig}, "
                         f"args={args})"
                     )
-                    print(msg)
+                    debug_print(msg)
                     node = invocable.node
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
@@ -2551,7 +2561,7 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
             args=self.runtime_arg_types,
             kws={},
         )
-        print(result)
+        debug_print(result)
         check = func_ty._impl_keys[sig.args]
         assert check is not None, check
 
@@ -3197,7 +3207,7 @@ class CoopNodeRewriter(Rewrite):
         num_block_instructions = len(block.body)
         block_hash = hash(block)
 
-        print(
+        debug_print(
             f"Processing rewriter.match(): block_no: {block_no}, "
             f"block_offset: {block_offset}, "
             f"num_block_instructions: {num_block_instructions}, "
@@ -3212,7 +3222,7 @@ class CoopNodeRewriter(Rewrite):
                 import debugpy
 
                 debugpy.breakpoint()
-                print(f"Found: {instr!r} at {instr.loc}")
+                debug_print(f"Found: {instr!r} at {instr.loc}")
 
             # We're only interested in ir.Assign nodes.  Skip the rest.
             if not isinstance(instr, ir.Assign):
@@ -3275,7 +3285,7 @@ class CoopNodeRewriter(Rewrite):
                         f"({instr.loc})"
                     )
 
-                print(f"Found existing node for {target_name!r} skipping...")
+                debug_print(f"Found existing node for {target_name!r} skipping...")
                 continue
 
             # N.B. This code block used to have a lot more functionality, but
@@ -3323,7 +3333,7 @@ class CoopNodeRewriter(Rewrite):
                 import debugpy
 
                 debugpy.breakpoint()
-                print(f"Found: {expr!r} at {expr.loc}")
+                debug_print(f"Found: {expr!r} at {expr.loc}")
                 # We can ignore these; they are not function calls.
 
             # We can ignore nodes that aren't function calls herein.
@@ -3670,7 +3680,7 @@ class CoopNodeRewriter(Rewrite):
                     # If the node wants a rewrite, request apply.
                     we_want_apply = True
 
-        print(
+        debug_print(
             f"Returning from rewriter.match(): block_no: {block_no}, "
             f"we_want_apply: {we_want_apply}, "
             f"num nodes: {len(self.nodes)}"
@@ -3682,7 +3692,7 @@ class CoopNodeRewriter(Rewrite):
         block = self.current_block
         num_block_instructions = len(block.body)
         block_hash = hash(block)
-        print(
+        debug_print(
             f"Entered rewriter.apply(): block_no: {self.current_block_no!r}, "
             f"num_block_instructions: {num_block_instructions}, "
             f"block_hash: {block_hash}, "
@@ -3730,7 +3740,7 @@ class CoopNodeRewriter(Rewrite):
                 no_new_instructions += 1
                 new_block.append(instr)
 
-        print(
+        debug_print(
             f"Rewriter.apply() results: "
             f"skipped: {skipped}, "
             f"ignored: {ignored}, "
