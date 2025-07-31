@@ -34,6 +34,11 @@ enum class HashStrategy
   XXHash_32,
   XXHash_64,
   MurmurHash3_32
+#if _CCCL_HAS_INT128()
+  ,
+  MurmurHash3_x86_128,
+  MurmurHash3_x64_128
+#endif // _CCCL_HAS_INT128()
 };
 
 //! @brief A hash function class specialized for different hash strategies.
@@ -66,6 +71,24 @@ public:
   using __detail::_MurmurHash3_32<_Key>::_MurmurHash3_32;
   using __detail::_MurmurHash3_32<_Key>::operator();
 };
+
+#if _CCCL_HAS_INT128()
+template <typename _Key>
+class Hash<_Key, HashStrategy::MurmurHash3_x86_128> : private __detail::_MurmurHash3_x86_128<_Key>
+{
+public:
+  using __detail::_MurmurHash3_x86_128<_Key>::_MurmurHash3_x86_128;
+  using __detail::_MurmurHash3_x86_128<_Key>::operator();
+};
+
+template <typename _Key>
+class Hash<_Key, HashStrategy::MurmurHash3_x64_128> : private __detail::_MurmurHash3_x64_128<_Key>
+{
+public:
+  using __detail::_MurmurHash3_x64_128<_Key>::_MurmurHash3_x64_128;
+  using __detail::_MurmurHash3_x64_128<_Key>::operator();
+};
+#endif // _CCCL_HAS_INT128()
 
 } // namespace cuda::experimental::cuco
 
