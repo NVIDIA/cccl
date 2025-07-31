@@ -85,8 +85,11 @@ struct WarpScanSmem
   /// The number of shared memory elements per warp
   static constexpr int WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS;
 
+  /// Storage cell type (workaround for SM1x compiler bugs with custom-ops like Max() on signed chars)
+  using CellT = T;
+
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
-  using _TempStorage = T[WARP_SMEM_ELEMENTS];
+  using _TempStorage = CellT[WARP_SMEM_ELEMENTS];
 
   // Alias wrapper allowing storage to be unioned
   struct TempStorage : Uninitialized<_TempStorage>
@@ -125,22 +128,15 @@ struct WarpScanSmem
   {
     constexpr int OFFSET = 1 << STEP;
 
-    // Share partal into buffer
-    if constexpr (STEP == 0)
-    {
-      detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], partial);
-    }
-    else
-    {
-      temp_storage[HALF_WARP_THREADS + lane_id] = partial;
-    }
+    // Share partial into buffer
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) partial);
 
     __syncwarp(member_mask);
 
     // Update partial if addend is in range
     if (HAS_IDENTITY || (lane_id >= OFFSET))
     {
-      T addend = temp_storage[HALF_WARP_THREADS + lane_id - OFFSET];
+      T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
       partial  = scan_op(addend, partial);
     }
     __syncwarp(member_mask);
@@ -171,8 +167,8 @@ struct WarpScanSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& output, ::cuda::std::plus<> scan_op, ::cuda::std::true_type /*is_primitive*/)
   {
-    T identity            = 0;
-    temp_storage[lane_id] = identity;
+    T identity = 0;
+    ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], (CellT) identity);
 
     __syncwarp(member_mask);
 
@@ -226,12 +222,12 @@ struct WarpScanSmem
   {
     if (lane_id == src_lane)
     {
-      *temp_storage = input;
+      ThreadStore<STORE_VOLATILE>(temp_storage, (CellT) input);
     }
 
     __syncwarp(member_mask);
 
-    return *temp_storage;
+    return (T) ThreadLoad<LOAD_VOLATILE>(temp_storage);
   }
 
   //---------------------------------------------------------------------
@@ -277,11 +273,11 @@ struct WarpScanSmem
     InclusiveScan(input, inclusive_output, scan_op);
 
     // Retrieve aggregate
-    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive_output);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = temp_storage[WARP_SMEM_ELEMENTS - 1];
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
     __syncwarp(member_mask);
   }
@@ -391,11 +387,11 @@ struct WarpScanSmem
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // initial value unknown
-    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = temp_storage[HALF_WARP_THREADS + lane_id - 1];
+    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
   }
 
   /**
@@ -417,12 +413,12 @@ struct WarpScanSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT scan_op, T initial_value, IsIntegerT /*is_integer*/)
   {
-    inclusive                                 = scan_op(initial_value, inclusive);
-    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+    inclusive = scan_op(initial_value, inclusive);
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = temp_storage[HALF_WARP_THREADS + lane_id - 1];
+    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
     if (lane_id == 0)
     {
       exclusive = initial_value;
@@ -453,12 +449,12 @@ struct WarpScanSmem
   Update(T /*input*/, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
-    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive      = temp_storage[HALF_WARP_THREADS + lane_id - 1];
-    warp_aggregate = temp_storage[WARP_SMEM_ELEMENTS - 1];
+    exclusive      = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
   }
 
   /**
@@ -474,11 +470,11 @@ struct WarpScanSmem
     ::cuda::std::true_type /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
-    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = temp_storage[WARP_SMEM_ELEMENTS - 1];
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
     exclusive      = inclusive - input;
   }
 
@@ -497,11 +493,11 @@ struct WarpScanSmem
     IsIntegerT /*is_integer*/)
   {
     // Broadcast warp aggregate
-    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = temp_storage[WARP_SMEM_ELEMENTS - 1];
+    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
     __syncwarp(member_mask);
 
@@ -509,11 +505,11 @@ struct WarpScanSmem
     inclusive = scan_op(initial_value, inclusive);
 
     // Get exclusive from exclusive
-    detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id - 1], inclusive);
+    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1], (CellT) inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = temp_storage[HALF_WARP_THREADS + lane_id - 2];
+    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
 
     if (lane_id == 0)
     {
