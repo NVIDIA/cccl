@@ -77,7 +77,7 @@ private:
 public:
   //! @brief Constructs a device_memory_resource using the default \c cudaMemPool_t of a given device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  explicit device_memory_resource(::cuda::experimental::device_ref __device)
+  explicit device_memory_resource(::cuda::device_ref __device)
       : __memory_resource_base(__get_default_device_mem_pool(__device.get()))
   {}
 

@@ -19,7 +19,7 @@
 
 C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 {
-  cudax::stream str{cudax::device_ref{0}};
+  cudax::stream str{cuda::device_ref{0}};
   ::test::pinned<int> i(0);
   cudax::launch(str, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   str.sync();
@@ -28,7 +28,7 @@ C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 
 C2H_CCCLRT_TEST("From native handle", "[stream]")
 {
-  cudax::__ensure_current_device guard(cudax::device_ref{0});
+  cudax::__ensure_current_device guard(cuda::device_ref{0});
   cudaStream_t handle;
   CUDART(cudaStreamCreate(&handle));
   {
@@ -66,7 +66,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
   SECTION("Stream wait declared event")
   {
     verify_dependency([&]() {
-      cudax::event ev(waitee);
+      cuda::event ev(waitee);
       waiter.wait(ev);
     });
   }
@@ -97,7 +97,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 
 C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 {
-  cudax::stream waiter{cudax::device_ref{0}}, waitee{cudax::device_ref{0}};
+  cudax::stream waiter{cuda::device_ref{0}}, waitee{cuda::device_ref{0}};
 
   add_dependency_test<cudax::stream>(waiter, waitee);
   add_dependency_test<cudax::stream_ref>(waiter, waitee);
@@ -105,26 +105,26 @@ C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 
 C2H_CCCLRT_TEST("Stream priority", "[stream]")
 {
-  cudax::stream stream_default_prio{cudax::device_ref{0}};
+  cudax::stream stream_default_prio{cuda::device_ref{0}};
   CUDAX_REQUIRE(stream_default_prio.priority() == cudax::stream::default_priority);
 
   auto priority = cudax::stream::default_priority - 1;
-  cudax::stream stream{cudax::device_ref{0}, priority};
+  cudax::stream stream{cuda::device_ref{0}, priority};
   CUDAX_REQUIRE(stream.priority() == priority);
 }
 
 C2H_CCCLRT_TEST("Stream get device", "[stream]")
 {
-  cudax::stream dev0_stream(cudax::device_ref{0});
+  cudax::stream dev0_stream(cuda::device_ref{0});
   CUDAX_REQUIRE(dev0_stream.device() == 0);
 
-  cudax::__ensure_current_device guard(cudax::device_ref{*std::prev(cudax::devices.end())});
+  cudax::__ensure_current_device guard(cuda::device_ref{*std::prev(cuda::devices.end())});
   cudaStream_t stream_handle;
   CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
-  CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cudax::devices.end()));
+  CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cuda::devices.end()));
   auto stream_ref_cudart = cudax::stream_ref(stream_handle);
-  CUDAX_REQUIRE(stream_ref_cudart.device() == *std::prev(cudax::devices.end()));
+  CUDAX_REQUIRE(stream_ref_cudart.device() == *std::prev(cuda::devices.end()));
 
   INFO("Can create a side stream using logical device");
   {
@@ -140,11 +140,11 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
 
 C2H_CCCLRT_TEST("Stream ID", "[stream]")
 {
-  STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cudax::stream_id>>);
-  STATIC_REQUIRE(cuda::std::is_same_v<cudax::stream_id, decltype(cuda::std::declval<cudax::stream_ref>().id())>);
+  STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cuda::stream_id>>);
+  STATIC_REQUIRE(cuda::std::is_same_v<cuda::stream_id, decltype(cuda::std::declval<cudax::stream_ref>().id())>);
 
-  cudax::stream stream1{cudax::device_ref{0}};
-  cudax::stream stream2{cudax::device_ref{0}};
+  cudax::stream stream1{cuda::device_ref{0}};
+  cudax::stream stream2{cuda::device_ref{0}};
 
   // Test that id() returns a valid ID
   auto id1 = stream1.id();
@@ -160,8 +160,8 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
   {
     // Test that stream_ref also supports id()
     // NULL stream needs a device to be set
-    cudax::__ensure_current_device guard(cudax::device_ref{0});
-    cudax::stream_ref ref1(static_cast<cudaStream_t>(NULL));
+    cudax::__ensure_current_device guard(cuda::device_ref{0});
+    cudax::stream_ref ref1(cudaStream_t{});
     cudax::stream_ref ref2(stream1);
 
     CUDAX_REQUIRE(ref1.id() != ref2.id());

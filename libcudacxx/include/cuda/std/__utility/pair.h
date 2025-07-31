@@ -118,9 +118,7 @@ struct __pair_constraints
 };
 
 // base class to ensure `is_trivially_copyable` when possible
-template <class _T1,
-          class _T2,
-          bool = __must_synthesize_assignment<_T1>::value || __must_synthesize_assignment<_T2>::value>
+template <class _T1, class _T2, bool = __must_synthesize_assignment_v<_T1> || __must_synthesize_assignment_v<_T2>>
 struct __pair_base
 {
   _T1 first;

@@ -20,7 +20,7 @@ dependencies = [
   "numba>=0.60.0",
   "numpy",
   "cuda-python==12.9.0",
-  "cupy-cuda12x",
+  "cuda-core",
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
   "pynvjitlink-cu12>=0.2.4",
@@ -68,7 +68,13 @@ root = "../.."
 python_version = "3.10"
 
 [[tool.mypy.overrides]]
-module = ["numba.*", "llvmlite", "cupy", "cuda.cccl.headers.*"]
+module = [
+  "numba.*",
+  "llvmlite",
+  "cuda.cccl.headers.*",
+  "cuda.bindings",
+  "cuda.core.*",
+]
 ignore_missing_imports = true
 follow_imports = "skip"
 

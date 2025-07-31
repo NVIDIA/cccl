@@ -480,7 +480,7 @@ public:
                                    default_determinism_t>;
 
       // Query relevant properties from the environment
-      auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+      auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
       auto mr = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
       void* d_temp_storage      = nullptr;
@@ -593,7 +593,7 @@ public:
                                           _CUDA_EXEC::determinism::run_to_run_t>;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
@@ -845,13 +845,17 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // The input value type
-    using InputT = cub::detail::it_value_t<InputIteratorT>;
-
-    using InitT = InputT;
+    using OffsetT  = detail::choose_offset_t<NumItemsT>; // Signed integer type for global offsets
+    using InputT   = detail::it_value_t<InputIteratorT>;
+    using InitT    = InputT;
+    using limits_t = ::cuda::std::numeric_limits<InitT>;
+#ifndef CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
+    static_assert(limits_t::is_specialized,
+                  "cub::DeviceReduce::Min uses cuda::std::numeric_limits<InputIteratorT::value_type>::max() as initial "
+                  "value, but cuda::std::numeric_limits is not specialized for the iterator's value type. This is "
+                  "probably a bug and you should specialize cuda::std::numeric_limits. Define "
+                  "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
+#endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::minimum<>, InitT>::Dispatch(
       d_temp_storage,
@@ -860,7 +864,7 @@ public:
       d_out,
       static_cast<OffsetT>(num_items),
       ::cuda::minimum<>{},
-      ::cuda::std::numeric_limits<InitT>::max(),
+      limits_t::max(),
       stream);
   }
 
@@ -1207,12 +1211,17 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
     // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // The input value type
-    using InputT = cub::detail::it_value_t<InputIteratorT>;
-
-    using InitT = InputT;
+    using OffsetT  = detail::choose_offset_t<NumItemsT>;
+    using InputT   = detail::it_value_t<InputIteratorT>;
+    using InitT    = InputT;
+    using limits_t = ::cuda::std::numeric_limits<InitT>;
+#ifndef CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
+    static_assert(limits_t::is_specialized,
+                  "cub::DeviceReduce::Max uses cuda::std::numeric_limits<InputIteratorT::value_type>::lowest() as "
+                  "initial value, but cuda::std::numeric_limits is not specialized for the iterator's value type. This "
+                  "is probably a bug and you should specialize cuda::std::numeric_limits. Define "
+                  "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
+#endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::maximum<>, InitT>::Dispatch(
       d_temp_storage,
@@ -1221,7 +1230,7 @@ public:
       d_out,
       static_cast<OffsetT>(num_items),
       ::cuda::maximum<>{},
-      ::cuda::std::numeric_limits<InitT>::lowest(),
+      limits_t::lowest(),
       stream);
   }
 
