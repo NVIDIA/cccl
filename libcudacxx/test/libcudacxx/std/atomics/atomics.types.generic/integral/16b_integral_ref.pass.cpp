@@ -90,8 +90,9 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include <cmpxchg_loop.h>
+
+#include "test_macros.h"
 #if !defined(TEST_COMPILER_MSVC)
 #  include "placement_new.h"
 #endif
@@ -164,8 +165,7 @@ __host__ __device__ __noinline__ void test()
 
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
-          template <typename, typename>
-          class Selector>
+          template <typename, typename> class Selector>
 __host__ __device__ void test_for_all_types()
 {
   test<Atomic<__int128_t, Scope>, __int128_t, Selector>();
