@@ -23,6 +23,7 @@
 #include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
@@ -175,8 +176,21 @@ struct DispatchReduceNondeterministic
       return error;
     }
 
-    const int reduce_grid_size =
-      ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_items, reduce_config.tile_size)));
+    // Get SM count
+    int sm_count;
+    error = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+
+    const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
+    // Even-share work distribution
+    int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+    GridEvenShare<OffsetT> even_share;
+    even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
+    // Get grid size for nondeterministic_device_reduce_atomic_kernel
+    const int reduce_grid_size = even_share.grid_size;
 
     error = CubDebug(launcher_factory.MemsetAsync(d_out, 0, kernel_source.InitSize(), stream));
     if (cudaSuccess != error)
@@ -184,7 +198,7 @@ struct DispatchReduceNondeterministic
       return error;
     }
 
-// Log device_reduce_sweep_kernel configuration
+// Log nondeterministic_device_reduce_atomic_kernel configuration
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
             "per thread, %d SM occupancy\n",
@@ -197,7 +211,7 @@ struct DispatchReduceNondeterministic
 
     // Invoke NondeterministicDeviceReduceAtomicKernel
     launcher_factory(reduce_grid_size, active_policy.ReduceNondeterministic().BlockThreads(), 0, stream)
-      .doit(atomic_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
+      .doit(atomic_kernel, d_in, d_out, num_items, even_share, reduction_op, init, transform_op);
 
     // Check for failure to launch
     if (error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
