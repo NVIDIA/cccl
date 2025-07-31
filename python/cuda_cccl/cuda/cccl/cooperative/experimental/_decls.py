@@ -994,7 +994,6 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
                 types.uint32,
                 types.uint64,
             )
-            print(f"histogram.dtype: {histogram.dtype}")
             if histogram.dtype not in valid_atomic_dtypes:
                 raise errors.TypingError(
                     "histogram array type must be a 32-bit or 64-bit integer "
