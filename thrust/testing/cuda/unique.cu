@@ -9,7 +9,7 @@ struct div_n_equality_op
   T div;
   __host__ __device__ bool operator()(const T x, const T& y) const
   {
-    return ( x / div) == ( y / div);
+    return (x / div) == (y / div);
   }
 };
 
@@ -394,9 +394,9 @@ void TestUniqueWithMagnitude(int magnitude)
 
 void TestUniqueWithLargeNumberOfItems()
 {
-  TestUniqueWithMagnitude(30);
-  TestUniqueWithMagnitude(31);
-  TestUniqueWithMagnitude(32);
-  TestUniqueWithMagnitude(33);
+  for (int mag : {30, 31, 32, 33})
+  {
+    TestUniqueWithMagnitude(mag);
+  }
 }
 DECLARE_UNITTEST(TestUniqueWithLargeNumberOfItems);

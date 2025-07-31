@@ -90,120 +90,115 @@ template <cub::SelectImpl SelectionOpt,
           typename OutputIt,
           typename EqualityOpT,
           typename OffsetT>
-struct dispatch_select_unique
+THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
+  execution_policy<Derived>& policy,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIt first,
+  OutputIt& output,
+  EqualityOpT equality_op,
+  OffsetT num_items)
 {
-  static cudaError_t THRUST_RUNTIME_FUNCTION dispatch(
-    execution_policy<Derived>& policy,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIt first,
-    OutputIt& output,
-    EqualityOpT equality_op,
-    OffsetT num_items)
+  using flag_iterator_t       = cub::NullType*; // flag iterator type (not used for unique)
+  using num_selected_out_it_t = OffsetT*; // number of selected output items iterator type
+  using select_op             = cub::NullType; // selection op (not used for unique)
+  using equality_op_t         = EqualityOpT;
+
+  cudaError_t status  = cudaSuccess;
+  cudaStream_t stream = cuda_cub::stream(policy);
+
+  std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
+  void* allocations[2]            = {nullptr, nullptr};
+
+  // The flag iterator is not used for unique, so we set it to nullptr.
+  flag_iterator_t flag_it = static_cast<flag_iterator_t>(nullptr);
+
+  // Query algorithm memory requirements
+  status = cub::DispatchSelectIf<
+    InputIt,
+    flag_iterator_t,
+    OutputIt,
+    num_selected_out_it_t,
+    select_op,
+    equality_op_t,
+    OffsetT,
+    SelectionOpt>::Dispatch(nullptr,
+                            allocation_sizes[0],
+                            first,
+                            flag_it,
+                            output,
+                            static_cast<num_selected_out_it_t>(nullptr),
+                            select_op{},
+                            equality_op,
+                            num_items,
+                            stream);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  // Return if we're only querying temporary storage requirements
+  if (d_temp_storage == nullptr)
   {
-    using flag_iterator_t       = cub::NullType*; // flag iterator type (not used for unique)
-    using num_selected_out_it_t = OffsetT*; // number of selected output items iterator type
-    using select_op             = cub::NullType; // selection op (not used for unique)
-    using equality_op_t         = EqualityOpT;
-
-    cudaError_t status  = cudaSuccess;
-    cudaStream_t stream = cuda_cub::stream(policy);
-
-    std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
-    void* allocations[2]            = {nullptr, nullptr};
-
-    // The flag iterator is not used for unique, so we set it to nullptr.
-    flag_iterator_t flag_it = static_cast<flag_iterator_t>(nullptr);
-
-    // Query algorithm memory requirements
-    status = cub::DispatchSelectIf<
-      InputIt,
-      flag_iterator_t,
-      OutputIt,
-      num_selected_out_it_t,
-      select_op,
-      equality_op_t,
-      OffsetT,
-      SelectionOpt>::Dispatch(nullptr,
-                              allocation_sizes[0],
-                              first,
-                              flag_it,
-                              output,
-                              static_cast<num_selected_out_it_t>(nullptr),
-                              select_op{},
-                              equality_op,
-                              num_items,
-                              stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    // Return if we're only querying temporary storage requirements
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
-
-    // Return for empty problems
-    if (num_items == 0)
-    {
-      return status;
-    }
-
-    // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
-
-    // Run algorithm
-    status = cub::DispatchSelectIf<
-      InputIt,
-      flag_iterator_t,
-      OutputIt,
-      num_selected_out_it_t,
-      select_op,
-      equality_op_t,
-      OffsetT,
-      SelectionOpt>::Dispatch(allocations[0],
-                              allocation_sizes[0],
-                              first,
-                              flag_it,
-                              output,
-                              d_num_selected_out,
-                              select_op{},
-                              equality_op,
-                              num_items,
-                              stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    // Get number of selected items
-    status = cuda_cub::synchronize(policy);
-    _CUDA_CUB_RET_IF_FAIL(status);
-    OffsetT num_selected = get_value(policy, d_num_selected_out);
-    ::cuda::std::advance(output, num_selected);
     return status;
   }
-};
+
+  // Return for empty problems
+  if (num_items == 0)
+  {
+    return status;
+  }
+
+  // Memory allocation for the number of selected output items
+  OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+
+  // Run algorithm
+  status = cub::DispatchSelectIf<
+    InputIt,
+    flag_iterator_t,
+    OutputIt,
+    num_selected_out_it_t,
+    select_op,
+    equality_op_t,
+    OffsetT,
+    SelectionOpt>::Dispatch(allocations[0],
+                            allocation_sizes[0],
+                            first,
+                            flag_it,
+                            output,
+                            d_num_selected_out,
+                            select_op{},
+                            equality_op,
+                            num_items,
+                            stream);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  _CUDA_CUB_RET_IF_FAIL(status);
+  OffsetT num_selected = get_value(policy, d_num_selected_out);
+  ::cuda::std::advance(output, num_selected);
+  return status;
+}
 
 template <cub::SelectImpl SelectionOpt, typename Derived, typename InputIt, typename OutputIt, typename EqualityOpT>
 THRUST_RUNTIME_FUNCTION OutputIt
 select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, EqualityOpT equality_op)
 {
+  // 64-bit offset-type dispatch
+  // Since https://github.com/NVIDIA/cccl/pull/2400, cub::DeviceSelect is using a streaming approach that splits up
+  // inputs larger than INT_MAX into partitions of up to `INT_MAX` items each, repeatedly invoking the respective
+  // algorithm. With that approach, we can always use i64 offset types for DispatchSelectIf, because there's only very
+  // limited performance upside for using i32 offset types. This avoids potentially duplicate kernel compilation.
   using offset_t = ::cuda::std::int64_t;
 
   const auto num_items      = static_cast<offset_t>(::cuda::std::distance(first, last));
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 
-  // 64-bit offset-type dispatch
-  // Since https://github.com/NVIDIA/cccl/pull/2400, cub::DeviceSelect is using a streaming approach that splits up
-  // inputs larger than INT_MAX into partitions of up to `INT_MAX` items each, repeatedly invoking the respective
-  // algorithm. With that approach, we can always use i64 offset types for DispatchSelectIf, because there's only very
-  // limited performance upside for using i32 offset types. This avoids potentially duplicate kernel compilation.
-  using dispatch64_t = dispatch_select_unique<SelectionOpt, Derived, InputIt, OutputIt, EqualityOpT, offset_t>;
-
   // Query temporary storage requirements
-  status = dispatch64_t::dispatch(
-    policy, nullptr, temp_storage_bytes, first, output, equality_op, num_items);
+  status =
+    dispatch_select_unique<SelectionOpt>(policy, nullptr, temp_storage_bytes, first, output, equality_op, num_items);
   cuda_cub::throw_on_error(status, "unique failed on 1st step");
 
   // Allocate temporary storage.
@@ -211,7 +206,7 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
-  status = dispatch64_t::dispatch(
+  status = dispatch_select_unique<SelectionOpt>(
     policy, temp_storage, temp_storage_bytes, first, output, equality_op, num_items);
   cuda_cub::throw_on_error(status, "unique failed on 2nd step");
 
