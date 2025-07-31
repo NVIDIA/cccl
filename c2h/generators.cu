@@ -2,28 +2,18 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_copy.cuh>
-#include <cub/util_type.cuh>
 
-#include <thrust/device_ptr.h>
-#include <thrust/execution_policy.h>
-#include <thrust/find.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
-#include <thrust/scan.h>
 #include <thrust/tabulate.h>
-
-#include <cuda/std/complex>
-#include <cuda/std/cstdint>
-#include <cuda/type_traits>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
-#include <c2h/fill_striped.h>
 #include <c2h/generators.h>
 #include <c2h/half.cuh>
 #include <c2h/vector.h>
@@ -54,23 +44,6 @@ struct i_to_rnd_t
   }
 };
 #endif // !C2H_HAS_CURAND
-
-template <typename T>
-struct random_to_item_t<cuda::std::complex<T>, false>
-{
-  cuda::std::complex<T> m_min;
-  cuda::std::complex<T> m_max;
-
-  __host__ __device__ random_to_item_t(cuda::std::complex<T> min, cuda::std::complex<T> max)
-      : m_min(min)
-      , m_max(max)
-  {}
-
-  __device__ cuda::std::complex<T> operator()(float random_value) const
-  {
-    return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
-  }
-};
 
 void generator_t::generate()
 {
@@ -128,17 +101,6 @@ void gen_custom_type_state(
                    thrust::counting_iterator<std::size_t>{elements},
                    random_to_custom_t{d_in, d_out, element_size});
 }
-
-template <class T>
-struct greater_equal_op
-{
-  T val;
-
-  __device__ bool operator()(T x)
-  {
-    return x >= val;
-  }
-};
 
 template <typename T>
 struct spaced_out_it_op
@@ -273,122 +235,4 @@ template void
 init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, bfloat16_t* out, std::size_t element_size);
 #endif // TEST_BF_T()
 
-template <typename T>
-std::size_t gen_uniform_offsets(
-  seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size)
-{
-  gen_values_between(seed, segment_offsets, min_segment_size, max_segment_size);
-  *thrust::device_ptr<T>(&segment_offsets[total_elements]) = total_elements + 1;
-  thrust::exclusive_scan(device_policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
-  const auto iter =
-    thrust::find_if(device_policy, segment_offsets.begin(), segment_offsets.end(), greater_equal_op<T>{total_elements});
-  *thrust::device_ptr<T>(&*iter) = total_elements;
-  return iter - segment_offsets.begin() + 1;
-}
-
-template std::size_t gen_uniform_offsets(
-  seed_t seed,
-  cuda::std::span<int32_t> segment_offsets,
-  int32_t total_elements,
-  int32_t min_segment_size,
-  int32_t max_segment_size);
-template std::size_t gen_uniform_offsets(
-  seed_t seed,
-  cuda::std::span<uint32_t> segment_offsets,
-  uint32_t total_elements,
-  uint32_t min_segment_size,
-  uint32_t max_segment_size);
-template std::size_t gen_uniform_offsets(
-  seed_t seed,
-  cuda::std::span<int64_t> segment_offsets,
-  int64_t total_elements,
-  int64_t min_segment_size,
-  int64_t max_segment_size);
-template std::size_t gen_uniform_offsets(
-  seed_t seed,
-  cuda::std::span<uint64_t> segment_offsets,
-  uint64_t total_elements,
-  uint64_t min_segment_size,
-  uint64_t max_segment_size);
-
-template <typename T>
-void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
-{
-  const auto* dist = generator.prepare_random_generator(seed, data.size());
-  thrust::transform(device_policy, dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
-}
-
-template <typename T>
-struct counter_to_cyclic_item_t
-{
-  std::size_t n;
-
-  template <typename CounterT>
-  __device__ T operator()(CounterT id)
-  {
-    // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<float>(static_cast<uint64_t>(id) % n));
-  }
-};
-
-template <typename T>
-void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data)
-{
-  thrust::tabulate(device_policy, data.begin(), data.end(), counter_to_cyclic_item_t<T>{mod.get()});
-}
-
-#define INSTANTIATE_RND(TYPE) \
-  template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
-#define INSTANTIATE_MOD(TYPE) template void gen_values_cyclic<TYPE>(modulo_t, ::cuda::std::span<TYPE> data)
-
-#define INSTANTIATE(TYPE) \
-  INSTANTIATE_RND(TYPE);  \
-  INSTANTIATE_MOD(TYPE)
-
-INSTANTIATE(std::uint8_t);
-INSTANTIATE(std::uint16_t);
-INSTANTIATE(std::uint32_t);
-INSTANTIATE(std::uint64_t);
-
-INSTANTIATE(std::int8_t);
-INSTANTIATE(std::int16_t);
-INSTANTIATE(std::int32_t);
-INSTANTIATE(std::int64_t);
-
-#if _CCCL_HAS_NVFP8()
-INSTANTIATE(__nv_fp8_e5m2);
-INSTANTIATE(__nv_fp8_e4m3);
-#endif // _CCCL_HAS_NVFP8()
-INSTANTIATE(float);
-INSTANTIATE(double);
-INSTANTIATE(cuda::std::complex<float>);
-INSTANTIATE(cuda::std::complex<double>);
-
-INSTANTIATE(bool);
-INSTANTIATE(char);
-
-#if TEST_HALF_T()
-INSTANTIATE(half_t);
-INSTANTIATE(__half);
-#  if _CCCL_CUDACC_AT_LEAST(12, 2)
-INSTANTIATE(cuda::std::complex<__half>);
-#  endif
-#endif // TEST_HALF_T()
-
-#if TEST_BF_T()
-INSTANTIATE(bfloat16_t);
-INSTANTIATE(__nv_bfloat16);
-#  if _CCCL_CUDACC_AT_LEAST(12, 2)
-INSTANTIATE(cuda::std::complex<__nv_bfloat16>);
-#  endif
-#endif // TEST_BF_T()
-
-#if TEST_INT128()
-INSTANTIATE(__int128_t);
-INSTANTIATE(__uint128_t);
-#endif // TEST_INT128()
-
-#undef INSTANTIATE_RND
-#undef INSTANTIATE_MOD
-#undef INSTANTIATE
 } // namespace c2h::detail
