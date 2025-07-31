@@ -23,6 +23,7 @@
 
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/cmath>
+#include <cuda/memory>
 #include <cuda/ptx>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
@@ -621,6 +622,119 @@ _CCCL_DEVICE auto round_up_smem_ptr(char* p) -> char*
   return static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32), Alignment));
 }
 
+// We use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and fails
+// for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
+// Furthermore, as required by the C++ language, any extern declaration of a variable with the same name must have the
+// same type and attributes. However, since different template instantiations produce different alignment values for the
+// attribute, we also need to make sure the extern declaration produces a different symbol name. Therefore, we could
+// declare the external shared memory as a variable template. However, nvcc drops attributes on extern __shared__
+// variable templates, see NVBug 5420296.
+//   template <int Alignment>
+//   extern __shared__ char __align__(Alignment) hopefully_aligned_smem[];
+
+// As a workaround, we declare dedicated variables and pick the right one.
+extern __shared__ char smem16[];
+extern __shared__ char __align__(32) smem32[];
+extern __shared__ char __align__(64) smem64[];
+extern __shared__ char __align__(128) smem128[];
+extern __shared__ char __align__(256) smem256[];
+extern __shared__ char __align__(512) smem512[];
+extern __shared__ char __align__(1024) smem1024[];
+extern __shared__ char __align__(2048) smem2048[];
+extern __shared__ char __align__(4096) smem4096[];
+extern __shared__ char __align__(8192) smem8192[];
+// MSVC does not allow alignment larger than 4KiB
+#if !_CCCL_COMPILER(MSVC)
+extern __shared__ char __align__(16384) smem16384[];
+extern __shared__ char __align__(32768) smem32768[];
+#endif // !_CCCL_COMPILER(MSVC)
+// cannot have larger alignment since it would exhause the 48KiB shared memory even for a single item
+
+template <int Alignment, bool EnsureAlignment = true>
+_CCCL_DEVICE auto aligned_smem() -> char*
+{
+  // smem is not guaranteed to be aligned for all nvcc compilation modes:
+  char* smem;
+  if constexpr (Alignment == 16)
+  {
+    smem = smem16;
+  }
+  else if constexpr (Alignment == 32)
+  {
+    smem = smem32;
+  }
+  else if constexpr (Alignment == 64)
+  {
+    smem = smem64;
+  }
+  else if constexpr (Alignment == 128)
+  {
+    smem = smem128;
+  }
+  else if constexpr (Alignment == 256)
+  {
+    smem = smem256;
+  }
+  else if constexpr (Alignment == 512)
+  {
+    smem = smem512;
+  }
+  else if constexpr (Alignment == 1024)
+  {
+    smem = smem1024;
+  }
+  else if constexpr (Alignment == 2048)
+  {
+    smem = smem2048;
+  }
+  else if constexpr (Alignment == 4096)
+  {
+    smem = smem4096;
+  }
+  else if constexpr (Alignment == 8192)
+  {
+    smem = smem8192;
+  }
+#if !_CCCL_COMPILER(MSVC)
+  else if constexpr (Alignment == 16384)
+  {
+    smem = smem16384;
+  }
+  else if constexpr (Alignment == 32768)
+  {
+    smem = smem32768;
+  }
+#endif // !_CCCL_COMPILER(MSVC)
+  else
+  {
+    static_assert(Alignment <= 32768, "Unsupported shared memory alignment");
+    _CCCL_UNREACHABLE();
+  }
+  if constexpr (EnsureAlignment)
+  {
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 2) && (__CUDACC_RDC__ || __CUDACC_DEBUG__)
+    // Manual alignment of the shared memory start address introduces about 7 additional SASS instructions at the start
+    // of the kernel. This does not outweigh the benefit of a faster bulk copy on Hopper, but is needed for correctness
+    // with overaligned types.
+
+    // We could do better if we relied on a few observations:
+    // * static shared memory is aligned to 1KiB
+    // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
+    // Since the transform kernel only stores an 8-byte barrier in static shared memory, the dynamic shared memory
+    // starts 16 bytes after a 1KiB aligned address and we could: `smem += Alignment - 16;` However, CUDA currently does
+    // not guarantee these observations in any official document.
+
+    // So let's just align the pointer:
+    smem = round_up_smem_ptr<Alignment>(smem);
+
+    // keep NVVM from pulling the alignment code deeper into the kernel (worse performance)
+    asm("" : "+l"(smem));
+#endif
+    _CCCL_ASSERT(::cuda::is_aligned(smem, Alignment), "");
+  }
+  return smem;
+}
+
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -638,47 +752,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   __shared__ uint64_t bar;
 
-  // We use an attribute to align the shared memory. This is not respected on all drivers though. The compiler correctly
-  // takes the alignment into account and even emits an alignment specifier into ptx. However, this sometimes randomly
-  // fails at runtime because the shared memory start pointer is not correctly provided by the driver/runtime. See also
-  // NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
-  extern __shared__ char __align__(tile_padding) smem_base_unaligned[];
-
-  // However, any manual alignment of the shared memory start address outweighs the performance benefits of a faster
-  // bulk copy by introducing about 7 additional SASS instructions at the start of the kernel. This also has to be done
-  // carefully using a fake read on the address to prevent NVVM to pull the aligning deeper into the kernel.
-  //   extern __shared__ char smem_base[];
-  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base);
-  //   smem32 = cuda::round_up(smem32, bulk_copy_alignment);
-  //   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
-  //                                                                bulk_copy_alignment));
-
-  // What gets closest to a working attribute is to rely on the following observations:
-  // * static shared memory is aligned to 1KiB
-  // * dynamic shared memory is aligned to 16 bytes and comes right after static shared memory
-  // In this case we could:
-  //   extern __shared__ char smem_base[];
-  //   uint32_t smem32 = __cvta_generic_to_shared(smem_base) + bulk_copy_alignment - 16;
-  //   asm("" : "+r"(smem32));
-  //   char* smem = static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32),
-  //                                                                bulk_copy_alignment));
-  // However, CUDA currently does not provide this guarantee.
-
-  // We cannot assert that shared memory is sufficiently aligned, since it fails on some systems (e.g. with driver
-  // 565.57.01 on RTX 2080 when cub::DeviceTransform is called from another kernel via CDP. See
-  // thrust.cpp.cuda.cpp20.test.cuda.transform.cdp_1). This will lead to slightly reduced performance of bulk copy, but
-  // correctness is maintained.
-  //_CCCL_ASSERT(::cuda::is_aligned(smem, bulk_copy_alignment), "");
-
-  char* smem_base = smem_base_unaligned;
-  // Since alignment via the attribute may not work, we have to align explicitly if it's larger than the default dynamic
-  // shared memory alignment (16). This is not needed when the tile size does not retain the alignment, since we align
-  // each tile separately later
-  if constexpr (tile_sizes_retain_max_alignment && max_alignment > 16)
-  {
-    smem_base = round_up_smem_ptr<tile_padding>(smem_base);
-    asm("" : "+l"(smem_base)); // keep the compiler from pulling the alignment deeper into the kernel
-  }
+  // if any type requires an alignment > 16, we need to ensure SMEM alignment. Otherwise, just try our best and eat the
+  // TMA copy perf regression otherwise.
+  constexpr bool need_alignment_for_correctness = max_alignment > 16;
+  char* smem_base                               = aligned_smem<tile_padding, need_alignment_for_correctness>();
 
   namespace ptx = ::cuda::ptx;
 

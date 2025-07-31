@@ -259,6 +259,16 @@ struct dispatch_t<StableAddress,
         {
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
         }
+        if (max_occupancy == 0)
+        {
+          printf("items_per_thread: %d, block_threads: %d, smem_size: %d (max: %d) -> max_occupancy %d\n",
+                 items_per_thread,
+                 block_threads,
+                 smem_size,
+                 max_smem,
+                 max_occupancy);
+          _CCCL_ASSERT(max_occupancy > 0, "");
+        }
 
         const auto config = async_config{items_per_thread, max_occupancy, sm_count};
 
