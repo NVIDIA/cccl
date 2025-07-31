@@ -604,7 +604,7 @@ public:
 
   // Comparison operator
   template <class _OtherIndexType, size_t... _OtherExtents>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
   {
     if constexpr (rank() != sizeof...(_OtherExtents))
