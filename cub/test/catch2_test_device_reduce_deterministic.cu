@@ -300,17 +300,8 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
 
   type min_value{}, max_value{};
 
-  // for nvbfloat16_t with CTK 12.0 needs float type value in constructor
-  if constexpr (cuda::std::is_same_v<type, __nv_bfloat16> || cuda::std::is_same_v<type, bfloat16_t>)
-  {
-    min_value = type{-50.0f};
-    max_value = type{50.0f};
-  }
-  else
-  {
-    min_value = static_cast<type>(-50);
-    max_value = static_cast<type>(50);
-  }
+  min_value = static_cast<type>(-50);
+  max_value = static_cast<type>(50);
 
   c2h::device_vector<type> d_input(num_items);
   c2h::gen(C2H_SEED(2), d_input, min_value, max_value);
@@ -359,7 +350,7 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
 
     c2h::host_vector<type> h_input = d_input;
     c2h::host_vector<type> h_expected(1);
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<>{});
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<type>{});
 
     c2h::host_vector<type> h_output = d_output;
     REQUIRE(h_expected == h_output);
@@ -371,8 +362,7 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
 
     init_t init_value{};
 
-    cub::DeviceReduce::Reduce(
-      d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
+    cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
 
     c2h::host_vector<type> h_input = d_input;
     c2h::host_vector<type> h_expected(1);
