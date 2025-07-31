@@ -1,5 +1,6 @@
 #include "test_utils.h"
 #include <iostream>
+#include <cstdlib>  // For malloc and free
 
 // Try to include CUDA headers, but handle the case where they're not available
 #ifdef __has_include
