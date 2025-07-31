@@ -6,11 +6,22 @@
 #include <unittest/unittest.h>
 
 template <typename T>
-struct is_equal_div_10_unique
+struct div_n_equality_op
 {
-  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
+  T div;
+  __host__ __device__ bool operator()(const T x, const T& y) const
   {
-    return ((int) x / 10) == ((int) y / 10);
+    return (x / div) == (y / div);
+  }
+};
+
+template <typename T>
+struct multiply_n
+{
+  T multiplier;
+  __host__ __device__ T operator()(T x)
+  {
+    return x * multiplier;
   }
 };
 
@@ -71,7 +82,7 @@ void TestUniqueDevice(ExecutionPolicy exec)
   Vector ref{11, 12, 20, 29, 21, 31, 37}; // should we consider calculating ref from std::algorithm if exists?
   ASSERT_EQUAL(data, ref);
 
-  unique_kernel<<<1, 1>>>(exec, data.begin(), new_last, is_equal_div_10_unique<T>(), new_last_vec.begin());
+  unique_kernel<<<1, 1>>>(exec, data.begin(), new_last, div_n_equality_op<T>{10}, new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -128,7 +139,7 @@ void TestUniqueCudaStreams(ExecutionPolicy policy)
   Vector ref{11, 12, 20, 29, 21, 31, 37};
   ASSERT_EQUAL(data, ref);
 
-  new_last = thrust::unique(streampolicy, data.begin(), new_last, is_equal_div_10_unique<T>());
+  new_last = thrust::unique(streampolicy, data.begin(), new_last, div_n_equality_op<T>{10});
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(new_last - data.begin(), 3);
@@ -193,7 +204,7 @@ void TestUniqueCopyDevice(ExecutionPolicy exec)
   ASSERT_EQUAL(output, ref);
 
   unique_copy_kernel<<<1, 1>>>(
-    exec, output.begin(), new_last, data.begin(), is_equal_div_10_unique<T>(), new_last_vec.begin());
+    exec, output.begin(), new_last, data.begin(), div_n_equality_op<T>{10}, new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -252,7 +263,7 @@ void TestUniqueCopyCudaStreams(ExecutionPolicy policy)
   Vector ref{11, 12, 20, 29, 21, 31, 37};
   ASSERT_EQUAL(output, ref);
 
-  new_last = thrust::unique_copy(streampolicy, output.begin(), new_last, data.begin(), is_equal_div_10_unique<T>());
+  new_last = thrust::unique_copy(streampolicy, output.begin(), new_last, data.begin(), div_n_equality_op<T>{10});
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(new_last - data.begin(), 3);
@@ -307,7 +318,7 @@ void TestUniqueCountDevice(ExecutionPolicy exec)
 
   ASSERT_EQUAL(output[0], 7);
 
-  unique_count_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_equal_div_10_unique<T>(), output.begin());
+  unique_count_kernel<<<1, 1>>>(exec, data.begin(), data.end(), div_n_equality_op<T>{10}, output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -353,7 +364,7 @@ void TestUniqueCountCudaStreams(ExecutionPolicy policy)
 
   ASSERT_EQUAL(result, 7);
 
-  result = thrust::unique_count(streampolicy, data.begin(), data.end(), is_equal_div_10_unique<T>());
+  result = thrust::unique_count(streampolicy, data.begin(), data.end(), div_n_equality_op<T>{10});
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(result, 3);
