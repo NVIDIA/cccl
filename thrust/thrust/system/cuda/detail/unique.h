@@ -101,9 +101,9 @@ struct dispatch_select_unique
     EqualityOpT equality_op,
     OffsetT num_items)
   {
-    using flag_iterator_t       = cub::NullType*; // flag iterator type (not used)
+    using flag_iterator_t       = cub::NullType*; // flag iterator type (not used for unique)
     using num_selected_out_it_t = OffsetT*; // number of selected output items iterator type
-    using select_op             = cub::NullType; // selection op (not used)
+    using select_op             = cub::NullType; // selection op (not used for unique)
     using equality_op_t         = EqualityOpT;
 
     cudaError_t status  = cudaSuccess;
@@ -203,7 +203,7 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
 
   // Query temporary storage requirements
   status = dispatch64_t::dispatch(
-    policy, nullptr, temp_storage_bytes, first, output, equality_op, static_cast<std::int64_t>(num_items));
+    policy, nullptr, temp_storage_bytes, first, output, equality_op, num_items);
   cuda_cub::throw_on_error(status, "unique failed on 1st step");
 
   // Allocate temporary storage.
@@ -212,7 +212,7 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
 
   // Run algorithm
   status = dispatch64_t::dispatch(
-    policy, temp_storage, temp_storage_bytes, first, output, equality_op, static_cast<std::int64_t>(num_items));
+    policy, temp_storage, temp_storage_bytes, first, output, equality_op, num_items);
   cuda_cub::throw_on_error(status, "unique failed on 2nd step");
 
   return output;
