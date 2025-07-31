@@ -560,7 +560,11 @@ inline constexpr bool is_simd_enabled_cuda_operator =
   is_cuda_std_bitwise_v<Op, T>;
 
 template <typename Op, typename T = void>
-inline constexpr bool is_cuda_binary_operator = is_simd_enabled_cuda_operator<Op, T> || is_cuda_std_logical_v<Op, T>;
+inline constexpr bool is_cuda_binary_operator =
+  is_cuda_minimum_maximum_v<Op, T> || //
+  is_cuda_std_plus_mul_v<Op, T> || //
+  is_cuda_std_bitwise_v<Op, T> || //
+  is_cuda_std_logical_v<Op, T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // Generalize Operator
