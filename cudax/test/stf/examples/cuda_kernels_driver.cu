@@ -87,6 +87,19 @@ int main()
   num_axpy++;
 #endif
 
+  /* Some extra sanity checks, we put this in a dummy task to get access to dX and dY values */
+  ctx.task(lX.read(), lY.rw())->*[&](auto, auto dX, auto dY) {
+    int nregs = cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+
+    int nregs_fun = cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    _CCCL_ASSERT(nregs == nregs_fun, "invalid value");
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+    int nregs_kernel = cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    _CCCL_ASSERT(nregs == nregs_kernel, "invalid value");
+#endif
+  };
+
   ctx.finalize();
 
   for (size_t i = 0; i < N; i++)

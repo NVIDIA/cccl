@@ -215,13 +215,17 @@ struct cuda_kernel_desc
       return func_attr.numRegs;
     }
 
-    auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
-    if (!ker_ptr)
+    auto* fun_ptr = ::std::get_if<CUfunction>(&func_variant);
+    if (fun_ptr)
     {
-      // If this is a CUkernel, the cast to a CUfunction is sufficient
-      ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
+      return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, *fun_ptr);
     }
-    return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, *ker_ptr);
+
+    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    _CCCL_ASSERT(ker_ptr, "invalid kernel");
+
+    auto current_dev = cuda_try<cuCtxGetDevice>();
+    return cuda_try<cuKernelGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, *ker_ptr, current_dev);
   }
 
 private:
