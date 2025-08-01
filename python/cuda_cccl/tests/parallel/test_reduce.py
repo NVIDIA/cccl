@@ -10,8 +10,7 @@ import numba.types
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
+import cuda.cccl.parallel.experimental as parallel
 
 
 def random_int(shape, dtype):
@@ -52,13 +51,10 @@ def test_device_reduce(dtype, num_items):
     init_value = 42
     h_init = np.array([init_value], dtype=dtype)
     d_output = numba.cuda.device_array(1, dtype=dtype)
-    reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
     h_input = random_int(num_items, dtype)
     d_input = numba.cuda.to_device(h_input)
-    temp_storage_size = reduce_into(None, d_input, d_output, d_input.size, h_init)
-    d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
-    reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
+    parallel.reduce_into(d_input, d_output, op, d_input.size, h_init)
     h_output = d_output.copy_to_host()
     assert h_output[0] == sum(h_input) + init_value
 
@@ -69,16 +65,13 @@ def test_complex_device_reduce():
 
     h_init = np.array([40.0 + 2.0j], dtype=complex)
     d_output = numba.cuda.device_array(1, dtype=complex)
-    reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
     for num_items in [42, 420000]:
         real_imag = np.random.random((2, num_items))
         h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
         assert d_input.size == num_items
-        temp_storage_bytes = reduce_into(None, d_input, d_output, num_items, h_init)
-        d_temp_storage = numba.cuda.device_array(temp_storage_bytes, np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, num_items, h_init)
+        parallel.reduce_into(d_input, d_output, op, num_items, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
@@ -105,16 +98,7 @@ def _test_device_sum_with_iterator(
 
     h_init = np.array([start_sum_with], dtype_out)
 
-    reduce_into = algorithms.reduce_into(
-        d_in=d_input, d_out=d_output, op=add_op, h_init=h_init
-    )
-
-    temp_storage_size = reduce_into(
-        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), h_init=h_init
-    )
-    d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
-
-    reduce_into(d_temp_storage, d_input, d_output, len(l_varr), h_init)
+    parallel.reduce_into(d_input, d_output, add_op, len(l_varr), h_init)
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
@@ -158,7 +142,7 @@ def test_device_sum_cache_modified_input_it(
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
     input_devarr = numba.cuda.to_device(np.array(l_varr, dtype=dtype_inp))
-    i_input = iterators.CacheModifiedInputIterator(input_devarr, modifier="stream")
+    i_input = parallel.CacheModifiedInputIterator(input_devarr, modifier="stream")
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -170,7 +154,7 @@ def test_device_sum_constant_it(
     l_varr = [42 for distance in range(num_items)]
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
-    i_input = iterators.ConstantIterator(dtype_inp.type(42))
+    i_input = parallel.ConstantIterator(dtype_inp.type(42))
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -182,7 +166,7 @@ def test_device_sum_counting_it(
     l_varr = [start_sum_with + distance for distance in range(num_items)]
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
-    i_input = iterators.CountingIterator(dtype_inp.type(start_sum_with))
+    i_input = parallel.CountingIterator(dtype_inp.type(start_sum_with))
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -206,8 +190,8 @@ def test_device_sum_map_mul2_count_it(
     vtn_out, vtn_inp = value_type_name_pair
     dtype_inp = np.dtype(vtn_inp)
     dtype_out = np.dtype(vtn_out)
-    i_input = iterators.TransformIterator(
-        iterators.CountingIterator(dtype_inp.type(start_sum_with)), mul2
+    i_input = parallel.TransformIterator(
+        parallel.CountingIterator(dtype_inp.type(start_sum_with)), mul2
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
@@ -238,9 +222,9 @@ def test_device_sum_map_mul_map_mul_count_it(
     dtype_inp = np.dtype(vtn_inp)
     dtype_out = np.dtype(vtn_out)
     mul_funcs = {2: mul2, 3: mul3}
-    i_input = iterators.TransformIterator(
-        iterators.TransformIterator(
-            iterators.CountingIterator(dtype_inp.type(start_sum_with)),
+    i_input = parallel.TransformIterator(
+        parallel.TransformIterator(
+            parallel.CountingIterator(dtype_inp.type(start_sum_with)),
             mul_funcs[fac_mid],
         ),
         mul_funcs[fac_out],
@@ -267,7 +251,7 @@ def test_device_sum_map_mul2_cp_array_it(
     rng = random.Random(0)
     l_d_in = [rng.randrange(100) for _ in range(num_items)]
     a_d_in = cp.array(l_d_in, dtype_inp)
-    i_input = iterators.TransformIterator(a_d_in, mul2)
+    i_input = parallel.TransformIterator(a_d_in, mul2)
     l_varr = [mul2(v) for v in l_d_in]
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
@@ -279,13 +263,13 @@ def test_reducer_caching():
         return x + y
 
     # inputs are device arrays
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -294,13 +278,13 @@ def test_reducer_caching():
     assert reducer_1 is reducer_2
 
     # inputs are device arrays of different dtype:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int32"),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -309,13 +293,13 @@ def test_reducer_caching():
     assert reducer_1 is not reducer_2
 
     # outputs are of different dtype:
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int32"),
         sum_op,
@@ -325,13 +309,13 @@ def test_reducer_caching():
 
     # inputs are of same dtype but different size
     # (should still use cached reducer):
-    reducer_1 = algorithms.reduce_into(
+    reducer_1 = parallel.make_reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
+    reducer_2 = parallel.make_reduce_into(
         cp.zeros(5, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
@@ -341,14 +325,14 @@ def test_reducer_caching():
 
     # inputs are counting iterators of the
     # same value type:
-    reducer_1 = algorithms.reduce_into(
-        iterators.CountingIterator(np.int32(0)),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.CountingIterator(np.int32(0)),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -356,14 +340,14 @@ def test_reducer_caching():
     assert reducer_1 is reducer_2
 
     # inputs are counting iterators of different value type:
-    reducer_1 = algorithms.reduce_into(
-        iterators.CountingIterator(np.int32(0)),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.CountingIterator(np.int64(0)),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.CountingIterator(np.int64(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -380,14 +364,14 @@ def test_reducer_caching():
         return x
 
     # inputs are TransformIterators
-    reducer_1 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -396,14 +380,14 @@ def test_reducer_caching():
 
     # inputs are TransformIterators with different
     # op:
-    reducer_1 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op2),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op2),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -412,14 +396,14 @@ def test_reducer_caching():
 
     # inputs are TransformIterators with same op
     # but different name:
-    reducer_1 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op3),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op3),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -427,14 +411,14 @@ def test_reducer_caching():
 
     # inputs are CountingIterators of same kind
     # but different state:
-    reducer_1 = algorithms.reduce_into(
-        iterators.CountingIterator(np.int32(0)),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.CountingIterator(np.int32(1)),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.CountingIterator(np.int32(1)),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -446,14 +430,14 @@ def test_reducer_caching():
     # but different state:
     ary1 = cp.asarray([0, 1, 2], dtype="int64")
     ary2 = cp.asarray([0, 1], dtype="int64")
-    reducer_1 = algorithms.reduce_into(
-        iterators.TransformIterator(ary1, op1),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.TransformIterator(ary1, op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.TransformIterator(ary2, op1),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.TransformIterator(ary2, op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -462,14 +446,14 @@ def test_reducer_caching():
 
     # inputs are TransformIterators of same kind
     # but different state:
-    reducer_1 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(1)), op1),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(1)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -477,14 +461,14 @@ def test_reducer_caching():
     assert reducer_1 is reducer_2
 
     # inputs are TransformIterators with different kind:
-    reducer_1 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+    reducer_1 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
-    reducer_2 = algorithms.reduce_into(
-        iterators.TransformIterator(iterators.CountingIterator(np.int64(0)), op1),
+    reducer_2 = parallel.make_reduce_into(
+        parallel.TransformIterator(parallel.CountingIterator(np.int64(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -512,14 +496,7 @@ def test_reduce_2d_array(array_2d):
     d_out = cp.empty(1, dtype=array_2d.dtype)
     h_init = np.asarray([0], dtype=array_2d.dtype)
     d_in = array_2d
-    reduce_into = algorithms.reduce_into(
-        d_in=d_in, d_out=d_out, op=binary_op, h_init=h_init
-    )
-    temp_storage_size = reduce_into(
-        None, d_in=d_in, d_out=d_out, num_items=d_in.size, h_init=h_init
-    )
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init)
+    parallel.reduce_into(d_in, d_out, binary_op, d_in.size, h_init)
     np.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
 
@@ -533,11 +510,11 @@ def test_reduce_non_contiguous():
 
     d_in = cp.zeros((size, 2))[:, 0]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
-        _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+        _ = parallel.make_reduce_into(d_in, d_out, binary_op, h_init)
 
     d_in = cp.zeros(size)[::2]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
-        _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+        _ = parallel.make_reduce_into(d_in, d_out, binary_op, h_init)
 
 
 def test_reduce_with_stream(cuda_stream):
@@ -552,21 +529,7 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    reduce_into = algorithms.reduce_into(
-        d_in=d_in, d_out=d_out, op=add_op, h_init=h_init
-    )
-    temp_storage_size = reduce_into(
-        None,
-        d_in=d_in,
-        d_out=d_out,
-        num_items=d_in.size,
-        h_init=h_init,
-        stream=cuda_stream,
-    )
-    with cp_stream:
-        d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=cuda_stream)
+    parallel.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=cuda_stream)
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -599,7 +562,7 @@ def test_reduce_invalid_stream():
     d_out = cp.empty(1)
     h_init = np.empty(1)
     d_in = cp.empty(1)
-    reduce_into = algorithms.reduce_into(d_in, d_out, add_op, h_init)
+    reduce_into = parallel.make_reduce_into(d_in, d_out, add_op, h_init)
 
     with pytest.raises(
         TypeError, match="does not implement the '__cuda_stream__' protocol"

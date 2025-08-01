@@ -23,6 +23,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/to_underlying.h>
 
 #  include <nv/target>
@@ -48,7 +49,7 @@ enum class address_space
   return __v >= 0 && __v < _CUDA_VSTD::to_underlying(address_space::__max);
 }
 
-[[nodiscard]] _CCCL_DEVICE_API bool is_address_from(address_space __space, const void* __ptr)
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space)
 {
   _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
   _CCCL_ASSERT(_CUDA_DEVICE::__cccl_is_valid_address_space(__space), "invalid address space");
@@ -74,6 +75,12 @@ enum class address_space
     default:
       return false;
   }
+}
+
+template <typename T>
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_object_from(T& __obj, address_space __space)
+{
+  return _CUDA_DEVICE::is_address_from(_CUDA_VSTD::addressof(__obj), __space);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
