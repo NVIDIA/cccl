@@ -116,7 +116,7 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
   }
 
   _CCCL_PUBLIC_HOST_API void
- 
+
   deallocate_sync(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return ::cuda::__virtcall<&__ibasic_resource::deallocate_sync>(this, __pv, __bytes, __alignment);
@@ -140,8 +140,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
       this, __stream, __bytes, alignof(_CUDA_VSTD::max_align_t));
   }
 
-  _CCCL_PUBLIC_HOST_API void
-  deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes, size_t __alignment)
+  _CCCL_PUBLIC_HOST_API void deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes, size_t __alignment)
   {
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(this, __stream, __pv, __bytes, __alignment);
   }
