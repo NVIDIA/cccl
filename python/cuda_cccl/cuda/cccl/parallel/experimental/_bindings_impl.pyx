@@ -2156,3 +2156,147 @@ cdef class DeviceBinaryTransform:
 
     def _get_cubin(self):
         return self.build_data.cubin[:self.build_data.cubin_size]
+
+
+# -----------------
+#   DeviceHistogram
+# -----------------
+cdef extern from "cccl/c/histogram.h":
+    cdef struct cccl_device_histogram_build_result_t 'cccl_device_histogram_build_result_t':
+        const char* cubin
+        size_t cubin_size
+
+    cdef CUresult cccl_device_histogram_build(
+        cccl_device_histogram_build_result_t *build_ptr,
+        int num_channels,
+        int num_active_channels,
+        cccl_iterator_t d_samples,
+        int num_output_levels_val,
+        cccl_iterator_t d_output_histograms,
+        cccl_value_t h_levels,
+        int64_t num_rows,
+        int64_t row_stride_samples,
+        bint is_evenly_segmented,
+        int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    cdef CUresult cccl_device_histogram_even(
+        cccl_device_histogram_build_result_t build,
+        void *d_storage_ptr,
+        size_t *d_storage_nbytes,
+        cccl_iterator_t d_samples,
+        cccl_iterator_t d_output_histograms,
+        cccl_value_t num_output_levels,
+        cccl_value_t lower_level,
+        cccl_value_t upper_level,
+        int64_t num_row_pixels,
+        int64_t num_rows,
+        int64_t row_stride_samples,
+        CUstream stream
+    ) nogil
+
+    cdef CUresult cccl_device_histogram_cleanup(
+        cccl_device_histogram_build_result_t *build_ptr,
+    ) nogil
+
+
+cdef class DeviceHistogramBuildResult:
+    cdef cccl_device_histogram_build_result_t build_data
+
+    def __dealloc__(DeviceHistogramBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_histogram_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during histogram result cleanup")
+
+
+    def __cinit__(
+        DeviceHistogramBuildResult self,
+        int num_channels,
+        int num_active_channels,
+        Iterator d_samples,
+        int num_levels,
+        Iterator d_histogram,
+        Value h_levels,
+        int num_rows,
+        int row_stride_samples,
+        bint is_evenly_segmented,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
+        with nogil:
+            status = cccl_device_histogram_build(
+                &self.build_data,
+                num_channels,
+                num_active_channels,
+                d_samples.iter_data,
+                num_levels,
+                d_histogram.iter_data,
+                h_levels.value_data,
+                num_rows,
+                row_stride_samples,
+                is_evenly_segmented,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed building histogram, error code: {status}"
+            )
+
+    cpdef int compute_even(
+        DeviceHistogramBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_samples,
+        Iterator d_histogram,
+        Value h_num_output_levels,
+        Value h_lower_level,
+        Value h_upper_level,
+        int num_row_pixels,
+        int num_rows,
+        int row_stride_samples,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_histogram_even(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_samples.iter_data,
+                d_histogram.iter_data,
+                h_num_output_levels.value_data,
+                h_lower_level.value_data,
+                h_upper_level.value_data,
+                num_row_pixels,
+                num_rows,
+                row_stride_samples,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing histogram, error code: {status}"
+            )
+        return storage_sz
+
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
