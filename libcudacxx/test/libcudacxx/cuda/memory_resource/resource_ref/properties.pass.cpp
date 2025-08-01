@@ -121,11 +121,15 @@ void test_property_forwarding()
   using ref = cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>>;
 
   static_assert(
-    cuda::mr::resource_with<res, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>, "");
+    cuda::mr::
+      synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>,
+    "");
   static_assert(
-    !cuda::mr::resource_with<ref, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>, "");
+    !cuda::mr::
+      synchronous_resource_with<ref, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>,
+    "");
 
-  static_assert(cuda::mr::resource_with<res, cuda::mr::host_accessible, property_with_value<short>>, "");
+  static_assert(cuda::mr::synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>>, "");
 }
 
 void test_resource_ref()

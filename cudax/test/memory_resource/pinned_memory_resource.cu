@@ -66,52 +66,52 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
   pinned_resource res{};
   cudax::stream stream{cuda::device_ref{0}};
 
-  { // allocate / deallocate
-    auto* ptr = res.allocate(42);
+  { // allocate_sync / deallocate_sync
+    auto* ptr = res.allocate_sync(42);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_pinned_ptr(ptr);
 
-    res.deallocate(ptr, 42);
+    res.deallocate_sync(ptr, 42);
   }
 
-  { // allocate / deallocate with alignment
-    auto* ptr = res.allocate(42, 4);
+  { // allocate_sync / deallocate_sync with alignment
+    auto* ptr = res.allocate_sync(42, 4);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_pinned_ptr(ptr);
 
-    res.deallocate(ptr, 42, 4);
+    res.deallocate_sync(ptr, 42, 4);
   }
 
-  if constexpr (cuda::mr::async_resource<pinned_resource>)
+  if constexpr (cuda::mr::resource<pinned_resource>)
   {
-    { // allocate_async / deallocate_async
-      auto* ptr = res.allocate_async(42, stream);
+    { // allocate / deallocate
+      auto* ptr = res.allocate(stream, 42);
       static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
       stream.sync();
       ensure_pinned_ptr(ptr);
 
-      res.deallocate_async(ptr, 42, stream);
+      res.deallocate(stream, ptr, 42);
     }
 
-    { // allocate_async / deallocate_async with alignment
-      auto* ptr = res.allocate_async(42, 4, stream);
+    { // allocate / deallocate with alignment
+      auto* ptr = res.allocate(stream, 42, 4);
       static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
       stream.sync();
       ensure_pinned_ptr(ptr);
 
-      res.deallocate_async(ptr, 42, 4, stream);
+      res.deallocate(stream, ptr, 42, 4);
     }
   }
 
 #if _CCCL_HAS_EXCEPTIONS()
-  { // allocate with too small alignment
+  { // allocate_sync with too small alignment
     while (true)
     {
       try
       {
-        [[maybe_unused]] auto* ptr = res.allocate(5, 42);
+        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -121,12 +121,12 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
     }
   }
 
-  { // allocate with non matching alignment
+  { // allocate_sync with non matching alignment
     while (true)
     {
       try
       {
-        [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
+        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -136,14 +136,14 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
     }
   }
 
-  if constexpr (cuda::mr::async_resource<pinned_resource>)
+  if constexpr (cuda::mr::resource<pinned_resource>)
   {
-    { // allocate_async with too small alignment
+    { // allocate with too small alignment
       while (true)
       {
         try
         {
-          [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, stream);
+          [[maybe_unused]] auto* ptr = res.allocate(stream, 5, 42);
         }
         catch (std::invalid_argument&)
         {
@@ -153,12 +153,12 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
       }
     }
 
-    { // allocate_async with non matching alignment
+    { // allocate with non matching alignment
       while (true)
       {
         try
         {
-          auto* ptr = res.allocate_async(5, 1337, stream);
+          auto* ptr = res.allocate(stream, 5, 1337);
           (void) ptr;
         }
         catch (std::invalid_argument&)
@@ -181,11 +181,11 @@ enum class AccessibilityType
 template <AccessibilityType Accessibility>
 struct resource
 {
-  void* allocate(size_t, size_t)
+  void* allocate_sync(size_t, size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
 
   bool operator==(const resource&) const
   {
@@ -196,27 +196,27 @@ struct resource
     return false;
   }
 };
-static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
+static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
 
 template <AccessibilityType Accessibility>
-struct async_resource : public resource<Accessibility>
+struct test_resource : public resource<Accessibility>
 {
-  void* allocate_async(size_t, size_t, cuda::stream_ref)
+  void* allocate(cuda::stream_ref, size_t, size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, size_t, size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
 };
-static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
+static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
 struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
 {
   using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
-static_assert(cuda::mr::resource<derived_pinned_resource>, "");
+static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>, "");
 
 C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
@@ -238,7 +238,7 @@ C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYP
     CHECK(!(second_ref != first));
   }
 
-  if constexpr (cuda::mr::async_resource<pinned_resource>)
+  if constexpr (cuda::mr::resource<pinned_resource>)
   { // comparison against a pinned_memory_resource wrapped inside a async_resource_ref
     pinned_resource second{};
     cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
@@ -279,7 +279,7 @@ C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYP
 }
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-C2H_TEST("pinned_memory_resource async deallocate", "[memory_resource]")
+C2H_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
   cudax::pinned_memory_resource resource{};
   test_deallocate_async(resource);
