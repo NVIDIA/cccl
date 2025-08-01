@@ -45,7 +45,6 @@
 #include <cub/block/specializations/block_reduce_raking.cuh>
 #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
-#include <cub/block/specializations/block_reduce_warp_reductions_nondeterministic.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -282,7 +281,7 @@ private:
 
   using WarpReductions = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using WarpReductionsNondeterministic =
-    detail::BlockReduceWarpReductionsNondeterministic<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+    detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, false>;
   using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using Raking                = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
