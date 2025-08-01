@@ -993,7 +993,265 @@ public:
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_prefix_callback_op);
   }
 
-  //! @} end member group // Inclusive prefix sums
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an exclusive prefix max scan of 3 of 128 integer items that
+  //! are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain input item for each thread
+  //!        int thread_data;
+  //!        ...
+  //!        int valid_items = 3;
+  //!
+  //!        // Collectively compute the block-wide exclusive prefix max scan
+  //!        BlockScan(temp_storage).ExclusiveScanPartialTile(
+  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
+  //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, -3, ..., 126, -127``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   @rst
+  //!   Initial value to seed the exclusive scan (and is assigned to `output[0]` in *thread*\ :sub:`0`)
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T input, T& output, T initial_value, ScanOp scan_op, int valid_items)
+  {
+    InternalBlockScan(temp_storage).ExclusiveScanPartialTile(input, output, initial_value, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation. Also provides every thread with the block-wide ``block_aggregate`` of all valid inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an exclusive prefix max scan of 3 of 128 integer items that
+  //! are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain input item for each thread
+  //!        int thread_data;
+  //!        ...
+  //!        int valid_items = 3;
+  //!
+  //!        // Collectively compute the block-wide exclusive prefix max scan
+  //!        int block_aggregate;
+  //!        BlockScan(temp_storage).ExclusiveScanPartialTile(
+  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, valid_items, block_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
+  //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, -3, ..., 126, -127``.
+  //! Furthermore the value ``2`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! .. note::
+  //!
+  //!    ``initial_value`` is not applied to the block-wide aggregate.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member ``T operator()(const T &a, const T &b)``
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to ``input``)
+  //!
+  //! @param[in] initial_value
+  //!   @rst
+  //!   Initial value to seed the exclusive scan (and is assigned to ``output[0]`` in *thread*\ :sub:`0`). It is not
+  //!   taken into account for ``block_aggregate``.
+  //!
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   block-wide aggregate reduction of input items
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T input, T& output, T initial_value, ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    InternalBlockScan(temp_storage)
+      .ExclusiveScanPartialTile(input, output, initial_value, scan_op, valid_items, block_aggregate);
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation. The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block, and the
+  //! value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread
+  //! block's scan inputs.
+  //!
+  //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
+  //!   The functor will be invoked by the first warp of threads in the block, however only the return value from
+  //!   *lane*\ :sub:`0` is applied as the block-wide prefix. Can be stateful.
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a single thread block that progressively
+  //! computes an exclusive prefix max scan over multiple "tiles" of input using a
+  //! prefix functor to maintain a running total between block-wide scans.
+  //! Each tile consists of 128 integer items that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    // A stateful callback functor that maintains a running prefix to be applied
+  //!    // during consecutive scan operations.
+  //!    struct BlockPrefixCallbackOp
+  //!    {
+  //!        // Running prefix
+  //!        int running_total;
+  //!
+  //!        // Constructor
+  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+  //!
+  //!        // Callback operator to be entered by the first warp of threads in the block.
+  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!        __device__ int operator()(int block_aggregate)
+  //!        {
+  //!            int old_prefix = running_total;
+  //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+  //!            return old_prefix;
+  //!        }
+  //!    };
+  //!
+  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Initialize running total
+  //!        BlockPrefixCallbackOp prefix_op(INT_MIN);
+  //!
+  //!        // Have the block iterate over segments of items
+  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  //!        {
+  //!            int valid_items = num_items - block_offset;
+  //!            int item_idx = block_offset + threadIdx.x;
+  //!
+  //!            // Load a segment of consecutive items
+  //!            int thread_data = item_idx < num_items ? d_data[item_idx] : 0;
+  //!
+  //!            // Collectively compute the block-wide exclusive prefix max scan
+  //!            BlockScan(temp_storage).ExclusiveScanPartialTile(
+  //!                thread_data, thread_data, cuda::maximum<>{}, valid_items, prefix_op);
+  //!            __syncthreads();
+  //!
+  //!            // Store scanned items to output segment
+  //!            if (item_idx < num_items) d_data[item_idx] = thread_data;
+  //!        }
+  //!
+  //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ..., -249, 250``.
+  //! The corresponding output for the first segment will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
+  //! The output for the second segment will be ``126, 128, 128, 130, ..., 248, 248``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam BlockPrefixCallbackOp
+  //!   **[inferred]** Call-back functor type having member `T operator()(T block_aggregate)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[in,out] block_prefix_callback_op
+  //!   @rst
+  //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
+  //!   the logical input sequence.
+  //!   @endrst
+  template <typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T input, T& output, ScanOp scan_op, int valid_items, BlockPrefixCallbackOp& block_prefix_callback_op)
+  {
+    InternalBlockScan(temp_storage)
+      .ExclusiveScanPartialTile(input, output, scan_op, valid_items, block_prefix_callback_op);
+  }
+
+  //! @} end member group // Exclusive prefix scans
   //! @name Exclusive prefix scan operations (multiple data per thread)
   //! @{
 
@@ -1291,7 +1549,329 @@ public:
     detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
-  //! @}  end member group
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an exclusive prefix max scan of 509 of 512 integer
+  //! items that are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3)
+  //! across 128 threads where each thread owns 4 consecutive items.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain a segment of consecutive items that are blocked across threads
+  //!        int thread_data[4];
+  //!        ...
+  //!        int valid_items = 509;
+  //!
+  //!        // Collectively compute the block-wide exclusive prefix max scan
+  //!        BlockScan(temp_storage).ExclusiveScanPartialTile(
+  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
+  //! The corresponding output ``thread_data`` in those threads will be
+  //! ``{ [INT_MIN,0,0,2], [2,4,4,6], ..., [506,-509,510,-511] }``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   @rst
+  //!   Initial value to seed the exclusive scan (and is assigned to `output[0]` in *thread*\ :sub:`0`)
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, int valid_items)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads);
+
+    // Exclusive scan in registers with prefix as seed
+    cub::detail::ThreadScanExclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation. Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an exclusive prefix max scan of 509 of 512 integer items that are partitioned
+  //! in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns 4
+  //! consecutive items.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain a segment of consecutive items that are blocked across threads
+  //!        int thread_data[4];
+  //!        ...
+  //!        int valid_items = 509;
+  //!
+  //!        // Collectively compute the block-wide exclusive prefix max scan
+  //!        int block_aggregate;
+  //!        BlockScan(temp_storage).ExclusiveScanPartialTile(
+  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, valid_items, block_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
+  //! The corresponding output ``thread_data`` in those threads will be
+  //! ``{ [INT_MIN,0,0,2], [2,4,4,6], ..., [506,-509,510,-511] }``.
+  //! Furthermore the value ``508`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! .. note::
+  //!
+  //!    ``initial_value`` is not applied to the block-wide aggregate.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   @rst
+  //!   Initial value to seed the exclusive scan (and is assigned to `output[0]` in *thread*\ :sub:`0`). It is not taken
+  //!   into account for ``block_aggregate``.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   block-wide aggregate reduction of input items
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
+    T initial_value,
+    ScanOp scan_op,
+    int valid_items,
+    T& block_aggregate)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads, block_aggregate);
+
+    // Exclusive scan in registers with prefix as seed
+    cub::detail::ThreadScanExclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation.
+  //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value
+  //! returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread
+  //! block's scan inputs.
+  //!
+  //! - The ``block_prefix_callback_op`` functor must implement a member function
+  //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the
+  //!   first warp of threads in the block, however only the return value from
+  //!   *lane*\ :sub:`0` is applied as the block-wide prefix. Can be stateful.
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a single thread block that progressively
+  //! computes an exclusive prefix max scan over multiple "tiles" of input using a
+  //! prefix functor to maintain a running total between block-wide scans. Each tile consists
+  //! of 128 integer items that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    // A stateful callback functor that maintains a running prefix to be applied
+  //!    // during consecutive scan operations.
+  //!    struct BlockPrefixCallbackOp
+  //!    {
+  //!        // Running prefix
+  //!        int running_total;
+  //!
+  //!        // Constructor
+  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+  //!
+  //!        // Callback operator to be entered by the first warp of threads in the block.
+  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!        __device__ int operator()(int block_aggregate)
+  //!        {
+  //!            int old_prefix = running_total;
+  //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+  //!            return old_prefix;
+  //!        }
+  //!    };
+  //!
+  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
+  //!    {
+  //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
+  //!        using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
+  //!        using BlockScan = cub::BlockScan<int, 128>                            ;
+  //!
+  //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
+  //!        __shared__ union {
+  //!            typename BlockLoad::TempStorage     load;
+  //!            typename BlockScan::TempStorage     scan;
+  //!            typename BlockStore::TempStorage    store;
+  //!        } temp_storage;
+  //!
+  //!        // Initialize running total
+  //!        BlockPrefixCallbackOp prefix_op(0);
+  //!
+  //!        // Have the block iterate over segments of items
+  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128 * 4)
+  //!        {
+  //!            int valid_items = num_items - block_offset;
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data, valid_items);
+  //!            __syncthreads();
+  //!
+  //!            // Collectively compute the block-wide exclusive prefix max scan
+  //!            BlockScan(temp_storage.scan).ExclusiveScanPartialTile(
+  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, valid_items, prefix_op);
+  //!            __syncthreads();
+  //!
+  //!            // Store scanned items to output segment
+  //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data, valid_items);
+  //!            __syncthreads();
+  //!        }
+  //!
+  //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ..., -1019, 1020``.
+  //! The corresponding output for the first segment will be
+  //! ``INT_MIN, 0, 0, 2, 2, 4, ..., 508, 510``.
+  //! The output for the second segment will be
+  //! ``510, 512, 512, 514, 514, 516, ..., 1018, 1018``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam BlockPrefixCallbackOp
+  //!   **[inferred]** Call-back functor type having member `T operator()(T block_aggregate)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[in,out] block_prefix_callback_op
+  //!   @rst
+  //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
+  //!   the logical input sequence.
+  //!   @endrst
+  template <int ItemsPerThread, typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
+    ScanOp scan_op,
+    int valid_items,
+    BlockPrefixCallbackOp& block_prefix_callback_op)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads, block_prefix_callback_op);
+
+    // Exclusive scan in registers with prefix as seed
+    cub::detail::ThreadScanExclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+  }
+
+  //! @} end member group // Exclusive prefix scans (multiple data per thread)
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document no-initial-value scans
 
   //! @name Exclusive prefix scan operations (no initial value, single datum per thread)
@@ -1355,6 +1935,73 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_aggregate);
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation. With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items)
+  {
+    InternalBlockScan(temp_storage).ExclusiveScanPartialTile(input, output, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation. Also provides every thread with the block-wide ``block_aggregate`` of all valid inputs.
+  //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   block-wide aggregate reduction of input items
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    InternalBlockScan(temp_storage).ExclusiveScanPartialTile(input, output, scan_op, valid_items, block_aggregate);
   }
 
   //! @} end member group // Exclusive prefix scans (no initial value, single datum per thread)
@@ -1431,9 +2078,9 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
+  template <int ItemsPerThread, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
     T thread_partial = cub::ThreadReduce(input, scan_op);
@@ -1443,6 +2090,102 @@ public:
 
     // Exclusive scan in registers with prefix
     detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation. With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, int valid_items)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_partial             = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_partial, thread_partial, scan_op, valid_threads);
+
+    // Exclusive scan in registers with prefix
+    cub::detail::ThreadScanExclusivePartial(
+      input, output, scan_op, thread_valid_items, thread_partial, (linear_tid != 0u));
+  }
+
+  //! @rst
+  //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation. Also provides every thread with the block-wide ``block_aggregate`` of all valid inputs.
+  //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   block-wide aggregate reduction of input items
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_partial             = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_partial, thread_partial, scan_op, valid_threads, block_aggregate);
+
+    // Exclusive scan in registers with prefix
+    cub::detail::ThreadScanExclusivePartial(
+      input, output, scan_op, thread_valid_items, thread_partial, (linear_tid != 0u));
   }
 
   //! @} end member group // Exclusive prefix scans (no initial value, multiple data per thread)
@@ -2155,7 +2898,252 @@ public:
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_prefix_callback_op);
   }
 
-  //! @}  end member group
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 3 of 128 integer items that
+  //! are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain input item for each thread
+  //!        int thread_data;
+  //!        ...
+  //!        int valid_items = 3;
+  //!
+  //!        // Collectively compute the block-wide inclusive prefix max scan
+  //!        BlockScan(temp_storage).InclusiveScanPartialTile(
+  //!            thread_data, thread_data, cuda::maximum<>{}, valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
+  //! in those threads will be ``0, 0, 2, -3, ..., 126, -127``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items)
+  {
+    InternalBlockScan(temp_storage).InclusiveScanPartialTile(input, output, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation. Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 3 of 128
+  //! integer items that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain input item for each thread
+  //!        int thread_data;
+  //!        ...
+  //!        int valid_items = 3;
+  //!
+  //!        // Collectively compute the block-wide inclusive prefix max scan
+  //!        int block_aggregate;
+  //!        BlockScan(temp_storage).InclusiveScanPartialTile(
+  //!            thread_data, thread_data, cuda::maximum<>{}, valid_items, block_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
+  //! in those threads will be ``0, 0, 2, -3, ..., 126, -127``. Furthermore the value
+  //! ``2`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   Block-wide aggregate reduction of input items
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    InternalBlockScan(temp_storage).InclusiveScanPartialTile(input, output, scan_op, valid_items, block_aggregate);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes one input element. But only the first ``valid_items`` elements are used in the
+  //! calculation. The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block, and the
+  //! value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread
+  //! block's scan inputs.
+  //!
+  //! - The ``block_prefix_callback_op`` functor must implement a member function
+  //!   ``T operator()(T block_aggregate)``. The functor's input parameter
+  //!   The functor will be invoked by the first warp of threads in the block,
+  //!   however only the return value from *lane*\ :sub:`0` is applied
+  //!   as the block-wide prefix. Can be stateful.
+  //! - Supports non-commutative scan operators.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a single thread block that progressively
+  //! computes an inclusive prefix max scan over multiple "tiles" of input using a
+  //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
+  //! of 128 integer items that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    // A stateful callback functor that maintains a running prefix to be applied
+  //!    // during consecutive scan operations.
+  //!    struct BlockPrefixCallbackOp
+  //!    {
+  //!        // Running prefix
+  //!        int running_total;
+  //!
+  //!        // Constructor
+  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+  //!
+  //!        // Callback operator to be entered by the first warp of threads in the block.
+  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!        __device__ int operator()(int block_aggregate)
+  //!        {
+  //!            int old_prefix = running_total;
+  //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+  //!            return old_prefix;
+  //!        }
+  //!    };
+  //!
+  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Initialize running total
+  //!        BlockPrefixCallbackOp prefix_op(INT_MIN);
+  //!
+  //!        // Have the block iterate over segments of items
+  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  //!        {
+  //!            int valid_items = num_items - block_offset;
+  //!            int item_idx = block_offset + threadIdx.x;
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data = item_idx < num_items ? d_data[item_idx] : 0;
+  //!
+  //!            // Collectively compute the block-wide inclusive prefix max scan
+  //!            BlockScan(temp_storage).InclusiveScanPartialTile(
+  //!                thread_data, thread_data, cuda::maximum<>{}, valid_items, prefix_op);
+  //!            __syncthreads();
+  //!
+  //!            // Store scanned items to output segment
+  //!            if (item_idx < num_items) d_data[item_idx] = thread_data;
+  //!        }
+  //!
+  //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ..., -249, 250``.
+  //! The corresponding output for the first segment will be
+  //! ``0, 0, 2, 2, ..., 126, 126``. The output for the second segment
+  //! will be ``128, 128, 130, 130, ..., 248, 250``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam BlockPrefixCallbackOp
+  //!   **[inferred]** Call-back functor type having member `T operator()(T block_aggregate)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] output
+  //!   Calling thread's output item (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[in,out] block_prefix_callback_op
+  //!   @rst
+  //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
+  //!   the logical input sequence.
+  //!   @endrst
+  template <typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
+    T input, T& output, ScanOp scan_op, int valid_items, BlockPrefixCallbackOp& block_prefix_callback_op)
+  {
+    InternalBlockScan(temp_storage)
+      .InclusiveScanPartialTile(input, output, scan_op, valid_items, block_prefix_callback_op);
+  }
+
+  //! @}  end member group // Inclusive prefix scans
   //! @name Inclusive prefix scan operations (multiple data per thread)
   //! @{
 
@@ -2574,6 +3562,467 @@ public:
 
       // Inclusive scan in registers with prefix as seed
       detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    }
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation.
+
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 509 of 512 integer items that
+  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! where each thread owns 4 consecutive items.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain a segment of consecutive items that are blocked across threads
+  //!        int thread_data[4];
+  //!        ...
+  //!        int valid_items = 509;
+  //!
+  //!        // Collectively compute the block-wide inclusive prefix max scan
+  //!        BlockScan(temp_storage).InclusiveScanPartialTile(thread_data, thread_data, cuda::maximum<>{}, valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
+  //! The corresponding output ``thread_data`` in those threads will be
+  //! ``{ [0,0,2,2], [4,4,6,6], ..., [508,-509,510,-511] }``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartialTile(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, int valid_items)
+  {
+    if constexpr (ItemsPerThread == 1)
+    {
+      InclusiveScanPartialTile(input[0], output[0], scan_op, valid_items);
+    }
+    else
+    {
+      // Reduce consecutive thread items in registers
+      const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+      T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+      // Exclusive thread block-scan
+      const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+      ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads);
+
+      // Inclusive scan in registers with prefix as seed (first thread does not seed)
+      cub::detail::ThreadScanInclusivePartial(
+        input, output, scan_op, thread_valid_items, thread_prefix, (linear_tid != 0u));
+    }
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation.
+
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 125 of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-partial-tile-array-init-value
+  //!     :end-before: example-end inclusive-scan-partial-tile-array-init-value
+  //!
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across block)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, int valid_items)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads);
+
+    // Exclusive scan in registers with prefix as seed
+    cub::detail::ThreadScanInclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation. Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 509 of 512 integer items that
+  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! where each thread owns 4 consecutive items.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!
+  //!        // Allocate shared memory for BlockScan
+  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!
+  //!        // Obtain a segment of consecutive items that are blocked across threads
+  //!        int thread_data[4];
+  //!        ...
+  //!        int valid_items = 509;
+  //!
+  //!        // Collectively compute the block-wide inclusive prefix max scan
+  //!        int block_aggregate;
+  //!        BlockScan(temp_storage).InclusiveScanPartialTile(
+  //!            thread_data, thread_data, cuda::maximum<>{}, valid_items, block_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
+  //! The corresponding output ``thread_data`` in those threads will be
+  //! ``{ [0,0,2,2], [4,4,6,6], ..., [508,-509,510,-511] }``.
+  //! Furthermore the value ``508`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   Block-wide aggregate reduction of input items
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    if constexpr (ItemsPerThread == 1)
+    {
+      InclusiveScanPartialTile(input[0], output[0], scan_op, valid_items, block_aggregate);
+    }
+    else
+    {
+      // Reduce consecutive thread items in registers
+      const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+      T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+      // Exclusive thread block-scan (with no initial value)
+      const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+      ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads, block_aggregate);
+
+      // Inclusive scan in registers with prefix as seed (first thread does not seed)
+      cub::detail::ThreadScanInclusivePartial(
+        input, output, scan_op, thread_valid_items, thread_prefix, (linear_tid != 0u));
+    }
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation. Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 125 of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-partial-tile-array-aggregate-init-value
+  //!     :end-before: example-end inclusive-scan-partial-tile-array-aggregate-init-value
+  //!
+  //! The value ``124`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! .. note::
+  //!
+  //!    ``initial_value`` is not applied to the block-wide aggregate.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across block). It is not taken
+  //!   into account for ``block_aggregate``.
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[out] block_aggregate
+  //!   Block-wide aggregate reduction of input items
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
+    T initial_value,
+    ScanOp scan_op,
+    int valid_items,
+    T& block_aggregate)
+  {
+    // Reduce consecutive thread items in registers
+    const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+    // Exclusive thread block-scan
+    const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+    ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads, block_aggregate);
+
+    // Exclusive scan in registers with prefix as seed
+    cub::detail::ThreadScanInclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. But only the first ``valid_items`` elements are
+  //! used in the calculation.
+  //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block,
+  //! and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the
+  //! thread block's scan inputs.
+  //!
+  //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
+  //!   The functor will be invoked by the first warp of threads in the block, however only the return value
+  //!   from *lane*\ :sub:`0` is applied as the block-wide prefix. Can be stateful.
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a single thread block that progressively
+  //! computes an inclusive prefix max scan over multiple "tiles" of input using a
+  //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
+  //! of 128 integer items that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!
+  //!    // A stateful callback functor that maintains a running prefix to be applied
+  //!    // during consecutive scan operations.
+  //!    struct BlockPrefixCallbackOp
+  //!    {
+  //!        // Running prefix
+  //!        int running_total;
+  //!
+  //!        // Constructor
+  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+  //!
+  //!        // Callback operator to be entered by the first warp of threads in the block.
+  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!        __device__ int operator()(int block_aggregate)
+  //!        {
+  //!            int old_prefix = running_total;
+  //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+  //!            return old_prefix;
+  //!        }
+  //!    };
+  //!
+  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
+  //!    {
+  //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
+  //!        using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
+  //!        using BlockScan = cub::BlockScan<int, 128>                            ;
+  //!
+  //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
+  //!        __shared__ union {
+  //!            typename BlockLoad::TempStorage     load;
+  //!            typename BlockScan::TempStorage     scan;
+  //!            typename BlockStore::TempStorage    store;
+  //!        } temp_storage;
+  //!
+  //!        // Initialize running total
+  //!        BlockPrefixCallbackOp prefix_op(0);
+  //!
+  //!        // Have the block iterate over segments of items
+  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128 * 4)
+  //!        {
+  //!            int valid_items = num_items - block_offset;
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data, valid_items);
+  //!            __syncthreads();
+  //!
+  //!            // Collectively compute the block-wide inclusive prefix max scan
+  //!            BlockScan(temp_storage.scan).InclusiveScanPartialTile(
+  //!                thread_data, thread_data, cuda::maximum<>{}, valid_items, prefix_op);
+  //!            __syncthreads();
+  //!
+  //!            // Store scanned items to output segment
+  //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data, valid_items);
+  //!            __syncthreads();
+  //!        }
+  //!
+  //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ..., -1019, 1020``.
+  //! The corresponding output for the first segment will be
+  //! ``0, 0, 2, 2, 4, 4, ..., 510, 510``. The output for the second
+  //! segment will be ``512, 512, 514, 514, 516, 516, ..., 1018, 1020``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ItemsPerThread
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam BlockPrefixCallbackOp
+  //!   **[inferred]** Call-back functor type having member `T operator()(T block_aggregate)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in thread block
+  //!
+  //! @param[in,out] block_prefix_callback_op
+  //!   @rst
+  //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
+  //!   the logical input sequence.
+  //!   @endrst
+  template <int ItemsPerThread, typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
+    ScanOp scan_op,
+    int valid_items,
+    BlockPrefixCallbackOp& block_prefix_callback_op)
+  {
+    if constexpr (ItemsPerThread == 1)
+    {
+      InclusiveScanPartialTile(input[0], output[0], scan_op, valid_items, block_prefix_callback_op);
+    }
+    else
+    {
+      // Reduce consecutive thread items in registers
+      const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * ItemsPerThread;
+      T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+
+      // Exclusive thread block-scan
+      const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), ItemsPerThread);
+      ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads, block_prefix_callback_op);
+
+      // Inclusive scan in registers with prefix as seed
+      cub::detail::ThreadScanInclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
     }
   }
 

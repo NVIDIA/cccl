@@ -251,6 +251,78 @@ struct BlockScanRaking
     CopySegment(smem_raking_ptr, cached_segment, constant_v<0>);
   }
 
+  /// Performs upsweep raking reduction, returning the aggregate
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T UpsweepPartialTile(ScanOp scan_op, int segment_valid_items)
+  {
+    T* const smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
+
+    // Read data into registers
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
+    {
+      cached_segment[iteration] = smem_raking_ptr[iteration];
+    }
+
+    return cub::detail::ThreadReducePartial(cached_segment, scan_op, segment_valid_items);
+  }
+
+  /// Performs exclusive downsweep raking scan
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveDownsweepPartialTile(ScanOp scan_op, T raking_partial, int segment_valid_items, bool apply_prefix = true)
+  {
+    T* const smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
+
+    // Read data back into registers
+    if constexpr (!MEMOIZE)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
+      {
+        cached_segment[iteration] = smem_raking_ptr[iteration];
+      }
+    }
+
+    cub::detail::ThreadScanExclusivePartial(
+      cached_segment, cached_segment, scan_op, segment_valid_items, raking_partial, apply_prefix);
+
+    // Write data back to smem
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
+    {
+      smem_raking_ptr[iteration] = cached_segment[iteration];
+    }
+  }
+
+  /// Performs inclusive downsweep raking scan
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveDownsweepPartialTile(ScanOp scan_op, T raking_partial, int segment_valid_items, bool apply_prefix = true)
+  {
+    T* const smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
+
+    // Read data back into registers
+    if constexpr (!MEMOIZE)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
+      {
+        cached_segment[iteration] = smem_raking_ptr[iteration];
+      }
+    }
+
+    cub::detail::ThreadScanInclusivePartial(
+      cached_segment, cached_segment, scan_op, segment_valid_items, raking_partial, apply_prefix);
+
+    // Write data back to smem
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
+    {
+      smem_raking_ptr[iteration] = cached_segment[iteration];
+    }
+  }
+
   //---------------------------------------------------------------------
   // Constructors
   //---------------------------------------------------------------------
@@ -586,6 +658,392 @@ struct BlockScanRaking
     }
   }
 
+  /**
+   * @brief Computes an exclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor. Each thread contributes one input element. With no initial value,
+   *        the output computed for <em>thread</em><sub>0</sub> is undefined.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] exclusive_output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T input, T& exclusive_output, ScanOp scan_op, int valid_items)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).ExclusiveScanPartial(input, exclusive_output, scan_op, valid_items);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments);
+
+        // Exclusive raking downsweep scan
+        ExclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items, (linear_tid != 0u));
+      }
+
+      __syncthreads();
+
+      // Grab thread prefix from shared memory
+      exclusive_output = *placement_ptr;
+    }
+  }
+
+  /**
+   * @brief Computes an exclusive thread block-wide prefix scan using the specified binary \p
+   * scan_op functor.  Each thread contributes one input element.
+   *
+   * @param[in] input
+   *   Calling thread's input items
+   *
+   * @param[out] output
+   *   Calling thread's output items (may be aliased to \p input)
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the exclusive scan
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T input, T& output, const T& initial_value, ScanOp scan_op, int valid_items)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).ExclusiveScanPartial(input, output, initial_value, scan_op, valid_items);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Exclusive Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .ExclusiveScanPartial(upsweep_partial, exclusive_partial, initial_value, scan_op, valid_segments);
+
+        // Exclusive raking downsweep scan
+        ExclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items);
+      }
+
+      __syncthreads();
+
+      // Grab exclusive partial from shared memory
+      output = *placement_ptr;
+    }
+  }
+
+  /**
+   * @brief Computes an exclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor.  Each thread contributes one input element.  Also provides every
+   *        thread with the block-wide \p block_aggregate of all inputs.  With no initial value,
+   *        the output computed for <em>thread</em><sub>0</sub> is undefined.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   *
+   * @param[out] block_aggregate
+   *   Threadblock-wide aggregate reduction of input items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).ExclusiveScanPartial(input, output, scan_op, valid_items, block_aggregate);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T inclusive_partial;
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .ScanPartial(upsweep_partial, inclusive_partial, exclusive_partial, scan_op, valid_segments);
+
+        // Exclusive raking downsweep scan
+        ExclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items, (linear_tid != 0u));
+
+        // Broadcast aggregate to all threads
+        if (static_cast<int>(linear_tid) == ::cuda::std::min(valid_segments - 1, RAKING_THREADS - 1))
+        {
+          temp_storage.block_aggregate = inclusive_partial;
+        }
+      }
+
+      __syncthreads();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+
+      // Retrieve block aggregate
+      block_aggregate = temp_storage.block_aggregate;
+    }
+  }
+
+  /**
+   * @brief Computes an exclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor.  Each thread contributes one input element.  Also provides every
+   *        thread with the block-wide \p block_aggregate of all inputs.
+   *
+   * @param[in] input
+   *   Calling thread's input items
+   *
+   * @param[out] output
+   *   Calling thread's output items (may be aliased to \p input)
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the exclusive scan
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   *
+   * @param[out] block_aggregate
+   *   Threadblock-wide aggregate reduction of input items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T input, T& output, const T& initial_value, ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan)
+        .ExclusiveScanPartial(input, output, initial_value, scan_op, valid_items, block_aggregate);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .ExclusiveScanPartial(
+            upsweep_partial, exclusive_partial, initial_value, scan_op, valid_segments, block_aggregate);
+
+        // Exclusive raking downsweep scan
+        ExclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items);
+
+        // Broadcast aggregate to other threads
+        if (linear_tid == 0u)
+        {
+          temp_storage.block_aggregate = block_aggregate;
+        }
+      }
+
+      __syncthreads();
+
+      // Grab exclusive partial from shared memory
+      output = *placement_ptr;
+
+      // Retrieve block aggregate
+      block_aggregate = temp_storage.block_aggregate;
+    }
+  }
+
+  /**
+   * @brief Computes an exclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor.  Each thread contributes one input element.  the call-back functor \p
+   *        block_prefix_callback_op is invoked by the first warp in the block, and the value
+   *        returned by <em>lane</em><sub>0</sub> in that warp is used as the "seed" value that
+   *        logically prefixes the thread block's scan inputs.  Also provides every thread with
+   *        the block-wide \p block_aggregate of all inputs.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   *
+   * @param[in-out] block_prefix_callback_op
+   *   <b>[<em>warp</em><sub>0</sub> only]</b> Call-back functor for specifying a thread
+   *   block-wide prefix to be applied to all inputs.
+   */
+  template <typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
+    T input, T& output, ScanOp scan_op, int valid_items, BlockPrefixCallbackOp& block_prefix_callback_op)
+  {
+    if (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      T block_aggregate;
+      WarpScan warp_scan(temp_storage.warp_scan);
+      warp_scan.ExclusiveScanPartial(input, output, scan_op, valid_items, block_aggregate);
+
+      // Obtain warp-wide prefix in lane0, then broadcast to other lanes
+      T block_prefix = block_prefix_callback_op(block_aggregate);
+      block_prefix   = warp_scan.Broadcast(block_prefix, 0);
+
+      if (static_cast<int>(linear_tid) < valid_items)
+      {
+        if (linear_tid == 0u)
+        {
+          output = block_prefix;
+        }
+        else
+        {
+          output = scan_op(block_prefix, output);
+        }
+      }
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        WarpScan warp_scan(temp_storage.warp_scan);
+
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T exclusive_partial;
+        T block_aggregate;
+        warp_scan.ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments, block_aggregate);
+
+        // Obtain block-wide prefix in lane0, then broadcast to other lanes
+        T block_prefix = block_prefix_callback_op(block_aggregate);
+        block_prefix   = warp_scan.Broadcast(block_prefix, 0);
+
+        // Update prefix with warpscan exclusive partial
+        T downsweep_prefix = block_prefix;
+        if ((linear_tid != 0u) && (static_cast<int>(linear_tid) < valid_segments))
+        {
+          downsweep_prefix = scan_op(block_prefix, exclusive_partial);
+        }
+
+        // Exclusive raking downsweep scan
+        ExclusiveDownsweepPartialTile(scan_op, downsweep_prefix, segment_valid_items);
+      }
+
+      __syncthreads();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+    }
+  }
+
   //---------------------------------------------------------------------
   // Inclusive scans
   //---------------------------------------------------------------------
@@ -776,6 +1234,238 @@ struct BlockScanRaking
 
         // Inclusive raking downsweep scan
         InclusiveDownsweep(scan_op, downsweep_prefix);
+      }
+
+      __syncthreads();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+    }
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor. Each thread contributes one input element.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).InclusiveScanPartial(input, output, scan_op, valid_items);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Exclusive Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments);
+
+        // Inclusive raking downsweep scan
+        InclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items, (linear_tid != 0u));
+      }
+
+      __syncthreads();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+    }
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor. Each thread contributes one input element.  Also provides every
+   *        thread with the block-wide \p block_aggregate of all inputs.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   *
+   * @param[out] block_aggregate
+   *   Threadblock-wide aggregate reduction of input items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartialTile(T input, T& output, ScanOp scan_op, int valid_items, T& block_aggregate)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).InclusiveScanPartial(input, output, scan_op, valid_items, block_aggregate);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T inclusive_partial;
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .ScanPartial(upsweep_partial, inclusive_partial, exclusive_partial, scan_op, valid_segments);
+
+        // Inclusive raking downsweep scan
+        InclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items, (linear_tid != 0u));
+
+        // Broadcast aggregate to all threads
+        if (static_cast<int>(linear_tid) == ::cuda::std::min(valid_segments - 1, RAKING_THREADS - 1))
+        {
+          temp_storage.block_aggregate = inclusive_partial;
+        }
+      }
+
+      __syncthreads();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+
+      // Retrieve block aggregate
+      block_aggregate = temp_storage.block_aggregate;
+    }
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor.  Each thread contributes one input element.  the call-back functor \p
+   *        block_prefix_callback_op is invoked by the first warp in the block, and the value
+   *        returned by <em>lane</em><sub>0</sub> in that warp is used as the "seed" value that
+   *        logically prefixes the thread block's scan inputs.  Also provides every thread with
+   *        the block-wide \p block_aggregate of all inputs.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items
+   *
+   * @param[in-out] block_prefix_callback_op
+   *   <b>[<em>warp</em><sub>0</sub> only]</b> Call-back functor for specifying a thread
+   *   block-wide prefix to be applied to all inputs.
+   */
+  template <typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
+    T input, T& output, ScanOp scan_op, int valid_items, BlockPrefixCallbackOp& block_prefix_callback_op)
+  {
+    if constexpr (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      T block_aggregate;
+      WarpScan warp_scan(temp_storage.warp_scan);
+      warp_scan.InclusiveScanPartial(input, output, scan_op, valid_items, block_aggregate);
+
+      // Obtain warp-wide prefix in lane0, then broadcast to other lanes
+      T block_prefix = block_prefix_callback_op(block_aggregate);
+      block_prefix   = warp_scan.Broadcast(block_prefix, 0);
+
+      // Update prefix with exclusive warpscan partial
+      if (static_cast<int>(linear_tid) < valid_items)
+      {
+        output = scan_op(block_prefix, output);
+      }
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* const placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      cub::detail::uninitialized_copy_single(placement_ptr, input);
+
+      __syncthreads();
+
+      // Reduce parallelism down to just raking threads
+      if (static_cast<int>(linear_tid) < RAKING_THREADS)
+      {
+        WarpScan warp_scan(temp_storage.warp_scan);
+
+        // Raking upsweep reduction across shared partials
+        int segment_valid_items = valid_items - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+        if constexpr (!BlockRakingLayout::UNGUARDED)
+        {
+          const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
+          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+        }
+        const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
+
+        // Warp-synchronous scan
+        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        T exclusive_partial;
+        T block_aggregate;
+        warp_scan.ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments, block_aggregate);
+
+        // Obtain block-wide prefix in lane0, then broadcast to other lanes
+        T block_prefix = block_prefix_callback_op(block_aggregate);
+        block_prefix   = warp_scan.Broadcast(block_prefix, 0);
+
+        // Update prefix with warpscan exclusive partial
+        T downsweep_prefix = block_prefix;
+        if ((linear_tid != 0u) && (static_cast<int>(linear_tid) < valid_segments))
+        {
+          downsweep_prefix = scan_op(block_prefix, exclusive_partial);
+        }
+
+        // Inclusive raking downsweep scan
+        InclusiveDownsweepPartialTile(scan_op, downsweep_prefix, segment_valid_items);
       }
 
       __syncthreads();
