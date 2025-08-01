@@ -196,8 +196,12 @@ class Configuration(object):
         return deduced_comput_archs_str
 
     def get_all_major_compute_capabilities(self):
+        if self.cxx.type != "nvcc":
+            self.lit_config.fatal("get_all_major_compute_capabilities is only supported for nvcc compiler type")
+            return ""
+
         cmd = (
-            "nvcc --help | grep -oE 'compute_[0-9]+0[^0-9]' | "
+            f"{self.cxx.path} --help | grep -oE 'compute_[0-9]+0[^0-9]' | "
             "sed -E 's/compute_([0-9]+)[^0-9]/\\1/g' | sort -ug"
         )
         result = subprocess.run(
@@ -209,11 +213,24 @@ class Configuration(object):
             universal_newlines=True,
         )
         archs = result.stdout.strip().splitlines()
-        return ";".join(archs)
+
+        if not archs:
+            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
+            return ""
+
+        archs = ";".join(archs)
+
+        self.lit_config.note("Deduced major compute capabilities are: %s" % archs)
+
+        return archs
 
     def get_all_compute_capabilities(self):
+        if self.cxx.type != "nvcc":
+            self.lit_config.fatal("get_all_compute_capabilities is only supported for nvcc compiler type")
+            return ""
+
         cmd = (
-            "nvcc --help | grep -oE 'compute_[0-9]+' | "
+            f"{self.cxx.path} --help | grep -oE 'compute_[0-9]+' | "
             "sed -E 's/compute_//g' | sort -ug"
         )
         result = subprocess.run(
@@ -225,7 +242,16 @@ class Configuration(object):
             universal_newlines=True,
         )
         archs = result.stdout.strip().splitlines()
-        return ";".join(archs)
+
+        if not archs:
+            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
+            return ""
+
+        archs = ";".join(archs)
+
+        self.lit_config.note("Deduced compute capabilities are: %s" % archs)
+
+        return archs
 
     def get_modules_enabled(self):
         return self.get_lit_bool(

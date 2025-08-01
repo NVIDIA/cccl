@@ -17,8 +17,8 @@ workflows:
   override:
     # - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14' }
 
-    - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14', sm: 'all' }
-    # - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14', sm: 'all-major' }
+    # - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14', sm: 'all' }
+    - {jobs: ['build'], project: ['cub'], std: 'max', cxx: 'gcc14', sm: 'all' }
 
     # - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14', cpu: 'arm64' }
 
