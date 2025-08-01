@@ -107,11 +107,8 @@ struct BlockReduceWarpReductions
   //!
   //! @param[in] warp_aggregate
   //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
-  //!
-  //! @param[in] num_valid
-  //!   Number of valid elements (may be less than block_threads)
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp reduction_op, T warp_aggregate)
   {
     if (linear_tid == 0)
     {
@@ -143,73 +140,6 @@ struct BlockReduceWarpReductions
   //!
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
-  //!
-  //! @tparam SuccessorWarp
-  //!   **[inferred]** Index of the next warp to process
-  //!
-  //! @param[in] reduction_op
-  //!   Binary reduction operator
-  //!
-  //! @param[in] warp_aggregate
-  //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
-  //!
-  //! @param[in] num_valid
-  //!   Number of valid elements (may be less than block_threads)
-  //!
-  //! @param[in] successor_warp
-  //!   Compile-time constant indicating the next warp index
-  template <bool FullTile, typename ReductionOp, int SuccessorWarp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp reduction_op, T warp_aggregate, int num_valid, constant_t<SuccessorWarp> /*successor_warp*/)
-  {
-    if (FullTile || (SuccessorWarp * logical_warp_size < num_valid))
-    {
-      T addend       = temp_storage.warp_aggregates[SuccessorWarp];
-      warp_aggregate = reduction_op(warp_aggregate, addend);
-    }
-    return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid, constant_v<SuccessorWarp + 1>);
-  }
-
-  //! @rst
-  //! Template recursion termination case for deterministic warp aggregate application.
-  //! @endrst
-  //!
-  //! @tparam FullTile
-  //!   **[inferred]** Whether this is a full tile
-  //!
-  //! @tparam ReductionOp
-  //!   **[inferred]** Binary reduction operator type
-  //!
-  //! @param[in] reduction_op
-  //!   Binary reduction operator (unused in termination case)
-  //!
-  //! @param[in] warp_aggregate
-  //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
-  //!
-  //! @param[in] num_valid
-  //!   Number of valid elements (unused in termination case)
-  //!
-  //! @param[in] successor_warp
-  //!   Compile-time constant indicating termination when equals warps
-  template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, constant_t<int{warps}> /*successor_warp*/)
-  {
-    return warp_aggregate;
-  }
-
-  /**
-   * @brief Returns block-wide aggregate in <em>thread</em><sub>0</sub>.
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than block_threads)
-   */
   template <bool FullTile, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
@@ -224,7 +154,15 @@ struct BlockReduceWarpReductions
     // Update total aggregate in warp 0, lane 0
     if (linear_tid == 0)
     {
-      warp_aggregate = ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid, constant_v<1>);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+      {
+        if (FullTile || (warp_idx * logical_warp_size < num_valid))
+        {
+          T addend       = temp_storage.warp_aggregates[warp_idx];
+          warp_aggregate = reduction_op(warp_aggregate, addend);
+        }
+      }
     }
 
     return warp_aggregate;
@@ -265,7 +203,7 @@ struct BlockReduceWarpReductions
     }
     else
     {
-      return ApplyWarpAggregates(reduction_op, warp_aggregate, num_valid);
+      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
     }
   }
 
@@ -309,7 +247,7 @@ struct BlockReduceWarpReductions
     }
     else
     {
-      return ApplyWarpAggregates(reduction_op, warp_aggregate, num_valid);
+      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
     }
   }
 };
