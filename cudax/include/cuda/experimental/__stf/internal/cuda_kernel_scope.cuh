@@ -41,7 +41,7 @@ namespace reserved
 {
 
 template <typename T>
-inline constexpr bool is_function_or_kernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
+inline constexpr bool is_cufunction_or_cukernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
 
 } // end namespace reserved
 
@@ -60,16 +60,16 @@ struct cuda_kernel_desc
       , blockDim(blockDim_)
       , sharedMem(sharedMem_)
   {
+    // Ensure we are packing arguments of the proper types to call func (only
+    // valid with the runtime API)
+    static_assert(reserved::is_cufunction_or_cukernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
+
     using TupleType = ::std::tuple<::std::decay_t<Args>...>;
 
     // We first copy all arguments into a tuple because the kernel
     // implementation needs pointers to the argument, so we cannot use
     // directly those passed in the pack of arguments
     auto arg_tuple = ::std::make_shared<TupleType>(mv(args)...);
-
-    // Ensure we are packing arguments of the proper types to call func (only
-    // valid with the runtime API)
-    static_assert(reserved::is_function_or_kernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
 
     // Get the address of every tuple entry
     ::std::apply(
