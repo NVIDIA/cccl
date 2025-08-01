@@ -8,6 +8,9 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - {jobs: ['build'], std: 'all', ctk: '12.9', cxx: 'nvhpc'}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.9'], std: 'all', cxx: ['nvhpc']}
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.9', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   pull_request:
     # Old CTK/compiler
@@ -204,7 +207,7 @@ host_compilers:
     container_tag: 'nvhpc'
     exe: nvc++
     versions:
-      25.5: { stds: [17, 20 ] }
+      25.7: { stds: [17, 20 ] }
 
 # Jobs support the following properties:
 #
