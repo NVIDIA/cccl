@@ -562,38 +562,16 @@ def test_reduce_invalid_stream():
     d_out = cp.empty(1)
     h_init = np.empty(1)
     d_in = cp.empty(1)
-    reduce_into = parallel.make_reduce_into(d_in, d_out, add_op, h_init)
 
     with pytest.raises(
         TypeError, match="does not implement the '__cuda_stream__' protocol"
     ):
-        _ = reduce_into(
-            None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=d_in.size,
-            h_init=h_init,
-            stream=Stream1(),
-        )
+        parallel.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=Stream1())
 
     with pytest.raises(
         TypeError, match="could not obtain __cuda_stream__ protocol version and handle"
     ):
-        _ = reduce_into(
-            None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=d_in.size,
-            h_init=h_init,
-            stream=Stream2(),
-        )
+        parallel.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=Stream2())
 
     with pytest.raises(TypeError, match="invalid stream handle"):
-        _ = reduce_into(
-            None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=d_in.size,
-            h_init=h_init,
-            stream=Stream3(),
-        )
+        parallel.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=Stream3())
