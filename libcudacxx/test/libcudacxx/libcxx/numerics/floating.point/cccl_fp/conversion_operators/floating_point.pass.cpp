@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+
+#define CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstring>

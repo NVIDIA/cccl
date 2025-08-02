@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+
+#define CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // test numeric_limits
 
 // epsilon()
