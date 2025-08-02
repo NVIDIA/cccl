@@ -57,6 +57,11 @@ static inline struct stf_exec_place make_host_place()
   return p;
 }
 
+typedef struct stf_exec_place_device stf_exec_place_device;
+typedef struct stf_exec_place_host stf_exec_place_host;
+typedef union stf_exec_place_u stf_exec_place_u;
+typedef struct stf_exec_place stf_exec_place;
+
 typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
 void stf_ctx_create(stf_ctx_handle* ctx);
@@ -83,7 +88,7 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
 typedef struct stf_task_handle_t* stf_task_handle;
 
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
-void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p);
+void stf_task_set_exec_place(stf_task_handle t, struct stf_exec_place* exec_p);
 void stf_task_set_symbol(stf_task_handle t, const char* symbol);
 void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
 void stf_task_start(stf_task_handle t);
@@ -95,7 +100,7 @@ void stf_task_destroy(stf_task_handle t);
 typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 
 void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
-void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place* exec_p);
+void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, struct stf_exec_place* exec_p);
 void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
 void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
 void stf_cuda_kernel_start(stf_cuda_kernel_handle k);

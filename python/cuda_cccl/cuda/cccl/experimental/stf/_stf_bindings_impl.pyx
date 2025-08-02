@@ -42,11 +42,38 @@ cdef extern from "<cuda.h>":
 
 
 cdef extern from "cccl/c/experimental/stf/stf.h":
+    #
+    # Contexts
+    #
     ctypedef struct stf_ctx_handle_t
     ctypedef stf_ctx_handle_t* stf_ctx_handle
     void stf_ctx_create(stf_ctx_handle* ctx)
     void stf_ctx_create_graph(stf_ctx_handle* ctx)
     void stf_ctx_finalize(stf_ctx_handle ctx)
+
+    #
+    # Exec places
+    #
+    ctypedef enum stf_exec_place_kind:
+        STF_EXEC_PLACE_DEVICE
+        STF_EXEC_PLACE_HOST
+
+    ctypedef struct stf_exec_place_device:
+        int dev_id
+
+    ctypedef struct stf_exec_place_host:
+        int dummy
+
+    ctypedef union stf_exec_place_u:
+        stf_exec_place_device device
+        stf_exec_place_host   host
+
+    ctypedef struct stf_exec_place:
+        stf_exec_place_kind kind
+        stf_exec_place_u    u
+
+    stf_exec_place make_device_place(int  dev_id)
+    stf_exec_place make_host_place()
 
     ctypedef struct stf_logical_data_handle_t
     ctypedef stf_logical_data_handle_t* stf_logical_data_handle
@@ -57,6 +84,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_task_handle_t
     ctypedef stf_task_handle_t* stf_task_handle
     void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
+    void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p)
     void stf_task_set_symbol(stf_task_handle t, const char* symbol)
     void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
     void stf_task_start(stf_task_handle t)
@@ -152,6 +180,36 @@ def read(ld):   return dep(ld, AccessMode.READ.value)
 def write(ld):  return dep(ld, AccessMode.WRITE.value)
 def rw(ld):     return dep(ld, AccessMode.RW.value)
 
+cdef class ExecPlace:
+    cdef stf_exec_place _c_place
+
+    def __cinit__(self):
+        # empty default constructor; never directly used
+        pass
+
+    @staticmethod
+    def device(int dev_id):
+        cdef ExecPlace p = ExecPlace.__new__(ExecPlace)
+        p._c_place = make_device_place(dev_id)
+        return p
+
+    @staticmethod
+    def host():
+        cdef ExecPlace p = ExecPlace.__new__(ExecPlace)
+        p._c_place = make_host_place()
+        return p
+
+    @property
+    def kind(self) -> str:
+        return ("device" if self._c_place.kind == STF_EXEC_PLACE_DEVICE
+                else "host")
+
+    @property
+    def device_id(self) -> int:
+        if self._c_place.kind != STF_EXEC_PLACE_DEVICE:
+            raise AttributeError("not a device execution place")
+        return self._c_place.u.device.dev_id
+
 cdef class task:
     cdef stf_task_handle _t
 
@@ -188,6 +246,13 @@ cdef class task:
         stf_task_add_dep(self._t, ldata._ld, mode_ce)
 
         self._lds_args.append(ldata)
+
+    def set_exec_place(self, object exec_p):
+       if not isinstance(exec_p, ExecPlace):
+           raise TypeError("set_exec_place expects and ExecPlace argument")
+
+       cdef ExecPlace ep = <ExecPlace> exec_p
+       stf_task_set_exec_place(self._t, &ep._c_place)
 
     def stream_ptr(self) -> int:
         """
@@ -249,7 +314,7 @@ cdef class context:
         """
         return logical_data(self, buf)
 
-    def task(self, *deps):
+    def task(self, *args):
         """
         Create a `task`
 
@@ -259,7 +324,18 @@ cdef class context:
         >>> t.start()
         >>> t.end()
         """
+        exec_place_set = False
         t = task(self)          # construct with this context
-        for d in deps:
-            t.add_dep(d)        # your existing add_dep logic
+        for d in args:
+            if isinstance(d, dep):
+                t.add_dep(d)
+            elif isinstance(d, ExecPlace):
+                if exec_place_set:
+                      raise ValueError("Only one ExecPlace can be given")
+                t.set_exec_place(d)
+                exec_place_set = True
+            else:
+                raise TypeError(
+                    "Arguments must be dependency objects or an ExecPlace"
+                )
         return t
