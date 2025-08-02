@@ -15,11 +15,11 @@
  *
  * Adapted from https://developer.nvidia.com/blog/dynamic-control-flow-in-cuda-graphs-with-conditional-nodes/
  */
-
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void dummy() {}
 
 __device__ int counter = 5;
@@ -35,9 +35,13 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
   }
   cudaGraphSetConditional(handle, value);
 }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 int main()
 {
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n")
+#else
   cudaStream_t stream;
 
   cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
@@ -99,4 +103,5 @@ int main()
   cuda_safe_call(cudaGraphLaunch(graphExec, stream));
   cuda_safe_call(cudaStreamSynchronize(stream));
   cuda_safe_call(cudaGraphDebugDotPrint(graph, "test-while.dot", cudaGraphDebugDotFlags(0)));
+#endif // !_CCCL_CTK_BELOW(12, 4)
 }
