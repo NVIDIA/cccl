@@ -50,6 +50,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/utility>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -280,6 +282,89 @@ struct WarpScanSmem
     __syncwarp(member_mask);
   }
 
+  /**
+   * @brief Partial inclusive scan
+   *
+   * @param[in] input
+   *   Calling thread's input item.
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item. May be aliased with @p input
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
+  {
+    // Iterate scan steps
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive_output = input;
+    }
+
+    ::cuda::static_for<STEPS>([&](auto step) {
+      constexpr int offset = 1 << step;
+
+      // Share partial into buffer
+      if constexpr (step == 0)
+      {
+        detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
+      }
+      else
+      {
+        temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
+      }
+
+      __syncwarp(member_mask);
+
+      // Update partial if addend is in range
+      if ((lane_id >= offset) && (static_cast<int>(lane_id) < valid_items))
+      {
+        T addend         = temp_storage[HALF_WARP_THREADS + lane_id - offset];
+        inclusive_output = scan_op(addend, inclusive_output);
+      }
+      __syncwarp(member_mask);
+    });
+  }
+
+  /**
+   * @brief Partial inclusive scan with aggregate
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item. May be aliased with @p input
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of input items.
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
+  {
+    InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    // Retrieve aggregate
+    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
+
+    __syncwarp(member_mask);
+
+    warp_aggregate = temp_storage[HALF_WARP_THREADS + ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)];
+
+    __syncwarp(member_mask);
+  }
+
   //---------------------------------------------------------------------
   // Get exclusive from inclusive
   //---------------------------------------------------------------------
@@ -430,6 +515,129 @@ struct WarpScanSmem
     {
       exclusive = initial_value;
     }
+  }
+
+  /**
+   * @brief Update inclusive and exclusive using input and inclusive
+   *
+   * @param[in] input
+   *
+   * @param[in, out] inclusive
+   *
+   * @param[out] exclusive
+   *
+   * @param[in] scan_op
+   *
+   * @param[in] valid_items
+   *
+   * @param[in] is_integer
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, IsIntegerT is_integer)
+  {
+    if constexpr (is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>)
+    {
+      // initial value presumed 0
+      if (static_cast<int>(lane_id) < valid_items)
+      {
+        exclusive = inclusive - input;
+      }
+    }
+    else
+    {
+      // initial value unknown
+      temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+
+      __syncwarp(member_mask);
+
+      T temp = temp_storage[HALF_WARP_THREADS + lane_id - 1];
+      if (static_cast<int>(lane_id) < valid_items)
+      {
+        exclusive = temp;
+      }
+    }
+  }
+
+  /**
+   * @brief Update inclusive and exclusive using initial value using input, inclusive, and initial
+   *        value
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value, IsIntegerT is_integer)
+  {
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive = scan_op(initial_value, inclusive);
+    }
+    // Get exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, is_integer);
+    if constexpr (!(is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>) )
+    {
+      if ((lane_id == 0u) && (valid_items > 0))
+      {
+        exclusive = initial_value;
+      }
+    }
+  }
+
+  /**
+   * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items, IsIntegerT is_integer)
+  {
+    // Initial value presumed to be unknown or identity (either way our padding is correct)
+    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+
+    __syncwarp(member_mask);
+
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
+    if constexpr (is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>)
+    {
+      UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, is_integer);
+    }
+    else
+    {
+      // Should not be replaced with UpdatePartial() to avoid redundant store of inclusive amd sync.
+      T temp = temp_storage[HALF_WARP_THREADS + lane_id - 1];
+      if (static_cast<int>(lane_id) < valid_items)
+      {
+        exclusive = temp;
+      }
+    }
+  }
+
+  /**
+   * @brief Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial
+   *        value
+   */
+  template <typename ScanOpT, typename IsIntegerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input,
+    T& inclusive,
+    T& exclusive,
+    T& warp_aggregate,
+    ScanOpT scan_op,
+    int valid_items,
+    T initial_value,
+    IsIntegerT is_integer)
+  {
+    // Broadcast warp aggregate
+    temp_storage[HALF_WARP_THREADS + lane_id] = inclusive;
+
+    __syncwarp(member_mask);
+
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
+
+    __syncwarp(member_mask);
+
+    // Apply initial_value and get exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, initial_value, is_integer);
   }
 };
 } // namespace detail
