@@ -141,18 +141,13 @@ struct cuda_kernel_desc
         .kernelParams   = args_ptr.data(),
         .extra          = nullptr};
       cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+      return;
     }
-    else
-    {
-      auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
-      if (!ker_ptr)
-      {
-        // If this is a CUkernel, the cast to a CUfunction is sufficient
-        ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
-      }
 
+    if (auto* func_ptr = ::std::get_if<CUfunction>(&func_variant))
+    {
       CUDA_KERNEL_NODE_PARAMS params{
-        .func           = *ker_ptr,
+        .func           = *func_ptr,
         .gridDimX       = gridDim.x,
         .gridDimY       = gridDim.y,
         .gridDimZ       = gridDim.z,
@@ -165,7 +160,27 @@ struct cuda_kernel_desc
         .kern           = nullptr,
         .ctx            = nullptr};
       cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+      return;
     }
+
+    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    _CCCL_ASSERT(ker_ptr, "invalid function");
+
+    CUDA_KERNEL_NODE_PARAMS params{
+      .func           = nullptr,
+      .gridDimX       = gridDim.x,
+      .gridDimY       = gridDim.y,
+      .gridDimZ       = gridDim.z,
+      .blockDimX      = blockDim.x,
+      .blockDimY      = blockDim.y,
+      .blockDimZ      = blockDim.z,
+      .sharedMemBytes = static_cast<unsigned>(sharedMem),
+      .kernelParams   = const_cast<void**>(args_ptr.data()),
+      .extra          = nullptr,
+      .kern           = *ker_ptr,
+      // ctx=nullptr means current context
+      .ctx = nullptr};
+    cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
   }
 
   // Utility to query the number of registers used by this kernel
