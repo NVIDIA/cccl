@@ -40,7 +40,7 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
 int main()
 {
 #if _CCCL_CTK_BELOW(12, 4)
-  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n")
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
 #else
   cudaStream_t stream;
 
