@@ -180,7 +180,7 @@ def read(ld):   return dep(ld, AccessMode.READ.value)
 def write(ld):  return dep(ld, AccessMode.WRITE.value)
 def rw(ld):     return dep(ld, AccessMode.RW.value)
 
-cdef class ExecPlace:
+cdef class exec_place:
     cdef stf_exec_place _c_place
 
     def __cinit__(self):
@@ -189,13 +189,13 @@ cdef class ExecPlace:
 
     @staticmethod
     def device(int dev_id):
-        cdef ExecPlace p = ExecPlace.__new__(ExecPlace)
+        cdef exec_place p = exec_place.__new__(exec_place)
         p._c_place = make_device_place(dev_id)
         return p
 
     @staticmethod
     def host():
-        cdef ExecPlace p = ExecPlace.__new__(ExecPlace)
+        cdef exec_place p = exec_place.__new__(exec_place)
         p._c_place = make_host_place()
         return p
 
@@ -248,10 +248,10 @@ cdef class task:
         self._lds_args.append(ldata)
 
     def set_exec_place(self, object exec_p):
-       if not isinstance(exec_p, ExecPlace):
-           raise TypeError("set_exec_place expects and ExecPlace argument")
+       if not isinstance(exec_p, exec_place):
+           raise TypeError("set_exec_place expects and exec_place argument")
 
-       cdef ExecPlace ep = <ExecPlace> exec_p
+       cdef exec_place ep = <exec_place> exec_p
        stf_task_set_exec_place(self._t, &ep._c_place)
 
     def stream_ptr(self) -> int:
@@ -329,13 +329,13 @@ cdef class context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
-            elif isinstance(d, ExecPlace):
+            elif isinstance(d, exec_place):
                 if exec_place_set:
-                      raise ValueError("Only one ExecPlace can be given")
+                      raise ValueError("Only one exec_place can be given")
                 t.set_exec_place(d)
                 exec_place_set = True
             else:
                 raise TypeError(
-                    "Arguments must be dependency objects or an ExecPlace"
+                    "Arguments must be dependency objects or an exec_place"
                 )
         return t
