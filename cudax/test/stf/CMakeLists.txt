@@ -20,6 +20,7 @@ set(stf_test_sources
   error_checks/non_managed_data.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
+  examples/cuda_kernels_driver.cu
   examples/05-stencil-no-copy.cu
   examples/05-stencil-places.cu
   examples/05-stencil.cu
