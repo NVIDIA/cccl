@@ -94,6 +94,22 @@ class context
       };
     }
 
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
+    }
+
     auto& set_symbol(::std::string s) &
     {
       payload->*[&](auto& self) {
@@ -191,6 +207,22 @@ public:
     {
       payload->*[&](auto& self) {
         self.set_symbol(mv(s));
+      };
+      return mv(*this);
+    }
+
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
       };
       return mv(*this);
     }
