@@ -15,6 +15,48 @@ typedef enum stf_access_mode
   STF_RW    = STF_READ | STF_WRITE
 } stf_access_mode;
 
+struct stf_exec_place_device
+{
+  int dev_id;
+};
+
+struct stf_exec_place_host
+{
+  char dummy; /* dummy to keep it standard C which does not allow empty structs */
+};
+
+typedef enum stf_exec_place_kind
+{
+  STF_EXEC_PLACE_DEVICE,
+  STF_EXEC_PLACE_HOST
+} stf_exec_place_kind;
+
+struct stf_exec_place
+{
+  enum stf_exec_place_kind kind;
+  union
+  {
+    struct stf_exec_place_device device;
+    struct stf_exec_place_host host;
+  } u;
+};
+
+static inline struct stf_exec_place make_device_place(int dev_id)
+{
+  struct stf_exec_place p;
+  p.kind            = STF_EXEC_PLACE_DEVICE;
+  p.u.device.dev_id = dev_id;
+  return p;
+}
+
+static inline struct stf_exec_place make_host_place()
+{
+  struct stf_exec_place p;
+  p.kind         = STF_EXEC_PLACE_HOST;
+  p.u.host.dummy = 0; /* to avoid uninitialized memory warnings */
+  return p;
+}
+
 typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
 void stf_ctx_create(stf_ctx_handle* ctx);
@@ -41,6 +83,7 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
 typedef struct stf_task_handle_t* stf_task_handle;
 
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
+void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p);
 void stf_task_set_symbol(stf_task_handle t, const char* symbol);
 void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
 void stf_task_start(stf_task_handle t);
@@ -52,6 +95,7 @@ void stf_task_destroy(stf_task_handle t);
 typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 
 void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
+void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place* exec_p);
 void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
 void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
 void stf_cuda_kernel_start(stf_cuda_kernel_handle k);

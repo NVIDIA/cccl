@@ -83,12 +83,30 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
   *ld = new stf_logical_data_handle_t{ctx->ctx.token()};
 }
 
+/* Convert the C-API stf_exec_place to a C++ exec_place object */
+exec_place to_exec_place(stf_exec_place* exec_p)
+{
+  if (exec_p->kind == STF_EXEC_PLACE_HOST)
+  {
+    return exec_place::host();
+  }
+
+  assert(exec_p->kind == STF_EXEC_PLACE_DEVICE);
+  return exec_place::device(exec_p->u.device.dev_id);
+}
+
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
 {
   assert(t);
   assert(ctx);
 
   *t = new stf_task_handle_t{ctx->ctx.task()};
+}
+
+void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p)
+{
+  assert(t);
+  t->t.set_exec_place(to_exec_place(exec_p));
 }
 
 void stf_task_set_symbol(stf_task_handle t, const char* symbol)
@@ -168,6 +186,12 @@ void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k)
   assert(ctx);
 
   *k = new stf_cuda_kernel_handle_t{ctx->ctx.cuda_kernel()};
+}
+
+void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place* exec_p)
+{
+  assert(k);
+  k->k.set_exec_place(to_exec_place(exec_p));
 }
 
 void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
