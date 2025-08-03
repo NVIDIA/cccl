@@ -188,6 +188,45 @@ def test_numba_exec_place():
         pass
 
 
+def test_numba_places():
+    X = np.ones(16, dtype=np.float32)
+    Y = np.ones(16, dtype=np.float32)
+    Z = np.ones(16, dtype=np.float32)
+
+    ctx = context()
+    lX = ctx.logical_data(X)
+    lY = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Z)
+
+    with ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = t.get_arg_numba(0)
+        scale[32, 64, nb_stream](2.0, dX)
+        pass
+
+    with ctx.task(lX.read(), lY.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        print(nb_stream)
+        dX = t.get_arg_numba(0)
+        dY = t.get_arg_numba(1)
+        axpy[32, 64, nb_stream](2.0, dX, dY)
+        pass
+
+    with ctx.task(exec_place.device(1), lX.read(), lZ.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = t.get_arg_numba(0)
+        dZ = t.get_arg_numba(1)
+        axpy[32, 64, nb_stream](2.0, dX, dZ)
+        pass
+
+    with ctx.task(lY.read(), lZ.rw(data_place.device(1))) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dY = t.get_arg_numba(0)
+        dZ = t.get_arg_numba(1)
+        axpy[32, 64, nb_stream](2.0, dY, dZ)
+        pass
+
+
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
     test_numba_exec_place()
