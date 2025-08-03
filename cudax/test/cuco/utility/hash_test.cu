@@ -87,7 +87,7 @@ TEST_CASE("Utility Hasher _XXHash_32 test", "")
 
   SECTION("device-generated hash values match the reference implementation.")
   {
-    cuda::std::array<bool, 1> result{false};
+    thrust::device_vector<bool> result(1, false);
     test_xxhash32_on_device<<<1, 1>>>(result.begin());
     CUDAX_REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
     CUDAX_REQUIRE(result[0]);
