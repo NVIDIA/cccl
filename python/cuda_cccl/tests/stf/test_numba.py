@@ -7,6 +7,7 @@ from numba import cuda
 
 from cuda.cccl.experimental.stf._stf_bindings_impl import (
     context,
+    data_place,
     exec_place,
     read,
     rw,
@@ -170,7 +171,9 @@ def test_numba_exec_place():
         axpy[32, 64, nb_stream](2.0, dX, dY)
         pass
 
-    with ctx.task(exec_place.device(0), lX.read(), lZ.rw()) as t:
+    with ctx.task(
+        exec_place.device(0), lX.read(data_place.managed()), lZ.rw(data_place.managed())
+    ) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
         dX = t.get_arg_numba(0)
         dZ = t.get_arg_numba(1)

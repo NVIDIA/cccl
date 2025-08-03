@@ -199,17 +199,17 @@ cdef class logical_data:
         """Return the shape of the logical data."""
         return self._shape
 
-    def read(self):
-        return dep(self, AccessMode.READ.value)
+    def read(self, dplace=None):
+        return dep(self, AccessMode.READ.value, dplace)
 
-    def write(self):
-        return dep(self, AccessMode.WRITE.value)
+    def write(self, dplace=None):
+        return dep(self, AccessMode.WRITE.value, dplace)
 
-    def rw(self):
-        return dep(self, AccessMode.RW.value)
+    def rw(self, dplace=None):
+        return dep(self, AccessMode.RW.value, dplace)
 
 class dep:
-    __slots__ = ("ld", "mode")
+    __slots__ = ("ld", "mode", "dplace")
     def __init__(self, logical_data ld, int mode, dplace=None):
         self.ld   = ld
         self.mode = mode
@@ -221,9 +221,9 @@ class dep:
     def __repr__(self):
         return f"dep({self.ld!r}, {self.mode}, {self.place!r})"
 
-def read(ld):   return dep(ld, AccessMode.READ.value)
-def write(ld):  return dep(ld, AccessMode.WRITE.value)
-def rw(ld):     return dep(ld, AccessMode.RW.value)
+def read(ld, dplace=None):   return dep(ld, AccessMode.READ.value, dplace)
+def write(ld, dplace=None):  return dep(ld, AccessMode.WRITE.value, dplace)
+def rw(ld, dplace=None):     return dep(ld, AccessMode.RW.value, dplace)
 
 cdef class exec_place:
     cdef stf_exec_place _c_place
@@ -264,25 +264,25 @@ cdef class data_place:
 
     @staticmethod
     def device(int dev_id):
-        cdef data_place p = data_place.__new__(exec_place)
+        cdef data_place p = data_place.__new__(data_place)
         p._c_place = make_device_data_place(dev_id)
         return p
 
     @staticmethod
     def host():
-        cdef data_place p = data_place.__new__(exec_place)
+        cdef data_place p = data_place.__new__(data_place)
         p._c_place = make_host_data_place()
         return p
 
     @staticmethod
     def managed():
-        cdef data_place p = data_place.__new__(exec_place)
+        cdef data_place p = data_place.__new__(data_place)
         p._c_place = make_managed_data_place()
         return p
 
     @staticmethod
     def affine():
-        cdef data_place p = data_place.__new__(exec_place)
+        cdef data_place p = data_place.__new__(data_place)
         p._c_place = make_affine_data_place()
         return p
 
