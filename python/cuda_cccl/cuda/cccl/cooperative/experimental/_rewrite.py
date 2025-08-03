@@ -1966,15 +1966,6 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
         self.runtime_arg_types = tuple()
         self.runtime_arg_names = tuple()
         return
-        self.runtime_args = algo.parameters[0]
-        self.runtime_arg_types = [p.dtype() for p in self.runtime_args]
-        self.runtime_arg_names = [
-            (p.name or f"param_{i}") for (i, p) in enumerate(self.runtime_args)
-        ]
-
-        # self.runtime_args = [ items_var, histogram_var ]
-        # self.runtime_arg_types = [ items_ty, histogram_ty ]
-        # self.runtime_arg_names = [ "items", "histogram" ]
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -1989,7 +1980,6 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
 class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.histogram.init"
     disposition = Disposition.CHILD
-    # return_type = types.void
 
     def refine_match(self, rewriter):
         parent_node = self.parent_node
@@ -2049,7 +2039,6 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
                 f"got {histogram_ty!r} for {self!r}"
             )
 
-        # parent_rewrite_details = parent_node.rewrite_details
         self.instance = parent_instance.composite(self, items)
 
         self.runtime_args = [items, histogram]
@@ -2057,38 +2046,6 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
         self.runtime_arg_names = ["items", "histogram"]
 
         return
-
-        algo = self.instance.specialization
-
-        assert len(algo.parameters) == 1, algo.parameters
-        # self.set_no_runtime_args()
-        # self.runtime_args = tuple()
-        # self.runtime_arg_types = tuple()
-        # self.runtime_arg_names = tuple()
-        # return
-
-        parent_var = parent_root_def.root_assign.target
-        parent_ty = self.typemap[parent_var.name]
-
-        # self.runtime_args = algo.parameters[0]
-        self.runtime_args = [parent_var, items, histogram]
-        self.runtime_arg_types = [parent_ty, items_ty, histogram_ty]
-        self.runtime_arg_names = ["parent", "items", "histogram"]
-
-        return
-
-        self.runtime_arg_types = [p.dtype() for p in self.runtime_args]
-        self.runtime_arg_names = [
-            (p.name or f"param_{i}") for (i, p) in enumerate(self.runtime_args)
-        ]
-
-        self.runtime_args.append(items)
-        self.runtime_arg_types.append(items_ty)
-        self.runtime_arg_names.append("items")
-
-        # self.runtime_args = [ items ]
-        # self.runtime_arg_types = [ items_ty ]
-        # self.runtime_arg_names = [ "items" ]
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
