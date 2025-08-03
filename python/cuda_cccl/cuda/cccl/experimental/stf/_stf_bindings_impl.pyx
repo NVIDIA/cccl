@@ -75,6 +75,42 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_exec_place make_device_place(int  dev_id)
     stf_exec_place make_host_place()
 
+    #
+    # Data places
+    #
+    ctypedef enum stf_data_place_kind:
+        STF_DATA_PLACE_DEVICE
+        STF_DATA_PLACE_HOST
+        STF_DATA_PLACE_MANAGED
+        STF_DATA_PLACE_AFFINE
+
+    ctypedef struct stf_data_place_device:
+        int dev_id
+
+    ctypedef struct stf_data_place_host:
+        int dummy
+
+    ctypedef struct stf_data_place_managed:
+        int dummy
+
+    ctypedef struct stf_data_place_affine:
+        int dummy
+
+    ctypedef union stf_data_place_u:
+        stf_data_place_device device
+        stf_data_place_host   host
+        stf_data_place_managed   managed
+        stf_data_place_affine   affine
+
+    ctypedef struct stf_data_place:
+        stf_data_place_kind kind
+        stf_data_place_u    u
+
+    stf_data_place make_device_data_place(int  dev_id)
+    stf_data_place make_host_data_place()
+    stf_data_place make_managed_data_place()
+    stf_data_place make_affine_data_place()
+
     ctypedef struct stf_logical_data_handle_t
     ctypedef stf_logical_data_handle_t* stf_logical_data_handle
     void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
@@ -87,6 +123,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p)
     void stf_task_set_symbol(stf_task_handle t, const char* symbol)
     void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
+    void stf_task_add_dep_with_dplace(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place* data_p)
     void stf_task_start(stf_task_handle t)
     void stf_task_end(stf_task_handle t)
     CUstream stf_task_get_custream(stf_task_handle t)
@@ -162,20 +199,28 @@ cdef class logical_data:
         """Return the shape of the logical data."""
         return self._shape
 
+    def read(self):
+        return dep(self, AccessMode.READ.value)
 
+    def write(self):
+        return dep(self, AccessMode.WRITE.value)
+
+    def rw(self):
+        return dep(self, AccessMode.RW.value)
 
 class dep:
     __slots__ = ("ld", "mode")
-    def __init__(self, logical_data ld, int mode):
+    def __init__(self, logical_data ld, int mode, dplace=None):
         self.ld   = ld
         self.mode = mode
+        self.dplace = dplace  # can be None or a data place
     def __iter__(self):      # nice unpacking support
         yield self.ld
         yield self.mode
+        yield self.dplace
     def __repr__(self):
-        return f"dep({self.ld!r}, {self.mode})"
+        return f"dep({self.ld!r}, {self.mode}, {self.place!r})"
 
-# optional sugar
 def read(ld):   return dep(ld, AccessMode.READ.value)
 def write(ld):  return dep(ld, AccessMode.WRITE.value)
 def rw(ld):     return dep(ld, AccessMode.RW.value)
@@ -243,7 +288,11 @@ cdef class task:
         cdef int           mode_int  = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
 
-        stf_task_add_dep(self._t, ldata._ld, mode_ce)
+        if d.dplace is None:
+            stf_task_add_dep(self._t, ldata._ld, mode_ce)
+        else:
+            cdef stf_data_place dplace = <stf_data_place> d.dplace
+            stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, &dplace)
 
         self._lds_args.append(ldata)
 

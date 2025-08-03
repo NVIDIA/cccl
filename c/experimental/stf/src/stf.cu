@@ -95,6 +95,30 @@ exec_place to_exec_place(struct stf_exec_place* exec_p)
   return exec_place::device(exec_p->u.device.dev_id);
 }
 
+/* Convert the C-API stf_data_place to a C++ data_place object */
+data_place to_data_place(struct stf_data_place* data_p)
+{
+  assert(data_p);
+
+  if (data_p->kind == STF_DATA_PLACE_HOST)
+  {
+    return data_place::host();
+  }
+
+  if (data_p->kind == STF_DATA_PLACE_MANAGED)
+  {
+    return data_place::managed();
+  }
+
+  if (data_p->kind == STF_DATA_PLACE_AFFINE)
+  {
+    return data_place::affine();
+  }
+
+  assert(data_p->kind == STF_DATA_PLACE_DEVICE);
+  return data_place::device(data_p->u.device.dev_id);
+}
+
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
 {
   assert(t);
@@ -123,6 +147,16 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
   assert(ld);
 
   t->t.add_deps(task_dep_untyped(ld->ld, access_mode(m)));
+}
+
+void stf_task_add_dep_with_dplace(
+  stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, struct stf_data_place* data_p)
+{
+  assert(t);
+  assert(ld);
+  assert(data_p);
+
+  t->t.add_deps(task_dep_untyped(ld->ld, access_mode(m), to_data_place(data_p)));
 }
 
 void* stf_task_get(stf_task_handle t, int index)

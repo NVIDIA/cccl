@@ -62,6 +62,85 @@ typedef struct stf_exec_place_host stf_exec_place_host;
 typedef union stf_exec_place_u stf_exec_place_u;
 typedef struct stf_exec_place stf_exec_place;
 
+struct stf_data_place_device
+{
+  int dev_id;
+};
+
+struct stf_data_place_host
+{
+  char dummy; /* dummy to keep it standard C which does not allow empty structs */
+};
+
+struct stf_data_place_managed
+{
+  char dummy; /* dummy to keep it standard C which does not allow empty structs */
+};
+
+struct stf_data_place_affine
+{
+  char dummy; /* dummy to keep it standard C which does not allow empty structs */
+};
+
+typedef enum stf_data_place_kind
+{
+  STF_DATA_PLACE_DEVICE,
+  STF_DATA_PLACE_HOST,
+  STF_DATA_PLACE_MANAGED,
+  STF_DATA_PLACE_AFFINE
+} stf_data_place_kind;
+
+struct stf_data_place
+{
+  enum stf_data_place_kind kind;
+  union
+  {
+    struct stf_data_place_device device;
+    struct stf_data_place_host host;
+    struct stf_data_place_managed managed;
+    struct stf_data_place_affine affine;
+  } u;
+};
+
+static inline struct stf_data_place make_device_data_place(int dev_id)
+{
+  struct stf_data_place p;
+  p.kind            = STF_DATA_PLACE_DEVICE;
+  p.u.device.dev_id = dev_id;
+  return p;
+}
+
+static inline struct stf_data_place make_host_data_place()
+{
+  struct stf_data_place p;
+  p.kind         = STF_DATA_PLACE_HOST;
+  p.u.host.dummy = 0; /* to avoid uninitialized memory warnings */
+  return p;
+}
+
+static inline struct stf_data_place make_managed_data_place()
+{
+  struct stf_data_place p;
+  p.kind            = STF_DATA_PLACE_MANAGED;
+  p.u.managed.dummy = 0; /* to avoid uninitialized memory warnings */
+  return p;
+}
+
+static inline struct stf_data_place make_affine_data_place()
+{
+  struct stf_data_place p;
+  p.kind           = STF_DATA_PLACE_AFFINE;
+  p.u.affine.dummy = 0; /* to avoid uninitialized memory warnings */
+  return p;
+}
+
+typedef struct stf_data_place_device stf_data_place_device;
+typedef struct stf_data_place_host stf_data_place_host;
+typedef struct stf_data_place_managed stf_data_place_managed;
+typedef struct stf_data_place_affine stf_data_place_affine;
+typedef union stf_data_place_u stf_data_place_u;
+typedef struct stf_data_place stf_data_place;
+
 typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
 void stf_ctx_create(stf_ctx_handle* ctx);
@@ -91,6 +170,8 @@ void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
 void stf_task_set_exec_place(stf_task_handle t, struct stf_exec_place* exec_p);
 void stf_task_set_symbol(stf_task_handle t, const char* symbol);
 void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
+void stf_task_add_dep_with_dplace(
+  stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, struct stf_data_place* data_p);
 void stf_task_start(stf_task_handle t);
 void stf_task_end(stf_task_handle t);
 CUstream stf_task_get_custream(stf_task_handle t);
