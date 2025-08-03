@@ -255,6 +255,59 @@ cdef class exec_place:
             raise AttributeError("not a device execution place")
         return self._c_place.u.device.dev_id
 
+cdef class data_place:
+    cdef stf_data_place _c_place
+
+    def __cinit__(self):
+        # empty default constructor; never directly used
+        pass
+
+    @staticmethod
+    def device(int dev_id):
+        cdef data_place p = data_place.__new__(exec_place)
+        p._c_place = make_device_data_place(dev_id)
+        return p
+
+    @staticmethod
+    def host():
+        cdef data_place p = data_place.__new__(exec_place)
+        p._c_place = make_host_data_place()
+        return p
+
+    @staticmethod
+    def managed():
+        cdef data_place p = data_place.__new__(exec_place)
+        p._c_place = make_managed_data_place()
+        return p
+
+    @staticmethod
+    def affine():
+        cdef data_place p = data_place.__new__(exec_place)
+        p._c_place = make_affine_data_place()
+        return p
+
+    @property
+    def kind(self) -> str:
+        cdef stf_data_place_kind k = self._c_place.kind
+        if k == STF_DATA_PLACE_DEVICE:
+            return "device"
+        elif k == STF_DATA_PLACE_HOST:
+            return "host"
+        elif k == STF_DATA_PLACE_MANAGED:
+            return "managed"
+        elif k == STF_DATA_PLACE_AFFINE:
+            return "affine"
+        else:
+            raise ValueError(f"Unknown data place kind: {k}")
+
+    @property
+    def device_id(self) -> int:
+        if self._c_place.kind != STF_DATA_PLACE_DEVICE:
+            raise AttributeError("not a device data place")
+        return self._c_place.u.device.dev_id
+
+
+
 cdef class task:
     cdef stf_task_handle _t
 
@@ -287,12 +340,13 @@ cdef class task:
         cdef logical_data ldata = <logical_data> d.ld
         cdef int           mode_int  = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
+        cdef data_place dp
 
         if d.dplace is None:
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
-            cdef stf_data_place dplace = <stf_data_place> d.dplace
-            stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, &dplace)
+            dp = <data_place> d.dplace
+            stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, &dp._c_place)
 
         self._lds_args.append(ldata)
 
