@@ -42,57 +42,59 @@ struct __numbers
   {                                                               \
     static _CCCL_API constexpr _TYPE __e() noexcept               \
     {                                                             \
-      return _MOD(2.718281828459045235360287471352662##_SUFFIX);  \
+      return _MOD(0x1.5bf0a8b1457695355fb8ac404e7ap+1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __log2e() noexcept           \
     {                                                             \
-      return _MOD(1.442695040888963407359924681001892##_SUFFIX);  \
+      return _MOD(0x1.71547652b82fe1777d0ffda0d23ap+0##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __log10e() noexcept          \
     {                                                             \
-      return _MOD(0.434294481903251827651128918916605##_SUFFIX);  \
+      return _MOD(0x1.bcb7b1526e50e32a6ab7555f5a68p-2##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __pi() noexcept              \
     {                                                             \
-      return _MOD(3.141592653589793238462643383279502##_SUFFIX);  \
+      return _MOD(0x1.921fb54442d18469898cc51701b8p+1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __inv_pi() noexcept          \
     {                                                             \
-      return _MOD(0.318309886183790671537767526745028##_SUFFIX);  \
+      return _MOD(0x1.45f306dc9c882a53f84eafa3ea6ap-2##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __inv_sqrtpi() noexcept      \
     {                                                             \
-      return _MOD(0.564189583547756286948079451560772##_SUFFIX);  \
+      return _MOD(0x1.20dd750429b6d11ae3a914fed7fep-1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __ln2() noexcept             \
     {                                                             \
-      return _MOD(0.693147180559945309417232121458176##_SUFFIX);  \
+      return _MOD(0x1.62e42fefa39ef35793c7673007e6p-1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __ln10() noexcept            \
     {                                                             \
-      return _MOD(2.302585092994045684017991454684364##_SUFFIX);  \
+      return _MOD(0x1.26bb1bbb5551582dd4adac5705a6p+1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __sqrt2() noexcept           \
     {                                                             \
-      return _MOD(1.414213562373095048801688724209698##_SUFFIX);  \
+      return _MOD(0x1.6a09e667f3bcc908b2fb1366ea95p+0##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __sqrt3() noexcept           \
     {                                                             \
-      return _MOD(1.732050807568877293527446341505872##_SUFFIX);  \
+      return _MOD(0x1.bb67ae8584caa73b25742d7078b8p+0##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __inv_sqrt3() noexcept       \
     {                                                             \
-      return _MOD(0.577350269189625764509148780501957##_SUFFIX);  \
+      return _MOD(0x1.279a74590331c4d218f81e4afb25p-1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __egamma() noexcept          \
     {                                                             \
-      return _MOD(0.577215664901532860606512090082402##_SUFFIX);  \
+      return _MOD(0x1.2788cfc6fb618f49a37c7f0202a6p-1##_SUFFIX);  \
     }                                                             \
     static _CCCL_API constexpr _TYPE __phi() noexcept             \
     {                                                             \
-      return _MOD(1.618033988749894848204586834365638##_SUFFIX);  \
+      return _MOD(0x1.9e3779b97f4a7c15f39cc0605ceep+0##_SUFFIX);  \
     }                                                             \
   };
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1046) // floating-point value cannot be represented exactly
 
 _CCCL_STD_NUMBERS_SPECIALATION_IMPL(float, f, );
 _CCCL_STD_NUMBERS_SPECIALATION_IMPL(double, , );
@@ -102,6 +104,8 @@ _CCCL_STD_NUMBERS_SPECIALATION_IMPL(long double, l, );
 #if _CCCL_HAS_FLOAT128()
 _CCCL_STD_NUMBERS_SPECIALATION_IMPL(__float128, , _CCCL_FLOAT128_LITERAL);
 #endif // _CCCL_HAS_FLOAT128()
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #undef _CCCL_STD_NUMBERS_SPECIALATION_IMPL
 
