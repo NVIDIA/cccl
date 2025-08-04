@@ -196,7 +196,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = ::cuda::std::identity;
+  using transform_t   = cuda::std::identity;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
@@ -330,7 +330,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = ::cuda::std::identity;
+  using transform_t   = cuda::std::identity;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);

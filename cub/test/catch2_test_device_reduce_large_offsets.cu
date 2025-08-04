@@ -160,7 +160,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   SECTION("argmin")
   {
-    using result_t = cuda::std::pair<::cuda::std::int64_t, index_t>;
+    using result_t = cuda::std::pair<cuda::std::int64_t, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
@@ -175,7 +175,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const index_t expected_value = iterator_offset;
-    const auto expected_index    = static_cast<::cuda::std::int64_t>(num_items - 1);
+    const auto expected_index    = static_cast<cuda::std::int64_t>(num_items - 1);
 
     // Verify result
     const result_t gpu_result = out_result[0];
@@ -185,7 +185,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   SECTION("argmax")
   {
-    using result_t = cuda::std::pair<::cuda::std::int64_t, index_t>;
+    using result_t = cuda::std::pair<cuda::std::int64_t, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
@@ -200,7 +200,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const index_t expected_value = iterator_offset + num_items - index_t{1};
-    const auto expected_index    = static_cast<::cuda::std::int64_t>(num_items - 1);
+    const auto expected_index    = static_cast<cuda::std::int64_t>(num_items - 1);
 
     // Verify result
     const result_t gpu_result = out_result[0];
