@@ -43,10 +43,10 @@ struct TestParameters
 };
 
 using test_params_tuple =
-  c2h::type_list<TestParameters<std::tuple_element_t<0, key_types>, item_t, false, false>,
-                 TestParameters<std::tuple_element_t<1, key_types>, item_t, true, false>,
-                 TestParameters<std::tuple_element_t<2, key_types>, item_t, false, true>,
-                 TestParameters<std::tuple_element_t<3, key_types>, item_t, true, true>>;
+  c2h::type_list<TestParameters<c2h::get<0, key_types>, item_t, false, false>,
+                 TestParameters<c2h::get<1, key_types>, item_t, true, false>,
+                 TestParameters<c2h::get<2, key_types>, item_t, false, true>,
+                 TestParameters<c2h::get<3, key_types>, item_t, true, true>>;
 
 using BuildResultT = cccl_device_radix_sort_build_result_t;
 
