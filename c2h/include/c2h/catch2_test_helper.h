@@ -340,10 +340,11 @@ template <typename T>
 struct nvtx_fixture
 {
   nvtx_fixture()
-      : r(Catch::getResultCapture().getCurrentTestName())
+      : nvtx_range(Catch::getResultCapture().getCurrentTestName())
   {}
 
-  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> r;
+private:
+  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range;
 };
 } // namespace detail
 
