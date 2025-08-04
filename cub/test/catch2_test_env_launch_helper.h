@@ -43,7 +43,7 @@
 struct get_expected_allocation_size_t
 {};
 
-_CCCL_HOST_DEVICE static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
+__host__ __device__ static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
 expected_allocation_size(size_t expected)
 {
   return cuda::std::execution::prop{get_expected_allocation_size_t{}, expected};
@@ -52,7 +52,7 @@ expected_allocation_size(size_t expected)
 struct get_allowed_kernels_t
 {};
 
-_CCCL_HOST_DEVICE static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
+__host__ __device__ static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
 allowed_kernels(cuda::std::span<void*> allowed_kernels)
 {
   return cuda::std::execution::prop{get_allowed_kernels_t{}, allowed_kernels};
@@ -185,12 +185,12 @@ struct device_memory_resource : cub::detail::device_memory_resource
     FAIL("CUB shouldn't use synchronous deallocation");
   }
 
-  void* allocate_async(size_t bytes, size_t /* alignment */, ::cuda::stream_ref stream)
+  void* allocate_async(size_t bytes, size_t /* alignment */, cuda::stream_ref stream)
   {
     return allocate_async(bytes, stream);
   }
 
-  void* allocate_async(size_t bytes, ::cuda::stream_ref stream)
+  void* allocate_async(size_t bytes, cuda::stream_ref stream)
   {
     REQUIRE(target_stream == stream.get());
 
@@ -201,7 +201,7 @@ struct device_memory_resource : cub::detail::device_memory_resource
     return cub::detail::device_memory_resource::allocate_async(bytes, stream);
   }
 
-  void deallocate_async(void* ptr, size_t bytes, const ::cuda::stream_ref stream)
+  void deallocate_async(void* ptr, size_t bytes, const cuda::stream_ref stream)
   {
     REQUIRE(target_stream == stream.get());
 
@@ -226,17 +226,17 @@ struct throwing_memory_resource
     FAIL("CUB shouldn't use synchronous deallocation");
   }
 
-  void* allocate_async(size_t /* bytes */, size_t /* alignment */, ::cuda::stream_ref /* stream */)
+  void* allocate_async(size_t /* bytes */, size_t /* alignment */, cuda::stream_ref /* stream */)
   {
     throw "test";
   }
 
-  void* allocate_async(size_t /* bytes */, ::cuda::stream_ref /* stream */)
+  void* allocate_async(size_t /* bytes */, cuda::stream_ref /* stream */)
   {
     throw "test";
   }
 
-  void deallocate_async(void* /* ptr */, size_t /* bytes */, const ::cuda::stream_ref /* stream */)
+  void deallocate_async(void* /* ptr */, size_t /* bytes */, const cuda::stream_ref /* stream */)
   {
     throw "test";
   }
@@ -258,12 +258,12 @@ struct device_side_memory_resource
     cuda::std::terminate();
   }
 
-  __host__ __device__ void* allocate_async(size_t bytes, size_t /* alignment */, ::cuda::stream_ref stream)
+  __host__ __device__ void* allocate_async(size_t bytes, size_t /* alignment */, cuda::stream_ref stream)
   {
     return allocate_async(bytes, stream);
   }
 
-  __host__ __device__ void* allocate_async(size_t bytes, ::cuda::stream_ref /* stream */)
+  __host__ __device__ void* allocate_async(size_t bytes, cuda::stream_ref /* stream */)
   {
     if (bytes_allocated)
     {
@@ -272,7 +272,7 @@ struct device_side_memory_resource
     return static_cast<void*>(static_cast<char*>(ptr) + *bytes_allocated);
   }
 
-  __host__ __device__ void deallocate_async(void* /* ptr */, size_t bytes, const ::cuda::stream_ref /* stream */)
+  __host__ __device__ void deallocate_async(void* /* ptr */, size_t bytes, const cuda::stream_ref /* stream */)
   {
     if (bytes_deallocated)
     {
@@ -429,7 +429,7 @@ void launch(ActionT action, Args... args)
   c2h::device_vector<std::size_t> d_deallocated(1, 0);
 
   // Host-side stream is unusable in device code, force it to be 0
-  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{}};
+  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{cudaStream_t{}}};
 
   static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::__get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");

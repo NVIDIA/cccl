@@ -127,12 +127,37 @@ class context
       return *this;
     }
 
+    template <typename... Args>
+    auto& add_kernel_desc(Args&&... args)
+    {
+      payload->*[&](auto& self) {
+        self.add_kernel_desc(::std::forward<Args>(args)...);
+      };
+      return *this;
+    }
+
     template <typename T>
     decltype(auto) get(size_t submitted_index) const
     {
       return payload->*[&](auto& self) {
         return self.template get<T>(submitted_index);
       };
+    }
+
+    auto& start()
+    {
+      payload->*[&](auto& self) {
+        self.start();
+      };
+      return *this;
+    }
+
+    auto& end()
+    {
+      payload->*[&](auto& self) {
+        self.end();
+      };
+      return *this;
     }
 
   private:

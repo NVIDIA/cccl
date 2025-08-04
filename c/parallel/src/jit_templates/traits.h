@@ -29,7 +29,7 @@ struct template_id
 struct specialization
 {
   std::string type_name;
-  std::string aux_code;
+  std::string aux_code = "";
 };
 
 template <typename Tag,

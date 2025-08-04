@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -221,7 +222,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
                  (__device_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));));
   }
 
-  _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+  _CCCL_IMMOVABLE(__opstate_t);
 
   _CCCL_API constexpr void start() noexcept
   {

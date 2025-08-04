@@ -48,22 +48,9 @@ def type_to_problem_sizes(dtype) -> List[int]:
 def merge_sort_device(
     d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream=None
 ):
-    merge_sort = parallel.merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
-
-    temp_storage_size = merge_sort(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream=stream
-    )
-    d_temp_storage = numba.cuda.device_array(
-        temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
-    )
-    merge_sort(
-        d_temp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        num_items,
-        stream=stream,
+    # Use the new single-phase API with automatic temp storage allocation
+    parallel.merge_sort(
+        d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream=stream
     )
 
 
