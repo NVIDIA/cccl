@@ -43,7 +43,7 @@
 struct get_expected_allocation_size_t
 {};
 
-_CCCL_HOST_DEVICE static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
+__host__ __device__ static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
 expected_allocation_size(size_t expected)
 {
   return cuda::std::execution::prop{get_expected_allocation_size_t{}, expected};
@@ -52,7 +52,7 @@ expected_allocation_size(size_t expected)
 struct get_allowed_kernels_t
 {};
 
-_CCCL_HOST_DEVICE static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
+__host__ __device__ static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
 allowed_kernels(cuda::std::span<void*> allowed_kernels)
 {
   return cuda::std::execution::prop{get_allowed_kernels_t{}, allowed_kernels};
@@ -185,12 +185,12 @@ struct device_memory_resource : cub::detail::device_memory_resource
     FAIL("CUB shouldn't use synchronous deallocation");
   }
 
-  void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
+  void* allocate(cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
     return allocate(stream, bytes);
   }
 
-  void* allocate(::cuda::stream_ref stream, size_t bytes)
+  void* allocate(cuda::stream_ref stream, size_t bytes)
   {
     REQUIRE(target_stream == stream.get());
 
@@ -201,7 +201,7 @@ struct device_memory_resource : cub::detail::device_memory_resource
     return cub::detail::device_memory_resource::allocate(stream, bytes);
   }
 
-  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t bytes)
+  void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes)
   {
     REQUIRE(target_stream == stream.get());
 
@@ -226,17 +226,17 @@ struct throwing_memory_resource
     FAIL("CUB shouldn't use synchronous deallocation");
   }
 
-  void* allocate(::cuda::stream_ref /* stream */, size_t /* bytes */, size_t /* alignment */)
+  void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */, size_t /* alignment */)
   {
     throw "test";
   }
 
-  void* allocate(::cuda::stream_ref /* stream */, size_t /* bytes */)
+  void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */)
   {
     throw "test";
   }
 
-  void deallocate(const ::cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
+  void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
   {
     throw "test";
   }
@@ -258,12 +258,12 @@ struct device_side_memory_resource
     cuda::std::terminate();
   }
 
-  __host__ __device__ void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
+  __host__ __device__ void* allocate(cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
     return allocate(stream, bytes);
   }
 
-  __host__ __device__ void* allocate(::cuda::stream_ref /* stream */, size_t bytes)
+  __host__ __device__ void* allocate(cuda::stream_ref /* stream */, size_t bytes)
   {
     if (bytes_allocated)
     {
@@ -272,7 +272,7 @@ struct device_side_memory_resource
     return static_cast<void*>(static_cast<char*>(ptr) + *bytes_allocated);
   }
 
-  __host__ __device__ void deallocate(const ::cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)
+  __host__ __device__ void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)
   {
     if (bytes_deallocated)
     {

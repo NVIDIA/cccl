@@ -117,13 +117,13 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
   SECTION("sum")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_values_it), op_t{});
 
     // Prepare verification data
-    using accum_t = ::cuda::std::__accumulator_t<op_t, value_t, output_t>;
+    using accum_t = cuda::std::__accumulator_t<op_t, value_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_values, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
@@ -151,12 +151,12 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
   SECTION("min")
   {
-    using op_t = ::cuda::minimum<>;
+    using op_t = cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_values, segment_offsets, op_t{}, ::cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
+      in_values, segment_offsets, op_t{}, cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test
