@@ -369,7 +369,7 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t,
       cub::detail::histogram::Transforms<LevelT, // LevelT
                                          OffsetT, // OffsetT
-                                         float // SampleT
+                                         LevelT // SampleT
                                          >>::
       DispatchEven(
         d_temp_storage,
