@@ -193,11 +193,8 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 constexpr int ldgsts_size_and_align = 16;
 
 template <typename ItValueSizesAlignments>
-_CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(
-  ItValueSizesAlignments it_value_sizes_alignments,
-  int tile_size,
-  int /*block_threads*/,
-  int copy_alignment = ldgsts_size_and_align) -> int
+_CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
+  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
 {
   int smem_size = 0;
   for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
@@ -212,6 +209,18 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(
   return smem_size;
 }
 
+// Because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
+// namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
+// different alignment based on the template parameters (i.e. the iterator value types). We settle on using 128 as
+// alignment, since it's the maximum bulk copy alignment to handle Hopper and should cover must overaligned types as
+// well (we don't expect many types with alignment > 128 bytes).
+//
+// Due to runtime implementation details, the alignment of dynamic shared memory effects the required *static* shared
+// memory of *every* other kernel that is generated into the same TU (translation unit) as the transform kernel here. So
+// we try not to pick a large alignment, because it may reduce the occupancy of *any* other kernel in the same TU as
+// ours. More internal information: https://github.com/NVIDIA/cccl_private/wiki/Dynamic-shared-memory-alignment
+inline constexpr int max_bulk_copy_alignment = 128;
+
 constexpr int bulk_copy_size_multiple = 16;
 
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
@@ -220,35 +229,28 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
 }
 
 template <typename ItValueSizesAlignments>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(
-  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int block_threads, int bulk_copy_align) -> int
+_CCCL_HOST_DEVICE constexpr auto
+bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int bulk_copy_align)
+  -> int
 {
   // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments
   _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
   _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
 
-  int min_retained_alignment = 2 << 30; // largest alignment that can fit into int
-  int max_alignment          = 1;
-  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  int max_alignment = 1;
+  for (auto&& [_, vt_alignment] : it_value_sizes_alignments)
   {
-    min_retained_alignment = ::cuda::std::min(min_retained_alignment, static_cast<int>(vt_size) * block_threads);
-    max_alignment          = ::cuda::std::max(max_alignment, static_cast<int>(vt_alignment));
+    max_alignment = ::cuda::std::max(max_alignment, static_cast<int>(vt_alignment));
   }
-  const bool tile_sizes_retain_max_alignment = max_alignment <= min_retained_alignment;
-  const int tile_padding =
-    tile_sizes_retain_max_alignment ? ::cuda::std::max(bulk_copy_align, max_alignment) : bulk_copy_align;
+  const int tile_padding = max_alignment > bulk_copy_align ? max_bulk_copy_alignment : bulk_copy_align;
 
   // dynamic SMEM comes after static shared memory (which contains the 8-byte barrier) and is at least 16 bytes aligned.
   // So let's start at offset 16. This also hits the worst case scenario for types with alignment larger than 16,
   // needing the most padding before the first tile. From observation, dynamic shared memory starts at address 0x408
   // within the shared memory window of the current CTA.
   int smem_size = ::cuda::round_up(int{sizeof(uint64_t)}, 16);
-  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  for (auto&& [vt_size, _] : it_value_sizes_alignments)
   {
-    if (!tile_sizes_retain_max_alignment)
-    {
-      smem_size = ::cuda::round_up(smem_size, static_cast<int>(vt_alignment));
-    }
     smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;
   }
   return smem_size;
@@ -344,10 +346,9 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      memcpy_async_smem_for_tile_size(
+      memcpy_async_dyn_smem_for_tile_size(
         make_sizes_alignments<RandomAccessIteratorsIn...>(),
         block_threads* async_policy::min_items_per_thread,
-        block_threads,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
     static constexpr bool use_fallback =
@@ -363,20 +364,22 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   struct bulk_copy_policy_base
   {
   private:
+    // TODO(bgruber): should we just use max_bulk_copy_alignment here? Would simplify the code
     static constexpr int alignment = bulk_copy_alignment(PtxVersion);
     using async_policy             = async_copy_policy_t<AsyncBlockSize, alignment>;
     // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      bulk_copy_smem_for_tile_size(
+      bulk_copy_dyn_smem_for_tile_size(
         make_sizes_alignments<RandomAccessIteratorsIn...>(),
         AsyncBlockSize* async_policy::min_items_per_thread,
-        AsyncBlockSize,
         alignment)
       > int{max_smem_per_block};
+    static constexpr bool any_type_is_overalinged =
+      ((alignof(it_value_t<RandomAccessIteratorsIn>) > max_bulk_copy_alignment) || ...);
     static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
