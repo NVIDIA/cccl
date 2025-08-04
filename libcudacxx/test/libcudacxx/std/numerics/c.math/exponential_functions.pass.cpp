@@ -119,7 +119,7 @@ __host__ __device__ void test_expm1(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_frexp(T val)
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_frexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::frexp(T{}, nullptr)), ret>, "");
@@ -429,6 +429,7 @@ __global__ void test_global_kernel(float* val)
 template <class T>
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST void test_constexpr(T value)
 {
+  test_frexp<T>(value);
   test_scalbn<T>(value);
   test_ldexp<T>(value);
 }

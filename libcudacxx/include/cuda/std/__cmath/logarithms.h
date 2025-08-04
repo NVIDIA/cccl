@@ -233,7 +233,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 // ilogb
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline constexpr int __ilogb_impl(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API constexpr int __ilogb_impl(_Tp __x) noexcept
 {
   switch (_CUDA_VSTD::fpclassify(__x))
   {
@@ -262,7 +262,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline constexpr int ilogb(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilogb(_Tp __x) noexcept
 {
   if constexpr (is_integral_v<_Tp>)
   {
@@ -274,13 +274,13 @@ template <class _Tp>
   }
 }
 
-[[nodiscard]] _CCCL_API inline constexpr int ilogbf(float __x) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilogbf(float __x) noexcept
 {
   return _CUDA_VSTD::__ilogb_impl(__x);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline constexpr int ilogbl(long double __x) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilogbl(long double __x) noexcept
 {
   return _CUDA_VSTD::__ilogb_impl(__x);
 }
@@ -463,7 +463,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 // logb
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline constexpr _Tp __logb_impl(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __logb_impl(_Tp __x) noexcept
 {
   switch (_CUDA_VSTD::fpclassify(__x))
   {
@@ -478,20 +478,20 @@ template <class _Tp>
   }
 }
 
-[[nodiscard]] _CCCL_API inline constexpr float logbf(float __x) noexcept
+[[nodiscard]] _CCCL_API constexpr float logbf(float __x) noexcept
 {
   return _CUDA_VSTD::__logb_impl(__x);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline constexpr long double logbl(long double __x) noexcept
+[[nodiscard]] _CCCL_API constexpr long double logbl(long double __x) noexcept
 {
   return _CUDA_VSTD::__logb_impl(__x);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp, enable_if_t<__is_extended_arithmetic_v<_Tp>, int> = 0>
-[[nodiscard]] _CCCL_API inline constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> logb(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> logb(_Tp __x) noexcept
 {
   if constexpr (is_integral_v<_Tp>)
   {
