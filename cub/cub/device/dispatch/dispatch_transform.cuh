@@ -205,9 +205,8 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel(int alignment, int static_smem, SMemFunc dyn_smem_for_tile_size, ActivePolicy policy = {})
-    -> cuda_expected<
-      ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
+  configure_async_kernel(int alignment, SMemFunc dyn_smem_for_tile_size, ActivePolicy policy = {}) -> cuda_expected<
+    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
   {
     auto wrapped_policy = MakeTransformPolicyWrapper(policy);
     int block_threads   = wrapped_policy.AlgorithmPolicy().BlockThreads();
@@ -246,19 +245,18 @@ struct dispatch_t<StableAddress,
       {
         const int tile_size     = block_threads * items_per_thread;
         const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
-        if (static_smem + dyn_smem_size > max_smem)
-        {
-          // assert should be prevented by smem check in policy
-          _CCCL_ASSERT(last_config.items_per_thread > 0, "min_items_per_thread exceeds available shared memory");
-          return last_config;
-        }
-
-        int max_occupancy = 0;
-        error             = CubDebug(launcher_factory.MaxSmOccupancy(
+        int max_occupancy       = 0;
+        error                   = CubDebug(launcher_factory.MaxSmOccupancy(
           max_occupancy, kernel_source.TransformKernel(), block_threads, dyn_smem_size));
         if (error != cudaSuccess)
         {
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
+        }
+        if (max_occupancy == 0)
+        {
+          // assert should be prevented by smem check in policy
+          _CCCL_ASSERT(last_config.items_per_thread > 0, "min_items_per_thread exceeds available shared memory");
+          return last_config;
         }
 
         const auto config = async_config{items_per_thread, max_occupancy, sm_count};
@@ -328,13 +326,9 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
-    int alignment,
-    int static_smem,
-    SMemFunc dyn_smem_for_tile_size,
-    cuda::std::index_sequence<Is...>,
-    ActivePolicy policy = {})
+    int alignment, SMemFunc dyn_smem_for_tile_size, cuda::std::index_sequence<Is...>, ActivePolicy policy = {})
   {
-    auto ret = configure_async_kernel(alignment, static_smem, dyn_smem_for_tile_size, policy);
+    auto ret = configure_async_kernel(alignment, dyn_smem_for_tile_size, policy);
     if (!ret)
     {
       return ret.error();
@@ -496,7 +490,6 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         bulk_copy_align,
-        /* static SMEM used to align dynamic SMEM (and contains 8 byte barrier) */ max_bulk_copy_alignment,
         [this](int tile_size, int alignment) {
           return bulk_copy_dyn_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
         },
@@ -507,7 +500,6 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         ldgsts_size_and_align,
-        /* no static SMEM */ 0,
         [this](int tile_size, int alignment) {
           return memcpy_async_dyn_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
         },
