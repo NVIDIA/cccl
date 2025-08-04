@@ -347,14 +347,6 @@ long double    truncl(long double x);
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-#if _LIBCUDACXX_HAS_NVFP16()
-#  include <cuda/std/__cmath/nvfp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-#  include <cuda/std/__cmath/nvbf16.h>
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _CCCL_COMPILER(NVRTC)
 #  define INFINITY _CUDA_VSTD::numeric_limits<float>::infinity()
 #  define NAN      _CUDA_VSTD::numeric_limits<float>::quiet_NaN()
@@ -391,80 +383,6 @@ using ::nanl;
 #else
 #  define _CCCL_CONSTEXPR_CXX14_COMPLEX
 #endif // !_LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-template <class _A1>
-_CCCL_API inline _A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
-{
-  return ::fmax(__x, __y);
-}
-#else
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(float __x, float __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-  if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-  {
-    if (_CUDA_VSTD::isnan(__x))
-    {
-      return __y;
-    }
-    if (_CUDA_VSTD::isnan(__y))
-    {
-      return __x;
-    }
-    return __x < __y ? __y : __x;
-  }
-#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  return __builtin_fmaxf(__x, __y);
-}
-
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(double __x, double __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-  if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-  {
-    if (_CUDA_VSTD::isnan(__x))
-    {
-      return __y;
-    }
-    if (_CUDA_VSTD::isnan(__y))
-    {
-      return __x;
-    }
-    return __x < __y ? __y : __x;
-  }
-#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  return __builtin_fmax(__x, __y);
-}
-
-#  if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX long double __constexpr_fmax(long double __x, long double __y) noexcept
-{
-#    if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-  if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-  {
-    if (_CUDA_VSTD::isnan(__x))
-    {
-      return __y;
-    }
-    if (_CUDA_VSTD::isnan(__y))
-    {
-      return __x;
-    }
-    return __x < __y ? __y : __x;
-  }
-#    endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  return __builtin_fmax(__x, __y);
-}
-#  endif // _CCCL_HAS_LONG_DOUBLE()
-
-template <class _Tp, class _Up, enable_if_t<is_arithmetic<_Tp>::value && is_arithmetic<_Up>::value, int> = 0>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __constexpr_fmax(_Tp __x, _Up __y) noexcept
-{
-  using __result_type = __promote_t<_Tp, _Up>;
-  return _CUDA_VSTD::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
-}
-#endif // !_CCCL_COMPILER(MSVC)
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 template <class _A1>
