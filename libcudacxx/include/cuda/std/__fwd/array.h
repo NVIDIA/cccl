@@ -29,6 +29,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array;
 
+template <class _Tp>
+inline constexpr bool __is_std_array_v = false;
+
+template <class _Tp, size_t _Sz>
+inline constexpr bool __is_std_array_v<array<_Tp, _Sz>> = true;
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>

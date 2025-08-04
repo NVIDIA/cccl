@@ -105,7 +105,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 struct times_seven
 {
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator()(T v) const -> T
+  __host__ __device__ auto operator()(T v) const -> T
   {
     return static_cast<T>(v * 7);
   }
@@ -146,20 +146,20 @@ struct overaligned_addable_and_equal_comparable_policy
   template <typename CustomType>
   struct alignas(Alignment) type
   {
-    _CCCL_HOST_DEVICE static void check(const CustomType& obj)
+    __host__ __device__ static void check(const CustomType& obj)
     {
       _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
                    "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
     }
 
-    _CCCL_HOST_DEVICE friend auto operator==(const CustomType& a, const CustomType& b) -> bool
+    __host__ __device__ friend auto operator==(const CustomType& a, const CustomType& b) -> bool
     {
       check(a);
       check(b);
       return a.key == b.key;
     }
 
-    _CCCL_HOST_DEVICE friend auto operator+(char u, const CustomType& b) -> CustomType
+    __host__ __device__ friend auto operator+(char u, const CustomType& b) -> CustomType
     {
       check(b);
       CustomType result{};
@@ -194,29 +194,29 @@ struct uncommon_plus
 {
   // vector types
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const T& b) const -> T
+  __host__ __device__ auto operator()(int8_t a, const T& b) const -> T
   {
     return T{a, 0, 0} + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const huge_t& b) const -> huge_t
+  __host__ __device__ auto operator()(int8_t a, const huge_t& b) const -> huge_t
   {
     huge_t r = b;
     r.key += static_cast<size_t>(a);
     return r;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<32>& b) const -> overaligned_t<32>
+  __host__ __device__ auto operator()(int8_t a, const overaligned_t<32>& b) const -> overaligned_t<32>
   {
     return a + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<256>& b) const -> overaligned_t<256>
+  __host__ __device__ auto operator()(int8_t a, const overaligned_t<256>& b) const -> overaligned_t<256>
   {
     return a + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<512>& b) const -> overaligned_t<512>
+  __host__ __device__ auto operator()(int8_t a, const overaligned_t<512>& b) const -> overaligned_t<512>
   {
     return a + b;
   }
@@ -253,11 +253,11 @@ struct non_default_constructible
   non_default_constructible& operator=(const non_default_constructible&) = default;
   ~non_default_constructible()                                           = default;
 
-  _CCCL_HOST_DEVICE explicit non_default_constructible(int data)
+  __host__ __device__ explicit non_default_constructible(int data)
       : data(data)
   {}
 
-  friend _CCCL_HOST_DEVICE auto operator==(non_default_constructible a, non_default_constructible b) -> bool
+  friend __host__ __device__ auto operator==(non_default_constructible a, non_default_constructible b) -> bool
   {
     return a.data == b.data;
   }
@@ -286,7 +286,7 @@ struct nstream_kernel
 {
   static constexpr T scalar = 42;
 
-  _CCCL_HOST_DEVICE T operator()(const T& ai, const T& bi, const T& ci) const
+  __host__ __device__ T operator()(const T& ai, const T& bi, const T& ci) const
   {
     return ai + bi + scalar * ci;
   }
@@ -451,7 +451,7 @@ struct plus_needs_stable_address
   int* a;
   int* b;
 
-  _CCCL_HOST_DEVICE int operator()(const int& v) const
+  __host__ __device__ int operator()(const int& v) const
   {
     const auto i = &v - a;
     return v + b[i];
@@ -489,26 +489,26 @@ struct non_trivial
 
   non_trivial() = default;
 
-  _CCCL_HOST_DEVICE explicit non_trivial(int data)
+  __host__ __device__ explicit non_trivial(int data)
       : data(data)
   {}
 
-  _CCCL_HOST_DEVICE non_trivial(const non_trivial& nt)
+  __host__ __device__ non_trivial(const non_trivial& nt)
       : data(nt.data)
   {}
 
-  _CCCL_HOST_DEVICE auto operator=(const non_trivial& nt) -> non_trivial&
+  __host__ __device__ auto operator=(const non_trivial& nt) -> non_trivial&
   {
     data = nt.data;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE auto operator-() const -> non_trivial
+  __host__ __device__ auto operator-() const -> non_trivial
   {
     return non_trivial{-data};
   }
 
-  friend _CCCL_HOST_DEVICE auto operator==(non_trivial a, non_trivial b) -> bool
+  friend __host__ __device__ auto operator==(non_trivial a, non_trivial b) -> bool
   {
     return a.data == b.data;
   }
