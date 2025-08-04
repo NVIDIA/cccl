@@ -29,27 +29,27 @@
 namespace cuda::experimental::cuco
 {
 
-enum class HashStrategy
+enum class hash_strategy
 {
-  XXHash_32,
-  XXHash_64,
-  MurmurHash3_32
+  xxhash_32,
+  xxhash_64,
+  murmurhash3_32
 #if _CCCL_HAS_INT128()
   ,
-  MurmurHash3_x86_128,
-  MurmurHash3_x64_128
+  murmurhash3_x86_128,
+  murmurhash3_x64_128
 #endif // _CCCL_HAS_INT128()
 };
 
 //! @brief A hash function class specialized for different hash strategies.
 //!
 //! @tparam _Key The type of the values to hash
-//! @tparam _S The hash strategy to use, defaults to `HashStrategy::XXHash_32`
-template <typename _Key, HashStrategy _S = HashStrategy::XXHash_32>
-class Hash;
+//! @tparam _S The hash strategy to use, defaults to `hash_strategy::xxhash_32`
+template <typename _Key, hash_strategy _S = hash_strategy::xxhash_32>
+class hash;
 
 template <typename _Key>
-class Hash<_Key, HashStrategy::XXHash_32> : private __detail::_XXHash_32<_Key>
+class hash<_Key, hash_strategy::xxhash_32> : private __detail::_XXHash_32<_Key>
 {
 public:
   using __detail::_XXHash_32<_Key>::_XXHash_32;
@@ -57,7 +57,7 @@ public:
 };
 
 template <typename _Key>
-class Hash<_Key, HashStrategy::XXHash_64> : private __detail::_XXHash_64<_Key>
+class hash<_Key, hash_strategy::xxhash_64> : private __detail::_XXHash_64<_Key>
 {
 public:
   using __detail::_XXHash_64<_Key>::_XXHash_64;
@@ -65,7 +65,7 @@ public:
 };
 
 template <typename _Key>
-class Hash<_Key, HashStrategy::MurmurHash3_32> : private __detail::_MurmurHash3_32<_Key>
+class hash<_Key, hash_strategy::murmurhash3_32> : private __detail::_MurmurHash3_32<_Key>
 {
 public:
   using __detail::_MurmurHash3_32<_Key>::_MurmurHash3_32;
@@ -74,7 +74,7 @@ public:
 
 #if _CCCL_HAS_INT128()
 template <typename _Key>
-class Hash<_Key, HashStrategy::MurmurHash3_x86_128> : private __detail::_MurmurHash3_x86_128<_Key>
+class hash<_Key, hash_strategy::murmurhash3_x86_128> : private __detail::_MurmurHash3_x86_128<_Key>
 {
 public:
   using __detail::_MurmurHash3_x86_128<_Key>::_MurmurHash3_x86_128;
@@ -82,7 +82,7 @@ public:
 };
 
 template <typename _Key>
-class Hash<_Key, HashStrategy::MurmurHash3_x64_128> : private __detail::_MurmurHash3_x64_128<_Key>
+class hash<_Key, hash_strategy::murmurhash3_x64_128> : private __detail::_MurmurHash3_x64_128<_Key>
 {
 public:
   using __detail::_MurmurHash3_x64_128<_Key>::_MurmurHash3_x64_128;
