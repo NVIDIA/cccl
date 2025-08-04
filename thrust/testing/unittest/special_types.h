@@ -25,7 +25,12 @@ struct FixedVector
     }
   }
 
-  _CCCL_HOST_DEVICE FixedVector operator+(const FixedVector& bs) const
+  _CCCL_HOST_DEVICE
+#if defined(__NVCOMPILER)
+  __attribute__((noinline))
+#endif
+  FixedVector
+  operator+(const FixedVector& bs) const
   {
     FixedVector output;
     for (unsigned int i = 0; i < N; i++)
