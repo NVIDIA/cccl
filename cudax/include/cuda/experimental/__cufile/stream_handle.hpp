@@ -11,15 +11,18 @@
 #endif // no system header
 
 #include "detail/error_handling.hpp"
+#include <functional>
+#include <optional>
 
 namespace cuda::experimental::cufile {
 
 /**
  * @brief RAII wrapper for CUDA stream registration with cuFILE
  */
-class stream_handle : public detail::raii_handle<stream_handle> {
+class stream_handle {
 private:
     cudaStream_t stream_;
+    std::optional<detail::raii_resource<cudaStream_t, std::function<void(cudaStream_t)>>> registered_stream_;
 
 public:
     /**
@@ -37,13 +40,12 @@ public:
      */
     cudaStream_t get() const noexcept;
 
-private:
-    friend class detail::raii_handle<stream_handle>;
-
     /**
-     * @brief Cleanup method required by CRTP base class
+     * @brief Check if the handle owns a valid resource
      */
-    void cleanup() noexcept;
+    bool is_valid() const noexcept;
+
+
 };
 
 } // namespace cuda::experimental::cufile

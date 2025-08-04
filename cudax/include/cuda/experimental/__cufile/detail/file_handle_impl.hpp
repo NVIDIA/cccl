@@ -52,15 +52,17 @@ inline void file_handle::register_file() {
     desc.type = CU_FILE_HANDLE_TYPE_OPAQUE_FD;
     desc.fs_ops = nullptr;
 
-    CUfileError_t error = cuFileHandleRegister(&handle_, &desc);
+    CUfileHandle_t handle;
+    CUfileError_t error = cuFileHandleRegister(&handle, &desc);
     detail::check_cufile_result(error, "cuFileHandleRegister");
-    set_owns_resource(true);
+
+    cufile_handle_.emplace(handle, [](CUfileHandle_t h) { cuFileHandleDeregister(h); });
 }
 
 // Constructor implementations
 inline file_handle::file_handle(const std::string& path,
                                std::ios_base::openmode mode)
-    : detail::raii_handle<file_handle>(false), owns_fd_(true), path_(path) {
+    : owns_fd_(true), path_(path) {
 
     int flags = convert_ios_mode(mode);
     fd_ = open(path.c_str(), flags, 0644);
@@ -74,8 +76,7 @@ inline file_handle::file_handle(const std::string& path,
 }
 
 inline file_handle::file_handle(int fd, bool take_ownership)
-    : detail::raii_handle<file_handle>(false), fd_(fd), owns_fd_(take_ownership),
-      path_("fd:" + std::to_string(fd)) {
+    : fd_(fd), owns_fd_(take_ownership), path_("fd:" + std::to_string(fd)) {
     if (fd_ < 0) {
         throw std::invalid_argument("Invalid file descriptor");
     }
@@ -85,9 +86,8 @@ inline file_handle::file_handle(int fd, bool take_ownership)
 
 // Move constructor and assignment
 inline file_handle::file_handle(file_handle&& other) noexcept
-    : detail::raii_handle<file_handle>(std::move(other)),
-      fd_(other.fd_), owns_fd_(other.owns_fd_), path_(std::move(other.path_)),
-      handle_(other.handle_) {
+    : fd_(other.fd_), owns_fd_(other.owns_fd_), path_(std::move(other.path_)),
+      cufile_handle_(std::move(other.cufile_handle_)) {
     other.owns_fd_ = false;
 }
 
@@ -98,11 +98,10 @@ inline file_handle& file_handle::operator=(file_handle&& other) noexcept {
             close(fd_);
         }
 
-        detail::raii_handle<file_handle>::operator=(std::move(other));
         fd_ = other.fd_;
         owns_fd_ = other.owns_fd_;
         path_ = std::move(other.path_);
-        handle_ = other.handle_;
+        cufile_handle_ = std::move(other.cufile_handle_);
 
         other.owns_fd_ = false;
     }
@@ -125,7 +124,7 @@ size_t file_handle::read(span<T> buffer, off_t file_offset, off_t buffer_offset)
     void* buffer_ptr = static_cast<void*>(buffer.data());
     size_t size_bytes = buffer.size_bytes();
 
-    ssize_t result = cuFileRead(handle_, buffer_ptr, size_bytes, file_offset, buffer_offset);
+    ssize_t result = cuFileRead(cufile_handle_->get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
     return static_cast<size_t>(detail::check_cufile_result(result, "cuFileRead"));
 }
 
@@ -137,7 +136,7 @@ size_t file_handle::write(span<const T> buffer, off_t file_offset, off_t buffer_
     const void* buffer_ptr = static_cast<const void*>(buffer.data());
     size_t size_bytes = buffer.size_bytes();
 
-    ssize_t result = cuFileWrite(handle_, buffer_ptr, size_bytes, file_offset, buffer_offset);
+    ssize_t result = cuFileWrite(cufile_handle_->get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
     return static_cast<size_t>(detail::check_cufile_result(result, "cuFileWrite"));
 }
 
@@ -153,7 +152,7 @@ void file_handle::read_async(span<T> buffer,
     size_t size_bytes = buffer.size_bytes();
     void* buffer_ptr = static_cast<void*>(buffer.data());
 
-    CUfileError_t error = cuFileReadAsync(handle_, buffer_ptr, &size_bytes,
+    CUfileError_t error = cuFileReadAsync(cufile_handle_->get(), buffer_ptr, &size_bytes,
                                          &file_offset, &buffer_offset,
                                          &bytes_read, stream);
     detail::check_cufile_result(error, "cuFileReadAsync");
@@ -171,7 +170,7 @@ void file_handle::write_async(span<const T> buffer,
     size_t size_bytes = buffer.size_bytes();
     const void* buffer_ptr = static_cast<const void*>(buffer.data());
 
-    CUfileError_t error = cuFileWriteAsync(handle_, const_cast<void*>(buffer_ptr), &size_bytes,
+    CUfileError_t error = cuFileWriteAsync(cufile_handle_->get(), const_cast<void*>(buffer_ptr), &size_bytes,
                                           &file_offset, &buffer_offset,
                                           &bytes_written, stream);
     detail::check_cufile_result(error, "cuFileWriteAsync");
@@ -179,16 +178,15 @@ void file_handle::write_async(span<const T> buffer,
 
 // Simple getter implementations
 inline CUfileHandle_t file_handle::native_handle() const noexcept {
-    return handle_;
+    return cufile_handle_ ? cufile_handle_->get() : CUfileHandle_t{};
 }
 
 inline const std::string& file_handle::path() const noexcept {
     return path_;
 }
 
-// Cleanup method
-inline void file_handle::cleanup() noexcept {
-    cuFileHandleDeregister(handle_);
+inline bool file_handle::is_valid() const noexcept {
+    return cufile_handle_.has_value() && cufile_handle_->has_value();
 }
 
 } // namespace cuda::experimental::cufile
