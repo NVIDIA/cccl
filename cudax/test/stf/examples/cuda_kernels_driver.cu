@@ -40,9 +40,14 @@ double Y0(int i)
   return cos((double) i);
 }
 
-int main()
+void test(bool is_graph)
 {
   context ctx;
+  if (is_graph)
+  {
+    ctx = graph_ctx();
+  }
+
   const size_t N = 16;
   double X[N], Y[N];
 
@@ -107,4 +112,12 @@ int main()
     _CCCL_ASSERT(fabs(Y[i] - (Y0(i) + num_axpy * alpha * X0(i))) < 0.0001, "Invalid result");
     _CCCL_ASSERT(fabs(X[i] - X0(i)) < 0.0001, "Invalid result");
   }
+}
+
+int main()
+{
+  // stream context
+  test(false);
+  // graph context
+  test(true);
 }

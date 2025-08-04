@@ -41,7 +41,7 @@ namespace reserved
 {
 
 template <typename T>
-inline constexpr bool is_function_or_kernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
+inline constexpr bool is_cufunction_or_cukernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
 
 } // end namespace reserved
 
@@ -64,6 +64,10 @@ struct cuda_kernel_desc
   template <typename Fun, typename... Args>
   void configure(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
   {
+    // Ensure we are packing arguments of the proper types to call func (only
+    // valid with the runtime API)
+    static_assert(reserved::is_cufunction_or_cukernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
+
     using TupleType = ::std::tuple<::std::decay_t<Args>...>;
 
     _CCCL_ASSERT(!configured, "cuda_kernel_desc was already configured");
@@ -77,10 +81,6 @@ struct cuda_kernel_desc
     // implementation needs pointers to the argument, so we cannot use
     // directly those passed in the pack of arguments
     auto arg_tuple = ::std::make_shared<TupleType>(mv(args)...);
-
-    // Ensure we are packing arguments of the proper types to call func (only
-    // valid with the runtime API)
-    static_assert(reserved::is_function_or_kernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
 
     // Get the address of every tuple entry
     ::std::apply(
@@ -176,18 +176,13 @@ struct cuda_kernel_desc
         .kernelParams   = args_ptr.data(),
         .extra          = nullptr};
       cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+      return;
     }
-    else
-    {
-      auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
-      if (!ker_ptr)
-      {
-        // If this is a CUkernel, the cast to a CUfunction is sufficient
-        ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
-      }
 
+    if (auto* func_ptr = ::std::get_if<CUfunction>(&func_variant))
+    {
       CUDA_KERNEL_NODE_PARAMS params{
-        .func           = *ker_ptr,
+        .func           = *func_ptr,
         .gridDimX       = gridDim.x,
         .gridDimY       = gridDim.y,
         .gridDimZ       = gridDim.z,
@@ -200,7 +195,27 @@ struct cuda_kernel_desc
         .kern           = nullptr,
         .ctx            = nullptr};
       cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+      return;
     }
+
+    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    _CCCL_ASSERT(ker_ptr, "invalid function");
+
+    CUDA_KERNEL_NODE_PARAMS params{
+      .func           = nullptr,
+      .gridDimX       = gridDim.x,
+      .gridDimY       = gridDim.y,
+      .gridDimZ       = gridDim.z,
+      .blockDimX      = blockDim.x,
+      .blockDimY      = blockDim.y,
+      .blockDimZ      = blockDim.z,
+      .sharedMemBytes = static_cast<unsigned>(sharedMem),
+      .kernelParams   = const_cast<void**>(args_ptr.data()),
+      .extra          = nullptr,
+      .kern           = *ker_ptr,
+      // ctx=nullptr means current context
+      .ctx = nullptr};
+    cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
   }
 
   // Utility to query the number of registers used by this kernel

@@ -29,7 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_argm
 
 struct get_gaussian_sum_from_offset_op
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::int64_t
+  __host__ __device__ _CCCL_FORCEINLINE ::cuda::std::int64_t
   operator()(::cuda::std::int64_t begin, ::cuda::std::int64_t end)
   {
     ::cuda::std::int64_t length                 = end - begin;
@@ -43,7 +43,7 @@ struct get_min_from_counting_it_range_op
 {
   IndexT init_val;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
+  __host__ __device__ _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
   {
     return begin == end ? init_val : begin;
   }
@@ -54,7 +54,7 @@ struct get_max_from_counting_it_range_op
 {
   IndexT init_val;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
+  __host__ __device__ _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
   {
     return begin == end ? init_val : end - 1;
   }
@@ -64,7 +64,7 @@ template <typename IndexT>
 struct get_argmax_from_counting_it_range_op
 {
   IndexT init_val;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT end)
+  __host__ __device__ _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT end)
   {
     if (begin == end)
     {
@@ -77,7 +77,7 @@ struct get_argmax_from_counting_it_range_op
 struct custom_sum_op
 {
   template <typename ItemT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
+  __host__ __device__ _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
   {
     return lhs + rhs;
   }
@@ -97,13 +97,13 @@ struct iterator_without_plus_operator
   using iterator_category = std::random_access_iterator_tag;
 
   // Dereference always returns 0.
-  _CCCL_HOST_DEVICE int operator*() const
+  __host__ __device__ int operator*() const
   {
     return 0;
   }
 
   // Indexing also always returns 0.
-  _CCCL_HOST_DEVICE int operator[](difference_type /*idx*/) const
+  __host__ __device__ int operator[](difference_type /*idx*/) const
   {
     return 0;
   }
@@ -277,7 +277,7 @@ struct dispatch_helper
     return cudaSuccess;
   }
 
-  static _CCCL_HOST tuple_t get_thresholds()
+  static __host__ tuple_t get_thresholds()
   {
     // Get PTX version
     int ptx_version = 0;

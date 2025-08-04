@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/atomic_intrusive_queue.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
@@ -57,8 +59,9 @@ public:
   {
     if (!__finishing_.exchange(true, _CUDA_VSTD::memory_order_acq_rel))
     {
-      // push an empty work item to the queue to wake up any waiting threads
-      __queue_.push(&__finish_task);
+      // push an empty work item to the queue to wake up the consuming thread
+      // and let it finish:
+      __queue_.push(&__noop_task);
     }
   }
 
@@ -222,17 +225,24 @@ private:
   // Returns true if any tasks were executed.
   _CCCL_API bool __execute_all() noexcept
   {
-    // Wait until the queue has tasks to execute and then dequeue all of them.
+    // Dequeue all tasks at once. This returns an __intrusive_queue.
     auto __queue = __queue_.pop_all();
-    if (__queue.empty())
-    {
-      return false;
-    }
+
     // Execute all the tasks in the queue.
-    for (auto __task : __queue)
+    auto __it = __queue.begin();
+    if (__it == __queue.end())
     {
-      __task->__execute();
+      return false; // No tasks to execute.
     }
+
+    do
+    {
+      // Take care to increment the iterator before executing the task,
+      // because __execute() may invalidate the current node.
+      auto __prev = __it++;
+      (*__prev)->__execute();
+    } while (__it != __queue.end());
+
     __queue.clear();
     return true;
   }
@@ -241,7 +251,7 @@ private:
 
   _CUDA_VSTD::atomic<bool> __finishing_{false};
   __atomic_intrusive_queue<&__task::__next_> __queue_{};
-  __task __finish_task{&__noop_};
+  __task __noop_task{&__noop_};
 };
 
 } // namespace cuda::experimental::execution
