@@ -222,15 +222,8 @@ struct dispatch_t<StableAddress,
     CUB_DETAIL_STATIC_ISH_ASSERT(min_items_per_thread <= max_items_per_thread, "invalid policy");
 
     auto determine_element_counts = [&]() -> cuda_expected<async_config> {
-      int max_smem = 0;
-      auto error   = CubDebug(launcher_factory.MaxSharedMemory(max_smem));
-      if (error != cudaSuccess)
-      {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
-      }
-
       int sm_count = 0;
-      error        = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
+      auto error   = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
       if (error != cudaSuccess)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
