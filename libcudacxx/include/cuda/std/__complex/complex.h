@@ -407,11 +407,43 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
 operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
+  _Tp __a = __z.real();
+  _Tp __b = __z.imag();
+  _Tp __c = __w.real();
+  _Tp __d = __w.imag();
+
+  // Annex G.5.1 Multiplicative operators
+  // if the first operand is an infinity and the second operand is a finite number, then the
+  // result of the / operator is an infinity;
+  if ((_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b)) && _CUDA_VSTD::isfinite(__c) && _CUDA_VSTD::isfinite(__d))
+  {
+    return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
+  }
+  // if the first operand is a finite number and the second operand is an infinity, then the
+  // result of the / operator is a zero;
+  else if ((_CUDA_VSTD::isinf(__c) || _CUDA_VSTD::isinf(__d)) && _CUDA_VSTD::isfinite(__a) && _CUDA_VSTD::isfinite(__b))
+  {
+    return complex<_Tp>(_Tp(0), _Tp(0));
+  }
+  // if the first operand is a nonzero finite number or an infinity and the second operand is
+  // a zero, then the result of the / operator is an infinity.
+  else if (__c == _Tp(0) && __d == _Tp(0))
+  {
+    if (!_CUDA_VSTD::isnan(__a) && !_CUDA_VSTD::isnan(__b))
+    {
+      return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
+    }
+    else
+    {
+      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+    }
+  }
+  else if (_CUDA_VSTD::isnan(__a) || _CUDA_VSTD::isnan(__b) || _CUDA_VSTD::isnan(__c) || _CUDA_VSTD::isnan(__d))
+  {
+    return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+  }
+
   int __ilogbw = 0;
-  _Tp __a      = __z.real();
-  _Tp __b      = __z.imag();
-  _Tp __c      = __w.real();
-  _Tp __d      = __w.imag();
   _Tp __logbw  = _CUDA_VSTD::logb(_CUDA_VSTD::fmax(_CUDA_VSTD::fabs(__c), _CUDA_VSTD::fabs(__d)));
   if (_CUDA_VSTD::isfinite(__logbw))
   {
@@ -420,84 +452,12 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     __d      = _CUDA_VSTD::scalbn(__d, -__ilogbw);
   }
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  // Avoid floating point operations that are invalid during constant evaluation
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
-    bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
-    bool __z_inf  = _CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b);
-    bool __w_inf  = _CUDA_VSTD::isinf(__c) || _CUDA_VSTD::isinf(__d);
-    bool __z_nan  = !__z_inf
-                && ((_CUDA_VSTD::isnan(__a) && _CUDA_VSTD::isnan(__b)) || (_CUDA_VSTD::isnan(__a) && __b == _Tp(0))
-                    || (__a == _Tp(0) && _CUDA_VSTD::isnan(__b)));
-    bool __w_nan = !__w_inf
-                && ((_CUDA_VSTD::isnan(__c) && _CUDA_VSTD::isnan(__d)) || (_CUDA_VSTD::isnan(__c) && __d == _Tp(0))
-                    || (__c == _Tp(0) && _CUDA_VSTD::isnan(__d)));
-    if ((__z_nan || __w_nan) || (__z_inf && __w_inf))
-    {
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
-    }
-    bool __z_nonzero_nan = !__z_inf && !__z_nan && (_CUDA_VSTD::isnan(__a) || _CUDA_VSTD::isnan(__b));
-    bool __w_nonzero_nan = !__w_inf && !__w_nan && (_CUDA_VSTD::isnan(__c) || _CUDA_VSTD::isnan(__d));
-    if (__z_nonzero_nan || __w_nonzero_nan)
-    {
-      if (__w_zero)
-      {
-        return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
-      }
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
-    }
-    if (__w_inf)
-    {
-      return complex<_Tp>(_Tp(0), _Tp(0));
-    }
-    if (__z_inf)
-    {
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
-    }
-    if (__w_zero)
-    {
-      if (__z_zero)
-      {
-        return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
-      }
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
-    }
-  }
-#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
   __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);
 
   _Tp __denom = __denom_vec.__a + __denom_vec.__b;
   _Tp __x     = _CUDA_VSTD::scalbn((__partials.__ac + __partials.__bd) / __denom, -__ilogbw);
   _Tp __y     = _CUDA_VSTD::scalbn((__partials.__bc - __partials.__ad) / __denom, -__ilogbw);
-#ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
-  if (_CUDA_VSTD::isnan(__x) && _CUDA_VSTD::isnan(__y))
-  {
-    if ((__denom == _Tp(0)) && (!_CUDA_VSTD::isnan(__a) || !_CUDA_VSTD::isnan(__b)))
-    {
-      __x = _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __c) * __a;
-      __y = _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __c) * __b;
-    }
-    else if ((_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b)) && _CUDA_VSTD::isfinite(__c)
-             && _CUDA_VSTD::isfinite(__d))
-    {
-      __a = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
-      __b = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
-      __x = numeric_limits<_Tp>::infinity() * (__a * __c + __b * __d);
-      __y = numeric_limits<_Tp>::infinity() * (__b * __c - __a * __d);
-    }
-    else if (_CUDA_VSTD::isinf(__logbw) && __logbw > _Tp(0) && _CUDA_VSTD::isfinite(__a) && _CUDA_VSTD::isfinite(__b))
-    {
-      __c = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
-      __d = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
-      __x = _Tp(0) * (__a * __c + __b * __d);
-      __y = _Tp(0) * (__b * __c - __a * __d);
-    }
-  }
-#endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
   return complex<_Tp>(__x, __y);
 }
 

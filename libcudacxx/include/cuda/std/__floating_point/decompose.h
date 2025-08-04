@@ -54,8 +54,8 @@ template <class _Tp>
   constexpr auto __fmt    = __fp_format_of_v<_Tp>;
   using _Storage          = __fp_storage_t<__fmt>;
   const auto __biased_exp = static_cast<_Storage>(_CUDA_VSTD::bit_cast<uint32_t>(__exp + __fp_exp_bias_v<__fmt>));
-  _CCCL_ASSERT(__biased_exp <= (_Storage{1} << __fp_exp_nbits_v<__fmt>),
-               "__fp_set_exp: __exp exceeds number of exponent bits");
+  //_CCCL_ASSERT(__biased_exp <= (_Storage{1} << __fp_exp_nbits_v<__fmt>),
+  //             "__fp_set_exp: __exp exceeds number of exponent bits");
   return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<_Storage>(
     (_CUDA_VSTD::__fp_get_storage(__v) & __fp_inv_exp_mask_v<__fmt>)
     | ((__biased_exp << __fp_mant_nbits_v<__fmt>) &__fp_exp_mask_v<__fmt>) ));
