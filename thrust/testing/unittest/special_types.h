@@ -26,7 +26,7 @@ struct FixedVector
   }
 
   _CCCL_HOST_DEVICE
-#if defined(__NVCOMPILER)
+#if _CCCL_COMPILER(NVHPC)
   __attribute__((noinline))
 #endif
   FixedVector
