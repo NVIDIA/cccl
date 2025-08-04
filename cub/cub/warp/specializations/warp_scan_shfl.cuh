@@ -50,6 +50,8 @@
 
 #include <cuda/ptx>
 #include <cuda/std/__algorithm_>
+#include <cuda/std/type_traits>
+#include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -438,7 +440,9 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE _T
   InclusiveScanStepPartial(_T input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
   {
-    _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
+    _CCCL_ASSERT(first_lane >= 0 && first_lane < LOGICAL_WARP_THREADS,
+                 "first_lane must be in range [0, LOGICAL_WARP_THREADS)");
+    _T temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
 
     // Perform scan op if from a valid peer
     _T output = input;
@@ -446,7 +450,6 @@ struct WarpScanShfl
     {
       output = scan_op(temp, input);
     }
-
     return output;
   }
 
@@ -583,14 +586,11 @@ struct WarpScanShfl
     {
       inclusive_output = input;
     }
-
-    // Iterate scan steps
-    int segment_first_lane = 0;
-
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int step = 0; step < STEPS; step++)
     {
+      constexpr int segment_first_lane = 0;
       inclusive_output =
         InclusiveScanStepPartial(inclusive_output, scan_op, valid_items, segment_first_lane, (1 << step));
     }
@@ -783,25 +783,28 @@ struct WarpScanShfl
   }
 
   /**
-   * @brief Partially update inclusive and exclusive using input and inclusive
+   * @brief Compute valid elements of the exclusive scan using input and/or inclusive.
    *
    * @param[in] input
+   *   Calling thread's input item
    *
-   * @param[out] inclusive
+   * @param[in] inclusive
+   *   Calling thread's item of the previously computed inclusive scan
    *
    * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
    *
    * @param[in] scan_op
+   *   Binary scan operator
    *
    * @param[in] valid_items
-   *
-   * @param[in] is_integer
+   *   Number of valid items in warp
    */
-  template <typename ScanOpT, typename IsIntegerT>
+  template <typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, IsIntegerT is_integer)
+  UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
-    if constexpr (is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>)
+    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -821,22 +824,43 @@ struct WarpScanShfl
   }
 
   /**
-   * @brief Update inclusive and exclusive using initial value using input, inclusive, and initial
-   *        value
+   * @brief Update valid elements of the inclusive scan with the initial value and compute valid
+   *        elements of the exclusive scan using input and/or the updated inclusive scan.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in, out] inclusive
+   *   Calling thread's item of the previously computed inclusive scan to be updated with initial
+   *   value
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the scan (uniform across warp)
    */
-  template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
-    T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value, IsIntegerT is_integer)
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value)
   {
+    // Update inclusive
     if (static_cast<int>(lane_id) < valid_items)
     {
       inclusive = scan_op(initial_value, inclusive);
     }
     // Get exclusive
-    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, is_integer);
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
 
-    if constexpr (!(is_integer && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>) )
+    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
     {
+      // Correct first element of exclusive
       if ((lane_id == 0u) && (valid_items > 0))
       {
         exclusive = initial_value;
@@ -845,35 +869,73 @@ struct WarpScanShfl
   }
 
   /**
-   * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
+   * @brief Compute valid elements of the exclusive scan and the warp aggregate using input and/or
+   *        the inclusive scan.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in] inclusive
+   *   Calling thread's item of the previously computed inclusive scan
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of valid input items.
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
    */
-  template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
-    T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items, IsIntegerT is_integer)
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  UpdatePartial(T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items)
   {
+    // Get aggregate
     const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
     warp_aggregate            = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive, last_valid_lane, member_mask);
-    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, is_integer);
+    // Compute exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
   }
 
   /**
-   * @brief Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial
-   *        value
+   * @brief Update valid elements of the inclusive scan with the initial value and compute valid
+   *        elements of the exclusive scan and the aggregate using input and/or the updated
+   *        inclusive scan.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in, out] inclusive
+   *   Calling thread's item of the previously computed inclusive scan
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of valid input items.
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the scan (uniform across warp)
    */
-  template <typename ScanOpT, typename IsIntegerT>
+  template <typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
-    T input,
-    T& inclusive,
-    T& exclusive,
-    T& warp_aggregate,
-    ScanOpT scan_op,
-    int valid_items,
-    T initial_value,
-    IsIntegerT is_integer)
+    T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items, T initial_value)
   {
+    // Get aggregate (excluding initial_value)
     const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
     warp_aggregate            = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive, last_valid_lane, member_mask);
-    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, initial_value, is_integer);
+    // Update inclusive with initial value and compute exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, initial_value);
   }
 };
 } // namespace detail

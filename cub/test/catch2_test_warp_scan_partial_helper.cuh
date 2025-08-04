@@ -10,19 +10,19 @@
 
 #include <c2h/catch2_test_helper.h>
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 __global__ void
 warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action, int valid_items, T filler)
 {
-  using warp_scan_t = cub::WarpScan<T, LOGICAL_WARP_THREADS>;
+  using warp_scan_t = cub::WarpScan<T, LogicalWarpThreads>;
   using storage_t   = typename warp_scan_t::TempStorage;
 
-  __shared__ storage_t storage[TOTAL_WARPS];
+  __shared__ storage_t storage[TotalWarps];
 
   const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
   // Get warp index
-  int warp_id = tid / LOGICAL_WARP_THREADS;
+  int warp_id = tid / LogicalWarpThreads;
 
   T inc_out     = filler;
   T exc_out     = filler;
@@ -36,7 +36,7 @@ warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT acti
   exclusive_out[tid] = exc_out;
 }
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 void warp_combine_scan(
   c2h::device_vector<T>& in,
   c2h::device_vector<T>& inclusive_out,
@@ -45,7 +45,7 @@ void warp_combine_scan(
   int valid_items,
   T filler)
 {
-  warp_combine_scan_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+  warp_combine_scan_kernel<LogicalWarpThreads, TotalWarps, T, ActionT><<<1, LogicalWarpThreads * TotalWarps>>>(
     thrust::raw_pointer_cast(in.data()),
     thrust::raw_pointer_cast(inclusive_out.data()),
     thrust::raw_pointer_cast(exclusive_out.data()),
@@ -57,18 +57,18 @@ void warp_combine_scan(
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 __global__ void warp_scan_kernel(T* in, T* out, ActionT action, int valid_items)
 {
-  using warp_scan_t = cub::WarpScan<T, LOGICAL_WARP_THREADS>;
+  using warp_scan_t = cub::WarpScan<T, LogicalWarpThreads>;
   using storage_t   = typename warp_scan_t::TempStorage;
 
-  __shared__ storage_t storage[TOTAL_WARPS];
+  __shared__ storage_t storage[TotalWarps];
 
   const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
   // Get warp index
-  int warp_id = tid / LOGICAL_WARP_THREADS;
+  int warp_id = tid / LogicalWarpThreads;
 
   T thread_data = in[tid];
 
@@ -79,10 +79,10 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action, int valid_items)
   out[tid] = thread_data;
 }
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 void warp_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action, int valid_items)
 {
-  warp_scan_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+  warp_scan_kernel<LogicalWarpThreads, TotalWarps, T, ActionT><<<1, LogicalWarpThreads * TotalWarps>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action, valid_items);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
@@ -154,13 +154,13 @@ c2h::host_vector<T> compute_host_reference(
   return warp_accumulator;
 }
 
-template <int logical_warp_threads>
+template <unsigned LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
+  static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
+  static constexpr bool is_pow_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:

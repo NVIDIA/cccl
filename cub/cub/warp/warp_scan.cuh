@@ -783,14 +783,7 @@ public:
     T exclusive_output;
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
-    internal.UpdatePartial(
-      input,
-      inclusive_output,
-      exclusive_output,
-      scan_op,
-      valid_items,
-      initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
   }
 
   //! @rst
@@ -928,14 +921,7 @@ public:
     // Update the inclusive_output and warp_aggregate using the Update function
     T exclusive_output;
     internal.UpdatePartial(
-      input,
-      inclusive_output,
-      exclusive_output,
-      warp_aggregate,
-      scan_op,
-      valid_items,
-      initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items, initial_value);
   }
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial inclusive scans
@@ -1295,8 +1281,7 @@ public:
     T inclusive_output;
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
-    internal.UpdatePartial(
-      input, inclusive_output, exclusive_output, scan_op, valid_items, detail::bool_constant_v<IS_INTEGER>);
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
   }
 
   //! @rst
@@ -1368,14 +1353,7 @@ public:
     T inclusive_output;
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
-    internal.UpdatePartial(
-      input,
-      inclusive_output,
-      exclusive_output,
-      scan_op,
-      valid_items,
-      initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
   }
 
   //! @rst
@@ -1452,14 +1430,7 @@ public:
     T inclusive_output;
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
-    internal.UpdatePartial(
-      input,
-      inclusive_output,
-      exclusive_output,
-      warp_aggregate,
-      scan_op,
-      valid_items,
-      detail::bool_constant_v<IS_INTEGER>);
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items);
   }
 
   //! @rst
@@ -1540,14 +1511,7 @@ public:
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
     internal.UpdatePartial(
-      input,
-      inclusive_output,
-      exclusive_output,
-      warp_aggregate,
-      scan_op,
-      valid_items,
-      initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items, initial_value);
   }
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial exclusive scans
@@ -1774,8 +1738,7 @@ public:
 
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
-    internal.UpdatePartial(
-      input, inclusive_output, exclusive_output, scan_op, valid_items, detail::bool_constant_v<IS_INTEGER>);
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
   }
 
   //! @rst
@@ -1854,14 +1817,7 @@ public:
 
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
-    internal.UpdatePartial(
-      input,
-      inclusive_output,
-      exclusive_output,
-      scan_op,
-      valid_items,
-      initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
   }
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial combined scans
