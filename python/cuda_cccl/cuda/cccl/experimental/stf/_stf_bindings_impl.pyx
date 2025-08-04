@@ -219,7 +219,7 @@ class dep:
         yield self.mode
         yield self.dplace
     def __repr__(self):
-        return f"dep({self.ld!r}, {self.mode}, {self.place!r})"
+        return f"dep({self.ld!r}, {self.mode}, {self.dplace!r})"
 
 def read(ld, dplace=None):   return dep(ld, AccessMode.READ.value, dplace)
 def write(ld, dplace=None):  return dep(ld, AccessMode.WRITE.value, dplace)
