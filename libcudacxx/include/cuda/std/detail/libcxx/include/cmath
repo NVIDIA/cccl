@@ -385,49 +385,6 @@ using ::nanl;
 #endif // !_LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
-template <class _A1>
-_CCCL_API inline _A1 __constexpr_logb(_A1 __x)
-{
-  return _CUDA_VSTD::logb(__x);
-}
-#else
-template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp __x)
-{
-#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-  if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-  {
-    if (__x == _Tp(0))
-    {
-      // raise FE_DIVBYZERO
-      return -numeric_limits<_Tp>::infinity();
-    }
-
-    if (_CUDA_VSTD::isinf(__x))
-    {
-      return numeric_limits<_Tp>::infinity();
-    }
-
-    if (_CUDA_VSTD::isnan(__x))
-    {
-      return numeric_limits<_Tp>::quiet_NaN();
-    }
-
-    __x                      = _CUDA_VSTD::fabs(__x);
-    unsigned long long __exp = 0;
-    while (__x >= _Tp(numeric_limits<_Tp>::radix))
-    {
-      __x /= numeric_limits<_Tp>::radix;
-      __exp += 1;
-    }
-    return _Tp(__exp);
-  }
-#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  return __builtin_logb(__x);
-}
-#endif // !_MSVC
-
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 template <class _Tp>
 _CCCL_API inline _Tp __constexpr_scalbn(_Tp __x, int __i)
 {

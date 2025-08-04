@@ -48,6 +48,22 @@ template <class _Tp>
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_inf<__fp_format_of_v<_Tp>>());
 }
 
+// __fp_neg_inf
+
+template <__fp_format _Fmt>
+[[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_neg_inf() noexcept
+{
+  static_assert(__fp_has_inf_v<_Fmt>, "The format does not support infinity");
+
+  return __fp_exp_mask_v<_Fmt> | __fp_sign_mask_v<_Fmt>;
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __fp_neg_inf() noexcept
+{
+  return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_inf<__fp_format_of_v<_Tp>>());
+}
+
 // __fp_nan
 
 template <__fp_format _Fmt>
