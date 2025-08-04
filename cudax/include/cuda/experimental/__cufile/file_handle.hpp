@@ -17,25 +17,28 @@
 #include "stream_handle.hpp"
 
 #include <fcntl.h>
+#include <functional>
 #include <ios>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <system_error>
 #include <unistd.h>
+#include "detail/raii_resource.hpp"
 
 namespace cuda::experimental::cufile {
 
 /**
  * @brief RAII file handle for cuFILE operations
  */
-class file_handle : public detail::raii_handle<file_handle> {
+class file_handle {
 private:
     int fd_;
     bool owns_fd_;
     std::string path_;
-    CUfileHandle_t handle_;
+    std::optional<detail::raii_resource<CUfileHandle_t, std::function<void(CUfileHandle_t)>>> cufile_handle_;
 
     static int convert_ios_mode(std::ios_base::openmode mode);
     void register_file();
@@ -124,13 +127,12 @@ public:
      */
     const std::string& path() const noexcept;
 
-private:
-    friend class detail::raii_handle<file_handle>;
-
     /**
-     * @brief Cleanup method required by CRTP base class
+     * @brief Check if the handle owns a valid resource
      */
-    void cleanup() noexcept;
+    bool is_valid() const noexcept;
+
+
 };
 
 } // namespace cuda::experimental::cufile

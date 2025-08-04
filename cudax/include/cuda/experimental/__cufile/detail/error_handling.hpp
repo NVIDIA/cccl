@@ -7,59 +7,7 @@
 
 namespace cuda::experimental::cufile::detail {
 
-/**
- * @brief CRTP base class for RAII handles with move semantics
- *
- * Provides common resource ownership and cleanup patterns.
- * Derived classes must implement cleanup() method.
- */
-template<typename Derived>
-class raii_handle {
-protected:
-    bool owns_resource_;
 
-    explicit raii_handle(bool owns = false) : owns_resource_(owns) {}
-
-    // Move constructor
-    raii_handle(raii_handle&& other) noexcept
-        : owns_resource_(other.owns_resource_) {
-        other.owns_resource_ = false;
-    }
-
-    // Move assignment
-    raii_handle& operator=(raii_handle&& other) noexcept {
-        if (this != &other) {
-            if (owns_resource_) {
-                static_cast<Derived*>(this)->cleanup();
-            }
-            owns_resource_ = other.owns_resource_;
-            other.owns_resource_ = false;
-        }
-        return *this;
-    }
-
-    // Non-copyable
-    raii_handle(const raii_handle&) = delete;
-    raii_handle& operator=(const raii_handle&) = delete;
-
-    ~raii_handle() {
-        if (owns_resource_) {
-            static_cast<Derived*>(this)->cleanup();
-        }
-    }
-
-public:
-    /**
-     * @brief Check if the handle owns a valid resource
-     */
-    bool is_valid() const noexcept { return owns_resource_; }
-
-protected:
-    /**
-     * @brief Set resource ownership state
-     */
-    void set_owns_resource(bool owns) noexcept { owns_resource_ = owns; }
-};
 
 /**
  * @brief Unified cuFile exception class
@@ -105,53 +53,4 @@ inline ssize_t check_cufile_result(ssize_t result, const std::string& operation 
     }
     return result;
 }
-
-/**
- * @brief RAII wrapper for automatic resource cleanup
- */
-template<typename T, typename Deleter>
-class raii_wrapper {
-private:
-    T resource_;
-    Deleter deleter_;
-    bool owns_resource_;
-
-public:
-    explicit raii_wrapper(T resource, Deleter deleter)
-        : resource_(resource), deleter_(deleter), owns_resource_(true) {}
-
-    ~raii_wrapper() {
-        if (owns_resource_) {
-            deleter_(resource_);
-        }
-    }
-
-    raii_wrapper(const raii_wrapper&) = delete;
-    raii_wrapper& operator=(const raii_wrapper&) = delete;
-
-    raii_wrapper(raii_wrapper&& other) noexcept
-        : resource_(other.resource_), deleter_(std::move(other.deleter_)), owns_resource_(other.owns_resource_) {
-        other.owns_resource_ = false;
-    }
-
-    raii_wrapper& operator=(raii_wrapper&& other) noexcept {
-        if (this != &other) {
-            if (owns_resource_) {
-                deleter_(resource_);
-            }
-            resource_ = other.resource_;
-            deleter_ = std::move(other.deleter_);
-            owns_resource_ = other.owns_resource_;
-            other.owns_resource_ = false;
-        }
-        return *this;
-    }
-
-    T get() const noexcept { return resource_; }
-    T release() noexcept {
-        owns_resource_ = false;
-        return resource_;
-    }
-};
-
 } // namespace cuda::experimental::cufile::detail
