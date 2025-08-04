@@ -43,7 +43,7 @@
 struct get_expected_allocation_size_t
 {};
 
-_CCCL_HOST_DEVICE static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
+__host__ __device__ static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
 expected_allocation_size(size_t expected)
 {
   return cuda::std::execution::prop{get_expected_allocation_size_t{}, expected};
@@ -52,7 +52,7 @@ expected_allocation_size(size_t expected)
 struct get_allowed_kernels_t
 {};
 
-_CCCL_HOST_DEVICE static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
+__host__ __device__ static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
 allowed_kernels(cuda::std::span<void*> allowed_kernels)
 {
   return cuda::std::execution::prop{get_allowed_kernels_t{}, allowed_kernels};

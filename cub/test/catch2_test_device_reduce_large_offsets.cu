@@ -29,7 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 // List of offset types to test
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE uint64_t
+__host__ __device__ _CCCL_FORCEINLINE uint64_t
 get_segmented_guassian_sum(const uint64_t num_items, const uint64_t segment_size)
 {
   const uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
@@ -46,7 +46,7 @@ struct mod_op
 {
   uint64_t segment_size;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE uint64_t operator()(const uint64_t index) const
+  __host__ __device__ _CCCL_FORCEINLINE uint64_t operator()(const uint64_t index) const
   {
     return static_cast<ItemT>(index % segment_size);
   }
@@ -55,7 +55,7 @@ struct mod_op
 struct custom_sum_op
 {
   template <typename ItemT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
+  __host__ __device__ _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
   {
     return lhs + rhs;
   }

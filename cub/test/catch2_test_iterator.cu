@@ -148,7 +148,7 @@ static_assert(
 template <typename T>
 struct transform_op_t
 {
-  _CCCL_HOST_DEVICE T operator()(T input) const
+  __host__ __device__ T operator()(T input) const
   {
     return input + input;
   }

@@ -194,7 +194,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 template <class T>
 struct square_t
 {
-  _CCCL_HOST_DEVICE T operator()(int x) const
+  __host__ __device__ T operator()(int x) const
   {
     return thrust::square<T>{}(static_cast<T>(x));
   }

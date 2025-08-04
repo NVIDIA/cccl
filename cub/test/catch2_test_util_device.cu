@@ -205,7 +205,7 @@ struct check_policy_closure
   ::cuda::std::array<int, NumPolicies> policies;
 
   // quick way to get a comparator for find_if below
-  _CCCL_HOST_DEVICE bool operator()(int policy_ver) const
+  __host__ __device__ bool operator()(int policy_ver) const
   {
     return policy_ver <= ptx_version;
   }
