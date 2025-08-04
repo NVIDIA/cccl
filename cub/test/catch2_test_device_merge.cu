@@ -24,7 +24,7 @@ using types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
 template <typename Key,
           typename Offset,
-          typename CompareOp = ::cuda::std::less<Key>,
+          typename CompareOp = cuda::std::less<Key>,
           typename MergeKeys = decltype(::merge_keys)>
 void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = {}, MergeKeys merge_keys = ::merge_keys)
 {
@@ -72,7 +72,7 @@ try
   using offset_t = int64_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_int_max = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  const auto num_items_int_max = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   // Generate the input sizes to test for
   const offset_t num_items_lhs =
@@ -80,7 +80,7 @@ try
   const offset_t num_items_rhs =
     GENERATE_COPY(values({num_items_int_max + offset_t{1000000}, num_items_int_max, offset_t{3}}));
 
-  test_keys<key_t, offset_t>(num_items_lhs, num_items_rhs, ::cuda::std::less<>{});
+  test_keys<key_t, offset_t>(num_items_lhs, num_items_rhs, cuda::std::less<>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -157,7 +157,7 @@ struct key_to_value
 template <typename Key,
           typename Value,
           typename Offset,
-          typename CompareOp  = ::cuda::std::less<Key>,
+          typename CompareOp  = cuda::std::less<Key>,
           typename MergePairs = decltype(::merge_pairs)>
 void test_pairs(
   Offset size1 = 200, Offset size2 = 625, CompareOp compare_op = {}, MergePairs merge_pairs = ::merge_pairs)
@@ -260,7 +260,7 @@ try
   using key_t     = char;
   using value_t   = char;
   const auto size = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-  test_pairs<key_t, value_t>(size, size, ::cuda::std::less<>{});
+  test_pairs<key_t, value_t>(size, size, cuda::std::less<>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -291,7 +291,7 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
     size2,
     result_keys_d.begin(),
     result_values_d.begin(),
-    ::cuda::std::less<key_t>{});
+    cuda::std::less<key_t>{});
 
   // check result
   c2h::host_vector<key_t> result_keys_h     = result_keys_d;
