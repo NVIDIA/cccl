@@ -170,15 +170,14 @@ template <class _Tp>
 template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_zero() noexcept
 {
+  static_assert(_Fmt != __fp_format::__fp8_nv_e8m0, "__fp_zero: __nv_fp8_e8m0 cannot represent zero");
   return __fp_storage_t<_Fmt>(0);
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __fp_zero() noexcept
 {
-#if _CCCL_HAS_NVFP8_E8M0()
   static_assert(__fp_format_of_v<_Tp> != __fp_format::__fp8_nv_e8m0, "__fp_zero: __nv_fp8_e8m0 cannot represent zero");
-#endif // _CCCL_HAS_NVFP8_E8M0()
   if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
     return _Tp{};
