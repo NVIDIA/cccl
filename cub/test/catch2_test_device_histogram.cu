@@ -263,7 +263,7 @@ auto generate_level_counts_to_test(int max_level_count) -> array<int, ActiveChan
 struct bit_and_anything
 {
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator()(const T& a, const T& b) const -> T
+  __host__ __device__ auto operator()(const T& a, const T& b) const -> T
   {
     using U = typename cub::Traits<T>::UnsignedBits;
     return ::cuda::std::bit_cast<T>(static_cast<U>(::cuda::std::bit_cast<U>(a) & ::cuda::std::bit_cast<U>(b)));

@@ -36,12 +36,6 @@
 
 namespace cuda::experimental
 {
-template <class _Type, template <class...> class _Template>
-inline constexpr bool __is_specialization_of_v = false;
-
-template <template <class...> class _Template, class... _Args>
-inline constexpr bool __is_specialization_of_v<_Template<_Args...>, _Template> = true;
-
 template <template <class...> class _Fn, class... _Ts>
 inline constexpr bool __is_instantiable_with_v = _CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value;
 
