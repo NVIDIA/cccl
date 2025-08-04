@@ -12,16 +12,20 @@
 
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
+#include <functional>
+#include <optional>
+#include "detail/raii_resource.hpp"
 
 namespace cuda::experimental::cufile {
 
 /**
  * @brief RAII wrapper for GPU buffer registration
  */
-class buffer_handle : public detail::raii_handle<buffer_handle> {
+class buffer_handle {
 private:
     const void* buffer_;
     size_t size_;
+    std::optional<detail::raii_resource<const void*, std::function<void(const void*)>>> registered_buffer_;
 
 public:
     /**
@@ -81,13 +85,12 @@ public:
     template<typename T>
     span<const T> as_const_span() const noexcept;
 
-private:
-    friend class detail::raii_handle<buffer_handle>;
-
     /**
-     * @brief Cleanup method required by CRTP base class
+     * @brief Check if the handle owns a valid resource
      */
-    void cleanup() noexcept;
+    bool is_valid() const noexcept;
+
+
 };
 
 } // namespace cuda::experimental::cufile

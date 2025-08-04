@@ -7,22 +7,22 @@ namespace cuda::experimental::cufile {
 
 // Constructor implementation
 inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
-    : detail::raii_handle<stream_handle>(false), stream_(stream) {
+    : stream_(stream) {
     CUfileError_t error = cuFileStreamRegister(stream, flags);
     detail::check_cufile_result(error, "cuFileStreamRegister");
-    set_owns_resource(true);
+
+    registered_stream_.emplace(stream, [](cudaStream_t s) { cuFileStreamDeregister(s); });
 }
 
 // Move constructor and assignment
 inline stream_handle::stream_handle(stream_handle&& other) noexcept
-    : detail::raii_handle<stream_handle>(std::move(other)), stream_(other.stream_) {
-    // Base class handles owns_resource_ transfer
+    : stream_(other.stream_), registered_stream_(std::move(other.registered_stream_)) {
 }
 
 inline stream_handle& stream_handle::operator=(stream_handle&& other) noexcept {
     if (this != &other) {
-        detail::raii_handle<stream_handle>::operator=(std::move(other));
         stream_ = other.stream_;
+        registered_stream_ = std::move(other.registered_stream_);
     }
     return *this;
 }
@@ -32,9 +32,10 @@ inline cudaStream_t stream_handle::get() const noexcept {
     return stream_;
 }
 
-// Cleanup method
-inline void stream_handle::cleanup() noexcept {
-    cuFileStreamDeregister(stream_);
+inline bool stream_handle::is_valid() const noexcept {
+    return registered_stream_.has_value() && registered_stream_->has_value();
 }
+
+
 
 } // namespace cuda::experimental::cufile

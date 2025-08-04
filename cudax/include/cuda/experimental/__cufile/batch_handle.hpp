@@ -12,7 +12,10 @@
 
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
+#include <functional>
+#include <optional>
 #include <vector>
+#include "detail/raii_resource.hpp"
 
 namespace cuda::experimental::cufile {
 
@@ -51,10 +54,11 @@ struct batch_io_result {
 /**
  * @brief RAII wrapper for batch operations
  */
-class batch_handle : public detail::raii_handle<batch_handle> {
+class batch_handle {
 private:
     CUfileBatchHandle_t handle_;
     unsigned int max_operations_;
+    std::optional<detail::raii_resource<CUfileBatchHandle_t, std::function<void(CUfileBatchHandle_t)>>> batch_resource_;
 
 public:
     /**
@@ -96,13 +100,12 @@ public:
      */
     unsigned int max_operations() const noexcept;
 
-private:
-    friend class detail::raii_handle<batch_handle>;
-
     /**
-     * @brief Cleanup method required by CRTP base class
+     * @brief Check if the handle owns a valid resource
      */
-    void cleanup() noexcept;
+    bool is_valid() const noexcept;
+
+
 };
 
 /**

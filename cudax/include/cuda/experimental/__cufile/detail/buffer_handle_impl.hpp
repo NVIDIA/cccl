@@ -8,35 +8,36 @@ namespace cuda::experimental::cufile {
 // Constructor implementations
 template<typename T>
 buffer_handle::buffer_handle(span<T> buffer, int flags)
-    : detail::raii_handle<buffer_handle>(false), buffer_(buffer.data()), size_(buffer.size_bytes()) {
+    : buffer_(buffer.data()), size_(buffer.size_bytes()) {
     static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     CUfileError_t error = cuFileBufRegister(buffer_, size_, flags);
     detail::check_cufile_result(error, "cuFileBufRegister");
-    set_owns_resource(true);
+
+    registered_buffer_.emplace(buffer_, [](const void* buf) { cuFileBufDeregister(buf); });
 }
 
 template<typename T>
 buffer_handle::buffer_handle(span<const T> buffer, int flags)
-    : detail::raii_handle<buffer_handle>(false), buffer_(buffer.data()), size_(buffer.size_bytes()) {
+    : buffer_(buffer.data()), size_(buffer.size_bytes()) {
     static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     CUfileError_t error = cuFileBufRegister(buffer_, size_, flags);
     detail::check_cufile_result(error, "cuFileBufRegister");
-    set_owns_resource(true);
+
+    registered_buffer_.emplace(buffer_, [](const void* buf) { cuFileBufDeregister(buf); });
 }
 
 // Move constructor and assignment
 inline buffer_handle::buffer_handle(buffer_handle&& other) noexcept
-    : detail::raii_handle<buffer_handle>(std::move(other)), buffer_(other.buffer_), size_(other.size_) {
-    // Base class handles owns_resource_ transfer
+    : buffer_(other.buffer_), size_(other.size_), registered_buffer_(std::move(other.registered_buffer_)) {
 }
 
 inline buffer_handle& buffer_handle::operator=(buffer_handle&& other) noexcept {
     if (this != &other) {
-        detail::raii_handle<buffer_handle>::operator=(std::move(other));
         buffer_ = other.buffer_;
         size_ = other.size_;
+        registered_buffer_ = std::move(other.registered_buffer_);
     }
     return *this;
 }
@@ -71,9 +72,11 @@ span<const T> buffer_handle::as_const_span() const noexcept {
     return span<const T>(static_cast<const T*>(buffer_), size_ / sizeof(T));
 }
 
-// Cleanup method
-inline void buffer_handle::cleanup() noexcept {
-    cuFileBufDeregister(buffer_);
+// is_valid method implementation
+inline bool buffer_handle::is_valid() const noexcept {
+    return registered_buffer_.has_value() && registered_buffer_->has_value();
 }
+
+
 
 } // namespace cuda::experimental::cufile

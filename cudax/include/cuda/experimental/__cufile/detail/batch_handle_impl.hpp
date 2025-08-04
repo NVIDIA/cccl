@@ -30,24 +30,23 @@ inline bool batch_io_result::has_error() const noexcept {
 
 // batch_handle constructor implementation
 inline batch_handle::batch_handle(unsigned int max_operations)
-    : detail::raii_handle<batch_handle>(false), max_operations_(max_operations) {
+    : max_operations_(max_operations) {
     CUfileError_t error = cuFileBatchIOSetUp(&handle_, max_operations);
     detail::check_cufile_result(error, "cuFileBatchIOSetUp");
-    set_owns_resource(true);
+
+    batch_resource_.emplace(handle_, [](CUfileBatchHandle_t h) { cuFileBatchIODestroy(h); });
 }
 
 // batch_handle move constructor and assignment
 inline batch_handle::batch_handle(batch_handle&& other) noexcept
-    : detail::raii_handle<batch_handle>(std::move(other)),
-      handle_(other.handle_), max_operations_(other.max_operations_) {
-    // Base class handles owns_resource_ transfer
+    : handle_(other.handle_), max_operations_(other.max_operations_), batch_resource_(std::move(other.batch_resource_)) {
 }
 
 inline batch_handle& batch_handle::operator=(batch_handle&& other) noexcept {
     if (this != &other) {
-        detail::raii_handle<batch_handle>::operator=(std::move(other));
         handle_ = other.handle_;
         max_operations_ = other.max_operations_;
+        batch_resource_ = std::move(other.batch_resource_);
     }
     return *this;
 }
@@ -89,16 +88,18 @@ inline std::vector<batch_io_result> batch_handle::get_status(unsigned int min_co
 inline void batch_handle::cancel() {
     CUfileError_t error = cuFileBatchIOCancel(handle_);
     detail::check_cufile_result(error, "cuFileBatchIOCancel");
-    set_owns_resource(false);
+    if (batch_resource_) batch_resource_->release();
 }
 
 inline unsigned int batch_handle::max_operations() const noexcept {
     return max_operations_;
 }
 
-inline void batch_handle::cleanup() noexcept {
-    cuFileBatchIODestroy(handle_);
+inline bool batch_handle::is_valid() const noexcept {
+    return batch_resource_.has_value() && batch_resource_->has_value();
 }
+
+
 
 // Template method implementations that require complete file_handle definition
 
