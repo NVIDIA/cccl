@@ -431,9 +431,8 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
   using offset_t            = typename testing_types_tuple::offset_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_ull =
-    std::min(static_cast<std::size_t>(cuda::std::numeric_limits<offset_t>::max()) - 1,
-             cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  auto num_items_ull = std::min(static_cast<std::size_t>(cuda::std::numeric_limits<offset_t>::max()) - 1,
+                                cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
 
   SECTION("Random")

@@ -340,8 +340,8 @@ C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, 
                 "Segmented tests must either be head or tail flags");
   using warp_seg_reduction_t =
     cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
-                     warp_seg_reduce_tail_t<type, red_op_t>,
-                     warp_seg_reduce_head_t<type, red_op_t>>;
+                   warp_seg_reduce_tail_t<type, red_op_t>,
+                   warp_seg_reduce_head_t<type, red_op_t>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);

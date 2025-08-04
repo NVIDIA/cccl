@@ -115,8 +115,7 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(d_in == h_itrs[1]);
 }
 
-static_assert(
-  cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
+static_assert(cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
 
 // using cache_modifiers =
 //   c2h::enum_type_list<cub::CacheLoadModifier,

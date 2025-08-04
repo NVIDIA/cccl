@@ -347,10 +347,8 @@ C2H_TEST("DeviceTransform::Transform add five streams", "[device][transform]")
   c2h::gen(C2H_SEED(1), e, float{10}, float{100});
 
   c2h::device_vector<double> result(num_items, thrust::no_init);
-  transform_many(cuda::std::make_tuple(a.begin(), b.begin(), c.begin(), d.begin(), e.begin()),
-                 result.begin(),
-                 num_items,
-                 sum_five{});
+  transform_many(
+    cuda::std::make_tuple(a.begin(), b.begin(), c.begin(), d.begin(), e.begin()), result.begin(), num_items, sum_five{});
 
   // compute reference and verify
   c2h::host_vector<std::int8_t> a_h  = a;

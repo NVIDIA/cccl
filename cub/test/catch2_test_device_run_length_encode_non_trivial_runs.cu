@@ -398,7 +398,7 @@ try
   using run_length_type = offset_type;
 
   cuda::std::size_t extra_items = GENERATE(take(1, random((1 << 20), (1 << 22))));
-  const auto num_items            = detail::make_large_offset<offset_type>(extra_items);
+  const auto num_items          = detail::make_large_offset<offset_type>(extra_items);
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
 
   auto counting_it = cuda::make_counting_iterator(offset_type{0});

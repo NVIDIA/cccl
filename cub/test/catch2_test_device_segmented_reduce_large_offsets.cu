@@ -29,8 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_argm
 
 struct get_gaussian_sum_from_offset_op
 {
-  __host__ __device__ _CCCL_FORCEINLINE cuda::std::int64_t
-  operator()(cuda::std::int64_t begin, cuda::std::int64_t end)
+  __host__ __device__ _CCCL_FORCEINLINE cuda::std::int64_t operator()(cuda::std::int64_t begin, cuda::std::int64_t end)
   {
     cuda::std::int64_t length                 = end - begin;
     const cuda::std::int64_t section_gaussian = ((begin - 1) * length + length * (length + 1) / 2);
@@ -309,8 +308,8 @@ void test_fixed_size_segmented_reduce(
 
   // Get small and medium segment size thresholds from dispatch helper
   const cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
-  const int small_segment_size                  = cuda::std::get<0>(thresholds);
-  const int medium_segment_size                 = cuda::std::get<1>(thresholds);
+  const int small_segment_size                = cuda::std::get<0>(thresholds);
+  const int medium_segment_size               = cuda::std::get<1>(thresholds);
 
   // Take one random segment size from each of the segment sizes
   const segment_size_t segment_size = GENERATE_COPY(

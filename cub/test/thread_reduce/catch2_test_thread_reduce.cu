@@ -243,8 +243,8 @@ using narrow_precision_type_list = c2h::type_list<
 #endif // TEST_BF_T()
   >;
 
-using integral_type_list = c2h::
-  type_list<cuda::std::int8_t, cuda::std::int16_t, cuda::std::uint16_t, cuda::std::int32_t, cuda::std::int64_t>;
+using integral_type_list =
+  c2h::type_list<cuda::std::int8_t, cuda::std::int16_t, cuda::std::uint16_t, cuda::std::int32_t, cuda::std::int64_t>;
 
 using fp_type_list = c2h::type_list<float, double>;
 

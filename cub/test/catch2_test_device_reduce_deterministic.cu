@@ -223,7 +223,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
     // Requires `std::accumulate` to produce deterministic result which is required for comparison
     // with the device RFA result.
     // NOTE: `std::reduce` is not equivalent
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
+    h_expected[0]                   = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
     c2h::host_vector<type> h_output = d_output;
 
     REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});

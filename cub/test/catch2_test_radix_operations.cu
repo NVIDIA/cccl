@@ -140,8 +140,7 @@ template <class... Ts>
 struct tuple_decomposer_t<cuda::std::tuple<Ts...>>
 {
   template <std::size_t... Is>
-  __host__ __device__ cuda::std::tuple<Ts&...>
-  extract(cuda::std::tuple<Ts...>& key, thrust::index_sequence<Is...>) const
+  __host__ __device__ cuda::std::tuple<Ts&...> extract(cuda::std::tuple<Ts...>& key, thrust::index_sequence<Is...>) const
   {
     return cuda::std::tie(cuda::std::get<Is>(key)...);
   }
@@ -388,7 +387,7 @@ C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
 C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_types, fundamental_types)
 {
   using tpl_t = cuda::std::tuple<typename c2h::get<0, TestType>, //
-                                   typename c2h::get<1, TestType>>;
+                                 typename c2h::get<1, TestType>>;
 
   using traits       = cub::detail::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
@@ -439,7 +438,7 @@ C2H_TEST(
   "Radix operations infere minimal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
 {
   using tpl_t = cuda::std::tuple<typename c2h::get<0, TestType>, //
-                                   typename c2h::get<1, TestType>>;
+                                 typename c2h::get<1, TestType>>;
 
   using traits       = cub::detail::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
@@ -472,7 +471,7 @@ C2H_TEST(
   "Radix operations infere maximal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
 {
   using tpl_t = cuda::std::tuple<typename c2h::get<0, TestType>, //
-                                   typename c2h::get<1, TestType>>;
+                                 typename c2h::get<1, TestType>>;
 
   using traits       = cub::detail::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
