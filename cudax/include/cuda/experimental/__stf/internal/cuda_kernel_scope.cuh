@@ -58,7 +58,7 @@ struct cuda_kernel_desc
   template <typename Fun, typename... Args>
   cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
   {
-    configure(mv(func), gridDim_, blockDim_, sharedMem_, ::std::forward<Args>(args)...);
+    configure(mv(func), gridDim_, blockDim_, sharedMem_, mv(args)...);
   }
 
   template <typename Fun, typename... Args>
