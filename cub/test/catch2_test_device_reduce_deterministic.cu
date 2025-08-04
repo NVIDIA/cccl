@@ -250,7 +250,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 template <class T>
 struct square_t
 {
-  _CCCL_HOST_DEVICE T operator()(int x) const
+  __host__ __device__ T operator()(int x) const
   {
     return static_cast<T>(x * x);
   }

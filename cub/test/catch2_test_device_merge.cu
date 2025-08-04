@@ -101,7 +101,7 @@ C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
 using unordered_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 struct order
 {
-  _CCCL_HOST_DEVICE auto operator()(const unordered_t& a, const unordered_t& b) const -> bool
+  __host__ __device__ auto operator()(const unordered_t& a, const unordered_t& b) const -> bool
   {
     return a.key < b.key;
   }
@@ -126,7 +126,7 @@ template <typename Value>
 struct key_to_value
 {
   template <typename Key>
-  _CCCL_HOST_DEVICE auto operator()(const Key& k) const -> Value
+  __host__ __device__ auto operator()(const Key& k) const -> Value
   {
     Value v{};
     convert(k, v, 0);
@@ -134,19 +134,19 @@ struct key_to_value
   }
 
   template <typename Key>
-  _CCCL_HOST_DEVICE static void convert(const Key& k, Value& v, ...)
+  __host__ __device__ static void convert(const Key& k, Value& v, ...)
   {
     v = static_cast<Value>(k);
   }
 
   template <template <typename> class... Policies>
-  _CCCL_HOST_DEVICE static void convert(const c2h::custom_type_t<Policies...>& k, Value& v, int)
+  __host__ __device__ static void convert(const c2h::custom_type_t<Policies...>& k, Value& v, int)
   {
     v = static_cast<Value>(k.val);
   }
 
   template <typename Key, template <typename> class... Policies>
-  _CCCL_HOST_DEVICE static void convert(const Key& k, c2h::custom_type_t<Policies...>& v, int)
+  __host__ __device__ static void convert(const Key& k, c2h::custom_type_t<Policies...>& v, int)
   {
     v     = {};
     v.val = static_cast<decltype(v.val)>(k);
