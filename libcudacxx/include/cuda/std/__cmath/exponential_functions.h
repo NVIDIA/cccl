@@ -21,9 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
@@ -224,84 +228,65 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // ldexp
 
-#if _CCCL_CHECK_BUILTIN(builtin_ldexp) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LDEXPF(...) __builtin_ldexpf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LDEXP(...)  __builtin_ldexp(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LDEXPL(...) __builtin_ldexpl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_ldexp)
-
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ldexp"
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LDEXPF
-#  undef _CCCL_BUILTIN_LDEXP
-#  undef _CCCL_BUILTIN_LDEXPL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-[[nodiscard]] _CCCL_API inline float ldexp(float __x, int __e) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __ldexp_impl(_Tp __x, int __exp) noexcept
 {
-#if defined(_CCCL_BUILTIN_LDEXPF)
-  return _CCCL_BUILTIN_LDEXPF(__x, __e);
-#else // ^^^ _CCCL_BUILTIN_LDEXPF ^^^ // vvv !_CCCL_BUILTIN_LDEXPF vvv
-  return ::ldexpf(__x, __e);
-#endif // !_CCCL_BUILTIN_LDEXPF
+  static_assert(numeric_limits<_Tp>::radix == 2, "__ldexp_impl: unsupported floating point type!");
+  // If exp is 0, then __x is returned, unmodified.
+  if (__exp == 0)
+  {
+    return __x;
+  }
+
+  // If __x is ±0, it is returned, unmodified.
+  // If __x is ±∞, it is returned, unmodified.
+  // If __x is NaN, NaN is returned.
+  const auto __classify = _CUDA_VSTD::fpclassify(__x);
+  if (__classify == FP_ZERO || __classify == FP_NAN || __classify == FP_INFINITE)
+  {
+    return __x;
+  }
+
+  // We should ensure that adding |exp| does not lead to integer rollover. But, if |exp| value is larger the exponent
+  // range for type T, then we can return infinity early. Because the result of the ldexp operation can be a subnormal
+  // number, we need to accommodate the (mantissa + 1) worth of shift in calculating the limit.
+  constexpr auto __fmt      = __fp_format_of_v<_Tp>;
+  constexpr int __exp_limit = __fp_exp_max_v<__fmt> + __fp_mant_nbits_v<__fmt> + 1;
+  if (__exp > __exp_limit)
+  {
+    // If a range error due to overflow occurs, ±HUGE_VAL, ±HUGE_VALF, or ±HUGE_VALL is returned.
+    return _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __x);
+  } // Similarly on the negative side we return zero early if |exp| is too small.
+  else if (__exp < -__exp_limit)
+  {
+    return _CUDA_VSTD::copysign(_CUDA_VSTD::__fp_zero<_Tp>(), __x);
+  }
+  return _CUDA_VSTD::__fp_set_exp(__x, _CUDA_VSTD::__fp_get_exp(__x) + __exp);
 }
 
-[[nodiscard]] _CCCL_API inline float ldexpf(float __x, int __e) noexcept
+[[nodiscard]] _CCCL_API constexpr float ldexpf(float __x, int __exp) noexcept
 {
-#if defined(_CCCL_BUILTIN_LDEXPF)
-  return _CCCL_BUILTIN_LDEXPF(__x, __e);
-#else // ^^^ _CCCL_BUILTIN_LDEXPF ^^^ // vvv !_CCCL_BUILTIN_LDEXPF vvv
-  return ::ldexpf(__x, __e);
-#endif // !_CCCL_BUILTIN_LDEXPF
-}
-
-[[nodiscard]] _CCCL_API inline double ldexp(double __x, int __e) noexcept
-{
-#if defined(_CCCL_BUILTIN_LDEXP)
-  return _CCCL_BUILTIN_LDEXP(__x, __e);
-#else // ^^^ _CCCL_BUILTIN_LDEXP ^^^ // vvv !_CCCL_BUILTIN_LDEXP vvv
-  return ::ldexp(__x, __e);
-#endif // !_CCCL_BUILTIN_LDEXP
+  return _CUDA_VSTD::__ldexp_impl(__x, __exp);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double ldexp(long double __x, int __e) noexcept
+[[nodiscard]] _CCCL_API constexpr long double ldexpl(long double __x, int __exp) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LDEXPL)
-  return _CCCL_BUILTIN_LDEXPL(__x, __e);
-#  else // ^^^ _CCCL_BUILTIN_LDEXPL ^^^ // vvv !_CCCL_BUILTIN_LDEXPL vvv
-  return ::ldexpl(__x, __e);
-#  endif // !_CCCL_BUILTIN_LDEXPL
-}
-
-[[nodiscard]] _CCCL_API inline long double ldexpl(long double __x, int __e) noexcept
-{
-#  if defined(_CCCL_BUILTIN_LDEXPL)
-  return _CCCL_BUILTIN_LDEXPL(__x, __e);
-#  else // ^^^ _CCCL_BUILTIN_LDEXPL ^^^ // vvv !_CCCL_BUILTIN_LDEXPL vvv
-  return ::ldexpl(__x, __e);
-#  endif // !_CCCL_BUILTIN_LDEXPL
+  return _CUDA_VSTD::__ldexp_impl(__x, __exp);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half ldexp(__half __x, int __e) noexcept
+template <class _Tp, enable_if_t<__is_extended_arithmetic_v<_Tp>, int> = 0>
+[[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> ldexp(_Tp __x, int __exp) noexcept
 {
-  return __float2half(_CUDA_VSTD::ldexpf(__half2float(__x), __e));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 ldexp(__nv_bfloat16 __x, int __e) noexcept
-{
-  return __float2bfloat16(_CUDA_VSTD::ldexpf(__bfloat162float(__x), __e));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _CCCL_API inline double ldexp(_Integer __x, int __e) noexcept
-{
-  return _CUDA_VSTD::ldexp((double) __x, __e);
+  if constexpr (is_integral_v<_Tp>)
+  {
+    return _CUDA_VSTD::__ldexp_impl(static_cast<double>(__x), __exp);
+  }
+  else
+  {
+    return _CUDA_VSTD::__ldexp_impl(__x, __exp);
+  }
 }
 
 // exp2
@@ -553,84 +538,29 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 
 // scalbn
 
-#if _CCCL_CHECK_BUILTIN(builtin_scalbn) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_SCALBNF(...) __builtin_scalbnf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_SCALBN(...)  __builtin_scalbn(__VA_ARGS__)
-#  define _CCCL_BUILTIN_SCALBNL(...) __builtin_scalbnl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_scalbn)
-
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "scalbnf"
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_SCALBNF
-#  undef _CCCL_BUILTIN_SCALBN
-#  undef _CCCL_BUILTIN_SCALBNL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-[[nodiscard]] _CCCL_API inline float scalbn(float __x, int __y) noexcept
+[[nodiscard]] _CCCL_API constexpr float scalbnf(float __x, int __exp) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBNF)
-  return _CCCL_BUILTIN_SCALBNF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_SCALBNF ^^^ // vvv !_CCCL_BUILTIN_SCALBNF vvv
-  return ::scalbnf(__x, __y);
-#endif // !_CCCL_BUILTIN_SCALBNF
-}
-
-[[nodiscard]] _CCCL_API inline float scalbnf(float __x, int __y) noexcept
-{
-#if defined(_CCCL_BUILTIN_SCALBNF)
-  return _CCCL_BUILTIN_SCALBNF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_SCALBNF ^^^ // vvv !_CCCL_BUILTIN_SCALBNF vvv
-  return ::scalbnf(__x, __y);
-#endif // !_CCCL_BUILTIN_SCALBNF
-}
-
-[[nodiscard]] _CCCL_API inline double scalbn(double __x, int __y) noexcept
-{
-#if defined(_CCCL_BUILTIN_SCALBN)
-  return _CCCL_BUILTIN_SCALBN(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_SCALBN ^^^ // vvv !_CCCL_BUILTIN_SCALBN vvv
-  return ::scalbn(__x, __y);
-#endif // !_CCCL_BUILTIN_SCALBN
+  return _CUDA_VSTD::__ldexp_impl(__x, __exp);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double scalbn(long double __x, int __y) noexcept
+[[nodiscard]] _CCCL_API constexpr long double scalbnl(long double __x, int __exp) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SCALBNL)
-  return _CCCL_BUILTIN_SCALBNL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_SCALBNL ^^^ // vvv !_CCCL_BUILTIN_SCALBNL vvv
-  return ::scalbnl(__x, __y);
-#  endif // !_CCCL_BUILTIN_SCALBNL
-}
-
-[[nodiscard]] _CCCL_API inline long double scalbnl(long double __x, int __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_SCALBNL)
-  return _CCCL_BUILTIN_SCALBNL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_SCALBNL ^^^ // vvv !_CCCL_BUILTIN_SCALBNL vvv
-  return ::scalbnl(__x, __y);
-#  endif // !_CCCL_BUILTIN_SCALBNL
+  return _CUDA_VSTD::__ldexp_impl(__x, __exp);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half scalbn(__half __x, int __y) noexcept
+template <class _Tp, enable_if_t<__is_extended_arithmetic_v<_Tp>, int> = 0>
+[[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> scalbn(_Tp __x, int __exp) noexcept
 {
-  return __float2half(_CUDA_VSTD::scalbnf(__half2float(__x), __y));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 scalbn(__nv_bfloat16 __x, int __y) noexcept
-{
-  return __float2bfloat16(_CUDA_VSTD::scalbnf(__bfloat162float(__x), __y));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-[[nodiscard]] _CCCL_API inline double scalbn(_Integer __x, int __y) noexcept
-{
-  return _CUDA_VSTD::scalbn((double) __x, __y);
+  if constexpr (is_integral_v<_Tp>)
+  {
+    return _CUDA_VSTD::__ldexp_impl(static_cast<double>(__x), __exp);
+  }
+  else
+  {
+    return _CUDA_VSTD::__ldexp_impl(__x, __exp);
+  }
 }
 
 // pow

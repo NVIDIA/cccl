@@ -15,13 +15,13 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ bool eq(T lhs, T rhs) noexcept
+__host__ __device__ constexpr bool eq(T lhs, T rhs) noexcept
 {
   return lhs == rhs;
 }
 
 template <typename T, typename U, cuda::std::enable_if_t<cuda::std::is_arithmetic_v<U>, int> = 0>
-__host__ __device__ bool eq(T lhs, U rhs) noexcept
+__host__ __device__ constexpr bool eq(T lhs, U rhs) noexcept
 {
   return eq(lhs, T(rhs));
 }

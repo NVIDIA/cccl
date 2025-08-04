@@ -416,8 +416,8 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   if (_CUDA_VSTD::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
-    __c      = _CUDA_VSTD::__constexpr_scalbn(__c, -__ilogbw);
-    __d      = _CUDA_VSTD::__constexpr_scalbn(__d, -__ilogbw);
+    __c      = _CUDA_VSTD::scalbn(__c, -__ilogbw);
+    __d      = _CUDA_VSTD::scalbn(__d, -__ilogbw);
   }
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
@@ -471,8 +471,8 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);
 
   _Tp __denom = __denom_vec.__a + __denom_vec.__b;
-  _Tp __x     = _CUDA_VSTD::__constexpr_scalbn((__partials.__ac + __partials.__bd) / __denom, -__ilogbw);
-  _Tp __y     = _CUDA_VSTD::__constexpr_scalbn((__partials.__bc - __partials.__ad) / __denom, -__ilogbw);
+  _Tp __x     = _CUDA_VSTD::scalbn((__partials.__ac + __partials.__bd) / __denom, -__ilogbw);
+  _Tp __y     = _CUDA_VSTD::scalbn((__partials.__bc - __partials.__ad) / __denom, -__ilogbw);
 #ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
   if (_CUDA_VSTD::isnan(__x) && _CUDA_VSTD::isnan(__y))
   {
