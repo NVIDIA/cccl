@@ -22,6 +22,7 @@
 #include <vector>
 #include <cstring>
 #include <unistd.h>
+#include <chrono>
 
 namespace cuda::experimental::cufile {
 
@@ -54,8 +55,8 @@ namespace {
         REQUIRE(is_cufile_available());
         driver_singleton::get();
 
-        // Create temporary test file - use /dev/shm for better filesystem compatibility
-        temp_file_path_ = "/workspace/cufile-tests/cufile_test_file.tmp";
+        auto timestamp = ::std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        temp_file_path_ = ::std::filesystem::temp_directory_path() / ("cufile_test_file_" + ::std::to_string(timestamp) + ".tmp");
 
         // Create test file with some data
         ::std::ofstream file(temp_file_path_, ::std::ios::binary);
@@ -69,8 +70,7 @@ namespace {
             file.close();
         }
 
-        // Also create a large file for testing - use /dev/shm for better filesystem compatibility
-        large_temp_file_path_ = "/workspace/cufile-tests/cufile_large_test_file.tmp";
+        large_temp_file_path_ = ::std::filesystem::temp_directory_path() / ("cufile_large_test_file_" + ::std::to_string(timestamp) + ".tmp");
         ::std::ofstream large_file(large_temp_file_path_, ::std::ios::binary);
         if (large_file.is_open()) {
             large_test_data_.resize(large_test_size_);
