@@ -202,7 +202,12 @@ struct square_t
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][nondeterministic]",
-         float_type_list)
+         c2h::type_list<float
+#if CUB_PTX_ARCH >= 600
+                        ,
+                        double // atomicAdd is not supported for double on SM < 6.0
+#endif
+                        >)
 {
   using type = typename c2h::get<0, TestType>;
 
