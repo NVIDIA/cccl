@@ -258,7 +258,7 @@ __global__ void test_hasher_kernel(TestFn test_fn, ResultIt result)
 template <typename TestFn>
 void test_hasher_on_device(TestFn test_fn)
 {
-  thrust::device_vector<bool, 1> result{false};
+  thrust::device_vector<bool> result(1, false);
   test_hasher_kernel<<<1, 1>>>(test_fn, result.begin());
   CUDAX_REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   CUDAX_REQUIRE(result[0]);
