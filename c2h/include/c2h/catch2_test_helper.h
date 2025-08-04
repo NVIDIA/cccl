@@ -5,6 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__nvtx/nvtx3.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
