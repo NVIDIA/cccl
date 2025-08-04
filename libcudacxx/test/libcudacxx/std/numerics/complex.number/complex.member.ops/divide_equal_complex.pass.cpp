@@ -19,7 +19,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-__host__ __device__ _LIBCUDACXX_CONSTEXPR_BIT_CAST bool test()
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test()
 {
   cuda::std::complex<T> c(-4, 7.5);
   const cuda::std::complex<T> c2(1.5, 2.5);
@@ -62,13 +62,13 @@ int main(int, char**)
 #if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
-#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
 #  if _CCCL_HAS_LONG_DOUBLE()
   static_assert(test<long double>(), "");
 #  endif // _CCCL_HAS_LONG_DOUBLE()
-#endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
 
   return 0;
 }
