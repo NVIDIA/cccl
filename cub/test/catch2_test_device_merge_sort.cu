@@ -135,9 +135,9 @@ template <typename UnsignedIntegralKeyT>
 struct index_to_key_value_op
 {
   static constexpr std::size_t max_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
   static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
                 "Calculation of num_distinct_key_values would overflow");
   static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
@@ -163,9 +163,9 @@ class index_to_expected_key_op
 {
 private:
   static constexpr std::size_t max_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
   static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
                 "Calculation of num_distinct_key_values would overflow");
   static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
@@ -431,9 +431,8 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
   using offset_t            = typename testing_types_tuple::offset_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()) - 1,
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  auto num_items_ull = std::min(static_cast<std::size_t>(cuda::std::numeric_limits<offset_t>::max()) - 1,
+                                cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
 
   SECTION("Random")

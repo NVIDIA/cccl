@@ -63,10 +63,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _ElementType,
-          class _Extents,
-          class _LayoutPolicy   = layout_right,
-          class _AccessorPolicy = default_accessor<_ElementType>>
+template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
 class mdspan
     : private __mdspan_ebco<typename _AccessorPolicy::data_handle_type,
                             typename _LayoutPolicy::template mapping<_Extents>,

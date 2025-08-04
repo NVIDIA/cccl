@@ -40,9 +40,14 @@ double Y0(int i)
   return cos((double) i);
 }
 
-int main()
+void test(bool is_graph)
 {
   context ctx;
+  if (is_graph)
+  {
+    ctx = graph_ctx();
+  }
+
   const size_t N = 16;
   double X[N], Y[N];
 
@@ -76,7 +81,7 @@ int main()
   };
   num_axpy++;
 
-#if CUDA_VERSION >= 12010
+#if _CCCL_CTK_AT_LEAST(12, 1)
   // CUkernel driver API
   CUkernel axpy_kernel;
   cuda_safe_call(cudaGetKernel(&axpy_kernel, (void*) axpy));
@@ -87,6 +92,19 @@ int main()
   num_axpy++;
 #endif
 
+  /* Some extra sanity checks, we put this in a dummy task to get access to dX and dY values */
+  ctx.task(lX.read(), lY.rw())->*[&](auto, auto dX, auto dY) {
+    int nregs = cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+
+    int nregs_fun = cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    _CCCL_ASSERT(nregs == nregs_fun, "invalid value");
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+    int nregs_kernel = cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    _CCCL_ASSERT(nregs == nregs_kernel, "invalid value");
+#endif
+  };
+
   ctx.finalize();
 
   for (size_t i = 0; i < N; i++)
@@ -94,4 +112,12 @@ int main()
     _CCCL_ASSERT(fabs(Y[i] - (Y0(i) + num_axpy * alpha * X0(i))) < 0.0001, "Invalid result");
     _CCCL_ASSERT(fabs(X[i] - X0(i)) < 0.0001, "Invalid result");
   }
+}
+
+int main()
+{
+  // stream context
+  test(false);
+  // graph context
+  test(true);
 }
