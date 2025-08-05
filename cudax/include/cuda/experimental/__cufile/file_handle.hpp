@@ -19,11 +19,8 @@
 #include <functional>
 #include <ios>
 #include <iostream>
-#include <memory>
 
-#include <stdexcept>
 #include <string>
-#include <system_error>
 #include <unistd.h>
 #include "detail/raii_resource.hpp"
 
