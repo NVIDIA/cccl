@@ -19,6 +19,7 @@
 #include <functional>
 #include <ios>
 #include <iostream>
+#include <cuda/stream_ref>
 
 #include <string>
 #include <unistd.h>
@@ -84,34 +85,34 @@ public:
     /**
      * @brief Asynchronous read using span
      * @tparam T Element type (must be trivially copyable)
+     * @param stream CUDA stream for async operation
      * @param buffer Span representing the destination buffer
      * @param file_offset Offset in file to read from
      * @param buffer_offset Offset in buffer to read into (in bytes)
      * @param bytes_read Output parameter for bytes read
-     * @param stream CUDA stream for async operation
      */
     template<typename T>
-    void read_async(cuda::std::span<T> buffer,
+    void read_async(cuda::stream_ref stream,
+                   cuda::std::span<T> buffer,
                    off_t file_offset,
                    off_t buffer_offset,
-                   ssize_t& bytes_read,
-                   cudaStream_t stream);
+                   ssize_t& bytes_read);
 
     /**
      * @brief Asynchronous write using span
      * @tparam T Element type (must be trivially copyable)
+     * @param stream CUDA stream for async operation
      * @param buffer Span representing the source buffer
      * @param file_offset Offset in file to write to
      * @param buffer_offset Offset in buffer to write from (in bytes)
      * @param bytes_written Output parameter for bytes written
-     * @param stream CUDA stream for async operation
      */
     template<typename T>
-    void write_async(cuda::std::span<const T> buffer,
+    void write_async(cuda::stream_ref stream,
+                    cuda::std::span<const T> buffer,
                     off_t file_offset,
                     off_t buffer_offset,
-                    ssize_t& bytes_written,
-                    cudaStream_t stream);
+                    ssize_t& bytes_written);
 
     /**
      * @brief Get native cuFILE handle

@@ -12,6 +12,7 @@
 #include <cuda/experimental/__cufile/driver.hpp>
 #include <cuda/experimental/__cufile/utils.hpp>
 #include <cuda/std/span>
+#include <cuda/stream_ref>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -236,7 +237,7 @@ TEST_CASE("Asynchronous I/O operations", "[file_handle][async_io]") {
             ssize_t bytes_read = 0;
 
             // Test asynchronous read
-            handle.read_async(buffer_span, file_offset, buffer_offset, bytes_read, stream);
+            handle.read_async(cuda::stream_ref{stream}, buffer_span, file_offset, buffer_offset, bytes_read);
 
             // Synchronize stream
             cudaStreamSynchronize(stream);
@@ -287,7 +288,7 @@ TEST_CASE("Asynchronous I/O operations", "[file_handle][async_io]") {
             ssize_t bytes_written = 0;
 
             // Test asynchronous write
-            handle.write_async(buffer_span, file_offset, buffer_offset, bytes_written, stream);
+            handle.write_async(cuda::stream_ref{stream}, buffer_span, file_offset, buffer_offset, bytes_written);
 
             // Synchronize stream
             cudaStreamSynchronize(stream);
