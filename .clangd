@@ -80,6 +80,9 @@ CompileFlags:
     # report all errors
     - "-ferror-limit=0"
     - "-ftemplate-backtrace-limit=0"
+    # Add CUDA include paths for cufile.h and other CUDA headers
+    - "-I/usr/local/cuda/include"
+    - "-I/usr/local/cuda/targets/x86_64-linux/include"
   Remove:
     - -G
     - -stdpar
