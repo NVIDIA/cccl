@@ -198,7 +198,7 @@ TEST_CASE("Statistics management", "[driver][statistics]")
         try {
             set_stats_level(2);
             REQUIRE_NOTHROW(get_stats_l2());
-        } catch (const std::exception&) {
+        } catch (const ::std::exception&) {
             // Level 2 stats might not be available - this is acceptable
         }
 
@@ -206,7 +206,7 @@ TEST_CASE("Statistics management", "[driver][statistics]")
         try {
             set_stats_level(3);
             REQUIRE_NOTHROW(get_stats_l3());
-        } catch (const std::exception&) {
+        } catch (const ::std::exception&) {
             // Level 3 stats might not be available - this is acceptable
         }
 

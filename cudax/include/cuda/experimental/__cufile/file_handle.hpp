@@ -11,7 +11,6 @@
 #endif // no system header
 
 #include "detail/error_handling.hpp"
-#include "detail/span_compat.hpp"
 #include "buffer_handle.hpp"
 #include "batch_handle.hpp"
 #include "stream_handle.hpp"
@@ -37,10 +36,10 @@ class file_handle {
 private:
     int fd_;
     bool owns_fd_;
-    std::string path_;
-    detail::raii_resource<CUfileHandle_t, std::function<void(CUfileHandle_t)>> cufile_handle_;
+    ::std::string path_;
+    detail::raii_resource<CUfileHandle_t, ::std::function<void(CUfileHandle_t)>> cufile_handle_;
 
-    static int convert_ios_mode(std::ios_base::openmode mode);
+    static int convert_ios_mode(::std::ios_base::openmode mode);
     void register_file();
 
 public:
@@ -49,8 +48,8 @@ public:
      * @param path File path
      * @param mode STL-compatible open mode flags
      */
-    explicit file_handle(const std::string& path,
-                        std::ios_base::openmode mode = std::ios_base::in);
+    explicit file_handle(const ::std::string& path,
+                        ::std::ios_base::openmode mode = ::std::ios_base::in);
 
     /**
      * @brief Create from existing file descriptor
@@ -72,7 +71,7 @@ public:
      * @return Number of bytes read
      */
     template<typename T>
-    size_t read(span<T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
+    size_t read(::std::span<T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
 
     /**
      * @brief Write data to file using span
@@ -83,7 +82,7 @@ public:
      * @return Number of bytes written
      */
     template<typename T>
-    size_t write(span<const T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
+    size_t write(::std::span<const T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
 
     /**
      * @brief Asynchronous read using span
@@ -95,7 +94,7 @@ public:
      * @param stream CUDA stream for async operation
      */
     template<typename T>
-    void read_async(span<T> buffer,
+    void read_async(::std::span<T> buffer,
                    off_t file_offset,
                    off_t buffer_offset,
                    ssize_t& bytes_read,
@@ -111,7 +110,7 @@ public:
      * @param stream CUDA stream for async operation
      */
     template<typename T>
-    void write_async(span<const T> buffer,
+    void write_async(::std::span<const T> buffer,
                     off_t file_offset,
                     off_t buffer_offset,
                     ssize_t& bytes_written,
@@ -125,7 +124,7 @@ public:
     /**
      * @brief Get file path
      */
-    const std::string& path() const noexcept;
+    const ::std::string& path() const noexcept;
 
     /**
      * @brief Check if the handle owns a valid resource

@@ -16,13 +16,13 @@ inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
 
 // Move constructor and assignment
 inline stream_handle::stream_handle(stream_handle&& other) noexcept
-    : stream_(other.stream_), registered_stream_(std::move(other.registered_stream_)) {
+    : stream_(other.stream_), registered_stream_(::std::move(other.registered_stream_)) {
 }
 
 inline stream_handle& stream_handle::operator=(stream_handle&& other) noexcept {
     if (this != &other) {
         stream_ = other.stream_;
-        registered_stream_ = std::move(other.registered_stream_);
+        registered_stream_ = ::std::move(other.registered_stream_);
     }
     return *this;
 }
