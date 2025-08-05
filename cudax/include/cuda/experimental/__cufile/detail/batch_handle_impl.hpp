@@ -88,7 +88,7 @@ inline std::vector<batch_io_result> batch_handle::get_status(unsigned int min_co
 inline void batch_handle::cancel() {
     CUfileError_t error = cuFileBatchIOCancel(handle_);
     detail::check_cufile_result(error, "cuFileBatchIOCancel");
-    if (batch_resource_) batch_resource_->release();
+    batch_resource_.release();
 }
 
 inline unsigned int batch_handle::max_operations() const noexcept {
@@ -96,7 +96,7 @@ inline unsigned int batch_handle::max_operations() const noexcept {
 }
 
 inline bool batch_handle::is_valid() const noexcept {
-    return batch_resource_.has_value() && batch_resource_->has_value();
+    return batch_resource_.has_value();
 }
 
 

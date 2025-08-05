@@ -124,7 +124,7 @@ size_t file_handle::read(span<T> buffer, off_t file_offset, off_t buffer_offset)
     void* buffer_ptr = static_cast<void*>(buffer.data());
     size_t size_bytes = buffer.size_bytes();
 
-    ssize_t result = cuFileRead(cufile_handle_->get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
+    ssize_t result = cuFileRead(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
     return static_cast<size_t>(detail::check_cufile_result(result, "cuFileRead"));
 }
 
@@ -136,7 +136,7 @@ size_t file_handle::write(span<const T> buffer, off_t file_offset, off_t buffer_
     const void* buffer_ptr = static_cast<const void*>(buffer.data());
     size_t size_bytes = buffer.size_bytes();
 
-    ssize_t result = cuFileWrite(cufile_handle_->get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
+    ssize_t result = cuFileWrite(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
     return static_cast<size_t>(detail::check_cufile_result(result, "cuFileWrite"));
 }
 
@@ -152,7 +152,7 @@ void file_handle::read_async(span<T> buffer,
     size_t size_bytes = buffer.size_bytes();
     void* buffer_ptr = static_cast<void*>(buffer.data());
 
-    CUfileError_t error = cuFileReadAsync(cufile_handle_->get(), buffer_ptr, &size_bytes,
+    CUfileError_t error = cuFileReadAsync(cufile_handle_.get(), buffer_ptr, &size_bytes,
                                          &file_offset, &buffer_offset,
                                          &bytes_read, stream);
     detail::check_cufile_result(error, "cuFileReadAsync");
@@ -170,7 +170,7 @@ void file_handle::write_async(span<const T> buffer,
     size_t size_bytes = buffer.size_bytes();
     const void* buffer_ptr = static_cast<const void*>(buffer.data());
 
-    CUfileError_t error = cuFileWriteAsync(cufile_handle_->get(), const_cast<void*>(buffer_ptr), &size_bytes,
+    CUfileError_t error = cuFileWriteAsync(cufile_handle_.get(), const_cast<void*>(buffer_ptr), &size_bytes,
                                           &file_offset, &buffer_offset,
                                           &bytes_written, stream);
     detail::check_cufile_result(error, "cuFileWriteAsync");
@@ -178,7 +178,7 @@ void file_handle::write_async(span<const T> buffer,
 
 // Simple getter implementations
 inline CUfileHandle_t file_handle::native_handle() const noexcept {
-    return cufile_handle_ ? cufile_handle_->get() : CUfileHandle_t{};
+    return cufile_handle_.get();
 }
 
 inline const std::string& file_handle::path() const noexcept {
@@ -186,7 +186,7 @@ inline const std::string& file_handle::path() const noexcept {
 }
 
 inline bool file_handle::is_valid() const noexcept {
-    return cufile_handle_.has_value() && cufile_handle_->has_value();
+    return cufile_handle_.has_value();
 }
 
 } // namespace cuda::experimental::cufile

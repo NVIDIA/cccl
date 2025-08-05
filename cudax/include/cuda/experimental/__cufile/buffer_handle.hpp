@@ -13,7 +13,7 @@
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
 #include <functional>
-#include <optional>
+
 #include "detail/raii_resource.hpp"
 
 namespace cuda::experimental::cufile {
@@ -25,7 +25,7 @@ class buffer_handle {
 private:
     const void* buffer_;
     size_t size_;
-    std::optional<detail::raii_resource<const void*, std::function<void(const void*)>>> registered_buffer_;
+    detail::raii_resource<const void*, std::function<void(const void*)>> registered_buffer_;
 
 public:
     /**

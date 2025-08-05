@@ -33,7 +33,7 @@ inline cudaStream_t stream_handle::get() const noexcept {
 }
 
 inline bool stream_handle::is_valid() const noexcept {
-    return registered_stream_.has_value() && registered_stream_->has_value();
+    return registered_stream_.has_value();
 }
 
 
