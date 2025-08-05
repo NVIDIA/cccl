@@ -23,7 +23,6 @@
 
 #if _LIBCUDACXX_HAS_NVBF16()
 
-#  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/complex.h>
 #  include <cuda/std/__complex/tuple.h>
 #  include <cuda/std/__complex/vector_support.h>
