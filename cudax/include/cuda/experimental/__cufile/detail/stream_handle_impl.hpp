@@ -2,6 +2,7 @@
 
 // This file provides the implementation of stream_handle methods
 // It's included after the class definition
+#include "cuda/experimental/__cufile/stream_handle.hpp"
 
 namespace cuda::experimental::cufile {
 
