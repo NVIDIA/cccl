@@ -28,7 +28,7 @@ __host__ __device__ constexpr void test_octal()
   assert(07_u128 == 07);
   assert(017_u128 == 017);
   assert(0377_u128 == 0377);
-  assert(01'777'777'777'777'777'777'777'375_u128 == (__uint128_t{(unsigned long long) -1} << 9) + 0'375);
+  assert(01'777'777'777'777'777'777'777'375_u128 == (__uint128_t{~0ull} << 9) + 0'375);
 }
 
 __host__ __device__ constexpr void test_decimal()
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test_decimal()
   assert(123_u128 == 123);
   assert(123'456'789_u128 == 123'456'789);
   assert(9'223'372'036'854'775'807_u128 == 9'223'372'036'854'775'807);
-  assert(12'345'678'901'234'567'890_u128 == 12'345'678'901'234'567'890);
+  assert(12'345'678'901'234'567'890_u128 == 12'345'678'901'234'567'890ull);
 }
 
 __host__ __device__ constexpr void test_hexadecimal()
@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test_hexadecimal()
   assert(0xFFFF_u128 == 0xFFFF);
   assert(0x7FFF'FFFF'FFFF'FFFF_u128 == 0x7FFF'FFFF'FFFF'FFFF);
   assert(0xFF'FFFF'FFFF'FFFF'FFFF_u128 == (__uint128_t{0xFFFF'FFFF'FFFF'FFFF} << 8) + 0xff);
-  assert(0x7FFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_u128 == __uint128_t{-1} >> 1);
+  assert(0x7FFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_u128 == ~__uint128_t{0} >> 1);
   assert(0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_u128
          == (__uint128_t{0xFFFF'FFFF'FFFF'FFFF} << 64) + 0xFFFF'FFFF'FFFF'FFFF);
 
