@@ -107,7 +107,7 @@ enum class address_space
       asm volatile(
         "{\n\t"
         "  .reg .pred p;\n\t"
-        "  isspacep.constant p, %1;\n\t"
+        "  isspacep.const p, %1;\n\t"
         "  selp.u32 %0, 1, 0, p;\n\t"
         "}\n\t"
         : "=r"(__ret)
