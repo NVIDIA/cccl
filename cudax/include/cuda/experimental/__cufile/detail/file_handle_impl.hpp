@@ -142,11 +142,11 @@ size_t file_handle::write(cuda::std::span<const T> buffer, off_t file_offset, of
 }
 
 template<typename T>
-void file_handle::read_async(cuda::std::span<T> buffer,
+void file_handle::read_async(cuda::stream_ref stream,
+                            cuda::std::span<T> buffer,
                             off_t file_offset,
                             off_t buffer_offset,
-                            ssize_t& bytes_read,
-                            cudaStream_t stream) {
+                            ssize_t& bytes_read) {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // cuFile async API requires size parameters to be passed by pointer
@@ -155,16 +155,16 @@ void file_handle::read_async(cuda::std::span<T> buffer,
 
     CUfileError_t error = cuFileReadAsync(cufile_handle_.get(), buffer_ptr, &size_bytes,
                                          &file_offset, &buffer_offset,
-                                         &bytes_read, stream);
+                                         &bytes_read, stream.get());
     detail::check_cufile_result(error, "cuFileReadAsync");
 }
 
 template<typename T>
-void file_handle::write_async(cuda::std::span<const T> buffer,
+void file_handle::write_async(cuda::stream_ref stream,
+                             cuda::std::span<const T> buffer,
                              off_t file_offset,
                              off_t buffer_offset,
-                             ssize_t& bytes_written,
-                             cudaStream_t stream) {
+                             ssize_t& bytes_written) {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // cuFile async API requires size parameters to be passed by pointer
@@ -173,7 +173,7 @@ void file_handle::write_async(cuda::std::span<const T> buffer,
 
     CUfileError_t error = cuFileWriteAsync(cufile_handle_.get(), const_cast<void*>(buffer_ptr), &size_bytes,
                                           &file_offset, &buffer_offset,
-                                          &bytes_written, stream);
+                                          &bytes_written, stream.get());
     detail::check_cufile_result(error, "cuFileWriteAsync");
 }
 
