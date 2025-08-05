@@ -12,7 +12,7 @@
 
 #include "detail/error_handling.hpp"
 #include <functional>
-#include <optional>
+
 
 namespace cuda::experimental::cufile {
 
@@ -22,7 +22,7 @@ namespace cuda::experimental::cufile {
 class stream_handle {
 private:
     cudaStream_t stream_;
-    std::optional<detail::raii_resource<cudaStream_t, std::function<void(cudaStream_t)>>> registered_stream_;
+    detail::raii_resource<cudaStream_t, std::function<void(cudaStream_t)>> registered_stream_;
 
 public:
     /**

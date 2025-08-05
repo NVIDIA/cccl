@@ -21,7 +21,7 @@
 #include <ios>
 #include <iostream>
 #include <memory>
-#include <optional>
+
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -38,7 +38,7 @@ private:
     int fd_;
     bool owns_fd_;
     std::string path_;
-    std::optional<detail::raii_resource<CUfileHandle_t, std::function<void(CUfileHandle_t)>>> cufile_handle_;
+    detail::raii_resource<CUfileHandle_t, std::function<void(CUfileHandle_t)>> cufile_handle_;
 
     static int convert_ios_mode(std::ios_base::openmode mode);
     void register_file();

@@ -12,7 +12,7 @@ class raii_resource {
 private:
     T resource_;
     Deleter deleter_;
-    bool owns_resource_;
+    bool owns_resource_ = false;
 
 public:
     /**
@@ -78,10 +78,31 @@ public:
      */
     bool has_value() const noexcept { return owns_resource_; }
 
+
+
     /**
-     * @brief Check if this wrapper owns the resource (alias for has_value)
+     * @brief Emplace a new resource (destroys current if owned)
+     * @param resource The resource to manage
+     * @param deleter Function/lambda to call for cleanup
      */
-    bool owns() const noexcept { return owns_resource_; }
+    void emplace(T resource, Deleter deleter) {
+        if (owns_resource_) {
+            deleter_(resource_);
+        }
+        resource_ = resource;
+        deleter_ = std::move(deleter);
+        owns_resource_ = true;
+    }
+
+    /**
+     * @brief Reset to empty state (destroys current if owned)
+     */
+    void reset() noexcept {
+        if (owns_resource_) {
+            deleter_(resource_);
+        }
+        owns_resource_ = false;
+    }
 };
 
 /**
