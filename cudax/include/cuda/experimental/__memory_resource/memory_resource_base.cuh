@@ -96,8 +96,8 @@ public:
 
   //! @brief deallocate_sync memory pointed to by \p __ptr.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`.
-  //! @param __bytes  The number of bytes that was passed to the `allocate_sync` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate_sync` call that returned \p __ptr.
+  //! @param __bytes  The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   //! @note The pointer passed to `deallocate_sync` must not be in use in a stream. It is the caller's responsibility to
   //! properly synchronize all relevant streams before calling `deallocate_sync`.
   void deallocate_sync(
@@ -147,10 +147,10 @@ public:
     return __ptr;
   }
 
-  //! @brief deallocate_sync memory pointed to by \p __ptr.
+  //! @brief Deallocate memory pointed to by \p __ptr.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   //! @param __stream A stream that has a stream ordering relationship with the stream used in the
   //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
   //! that returned \p __ptr.
@@ -161,13 +161,13 @@ public:
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
-                 "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
+                 "Invalid alignment passed to __memory_resource_base::deallocate.");
     deallocate(__stream, __ptr, __bytes);
   }
 
-  //! @brief deallocate_sync memory pointed to by \p __ptr.
+  //! @brief Deallocate memory pointed to by \p __ptr.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __stream A stream that has a stream ordering relationship with the stream used in the
   //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
   //! that returned \p __ptr.

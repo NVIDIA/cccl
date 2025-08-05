@@ -145,10 +145,10 @@ struct shared_resource : __copy_default_queries<_Resource>
     return __control_block->__resource.allocate_sync(__bytes, __alignment);
   }
 
-  //! @brief deallocate_sync memory pointed to by \p __ptr using the stored resource.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`
-  //! @param __bytes The number of bytes that was passed to the `allocate_sync` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate_sync` call that returned \p __ptr.
+  //! @brief Deallocate memory pointed to by \p __ptr using the stored resource.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
   {
     __control_block->__resource.deallocate_sync(__ptr, __bytes, __alignment);
@@ -172,10 +172,9 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
   //! performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c resource.
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned
-  //! \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate` call that returned
-  //! \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   //! @note The caller is responsible for ensuring that the memory is not accessed after the
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)

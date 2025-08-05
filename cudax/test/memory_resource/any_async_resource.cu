@@ -104,7 +104,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate_async and deallocate")
+  SECTION("allocate and deallocate")
   {
     Counts expected{};
     CHECK(this->counts == expected);

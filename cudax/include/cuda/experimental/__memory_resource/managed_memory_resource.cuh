@@ -100,9 +100,10 @@ public:
     return allocate_sync(__bytes);
   }
 
-  //! @brief deallocate_sync memory pointed to by \p __ptr.
-  //! @param __bytes The number of bytes that was passed to the `allocate_sync` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate_sync` call that returned \p __ptr.
+  //! @brief Deallocate memory pointed to by \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   void deallocate_sync(
     void* __ptr,
     const size_t,
@@ -114,10 +115,10 @@ public:
     _CCCL_ASSERT_CUDA_API(::cudaFree, "managed_memory_resource::deallocate_sync failed", __ptr);
   }
 
-  //! @brief deallocate_sync memory pointed to by \p __ptr.
+  //! @brief Deallocate memory pointed to by \p __ptr.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   //! @param __stream A stream that has a stream ordering relationship with the stream used in the
   //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
   //! that returned \p __ptr.
@@ -131,9 +132,9 @@ public:
     deallocate_sync(__ptr, __bytes);
   }
 
-  //! @brief deallocate_sync memory pointed to by \p __ptr.
+  //! @brief Deallocate memory pointed to by \p __ptr.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __stream A stream that has a stream ordering relationship with the stream used in the
   //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
   //! that returned \p __ptr.

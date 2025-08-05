@@ -88,7 +88,7 @@ using __iproperty = typename __with_property<_Property>::template __iproperty<>;
 template <class... _Properties>
 using __iproperty_set = ::cuda::__iset<__iproperty<_Properties>...>;
 
-// Wrap the calls of the allocate_async and deallocate member functions
+// Wrap the calls of the allocate and deallocate member functions
 // because of NVBUG#4967486
 // Needs to keep the _async because of fun windows macros
 template <class _Resource>
@@ -576,7 +576,7 @@ public:
   template <_ResourceKind _OtherKind, class... _OtherProperties>
   [[nodiscard]] bool operator==(const basic_resource_ref<_OtherKind, _OtherProperties...>& __rhs) const;
 
-  //! @brief Calls `allocate` on the wrapped object with the specified
+  //! @brief Calls `allocate_sync` on the wrapped object with the specified
   //! arguments.
   //! @pre `has_value()` is `true`.
   //! @return `obj.allocate_sync(__size, __align)`, where `obj` is the wrapped
@@ -592,7 +592,7 @@ public:
   //! wrapped object.
   void deallocate_sync(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
 
-  //! @brief Calls `allocate_async` on the wrapped object with the specified
+  //! @brief Calls `allocate` on the wrapped object with the specified
   //! arguments.
   //! @pre `_Kind` is `_ResourceKind::_Asynchronous`.
   //! @pre `has_value()` is `true`.
@@ -611,7 +611,7 @@ public:
   //! @pre `_Kind` is `_ResourceKind::_Asynchronous`.
   //! @pre `has_value()` is `true`.
   //! @pre `__pv` must be a pointer that was previously returned by a call to
-  //! \c allocate_async on the object wrapped by `*this`.
+  //! \c allocate on the object wrapped by `*this`.
   //! @return `obj.deallocate(__stream, __pv, __size, __align)`, where
   //! `obj` is the wrapped object.
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size, size_t __align);
@@ -742,7 +742,7 @@ public:
   template <_ResourceKind _OtherKind, class... _OtherProperties>
   [[nodiscard]] bool operator==(const basic_resource_ref<_OtherKind, _OtherProperties...>& __rhs) const;
 
-  //! @brief Calls `allocate` on the wrapped reference with the specified
+  //! @brief Calls `allocate_sync` on the wrapped reference with the specified
   //! arguments.
   //! @return `obj.allocate_sync(__size, __align)`, where `obj` is the wrapped
   //! reference.
@@ -756,7 +756,7 @@ public:
   //! wrapped reference.
   void deallocate_sync(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
 
-  //! @brief Calls `allocate_async` on the wrapped reference with the specified
+  //! @brief Calls `allocate` on the wrapped reference with the specified
   //! arguments.
   //! @pre `_Kind` is `_ResourceKind::_Asynchronous`.
   //! @return `obj.allocate(__stream, __size, __align)`, where `obj` is
@@ -773,7 +773,7 @@ public:
   //! arguments.
   //! @pre `_Kind` is `_ResourceKind::_Asynchronous`.
   //! @pre `__pv` must be a pointer that was previously returned by a call to \c
-  //! allocate_async on the object referenced by `*this`.
+  //! allocate on the object referenced by `*this`.
   //! @return `obj.deallocate(__stream, __pv, __size, __align)`, where
   //! `obj` is the wrapped reference.
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size, size_t __align);

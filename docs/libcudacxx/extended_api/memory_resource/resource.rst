@@ -12,8 +12,11 @@ whether a memory resource can utilize stream-ordered allocations. Even if the ap
 to properly tell the memory resource to use stream-ordered allocation. Ideally, this should not be something discovered
 through an assert at run time, but should be checked by the compiler.
 
+Because asynchronous memory management is critical for performance, ``cuda::mr::resource`` defaults to stream-ordered interface provided by ``allocate`` / ``deallocate``.
+For cases where stream-ordered allocation is not possible, ``cuda::mr::synchronous_resource`` is provided.
+
 The ``cuda::mr::synchronous_resource`` concept provides basic type checks to ensure that a given memory resource provides the
-expected ``allocate`` / ``deallocate`` interface and is also equality comparable, which covers the whole API surface of
+expected ``allocate_sync`` / ``deallocate_sync`` interface and is also equality comparable, which covers the whole API surface of
 `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__.
 See below for different memory resources and potential pitfals.
 
@@ -77,7 +80,7 @@ In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
      void* allocate(cuda::stream_ref, std::size_t, std::size_t) { return nullptr; }
-     void deallocate(cuda::stream_ref, void*, std::size_t,  std::size_t) {}
+     void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
      bool operator==(const valid_resource&) const { return true; }
      bool operator!=(const valid_resource&) const { return false; }
    };
@@ -89,7 +92,7 @@ A library can easily decide whether to use the async interface:
 
    template<class MemoryResource>
        requires cuda::mr::synchronous_resource<MemoryResource>
-   void* maybe_allocate(cuda::stream_ref stream, MemoryResource& resource, std::size_t size, std::size_t align) {
+   void* allocate_maybe_sync(cuda::stream_ref stream, MemoryResource& resource, std::size_t size, std::size_t align) {
        if constexpr(cuda::mr::resource<MemoryResource>) {
            return resource.allocate(stream, size, align);
        } else {
@@ -120,12 +123,12 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
 
    template<class MemoryResource>
        requires cuda::mr::resource<MemoryResource>
-   void* maybe_allocate_async_check_alignment(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
+   void* allocate_maybe_sync_check_alignment(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
        if constexpr(cuda::mr::resource_with<MemoryResource, required_alignment>) {
            return resource.allocate(stream, size, get_property(resource, required_alignment));
        } else if constexpr (cuda::mr::resource<MemoryResource>) {
            return resource.allocate(stream, size, my_default_alignment);
-       } else if constexpr (cuda::mr::resource_with<MemoryResource, required_alignment>) {
+       } else if constexpr (cuda::mr::synchronous_resource_with<MemoryResource, required_alignment>) {
            return resource.allocate_sync(size, get_property(resource, required_alignment));
        } else {
            return resource.allocate_sync(size, my_default_alignment);
@@ -135,7 +138,7 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
    // Potentially more concise
    template<class MemoryResource>
        requires cuda::mr::resource<MemoryResource>
-   void* maybe_allocate_async_check_alignment2(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
+   void* allocate_maybe_sync_check_alignment2(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
        constexpr std::size_t align = cuda::mr::resource_with<MemoryResource, required_alignment>
                                    ? get_property(resource, required_alignment)
                                    : my_default_alignment;
