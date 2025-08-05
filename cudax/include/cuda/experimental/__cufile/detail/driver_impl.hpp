@@ -137,11 +137,11 @@ inline bool get_parameter_bool(CUFileBoolConfigParameter_t param) {
     return value;
 }
 
-inline std::string get_parameter_string(CUFileStringConfigParameter_t param) {
+inline ::std::string get_parameter_string(CUFileStringConfigParameter_t param) {
     char buffer[1024]; // Reasonable buffer size
     CUfileError_t error = cuFileGetParameterString(param, buffer, sizeof(buffer));
     detail::check_cufile_result(error, "cuFileGetParameterString");
-    return std::string(buffer);
+    return ::std::string(buffer);
 }
 
 inline void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value) {
@@ -154,7 +154,7 @@ inline void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value) {
     detail::check_cufile_result(error, "cuFileSetParameterBool");
 }
 
-inline void set_parameter_string(CUFileStringConfigParameter_t param, const std::string& value) {
+inline void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value) {
     CUfileError_t error = cuFileSetParameterString(param, value.c_str());
     detail::check_cufile_result(error, "cuFileSetParameterString");
 }

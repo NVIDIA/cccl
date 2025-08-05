@@ -34,7 +34,7 @@ inline int get_device_id(const void* ptr) {
     cudaPointerAttributes attrs;
     cudaError_t err = cudaPointerGetAttributes(&attrs, ptr);
     if (err != cudaSuccess) {
-        throw std::runtime_error("Failed to get pointer attributes");
+        throw ::std::runtime_error("Failed to get pointer attributes");
     }
     return attrs.device;
 }
