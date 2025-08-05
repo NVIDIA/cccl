@@ -43,12 +43,12 @@ void* allocate_gpu_memory(size_t size) {
     void* ptr = nullptr;
     cudaError_t error = cudaMalloc(&ptr, size);
     if (error != cudaSuccess) {
-        throw std::runtime_error("Failed to allocate GPU memory: " + std::string(cudaGetErrorString(error)));
+        throw ::std::runtime_error("Failed to allocate GPU memory: " + ::std::string(cudaGetErrorString(error)));
     }
     return ptr;
 #else
     (void)size;  // Suppress unused parameter warning
-    throw std::runtime_error("CUDA not available - cannot allocate GPU memory");
+    throw ::std::runtime_error("CUDA not available - cannot allocate GPU memory");
 #endif
 }
 
@@ -57,12 +57,12 @@ void* allocate_host_memory(size_t size) {
     void* ptr = nullptr;
     cudaError_t error = cudaMallocHost(&ptr, size);
     if (error != cudaSuccess) {
-        throw std::runtime_error("Failed to allocate host memory: " + std::string(cudaGetErrorString(error)));
+        throw ::std::runtime_error("Failed to allocate host memory: " + ::std::string(cudaGetErrorString(error)));
     }
     return ptr;
 #else
     (void)size;  // Suppress unused parameter warning
-    throw std::runtime_error("CUDA not available - cannot allocate pinned host memory");
+    throw ::std::runtime_error("CUDA not available - cannot allocate pinned host memory");
 #endif
 }
 
@@ -99,9 +99,9 @@ void free_regular_memory(void* ptr) {
 GPUMemoryRAII::GPUMemoryRAII(size_t size) : ptr_(nullptr), size_(size) {
     try {
         ptr_ = allocate_gpu_memory(size);
-    } catch (const std::exception& e) {
+    } catch (const ::std::exception& e) {
         // Re-throw with more context
-        throw std::runtime_error("GPUMemoryRAII constructor failed: " + std::string(e.what()));
+        throw ::std::runtime_error("GPUMemoryRAII constructor failed: " + ::std::string(e.what()));
     }
 }
 
@@ -120,9 +120,9 @@ size_t GPUMemoryRAII::size() const {
 HostMemoryRAII::HostMemoryRAII(size_t size) : ptr_(nullptr), size_(size) {
     try {
         ptr_ = allocate_host_memory(size);
-    } catch (const std::exception& e) {
+    } catch (const ::std::exception& e) {
         // Re-throw with more context
-        throw std::runtime_error("HostMemoryRAII constructor failed: " + std::string(e.what()));
+        throw ::std::runtime_error("HostMemoryRAII constructor failed: " + ::std::string(e.what()));
     }
 }
 

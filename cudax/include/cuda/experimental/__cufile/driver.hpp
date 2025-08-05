@@ -115,11 +115,11 @@ void set_max_pinned_memory_size(size_t size_kb);
 // Parameter Management
 size_t get_parameter_size_t(CUFileSizeTConfigParameter_t param);
 bool get_parameter_bool(CUFileBoolConfigParameter_t param);
-std::string get_parameter_string(CUFileStringConfigParameter_t param);
+::std::string get_parameter_string(CUFileStringConfigParameter_t param);
 
 void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value);
 void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value);
-void set_parameter_string(CUFileStringConfigParameter_t param, const std::string& value);
+void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value);
 
 // Statistics Management
 #ifdef CUfileStatsLevel1_t

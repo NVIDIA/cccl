@@ -15,7 +15,7 @@
 namespace cuda::experimental::cufile {
 
 // Static method implementations
-inline int file_handle::convert_ios_mode(std::ios_base::openmode mode) {
+inline int file_handle::convert_ios_mode(::std::ios_base::openmode mode) {
     int flags = 0;
 
     bool has_in = (mode & std::ios_base::in) != 0;
@@ -60,15 +60,15 @@ inline void file_handle::register_file() {
 }
 
 // Constructor implementations
-inline file_handle::file_handle(const std::string& path,
-                               std::ios_base::openmode mode)
+inline file_handle::file_handle(const ::std::string& path,
+                               ::std::ios_base::openmode mode)
     : owns_fd_(true), path_(path) {
 
     int flags = convert_ios_mode(mode);
     fd_ = open(path.c_str(), flags, 0644);
 
     if (fd_ < 0) {
-        throw std::system_error(errno, std::system_category(),
+        throw ::std::system_error(errno, ::std::system_category(),
                                "Failed to open file: " + path);
     }
 
@@ -76,9 +76,9 @@ inline file_handle::file_handle(const std::string& path,
 }
 
 inline file_handle::file_handle(int fd, bool take_ownership)
-    : fd_(fd), owns_fd_(take_ownership), path_("fd:" + std::to_string(fd)) {
+    : fd_(fd), owns_fd_(take_ownership), path_("fd:" + ::std::to_string(fd)) {
     if (fd_ < 0) {
-        throw std::invalid_argument("Invalid file descriptor");
+        throw ::std::invalid_argument("Invalid file descriptor");
     }
 
     register_file();
@@ -86,8 +86,8 @@ inline file_handle::file_handle(int fd, bool take_ownership)
 
 // Move constructor and assignment
 inline file_handle::file_handle(file_handle&& other) noexcept
-    : fd_(other.fd_), owns_fd_(other.owns_fd_), path_(std::move(other.path_)),
-      cufile_handle_(std::move(other.cufile_handle_)) {
+    : fd_(other.fd_), owns_fd_(other.owns_fd_), path_(::std::move(other.path_)),
+      cufile_handle_(::std::move(other.cufile_handle_)) {
     other.owns_fd_ = false;
 }
 
@@ -100,8 +100,8 @@ inline file_handle& file_handle::operator=(file_handle&& other) noexcept {
 
         fd_ = other.fd_;
         owns_fd_ = other.owns_fd_;
-        path_ = std::move(other.path_);
-        cufile_handle_ = std::move(other.cufile_handle_);
+        path_ = ::std::move(other.path_);
+        cufile_handle_ = ::std::move(other.cufile_handle_);
 
         other.owns_fd_ = false;
     }
@@ -117,8 +117,8 @@ inline file_handle::~file_handle() noexcept {
 
 // Template method implementations
 template<typename T>
-size_t file_handle::read(span<T> buffer, off_t file_offset, off_t buffer_offset) {
-    static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+size_t file_handle::read(::std::span<T> buffer, off_t file_offset, off_t buffer_offset) {
+    static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // Convert span to void* and size for cuFile API
     void* buffer_ptr = static_cast<void*>(buffer.data());
@@ -129,8 +129,8 @@ size_t file_handle::read(span<T> buffer, off_t file_offset, off_t buffer_offset)
 }
 
 template<typename T>
-size_t file_handle::write(span<const T> buffer, off_t file_offset, off_t buffer_offset) {
-    static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+size_t file_handle::write(::std::span<const T> buffer, off_t file_offset, off_t buffer_offset) {
+    static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // Convert span to void* and size for cuFile API
     const void* buffer_ptr = static_cast<const void*>(buffer.data());
@@ -141,12 +141,12 @@ size_t file_handle::write(span<const T> buffer, off_t file_offset, off_t buffer_
 }
 
 template<typename T>
-void file_handle::read_async(span<T> buffer,
+void file_handle::read_async(::std::span<T> buffer,
                             off_t file_offset,
                             off_t buffer_offset,
                             ssize_t& bytes_read,
                             cudaStream_t stream) {
-    static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+    static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // cuFile async API requires size parameters to be passed by pointer
     size_t size_bytes = buffer.size_bytes();
@@ -159,12 +159,12 @@ void file_handle::read_async(span<T> buffer,
 }
 
 template<typename T>
-void file_handle::write_async(span<const T> buffer,
+void file_handle::write_async(::std::span<const T> buffer,
                              off_t file_offset,
                              off_t buffer_offset,
                              ssize_t& bytes_written,
                              cudaStream_t stream) {
-    static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+    static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // cuFile async API requires size parameters to be passed by pointer
     size_t size_bytes = buffer.size_bytes();
@@ -181,7 +181,7 @@ inline CUfileHandle_t file_handle::native_handle() const noexcept {
     return cufile_handle_.get();
 }
 
-inline const std::string& file_handle::path() const noexcept {
+inline const ::std::string& file_handle::path() const noexcept {
     return path_;
 }
 

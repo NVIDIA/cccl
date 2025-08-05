@@ -29,7 +29,7 @@ public:
      * @param deleter Function/lambda to call for cleanup
      */
     explicit raii_resource(T resource, Deleter deleter)
-        : resource_(resource), deleter_(std::move(deleter)), owns_resource_(true) {}
+        : resource_(resource), deleter_(::std::move(deleter)), owns_resource_(true) {}
 
     /**
      * @brief Destructor automatically calls deleter if resource is owned
@@ -48,7 +48,7 @@ public:
      * @brief Move constructor transfers ownership
      */
     raii_resource(raii_resource&& other) noexcept
-        : resource_(other.resource_), deleter_(std::move(other.deleter_)), owns_resource_(other.owns_resource_) {
+        : resource_(other.resource_), deleter_(::std::move(other.deleter_)), owns_resource_(other.owns_resource_) {
         other.owns_resource_ = false;
     }
 
@@ -61,7 +61,7 @@ public:
                 deleter_(resource_);
             }
             resource_ = other.resource_;
-            deleter_ = std::move(other.deleter_);
+            deleter_ = ::std::move(other.deleter_);
             owns_resource_ = other.owns_resource_;
             other.owns_resource_ = false;
         }
@@ -97,7 +97,7 @@ public:
             deleter_(resource_);
         }
         resource_ = resource;
-        deleter_ = std::move(deleter);
+        deleter_ = ::std::move(deleter);
         owns_resource_ = true;
     }
 
@@ -117,6 +117,6 @@ public:
  */
 template<typename T, typename Deleter>
 raii_resource<T, Deleter> make_raii_resource(T resource, Deleter deleter) {
-    return raii_resource<T, Deleter>(resource, std::move(deleter));
+    return raii_resource<T, Deleter>(resource, ::std::move(deleter));
 }
 } // namespace cuda::experimental::cufile::detail
