@@ -18,8 +18,8 @@ namespace cuda::experimental::cufile {
 inline int file_handle::convert_ios_mode(::std::ios_base::openmode mode) {
     int flags = 0;
 
-    bool has_in = (mode & std::ios_base::in) != 0;
-    bool has_out = (mode & std::ios_base::out) != 0;
+    bool has_in = (mode & ::std::ios_base::in) != 0;
+    bool has_out = (mode & ::std::ios_base::out) != 0;
 
     if (has_in && has_out) {
         flags |= O_RDWR;
@@ -29,11 +29,11 @@ inline int file_handle::convert_ios_mode(::std::ios_base::openmode mode) {
         flags |= O_RDONLY;
     }
 
-    if (mode & std::ios_base::trunc) {
+    if (mode & ::std::ios_base::trunc) {
         flags |= O_TRUNC;
     }
 
-    if (mode & std::ios_base::app) {
+    if (mode & ::std::ios_base::app) {
         flags |= O_APPEND;
     }
 
@@ -117,7 +117,7 @@ inline file_handle::~file_handle() noexcept {
 
 // Template method implementations
 template<typename T>
-size_t file_handle::read(::std::span<T> buffer, off_t file_offset, off_t buffer_offset) {
+size_t file_handle::read(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset) {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // Convert span to void* and size for cuFile API
@@ -129,7 +129,7 @@ size_t file_handle::read(::std::span<T> buffer, off_t file_offset, off_t buffer_
 }
 
 template<typename T>
-size_t file_handle::write(::std::span<const T> buffer, off_t file_offset, off_t buffer_offset) {
+size_t file_handle::write(cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset) {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
     // Convert span to void* and size for cuFile API
@@ -141,7 +141,7 @@ size_t file_handle::write(::std::span<const T> buffer, off_t file_offset, off_t 
 }
 
 template<typename T>
-void file_handle::read_async(::std::span<T> buffer,
+void file_handle::read_async(cuda::std::span<T> buffer,
                             off_t file_offset,
                             off_t buffer_offset,
                             ssize_t& bytes_read,
@@ -159,7 +159,7 @@ void file_handle::read_async(::std::span<T> buffer,
 }
 
 template<typename T>
-void file_handle::write_async(::std::span<const T> buffer,
+void file_handle::write_async(cuda::std::span<const T> buffer,
                              off_t file_offset,
                              off_t buffer_offset,
                              ssize_t& bytes_written,
