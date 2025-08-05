@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/forward_like.h>
 
@@ -51,7 +52,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
 
       if (__tid < this->__state_->__shape_)
       {
-        if constexpr (__is_specialization_of_v<_Fn, bulk_t::__bulk_chunked_fn>)
+        if constexpr (::cuda::__is_specialization_of_v<_Fn, bulk_t::__bulk_chunked_fn>)
         {
           // If the chunked function was adapted from an unchunked function, we can call
           // the unchunked functions directly.

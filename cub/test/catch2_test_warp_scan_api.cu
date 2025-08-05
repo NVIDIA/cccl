@@ -74,7 +74,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // warp #3 input: {3, 4, 5, 6, ..., 34}
 
   // Collectively compute the warp-wide inclusive prefix max scan
-  warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, ::cuda::maximum<>{});
+  warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, cuda::maximum<>{});
 
   // initial value = 3 (for each warp)
   // warp #0 output: {3, 3, 3, 3, ..., 31}
@@ -128,7 +128,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
 
   // Collectively compute the warp-wide inclusive prefix max scan
   warp_scan_t(temp_storage[warp_id])
-    .InclusiveScan(thread_data, thread_data, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
+    .InclusiveScan(thread_data, thread_data, initial_value, cuda::std::plus<>{}, warp_aggregate);
 
   // warp #1 output: {4, 5, 6, 7, ..., 35} - warp aggregate: 32
   // warp #2 output: {4, 5, 6, 7, ..., 35} - warp aggregate: 32

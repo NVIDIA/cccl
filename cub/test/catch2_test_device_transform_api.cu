@@ -22,7 +22,7 @@ void test_transform_api()
 
   auto result = c2h::device_vector<int>(num_items);
   cub::DeviceTransform::Transform(
-    ::cuda::std::make_tuple(input1.begin(), input2.begin(), input3), result.begin(), num_items, op);
+    cuda::std::make_tuple(input1.begin(), input2.begin(), input3), result.begin(), num_items, op);
 
   const auto expected = c2h::host_vector<float>{520, 111, 397, 618};
   // example-end transform-many
@@ -52,7 +52,7 @@ void test_transform_stable_api()
 
   auto result = c2h::device_vector<int>(num_items);
   cub::DeviceTransform::TransformStableArgumentAddresses(
-    ::cuda::std::make_tuple(input1_ptr), result.begin(), num_items, op);
+    cuda::std::make_tuple(input1_ptr), result.begin(), num_items, op);
 
   const auto expected = c2h::host_vector<float>{52, 29, -6, 33};
   // example-end transform-many-stable
