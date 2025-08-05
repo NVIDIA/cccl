@@ -119,9 +119,13 @@ c2h::host_vector<T> compute_host_reference(
     for (int w = 0; w < num_warps; ++w)
     {
       T* output     = result.data() + w * logical_warp_threads;
-      T accumulator = output[0];
+      T accumulator = T{};
       T current     = static_cast<T>(scan_op(initial_value, output[0]));
-      output[0]     = initial_value;
+      if (valid_items > 0)
+      {
+        accumulator = output[0];
+        output[0]   = initial_value;
+      }
       for (int i = 1; i < cuda::std::clamp(valid_items, 0, logical_warp_threads); i++)
       {
         accumulator = static_cast<T>(scan_op(accumulator, output[i]));
@@ -137,9 +141,13 @@ c2h::host_vector<T> compute_host_reference(
     for (int w = 0; w < num_warps; ++w)
     {
       T* output     = result.data() + w * logical_warp_threads;
-      T accumulator = output[0];
+      T accumulator = T{};
       T current     = static_cast<T>(scan_op(initial_value, output[0]));
-      output[0]     = current;
+      if (valid_items > 0)
+      {
+        accumulator = output[0];
+        output[0]   = current;
+      }
       for (int i = 1; i < cuda::std::clamp(valid_items, 0, logical_warp_threads); i++)
       {
         T tmp       = output[i];
