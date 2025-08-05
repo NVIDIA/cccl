@@ -15,6 +15,14 @@ private:
     bool owns_resource_ = false;
 
 public:
+
+    /**
+     * @brief Default constructor
+     *
+     * This constructor is required for the default constructor of the derived class.
+     */
+    raii_resource() = default;
+
     /**
      * @brief Construct with resource and deleter
      * @param resource The resource to manage
@@ -77,7 +85,6 @@ public:
      * @brief Check if this wrapper owns the resource
      */
     bool has_value() const noexcept { return owns_resource_; }
-
 
 
     /**
