@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 #include "test_utils.h"
-#include <cstdlib>  // For malloc and free
 #include <stdexcept>
 #include <string>
 

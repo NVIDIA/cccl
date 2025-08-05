@@ -13,7 +13,6 @@
 #include <c2h/catch2_test_helper.h>
 
 #include "test_utils.h"
-#include <memory>
 #include <stdexcept>
 
 namespace cuda::experimental::cufile {
