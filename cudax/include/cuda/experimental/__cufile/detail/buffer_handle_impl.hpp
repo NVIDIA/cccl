@@ -10,35 +10,34 @@ namespace cuda::experimental::cufile {
 // Constructor implementations
 template<typename T>
 buffer_handle::buffer_handle(cuda::std::span<T> buffer, int flags)
-    : buffer_(buffer.data()), size_(buffer.size_bytes()) {
+    : buffer_(cuda::std::as_bytes(buffer)) {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
-    CUfileError_t error = cuFileBufRegister(buffer_, size_, flags);
+    CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
     detail::check_cufile_result(error, "cuFileBufRegister");
 
-    registered_buffer_.emplace(buffer_, [](const void* buf) { cuFileBufDeregister(buf); });
+    registered_buffer_.emplace(buffer_.data(), [](const void* buf) { cuFileBufDeregister(buf); });
 }
 
 template<typename T>
 buffer_handle::buffer_handle(cuda::std::span<const T> buffer, int flags)
-    : buffer_(buffer.data()), size_(buffer.size_bytes()) {
+    : buffer_(cuda::std::as_bytes(buffer)) {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
-    CUfileError_t error = cuFileBufRegister(buffer_, size_, flags);
+    CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
     detail::check_cufile_result(error, "cuFileBufRegister");
 
-    registered_buffer_.emplace(buffer_, [](const void* buf) { cuFileBufDeregister(buf); });
+    registered_buffer_.emplace(buffer_.data(), [](const void* buf) { cuFileBufDeregister(buf); });
 }
 
 // Move constructor and assignment
 inline buffer_handle::buffer_handle(buffer_handle&& other) noexcept
-    : buffer_(other.buffer_), size_(other.size_), registered_buffer_(::std::move(other.registered_buffer_)) {
+    : buffer_(other.buffer_), registered_buffer_(::std::move(other.registered_buffer_)) {
 }
 
 inline buffer_handle& buffer_handle::operator=(buffer_handle&& other) noexcept {
     if (this != &other) {
         buffer_ = other.buffer_;
-        size_ = other.size_;
         registered_buffer_ = ::std::move(other.registered_buffer_);
     }
     return *this;
@@ -46,32 +45,32 @@ inline buffer_handle& buffer_handle::operator=(buffer_handle&& other) noexcept {
 
 // Simple getter implementations
 inline const void* buffer_handle::data() const noexcept {
-    return buffer_;
+    return buffer_.data();
 }
 
 inline size_t buffer_handle::size() const noexcept {
-    return size_;
+    return buffer_.size();
 }
 
-inline cuda::std::span<const ::std::byte> buffer_handle::as_bytes() const noexcept {
-    return cuda::std::span<const ::std::byte>(static_cast<const ::std::byte*>(buffer_), size_);
+inline cuda::std::span<const cuda::std::byte> buffer_handle::as_bytes() const noexcept {
+    return buffer_;
 }
 
-inline cuda::std::span<::std::byte> buffer_handle::as_writable_bytes() const noexcept {
-    return cuda::std::span<::std::byte>(static_cast<::std::byte*>(const_cast<void*>(buffer_)), size_);
+inline cuda::std::span<cuda::std::byte> buffer_handle::as_writable_bytes() const noexcept {
+    return cuda::std::span<cuda::std::byte>(const_cast<cuda::std::byte*>(buffer_.data()), buffer_.size());
 }
 
 // Template method implementations
 template<typename T>
 cuda::std::span<T> buffer_handle::as_span() const noexcept {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
-    return cuda::std::span<T>(static_cast<T*>(const_cast<void*>(buffer_)), size_ / sizeof(T));
+    return cuda::std::span<T>(reinterpret_cast<T*>(const_cast<cuda::std::byte*>(buffer_.data())), buffer_.size() / sizeof(T));
 }
 
 template<typename T>
 cuda::std::span<const T> buffer_handle::as_const_span() const noexcept {
     static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
-    return cuda::std::span<const T>(static_cast<const T*>(buffer_), size_ / sizeof(T));
+    return cuda::std::span<const T>(reinterpret_cast<const T*>(buffer_.data()), buffer_.size() / sizeof(T));
 }
 
 // is_valid method implementation
