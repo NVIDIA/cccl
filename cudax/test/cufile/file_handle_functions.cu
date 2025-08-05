@@ -11,6 +11,7 @@
 #include <cuda/experimental/__cufile/file_handle.hpp>
 #include <cuda/experimental/__cufile/driver.hpp>
 #include <cuda/experimental/__cufile/utils.hpp>
+#include <cuda/std/span>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -143,7 +144,7 @@ TEST_CASE("Synchronous I/O operations", "[file_handle][sync_io]") {
         test_utils::GPUMemoryRAII gpu_buffer(test_size_);
 
         // Create span from GPU buffer
-        ::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
+        cuda::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
 
         // Test span-based synchronous read
         size_t bytes_read = handle.read(buffer_span);
@@ -172,7 +173,7 @@ TEST_CASE("Synchronous I/O operations", "[file_handle][sync_io]") {
         cudaMemcpy(gpu_buffer.get(), test_data_.data(), test_size_, cudaMemcpyHostToDevice);
 
         // Create span from GPU buffer
-        ::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
+        cuda::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
 
         // Test span-based synchronous write
         size_t bytes_written = handle.write(buffer_span);
@@ -192,7 +193,7 @@ TEST_CASE("Synchronous I/O operations", "[file_handle][sync_io]") {
         test_utils::HostMemoryRAII host_buffer(test_size_);
 
         // Create span from host buffer
-        ::std::span<char> buffer_span(static_cast<char*>(host_buffer.get()), test_size_);
+        cuda::std::span<char> buffer_span(static_cast<char*>(host_buffer.get()), test_size_);
 
         // Test read with host memory (should work in compatibility mode)
         size_t bytes_read = handle.read(buffer_span);
@@ -227,7 +228,7 @@ TEST_CASE("Asynchronous I/O operations", "[file_handle][async_io]") {
             cudaStreamCreate(&stream);
 
             // Create span from GPU buffer
-            ::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
+            cuda::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
 
             // Prepare async parameters
             off_t file_offset = 0;
@@ -278,7 +279,7 @@ TEST_CASE("Asynchronous I/O operations", "[file_handle][async_io]") {
             cudaStreamCreate(&stream);
 
             // Create span from GPU buffer
-            ::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
+            cuda::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
 
             // Prepare async parameters
             off_t file_offset = 0;
@@ -328,7 +329,7 @@ TEST_CASE("Buffer handle operations", "[file_handle][buffer_handle]") {
         test_utils::GPUMemoryRAII gpu_buffer(test_size_);
 
         // Create span from GPU buffer
-        ::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
+        cuda::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
 
         // Test buffer registration
         buffer_handle buf_handle(buffer_span);
@@ -348,7 +349,7 @@ TEST_CASE("Buffer handle operations", "[file_handle][buffer_handle]") {
         test_utils::GPUMemoryRAII gpu_buffer(test_size_);
 
         // Create span from GPU buffer
-        ::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
+        cuda::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
 
         // Test buffer registration with flags
         buffer_handle buf_handle(buffer_span, 0);  // Default flags
@@ -394,8 +395,8 @@ TEST_CASE("Batch operations", "[file_handle][batch]") {
         batch_handle batch(5);
 
         // Create spans from GPU buffers
-        ::std::span<char> buffer_span1(static_cast<char*>(gpu_buffer1.get()), test_size_ / 2);
-        ::std::span<char> buffer_span2(static_cast<char*>(gpu_buffer2.get()), test_size_ / 2);
+        cuda::std::span<char> buffer_span1(static_cast<char*>(gpu_buffer1.get()), test_size_ / 2);
+        cuda::std::span<char> buffer_span2(static_cast<char*>(gpu_buffer2.get()), test_size_ / 2);
 
         // Prepare batch operations using factory functions
         ::std::vector<batch_io_params_span<char>> operations;
@@ -403,7 +404,7 @@ TEST_CASE("Batch operations", "[file_handle][batch]") {
         operations.push_back(make_read_operation(buffer_span2, test_size_ / 2, 0, reinterpret_cast<void*>(2)));
 
         // Submit batch operations
-        batch.submit(handle, ::std::span<const batch_io_params_span<char>>(operations));
+        batch.submit(handle, cuda::std::span<const batch_io_params_span<char>>(operations));
 
         // Wait for all submitted operations to complete
         auto results = batch.get_status(operations.size(), 5000);  // Wait for all operations, 5s timeout
@@ -486,7 +487,7 @@ TEST_CASE("Error handling and compatibility", "[file_handle][error_handling]") {
         file_handle handle(temp_file_path_.string(), ::std::ios::in | ::std::ios::binary);
 
         // Create span from regular buffer
-        ::std::span<char> buffer_span(static_cast<char*>(regular_buffer.get()), test_size_);
+        cuda::std::span<char> buffer_span(static_cast<char*>(regular_buffer.get()), test_size_);
 
         // This should work in compatibility mode by falling back to POSIX I/O
         size_t bytes_read = handle.read(buffer_span);
@@ -516,7 +517,7 @@ TEST_CASE("Large file operations", "[file_handle][large_files]") {
         test_utils::GPUMemoryRAII gpu_buffer(large_test_size_);
 
         // Create span from GPU buffer
-        ::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), large_test_size_);
+        cuda::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), large_test_size_);
 
         // Test large file read
         size_t bytes_read = handle.read(buffer_span);

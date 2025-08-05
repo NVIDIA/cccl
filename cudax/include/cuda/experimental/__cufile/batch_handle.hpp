@@ -11,7 +11,7 @@
 #endif // no system header
 
 #include "detail/error_handling.hpp"
-#include <span>
+#include <cuda/std/span>
 #include <functional>
 
 #include <vector>
@@ -28,14 +28,14 @@ class file_handle;
  */
 template<typename T>
 struct batch_io_params_span {
-    ::std::span<T> buffer;             ///< Buffer span
+    cuda::std::span<T> buffer;             ///< Buffer span
     off_t file_offset;          ///< File offset
     off_t buffer_offset;        ///< Buffer offset (in bytes)
     CUfileOpcode_t opcode;      ///< CUFILE_READ or CUFILE_WRITE
     void* cookie;               ///< User data for tracking
 
     // Constructor
-    batch_io_params_span(::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr);
+    batch_io_params_span(cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr);
 };
 
 /**
@@ -79,7 +79,7 @@ public:
      */
     template<typename T>
     void submit(const file_handle& file_handle_ref,
-               ::std::span<const batch_io_params_span<T>> operations,
+               cuda::std::span<const batch_io_params_span<T>> operations,
                unsigned int flags = 0);
 
 
@@ -117,7 +117,7 @@ public:
  * @param cookie User data for tracking
  */
 template<typename T>
-batch_io_params_span<T> make_read_operation(::std::span<T> buffer, off_t file_offset,
+batch_io_params_span<T> make_read_operation(cuda::std::span<T> buffer, off_t file_offset,
                                             off_t buffer_offset = 0, void* cookie = nullptr);
 
 /**
@@ -129,7 +129,7 @@ batch_io_params_span<T> make_read_operation(::std::span<T> buffer, off_t file_of
  * @param cookie User data for tracking
  */
 template<typename T>
-batch_io_params_span<const T> make_write_operation(::std::span<const T> buffer, off_t file_offset,
+batch_io_params_span<const T> make_write_operation(cuda::std::span<const T> buffer, off_t file_offset,
                                                    off_t buffer_offset = 0, void* cookie = nullptr);
 
 } // namespace cuda::experimental::cufile

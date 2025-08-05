@@ -71,7 +71,7 @@ public:
      * @return Number of bytes read
      */
     template<typename T>
-    size_t read(::std::span<T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
+    size_t read(cuda::std::span<T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
 
     /**
      * @brief Write data to file using span
@@ -82,7 +82,7 @@ public:
      * @return Number of bytes written
      */
     template<typename T>
-    size_t write(::std::span<const T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
+    size_t write(cuda::std::span<const T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
 
     /**
      * @brief Asynchronous read using span
@@ -94,7 +94,7 @@ public:
      * @param stream CUDA stream for async operation
      */
     template<typename T>
-    void read_async(::std::span<T> buffer,
+    void read_async(cuda::std::span<T> buffer,
                    off_t file_offset,
                    off_t buffer_offset,
                    ssize_t& bytes_read,
@@ -110,7 +110,7 @@ public:
      * @param stream CUDA stream for async operation
      */
     template<typename T>
-    void write_async(::std::span<const T> buffer,
+    void write_async(cuda::std::span<const T> buffer,
                     off_t file_offset,
                     off_t buffer_offset,
                     ssize_t& bytes_written,
