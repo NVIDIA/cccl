@@ -11,6 +11,7 @@
 #endif // no system header
 
 #include "detail/error_handling.hpp"
+#include "detail/raii_resource.hpp"
 #include <functional>
 
 

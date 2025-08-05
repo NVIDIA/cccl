@@ -11,6 +11,7 @@
 #include <string>
 #include <system_error>
 #include <unistd.h>
+#include "cuda/experimental/__cufile/file_handle.hpp"
 
 namespace cuda::experimental::cufile {
 

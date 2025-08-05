@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 namespace cuda::experimental::cufile::detail {
     /**
  * @brief RAII wrapper for automatic resource cleanup
