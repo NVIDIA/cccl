@@ -119,10 +119,15 @@ def canonicalize_ctk_version(ctk_string):
     if ctk_string in matrix_yaml["ctk_versions"]:
         return ctk_string
 
-    # Check for aka's:
+    # Check for aliases:
     for ctk_key, ctk_value in matrix_yaml["ctk_versions"].items():
-        if "aka" in ctk_value and ctk_string == ctk_value["aka"]:
-            return ctk_key
+        if "alias" in ctk_value:
+            # Allow a string or list of strings:
+            aliases = ctk_value['alias']
+            aliases = [aliases] if isinstance(aliases, str) else aliases
+            print(f"Checking CTK alias '{ctk_string}' against {aliases}")
+            if ctk_string in aliases:
+                return ctk_key
 
     raise Exception(f"Unknown CTK version '{ctk_string}'")
 
@@ -136,7 +141,7 @@ def get_ctk(ctk_string):
 @memoize_result
 def parse_cxx_string(cxx_string):
     "Returns (id, version) tuple. Version may be None if not present."
-    return re.match(r"^([a-z]+)-?([\d\.]+)?$", cxx_string).groups()
+    return re.match(r"^([^\d]+)-?([\d\.]+)?$", cxx_string).groups()
 
 
 @memoize_result
@@ -163,11 +168,15 @@ def canonicalize_host_compiler_name(cxx_string):
             hc_def["versions"].keys(), key=lambda x: tuple(map(int, x.split(".")))
         )
 
-    # Check for aka's:
+    # Check for aliases:
     if version not in hc_def["versions"]:
         for version_key, version_data in hc_def["versions"].items():
-            if "aka" in version_data and version == version_data["aka"]:
-                version = version_key
+            if "alias" in version_data:
+                # Allow a string or list of strings:
+                aliases = version_data['alias']
+                aliases = [aliases] if isinstance(aliases, str) else aliases
+                if version in aliases:
+                    version = version_key
 
     if version not in hc_def["versions"]:
         raise Exception(f"Unknown version '{version}' for host compiler '{id}'.")
@@ -284,7 +293,9 @@ def get_job_type_info(job):
         result["gpu"] = False
     if "cuda_ext" not in result:
         result["cuda_ext"] = False
-    if "force_producer_ctk" not in result:
+    if "force_producer_ctk" in result:
+        result["force_producer_ctk"] = canonicalize_ctk_version(result["force_producer_ctk"])
+    else:
         result["force_producer_ctk"] = None
     if "needs" not in result:
         result["needs"] = None
@@ -513,23 +524,26 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
 
+    # Replace the unexploded 'jobs' tag with the current single job type:
+    origin_job["jobs"] = [job_info["id"]]
+
     # The origin tags are used to build the execution summary for the CI PR comment.
     # Use the human readable job label for the execution summary:
-    origin_job["jobs"] = job_info["name"]
+    origin_job["job_name"] = job_info["name"]
 
     # Replace some of the clunkier tags with a summary-friendly version:
     if "cxx" in origin_job:
         host_compiler = get_host_compiler(matrix_job["cxx"])
         del origin_job["cxx"]
 
-        origin_job["cxx"] = host_compiler["name"] + host_compiler["version"]
+        origin_job["cxx"] = host_compiler["id"] + host_compiler["version"]
         origin_job["cxx_family"] = host_compiler["name"]
 
     if "cudacxx" in origin_job:
         device_compiler = get_device_compiler(matrix_job)
         del origin_job["cudacxx"]
 
-        origin_job["cudacxx"] = device_compiler["name"] + device_compiler["version"]
+        origin_job["cudacxx"] = device_compiler["id"] + device_compiler["version"]
         origin_job["cudacxx_family"] = device_compiler["name"]
 
     origin["matrix_job"] = origin_job
@@ -1243,6 +1257,9 @@ def print_gha_workflow(args):
 def print_devcontainer_info(args):
     devcontainer_version = matrix_yaml["devcontainer_version"]
 
+    cuda99_gcc_version = matrix_yaml["cuda99_gcc_version"]
+    cuda99_clang_version = matrix_yaml["cuda99_clang_version"]
+
     matrix_jobs = []
 
     # Remove the `exclude` and `override` entries:
@@ -1253,14 +1270,19 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
+    # Explode jobs to ensure that the cuda_ext tags are correctly handled:
+    exploded_jobs = []
+    for matrix_job in matrix_jobs:
+        exploded_jobs.extend(explode_tags(matrix_job, "jobs"))
+    matrix_jobs = exploded_jobs
+
     # Check if the extended cuda images are needed:
     for matrix_job in matrix_jobs:
         cuda_ext = False
-        for job in matrix_job["jobs"]:
-            job_info = get_job_type_info(job)
-            if job_info["cuda_ext"]:
-                cuda_ext = True
-                break
+        job = matrix_job["jobs"]
+        job_info = get_job_type_info(job)
+        if job_info["cuda_ext"]:
+            cuda_ext = True
         matrix_job["cuda_ext"] = cuda_ext
 
     # Remove all but the following keys from the matrix jobs:
@@ -1285,6 +1307,8 @@ def print_devcontainer_info(args):
 
     devcontainer_json = {
         "devcontainer_version": devcontainer_version,
+        "cuda99_gcc_version": cuda99_gcc_version,
+        "cuda99_clang_version": cuda99_clang_version,
         "combinations": unique_combinations,
     }
 
