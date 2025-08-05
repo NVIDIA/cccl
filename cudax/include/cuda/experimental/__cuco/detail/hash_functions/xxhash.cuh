@@ -86,58 +86,6 @@ private:
   static constexpr size_t __block_size = 4;
   static constexpr size_t __chunk_size = 16;
 
-  //! @brief Type erased holder of all the bytes
-  template <size_t _KeySize,
-            size_t _Alignment,
-            bool _HasChunks = (_KeySize >= __block_size),
-            bool _HasTail   = (_KeySize % __block_size)>
-  struct alignas(_Alignment) _Byte_holder
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of uint32_t blocks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment)::cuda::std::uint32_t __blocks[__num_blocks];
-    unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of small types < __block_size
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, false, true>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of uint32_t blocks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of types without trailing bytes
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, true, false>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of uint32_t blocks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment)::cuda::std::uint32_t __blocks[__num_blocks];
-  };
-
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
@@ -150,7 +98,7 @@ public:
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t operator()(_Key const& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
+    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, true, _CUDA_VSTD::uint32_t>;
     // explicit copy to avoid emitting a bunch of LDG.8 instructions
     const _Key __copy{__key};
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));

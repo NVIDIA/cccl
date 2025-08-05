@@ -87,49 +87,7 @@ struct _MurmurHash3_32
   static constexpr _CUDA_VSTD::uint32_t __c2 = 0x1b873593;
 
   static constexpr size_t __block_size = 4;
-
-  //! @brief Type erased holder of all the bytes
-  template <size_t _KeySize,
-            size_t _Alignment,
-            bool _HasChunks = (_KeySize >= __block_size),
-            bool _HasTail   = (_KeySize % __block_size)>
-  struct alignas(_Alignment) _Byte_holder
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of 4-byte chunks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
-    ::cuda::std::byte __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of small types < __block_size
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, false, true>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of 4-byte chunks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    alignas(_Alignment)::cuda::std::byte __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of types without trailing bytes
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, true, false>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of 4-byte chunks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
-  };
+  static constexpr size_t __chunk_size = 4;
 
   _CCCL_API constexpr _MurmurHash3_32(_CUDA_VSTD::uint32_t __seed = 0)
       : __seed_{__seed}
@@ -137,7 +95,7 @@ struct _MurmurHash3_32
 
   [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t operator()(_Key const& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
+    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, _CUDA_VSTD::uint32_t>;
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__key));
   }
 
@@ -263,55 +221,6 @@ private:
   static constexpr size_t __block_size = 4;
   static constexpr size_t __chunk_size = 16;
 
-  //! @brief Type erased holder of all the bytes
-  template <size_t _KeySize,
-            size_t _Alignment,
-            bool _HasChunks = (_KeySize >= __chunk_size),
-            bool _HasTail   = (_KeySize % __chunk_size)>
-  struct alignas(_Alignment) _Byte_holder
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __chunk_size;
-
-    //! The number of 4-byte blocks in a 16-byte chunk
-    static constexpr size_t __blocks_per_chunk = __chunk_size / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_chunks * __blocks_per_chunk];
-    unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of small types < __block_size
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, false, true>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __chunk_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of types without trailing bytes
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, true, false>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __chunk_size;
-
-    //! The number of 4-byte blocks in a 16-byte chunk
-    static constexpr size_t __blocks_per_chunk = __chunk_size / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_chunks * __blocks_per_chunk];
-  };
-
 public:
   _CCCL_HOST_DEVICE constexpr _MurmurHash3_x86_128(_CUDA_VSTD::uint32_t __seed = 0)
       : __seed_{__seed}
@@ -319,7 +228,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(_Key const& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
+    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, _CUDA_VSTD::uint32_t>;
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__key));
   }
 
@@ -662,52 +571,6 @@ private:
   static constexpr size_t __block_size = 8;
   static constexpr size_t __chunk_size = 16;
 
-  //! @brief Type erased holder of all the bytes
-  template <size_t _KeySize, bool _HasChunks = (_KeySize >= __chunk_size), bool _HasTail = (_KeySize % __chunk_size)>
-  struct _Byte_holder
-  {
-    //! The number of trailing bytes that do not fit into a uint64_t
-    static constexpr size_t __tail_size = _KeySize % __chunk_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    //! The number of 8-byte blocks in a 16-byte chunk
-    static constexpr size_t __blocks_per_chunk = __chunk_size / __block_size;
-
-    _CUDA_VSTD::uint64_t __blocks[__num_chunks * __blocks_per_chunk];
-    unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of small types < __block_size
-  template <size_t _KeySize>
-  struct _Byte_holder<_KeySize, false, true>
-  {
-    //! The number of trailing bytes that do not fit into a uint64_t
-    static constexpr size_t __tail_size = _KeySize % __chunk_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of types without trailing bytes
-  template <size_t _KeySize>
-  struct _Byte_holder<_KeySize, true, false>
-  {
-    //! The number of trailing bytes that do not fit into a uint64_t
-    static constexpr size_t __tail_size = _KeySize % __chunk_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    //! The number of 8-byte blocks in a 16-byte chunk
-    static constexpr size_t __blocks_per_chunk = __chunk_size / __block_size;
-
-    _CUDA_VSTD::uint64_t __blocks[__num_chunks * __blocks_per_chunk];
-  };
-
 public:
   _CCCL_HOST_DEVICE constexpr _MurmurHash3_x64_128(_CUDA_VSTD::uint64_t __seed = 0)
       : __seed_{__seed}
@@ -715,7 +578,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(_Key const& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key)>;
+    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, _CUDA_VSTD::uint64_t>;
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__key));
   }
 
