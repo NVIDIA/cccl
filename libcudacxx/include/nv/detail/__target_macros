@@ -464,6 +464,15 @@
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103a 0
 #  endif
 
+// Re-enable sm_110a support in nvcc.
+#  undef NV_HAS_FEATURE_SM_110a
+#  define NV_HAS_FEATURE_SM_110a __NV_HAS_FEATURE_SM_110a
+#  if defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100))
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 0
+#  endif
+
 // Re-enable sm_120a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_120a
 #  define NV_HAS_FEATURE_SM_120a __NV_HAS_FEATURE_SM_120a
@@ -501,6 +510,15 @@
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103f 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103f 0
+#  endif
+
+// Re-enable sm_110f support in nvcc.
+#  undef NV_HAS_FEATURE_SM_110f
+#  define NV_HAS_FEATURE_SM_110f __NV_HAS_FEATURE_SM_110f
+#  if defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1100)
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110f 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110f 0
 #  endif
 
 // Re-enable sm_120f support in nvcc.
