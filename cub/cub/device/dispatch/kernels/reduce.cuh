@@ -338,6 +338,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   constexpr auto block_threads    = reduce_policy_t::BLOCK_THREADS;
 
   using block_reduce_t = BlockReduce<AccumT, block_threads, reduce_policy_t::BLOCK_ALGORITHM>;
+  using offset_t       = OffsetT;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
@@ -359,13 +360,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   AccumT thread_aggregate{};
   int count = 0;
 
+  offset_t n_threads = static_cast<offset_t>(reduce_grid_size) * block_threads;
+
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = tid; i < num_items; i += items_per_thread * reduce_grid_size * block_threads)
+  for (offset_t i = tid; i < num_items; i += (n_threads * items_per_thread))
   {
     ftype items[items_per_thread] = {};
     for (int j = 0; j < items_per_thread; j++)
     {
-      const int idx = i + j * reduce_grid_size * block_threads;
+      const offset_t idx = i + static_cast<offset_t>(j * block_threads);
       if (idx < num_items)
       {
         items[j] = transform_op(d_in[idx]);
