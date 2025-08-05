@@ -47,6 +47,11 @@ namespace reserved
 {
 using unique_id_t = unique_id<event>;
 
+inline int get_next_prereq_unique_id()
+{
+  return int(unique_id<event>::next_id());
+}
+
 using event_vector = small_vector<event, 7>;
 static_assert(sizeof(event_vector) == 120);
 } // namespace reserved
@@ -146,7 +151,7 @@ public:
   // stream then depends on the list of events
   virtual void sync_with_stream(backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
-    fprintf(stderr, "Unsupported synchronization with stream.\n");
+    fprintf(stderr, "sync_with_stream: unsupported synchronization with stream.\n");
     abort();
   }
 
