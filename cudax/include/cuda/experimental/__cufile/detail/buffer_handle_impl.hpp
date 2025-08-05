@@ -74,7 +74,7 @@ span<const T> buffer_handle::as_const_span() const noexcept {
 
 // is_valid method implementation
 inline bool buffer_handle::is_valid() const noexcept {
-    return registered_buffer_.has_value() && registered_buffer_->has_value();
+    return registered_buffer_.has_value();
 }
 
 

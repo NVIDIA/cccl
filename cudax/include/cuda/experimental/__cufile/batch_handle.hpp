@@ -13,7 +13,7 @@
 #include "detail/error_handling.hpp"
 #include "detail/span_compat.hpp"
 #include <functional>
-#include <optional>
+
 #include <vector>
 #include "detail/raii_resource.hpp"
 
@@ -58,7 +58,7 @@ class batch_handle {
 private:
     CUfileBatchHandle_t handle_;
     unsigned int max_operations_;
-    std::optional<detail::raii_resource<CUfileBatchHandle_t, std::function<void(CUfileBatchHandle_t)>>> batch_resource_;
+    detail::raii_resource<CUfileBatchHandle_t, std::function<void(CUfileBatchHandle_t)>> batch_resource_;
 
 public:
     /**
