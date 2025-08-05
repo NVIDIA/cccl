@@ -3,8 +3,11 @@ from cuda.cccl.experimental.stf import context, dep, exec_place
 
 
 class _CudaSTFKernel:
-    def __init__(self, numba_kernel):
-        self._nkern = numba_kernel
+    def __init__(self, pyfunc, jit_args, jit_kwargs):
+        self._pyfunc = pyfunc
+        self._jit_args = jit_args
+        self._jit_kwargs = jit_kwargs
+        self._compiled_kernel = None
         self._launch_cfg = None  # (gridDim, blockDim, context, exec_place?)
 
     def __getitem__(self, cfg):
@@ -28,20 +31,28 @@ class _CudaSTFKernel:
 
         gridDim, blockDim, ctx, exec_pl = self._launch_cfg
 
-        dep_items = [(i, a) for i, a in enumerate(args) if isinstance(a, dep)]
-        if not dep_items:
-            raise TypeError("at least one argument must be an STF dep")
+        dep_items = []
+        for i, a in enumerate(args):
+            print(f'got one arg {a} is dep ? {isinstance(a, dep)}')
+            if isinstance(a, dep):
+                dep_items.append((i, a))
 
         task_args = [exec_pl] if exec_pl else []
         task_args.extend(a for _, a in dep_items)
 
         with ctx.task(*task_args) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
             dev_args = list(args)
+            print(dev_args)
             for dep_index, (pos, _) in enumerate(dep_items):
+                print(f'set arg {dep_index} at position {pos}')
                 dev_args[pos] = t.get_arg_numba(dep_index)
 
-            self._nkern[gridDim, blockDim, nb_stream](*dev_args, **kwargs)
+            if self._compiled_kernel is None:
+                print("compile kernel")
+                self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(self._pyfunc)
+
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            self._compiled_kernel[grid, block, stream](*dev_args, **kwargs)
 
         return None
 
@@ -58,6 +69,5 @@ def jit(*jit_args, **jit_kwargs):
 
 
 def _build_kernel(pyfunc, jit_args, **jit_kwargs):
-    numba_kernel = cuda.jit(*jit_args, **jit_kwargs)(pyfunc)
-    return _CudaSTFKernel(numba_kernel)
+    return _CudaSTFKernel(pyfunc, jit_args, jit_kwargs)
 
