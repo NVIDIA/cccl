@@ -74,5 +74,5 @@ static void load_and_run_gpu_code(const std::string inputFile, const RunConfig& 
   CUDA_API_CALL(cudaGetLastError());
   CUDA_API_CALL(cudaDeviceSynchronize());
 
-  return;
+  CUDA_SAFE_CALL(cuModuleUnload(module));
 }
