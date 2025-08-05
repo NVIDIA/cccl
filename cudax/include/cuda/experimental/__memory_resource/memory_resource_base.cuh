@@ -160,8 +160,7 @@ public:
     [[maybe_unused]] const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment),
-                 "Invalid alignment passed to __memory_resource_base::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
     deallocate(__stream, __ptr, __bytes);
   }
 

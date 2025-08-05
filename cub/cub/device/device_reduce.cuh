@@ -136,8 +136,7 @@ struct device_memory_resource
   void* allocate(::cuda::stream_ref stream, size_t bytes)
   {
     void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
+    _CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
     return ptr;
   }
 
