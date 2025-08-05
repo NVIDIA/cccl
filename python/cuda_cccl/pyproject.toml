@@ -18,12 +18,12 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
   "numba>=0.60.0",
+  "numba-cuda>=0.16.0",
   "numpy",
   "cuda-python==12.9.0",
   "cuda-core",
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
-  "pynvjitlink-cu12>=0.2.4",
 ]
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
