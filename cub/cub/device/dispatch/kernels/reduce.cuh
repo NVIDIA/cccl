@@ -564,7 +564,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
       NV_PROVIDES_SM_60,
       (::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]); atomic_target.fetch_add(
         blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate, ::cuda::memory_order_relaxed);),
-      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
+      (
+        if constexpr (::cuda::std::is_same_v<AccumT, double>) {
+          atomicAddEmulated(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);
+        } else { atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate); }));
   }
 }
 

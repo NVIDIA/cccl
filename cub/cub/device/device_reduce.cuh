@@ -531,14 +531,11 @@ public:
       constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
       constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
 
-      constexpr auto supports_atomic_add =
-        !no_determinism || (CUB_PTX_ARCH < 600 && !::cuda::std::is_same_v<accum_t, double>);
-
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
       using determinism_t = ::cuda::std::conditional_t<
         (gpu_gpu_determinism && (integral_fallback || fp_min_max_fallback))
-          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater && supports_atomic_add)),
+          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
 
@@ -668,11 +665,8 @@ public:
     // determinism.
     constexpr auto is_4b_or_greater = !no_determinism || sizeof(OutputT) >= 4;
 
-    constexpr auto supports_atomic_add =
-      !no_determinism || (CUB_PTX_ARCH < 600 && !::cuda::std::is_same_v<OutputT, double>);
-
     using determinism_t =
-      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater && supports_atomic_add),
+      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater),
                                  ::cuda::execution::determinism::run_to_run_t,
                                  default_determinism_t>;
 

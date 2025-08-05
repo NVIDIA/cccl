@@ -56,6 +56,27 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
+#if _CCCL_PTX_ARCH() < 600
+// From
+// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions.
+// Older architectures don't support atomicAdd for double.
+_CCCL_DEVICE _CCCL_FORCEINLINE double atomicAddEmulated(double* address, double val)
+{
+  unsigned long long int* address_as_ull = (unsigned long long int*) address;
+  unsigned long long int old             = *address_as_ull, assumed;
+
+  do
+  {
+    assumed = old;
+    old     = atomicCAS(address_as_ull, assumed, __double_as_longlong(val + __longlong_as_double(assumed)));
+
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+  } while (assumed != old);
+
+  return __longlong_as_double(old);
+}
+#endif
+
 //! @rst
 //! BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction
 //! across a CUDA thread block. Supports non-commutative reduction operators.
@@ -146,10 +167,14 @@ struct BlockReduceWarpReductions
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
-      NV_IF_TARGET(NV_PROVIDES_SM_60,
-                   (::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
-                    atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);),
-                   (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
+      NV_IF_TARGET(
+        NV_PROVIDES_SM_60,
+        (::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
+         atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);),
+        (
+          if constexpr (::cuda::std::is_same_v<T, double>) {
+            atomicAddEmulated(&temp_storage.warp_aggregates[0], warp_aggregate);
+          } else { atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate); }));
     }
 
     __syncthreads();
