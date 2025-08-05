@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__format/format_integral.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/formatter.h>
 #include <cuda/std/cstdint>
