@@ -12,7 +12,6 @@
 
 #include <cuda_runtime.h>
 #include <stdexcept>
-#include <string>
 
 namespace cuda::experimental::cufile {
 

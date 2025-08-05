@@ -3,7 +3,7 @@
 // This file provides the implementation of batch_handle methods
 // It's included after the class definition to avoid circular dependency issues
 
-#include <span>
+#include "cuda/experimental/__cufile/batch_handle.hpp"
 
 namespace cuda::experimental::cufile {
 
