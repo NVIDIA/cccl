@@ -22,8 +22,7 @@ namespace cuda::experimental::cufile {
  */
 class buffer_handle {
 private:
-    const void* buffer_;
-    size_t size_;
+    cuda::std::span<const cuda::std::byte> buffer_;
     detail::raii_resource<const void*, ::std::function<void(const void*)>> registered_buffer_;
 
 public:
@@ -61,12 +60,12 @@ public:
     /**
      * @brief Get the buffer as a span of bytes
      */
-    cuda::std::span<const ::std::byte> as_bytes() const noexcept;
+    cuda::std::span<const cuda::std::byte> as_bytes() const noexcept;
 
     /**
      * @brief Get the buffer as a span of mutable bytes
      */
-    cuda::std::span<::std::byte> as_writable_bytes() const noexcept;
+    cuda::std::span<cuda::std::byte> as_writable_bytes() const noexcept;
 
     /**
      * @brief Get the buffer as a typed span
