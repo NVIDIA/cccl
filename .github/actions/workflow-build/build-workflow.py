@@ -136,7 +136,7 @@ def get_ctk(ctk_string):
 @memoize_result
 def parse_cxx_string(cxx_string):
     "Returns (id, version) tuple. Version may be None if not present."
-    return re.match(r"^([a-z]+)-?([\d\.]+)?$", cxx_string).groups()
+    return re.match(r"^([^\d]+)-?([\d\.]+)?$", cxx_string).groups()
 
 
 @memoize_result
@@ -1250,6 +1250,9 @@ def print_gha_workflow(args):
 def print_devcontainer_info(args):
     devcontainer_version = matrix_yaml["devcontainer_version"]
 
+    cuda99_gcc_version = matrix_yaml["cuda99_gcc_version"]
+    cuda99_clang_version = matrix_yaml["cuda99_clang_version"]
+
     matrix_jobs = []
 
     # Remove the `exclude` and `override` entries:
@@ -1260,14 +1263,19 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
+    # Explode jobs to ensure that the cuda_ext tags are correctly handled:
+    exploded_jobs = []
+    for matrix_job in matrix_jobs:
+        exploded_jobs.extend(explode_tags(matrix_job, "jobs"))
+    matrix_jobs = exploded_jobs
+
     # Check if the extended cuda images are needed:
     for matrix_job in matrix_jobs:
         cuda_ext = False
-        for job in matrix_job["jobs"]:
-            job_info = get_job_type_info(job)
-            if job_info["cuda_ext"]:
-                cuda_ext = True
-                break
+        job = matrix_job["jobs"]
+        job_info = get_job_type_info(job)
+        if job_info["cuda_ext"]:
+            cuda_ext = True
         matrix_job["cuda_ext"] = cuda_ext
 
     # Remove all but the following keys from the matrix jobs:
@@ -1292,6 +1300,8 @@ def print_devcontainer_info(args):
 
     devcontainer_json = {
         "devcontainer_version": devcontainer_version,
+        "cuda99_gcc_version": cuda99_gcc_version,
+        "cuda99_clang_version": cuda99_clang_version,
         "combinations": unique_combinations,
     }
 

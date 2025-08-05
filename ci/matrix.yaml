@@ -7,7 +7,28 @@ workflows:
   # override:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
-  # override:
+  override:
+    # TODO:
+    # - Per-project default gpus -- overrides the default when specified.
+    # - Update pr/nightly/weekly to account for CTK 13.0, rebalance existing builds.
+    # - Add 'major-latest' option to the force_producer_ctk to support both 12.x and 13.x builds.
+    # - Switch to all-major default in presets, along with related changes for perf:
+    #   - Move graph capture tests from CUB PR -> nightly
+    #   - Make thrust builds `sm: gpu` in PRs -- heavy CUDA testing is in CUB.
+
+    - {jobs: ['build'], ctk: ['12.0', '12.9'        ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
+    - {jobs: ['build'], ctk: ['12.0', '12.9'        ], cxx: ['clang14']}
+    - {jobs: ['build'], ctk: ['12.0', '12.9', '13.0'], cxx: ['gcc11', 'gcc12']}
+    - {jobs: ['build'], ctk: [        '12.9', '13.0'], cxx: ['gcc13']}
+    - {jobs: ['build'], ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18']}
+    - {jobs: ['build'], ctk: [        '12.9'        ], cxx: ['gcc_preview14', 'clang19']}
+    - {jobs: ['test'],  ctk: [        '12.9', '13.0'], cxx: ['gcc_preview14', 'clang19']}
+
+    # 12.X python images, pinned at gcc13 for consistency, as 12.5 / 12.6 don't support newer gcc.
+    - {jobs: ['build'], ctk: ['12.5', '12.6', '12.8', '12.9'], cxx: 'gcc13'}
+
+    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_par'],                                         ctk: [                '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc13'}
 
   pull_request:
     # Old CTK/compiler
@@ -57,9 +78,9 @@ workflows:
     # TODO Just need this line once cccl.parallel tests pass on 12.5 and 12.6:
     # - {jobs: ['test'], project: 'python', ctk: ['12.5', 'curr'], py_version: ['3.10', '3.13'], gpu: 'l4'}
     # These two can be removed once the above is working:
-    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4'}
-    - {jobs: ['test_py_par'],                                         ctk: ['12.8', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4'}
-    - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100'}
+    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc_preview14'}
+    - {jobs: ['test_py_par'],                                         ctk: ['12.8', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc_preview14'}
+    - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100', cxx: 'gcc_preview14'}
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
@@ -117,9 +138,9 @@ workflows:
     # TODO Just need this line once cccl.parallel tests pass on 12.5 and 12.6:
     # - {jobs: ['test'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
     # These two can be removed once the above is working.
-    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
-    - {jobs: ['test_py_par'],                                         ctk: [                '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
-    - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100'}
+    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc_preview14'}
+    - {jobs: ['test_py_par'],                                         ctk: [                '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc_preview14'}
+    - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100', cxx: 'gcc_preview14'}
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
@@ -133,8 +154,21 @@ workflows:
     # TODO Just need this line once cccl.parallel tests pass on 12.5 and 12.6:
     # - {jobs: ['test'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
     # These two can be removed once the above is working.
-    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
-    - {jobs: ['test_py_par'],                                         ctk: ['12.8', '12.9'],                 py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
+    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc_preview14'}
+    - {jobs: ['test_py_par'],                                         ctk: ['12.8', '12.9'],                 py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc_preview14'}
+
+  # This is just used ensure that we generate all devcontainers. These do not map to any actual jobs.
+  devcontainers:
+    - {jobs: ['dc'],     ctk: ['12.0', '12.9'        ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.9'        ], cxx: ['clang14']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.9', '13.0'], cxx: ['gcc11', 'gcc12']}
+    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['gcc13']}
+    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18']}
+    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['gcc_preview14', 'clang19']}
+    - {jobs: ['dc_ext'], ctk: [        '12.9', '13.0'], cxx: ['gcc_preview14', 'clang19']}
+
+    # 12.X python images, pinned at gcc13 for consistency, as 12.5 / 12.6 don't support newer gcc.
+    - {jobs: ['dc'], ctk: ['12.5', '12.6', '12.8', '12.9'], cxx: 'gcc13'}
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
@@ -148,6 +182,10 @@ workflows:
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
 devcontainer_version: '25.10'
 
+# Compiler versions used for the cuda99.X internal builds:
+cuda99_gcc_version: 13
+cuda99_clang_version: 19
+
 # All supported C++ standards:
 all_stds: [17, 20]
 
@@ -158,6 +196,7 @@ ctk_versions:
   # 12.7 not buildable by current devcontainer scripting.
   12.8: { stds: [17, 20] }
   12.9: { stds: [17, 20], aka: 'curr' }
+  13.0: { stds: [17, 20] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -180,6 +219,12 @@ host_compilers:
       11: { stds: [17, 20] }
       12: { stds: [17, 20] }
       13: { stds: [17, 20] }
+  gcc_preview: # Temporary; will be removed once jobs are passing on gcc14.
+    name: 'GCC'
+    container_tag: 'gcc'
+    exe: 'g++'
+    versions:
+      14: { stds: [17, 20] }
   clang:
     name: 'Clang'
     container_tag: 'llvm'
@@ -208,12 +253,13 @@ host_compilers:
 
 # Jobs support the following properties:
 #
-# - gpu: Whether the job requires a GPU runner. Default is false.
 # - name: The human-readable name of the job. Default is the capitalized job key.
 # - needs:
 #   - A list of jobs that must be completed before this job can run. Default is an empty list.
-#   - These are automatically added if needed:
+#   - These jobs are automatically added if needed:
 #     - Eg. "jobs: ['test']" in the workflow def will also create the required 'build' jobs.
+# - gpu: Whether the job requires a GPU runner. Default is false.
+# - cuda_ext: Whether the job requires a devcontainer with extra CUDA libraries. Default is false.
 # - invoke:
 #   - Map the job type to the script invocation spec:
 #     - prefix: The script invocation prefix. Default is the job name.
@@ -228,6 +274,10 @@ host_compilers:
 #   - E.g. "force_producer_ctk: '12.0'" on a test step will force the generated build step to use CTK 12.0.
 
 jobs:
+  # Only used for generating devcontainers. No scripts actually exist for these:
+  dc:     { gpu: false }
+  dc_ext: { gpu: false, cuda_ext: true }
+
   # General:
   build:        { gpu: false }
   test:         { gpu: true, needs: 'build' }

@@ -99,7 +99,7 @@ jobs:
           .devcontainer/launch.sh \
             --docker \
             --cuda 12.9 \
-            --host gcc13 \
+            --host gcc14 \
             --cuda-ext \
             --env "devcontainer_utils_debug=sccache" \
             --env "CCCL_TAG=${CCCL_TAG}" \
