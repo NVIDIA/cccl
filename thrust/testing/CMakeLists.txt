@@ -56,8 +56,6 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
 
-  thrust_is_catch2_test(is_catch2_test "${test_src}")
-
   # Wrap the .cu file in .cpp for non-CUDA backends
   if ("CUDA" STREQUAL "${config_device}")
     set(real_test_src "${test_src}")
@@ -75,12 +73,7 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   set(test_meta_target thrust.all.test.${test_name})
 
   add_executable(${test_target} "${real_test_src}")
-
-  if (is_catch2_test)
-    target_link_libraries(${test_target} PRIVATE ${thrust_target} Catch2::Catch2WithMain)
-  else()
-    target_link_libraries(${test_target} PRIVATE ${config_framework_target})
-  endif()
+  target_link_libraries(${test_target} PRIVATE ${thrust_target} Catch2::Catch2WithMain)
   target_include_directories(${test_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
   thrust_clone_target_properties(${test_target} ${thrust_target})
 
@@ -99,17 +92,7 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
     add_custom_target(${test_meta_target})
   endif()
   add_dependencies(${test_meta_target} ${test_target})
-
-  if (is_catch2_test)
-    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
-  else()
-    add_test(NAME ${test_target}
-      COMMAND "${CMAKE_COMMAND}"
-      "-DTHRUST_BINARY=$<TARGET_FILE:${test_target}>"
-      "-DTHRUST_SOURCE=${Thrust_SOURCE_DIR}"
-      -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunTest.cmake"
-    )
-  endif()
+  add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
   # Run OMP/TBB tests in serial. Multiple OMP processes will massively
   # oversubscribe the machine with GCC's OMP, and we want to test these with

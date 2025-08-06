@@ -101,4 +101,4 @@ struct TestZipIteratorScan
     ASSERT_EQUAL_QUIET(h_result1, d_result1);
   }
 };
-VariableUnitTest<TestZipIteratorScan, SignedIntegralTypes> TestZipIteratorScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorScan, SignedIntegralTypes);

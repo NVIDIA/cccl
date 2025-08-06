@@ -38,7 +38,7 @@ struct TestReduceDeviceSeq
     TestReduceDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestReduceDeviceSeq, IntegralTypes> TestReduceDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceDeviceSeq, IntegralTypes);
 
 template <typename T>
 struct TestReduceDeviceDevice
@@ -48,7 +48,7 @@ struct TestReduceDeviceDevice
     TestReduceDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestReduceDeviceDevice, IntegralTypes> TestReduceDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceDeviceDevice, IntegralTypes);
 
 template <typename T>
 struct TestReduceDeviceNoSync
@@ -58,7 +58,7 @@ struct TestReduceDeviceNoSync
     TestReduceDevice<T>(thrust::cuda::par_nosync, n);
   }
 };
-VariableUnitTest<TestReduceDeviceNoSync, IntegralTypes> TestReduceDeviceNoSyncInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceDeviceNoSync, IntegralTypes);
 #endif
 
 template <typename ExecutionPolicy>
