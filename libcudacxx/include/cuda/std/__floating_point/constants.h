@@ -193,7 +193,17 @@ template <class _Tp>
 template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_one() noexcept
 {
-  return static_cast<__fp_storage_t<_Fmt>>(__fp_exp_bias_v<_Fmt> << __fp_mant_nbits_v<_Fmt>);
+  if constexpr (__fp_has_implicit_bit_v<_Fmt>)
+  {
+    return static_cast<__fp_storage_t<_Fmt>>(
+      static_cast<__fp_storage_t<_Fmt>>(__fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>);
+  }
+  else
+  {
+    constexpr __fp_storage_t<_Fmt> implicit_bit = __fp_storage_t<_Fmt>{1} << (__fp_mant_nbits_v<fmt> - 1);
+    return static_cast<__fp_storage_t<_Fmt>>(
+      (static_cast<__fp_storage_t<_Fmt>>(__fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>) &implicit_bit);
+  }
 }
 
 template <class _Tp>
