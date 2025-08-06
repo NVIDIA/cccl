@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#  include <cuda/std/__concepts/same_as.h>
-#  include <cuda/std/__type_traits/remove_const_ref.h>
-#  include <cuda/std/__type_traits/void_t.h>
-#  include <cuda/std/__utility/declval.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__type_traits/remove_const_ref.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -148,6 +148,6 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_PROPERTY_H

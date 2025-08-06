@@ -21,17 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__concepts/convertible_to.h>
-#  include <cuda/std/__concepts/equality_comparable.h>
-#  include <cuda/std/__concepts/same_as.h>
-#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#  include <cuda/std/__type_traits/decay.h>
-#  include <cuda/std/__type_traits/fold.h>
-#  include <cuda/stream_ref>
+#include <cuda/__memory_resource/get_property.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/fold.h>
+#include <cuda/stream_ref>
 
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -120,6 +120,6 @@ _CCCL_CONCEPT __different_resource =
     static_cast<_OtherResource*>(nullptr));
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
-#  include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_H

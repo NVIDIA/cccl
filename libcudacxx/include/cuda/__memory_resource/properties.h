@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/cstddef>
 
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -64,6 +64,6 @@ inline constexpr bool __contains_execution_space_property =
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#  include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_PROPERTIES_H
