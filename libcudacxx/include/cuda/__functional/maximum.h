@@ -61,10 +61,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
     {
       return _CUDA_VSTD::fmax(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
-    else
-    {
-      return (__lhs < __rhs) ? __rhs : __lhs;
-    }
+    return (__lhs < __rhs) ? __rhs : __lhs;
   }
 };
 
