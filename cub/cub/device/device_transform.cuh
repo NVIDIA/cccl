@@ -67,8 +67,7 @@ struct DeviceTransform
     using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items);
-    if (error)
+    if (const cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items); error != cudaSuccess)
     {
       return error;
     }
@@ -88,8 +87,7 @@ struct DeviceTransform
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  // This overload has additional parameters to specify temporary storage. Provided for compatibility with other CUB
-  // APIs.
+  // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     void* d_temp_storage,
@@ -123,7 +121,7 @@ struct DeviceTransform
   //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
   //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
-  //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
+  //! @param transform_op A unary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -144,8 +142,7 @@ struct DeviceTransform
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  // This overload has additional parameters to specify temporary storage. Provided for compatibility with other CUB
-  // APIs.
+  // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     void* d_temp_storage,
@@ -166,6 +163,132 @@ struct DeviceTransform
       ::cuda::std::make_tuple(::cuda::std::move(input)),
       ::cuda::std::move(output),
       num_items,
+      ::cuda::std::move(transform_op),
+      stream);
+  }
+#endif // _CCCL_DOXYGEN_INVOKED
+
+  template <typename... RandomAccessIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename Predicate,
+            typename NumItemsT,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIf");
+
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    if (const cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items); error != cudaSuccess)
+    {
+      return error;
+    }
+
+    return detail::transform::dispatch_t<
+      detail::transform::requires_stable_address::no,
+      offset_t,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      Predicate,
+      TransformOp>::dispatch(::cuda::std::move(inputs),
+                             ::cuda::std::move(output),
+                             num_items,
+                             ::cuda::std::move(predicate),
+                             ::cuda::std::move(transform_op),
+                             stream);
+  }
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
+  template <typename... RandomAccessIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename Predicate,
+            typename NumItemsT,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream = nullptr)
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return TransformIf(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      stream);
+  }
+#endif // _CCCL_DOXYGEN_INVOKED
+
+  template <typename RandomAccessIteratorIn,
+            typename RandomAccessIteratorOut,
+            typename Predicate,
+            typename NumItemsT,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
+    RandomAccessIteratorIn input,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream = nullptr)
+  {
+    return TransformIf(
+      ::cuda::std::make_tuple(::cuda::std::move(input)),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      stream);
+  }
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
+  template <typename RandomAccessIteratorIn,
+            typename RandomAccessIteratorOut,
+            typename Predicate,
+            typename NumItemsT,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorIn input,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream = nullptr)
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return TransformIf(
+      ::cuda::std::make_tuple(::cuda::std::move(input)),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
       stream);
   }
