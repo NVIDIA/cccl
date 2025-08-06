@@ -27,7 +27,7 @@ At a high level, the header provides:
 
    * - :ref:`cuda::get_property <libcudacxx-extended-api-memory-resources-properties>`
      - Infrastructure to tag a user defined type with a given property
-     - CCCL 2.2.0 / CUDA 12.3
+     - CCCL 2.2.0 / CUDA 12.3 (experimental)
      - CCCL 3.1.0 / CUDA 13.1 (stable)
    * - :ref:`cuda::mr::{synchronous_}resource <libcudacxx-extended-api-memory-resources-resource>` and
        :ref:`cuda::mr::{synchronous_}resource_with <libcudacxx-extended-api-memory-resources-resource>`
