@@ -634,7 +634,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // Because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
   // namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
   // different alignment based on the template parameters (i.e. the iterator value types). We settle on using 128 as
-  // alignment, since it's the maximum bulk copy alignment to handle Hopper and should cover must overaligned types as
+  // alignment, since it's the maximum bulk copy alignment to handle Hopper and should cover most overaligned types as
   // well (we don't expect many types with alignment > 128 bytes).
   //
   // We could use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and
