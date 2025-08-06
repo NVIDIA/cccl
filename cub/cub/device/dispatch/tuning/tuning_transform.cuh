@@ -209,8 +209,6 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-inline constexpr int max_bulk_copy_alignment = 128;
-
 constexpr int bulk_copy_size_multiple = 16;
 
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
@@ -227,14 +225,13 @@ bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignment
   _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
   _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
 
-  int max_alignment = 1;
+  int tile_padding = bulk_copy_align;
   for (auto&& [_, vt_alignment] : it_value_sizes_alignments)
   {
-    max_alignment = ::cuda::std::max(max_alignment, static_cast<int>(vt_alignment));
+    tile_padding = ::cuda::std::max(tile_padding, static_cast<int>(vt_alignment));
   }
-  const int tile_padding = max_alignment > bulk_copy_align ? max_bulk_copy_alignment : bulk_copy_align;
 
-  int smem_size = max_bulk_copy_alignment; // for the barrier and padding
+  int smem_size = tile_padding; // for the barrier and padding
   for (auto&& [vt_size, _] : it_value_sizes_alignments)
   {
     smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;
@@ -361,10 +358,18 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
         AsyncBlockSize* async_policy::min_items_per_thread,
         alignment)
       > int{max_smem_per_block};
-    static constexpr bool any_type_is_overalinged =
-      ((alignof(it_value_t<RandomAccessIteratorsIn>) > max_bulk_copy_alignment) || ...);
+
+    // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
+    // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
+    // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly and
+    // complex, so let's fall back in this case.
+    static constexpr int max_alignment =
+      ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
+    static constexpr int tile_sizes_retain_alignment =
+      (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
+
     static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || !tile_sizes_retain_alignment;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);

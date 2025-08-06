@@ -619,17 +619,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
   constexpr int block_threads       = BulkCopyPolicy::block_threads;
-  constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment; // TODO(bgruber): just use
-                                                                           // max_bulk_copy_alignment instead?
-
-  // if block_threads is a multiple of the SMEM alignment, and no type is higher aligned than the SMEM alignment, then
-  // each tile retains the alignment.
-  static_assert(block_threads % max_bulk_copy_alignment == 0,
-                "The block size must be a multiple of the max bulk copy alignment (128).");
+  constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
-  constexpr int max_alignment = ::cuda::std::max({alignof(InTs)...});
-  constexpr int tile_padding  = max_alignment > bulk_copy_alignment ? max_bulk_copy_alignment : bulk_copy_alignment;
+  constexpr int tile_padding = ::cuda::std::max({bulk_copy_alignment, int{alignof(InTs)}...});
 
   // Because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
   // namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
@@ -649,18 +642,21 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // This is also what cutlass does. But it is not guaranteed by CUDA. So let's align manually (this costs up to 5% on
   // 2^16 problems on H200)
 
-  extern __shared__ char smem_with_barrier_base[];
+  extern __shared__ char smem_with_barrier_base[]; // aligned to 16 bytes by default
   char* smem_with_barrier = smem_with_barrier_base;
-  if constexpr (max_alignment > 16) // we need to align for correctness
+  if constexpr (tile_padding > 16)
   {
+    // manual alignment is necessary
     uint32_t smem32 = __cvta_generic_to_shared(smem_with_barrier);
-    smem32          = ::cuda::round_up(smem32, max_bulk_copy_alignment);
+    smem32          = ::cuda::round_up(smem32, tile_padding);
     asm("" : "+r"(smem32)); // avoid NVVM pulling the alignment code into the kernel, gains up to 8.7% some runs on H200
     smem_with_barrier = static_cast<char*>(__cvta_shared_to_generic(smem32));
   }
-  uint64_t& bar   = *reinterpret_cast<uint64_t*>(smem_with_barrier);
-  char* smem_base = smem_with_barrier + max_bulk_copy_alignment;
-  _CCCL_ASSERT(::cuda::is_aligned(smem_with_barrier, max_bulk_copy_alignment), "");
+
+  uint64_t& bar = *reinterpret_cast<uint64_t*>(smem_with_barrier);
+  static_assert(tile_padding >= sizeof(uint64_t));
+  char* smem_base = smem_with_barrier + tile_padding;
+  _CCCL_ASSERT(::cuda::is_aligned(smem_base, tile_padding), "");
 
   namespace ptx = ::cuda::ptx;
 
