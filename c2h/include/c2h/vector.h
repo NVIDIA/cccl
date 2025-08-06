@@ -69,10 +69,10 @@ struct Catch::StringMaker<THRUST_NS_QUALIFIER::detail::vector_base<T, A>, ::cuda
     rss << "{ ";
     if (first != last)
     {
-      rss << Detail::stringify(static_cast<unsigned>(*first));
+      rss << Detail::stringify(static_cast<unsigned>(static_cast<T>(*first)));
       for (++first; first != last; ++first)
       {
-        rss << ", " << Detail::stringify(static_cast<unsigned>(*first));
+        rss << ", " << Detail::stringify(static_cast<unsigned>(static_cast<T>(*first)));
       }
     }
     rss << " }";
