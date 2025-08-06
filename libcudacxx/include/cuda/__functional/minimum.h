@@ -59,12 +59,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
     // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
     if constexpr (_CUDA_VSTD::is_floating_point_v<_Common> || _CUDA_VSTD::__is_extended_floating_point_v<_Common>)
     {
-      return minimum<_Common>{}(__lhs, __rhs);
+      return _CUDA_VSTD::fmin(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
-    else
-    {
-      return (__lhs < __rhs) ? __lhs : __rhs;
-    }
+    return (__lhs < __rhs) ? __lhs : __rhs;
   }
 };
 
