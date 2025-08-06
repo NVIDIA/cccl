@@ -280,7 +280,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
 // address that is a multiple of 16 bytes. This introduces head padding. We also round up the total number of bytes to
 // copy (including head padding) to a multiple of 16 bytes, which introduces tail padding. For the bulk copy kernel, we
-// have to align to 128 bytes instead of 16 on Hopper.
+// should align to 128 bytes instead of 16 on Hopper.
 //
 // However, padding memory copies like that may access the input buffer out-of-bounds. Here are some thoughts:
 // * According to the CUDA programming guide
@@ -622,31 +622,38 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
-  constexpr int tile_padding = ::cuda::std::max({bulk_copy_alignment, int{alignof(InTs)}...});
+  constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
+  constexpr int tile_padding  = ::cuda::std::max(bulk_copy_alignment, max_alignment);
 
-  // Because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
-  // namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
-  // different alignment based on the template parameters (i.e. the iterator value types). We settle on using 128 as
-  // alignment, since it's the maximum bulk copy alignment to handle Hopper and should cover most overaligned types as
-  // well (we don't expect many types with alignment > 128 bytes).
-  //
   // We could use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and
   // fails for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR
-  // #5122. However, due to CUDA runtime implementation details, the alignment of dynamic shared memory effects the
-  // required *static* shared memory of *every* other kernel that is generated into the same TU (translation unit) as
-  // the transform kernel here. More internal information:
-  // https://github.com/NVIDIA/cccl_private/wiki/Dynamic-shared-memory-alignment. Because we put the barrier into the
-  // dynamic shared memory, we don't have any static shared memory, and the dynamic shared memory starts right at the
-  // beginning of the shared memory window, which usually has a high alignment (> 1KiB, depends on the GPU
-  // architecture). So we could just rely in this fact and don't specify an attribute to not mess with other kernels.
-  // This is also what cutlass does. But it is not guaranteed by CUDA. So let's align manually (this costs up to 5% on
-  // 2^16 problems on H200)
+  // #5122.
+  //
+  // Also, because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
+  // namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
+  // different alignment based on the template parameters (i.e. the iterator value types). We could use multiple extern
+  // __shared__ variables with different alignment and select the right one at compile time though. A variable template
+  // won't work, see NVBug 5420296.
+  //
+  // However, due to CUDA runtime implementation details, the alignment of dynamic shared memory affects the required
+  // *static* shared memory of *every* other kernel that is generated into the same TU (translation unit) as the
+  // transform kernel here, which causes all kinds of headaches for downstream users. So lets avoid alignment
+  // attributes. More internal information: https://github.com/NVIDIA/cccl_private/wiki/Dynamic-shared-memory-alignment.
+  //
+  // Because we put the barrier into the dynamic shared memory, we don't have any static shared memory, and the dynamic
+  // shared memory starts right at the beginning of the shared memory window, which usually has a high alignment (>
+  // 1KiB, depends on the GPU architecture). So we could just rely on this fact and don't specify an attribute to not
+  // mess with other kernels. This is also what cutlass does. But it is not guaranteed by CUDA. So let's align manually
+  // when we actually need it for correctness. That's when any value type's alignment is larger than 16. Hopper does
+  // benefit from 128 byte alignment, which is granted by the alignment of the shared memory window. In case this ever
+  // changes, it does not break the correctness and may entail up to 5% perf regression for TMA (the worst I have
+  // measured for a 16 byte aligned SMEM destination). So no manual alignment is needed to respect bulk_copy_alignment.
 
   extern __shared__ char smem_with_barrier_base[]; // aligned to 16 bytes by default
   char* smem_with_barrier = smem_with_barrier_base;
-  if constexpr (tile_padding > 16)
+  if constexpr (max_alignment > 16)
   {
-    // manual alignment is necessary
+    // manual alignment is necessary for correctness
     uint32_t smem32 = __cvta_generic_to_shared(smem_with_barrier);
     smem32          = ::cuda::round_up(smem32, tile_padding);
     asm("" : "+r"(smem32)); // avoid NVVM pulling the alignment code into the kernel, gains up to 8.7% some runs on H200
