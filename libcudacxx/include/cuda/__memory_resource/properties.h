@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,8 +23,6 @@
 
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/cstddef>
-
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -67,7 +65,5 @@ inline constexpr bool __contains_execution_space_property =
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  include <cuda/std/__cccl/epilogue.h>
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_PROPERTIES_H

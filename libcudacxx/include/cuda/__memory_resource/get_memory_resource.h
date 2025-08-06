@@ -79,13 +79,9 @@ struct __get_memory_resource_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_memory_resource = __get_memory_resource_t{};
 
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-
 using get_memory_resource_t = __get_memory_resource_t;
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

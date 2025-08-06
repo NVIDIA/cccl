@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,8 +20,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
@@ -151,7 +149,5 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_PROPERTY_H
