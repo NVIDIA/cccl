@@ -101,7 +101,7 @@ template <size_t _IdSize>
 struct __fmt_substitute_arg_id_visitor
 {
   template <class _Tp>
-  [[nodiscard]] _CCCL_API uint32_t operator()(_Tp __arg)
+  [[nodiscard]] _CCCL_API uint32_t operator()([[maybe_unused]] _Tp __arg)
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {
@@ -135,7 +135,7 @@ struct __fmt_substitute_arg_id_visitor
         _CUDA_VSTD::__throw_format_error("The value of the argument index exceeds its maximum value");
       }
 
-      return __arg;
+      return static_cast<uint32_t>(__arg);
     }
     else
     {
@@ -234,7 +234,7 @@ enum class __fmt_spec_alignment : uint8_t
   __left,
   __center,
   __right,
-  __zero_padding
+  __zero_padding,
 };
 
 enum class __fmt_spec_sign : uint8_t
@@ -247,7 +247,7 @@ enum class __fmt_spec_sign : uint8_t
   __default,
   __minus,
   __plus,
-  __space
+  __space,
 };
 
 enum class __fmt_spec_type : uint8_t
@@ -559,7 +559,7 @@ public:
   // reporting.
   template <size_t _IdSize>
   _CCCL_API constexpr void
-  __validate(__fmt_spec_fields __fields, const char (&__id)[_IdSize], uint32_t __type_mask = uint32_t{-1}) const
+  __validate(__fmt_spec_fields __fields, const char (&__id)[_IdSize], uint32_t __type_mask = ~uint32_t{0}) const
   {
     if (!__fields.__sign_ && __sign_ != __fmt_spec_sign::__default)
     {

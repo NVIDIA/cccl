@@ -99,9 +99,13 @@ __host__ __device__ void test_type()
   test_termination_condition<CharT, T>(TEST_STRLIT(CharT, "}"), -2147483648, TEST_STRLIT(CharT, "-2147483648"));
   test_termination_condition<CharT, T>(TEST_STRLIT(CharT, "}"), 2147483647, TEST_STRLIT(CharT, "2147483647"));
   test_termination_condition<CharT, T>(
-    TEST_STRLIT(CharT, "}"), cuda::std::numeric_limits<std::int64_t>::min(), TEST_STRLIT(CharT, "-9223372036854775808"));
+    TEST_STRLIT(CharT, "}"),
+    cuda::std::numeric_limits<cuda::std::int64_t>::min(),
+    TEST_STRLIT(CharT, "-9223372036854775808"));
   test_termination_condition<CharT, T>(
-    TEST_STRLIT(CharT, "}"), cuda::std::numeric_limits<std::int64_t>::max(), TEST_STRLIT(CharT, "9223372036854775807"));
+    TEST_STRLIT(CharT, "}"),
+    cuda::std::numeric_limits<cuda::std::int64_t>::max(),
+    TEST_STRLIT(CharT, "9223372036854775807"));
 #if _CCCL_HAS_INT128()
   test_termination_condition<CharT, T>(
     TEST_STRLIT(CharT, "}"),
