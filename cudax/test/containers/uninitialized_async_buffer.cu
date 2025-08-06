@@ -78,7 +78,7 @@ C2H_TEST_LIST(
       // Ensure that we properly reset the input buffer
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
-      CUDAX_CHECK(input.stream() == cuda::stream_ref{static_cast<::cudaStream_t>(0)});
+      CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
   }
 
@@ -96,7 +96,7 @@ C2H_TEST_LIST(
     // Ensure that we properly reset the input buffer
     CUDAX_CHECK(input.data() == nullptr);
     CUDAX_CHECK(input.size() == 0);
-    CUDAX_CHECK(input.stream() == cuda::stream_ref{static_cast<::cudaStream_t>(0)});
+    CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
   }
 
   SECTION("assignment")
@@ -119,7 +119,7 @@ C2H_TEST_LIST(
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
       CUDAX_CHECK(input.size_bytes() == 0);
-      CUDAX_CHECK(input.stream() == cuda::stream_ref{static_cast<::cudaStream_t>(0)});
+      CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
 
     { // Ensure self move assignment does not do anything

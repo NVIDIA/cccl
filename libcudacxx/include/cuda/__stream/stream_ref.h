@@ -60,6 +60,8 @@ public:
   //!
   //! For behavior of the default stream,
   //! @see //! https://docs.nvidia.com/cuda/cuda-runtime-api/stream-sync-behavior.html
+  [[deprecated("Using the default/null stream is generally discouraged. If you need to use it, please construct a "
+               "stream_ref from cudaStream_t{nullptr}")]]
   _CCCL_HIDE_FROM_ABI stream_ref() = default;
 
   //! @brief Constructs a `stream_ref` from a `cudaStream_t` handle.
@@ -134,7 +136,7 @@ public:
   //! @throws cuda_error if inserting the dependency fails
   _CCCL_HOST_API void wait(event_ref __ev) const
   {
-    _CCCL_ASSERT(__ev.get() != nullptr, "cuda::experimental::stream_ref::wait invalid event passed");
+    _CCCL_ASSERT(__ev.get() != nullptr, "cuda::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
     _CUDA_DRIVER::__streamWaitEvent(get(), __ev.get());
   }
@@ -149,7 +151,7 @@ public:
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
-    _CCCL_ASSERT(__stream != __detail::__invalid_stream, "cuda::experimental::stream_ref::wait invalid stream passed");
+    _CCCL_ASSERT(__stream != __detail::__invalid_stream, "cuda::stream_ref::wait invalid stream passed");
     if (*this != __other)
     {
       event __tmp(__other);
@@ -253,8 +255,8 @@ public:
 
 inline void event_ref::record(stream_ref __stream) const
 {
-  _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
-  _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
+  _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::record no event set");
+  _CCCL_ASSERT(__stream.get() != nullptr, "cuda::event_ref::record invalid stream passed");
   // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
   _CUDA_DRIVER::__eventRecord(__event_, __stream.get());
 }

@@ -33,22 +33,9 @@ def test_device_segmented_reduce():
     n_segments = start_o.size
     d_output = cp.empty(n_segments, dtype=dtype)
 
-    # Instantiate reduction for the given operator and initial value
-    segmented_reduce = parallel.segmented_reduce(
-        d_output, d_output, start_o, end_o, min_op, h_init
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = segmented_reduce(
-        None, d_input, d_output, n_segments, start_o, end_o, h_init
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run reduction
-    segmented_reduce(
-        d_temp_storage, d_input, d_output, n_segments, start_o, end_o, h_init
+    # Run segmented reduction with automatic temp storage allocation
+    parallel.segmented_reduce(
+        d_input, d_output, start_o, end_o, min_op, h_init, n_segments
     )
 
     # Check the result is correct
@@ -85,17 +72,10 @@ def test_device_segmented_reduce_for_rowwise_sum():
     h_init = np.zeros(tuple(), dtype=np.int32)
     d_output = cp.empty(n_rows, dtype=d_input.dtype)
 
-    alg = parallel.segmented_reduce(
-        d_input, d_output, start_offsets, end_offsets, add_op, h_init
+    # Run segmented reduction with automatic temp storage allocation
+    parallel.segmented_reduce(
+        d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
     )
-
-    # query size of temporary storage and allocate
-    temp_nbytes = alg(
-        None, d_input, d_output, n_rows, start_offsets, end_offsets, h_init
-    )
-    temp_storage = cp.empty(temp_nbytes, dtype=cp.uint8)
-    # launch computation
-    alg(temp_storage, d_input, d_output, n_rows, start_offsets, end_offsets, h_init)
 
     # Verify correctness
     expected = cp.sum(mat, axis=-1)
