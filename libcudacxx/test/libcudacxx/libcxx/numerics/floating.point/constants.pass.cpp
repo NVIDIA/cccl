@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fp_storage()
+__host__ __device__ void test_fp_storage(cuda::std::__fp_storage_of_t<T> expected_one)
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
 
@@ -79,49 +79,49 @@ __host__ __device__ void test_fp_storage()
   {
     const auto val = cuda::std::__fp_zero<T>();
     const auto ref = cuda::std::__fp_storage_of_t<T>(0);
+    assert(cuda::std::__fp_zero<cuda::std::__fp_format_of_v<T>>() == cuda::std::__fp_storage_of_t<T>(0));
     assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
     assert(!cuda::std::signbit(val));
   }
 
   // test __fp_one for standard types only
-  if constexpr (cuda::std::__fp_is_native_type_v<T>)
   {
     const auto val = cuda::std::__fp_one<T>();
-    const auto ref = T{1};
-    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+    assert(cuda::std::__fp_one<cuda::std::__fp_format_of_v<T>>() == expected_one);
+    assert(cuda::std::__fp_get_storage(val) == expected_one);
   }
 }
 
 int main(int, char**)
 {
-  test_fp_storage<float>();
-  test_fp_storage<double>();
+  test_fp_storage<float>(0x3f800000);
+  test_fp_storage<double>(0x3ff0000000000000);
 #if _CCCL_HAS_LONG_DOUBLE()
-  test_fp_storage<long double>();
+  test_fp_storage<long double>(0x3fff8000000000000000);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
-  test_fp_storage<__half>();
+  test_fp_storage<__half>(0x3c00);
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-  test_fp_storage<__nv_bfloat16>();
+  test_fp_storage<__nv_bfloat16>(0x3f80);
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
-  test_fp_storage<__nv_fp8_e4m3>();
+  test_fp_storage<__nv_fp8_e4m3>(0x38);
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
-  test_fp_storage<__nv_fp8_e5m2>();
+  test_fp_storage<__nv_fp8_e5m2>(0x3c);
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
-  test_fp_storage<__nv_fp8_e8m0>();
+  test_fp_storage<__nv_fp8_e8m0>(0x7f);
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
-  test_fp_storage<__nv_fp6_e2m3>();
+  test_fp_storage<__nv_fp6_e2m3>(0x8);
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
-  test_fp_storage<__nv_fp6_e3m2>();
+  test_fp_storage<__nv_fp6_e3m2>(0xc);
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
-  test_fp_storage<__nv_fp4_e2m1>();
+  test_fp_storage<__nv_fp4_e2m1>(0x2);
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
   return 0;
