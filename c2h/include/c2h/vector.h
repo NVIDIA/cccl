@@ -55,39 +55,35 @@ using THRUST_NS_QUALIFIER::host_vector;
 } // namespace c2h
 
 // We specialize how Catch2 prints ([signed|unsigned]) char vectors for better readability. Let's print them as numbers
-// instead of characters. We need a full specialization here to avoid an ambiguity, since Catch2 already provides a
-// partial specialization for range-like types.
-namespace Catch
+// instead of characters.
+template <typename T, typename A>
+struct Catch::StringMaker<THRUST_NS_QUALIFIER::detail::vector_base<T, A>, ::cuda::std::enable_if_t<sizeof(T) == 1>>
 {
-#define _SPECIALIZE_VEC(V, T)                                              \
-  template <>                                                              \
-  struct StringMaker<::c2h::V<T>>                                          \
-  {                                                                        \
-    /* Copied from `rangeToString` in catch_tostring.hpp */                \
-    static auto convert(const ::c2h::V<T>& v) -> std::string               \
-    {                                                                      \
-      auto first = v.begin();                                              \
-      auto last  = v.end();                                                \
-                                                                           \
-      ReusableStringStream rss;                                            \
-      rss << "{ ";                                                         \
-      if (first != last)                                                   \
-      {                                                                    \
-        rss << Detail::stringify(static_cast<unsigned>(*first));           \
-        for (++first; first != last; ++first)                              \
-        {                                                                  \
-          rss << ", " << Detail::stringify(static_cast<unsigned>(*first)); \
-        }                                                                  \
-      }                                                                    \
-      rss << " }";                                                         \
-      return rss.str();                                                    \
-    }                                                                      \
-  };
-_SPECIALIZE_VEC(host_vector, char)
-_SPECIALIZE_VEC(host_vector, signed char)
-_SPECIALIZE_VEC(host_vector, unsigned char)
-_SPECIALIZE_VEC(device_vector, char)
-_SPECIALIZE_VEC(device_vector, signed char)
-_SPECIALIZE_VEC(device_vector, unsigned char)
-#undef _SPECIALIZE_VEC
-} // namespace Catch
+  // Copied from `rangeToString` in catch_tostring.hpp
+  static auto convert(const THRUST_NS_QUALIFIER::detail::vector_base<T, A>& v) -> std::string
+  {
+    auto first = v.begin();
+    auto last  = v.end();
+
+    ReusableStringStream rss;
+    rss << "{ ";
+    if (first != last)
+    {
+      rss << Detail::stringify(static_cast<unsigned>(*first));
+      for (++first; first != last; ++first)
+      {
+        rss << ", " << Detail::stringify(static_cast<unsigned>(*first));
+      }
+    }
+    rss << " }";
+    return rss.str();
+  }
+};
+
+// due to an nvcc bug, the above specialization of StringMaker is ambiguous with one inside Catch2, so let's disable
+// Catch2 range formatting for vector_base with sizeof(T) == 1 entirely
+template <typename T, typename A>
+struct Catch::is_range<THRUST_NS_QUALIFIER::detail::vector_base<T, A>>
+{
+  static constexpr bool value = sizeof(T) != 1;
+};
