@@ -29,8 +29,8 @@ def make_zip_iterator(*iterators):
     Returns:
         ZipIterator: Iterator that combines all input iterators
     """
-    if len(iterators) < 2:
-        raise ValueError("At least 2 iterators are required")
+    if len(iterators) < 1:
+        raise ValueError("At least 1 iterator is required")
 
     # Convert arrays to iterators if needed
     processed_iterators = []

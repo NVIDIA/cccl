@@ -200,3 +200,30 @@ def test_zip_iterator_four_iterators():
     np.testing.assert_allclose(result["b"], 0.6)
     assert result["c"] == 303
     np.testing.assert_allclose(result["d"], 18.0)
+
+
+def test_zip_iterator_single_iterator():
+    """Test ZipIterator with a single iterator."""
+
+    @parallel.gpu_struct
+    class Single:
+        value: np.int32
+
+    def sum_singles(s1, s2):
+        return Single(s1.value + s2.value)
+
+    d_input = cp.array([10, 20, 30, 40], dtype=np.int32)
+
+    # Create zip iterator with only one iterator
+    zip_it = parallel.ZipIterator(d_input)
+
+    num_items = 4
+    d_output = cp.empty(1, dtype=Single.dtype)
+    h_init = Single(0)
+
+    parallel.reduce_into(zip_it, d_output, sum_singles, num_items, h_init)
+
+    result = d_output.get()[0]
+
+    # Expected result: 10 + 20 + 30 + 40 = 100
+    assert result["value"] == 100
