@@ -33,6 +33,15 @@ inline constexpr bool __is_zip_iterator = false;
 template <class... _Iterators>
 inline constexpr bool __is_zip_iterator<zip_iterator<_Iterators...>> = true;
 
+template <class _Fn>
+class zip_function;
+
+template <class>
+inline constexpr bool __is_zip_function = false;
+
+template <class _Fn>
+inline constexpr bool __is_zip_function<zip_function<_Fn>> = true;
+
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
